@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/screens/review/user_experience_survey_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
@@ -10,13 +11,17 @@ class AppReviewService {
   static final InAppReview _inAppReview = InAppReview.instance;
 
   static Future<void> requestReview() async {
-    if (await _inAppReview.isAvailable()) {
-      _inAppReview.requestReview();
-    } else {
-      _inAppReview.openStoreListing(appStoreId: '375380948');
+    try {
+      if (await _inAppReview.isAvailable()) {
+        _inAppReview.requestReview();
+      } else {
+        _inAppReview.openStoreListing(appStoreId: APPSTORE_ID);
+      }
+    } catch (_) {
+      _inAppReview.openStoreListing(appStoreId: APPSTORE_ID);
+    } finally {
+      setHasReviewed();
     }
-
-    setHasReviewed();
   }
 
   /// ----------------- 리뷰 요청 관련 로직 -----------------

@@ -108,7 +108,7 @@ class _StartScreenState extends State<StartScreen> {
             Uri storeUrl = Platform.isAndroid
                 ? Uri.parse(
                     'https://play.google.com/store/apps/details?id=${_packageInfo.packageName}')
-                : Uri.parse('https://apps.apple.com/us/app/$APPSTORE_ID');
+                : Uri.parse('https://apps.apple.com/kr/app/$APPSTORE_ID');
 
             if (await canLaunchUrl(storeUrl)) {
               await launchUrl(storeUrl);
