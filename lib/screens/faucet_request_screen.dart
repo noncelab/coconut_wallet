@@ -312,7 +312,15 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
 
                           addressValue = _validateAddress();
                           setState(() {
-                            _faucetAddressController.text = inputText;
+                            _faucetAddressController.value =
+                                _faucetAddressController.value.copyWith(
+                              text: inputText,
+                              selection: TextSelection.collapsed(
+                                offset: _faucetAddressController
+                                    .selection.baseOffset
+                                    .clamp(0, inputText.length),
+                              ),
+                            );
                             addressError = !addressValue;
                           });
                         },
