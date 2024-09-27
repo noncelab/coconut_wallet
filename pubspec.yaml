@@ -1,0 +1,235 @@
+name: coconut_wallet
+description: "비트코인을 주고 받기 위해 코코넛 볼트와 함께 사용하는 보기 전용 지갑 앱"
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+# iOS
+# version: 1.0.1+1
+# AOS
+version: 1.0.1+9
+
+environment:
+  sdk: ">=3.3.1 <4.0.0"
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.6
+  intl: ^0.19.0
+  provider: ^6.1.2
+  scoped_model: ^2.0.0
+  flutter_secure_storage: ^9.0.0
+  json_annotation: ^4.8.1
+  shared_preferences: ^2.2.2
+  qr_flutter: ^4.1.0
+  qr_code_scanner: ^1.0.1
+  flutter_svg: ^2.0.10+1
+  fluttertoast: ^8.2.4
+  loader_overlay: ^4.0.0
+  carousel_slider: ^4.2.1
+  modal_bottom_sheet: ^3.0.0
+  coconut_lib: ^0.6.1
+  connectivity_plus: ^6.0.3
+  url_launcher: ^6.2.6
+  path_provider: ^2.1.3
+  convert: ^3.1.1
+  screen_capture_event: ^1.1.1
+  crypto: ^3.0.3
+  local_auth: ^2.2.0
+  objectbox_flutter_libs: any
+  path: ^1.9.0
+  web_socket_channel: ^2.4.5
+  uuid: ^4.4.0
+  vibration: ^1.7.7
+  lottie: ^3.1.2
+  retrofit: '>=4.0.0 <5.0.0'
+  dio: ^5.5.0+1
+  http: ^1.2.1
+  in_app_review: ^2.0.9
+  equatable: ^2.0.5
+  flutter_dotenv: ^5.1.0
+  device_info_plus: ^10.1.1
+  package_info_plus: ^8.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_oss_licenses: ^3.0.2
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^3.0.0
+  retrofit_generator: '>=7.0.0 <8.0.0'
+  json_serializable: ^6.7.1
+  build_runner: '>=2.3.0 <4.0.0'
+  mockito: ^5.4.4
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/files/terms_details.json
+    - assets/files/status_loading.json
+    - assets/images/splash_logo.png
+    - assets/images/pow_logo.png
+    - assets/images/telegram_logo.png
+    - assets/svg/coconut.svg
+    - assets/svg/bell.svg
+    - assets/svg/add-circle.svg
+    - assets/svg/arrow-right.svg
+    - assets/svg/send.svg
+    - assets/svg/settings.svg
+    - assets/svg/receive.svg
+    - assets/svg/back.svg
+    - assets/svg/tx-received.svg
+    - assets/svg/tx-receiving.svg
+    - assets/svg/tx-self.svg
+    - assets/svg/tx-self-sending.svg
+    - assets/svg/tx-sent.svg
+    - assets/svg/tx-sending.svg
+    - assets/svg/delete.svg
+    - assets/svg/open-scanner.svg
+    - assets/svg/arrow-down.svg
+    - assets/svg/trash.svg
+    - assets/svg/eye.svg
+    - assets/svg/eye-crossed.svg
+    - assets/svg/nav-icons/home.svg
+    - assets/svg/nav-icons/info.svg
+    - assets/svg/nav-icons/settings.svg
+    - assets/svg/wallet-icons/bank.svg
+    - assets/svg/wallet-icons/building.svg
+    - assets/svg/wallet-icons/car.svg
+    - assets/svg/wallet-icons/carrot.svg
+    - assets/svg/wallet-icons/child-head.svg
+    - assets/svg/wallet-icons/couch.svg
+    - assets/svg/wallet-icons/croissant.svg
+    - assets/svg/wallet-icons/cursor-finger.svg
+    - assets/svg/wallet-icons/diamond.svg
+    - assets/svg/wallet-icons/envelope.svg
+    - assets/svg/wallet-icons/flower.svg
+    - assets/svg/wallet-icons/gift.svg
+    - assets/svg/wallet-icons/hamburger.svg
+    - assets/svg/wallet-icons/hand-holding-heart.svg
+    - assets/svg/wallet-icons/heart.svg
+    - assets/svg/wallet-icons/home-heart.svg
+    - assets/svg/wallet-icons/man-head.svg
+    - assets/svg/wallet-icons/music.svg
+    - assets/svg/wallet-icons/paper-plane.svg
+    - assets/svg/wallet-icons/paw.svg
+    - assets/svg/wallet-icons/piggy-bank.svg
+    - assets/svg/wallet-icons/pizza-slice.svg
+    - assets/svg/wallet-icons/rocket-lunch.svg
+    - assets/svg/wallet-icons/shop.svg
+    - assets/svg/wallet-icons/smile-beam.svg
+    - assets/svg/wallet-icons/star.svg
+    - assets/svg/wallet-icons/woman-head.svg
+    - assets/svg/wallet-icons/turkey.svg
+    - assets/svg/wallet-icons/umbrella.svg
+    - assets/svg/wallet-icons/shrimp.svg
+    - assets/svg/wallet-icons/crab.svg
+    - assets/svg/wallet-icons/fish.svg
+    - assets/svg/wallet-icons/squid.svg
+    - assets/svg/wallet-icons/dolphin.svg
+    - assets/svg/wallet-icons/whale.svg
+    - assets/svg/scan-wallet-qr.svg
+    - assets/svg/scan-vault-qr.svg
+    - assets/svg/completion-check.svg
+    - assets/svg/tooltip/info.svg
+    - assets/svg/tooltip/normal.svg
+    - assets/svg/tooltip/success.svg
+    - assets/svg/tooltip/warning.svg
+    - assets/svg/tooltip/error.svg
+    - assets/svg/tooltip/triangle-warning.svg
+    - assets/svg/face-id.svg
+    - assets/svg/fingerprint.svg
+    - assets/svg/status-complete.svg
+    - assets/svg/status-failure.svg
+    - assets/svg/status-idle.svg
+    - assets/svg/status-impossible.svg
+    - assets/svg/status-loading.svg
+    - assets/svg/faucet.svg
+    - assets/svg/book.svg
+    - regtest.env
+    - regtestlocal.env
+    - assets/lottie/pin-locked-success.json
+    - assets/images/pow-full-logo.jpg
+    - assets/images/x-logo.jpg
+    - assets/images/telegram-circle-logo.png
+    - assets/images/mail-icon.png
+    - assets/images/onboarding.png
+    - assets/svg/github-logo-white.svg
+    - assets/svg/github-logo.svg
+    - assets/files/LICENSE
+    - assets/files/CONTRIBUTING.md
+
+  fonts:
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Bold.ttf
+        - asset: assets/fonts/SpaceGrotesk-Regular.ttf
+        - asset: assets/fonts/SpaceGrotesk-Medium.ttf
+        - asset: assets/fonts/SpaceGrotesk-Light.ttf
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Bold.ttf
+        - asset: assets/fonts/Pretendard-Regular.ttf
+
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/assets-and-images/#resolution-aware
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/assets-and-images/#from-packages
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/custom-fonts/#from-packages
