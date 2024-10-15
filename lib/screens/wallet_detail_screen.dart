@@ -14,7 +14,6 @@ import 'package:coconut_wallet/screens/faucet_request_screen.dart';
 import 'package:coconut_wallet/screens/receive_address_screen.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
@@ -261,7 +260,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
-      onPopInvoked: (_) {
+      onPopInvokedWithResult: (didPop, _) {
         _removeFaucetTooltip();
       },
       child: Stack(

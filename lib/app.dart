@@ -1,6 +1,4 @@
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/appGuard.dart';
-import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/address_list_screen.dart';
 import 'package:coconut_wallet/screens/receive_address_screen.dart';

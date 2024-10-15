@@ -106,7 +106,11 @@ class CustomAppBar {
           IconButton(
             color: MyColors.white,
             focusColor: MyColors.transparentGrey,
-            icon: const Icon(CupertinoIcons.ellipsis, size: 18),
+            icon: SvgPicture.asset(
+              'assets/svg/wallet-info.svg',
+              width: 18,
+              height: 18,
+            ),
             onPressed: () {
               if (onRightIconPressed != null) {
                 onRightIconPressed();

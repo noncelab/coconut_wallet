@@ -16,14 +16,14 @@ void main() {
     });
 
     test('parseIndex parses index correctly', () {
-      final data = 'ur:crypto-psbt/2-4/someData';
+      const data = 'ur:crypto-psbt/2-4/someData';
       final result = AnimatedQRDataHandler.parseIndex(data);
 
       expect(result, 2);
     });
 
     test('parseTotalCount parses total count correctly', () {
-      final data = 'ur:crypto-psbt/2-4/someData';
+      const data = 'ur:crypto-psbt/2-4/someData';
       final result = AnimatedQRDataHandler.parseTotalCount(data);
 
       expect(result, 4);

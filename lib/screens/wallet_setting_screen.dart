@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -35,7 +34,6 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
   late AppSubStateModel _subModel;
   final GlobalKey _walletTooltipKey = GlobalKey();
   late RenderBox _walletTooltipIconRenderBox;
-  late Size _tooltipIconSize;
   late Offset _walletTooltipIconPosition;
   Timer? _tooltipTimer;
   int _tooltipRemainingTime = 5;
@@ -51,7 +49,6 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
           _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
       _walletTooltipIconPosition =
           _walletTooltipIconRenderBox.localToGlobal(Offset.zero);
-      _tooltipIconSize = _walletTooltipIconRenderBox.size;
     });
   }
 
@@ -136,7 +133,7 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
 
     return PopScope(
       canPop: true,
-      onPopInvoked: (_) {
+      onPopInvokedWithResult: (didPop, _) {
         _removeTooltip();
       },
       child: Scaffold(
