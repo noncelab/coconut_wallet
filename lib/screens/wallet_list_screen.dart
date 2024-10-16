@@ -17,7 +17,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
-import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:coconut_wallet/widgets/wallet_row_item.dart';
 import 'package:coconut_wallet/screens/onboarding_screen.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -202,8 +201,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                                     }
                                   : null,
                               child: Container(
-                                padding:
-                                    const EdgeInsets.only(right: 28, top: 4),
+                                padding: const EdgeInsets.only(
+                                    right: 28, top: 4, bottom: 16),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -242,10 +241,76 @@ class _WalletListScreenState extends State<WalletListScreen>
                           },
                         ),
                       ),
+                    if (!_subModel.isOpenTermsScreen)
+                      SliverToBoxAdapter(
+                        child: GestureDetector(
+                          onTap: () {
+                            MyBottomSheet.showBottomSheet_90(
+                                context: context, child: const TermsScreen());
+                          },
+                          child: Container(
+                            width: double.maxFinite,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                color: MyColors.directBackground),
+                            margin: const EdgeInsets.only(
+                                left: 8, right: 8, bottom: 16),
+                            padding: const EdgeInsets.only(
+                                left: 26, top: 16, bottom: 16),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    const Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '모르는 용어가 있으신가요?',
+                                          style: TextStyle(
+                                              fontFamily: 'Pretendard',
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: MyColors.white),
+                                        ),
+                                        Text(
+                                          '오른쪽 위 ••• - 용어집 또는 여기를 눌러 바로가기',
+                                          maxLines: 2,
+                                          style: TextStyle(
+                                              fontFamily: 'Pretendard',
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w300,
+                                              color: MyColors.directTextGrey),
+                                        ),
+                                      ],
+                                    ),
+                                    GestureDetector(
+                                      onTap: _subModel.setIsOpenTermsScreen,
+                                      child: Container(
+                                        color: Colors.transparent,
+                                        padding: const EdgeInsets.all(16),
+                                        child: SvgPicture.asset(
+                                            'assets/svg/close.svg',
+                                            width: 10,
+                                            height: 10,
+                                            colorFilter: const ColorFilter.mode(
+                                                MyColors.white,
+                                                BlendMode.srcIn)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     SliverSafeArea(
                       top: false,
-                      minimum:
-                          const EdgeInsets.only(top: 22, left: 8.0, right: 8.0),
+                      minimum: const EdgeInsets.symmetric(horizontal: 8),
                       sliver: Selector<AppStateModel, bool>(
                         selector: (_, selectorModel) =>
                             selectorModel.fastLoadDone,
@@ -286,18 +351,62 @@ class _WalletListScreenState extends State<WalletListScreen>
                               }
 
                               if (index == wallets.length && wallets.isEmpty) {
-                                return CustomTooltip(
-                                    richText: RichText(
-                                        text: TextSpan(
-                                            text:
-                                                '안녕하세요. 코코넛 월렛이에요!\n\n오른쪽 위 + 버튼을 눌러 보기 전용 지갑을 추가해 주세요.',
-                                            style: Styles.subLabel.merge(
-                                                TextStyle(
-                                                    fontFamily: CustomFonts
-                                                        .text.getFontFamily,
-                                                    color: MyColors.white)))),
-                                    showIcon: true,
-                                    type: TooltipType.info);
+                                return Container(
+                                  width: double.maxFinite,
+                                  decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      color: MyColors.directBackground),
+                                  padding: const EdgeInsets.only(
+                                      top: 26, bottom: 24, left: 26, right: 26),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '보기 전용 지갑을 추가해 주세요',
+                                        style: TextStyle(
+                                            fontFamily: 'Pretendard',
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: MyColors.white),
+                                      ),
+                                      const Text(
+                                        '오른쪽 위 + 버튼을 눌러도 추가할 수 있어요',
+                                        style: TextStyle(
+                                            fontFamily: 'Pretendard',
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.normal,
+                                            color: MyColors.directTextGrey),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      CupertinoButton(
+                                        onPressed: () {
+                                          Navigator.pushNamed(
+                                              context, '/wallet-add-scanner');
+                                        },
+                                        borderRadius: BorderRadius.circular(10),
+                                        padding: EdgeInsets.zero,
+                                        color: MyColors.primary,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 28,
+                                            vertical: 12,
+                                          ),
+                                          child: Text(
+                                            '바로 추가하기',
+                                            style: Styles.label.merge(
+                                              const TextStyle(
+                                                color: MyColors.black,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
                               }
                               return null;
                             }),

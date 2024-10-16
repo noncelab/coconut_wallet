@@ -183,6 +183,7 @@ flutter:
     - assets/svg/faucet.svg
     - assets/svg/book.svg
     - assets/svg/wallet-info.svg
+    - assets/svg/close.svg
     - regtest.env
     - regtestlocal.env
     - assets/lottie/pin-locked-success.json
