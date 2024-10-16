@@ -40,7 +40,7 @@ class _SettingsScreen extends State<SettingsScreen> {
             title: '설정',
             context: context,
             hasRightIcon: false,
-            isBottom: false,
+            isBottom: true,
             showTestnetLabel: false,
           ),
           body: SafeArea(

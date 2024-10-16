@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 import 'package:coconut_wallet/screens/settings/security_self_check_screen.dart';
+import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/screens/settings/terms_screen.dart';
 import 'package:coconut_wallet/widgets/coconut_dropdown.dart';
 import 'package:flutter/cupertino.dart';
@@ -340,22 +340,23 @@ class _WalletListScreenState extends State<WalletListScreen>
                             });
                             switch (index) {
                               case 0: // 용어집
-                                MyBottomSheet.showBottomSheet_95(
+                                MyBottomSheet.showBottomSheet_90(
                                     context: context,
                                     child: const TermsScreen());
                                 break;
                               case 1: // 니모닉 문구 단어집
-                                MyBottomSheet.showBottomSheet_95(
-                                    context: context,
-                                    child: const Bip39ListScreen());
+                                Navigator.pushNamed(
+                                    context, '/mnemonic-word-list');
                                 break;
                               case 2: // 셀프 보안 점검
-                                MyBottomSheet.showBottomSheet_95(
+                                MyBottomSheet.showBottomSheet_90(
                                     context: context,
                                     child: const SecuritySelfCheckScreen());
                                 break;
                               case 3: // 설정
-                                Navigator.pushNamed(context, '/settings');
+                                MyBottomSheet.showBottomSheet_90(
+                                    context: context,
+                                    child: const SettingsScreen());
                                 break;
                               case 4: // 앱 정보 보기
                                 Navigator.pushNamed(context, '/app-info');

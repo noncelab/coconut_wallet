@@ -11,7 +11,7 @@ import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/send/send_confirm_screen.dart';
 import 'package:coconut_wallet/screens/send/send_fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_info_screen.dart';
-import 'package:coconut_wallet/screens/settings/settings_screen.dart';
+import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 import 'package:coconut_wallet/screens/signed_psbt_scanner_screen.dart';
 import 'package:coconut_wallet/screens/transaction_detail_screen.dart';
 import 'package:coconut_wallet/screens/unsigned_transaction_qr_screen.dart';
@@ -133,7 +133,6 @@ class _PowWalletAppState extends State<PowWalletApp> {
               const AppGuard(child: WalletListScreen()),
           '/wallet-add-scanner': (context) =>
               const CustomLoadingOverlay(child: WalletAddScannerScreen()),
-          '/settings': (context) => const SettingsScreen(),
           '/app-info': (context) => const AppInfoScreen(),
           '/wallet-detail': (context) => buildScreenWithArguments(
                 context,
@@ -206,6 +205,7 @@ class _PowWalletAppState extends State<PowWalletApp> {
               ),
           '/positive-feedback': (context) => const PositiveFeedbackScreen(),
           '/negative-feedback': (context) => const NegativeFeedbackScreen(),
+          '/mnemonic-word-list': (context) => const Bip39ListScreen(),
         },
       ),
     );

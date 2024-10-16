@@ -106,7 +106,7 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
                 fontFamily: CustomFonts.text.getFontFamily,
                 color: MyColors.white,
                 fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
                 fontStyle: FontStyle.normal,
               ),
             ),
