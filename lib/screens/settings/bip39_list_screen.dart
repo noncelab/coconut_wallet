@@ -118,7 +118,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
             context: context,
             hasRightIcon: false,
             showTestnetLabel: false,
-            isBottom: false),
+            isBottom: true),
         floatingActionButton: Visibility(
           visible: _isFabShown,
           child: FloatingActionButton(

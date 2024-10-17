@@ -50,9 +50,6 @@ abstract class MyColors {
   static const warningYellowBackground = Color.fromRGBO(255, 243, 190, 1.0);
 
   static const failedYellow = Color.fromRGBO(218, 152, 65, 1);
-
-  static const Color directBackground = Color(0xFF222126);
-  static const Color directTextGrey = Color(0xFFB8B8B8);
 }
 
 const List<Color> ColorPalette = [

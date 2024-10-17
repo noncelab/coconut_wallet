@@ -37,6 +37,7 @@ class _WalletListScreenState extends State<WalletListScreen>
   bool isShowLastUpdateTime = false;
   bool isShownErrorToast = false;
   bool _isSeeMoreDropdown = false;
+  bool _isTapped = false; // 용어집 유도 카드
 
   DateTime? _lastPressedAt;
 
@@ -248,11 +249,28 @@ class _WalletListScreenState extends State<WalletListScreen>
                             MyBottomSheet.showBottomSheet_90(
                                 context: context, child: const TermsScreen());
                           },
+                          onTapDown: (_) {
+                            setState(() {
+                              _isTapped = true;
+                            });
+                          },
+                          onTapUp: (_) {
+                            setState(() {
+                              _isTapped = false;
+                            });
+                          },
+                          onTapCancel: () {
+                            setState(() {
+                              _isTapped = false;
+                            });
+                          },
                           child: Container(
                             width: double.maxFinite,
                             decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16),
-                                color: MyColors.directBackground),
+                                color: _isTapped
+                                    ? MyColors.transparentWhite_20
+                                    : MyColors.transparentWhite_12),
                             margin: const EdgeInsets.only(
                                 left: 8, right: 8, bottom: 16),
                             padding: const EdgeInsets.only(
@@ -264,27 +282,36 @@ class _WalletListScreenState extends State<WalletListScreen>
                                       MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    const Column(
+                                    Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          '모르는 용어가 있으신가요?',
-                                          style: TextStyle(
-                                              fontFamily: 'Pretendard',
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                              color: MyColors.white),
-                                        ),
-                                        Text(
-                                          '오른쪽 위 ••• - 용어집 또는 여기를 눌러 바로가기',
+                                        Text('모르는 용어가 있으신가요?',
+                                            style: Styles.body1.merge(
+                                                const TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.w600))),
+                                        Text.rich(
+                                          TextSpan(
+                                            children: [
+                                              const TextSpan(
+                                                text: '오른쪽 위 ',
+                                                style: Styles.label,
+                                              ),
+                                              TextSpan(
+                                                text: '•••',
+                                                style: Styles.label.merge(
+                                                    const TextStyle(
+                                                        letterSpacing: -2.0)),
+                                              ),
+                                              const TextSpan(
+                                                text: ' - 용어집 또는 여기를 눌러 바로가기',
+                                                style: Styles.label,
+                                              ),
+                                            ],
+                                          ),
                                           maxLines: 2,
-                                          style: TextStyle(
-                                              fontFamily: 'Pretendard',
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w300,
-                                              color: MyColors.directTextGrey),
-                                        ),
+                                        )
                                       ],
                                     ),
                                     GestureDetector(
@@ -355,7 +382,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   width: double.maxFinite,
                                   decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(16),
-                                      color: MyColors.directBackground),
+                                      color: MyColors.transparentWhite_12),
                                   padding: const EdgeInsets.only(
                                       top: 26, bottom: 24, left: 26, right: 26),
                                   child: Column(
@@ -364,19 +391,11 @@ class _WalletListScreenState extends State<WalletListScreen>
                                     children: [
                                       const Text(
                                         '보기 전용 지갑을 추가해 주세요',
-                                        style: TextStyle(
-                                            fontFamily: 'Pretendard',
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: MyColors.white),
+                                        style: Styles.title5,
                                       ),
                                       const Text(
                                         '오른쪽 위 + 버튼을 눌러도 추가할 수 있어요',
-                                        style: TextStyle(
-                                            fontFamily: 'Pretendard',
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.normal,
-                                            color: MyColors.directTextGrey),
+                                        style: Styles.label,
                                       ),
                                       const SizedBox(height: 16),
                                       CupertinoButton(
@@ -398,7 +417,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                               const TextStyle(
                                                 color: MyColors.black,
                                                 fontWeight: FontWeight.w700,
-                                                fontSize: 12,
+                                                // fontSize: 12,
                                               ),
                                             ),
                                           ),

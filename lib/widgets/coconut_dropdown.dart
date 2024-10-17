@@ -17,7 +17,7 @@ class CoconutDropdown extends StatefulWidget {
 
 class _CoconutDropdownState extends State<CoconutDropdown> {
   int _selectedIndex = 0;
-  final buttonHeight = 40.0;
+  final buttonHeight = 44.0;
 
   @override
   void initState() {
