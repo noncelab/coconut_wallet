@@ -126,10 +126,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: SvgPicture.asset('assets/svg/back.svg',
-                width: 24,
-                colorFilter:
-                    const ColorFilter.mode(MyColors.white, BlendMode.srcIn))),
+            icon: const Icon(Icons.close_rounded,
+                color: MyColors.white, size: 22)),
         flexibleSpace: _isScrollOverTitleHeight
             ? ClipRect(
                 child: BackdropFilter(

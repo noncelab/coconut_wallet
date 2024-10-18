@@ -17,6 +17,7 @@ class SharedPrefs {
   static const String kWalletTxListId = "WALLET_TX_LIST_ID";
   static const String kNextVersionUpdateDialogDate =
       "NEXT_VERSION_UPDATE_DIALOG_DATE";
+  static const String kIsOpenTermsScreen = "IS_OPEN_TERMS_SCREEN";
 
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';
