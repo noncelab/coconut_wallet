@@ -289,7 +289,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
     return PopScope(
       canPop: true,
-      onPopInvoked: (_) {
+      onPopInvokedWithResult: (didPop, _) {
         _removeTooltip();
       },
       child: Stack(

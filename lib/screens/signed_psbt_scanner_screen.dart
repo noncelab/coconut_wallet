@@ -138,7 +138,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         _stopCamera();
         controller = null;
       },
