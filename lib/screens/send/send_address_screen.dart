@@ -99,9 +99,8 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         _stopCamera();
-
         controller = null;
       },
       child: Scaffold(

@@ -137,11 +137,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                             child: ListView.builder(
                                 itemCount: sortedUTXOs.length,
                                 itemBuilder: (context, index) {
-                                  String accountIndex = sortedUTXOs[index]
+                                  /*String accountIndex = sortedUTXOs[index]
                                       .derivationPath
                                       .split('/')
-                                      .last;
-
+                                      .last;*/
                                   return UTXOItem(
                                       utxo: sortedUTXOs[index],
                                       btcPrice: bitcointPriceKrw ?? 0);

@@ -20,13 +20,13 @@ enum TooltipType {
 }
 
 class CustomTooltip extends StatefulWidget {
-  RichText richText;
-  TooltipType type;
-  bool showIcon;
-  double marginHorizontal;
-  Color backgroundColor;
+  final RichText richText;
+  final TooltipType type;
+  final bool showIcon;
+  final double marginHorizontal;
+  final Color backgroundColor;
 
-  CustomTooltip(
+  const CustomTooltip(
       {super.key,
       required this.richText,
       this.type = TooltipType.info,
