@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -167,93 +168,89 @@ class _TermsScreenState extends State<TermsScreen> {
   }
 
   void _showBottomSheet(String term) {
-    showModalBottomSheet(
+    var details = termDetails[term];
+
+    MyBottomSheet.showDraggableScrollableSheet(
       useSafeArea: true,
       isScrollControlled: true,
       enableDrag: true,
       backgroundColor: MyColors.grey,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.95,
-      ),
       context: context,
-      builder: (context) {
-        var details = termDetails[term];
-        return details != null
-            ? SingleChildScrollView(
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
+      child: details != null
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        term,
+                        style: Styles.h3,
+                      ),
+                      Text(
+                        '${details['en']}',
+                        style: Styles.label,
+                      ),
+                    ],
+                  ),
+                ),
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 32),
+                    color: MyColors.black,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          term,
-                          style: Styles.h3,
+                          '${details['content']}',
+                          style: Styles.label
+                              .merge(const TextStyle(color: MyColors.white)),
                         ),
-                        Text(
-                          '${details['en']}',
-                          style: Styles.label,
+                        const SizedBox(height: 32),
+                        const Text(
+                          '같은 용어',
+                          style: Styles.body2Bold,
                         ),
-                      ],
-                    ),
-                  ),
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24)),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 32),
-                      color: MyColors.black,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${details['content']}',
-                            style: Styles.label
-                                .merge(const TextStyle(color: MyColors.white)),
-                          ),
+                        const SizedBox(height: 8),
+                        if (details['synonym'] != null) ...[
+                          Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: details['synonym']
+                                  .map<Widget>((text) => Keyword(keyword: text))
+                                  .toList()),
                           const SizedBox(height: 32),
                           const Text(
-                            '같은 용어',
+                            '관련 용어',
                             style: Styles.body2Bold,
                           ),
                           const SizedBox(height: 8),
-                          if (details['synonym'] != null) ...[
+                          if (details['related'] != null) ...[
                             Wrap(
                                 spacing: 8.0,
                                 runSpacing: 8.0,
-                                children: details['synonym']
+                                children: details['related']
                                     .map<Widget>(
                                         (text) => Keyword(keyword: text))
-                                    .toList()),
-                            const SizedBox(height: 32),
-                            const Text(
-                              '관련 용어',
-                              style: Styles.body2Bold,
-                            ),
-                            const SizedBox(height: 8),
-                            if (details['related'] != null) ...[
-                              Wrap(
-                                  spacing: 8.0,
-                                  runSpacing: 8.0,
-                                  children: details['related']
-                                      .map<Widget>(
-                                          (text) => Keyword(keyword: text))
-                                      .toList())
-                            ],
-                            const SizedBox(height: 40),
+                                    .toList())
                           ],
+                          const SizedBox(height: 100),
                         ],
-                      ),
+                      ],
                     ),
                   ),
-                ],
-              ))
-            : Center(child: Text('No details available for $term'));
-      },
+                ),
+              ],
+            )
+          : Center(
+              child: Text('No details available for $term'),
+            ),
     );
   }
 }

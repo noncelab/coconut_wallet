@@ -79,4 +79,46 @@ class MyBottomSheet {
         constraints:
             BoxConstraints(maxHeight: MediaQuery.of(context).size.height));
   }
+
+  static Future<T?> showDraggableScrollableSheet<T>({
+    required BuildContext context,
+    required Widget child,
+    bool enableDrag = true,
+    Color backgroundColor = MyColors.black,
+    bool isDismissible = true,
+    bool isScrollControlled = true,
+    bool useSafeArea = true,
+    bool expand = true,
+    bool snap = true,
+    double initialChildSize = 1,
+    double maxChildSize = 1,
+    double minChildSize = 0.9,
+    double maxHeight = 0.9,
+  }) async {
+    return showModalBottomSheet<T>(
+        context: context,
+        builder: (context) {
+          return DraggableScrollableSheet(
+            expand: expand,
+            snap: snap,
+            initialChildSize: initialChildSize,
+            maxChildSize: maxChildSize,
+            minChildSize: minChildSize,
+            builder: (_, controller) {
+              return SingleChildScrollView(
+                // physics: const ClampingScrollPhysics(),
+                controller: controller,
+                child: child,
+              );
+            },
+          );
+        },
+        backgroundColor: backgroundColor,
+        isDismissible: isDismissible,
+        isScrollControlled: isScrollControlled,
+        enableDrag: enableDrag,
+        useSafeArea: useSafeArea,
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.5));
+  }
 }
