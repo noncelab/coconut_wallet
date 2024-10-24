@@ -133,8 +133,10 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                     MediaQuery.of(context).padding.top +
                     MediaQuery.of(context).padding.bottom,
                 child: _buildQrView(context)),
-            Align(
-                alignment: Alignment.topCenter,
+            Positioned(
+                top: kToolbarHeight - 75,
+                left: 0,
+                right: 0,
                 child: Container(
                     padding: const EdgeInsets.only(top: 32),
                     child: Text(
