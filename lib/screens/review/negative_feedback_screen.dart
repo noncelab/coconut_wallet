@@ -22,7 +22,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
           Navigator.pop(context);
         }

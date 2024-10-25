@@ -49,6 +49,10 @@ class AppSubStateModel with ChangeNotifier {
   int _lastUpdateTime = 0;
   int get lastUpdateTime => _lastUpdateTime;
 
+  /// 용어집 바로가기 진입 여부
+  bool _isOpenTermsScreen = false;
+  bool get isOpenTermsScreen => _isOpenTermsScreen;
+
   setInitData() async {
     await checkDeviceBiometrics();
     _isSetBiometrics = _sharedPrefs.getBool(SharedPrefs.kIsSetBiometrics);
@@ -60,6 +64,7 @@ class AppSubStateModel with ChangeNotifier {
       _hasLaunchedBefore = _sharedPrefs.getBool(hasLaunchedBeforeKey);
     }
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefs.kIsBalanceHidden);
+    _isOpenTermsScreen = _sharedPrefs.getBool(SharedPrefs.kIsOpenTermsScreen);
     _lastUpdateTime = _sharedPrefs.getInt(SharedPrefs.kLastUpdateTime);
     shuffleNumbers();
   }
@@ -93,6 +98,13 @@ class AppSubStateModel with ChangeNotifier {
   Future<void> changeIsBalanceHidden(bool isOn) async {
     _isBalanceHidden = isOn;
     await _sharedPrefs.setBool(SharedPrefs.kIsBalanceHidden, isOn);
+    notifyListeners();
+  }
+
+  /// /// 용어집 바로가기 진입 여부 저장
+  Future<void> setIsOpenTermsScreen() async {
+    _isOpenTermsScreen = true;
+    await _sharedPrefs.setBool(SharedPrefs.kIsOpenTermsScreen, true);
     notifyListeners();
   }
 
@@ -165,11 +177,6 @@ class AppSubStateModel with ChangeNotifier {
 
   /// 비밀번호 저장
   Future<void> savePinSet(String pin) async {
-    if (_canCheckBiometrics) {
-      _isSetBiometrics = true;
-      _sharedPrefs.setBool(SharedPrefs.kIsSetBiometrics, _isSetBiometrics);
-    }
-
     String hashed = hashString(pin);
     await _secureStorageService.write(key: kSecureStoragePinKey, value: hashed);
     _isSetPin = true;

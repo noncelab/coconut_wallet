@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/screens/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
-import 'package:coconut_wallet/screens/settings/security_self_check_screen.dart';
-import 'package:coconut_wallet/screens/settings/terms_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
@@ -63,7 +60,8 @@ class _SettingsScreen extends State<SettingsScreen> {
                             MyBottomSheet.showBottomSheet_90<bool>(
                               context: context,
                               child: const CustomLoadingOverlay(
-                                child: PinSettingScreen(),
+                                child:
+                                    PinSettingScreen(isCheckBiometrics: true),
                               ),
                             );
                           } else {
@@ -114,7 +112,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                       _subModel.changeIsBalanceHidden(value);
                     }),
               )),
-              _category('정보'),
+              /*_category('정보'),
               ButtonGroup(buttons: [
                 SingleButton(
                     title: '셀프 보안 점검',
@@ -144,7 +142,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                   Navigator.pushNamed(context, '/app-info');
                 },
               )),
-              const SizedBox(height: 40),
+              const SizedBox(height: 40),*/
             ]),
           )));
     });

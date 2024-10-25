@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -106,7 +105,11 @@ class CustomAppBar {
           IconButton(
             color: MyColors.white,
             focusColor: MyColors.transparentGrey,
-            icon: const Icon(CupertinoIcons.ellipsis, size: 18),
+            icon: SvgPicture.asset(
+              'assets/svg/wallet-info.svg',
+              width: 18,
+              height: 18,
+            ),
             onPressed: () {
               if (onRightIconPressed != null) {
                 onRightIconPressed();

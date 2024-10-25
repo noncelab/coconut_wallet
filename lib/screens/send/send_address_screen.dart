@@ -28,7 +28,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   Barcode? result;
   QRViewController? controller;
   bool _isProcessing = false;
-  bool _existsClipboardText = false;
+  String? _address;
 
   @override
   void initState() {
@@ -39,9 +39,15 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   void _loadData() {
     Future.delayed(Duration.zero, () async {
       ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+      final clipboardText = data?.text ?? '';
       setState(() {
-        if (data?.text != null) {
-          _existsClipboardText = true;
+        if (clipboardText.isNotEmpty &&
+            BitcoinNetwork.currentNetwork == BitcoinNetwork.regtest &&
+            clipboardText.startsWith('bcrt1') &&
+            WalletUtility.validateAddress(clipboardText)) {
+          _address = clipboardText;
+        } else {
+          _address = null;
         }
       });
     });
@@ -93,9 +99,8 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, _) {
         _stopCamera();
-
         controller = null;
       },
       child: Scaffold(
@@ -128,12 +133,14 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                     MediaQuery.of(context).padding.top +
                     MediaQuery.of(context).padding.bottom,
                 child: _buildQrView(context)),
-            Align(
-                alignment: Alignment.topCenter,
+            Positioned(
+                top: kToolbarHeight - 75,
+                left: 0,
+                right: 0,
                 child: Container(
                     padding: const EdgeInsets.only(top: 32),
                     child: Text(
-                      'QR을 스캔하거나\n복사한 주소를 붙여넣기 해주세요',
+                      'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요',
                       textAlign: TextAlign.center,
                       style: Styles.label
                           .merge(const TextStyle(color: MyColors.white)),
@@ -141,31 +148,42 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
             Align(
                 alignment: Alignment.bottomCenter,
                 child: Container(
-                    padding: const EdgeInsets.only(bottom: 60),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
                     child: TextButton(
-                      onPressed: _getClipboardText,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _existsClipboardText
-                            ? MyColors.darkgrey
-                            : MyColors.white,
-                        backgroundColor: _existsClipboardText
-                            ? MyColors.white
-                            : MyColors.transparentBlack_50,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 20),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(8),
+                        onPressed: _getClipboardText,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _address != null
+                              ? MyColors.darkgrey
+                              : MyColors.white,
+                          backgroundColor: _address != null
+                              ? MyColors.white
+                              : MyColors.transparentBlack_50,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 20),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(8),
+                            ),
                           ),
                         ),
-                      ),
-                      child: Text('붙여넣기',
-                          style: Styles.label.merge(TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _existsClipboardText
-                                  ? MyColors.darkgrey
-                                  : MyColors.transparentWhite_20))),
-                    )))
+                        child: _address != null
+                            ? Text.rich(TextSpan(
+                                text: '주소 ',
+                                style: Styles.label.merge(
+                                    const TextStyle(color: MyColors.darkgrey)),
+                                children: [
+                                    TextSpan(
+                                        text:
+                                            '${_address?.substring(0, 10)}...${_address?.substring(35)}',
+                                        style: TextStyle(
+                                            fontFamily: CustomFonts
+                                                .number.getFontFamily,
+                                            fontWeight: FontWeight.bold)),
+                                    const TextSpan(text: ' 붙여넣기')
+                                  ]))
+                            : Text('붙여넣기',
+                                style: Styles.label.merge(const TextStyle(
+                                    color: MyColors.transparentWhite_20))))))
           ])),
     );
   }
@@ -191,7 +209,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   }
 
   Future<void> _getClipboardText() async {
-    if (!_existsClipboardText) return;
+    if (_address == null) return;
 
     ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     _validateAddress(data?.text);
