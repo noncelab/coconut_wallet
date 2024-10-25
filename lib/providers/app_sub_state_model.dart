@@ -177,11 +177,6 @@ class AppSubStateModel with ChangeNotifier {
 
   /// 비밀번호 저장
   Future<void> savePinSet(String pin) async {
-    if (_canCheckBiometrics) {
-      _isSetBiometrics = true;
-      _sharedPrefs.setBool(SharedPrefs.kIsSetBiometrics, _isSetBiometrics);
-    }
-
     String hashed = hashString(pin);
     await _secureStorageService.write(key: kSecureStoragePinKey, value: hashed);
     _isSetPin = true;

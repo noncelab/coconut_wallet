@@ -136,7 +136,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         vibrateLight();
 
         if (widget.isCheckBiometrics && _subModel.canCheckBiometrics) {
-          await _subModel.authenticateWithBiometrics();
+          await _subModel.authenticateWithBiometrics(isSave: true);
           await _subModel.checkDeviceBiometrics();
         }
 
