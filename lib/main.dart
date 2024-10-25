@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/material.dart';
@@ -14,13 +15,29 @@ import 'app.dart';
 
 late final String dbDirectoryPath;
 
+const methodChannelOS = 'onl.coconut.wallet/os';
+
 void main() {
   runZonedGuarded(() async {
     // This app is designed only to work vertically, so we limit
     // orientations to portrait up and down.
     WidgetsFlutterBinding.ensureInitialized();
-    SystemChrome.setPreferredOrientations(
-        [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+    if (Platform.isAndroid) {
+      try {
+        const MethodChannel channel = MethodChannel(methodChannelOS);
+
+        final int version = await channel.invokeMethod('getSdkVersion');
+        if (version != 26) {
+          SystemChrome.setPreferredOrientations(
+              [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+        }
+      } on PlatformException catch (e) {
+        Logger.log("Failed to get platform version: '${e.message}'.");
+      }
+    } else {
+      SystemChrome.setPreferredOrientations(
+          [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+    }
     await SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.manual,
       overlays: [
