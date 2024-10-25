@@ -60,7 +60,8 @@ class _SettingsScreen extends State<SettingsScreen> {
                             MyBottomSheet.showBottomSheet_90<bool>(
                               context: context,
                               child: const CustomLoadingOverlay(
-                                child: PinSettingScreen(),
+                                child:
+                                    PinSettingScreen(isCheckBiometrics: true),
                               ),
                             );
                           } else {

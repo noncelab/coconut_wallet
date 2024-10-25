@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
+import 'package:coconut_wallet/main.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:coconut_wallet/widgets/button/small_action_button.dart';
@@ -21,6 +22,7 @@ class QRCodeInfo extends StatefulWidget {
 }
 
 class _QRCodeInfoState extends State<QRCodeInfo> {
+  static const MethodChannel _channel = MethodChannel(methodChannelOS);
   @override
   Widget build(BuildContext context) {
     final double qrSize = MediaQuery.of(context).size.width * 275 / 375;
@@ -63,11 +65,17 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
                 Clipboard.setData(ClipboardData(text: widget.qrData))
                     .then((value) => null);
                 if (Platform.isAndroid) {
-                  DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-                  AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-                  int androidVersion = int.parse(androidInfo.version.release);
-                  if (androidVersion >= 12) {
-                    return;
+                  try {
+                    final int version =
+                        await _channel.invokeMethod('getSdkVersion');
+
+                    // 안드로이드13 부터는 클립보드 복사 메세지가 나오기 때문에 예외 적용
+                    if (version > 31) {
+                      return;
+                    }
+                  } on PlatformException catch (e) {
+                    Logger.log(
+                        "Failed to get platform version: '${e.message}'.");
                   }
                 }
 

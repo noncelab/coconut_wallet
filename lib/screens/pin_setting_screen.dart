@@ -7,7 +7,8 @@ import 'package:coconut_wallet/widgets/pin/pin_input_screen.dart';
 import 'package:provider/provider.dart';
 
 class PinSettingScreen extends StatefulWidget {
-  const PinSettingScreen({super.key});
+  final bool isCheckBiometrics;
+  const PinSettingScreen({super.key, this.isCheckBiometrics = false});
 
   @override
   State<PinSettingScreen> createState() => _PinSettingScreenState();
@@ -133,6 +134,11 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         }
 
         vibrateLight();
+
+        if (widget.isCheckBiometrics && _subModel.canCheckBiometrics) {
+          await _subModel.authenticateWithBiometrics();
+          await _subModel.checkDeviceBiometrics();
+        }
 
         _subModel.savePinSet(pin).then((_) async {
           _showPinSetDialog();
