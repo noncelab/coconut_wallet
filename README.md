@@ -34,6 +34,8 @@
 | coconut_vault | [![GitHub tag](https://img.shields.io/badge/dynamic/yaml.svg?url=https://raw.githubusercontent.com/noncelab/coconut_vault/main/pubspec.yaml&query=$.version&label=coconut_vault)](https://github.com/noncelab/coconut_vault) |
 | coconut_wallet | [![GitHub tag](https://img.shields.io/badge/dynamic/yaml.svg?url=https://raw.githubusercontent.com/noncelab/coconut_wallet/main/pubspec.yaml&query=$.version&label=coconut_wallet)](https://github.com/noncelab/coconut_wallet) |
 
+<br/>
+
 ## 개발환경 설정 및 실행
 
 ### 개발환경 설정
@@ -56,8 +58,6 @@
     Tools • Dart 3.5.3 • DevTools 2.37.3
     ```
 
-<br/>
-
 ### 실행하기
 
 1. 포우팀에게 문의하여 환경변수 파일 준비하기
@@ -69,12 +69,26 @@
    git clone https://github.com/noncelab/coconut_wallet.git
    cd coconut_wallet
    ```
-4. 프로젝트 경로에서 터미널 창을 열고, 명령어를 실행합니다. 
-   
-   * 플러터 플러그인 설치하기
-     ```bash
-     flutter pub get
-     ```
+
+4. 플러터 플러그인 설치
+   ```bash
+   flutter pub get
+   ```
+
+5. IDE debug mode 실행시 Default flavor 설정
+    * Android Studio or IntelliJ 
+        *  Run -> Edit Configurations... -> Build Flavor에 regtest 입력
+    * Visual Studio Code
+        * .vscode/launch.json 내부에 args 항목을 추가합니다.
+          ```json
+          {
+          "name": "coconut_wallet (debug)",
+            "request": "launch",
+            "type": "dart",
+            "args": ["--flavor", "regtest",]
+          },
+          ```
+6. 터미널 실행
     
    * 앱 실행하기
      ```bash
@@ -96,23 +110,6 @@
         만약 원하시는 분들이 많아진다면, 비트코인 mainnet 네트워크용 코코넛 볼트와 월렛도 지원할 예정이기 때문에 미리 flavor를 적용해서, 동일한 코드베이스에서 여러 환경에 맞는 앱을 빌드하고 배포할 준비를 해놓았습니다.
         
         현재는 regtest flavor만 설정해 놓은 상태입니다.
-        
-<br/>
-
-### IDE별 Default flavor 설정
-
-1. Android Studio or IntelliJ 
-    *  Run -> Edit Configurations... -> Build Flavor에 regtest 입력
-2. Visual Studio Code
-    * .vscode/launch.json 내부에 args 항목을 추가합니다.
-      ```json
-      {
-      "name": "coconut_wallet (debug)",
-        "request": "launch",
-        "type": "dart",
-        "args": ["--flavor", "regtest",]
-      },
-      ```
 
 <br/>
 
@@ -121,9 +118,10 @@
 자세한 사항은 [CONTRIBUTING](https://github.com/noncelab/coconut_wallet/blob/main/CONTRIBUTING.md)을 참고해주세요.
 
 * [Issues](https://github.com/noncelab/coconut_wallet/issues)를 통해 버그를 보고하기
-* [Pull Request](https://github.com/noncelab/coconut_wallet/pulls)를 통해 새로운 기능을 추가하기
-* 문서를 업데이트하거나 예제를 추가하기
-* 오타나 문법 오류를 수정하기
+* [Pull Request](https://github.com/noncelab/coconut_wallet/pulls)를 통해
+    * 새로운 기능을 추가하기
+    * 문서를 업데이트하거나 예제를 추가하기
+    * 오타나 문법 오류를 수정하기
 
 <br/>
 
