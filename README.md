@@ -13,7 +13,7 @@
 
 현재는 개발팀이 직접 구축한 '로컬 테스트넷 비트코인 네트워크'와 연결해서 사용하실 수 있어요.
 
-휴대폰 두 대를 사용한다는 가정 하에 하나의 폰에는 [코코넛 볼트](https://github.com/noncelab/coconut_vault)를 설치하고, '내보내기'메뉴의 QR 코드를 월렛으로 스캔해야만 보기 전용(watch-only) 지갑이 추가돼요. 
+휴대폰 두 대를 사용한다는 가정 하에 하나의 폰에는 `코코넛 볼트`를 설치하고, '내보내기'메뉴의 QR 코드를 월렛으로 스캔해야만 보기 전용(watch-only) 지갑이 추가돼요. 
 
 월렛은 온라인 상태를 유지하여 지갑의 정보를 최신으로 유지하고, 서명된 트랜잭션을 비트코인 네트워크로 전송해요.
 
@@ -27,7 +27,7 @@
 
 <br/>
 
-비트코인 지갑 개발을 위한 라이브러리로 [코코넛 라이브러리](https://github.com/noncelab/coconut_lib)를 사용하고 있어요.
+비트코인 지갑 개발을 위한 라이브러리로 [코코넛 라이브러리](https://pub.dartlang.org/packages/coconut_lib)를 사용하고 있어요.
 
 | coconut_lib         | [![pub package](https://img.shields.io/pub/v/coconut_lib.svg?label=coconut_lib&color=blue)](https://pub.dartlang.org/packages/coconut_lib)                 |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -88,28 +88,26 @@
             "args": ["--flavor", "regtest",]
           },
           ```
-6. 터미널 실행
-    
-   * 앱 실행하기
-     ```bash
-     # debug mode
-     flutter run --flavor regtest
+6. 터미널 실행 가이드
+    ```bash
+    # debug mode
+    flutter run --flavor regtest
 
-     # release mode
-     flutter run --release --flavor regtest
-     ```
+    # release mode
+    flutter run --release --flavor regtest
+    ```
 
-     <br />
+    <br />
 
-      **flavor 옵션은 왜 설정해야 하나요❓**
+    **flavor 옵션은 왜 설정해야 하나요❓**
         
-        현재 코코넛 볼트와 코코넛 월렛 프로젝트는 저희 팀이 직접 구축한 **로컬 비트코인 테스트넷** (regtest)을 사용합니다. 
+    현재 코코넛 볼트와 코코넛 월렛 프로젝트는 저희 팀이 직접 구축한 **로컬 비트코인 테스트넷** (regtest)을 사용합니다. 
 
-        그렇기 때문에 여러분이 코코넛 월렛에서 테스트용 비트코인을 바로 받아보고, 전송 연습을 하실 수 있는 것이죠.
+    그렇기 때문에 여러분이 코코넛 월렛에서 테스트용 비트코인을 바로 받아보고, 전송 연습을 하실 수 있는 것이죠.
 
-        만약 원하시는 분들이 많아진다면, 비트코인 mainnet 네트워크용 코코넛 볼트와 월렛도 지원할 예정이기 때문에 미리 flavor를 적용해서, 동일한 코드베이스에서 여러 환경에 맞는 앱을 빌드하고 배포할 준비를 해놓았습니다.
+    만약 원하시는 분들이 많아진다면, 비트코인 mainnet 네트워크용 코코넛 볼트와 월렛도 지원할 예정이기 때문에 미리 flavor를 적용해서, 동일한 코드베이스에서 여러 환경에 맞는 앱을 빌드하고 배포할 준비를 해놓았습니다.
         
-        현재는 regtest flavor만 설정해 놓은 상태입니다.
+    현재는 regtest flavor만 설정해 놓은 상태입니다.
 
 <br/>
 
