@@ -23,7 +23,7 @@
 
 <br/>
 
-<img src="https://www.coconut.onl/~gitbook/image?url=https%3A%2F%2F161374591-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FZj9icmh14UnjnZt15F4i%252Fuploads%252FP6IDvhualTfYWmHPzbbs%252F%25E1%2584%2589%25E1%2585%25A9%25E1%2584%2580%25E1%2585%25A2.png%3Falt%3Dmedia%26token%3D75375507-80e9-4f99-aa5f-8f4df0645390&width=768&dpr=4&quality=100&sign=a5b80c5f&sv=1" width="600"/>
+<img src="./assets/readme/coconut_universe.webp" width="600"/>
 
 <br/>
 
