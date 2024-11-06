@@ -33,8 +33,10 @@ class WalletListItem {
   late coconut.SingleSignatureWallet coconutWallet;
   @JsonKey(name: "balance")
   int? balance;
+
+  /// wallet.fetchOnChainData(nodeConnector) 또는 _nodeConnector.fetch 결과에서 txCount가 변경되지 않았는지 확인용
   @JsonKey(name: "txCount")
-  int? txCount; // wallet.fetchOnChainData(nodeConnector) 또는 _nodeConnector.fetch 결과에서 txCount가 변경되지 않았는지 확인용
+  int? txCount;
   @JsonKey(name: "isLatestTxBlockHeightZero")
   bool isLatestTxBlockHeightZero =
       false; // _nodeConnector.fetch 결과에서 latestTxBlockHeight가 변경되지 않았는지 확인용

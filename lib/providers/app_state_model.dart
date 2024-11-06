@@ -454,18 +454,21 @@ class AppStateModel extends ChangeNotifier {
 
     try {
       for (int i = 0; i < walletListItems.length; i++) {
-        await walletListItems[i].coconutWallet.fetchOnChainData(_nodeConnector!);
+        await walletListItems[i]
+            .coconutWallet
+            .fetchOnChainData(_nodeConnector!);
         if (walletListItems[i].coconutWallet.walletStatus == null) {
-          throw Exception("${walletListItems[i].name} 지갑의 fetchOnChainData 결과가 null");
+          throw Exception(
+              "${walletListItems[i].name} 지갑의 fetchOnChainData 결과가 null");
         }
-        WalletStatus syncResult = walletListItems[i].coconutWallet.walletStatus!;
+        WalletStatus syncResult =
+            walletListItems[i].coconutWallet.walletStatus!;
         // regtest에서는 txEntityList.count가 변경되지 않았으면 db update를 하지 않습니다.
         // mainnet에서는 트랜잭션을 추가해서 기존 트잭을 무효화시키는 경우가 있어서 5% 미만의 확률로 아래 조건문이 유효하지 않을 수 있습니다.
         // 하지만 현재는 regtest용 앱만 있고 우리 지갑에서 rbf나 cpfp 등의 기능을 제공하지 않기 때문에 유효한 조건문입니다.
         // 진행중인 트랜잭션이 없거나 (isLatestTxBlockHeightZero == false) txEntityList.count가 변경되지 않았으면 db update를 하지 않습니다.
         if (!walletListItems[i].isLatestTxBlockHeightZero &&
-            syncResult.transactionList.length ==
-                walletListItems[i].txCount &&
+            syncResult.transactionList.length == walletListItems[i].txCount &&
             walletListItems[i].balance != null) {
           noNeedToUpdate.add(i);
           Logger.log('>>>>> noNeedToUpdate: ${walletListItems[i].name}');
