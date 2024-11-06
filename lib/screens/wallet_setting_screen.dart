@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -198,7 +197,7 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                       children: [
                                         Text(
                                           wallet.coconutWallet.keyStore
-                                              .fingerprint,
+                                              .masterFingerprint,
                                           style: Styles.h3.merge(TextStyle(
                                               fontFamily: CustomFonts
                                                   .number.getFontFamily)),
@@ -380,10 +379,6 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                                                   .deleteWallet(
                                                                       widget
                                                                           .id);
-                                                              Repository()
-                                                                  .resetObjectBoxWallet(
-                                                                      wallet
-                                                                          .coconutWallet);
                                                               removedWalletId =
                                                                   widget.id;
                                                               Navigator.popUntil(
@@ -396,10 +391,6 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                               } else {
                                                 await model
                                                     .deleteWallet(widget.id);
-                                                Repository()
-                                                    .resetObjectBoxWallet(
-                                                        wallet.coconutWallet);
-
                                                 removedWalletId = widget.id;
                                                 Navigator.popUntil(context,
                                                     (route) => route.isFirst);
