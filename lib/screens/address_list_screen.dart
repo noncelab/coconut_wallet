@@ -51,7 +51,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   Timer? _tooltipTimer;
   int _tooltipRemainingTime = 5;
   double topPadding = 0;
-  bool _isScrollOverTitleHeight = false;
+  final bool _isScrollOverTitleHeight = false;
 
   @override
   void initState() {
