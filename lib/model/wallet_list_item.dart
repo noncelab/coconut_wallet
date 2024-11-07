@@ -33,15 +33,20 @@ class WalletListItem {
   late coconut.SingleSignatureWallet coconutWallet;
   @JsonKey(name: "balance")
   int? balance;
+
+  /// wallet.fetchOnChainData(nodeConnector) 또는 _nodeConnector.fetch 결과에서 txCount가 변경되지 않았는지 확인용
   @JsonKey(name: "txCount")
-  int? txCount; // _nodeConnector.fetch 결과에서 txCount가 변경되지 않았는지 확인용
+  int? txCount;
   @JsonKey(name: "isLatestTxBlockHeightZero")
   bool isLatestTxBlockHeightZero =
       false; // _nodeConnector.fetch 결과에서 latestTxBlockHeight가 변경되지 않았는지 확인용
-  // TODO: 현재 coconut_lib getAddressList 결과에 오류가 있어 대신 사용합니다. (라이브러리 버그 픽싱 후 삭제)
+
+  // coconut_lib 0.6.x getAddressList 결과에 오류가 있어 사용했었습니다. coconut_lib 0.7에서 버그가 고쳐져서 더이상 사용되지 않지만, 앱 호환을 위해 프로퍼티를 유지합니다.
+  /// deprecated
   @JsonKey(name: "addressBalanceMap")
   Map<int, Map<int, int>>? addressBalanceMap;
-  // TODO: 현재 coconut_lib getAddressList 결과에 오류가 있어 대신 사용합니다. (라이브러리 버그 픽싱 후 삭제)
+  // coconut_lib 0.6.x getAddressList 결과에 오류가 있어 사용했었습니다. coconut_lib 0.7에서 버그가 고쳐져서 더이상 사용되지 않지만, 앱 호환을 위해 프로퍼티를 유지합니다.
+  /// deprecated
   @JsonKey(name: "usedIndexList")
   Map<int, List<int>>? usedIndexList;
 

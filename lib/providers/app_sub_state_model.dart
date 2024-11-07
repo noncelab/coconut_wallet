@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
@@ -210,7 +209,6 @@ class AppSubStateModel with ChangeNotifier {
     _isSetPin = false;
     _isBalanceHidden = false;
     _lastUpdateTime = 0;
-    Repository().resetObjectBox();
     await SecureStorageService().deleteAll();
     await SharedPrefs().clearSharedPref();
     await checkDeviceBiometrics();

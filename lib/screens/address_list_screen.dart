@@ -40,14 +40,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
   late WalletListItem _walletListItem;
   late coconut.SingleSignatureWallet _coconutWallet;
   bool isReceivingSelected = true;
-  // TODO: 현재 coconut_lib getAddressList 결과에 오류가 있어 대신 사용합니다. (라이브러리 버그 픽싱 후 삭제)
-  Map<int, Map<int, int>>? _addressBalanceMap;
-  int? _addressBalanceMapLastIndex0;
-  int? _addressBalanceMapLastIndex1;
-  // TODO: 현재 coconut_lib getAddressList 결과에 오류가 있어 대신 사용합니다. (라이브러리 버그 픽싱 후 삭제)
-  Map<int, List<int>>? _usedIndexList;
-  int? _usedIndexListLastIndex0;
-  int? _usedIndexListLastIndex1;
   final GlobalKey _depositTooltipKey = GlobalKey();
   final GlobalKey _changeTooltipKey = GlobalKey();
   late RenderBox _depositTooltipIconRenderBox;
@@ -59,7 +51,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   Timer? _tooltipTimer;
   int _tooltipRemainingTime = 5;
   double topPadding = 0;
-  bool _isScrollOverTitleHeight = false;
+  final bool _isScrollOverTitleHeight = false;
 
   @override
   void initState() {
@@ -73,13 +65,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
         _coconutWallet.getAddressList(0, FIRST_COUNT, false);
     _changeAddressList = _coconutWallet.getAddressList(0, FIRST_COUNT, true);
     _isFirstLoadRunning = false;
-    _setTemporaryFixData();
-    Logger.log(
-        ">>>>>> addressBalanceMap: ${_addressBalanceMap.toString()} / RlastIndex: $_addressBalanceMapLastIndex0 / ClastIndex: $_addressBalanceMapLastIndex1");
-    Logger.log(
-        ">>>>>> usedIndexList: ${_usedIndexList.toString()} / RlastIndex: $_usedIndexListLastIndex0 / ClastIndex: $_usedIndexListLastIndex1");
-    _adoptTemporaryFixDataToReceiveAddress(0, FIRST_COUNT);
-    _adoptTemporaryFixDataToChangeAddress(0, FIRST_COUNT);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _depositTooltipIconRenderBox =
@@ -92,98 +77,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
       _changeTooltipIconPosition =
           _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
     });
-  }
-
-  // TODO: 현재 coconut_lib getAddressList 결과에 오류가 있어 대신 사용합니다. (라이브러리 버그 픽싱 후 삭제)
-  void _setTemporaryFixData() {
-    if (_walletListItem.addressBalanceMap != null) {
-      _addressBalanceMap = _walletListItem.addressBalanceMap;
-      // receive address
-      // check _addressBalanceMap
-      _addressBalanceMapLastIndex0 = _addressBalanceMap![0]?.keys.lastOrNull;
-      // change address
-      _addressBalanceMapLastIndex1 = _addressBalanceMap![1]?.keys.lastOrNull;
-    }
-
-    if (_walletListItem.usedIndexList != null) {
-      _usedIndexList = _walletListItem.usedIndexList;
-      // receive address
-      _usedIndexListLastIndex0 = _usedIndexList![0]?.lastOrNull;
-      // change address
-      _usedIndexListLastIndex1 = _usedIndexList![1]?.lastOrNull;
-    }
-    Logger.log(
-        ">>>>>> addressBalanceMap: ${_addressBalanceMap.toString()} / RlastIndex: $_addressBalanceMapLastIndex0 / ClastIndex: $_addressBalanceMapLastIndex1");
-    Logger.log(
-        ">>>>>> usedIndexList: ${_usedIndexList.toString()} / RlastIndex: $_usedIndexListLastIndex0 / ClastIndex: $_usedIndexListLastIndex1");
-  }
-
-  // TODO: 현재 coconut_lib getAddressList 결과에 오류가 있어 대신 사용합니다. (라이브러리 버그 픽싱 후 삭제)
-  void _adoptTemporaryFixDataToReceiveAddress(int cursor, int count) {
-    Logger.log('>>>>>> 받기 주소 index: $cursor ~ ${cursor + count - 1}까지 적용');
-    final int lastIndex = cursor + count - 1;
-
-    if (_addressBalanceMapLastIndex0 != null &&
-        _addressBalanceMapLastIndex0! >= cursor) {
-      _addressBalanceMap![0]!
-          .keys
-          .where((key) => key >= cursor && key <= lastIndex)
-          .forEach((key) {
-        Logger.log('>>>>>> R주소 $key: ${_addressBalanceMap![0]![key]}으로 적용');
-        _receivingAddressList[key].setAmount(_addressBalanceMap![0]![key]!);
-      });
-    }
-    if (_usedIndexListLastIndex0 != null &&
-        _usedIndexListLastIndex0! >= cursor) {
-      _usedIndexList![0]!
-          .where((key) => key >= cursor && key <= lastIndex)
-          .forEach((key) {
-        Logger.log('>>>>>> R주소 $key: isUsed = true 로 적용');
-        _receivingAddressList[key].setUsed(true);
-      });
-    }
-  }
-
-  // TODO: 현재 coconut_lib getAddressList 결과에 오류가 있어 대신 사용합니다. (라이브러리 버그 픽싱 후 삭제)
-  void _adoptTemporaryFixDataToChangeAddress(int cursor, int count) {
-    Logger.log('>>>>>> 잔액 주소 index: $cursor ~ ${cursor + count - 1}까지 적용');
-    final int lastIndex = cursor + count - 1;
-
-    if (_addressBalanceMapLastIndex1 != null &&
-        _addressBalanceMapLastIndex1! >= cursor) {
-      _addressBalanceMap![1]!
-          .keys
-          .where((key) => key >= cursor && key <= lastIndex)
-          .forEach((key) {
-        Logger.log('>>>>>> C주소 $key: ${_addressBalanceMap![1]![key]}으로 적용');
-        _changeAddressList[key].setAmount(_addressBalanceMap![1]![key]!);
-      });
-    }
-    if (_usedIndexListLastIndex1 != null &&
-        _usedIndexListLastIndex1! >= cursor) {
-      _usedIndexList![1]!
-          .where((key) => key >= cursor && key <= lastIndex)
-          .forEach((key) {
-        Logger.log('>>>>>> C주소 $key: isUsed = true 로 적용');
-        _changeAddressList[key].setUsed(true);
-      });
-    }
-  }
-
-  void _scrollListener() {
-    if (_controller.position.pixels >= 10) {
-      if (!_isScrollOverTitleHeight) {
-        setState(() {
-          _isScrollOverTitleHeight = true;
-        });
-      }
-    } else {
-      if (_isScrollOverTitleHeight) {
-        setState(() {
-          _isScrollOverTitleHeight = false;
-        });
-      }
-    }
   }
 
   void _nextLoad() {
@@ -206,23 +99,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
         setState(() {
           if (isReceivingSelected) {
             _receivingAddressList.addAll(newAddresses);
-            _adoptTemporaryFixDataToReceiveAddress(
-                FIRST_COUNT +
-                    (isReceivingSelected
-                            ? _receivingAddressPage
-                            : _changeAddressPage) *
-                        _limit,
-                _limit);
             _receivingAddressPage += 1;
           } else {
             _changeAddressList.addAll(newAddresses);
-            _adoptTemporaryFixDataToChangeAddress(
-                FIRST_COUNT +
-                    (isReceivingSelected
-                            ? _receivingAddressPage
-                            : _changeAddressPage) *
-                        _limit,
-                _limit);
             _changeAddressPage += 1;
           }
         });

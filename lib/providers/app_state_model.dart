@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:isolate';
-import 'dart:ui';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/model/enums.dart';
@@ -14,7 +11,6 @@ import 'package:coconut_wallet/model/request/faucet_request.dart';
 import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/repositories/faucet_repository.dart';
-import 'package:coconut_wallet/services/isolate_entry_point.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -73,9 +69,6 @@ class AppStateModel extends ChangeNotifier {
 
   bool _isFaucetRequesting = false;
   bool get isFaucetRequesting => _isFaucetRequesting;
-
-  final String _dbDiretoryPath = dbDirectoryPath;
-  String get dbDiretoryPath => _dbDiretoryPath;
 
   final FaucetRepository _faucetRepository = FaucetRepository();
 
@@ -391,8 +384,8 @@ class AppStateModel extends ChangeNotifier {
   // _walletList에 walletListItem을 추가하거나 있으면 대체합니다.
   void addOrUpdateWalletList(WalletListItem walletListItem) {
     int index = _walletList.indexWhere((element) =>
-        element.coconutWallet.keyStore.fingerprint ==
-            walletListItem.coconutWallet.keyStore.fingerprint &&
+        element.coconutWallet.keyStore.masterFingerprint ==
+            walletListItem.coconutWallet.keyStore.masterFingerprint &&
         element.id == walletListItem.id);
 
     List<WalletListItem> updatedList = List.from(_walletList);
@@ -449,113 +442,51 @@ class AppStateModel extends ChangeNotifier {
     }
   }
 
-  Future<void> runSaveRepositoryInIsolate(List<WalletListItem> walletListItems,
-      List<WalletFetchResult> retchResults) async {
-    assert(walletListItems.length == retchResults.length);
-    final ReceivePort receivePort = ReceivePort();
-    final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
-    final isolateData = <String, dynamic>{};
-    isolateData['count'] = walletListItems.length;
-    isolateData['dbDirectoryPath'] = _dbDiretoryPath;
-    isolateData['bitcoinNetwork'] = BitcoinNetwork.regtest;
-    for (int i = 0; i < walletListItems.length; i++) {
-      isolateData['descriptor$i'] = walletListItems[i].descriptor;
-
-      /// add isolate result data
-      isolateData['txEntityList$i'] = retchResults[i]
-          .txEntityList
-          .map((entry) => jsonEncode(entry.toJson()))
-          .toList();
-      isolateData['utxoEntityList$i'] = retchResults[i]
-          .utxoEntityList
-          .map((entry) => jsonEncode(entry.toJson()))
-          .toList();
-      isolateData['blockEntityMap$i'] = retchResults[i]
-          .blockEntityMap
-          .map((key, value) => MapEntry(key, jsonEncode(value.toJson())));
-      isolateData['balanceEntity$i'] =
-          jsonEncode(retchResults[i].balanceEntity.toJson());
-      isolateData['addressBalanceMap$i'] = retchResults[i].addressBalanceMap;
-      isolateData['usedIndexList$i'] = retchResults[i].usedIndexList;
-      isolateData['maxGapMap$i'] = retchResults[i].maxGapMap;
-      isolateData['initialReceiveIndex$i'] =
-          retchResults[i].initialReceiveIndex;
-      isolateData['initialChangeIndex$i'] = retchResults[i].initialChangeIndex;
-    }
-
-    /// Isolate (2) - repository close / isolate spawn
-    Repository().close();
-    Isolate isolate = await Isolate.spawn(isolateEntryPoint,
-        [receivePort.sendPort, isolateData, rootIsolateToken]);
-
-    /// Isolate (6) - afterIsolate / get wallet / initialize repository
-    final coconutWallets = await receivePort.first;
-    Repository.initialize(_dbDiretoryPath);
-
-    /// Isolate (7) - update wallet
-    for (int i = 0; i < walletListItems.length; i++) {
-      walletListItems[i].coconutWallet = coconutWallets[i];
-    }
-    // if (coconutWallet is SingleSignatureWallet) {
-    //   int i =
-    //       _walletList.indexWhere((element) => element.id == walletListItems.id);
-    //   _walletList[i].coconutWallet = coconutWallet;
-    // }
-
-    // Isolate (8) - close isolate
-    isolate.kill(priority: Isolate.immediate);
-    receivePort.close();
-  }
-
   // 지갑의 잔액, 트랜잭션 목록 최신 정보를 조회합니다.
   Future<List<WalletListItem>> _fetchWalletsData(
       List<WalletListItem> walletListItems) async {
     List<int> noNeedToUpdate = [];
     List<WalletListItem> needToUpdateList = [];
-    List<WalletFetchResult> syncResults = []; // db update 성공 후 txCount 업데이트를 위해
+    List<WalletStatus> syncResults = []; // db update 성공 후 txCount 업데이트를 위해
 
     await _initNodeConnectionWhenIsNull();
 
     try {
       for (int i = 0; i < walletListItems.length; i++) {
-        Result<WalletFetchResult, CoconutError> syncResult =
-            await _nodeConnector!.fetch(walletListItems[i].coconutWallet);
-        if (syncResult.isFailure) {
-          throw syncResult.error?.message ??
-              Exception('_nodeConnector.fetch() failed.');
+        await walletListItems[i]
+            .coconutWallet
+            .fetchOnChainData(_nodeConnector!);
+        if (walletListItems[i].coconutWallet.walletStatus == null) {
+          throw Exception(
+              "${walletListItems[i].name} 지갑의 fetchOnChainData 결과가 null");
         }
-        if (syncResult.value == null) {
-          throw Exception('_nodeConnector.fetch() returned null');
-        }
+        WalletStatus syncResult =
+            walletListItems[i].coconutWallet.walletStatus!;
         // regtest에서는 txEntityList.count가 변경되지 않았으면 db update를 하지 않습니다.
         // mainnet에서는 트랜잭션을 추가해서 기존 트잭을 무효화시키는 경우가 있어서 5% 미만의 확률로 아래 조건문이 유효하지 않을 수 있습니다.
         // 하지만 현재는 regtest용 앱만 있고 우리 지갑에서 rbf나 cpfp 등의 기능을 제공하지 않기 때문에 유효한 조건문입니다.
         // 진행중인 트랜잭션이 없거나 (isLatestTxBlockHeightZero == false) txEntityList.count가 변경되지 않았으면 db update를 하지 않습니다.
         if (!walletListItems[i].isLatestTxBlockHeightZero &&
-            syncResult.value!.txEntityList.length ==
-                walletListItems[i].txCount) {
+            syncResult.transactionList.length == walletListItems[i].txCount &&
+            walletListItems[i].balance != null) {
           noNeedToUpdate.add(i);
-          walletListItems[i].coconutWallet.updateAddressBook();
           Logger.log('>>>>> noNeedToUpdate: ${walletListItems[i].name}');
           continue;
         }
 
         needToUpdateList.add(walletListItems[i]);
-        syncResults.add(syncResult.value!);
-        // TODO: 현재 coconut_lib getAddressList 결과에 오류가 있어 대신 사용합니다. (라이브러리 버그 픽싱 후 삭제)
-        walletListItems[i].addressBalanceMap =
-            syncResult.value!.addressBalanceMap;
-        // TODO: 현재 coconut_lib getAddressList 결과에 오류가 있어 대신 사용합니다. (라이브러리 버그 픽싱 후 삭제)
-        walletListItems[i].usedIndexList = syncResult.value!.usedIndexList;
+        syncResults.add(syncResult);
+        // coconut_lib 0.6.x getAddressList 결과에 오류가 있어 사용했었습니다. coconut_lib 0.7에서 버그가 고쳐져서 더이상 사용되지 않지만, 앱 호환을 위해 프로퍼티를 유지합니다.
+        walletListItems[i].addressBalanceMap = {
+          0: syncResult.receiveAddressBalanceMap,
+          1: syncResult.changeAddressBalanceMap
+        };
+        // coconut_lib 0.6.x getAddressList 결과에 오류가 있어 사용했었습니다. coconut_lib 0.7에서 버그가 고쳐져서 더이상 사용되지 않지만, 앱 호환을 위해 프로퍼티를 유지합니다.
+        walletListItems[i].usedIndexList = {
+          0: syncResult.receiveUsedIndexList,
+          1: syncResult.changeUsedIndexList
+        };
       }
-
-      /// Isolate (1) - call runSaveRepositoryInIsolate
-      if (needToUpdateList.isNotEmpty) {
-        await runSaveRepositoryInIsolate(needToUpdateList, syncResults);
-      }
-
-      /// MainThread - repositorySync
-      // await Repository().sync(wallet, syncResult.value!);
     } catch (e) {
       setWalletInitState(WalletInitState.error,
           error:
@@ -565,7 +496,7 @@ class AppStateModel extends ChangeNotifier {
 
     // db sync 성공 후 txCount, isLatestTxBlockHeightZero 업데이트 / txCount와 isLatestTxBlockHeightZero 다음 sync 여부를 결정합니다
     for (int i = 0; i < needToUpdateList.length; i++) {
-      needToUpdateList[i].txCount = syncResults[i].txEntityList.length;
+      needToUpdateList[i].txCount = syncResults[i].transactionList.length;
 
       // 잔액 업데이트
       try {
@@ -584,7 +515,7 @@ class AppStateModel extends ChangeNotifier {
         List<Transfer> txList = needToUpdateList[i]
             .coconutWallet
             .getTransferList(cursor: 0, count: needToUpdateList[i].txCount!);
-        Logger.log(">>>>>> ${txList.toJsonList()}");
+        //Logger.log(">>>>>>txList: ${txList.toJsonList()}");
         await SharedPrefs()
             .setTxList(needToUpdateList[i].id, jsonEncode(txList.toJsonList()));
         // 최신 트랜잭션의 블록 높이가 0인지 확인: 아직 Confirm 안된 트랜잭션이 있다는 의미입니다.
