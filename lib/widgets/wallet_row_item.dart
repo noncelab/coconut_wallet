@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -16,31 +17,55 @@ class WalletRowItem extends StatefulWidget {
   final bool isLastItem;
   final bool isBalanceHidden;
 
-  const WalletRowItem(
-      {super.key,
-      required this.id,
-      required this.balance,
-      required this.name,
-      required this.iconIndex,
-      required this.colorIndex,
-      required this.isLastItem,
-      this.isBalanceHidden = false});
+  const WalletRowItem({
+    super.key,
+    required this.id,
+    required this.balance,
+    required this.name,
+    required this.iconIndex,
+    required this.colorIndex,
+    required this.isLastItem,
+    this.isBalanceHidden = false,
+  });
 
   @override
   State<WalletRowItem> createState() => _WalletRowItemState();
 }
 
 class _WalletRowItemState extends State<WalletRowItem> {
+  // TODO : 추후 로직 변경될 수 있음
+  bool _isMultiSig = false;
+
   @override
   void initState() {
     super.initState();
+
+    // TODO : 월렛 속성 업데이트
+    if (widget.name == '다중지갑') {
+      _isMultiSig = true;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // TODO: gradient 적용
     final row = ShrinkAnimationButton(
-        onPressed: () => Navigator.pushNamed(context, '/wallet-detail',
-            arguments: {'id': widget.id}),
+        onPressed: () {
+          if (_isMultiSig) {
+            Navigator.pushNamed(context, '/wallet-multisig',
+                arguments: {'id': widget.id});
+          } else {
+            Navigator.pushNamed(context, '/wallet-detail',
+                arguments: {'id': widget.id});
+          }
+        },
+        borderGradientColors: _isMultiSig
+            ? [
+                CustomColorHelper.getColorByIndex(0),
+                MyColors.white,
+                CustomColorHelper.getColorByIndex(4),
+              ]
+            : null,
         child: Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
@@ -60,7 +85,7 @@ class _WalletRowItemState extends State<WalletRowItem> {
                           ColorPalette[widget.colorIndex], BlendMode.srcIn),
                       width: 20.0)),
               const SizedBox(width: 8.0),
-              Flexible(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
