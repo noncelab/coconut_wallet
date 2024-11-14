@@ -25,7 +25,7 @@ class SendConfirmScreen extends StatefulWidget {
 
 class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late AppStateModel _model;
-  late SingleSignatureWallet _wallet;
+  late WalletBase _walletBase;
   @override
   void initState() {
     super.initState();
@@ -34,17 +34,21 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
 
   void _loadWalletInfo() {
     _model = Provider.of<AppStateModel>(context, listen: false);
-    _wallet = _model.getWalletById(widget.id).coconutWallet;
+    _walletBase = _model.getWalletById(widget.id).walletBase;
   }
 
   Future<String> generateUnsignedPsbt() async {
     var FullSendInfo(:satsPerVb, :address, :amount) = widget.sendInfo;
     String generatedTx;
 
+    //TODO: SingleSignatureWallet
+    final singlesigWallet = _walletBase as SingleSignatureWallet;
+
     if (widget.sendInfo.isMaxMode) {
-      generatedTx = await _wallet.generatePsbtWithMaximum(address, satsPerVb);
+      generatedTx =
+          await singlesigWallet.generatePsbtWithMaximum(address, satsPerVb);
     } else {
-      generatedTx = await _wallet.generatePsbt(
+      generatedTx = await singlesigWallet.generatePsbt(
           address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
     }
 

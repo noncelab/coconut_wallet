@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:coconut_lib/coconut_lib.dart' as coconut;
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/screens/qrcode_bottom_sheet_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -37,8 +37,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
   List<coconut.Address> _receivingAddressList = [];
   List<coconut.Address> _changeAddressList = [];
   late ScrollController _controller;
-  late WalletListItem _walletListItem;
-  late coconut.SingleSignatureWallet _coconutWallet;
+  late SinglesigWalletListItem _singlesigWalletListItem;
+  late coconut.WalletBase _walletBase;
   bool isReceivingSelected = true;
   final GlobalKey _depositTooltipKey = GlobalKey();
   final GlobalKey _changeTooltipKey = GlobalKey();
@@ -58,12 +58,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
     _controller = ScrollController()..addListener(_nextLoad);
-    _walletListItem = model.getWalletById(widget.id);
-    _coconutWallet = _walletListItem.coconutWallet;
+    _singlesigWalletListItem = model.getWalletById(widget.id);
+    _walletBase = _singlesigWalletListItem.walletBase;
 
-    _receivingAddressList =
-        _coconutWallet.getAddressList(0, FIRST_COUNT, false);
-    _changeAddressList = _coconutWallet.getAddressList(0, FIRST_COUNT, true);
+    _receivingAddressList = _walletBase.getAddressList(0, FIRST_COUNT, false);
+    _changeAddressList = _walletBase.getAddressList(0, FIRST_COUNT, true);
     _isFirstLoadRunning = false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -88,7 +87,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
       });
 
       try {
-        final newAddresses = _coconutWallet.getAddressList(
+        final newAddresses = _walletBase.getAddressList(
             FIRST_COUNT +
                 (isReceivingSelected
                         ? _receivingAddressPage
@@ -201,7 +200,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       )
                     : null,
                 title: Text(
-                  '${_walletListItem.name}의 주소',
+                  '${_singlesigWalletListItem.name}의 주소',
                   style: Styles.appbarTitle,
                 ),
                 centerTitle: true,

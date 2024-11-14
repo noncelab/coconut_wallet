@@ -1,10 +1,10 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -31,7 +31,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   int? _fee;
   int? _totalAmount;
   late final AppStateModel _model;
-  late SingleSignatureWallet _wallet;
+  late WalletBase _walletBase;
   bool _initDone = false;
   bool _isValidSignedTransaction = false;
   int? _sendingAmountWhenAddressIsMyChange; // 내 지갑의 change address로 보내는 경우 잔액
@@ -49,8 +49,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       throw "[broadcasting_screen] _model.txWaitingForSign is null";
     }
 
-    final WalletListItem walletListItem = _model.getWalletById(widget.id);
-    _wallet = walletListItem.coconutWallet;
+    final SinglesigWalletListItem walletListItem =
+        _model.getWalletById(widget.id);
+    _walletBase = walletListItem.walletBase;
 
     WidgetsBinding.instance.addPostFrameCallback((duration) {
       setOverlayLoading(true);
@@ -62,6 +63,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   void setTxInfo() async {
     try {
       PSBT signedPsbt = PSBT.parse(_model.signedTransaction!);
+      print("!!! -> ${_model.signedTransaction!}");
       List<PsbtOutput> outputs = signedPsbt.outputs;
 
       // case1. 다른 사람에게 보내고(B1) 잔액이 있는 경우(A2)
@@ -124,7 +126,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     setOverlayLoading(true);
     final model = Provider.of<AppStateModel>(context, listen: false);
     PSBT psbt = PSBT.parse(model.signedTransaction!);
-    Transaction signedTx = psbt.getSignedTransaction(_wallet.addressType);
+    Transaction signedTx = psbt.getSignedTransaction(_walletBase.addressType);
 
     try {
       Result<String, CoconutError> result =

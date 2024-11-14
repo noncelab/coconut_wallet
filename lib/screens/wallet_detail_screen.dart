@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +10,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/screens/faucet_request_screen.dart';
 import 'package:coconut_wallet/screens/receive_address_screen.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
@@ -50,7 +50,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   Unit _current = Unit.btc;
   List<Transfer> _txList = [];
   bool _isPullToRefeshing = false;
-  late WalletListItem _walletListItem;
+  late SinglesigWalletListItem _singlesigWalletListItem;
   String faucetTip = '테스트용 비트코인으로 마음껏 테스트 해보세요';
   late RenderBox _faucetRenderBox;
   late Size _faucetIconSize;
@@ -70,9 +70,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
     _prevWalletInitState = _model.walletInitState;
-    _walletListItem = _model.getWalletById(widget.id);
-    _prevTxCount = _walletListItem.txCount;
-    _prevIsLatestTxBlockHeightZero = _walletListItem.isLatestTxBlockHeightZero;
+    _singlesigWalletListItem = _model.getWalletById(widget.id);
+    _prevTxCount = _singlesigWalletListItem.txCount;
+    _prevIsLatestTxBlockHeightZero =
+        _singlesigWalletListItem.isLatestTxBlockHeightZero;
 
     List<Transfer>? newTxList = loadTxListFromSharedPref();
     if (newTxList != null) {
@@ -105,7 +106,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       }
 
       final faucetHistory = SharedPrefs().getFaucetHistoryWithId(widget.id);
-      if (_walletListItem.balance == 0 && faucetHistory.count < 3) {
+      if (_singlesigWalletListItem.balance == 0 && faucetHistory.count < 3) {
         setState(() {
           _faucetTooltipVisible = true;
         });
@@ -128,26 +129,26 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     // _prevWalletInitState != WalletInitState.finished 조건 걸어주지 않으면 삭제 시 getWalletById 과정에서 에러 발생
     if (_prevWalletInitState != WalletInitState.finished &&
         _model.walletInitState == WalletInitState.finished) {
-      _walletListItem = _model.getWalletById(widget.id);
+      _singlesigWalletListItem = _model.getWalletById(widget.id);
 
       Logger.log(
-          '>>>>>> prevTxCount: $_prevTxCount, wallet.txCount: ${_walletListItem.txCount}');
+          '>>>>>> prevTxCount: $_prevTxCount, wallet.txCount: ${_singlesigWalletListItem.txCount}');
       Logger.log(
-          '>>>>>> prevIsZero: $_prevIsLatestTxBlockHeightZero, wallet.isZero: ${_walletListItem.isLatestTxBlockHeightZero}');
+          '>>>>>> prevIsZero: $_prevIsLatestTxBlockHeightZero, wallet.isZero: ${_singlesigWalletListItem.isLatestTxBlockHeightZero}');
 
       /// _walletListItem의 txCount, isLatestTxBlockHeightZero가 변경되었을 때만 트랜잭션 목록 업데이트
-      if (_prevTxCount != _walletListItem.txCount ||
+      if (_prevTxCount != _singlesigWalletListItem.txCount ||
           _prevIsLatestTxBlockHeightZero !=
-              _walletListItem.isLatestTxBlockHeightZero) {
+              _singlesigWalletListItem.isLatestTxBlockHeightZero) {
         List<Transfer>? newTxList = loadTxListFromSharedPref();
         if (newTxList != null) {
           _txList = newTxList;
           setState(() {});
         }
       }
-      _prevTxCount = _walletListItem.txCount;
+      _prevTxCount = _singlesigWalletListItem.txCount;
       _prevIsLatestTxBlockHeightZero =
-          _walletListItem.isLatestTxBlockHeightZero;
+          _singlesigWalletListItem.isLatestTxBlockHeightZero;
     }
     _prevWalletInitState = _model.walletInitState;
   }
@@ -248,7 +249,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   bool _checkBalanceIsNotNullAndShowToast() {
-    if (_walletListItem.balance == null) {
+    if (_singlesigWalletListItem.balance == null) {
       CustomToast.showToast(
           context: context, text: "화면을 아래로 당겨 최신 데이터를 가져와 주세요.");
       return false;
@@ -269,7 +270,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             backgroundColor: MyColors.black,
             appBar: CustomAppBar.build(
               faucetIconKey: _faucetIconKey,
-              title: _walletListItem.name,
+              title: _singlesigWalletListItem.name,
               context: context,
               hasRightIcon: true,
               onFaucetIconPressed: () async {
@@ -287,7 +288,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                               targetId: widget.id, syncOthers: false);
                         });
                       },
-                      walletListItem: _walletListItem,
+                      singlesigWalletListItem: _singlesigWalletListItem,
                     ));
               },
               onRightIconPressed: () {
@@ -334,7 +335,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       builder: (context, bitcoinPriceKrw, child) {
                         return SliverToBoxAdapter(
                             child: BalanceAndButtons(
-                          balance: _walletListItem.balance,
+                          balance: _singlesigWalletListItem.balance,
                           walletId: widget.id,
                           accountIndex: _selectedAccountIndex,
                           currentUnit: _current,

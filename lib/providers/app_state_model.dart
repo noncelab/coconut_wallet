@@ -2,13 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item_factory.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/request/faucet_request.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/repositories/faucet_repository.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
@@ -61,8 +62,8 @@ class AppStateModel extends ChangeNotifier {
 
   NodeConnector? _nodeConnector;
 
-  List<WalletListItem> _walletList = [];
-  List<WalletListItem> get walletList => _walletList;
+  List<SinglesigWalletListItem> _singlesigWalletList = [];
+  List<SinglesigWalletListItem> get singlesigWalletList => _singlesigWalletList;
 
   String? txWaitingForSign;
   String? signedTransaction; // hex decode result
@@ -206,16 +207,16 @@ class AppStateModel extends ChangeNotifier {
   }
 
   // Returns a copy of the list of wallet list.
-  List<WalletListItem> getWallets() {
-    if (_walletList.isEmpty) {
+  List<SinglesigWalletListItem> getWallets() {
+    if (_singlesigWalletList.isEmpty) {
       return [];
     }
 
-    return List.from(_walletList);
+    return List.from(_singlesigWalletList);
   }
 
-  WalletListItem getWalletById(int id) {
-    return _walletList.firstWhere((element) => element.id == id);
+  SinglesigWalletListItem getWalletById(int id) {
+    return _singlesigWalletList.firstWhere((element) => element.id == id);
   }
 
   /// case1. 새로운 fingerprint인지 확인 후 지갑으로 추가하기 ("지갑을 추가했습니다.")
@@ -231,17 +232,17 @@ class AppStateModel extends ChangeNotifier {
 
     int id;
     SyncResult result = SyncResult.newWalletAdded;
-    final index = _walletList
+    final index = _singlesigWalletList
         .indexWhere((element) => element.descriptor == walletSync.descriptor);
 
     if (index != -1) {
-      WalletListItem existingWallet = _walletList[index];
+      SinglesigWalletListItem existingWallet = _singlesigWalletList[index];
       // 변동사항이 있는지 체크하기: 이름, pubkeys, colorIndex, iconIndex
       if (walletSync.name != existingWallet.name ||
           walletSync.colorIndex != existingWallet.colorIndex ||
           walletSync.iconIndex != existingWallet.iconIndex) {
         // case 2
-        var updateItem = WalletListItem(
+        var updateItem = SinglesigWalletListItem(
             id: existingWallet.id,
             name: walletSync.name,
             colorIndex: walletSync.colorIndex,
@@ -249,11 +250,12 @@ class AppStateModel extends ChangeNotifier {
             descriptor: walletSync.descriptor,
             balance: existingWallet.balance);
 
-        List<WalletListItem> updatedList = List.from(_walletList);
+        List<SinglesigWalletListItem> updatedList =
+            List.from(_singlesigWalletList);
         updatedList[index] = updateItem;
 
         // Assign the new list back to _walletList
-        _walletList = updatedList;
+        _singlesigWalletList = updatedList;
 
         result = SyncResult.existingWalletUpdated;
 
@@ -267,8 +269,8 @@ class AppStateModel extends ChangeNotifier {
       }
       id = existingWallet.id;
     } else {
-      final sameNameIndex =
-          _walletList.indexWhere((element) => element.name == walletSync.name);
+      final sameNameIndex = _singlesigWalletList
+          .indexWhere((element) => element.name == walletSync.name);
       if (sameNameIndex != -1) {
         // case 4
         result = SyncResult.existingName;
@@ -277,12 +279,20 @@ class AppStateModel extends ChangeNotifier {
 
       // case1
       // Create a new list and add the new item
-      List<WalletListItem> updatedList = List.from(_walletList);
-      WalletListItem newItem =
-          await WalletListItem.create(walletSyncObject: walletSync);
+      List<SinglesigWalletListItem> updatedList =
+          List.from(_singlesigWalletList);
+
+      SinglesigWalletListItem newItem =
+          await SinglesigWalletListItemFactory().create(
+        name: walletSync.name,
+        colorIndex: walletSync.colorIndex,
+        iconIndex: walletSync.iconIndex,
+        descriptor: walletSync.descriptor,
+      );
+
       updatedList.add(newItem);
       // Assign the new list back to _walletList
-      _walletList = updatedList;
+      _singlesigWalletList = updatedList;
 
       id = newItem.id;
       await initWallet(targetId: id, syncOthers: false);
@@ -292,14 +302,14 @@ class AppStateModel extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int id) async {
-    final index = _walletList.indexWhere((item) => item.id == id);
+    final index = _singlesigWalletList.indexWhere((item) => item.id == id);
     if (index == -1) {
       throw Exception('deleteVault: no wallet id is "$id"');
     }
 
-    _walletList = List.from(_walletList)..removeAt(index);
+    _singlesigWalletList = List.from(_singlesigWalletList)..removeAt(index);
 
-    if (_walletList.isEmpty) {
+    if (_singlesigWalletList.isEmpty) {
       _subStateModel.saveNotEmptyWalletList(false);
     }
 
@@ -368,11 +378,11 @@ class AppStateModel extends ChangeNotifier {
 
     final List<dynamic> itemList = jsonDecode(jsonArrayString) as List;
     for (final item in itemList) {
-      var walletListItem = WalletListItem.fromJson(item);
+      var walletListItem = SinglesigWalletListItem.fromJson(item);
       addOrUpdateWalletList(walletListItem);
     }
 
-    _subStateModel.saveNotEmptyWalletList(_walletList.isNotEmpty);
+    _subStateModel.saveNotEmptyWalletList(_singlesigWalletList.isNotEmpty);
 
     // for wallet_list_screen
     if (!_fastLoadDone) {
@@ -382,13 +392,18 @@ class AppStateModel extends ChangeNotifier {
   }
 
   // _walletList에 walletListItem을 추가하거나 있으면 대체합니다.
-  void addOrUpdateWalletList(WalletListItem walletListItem) {
-    int index = _walletList.indexWhere((element) =>
-        element.coconutWallet.keyStore.masterFingerprint ==
-            walletListItem.coconutWallet.keyStore.masterFingerprint &&
+  void addOrUpdateWalletList(SinglesigWalletListItem walletListItem) {
+    // TODO: SingleSignatureWallet
+    int index = _singlesigWalletList.indexWhere((element) =>
+        (element.walletBase as SingleSignatureWallet)
+                .keyStore
+                .masterFingerprint ==
+            (walletListItem.walletBase as SingleSignatureWallet)
+                .keyStore
+                .masterFingerprint &&
         element.id == walletListItem.id);
 
-    List<WalletListItem> updatedList = List.from(_walletList);
+    List<SinglesigWalletListItem> updatedList = List.from(_singlesigWalletList);
 
     if (index != -1) {
       updatedList[index] = walletListItem;
@@ -396,33 +411,35 @@ class AppStateModel extends ChangeNotifier {
       updatedList.add(walletListItem);
     }
 
-    _walletList = updatedList;
+    _singlesigWalletList = updatedList;
 
-    _subStateModel.saveNotEmptyWalletList(_walletList.isNotEmpty);
+    _subStateModel.saveNotEmptyWalletList(_singlesigWalletList.isNotEmpty);
 
     notifyListeners();
   }
 
   Future<void> _fetchAllWalletLatestInfo({int? exceptionalId}) async {
     //Logger.log(">>>>> [_fetchAllWalletLatestInfo] exceptionalId: $exceptionalId");
-    List<WalletListItem> targetWalletList = _walletList;
+    List<SinglesigWalletListItem> targetWalletList = _singlesigWalletList;
     int? exceptionIndex;
     if (exceptionalId != null) {
-      exceptionIndex =
-          _walletList.indexWhere((element) => element.id == exceptionalId);
-      targetWalletList = List<WalletListItem>.from(_walletList)
-        ..removeAt(exceptionIndex);
+      exceptionIndex = _singlesigWalletList
+          .indexWhere((element) => element.id == exceptionalId);
+      targetWalletList =
+          List<SinglesigWalletListItem>.from(_singlesigWalletList)
+            ..removeAt(exceptionIndex);
     }
 
-    List<WalletListItem> newWalletList =
+    List<SinglesigWalletListItem> newWalletList =
         await _fetchWalletsData(targetWalletList);
 
     if (exceptionalId != null) {
       assert(exceptionIndex != -1);
-      newWalletList.insert(exceptionIndex!, _walletList[exceptionIndex]);
+      newWalletList.insert(
+          exceptionIndex!, _singlesigWalletList[exceptionIndex]);
     }
     // for update _walletList and UI both
-    _walletList = newWalletList;
+    _singlesigWalletList = newWalletList;
 
     await _updateWalletInStorage();
     //_walletList = List.from(_walletList);
@@ -430,38 +447,40 @@ class AppStateModel extends ChangeNotifier {
 
   Future<void> _fetchWalletLatestInfo(int walletId) async {
     try {
-      int i = _walletList.indexWhere((element) => element.id == walletId);
-      WalletListItem existingWallet = _walletList[i];
-      List<WalletListItem> fetchResult =
+      int i =
+          _singlesigWalletList.indexWhere((element) => element.id == walletId);
+      SinglesigWalletListItem existingWallet = _singlesigWalletList[i];
+      List<SinglesigWalletListItem> fetchResult =
           await _fetchWalletsData([existingWallet]);
-      _walletList[i] = fetchResult[0];
+      _singlesigWalletList[i] = fetchResult[0];
     } finally {
       await _updateWalletInStorage();
       // UI 업데이트를 위해 _walletList reference를 변경해준다
-      _walletList = List.from(_walletList);
+      _singlesigWalletList = List.from(_singlesigWalletList);
     }
   }
 
   // 지갑의 잔액, 트랜잭션 목록 최신 정보를 조회합니다.
-  Future<List<WalletListItem>> _fetchWalletsData(
-      List<WalletListItem> walletListItems) async {
+  Future<List<SinglesigWalletListItem>> _fetchWalletsData(
+      List<SinglesigWalletListItem> walletListItems) async {
     List<int> noNeedToUpdate = [];
-    List<WalletListItem> needToUpdateList = [];
+    List<SinglesigWalletListItem> needToUpdateList = [];
     List<WalletStatus> syncResults = []; // db update 성공 후 txCount 업데이트를 위해
 
     await _initNodeConnectionWhenIsNull();
 
     try {
       for (int i = 0; i < walletListItems.length; i++) {
-        await walletListItems[i]
-            .coconutWallet
-            .fetchOnChainData(_nodeConnector!);
-        if (walletListItems[i].coconutWallet.walletStatus == null) {
+        // TODO: SingleSignatureWallet
+        final singlesigWallet =
+            walletListItems[i].walletBase as SingleSignatureWallet;
+        await singlesigWallet.fetchOnChainData(_nodeConnector!);
+
+        if (singlesigWallet.walletStatus == null) {
           throw Exception(
               "${walletListItems[i].name} 지갑의 fetchOnChainData 결과가 null");
         }
-        WalletStatus syncResult =
-            walletListItems[i].coconutWallet.walletStatus!;
+        WalletStatus syncResult = singlesigWallet.walletStatus!;
         // regtest에서는 txEntityList.count가 변경되지 않았으면 db update를 하지 않습니다.
         // mainnet에서는 트랜잭션을 추가해서 기존 트잭을 무효화시키는 경우가 있어서 5% 미만의 확률로 아래 조건문이 유효하지 않을 수 있습니다.
         // 하지만 현재는 regtest용 앱만 있고 우리 지갑에서 rbf나 cpfp 등의 기능을 제공하지 않기 때문에 유효한 조건문입니다.
@@ -498,11 +517,14 @@ class AppStateModel extends ChangeNotifier {
     for (int i = 0; i < needToUpdateList.length; i++) {
       needToUpdateList[i].txCount = syncResults[i].transactionList.length;
 
+      // TODO: SingleSignatureWallet
+      final singlesigWallet =
+          needToUpdateList[i].walletBase as SingleSignatureWallet;
+
       // 잔액 업데이트
       try {
-        needToUpdateList[i].balance =
-            needToUpdateList[i].coconutWallet.getBalance() +
-                needToUpdateList[i].coconutWallet.getUnconfirmedBalance();
+        needToUpdateList[i].balance = singlesigWallet.getBalance() +
+            singlesigWallet.getUnconfirmedBalance();
       } catch (e) {
         setWalletInitState(WalletInitState.error,
             error: ErrorCodes.withMessage(
@@ -512,9 +534,8 @@ class AppStateModel extends ChangeNotifier {
 
       // txlist 업데이트
       try {
-        List<Transfer> txList = needToUpdateList[i]
-            .coconutWallet
-            .getTransferList(cursor: 0, count: needToUpdateList[i].txCount!);
+        List<Transfer> txList = singlesigWallet.getTransferList(
+            cursor: 0, count: needToUpdateList[i].txCount!);
         //Logger.log(">>>>>>txList: ${txList.toJsonList()}");
         await SharedPrefs()
             .setTxList(needToUpdateList[i].id, jsonEncode(txList.toJsonList()));
@@ -539,9 +560,9 @@ class AppStateModel extends ChangeNotifier {
 
   Future<void> _updateWalletInStorage() async {
     final jsonString =
-        jsonEncode(_walletList.map((item) => item.toJson()).toList());
+        jsonEncode(_singlesigWalletList.map((item) => item.toJson()).toList());
 
-    _subStateModel.saveNotEmptyWalletList(_walletList.isNotEmpty);
+    _subStateModel.saveNotEmptyWalletList(_singlesigWalletList.isNotEmpty);
 
     try {
       await _storageService.write(key: WALLET_LIST, value: jsonString);

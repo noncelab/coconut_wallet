@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -8,7 +9,6 @@ import 'package:coconut_wallet/model/faucet_history.dart';
 import 'package:coconut_wallet/model/response/default_error_response.dart';
 import 'package:coconut_wallet/model/response/faucet_response.dart';
 import 'package:coconut_wallet/model/response/faucet_status_response.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/repositories/faucet_repository.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -20,14 +20,14 @@ import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
 
 class FaucetRequestScreen extends StatefulWidget {
-  final WalletListItem walletListItem;
+  final SinglesigWalletListItem singlesigWalletListItem;
   final VoidCallback? onRequestSuccess;
   final VoidCallback? onNextPressed;
 
   const FaucetRequestScreen({
     super.key,
     required this.onRequestSuccess,
-    required this.walletListItem,
+    required this.singlesigWalletListItem,
     this.onNextPressed,
   });
 
@@ -63,18 +63,18 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
   void initState() {
     super.initState();
     Address receiveAddress =
-        widget.walletListItem.coconutWallet.getReceiveAddress();
+        widget.singlesigWalletListItem.walletBase.getReceiveAddress();
     _walletAddress = receiveAddress.address;
     inputText = _walletAddress;
-    _walletName = widget.walletListItem.name.length > 20
-        ? '${widget.walletListItem.name.substring(0, 17)}...'
-        : widget.walletListItem.name;
+    _walletName = widget.singlesigWalletListItem.name.length > 20
+        ? '${widget.singlesigWalletListItem.name.substring(0, 17)}...'
+        : widget.singlesigWalletListItem.name;
     _walletIndex = receiveAddress.derivationPath.split('/').last;
-    _walletAddressBook = widget.walletListItem.coconutWallet.addressBook;
+    _walletAddressBook = widget.singlesigWalletListItem.walletBase.addressBook;
 
     _faucetAddressController = TextEditingController(text: _walletAddress);
 
-    _walletId = widget.walletListItem.id;
+    _walletId = widget.singlesigWalletListItem.id;
     _faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetHistory();
     _getFaucetStatus();

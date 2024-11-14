@@ -1,9 +1,9 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/model/utxo.dart' as model;
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -26,15 +26,19 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   int _current = 0; // for ordering
   late int? _balance;
   late List<model.UTXO> _utxoList;
-  late WalletListItem _walletListItem;
+  late SinglesigWalletListItem _singlesigWalletListItem;
 
   @override
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
-    _walletListItem = model.getWalletById(widget.id);
-    _balance = _walletListItem.balance;
-    List<UTXO> utxoEntities = _walletListItem.coconutWallet.getUtxoList();
+    _singlesigWalletListItem = model.getWalletById(widget.id);
+    _balance = _singlesigWalletListItem.balance;
+
+    // TODO: SingleSignatureWallet
+    final singlesigWallet =
+        _singlesigWalletListItem.walletBase as SingleSignatureWallet;
+    List<UTXO> utxoEntities = singlesigWallet.getUtxoList();
     _utxoList = getUtxoListWithHoldingAddress(utxoEntities);
   }
 
@@ -46,7 +50,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       // m/84'/1'/0'/1/1
       String change = pathElements[4];
 
-      String ownedAddress = _walletListItem.coconutWallet.getAddress(
+      String ownedAddress = _singlesigWalletListItem.walletBase.getAddress(
           int.parse(accountIndex),
           isChange: int.parse(change) == 1);
 

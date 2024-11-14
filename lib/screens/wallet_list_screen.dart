@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/screens/settings/security_self_check_screen.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/screens/settings/terms_screen.dart';
@@ -12,7 +13,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
@@ -104,9 +104,9 @@ class _WalletListScreenState extends State<WalletListScreen>
           }
         }
       },
-      child: Selector<AppStateModel, List<WalletListItem>>(
+      child: Selector<AppStateModel, List<SinglesigWalletListItem>>(
         shouldRebuild: (previous, next) => true,
-        selector: (_, selectorModel) => selectorModel.walletList,
+        selector: (_, selectorModel) => selectorModel.singlesigWalletList,
         builder: (context, wallets, child) {
           return Scaffold(
             backgroundColor: MyColors.black,
@@ -355,7 +355,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                               }
 
                               if (index < wallets.length) {
-                                final WalletListItem(
+                                final SinglesigWalletListItem(
                                   id: id,
                                   name: name,
                                   balance: balance,

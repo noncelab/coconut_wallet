@@ -74,7 +74,7 @@ dependencies:
   coconut_lib:
     git:
       url: https://github.com/noncelab/coconut_lib
-      ref: develop
+      ref: multisig
 
 dev_dependencies:
   flutter_test:

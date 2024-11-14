@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,6 @@ import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/model/constants.dart';
 import 'package:coconut_wallet/model/enums.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/model/send_info.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
@@ -53,10 +53,11 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
   late AppStateModel _model;
   late UpbitConnectModel _upbitConnectModel;
-  late WalletListItem _walletListItem;
+  late SinglesigWalletListItem _singlesigWalletListItem;
   late bool _isMaxMode;
   late bool _userBackFlag;
-  late SingleSignatureWallet _wallet;
+  late WalletBase _walletBase;
+  late SingleSignatureWallet _singlesigWallet;
   late int _confirmedBalance;
 
   bool? _isNetworkOn;
@@ -68,9 +69,13 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     context.loaderOverlay.show(); // onChangedNetworkStatus 과정 중 hide 됨
     _model = Provider.of<AppStateModel>(context, listen: false);
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
-    _walletListItem = _model.getWalletById(widget.id);
-    _wallet = _walletListItem.coconutWallet;
-    _confirmedBalance = _wallet.getBalance();
+    _singlesigWalletListItem = _model.getWalletById(widget.id);
+    _walletBase = _singlesigWalletListItem.walletBase;
+
+    // TODO: SingleSignatureWallet
+    _singlesigWallet = _walletBase as SingleSignatureWallet;
+    _confirmedBalance = _singlesigWallet.getBalance();
+
     _isMaxMode =
         _confirmedBalance == UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount);
     _userBackFlag = false;
@@ -134,10 +139,10 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       try {
         int? estimatedFee;
         if (_isMaxMode) {
-          estimatedFee = await _wallet.estimateFeeWithMaximum(
+          estimatedFee = await _singlesigWallet.estimateFeeWithMaximum(
               widget.sendInfo.address, feeInfo.satsPerVb!);
         } else {
-          estimatedFee = await _wallet.estimateFee(
+          estimatedFee = await _singlesigWallet.estimateFee(
               widget.sendInfo.address,
               UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
               feeInfo.satsPerVb!);
@@ -310,11 +315,13 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     try {
       int? estimatedFee;
       if (_isMaxMode) {
-        estimatedFee = await _wallet.estimateFeeWithMaximum(
+        estimatedFee = await _singlesigWallet.estimateFeeWithMaximum(
             widget.sendInfo.address, customSatsPerVb);
       } else {
-        estimatedFee = await _wallet.estimateFee(widget.sendInfo.address,
-            UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), customSatsPerVb);
+        estimatedFee = await _singlesigWallet.estimateFee(
+            widget.sendInfo.address,
+            UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
+            customSatsPerVb);
       }
 
       setState(() {
@@ -381,8 +388,11 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         body: Consumer<AppStateModel>(
           builder: (context, state, child) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              onChangedNetworkStatus(state.isNetworkOn,
-                  state.getWalletById(widget.id).coconutWallet.getBalance());
+              // TODO: SingleSignatureWallet
+              final singlesigWallet = state.getWalletById(widget.id).walletBase
+                  as SingleSignatureWallet;
+              onChangedNetworkStatus(
+                  state.isNetworkOn, singlesigWallet.getBalance());
             });
 
             return SafeArea(
