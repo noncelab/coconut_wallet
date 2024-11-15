@@ -18,20 +18,31 @@ class MultisigWalletListItem extends WalletListItemBase {
     required this.requiredSignatureCount,
     super.balance,
   }) : super(walletType: WalletType.multiSignature) {
-    walletBase = MultisignatureWallet.fromKeyStoreList(
-      requiredSignatureCount,
-      AddressType.p2wsh,
-      '',
-      signers.map((signer) => signer.keyStore).toList(),
-    );
+    walletBase = MultisignatureWallet.fromDescriptor(descriptor);
   }
 
   @JsonKey(name: "signers")
   late final List<MultisigSigner> signers;
 
-  // json_serialization가 기본 생성자를 사용해서 추가함
   @JsonKey(name: "requiredSignatureCount")
   late final int requiredSignatureCount;
+
+  /// wallet.fetchOnChainData(nodeConnector) 또는 _nodeConnector.fetch 결과에서 txCount가 변경되지 않았는지 확인용
+  @JsonKey(name: "txCount")
+  int? txCount;
+
+  @JsonKey(name: "isLatestTxBlockHeightZero")
+  bool isLatestTxBlockHeightZero =
+      false; // _nodeConnector.fetch 결과에서 latestTxBlockHeight가 변경되지 않았는지 확인용
+
+  // coconut_lib 0.6.x getAddressList 결과에 오류가 있어 사용했었습니다. coconut_lib 0.7에서 버그가 고쳐져서 더이상 사용되지 않지만, 앱 호환을 위해 프로퍼티를 유지합니다.
+  /// deprecated
+  @JsonKey(name: "addressBalanceMap")
+  Map<int, Map<int, int>>? addressBalanceMap;
+  // coconut_lib 0.6.x getAddressList 결과에 오류가 있어 사용했었습니다. coconut_lib 0.7에서 버그가 고쳐져서 더이상 사용되지 않지만, 앱 호환을 위해 프로퍼티를 유지합니다.
+  /// deprecated
+  @JsonKey(name: "usedIndexList")
+  Map<int, List<int>>? usedIndexList;
 
   Map<String, dynamic> toJson() => _$MultisigWalletListItemToJson(this);
 

@@ -1,5 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +37,6 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   String _input = '';
   int? _errorIndex;
   bool _enableNextButton = false;
-  late SinglesigWalletListItem _singlesigWalletListItem;
   late int _balance;
   late int _unconfirmedBalance;
   late WalletBase _walletBase;
@@ -44,13 +45,24 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
-    _singlesigWalletListItem = model.getWalletById(widget.id);
-    _walletBase = _singlesigWalletListItem.walletBase;
 
-    // TODO: SingleSignatureWallet
-    final singlesigWallet = _walletBase as SingleSignatureWallet;
-    _balance = singlesigWallet.getBalance();
-    _unconfirmedBalance = singlesigWallet.getUnconfirmedBalance();
+    // TODO: Check Multisig
+    final walletBaseItem = model.getWalletById(widget.id);
+    if (walletBaseItem.walletType == WalletType.multiSignature) {
+      final multisigListItem = walletBaseItem as MultisigWalletListItem;
+      _walletBase = multisigListItem.walletBase;
+
+      final multisigWallet = _walletBase as MultisignatureWallet;
+      _balance = multisigWallet.getBalance();
+      _unconfirmedBalance = multisigWallet.getUnconfirmedBalance();
+    } else {
+      final singlesigListItem = walletBaseItem as SinglesigWalletListItem;
+      _walletBase = singlesigListItem.walletBase;
+
+      final singlesigWallet = _walletBase as SingleSignatureWallet;
+      _balance = singlesigWallet.getBalance();
+      _unconfirmedBalance = singlesigWallet.getUnconfirmedBalance();
+    }
   }
 
   void _onKeyTap(String value) {

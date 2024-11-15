@@ -302,7 +302,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                                                 color: isVaultKey
                                                     ? BackgroundColorPalette[
                                                         item.colorIndex]
-                                                    : MyColors.borderLightgrey,
+                                                    : BackgroundColorPalette[8],
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                               ),
@@ -316,7 +316,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                                                   isVaultKey
                                                       ? ColorPalette[
                                                           item.colorIndex]
-                                                      : MyColors.white,
+                                                      : ColorPalette[8],
                                                   BlendMode.srcIn,
                                                 ),
                                                 width: isVaultKey ? 20 : 15,

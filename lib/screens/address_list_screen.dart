@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:coconut_lib/coconut_lib.dart' as coconut;
+import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -37,8 +40,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
   List<coconut.Address> _receivingAddressList = [];
   List<coconut.Address> _changeAddressList = [];
   late ScrollController _controller;
-  late SinglesigWalletListItem _singlesigWalletListItem;
   late coconut.WalletBase _walletBase;
+  late WalletListItemBase _walletBaseItem;
   bool isReceivingSelected = true;
   final GlobalKey _depositTooltipKey = GlobalKey();
   final GlobalKey _changeTooltipKey = GlobalKey();
@@ -56,10 +59,18 @@ class _AddressListScreenState extends State<AddressListScreen> {
   @override
   void initState() {
     super.initState();
-    final model = Provider.of<AppStateModel>(context, listen: false);
     _controller = ScrollController()..addListener(_nextLoad);
-    _singlesigWalletListItem = model.getWalletById(widget.id);
-    _walletBase = _singlesigWalletListItem.walletBase;
+    final model = Provider.of<AppStateModel>(context, listen: false);
+
+    // TODO: Check Multisig
+    _walletBaseItem = model.getWalletById(widget.id);
+    if (_walletBaseItem.walletType == WalletType.multiSignature) {
+      final multisigListItem = _walletBaseItem as MultisigWalletListItem;
+      _walletBase = multisigListItem.walletBase;
+    } else {
+      final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
+      _walletBase = singlesigListItem.walletBase;
+    }
 
     _receivingAddressList = _walletBase.getAddressList(0, FIRST_COUNT, false);
     _changeAddressList = _walletBase.getAddressList(0, FIRST_COUNT, true);
@@ -200,7 +211,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       )
                     : null,
                 title: Text(
-                  '${_singlesigWalletListItem.name}의 주소',
+                  '${_walletBaseItem.name}의 주소',
                   style: Styles.appbarTitle,
                 ),
                 centerTitle: true,

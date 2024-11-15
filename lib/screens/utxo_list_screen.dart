@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -26,20 +27,24 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   int _current = 0; // for ordering
   late int? _balance;
   late List<model.UTXO> _utxoList;
-  late SinglesigWalletListItem _singlesigWalletListItem;
+  late WalletListItemBase _walletBaseItem;
 
   @override
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
-    _singlesigWalletListItem = model.getWalletById(widget.id);
-    _balance = _singlesigWalletListItem.balance;
+    _walletBaseItem = model.getWalletById(widget.id);
+    _balance = _walletBaseItem.balance;
 
-    // TODO: SingleSignatureWallet
-    final singlesigWallet =
-        _singlesigWalletListItem.walletBase as SingleSignatureWallet;
-    List<UTXO> utxoEntities = singlesigWallet.getUtxoList();
-    _utxoList = getUtxoListWithHoldingAddress(utxoEntities);
+    // TODO: Check Multisig
+    if (_walletBaseItem.walletType == WalletType.multiSignature) {
+      final multisigWallet = _walletBaseItem.walletBase as MultisignatureWallet;
+      _utxoList = getUtxoListWithHoldingAddress(multisigWallet.getUtxoList());
+    } else {
+      final singlesigWallet =
+          _walletBaseItem.walletBase as SingleSignatureWallet;
+      _utxoList = getUtxoListWithHoldingAddress(singlesigWallet.getUtxoList());
+    }
   }
 
   List<model.UTXO> getUtxoListWithHoldingAddress(List<UTXO> utxoEntities) {
@@ -50,7 +55,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       // m/84'/1'/0'/1/1
       String change = pathElements[4];
 
-      String ownedAddress = _singlesigWalletListItem.walletBase.getAddress(
+      String ownedAddress = _walletBaseItem.walletBase.getAddress(
           int.parse(accountIndex),
           isChange: int.parse(change) == 1);
 

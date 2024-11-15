@@ -1,5 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -49,9 +51,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       throw "[broadcasting_screen] _model.txWaitingForSign is null";
     }
 
-    final SinglesigWalletListItem walletListItem =
-        _model.getWalletById(widget.id);
-    _walletBase = walletListItem.walletBase;
+    // TODO: Check Multisig
+    final walletBaseItem = _model.getWalletById(widget.id);
+    if (walletBaseItem.walletType == WalletType.multiSignature) {
+      final multisigListItem = walletBaseItem as MultisigWalletListItem;
+      _walletBase = multisigListItem.walletBase;
+    } else {
+      final singlesigListItem = walletBaseItem as SinglesigWalletListItem;
+      _walletBase = singlesigListItem.walletBase;
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((duration) {
       setOverlayLoading(true);

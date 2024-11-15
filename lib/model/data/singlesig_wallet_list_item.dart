@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:coconut_lib/coconut_lib.dart' as coconut;
+import 'package:coconut_lib/coconut_lib.dart';
 
 part 'singlesig_wallet_list_item.g.dart'; // 생성될 파일 이름 $ dart run build_runner build
 
@@ -17,7 +17,7 @@ class SinglesigWalletListItem extends WalletListItemBase {
   }) : super(
           walletType: WalletType.singleSignature,
         ) {
-    walletBase = coconut.SingleSignatureWallet.fromDescriptor(descriptor);
+    walletBase = SingleSignatureWallet.fromDescriptor(descriptor);
   }
 
   /// wallet.fetchOnChainData(nodeConnector) 또는 _nodeConnector.fetch 결과에서 txCount가 변경되지 않았는지 확인용

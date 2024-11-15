@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -20,14 +20,14 @@ import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
 
 class FaucetRequestScreen extends StatefulWidget {
-  final SinglesigWalletListItem singlesigWalletListItem;
+  final WalletListItemBase walletBaseItem;
   final VoidCallback? onRequestSuccess;
   final VoidCallback? onNextPressed;
 
   const FaucetRequestScreen({
     super.key,
     required this.onRequestSuccess,
-    required this.singlesigWalletListItem,
+    required this.walletBaseItem,
     this.onNextPressed,
   });
 
@@ -63,18 +63,18 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
   void initState() {
     super.initState();
     Address receiveAddress =
-        widget.singlesigWalletListItem.walletBase.getReceiveAddress();
+        widget.walletBaseItem.walletBase.getReceiveAddress();
     _walletAddress = receiveAddress.address;
     inputText = _walletAddress;
-    _walletName = widget.singlesigWalletListItem.name.length > 20
-        ? '${widget.singlesigWalletListItem.name.substring(0, 17)}...'
-        : widget.singlesigWalletListItem.name;
+    _walletName = widget.walletBaseItem.name.length > 20
+        ? '${widget.walletBaseItem.name.substring(0, 17)}...'
+        : widget.walletBaseItem.name;
     _walletIndex = receiveAddress.derivationPath.split('/').last;
-    _walletAddressBook = widget.singlesigWalletListItem.walletBase.addressBook;
+    _walletAddressBook = widget.walletBaseItem.walletBase.addressBook;
 
     _faucetAddressController = TextEditingController(text: _walletAddress);
 
-    _walletId = widget.singlesigWalletListItem.id;
+    _walletId = widget.walletBaseItem.id;
     _faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetHistory();
     _getFaucetStatus();
