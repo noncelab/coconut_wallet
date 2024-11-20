@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/screens/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/qrcode_bottom_sheet_screen.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/infomation_row_item.dart';
@@ -146,6 +149,35 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
     }
     _removeTooltip();
     Navigator.pushNamed(context, '/utxo-list', arguments: {'id': widget.id});
+  }
+
+  _showXPubBottomSheet(String qrData) async {
+    _removeTooltip();
+    if (_subModel.isSetPin) {
+      _subModel.shuffleNumbers();
+      await MyBottomSheet.showBottomSheet_90(
+        context: context,
+        child: CustomLoadingOverlay(
+          child: PinCheckScreen(
+            onComplete: () {
+              _qrCodeBottomSheet(qrData);
+            },
+          ),
+        ),
+      );
+    } else {
+      _qrCodeBottomSheet(qrData);
+    }
+  }
+
+  _qrCodeBottomSheet(String qrData) {
+    MyBottomSheet.showBottomSheet_90(
+      context: context,
+      child: QrcodeBottomSheetScreen(
+        qrData: qrData,
+        title: '다중 서명용 확장 공개키',
+      ),
+    );
   }
 
   @override
@@ -315,10 +347,11 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
             final name = item.name ?? '';
             final colorIndex = item.colorIndex ?? 0;
             final iconIndex = item.iconIndex ?? 0;
+            final memo = item.memo ?? '';
 
             return GestureDetector(
               onTap: () {
-                // TODO: 스캔
+                _selectedKeyBottomSheet(item, _keystoreList[index]);
               },
               child: Container(
                 color: Colors.transparent,
@@ -376,13 +409,30 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
 
                             const SizedBox(width: 12),
 
-                            // 이름
+                            // 이름, 메모
                             Expanded(
-                              child: Text(
-                                name,
-                                style: Styles.body2,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    TextUtils.ellipsisIfLonger(name),
+                                    style: Styles.body2,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Visibility(
+                                    visible: memo.isNotEmpty,
+                                    child: Text(
+                                      memo,
+                                      style: Styles.body2.copyWith(
+                                        color: MyColors.transparentWhite_60,
+                                        fontSize: 11,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
 
@@ -403,6 +453,52 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
           },
         ),
       );
+
+  Future _selectedKeyBottomSheet(
+      MultisigSigner signer, KeyStore keystore) async {
+    final name = signer.name ?? '';
+
+    MyBottomSheet.showBottomSheet(
+      context: context,
+      title: name.length > 20 ? '${name.substring(0, 17)}...' : name,
+      titleTextStyle: Styles.body1.copyWith(
+        fontSize: 18,
+      ),
+      isCloseButton: true,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.only(bottom: 84),
+        child: _bottomSheetButton(
+          '다중 서명용 확장 공개키 보기',
+          onPressed: () {
+            _showXPubBottomSheet(keystore.extendedPublicKey.serialize());
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _bottomSheetButton(String title, {required VoidCallback onPressed}) {
+    return GestureDetector(
+      onTap: () {
+        onPressed.call();
+      },
+      child: Container(
+        color: Colors.transparent,
+        padding: const EdgeInsets.only(
+          top: 30,
+          bottom: 30,
+          left: 8,
+        ),
+        width: double.infinity,
+        child: Text(
+          title,
+          style: Styles.body1Bold,
+          textAlign: TextAlign.left, // 텍스트 왼쪽 정렬
+        ),
+      ),
+    );
+  }
 
   Widget _buttons() => Container(
         margin: const EdgeInsets.only(bottom: 32),
