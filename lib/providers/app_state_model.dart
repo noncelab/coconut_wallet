@@ -420,8 +420,14 @@ class AppStateModel extends ChangeNotifier {
 
     final List<dynamic> itemList = jsonDecode(jsonArrayString) as List;
     for (final item in itemList) {
-      var walletListItem = SinglesigWalletListItem.fromJson(item);
-      addOrUpdateWalletList(walletListItem);
+      final Map<String, dynamic> walletData = item as Map<String, dynamic>;
+      if (walletData['walletType'] == 'singleSignature') {
+        final singleWallet = SinglesigWalletListItem.fromJson(walletData);
+        addOrUpdateWalletList(singleWallet);
+      } else if (walletData['walletType'] == 'multiSignature') {
+        final multiWallet = MultisigWalletListItem.fromJson(walletData);
+        addOrUpdateWalletList(multiWallet);
+      }
     }
 
     _subStateModel.saveNotEmptyWalletList(_walletBaseItemList.isNotEmpty);
@@ -434,18 +440,23 @@ class AppStateModel extends ChangeNotifier {
   }
 
   // _walletList에 walletListItem을 추가하거나 있으면 대체합니다.
-  void addOrUpdateWalletList(SinglesigWalletListItem walletListItem) {
-    // TODO: SingleSignatureWallet
-    int index = _walletBaseItemList.indexWhere((element) =>
-        (element.walletBase as SingleSignatureWallet)
-                .keyStore
-                .masterFingerprint ==
-            (walletListItem.walletBase as SingleSignatureWallet)
-                .keyStore
-                .masterFingerprint &&
-        element.id == walletListItem.id);
+  void addOrUpdateWalletList(WalletListItemBase walletListItem) {
+    int index;
+    if (walletListItem.walletType == WalletType.multiSignature) {
+      index = _walletBaseItemList
+          .indexWhere((element) => element.id == walletListItem.id);
+    } else {
+      index = _walletBaseItemList.indexWhere((element) =>
+          (element.walletBase as SingleSignatureWallet)
+                  .keyStore
+                  .masterFingerprint ==
+              (walletListItem.walletBase as SingleSignatureWallet)
+                  .keyStore
+                  .masterFingerprint &&
+          element.id == walletListItem.id);
+    }
 
-    List<SinglesigWalletListItem> updatedList = List.from(_walletBaseItemList);
+    List<WalletListItemBase> updatedList = List.from(_walletBaseItemList);
 
     if (index != -1) {
       updatedList[index] = walletListItem;

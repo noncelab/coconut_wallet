@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -16,6 +17,7 @@ class WalletRowItem extends StatefulWidget {
   final int colorIndex;
   final bool isLastItem;
   final bool isBalanceHidden;
+  final List<MultisigSigner>? signers;
 
   const WalletRowItem({
     super.key,
@@ -26,6 +28,7 @@ class WalletRowItem extends StatefulWidget {
     required this.colorIndex,
     required this.isLastItem,
     this.isBalanceHidden = false,
+    this.signers,
   });
 
   @override
@@ -33,38 +36,21 @@ class WalletRowItem extends StatefulWidget {
 }
 
 class _WalletRowItemState extends State<WalletRowItem> {
-  // TODO : 추후 로직 변경될 수 있음
-  bool _isMultiSig = false;
-
   @override
-  void initState() {
-    super.initState();
-
-    // TODO : 월렛 속성 업데이트
-    if (widget.name == '다중지갑') {
-      _isMultiSig = true;
-    }
+  void didUpdateWidget(covariant WalletRowItem oldWidget) {
+    // TODO: implement didUpdateWidget
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: gradient 적용
     final row = ShrinkAnimationButton(
         onPressed: () {
-          if (_isMultiSig) {
-            Navigator.pushNamed(context, '/wallet-multisig',
-                arguments: {'id': widget.id});
-          } else {
-            Navigator.pushNamed(context, '/wallet-detail',
-                arguments: {'id': widget.id});
-          }
+          Navigator.pushNamed(context, '/wallet-detail',
+              arguments: {'id': widget.id});
         },
-        borderGradientColors: _isMultiSig
-            ? [
-                CustomColorHelper.getColorByIndex(0),
-                MyColors.white,
-                CustomColorHelper.getColorByIndex(4),
-              ]
+        borderGradientColors: widget.signers?.isNotEmpty == true
+            ? CustomColorHelper.getGradientColors(widget.signers!)
             : null,
         child: Container(
             padding:

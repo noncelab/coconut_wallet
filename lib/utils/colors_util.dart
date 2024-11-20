@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/model/data/multisig_signer.dart';
+
 import '../styles.dart';
 
 class CustomColorHelper {
@@ -98,6 +100,32 @@ class CustomColorHelper {
     }
 
     return BackgroundColorPalette[index % ColorPalette.length];
+  }
+
+  static List<Color> getGradientColors(List<MultisigSigner> list) {
+    if (list.isEmpty) {
+      return [MyColors.borderLightgrey];
+    }
+
+    Color getColor(MultisigSigner item) {
+      return item.innerVaultId != null
+          ? CustomColorHelper.getColorByIndex(item.colorIndex ?? 0)
+          : MyColors.borderLightgrey;
+    }
+
+    // 2개인 경우
+    if (list.length == 2) {
+      return [
+        getColor(list[0]),
+        getColor(list[1]),
+      ];
+    }
+
+    return [
+      getColor(list[0]),
+      getColor(list[1]),
+      getColor(list[2]),
+    ];
   }
 }
 

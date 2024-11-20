@@ -74,7 +74,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _model = Provider.of<AppStateModel>(context, listen: false);
     _prevWalletInitState = _model.walletInitState;
 
-    // TODO: Check Multisig
     _walletBaseItem = _model.getWalletById(widget.id);
     if (_walletBaseItem.walletType == WalletType.multiSignature) {
       final multisigListItem = _walletBaseItem as MultisigWalletListItem;
@@ -314,8 +313,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     ));
               },
               onRightIconPressed: () {
-                Navigator.pushNamed(context, '/wallet-setting',
-                    arguments: {'id': widget.id});
+                if (_walletBaseItem.walletType == WalletType.multiSignature) {
+                  Navigator.pushNamed(context, '/wallet-multisig',
+                      arguments: {'id': widget.id});
+                } else {
+                  Navigator.pushNamed(context, '/wallet-setting',
+                      arguments: {'id': widget.id});
+                }
               },
               showFaucetIcon: true,
             ),

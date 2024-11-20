@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/model/data/multisig_signer.dart';
+import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/screens/settings/security_self_check_screen.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/screens/settings/terms_screen.dart';
@@ -362,6 +365,15 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   iconIndex: iconIndex,
                                   colorIndex: colorIndex
                                 ) = wallets[index];
+
+                                final base = wallets[index];
+                                List<MultisigSigner>? signers;
+                                if (base.walletType ==
+                                    WalletType.multiSignature) {
+                                  signers =
+                                      (base as MultisigWalletListItem).signers;
+                                }
+
                                 return WalletRowItem(
                                   id: id,
                                   name: name,
@@ -370,6 +382,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   colorIndex: colorIndex,
                                   isLastItem: index == wallets.length - 1,
                                   isBalanceHidden: _subModel.isBalanceHidden,
+                                  signers: signers,
                                 );
                               }
 

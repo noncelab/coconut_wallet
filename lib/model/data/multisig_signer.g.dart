@@ -12,10 +12,11 @@ MultisigSigner _$MultisigSignerFromJson(Map<String, dynamic> json) =>
       iconIndex: (json['iconIndex'] as num?)?.toInt(),
       colorIndex: (json['colorIndex'] as num?)?.toInt(),
       memo: json['memo'] as String?,
-    );
+    )..innerVaultId = (json['innerVaultId'] as num?)?.toInt();
 
 Map<String, dynamic> _$MultisigSignerToJson(MultisigSigner instance) =>
     <String, dynamic>{
+      'innerVaultId': instance.innerVaultId,
       'name': instance.name,
       'iconIndex': instance.iconIndex,
       'colorIndex': instance.colorIndex,
