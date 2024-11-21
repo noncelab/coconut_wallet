@@ -1,4 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -7,7 +9,6 @@ import 'package:coconut_wallet/model/send_info.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/infomation_row_item.dart';
 import 'package:provider/provider.dart';
@@ -25,7 +26,7 @@ class SendConfirmScreen extends StatefulWidget {
 
 class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late AppStateModel _model;
-  late WalletBase _walletBase;
+  late WalletListItemBase _walletBaseItem;
   @override
   void initState() {
     super.initState();
@@ -34,26 +35,35 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
 
   void _loadWalletInfo() {
     _model = Provider.of<AppStateModel>(context, listen: false);
-    _walletBase = _model.getWalletById(widget.id).walletBase;
+    _walletBaseItem = _model.getWalletById(widget.id);
   }
 
   Future<String> generateUnsignedPsbt() async {
     var FullSendInfo(:satsPerVb, :address, :amount) = widget.sendInfo;
     String generatedTx;
-
-    //TODO: SingleSignatureWallet
-    final singlesigWallet = _walletBase as SingleSignatureWallet;
-
-    if (widget.sendInfo.isMaxMode) {
-      generatedTx =
-          await singlesigWallet.generatePsbtWithMaximum(address, satsPerVb);
+    if (_walletBaseItem.walletType == WalletType.multiSignature) {
+      final multisigWallet = _walletBaseItem.walletBase as MultisignatureWallet;
+      if (widget.sendInfo.isMaxMode) {
+        generatedTx =
+            await multisigWallet.generatePsbtWithMaximum(address, satsPerVb);
+      } else {
+        generatedTx = await multisigWallet.generatePsbt(
+            address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
+      }
     } else {
-      generatedTx = await singlesigWallet.generatePsbt(
-          address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
+      final singlesigWallet =
+          _walletBaseItem.walletBase as SingleSignatureWallet;
+      if (widget.sendInfo.isMaxMode) {
+        generatedTx =
+            await singlesigWallet.generatePsbtWithMaximum(address, satsPerVb);
+      } else {
+        generatedTx = await singlesigWallet.generatePsbt(
+            address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
+      }
     }
 
-    printLongString(">>>>>> psbt 생성");
-    printLongString(generatedTx);
+    // printLongString(">>>>>> psbt 생성");
+    // printLongString(generatedTx);
     return generatedTx;
   }
 

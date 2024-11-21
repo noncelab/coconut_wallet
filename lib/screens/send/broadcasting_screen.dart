@@ -51,7 +51,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       throw "[broadcasting_screen] _model.txWaitingForSign is null";
     }
 
-    // TODO: Check Multisig
     final walletBaseItem = _model.getWalletById(widget.id);
     if (walletBaseItem.walletType == WalletType.multiSignature) {
       final multisigListItem = walletBaseItem as MultisigWalletListItem;
@@ -71,7 +70,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   void setTxInfo() async {
     try {
       PSBT signedPsbt = PSBT.parse(_model.signedTransaction!);
-      print("!!! -> ${_model.signedTransaction!}");
+      // print("!!! -> ${_model.signedTransaction!}");
       List<PsbtOutput> outputs = signedPsbt.outputs;
 
       // case1. 다른 사람에게 보내고(B1) 잔액이 있는 경우(A2)

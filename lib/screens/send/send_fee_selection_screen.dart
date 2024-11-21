@@ -72,7 +72,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     _model = Provider.of<AppStateModel>(context, listen: false);
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
 
-    // TODO: Check Multisig
     final walletBaseItem = _model.getWalletById(widget.id);
     if (walletBaseItem.walletType == WalletType.multiSignature) {
       final multisigListItem = walletBaseItem as MultisigWalletListItem;
@@ -378,7 +377,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     context.loaderOverlay.hide();
   }
 
-  // TODO: Check Multisig
   Future<int?> _estimateFeeWithMaximum(String address, int satsPerVb) async {
     if (_isMultisig) {
       return await (_walletBase as MultisignatureWallet)
@@ -440,11 +438,19 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         body: Consumer<AppStateModel>(
           builder: (context, state, child) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              // TODO: SingleSignatureWallet
-              final singlesigWallet = state.getWalletById(widget.id).walletBase
-                  as SingleSignatureWallet;
-              onChangedNetworkStatus(
-                  state.isNetworkOn, singlesigWallet.getBalance());
+              final walletBase = state.getWalletById(widget.id);
+              if (walletBase.walletType == WalletType.multiSignature) {
+                final multisigWallet = state.getWalletById(widget.id).walletBase
+                    as MultisignatureWallet;
+                onChangedNetworkStatus(
+                    state.isNetworkOn, multisigWallet.getBalance());
+              } else {
+                final singlesigWallet = state
+                    .getWalletById(widget.id)
+                    .walletBase as SingleSignatureWallet;
+                onChangedNetworkStatus(
+                    state.isNetworkOn, singlesigWallet.getBalance());
+              }
             });
 
             return SafeArea(

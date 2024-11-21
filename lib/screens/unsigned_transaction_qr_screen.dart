@@ -30,7 +30,6 @@ class _UnsignedTransactionQrScreenState
       throw "[unsigned_transaction_qr_screen] model.txWaitingForSign is null";
     }
     _psbtBase64 = model.txWaitingForSign!;
-
     _name = model.getWalletById(widget.id).name;
   }
 

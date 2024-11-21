@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/widgets/animatedQR/animated_qr_scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -25,12 +26,15 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   late AppStateModel _model;
   bool _isProcessing = false;
+  bool _isMultisig = false;
   QRViewController? controller;
 
   @override
   void initState() {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
+    final walletBaseItem = _model.getWalletById(widget.id);
+    _isMultisig = walletBaseItem.walletType == WalletType.multiSignature;
   }
 
   @override
@@ -173,7 +177,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
                         letterSpacing: 0.5,
                         color: MyColors.black,
                       ),
-                      children: <TextSpan>[
+                      children: [
                         TextSpan(
                           text:
                               '볼트 앱에서 생성된 서명 트랜잭션이 보이시나요? 이제, QR 코드를 스캔해 주세요.',
