@@ -344,7 +344,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
           itemBuilder: (context, index) {
             final item = _multiWallet.signers[index];
             final isVaultKey = item.innerVaultId != null;
-            final name = item.name ?? '';
+            final name = isVaultKey ? item.name ?? '' : '외부지갑';
             final colorIndex = item.colorIndex ?? 0;
             final iconIndex = item.iconIndex ?? 0;
             final memo = item.memo ?? '';
