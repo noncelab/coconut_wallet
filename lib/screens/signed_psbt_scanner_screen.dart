@@ -25,9 +25,11 @@ class SignedPsbtScannerScreen extends StatefulWidget {
 class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   late AppStateModel _model;
+  MultisignatureWallet? _multisigWallet;
   bool _isProcessing = false;
   bool _isMultisig = false;
   QRViewController? controller;
+  final int _requiredSignature = 0;
 
   @override
   void initState() {
@@ -35,6 +37,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     _model = Provider.of<AppStateModel>(context, listen: false);
     final walletBaseItem = _model.getWalletById(widget.id);
     _isMultisig = walletBaseItem.walletType == WalletType.multiSignature;
+    if (_isMultisig) {
+      _multisigWallet = walletBaseItem.walletBase as MultisignatureWallet;
+    }
   }
 
   @override
@@ -54,8 +59,20 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     _isProcessing = true;
 
     try {
-      // signedPSBT는 Base64 인코딩 된 문자열입니다.
-      PSBT.parse(signedPsbt);
+      final psbt = PSBT.parse(signedPsbt);
+
+      if (_multisigWallet != null) {
+        int signedCount = _multisigWallet!.keyStoreList
+            .where((keyStore) => psbt.isSigned(keyStore))
+            .length;
+        int difference = _multisigWallet!.requiredSignature - signedCount;
+        if (difference > 0) {
+          _showAlertBottomSheet('$difference개의 서명이 더 필요해요', isBack: true);
+          controller?.pauseCamera();
+          await _stopCamera();
+          return;
+        }
+      }
 
       if (!validateSignedPsbt(signedPsbt)) {
         throw ('invalidSignedPsbt');
@@ -82,15 +99,23 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         } else {
           errorMessage = 'QR코드 스캔에 실패했어요. 다시 시도해 주세요.';
         }
-        showAlertDialog(
-            context: context,
-            content: errorMessage,
-            dismissible: false,
-            onClosed: () {
-              _isProcessing = false;
-            });
+        _showAlertBottomSheet(errorMessage);
       }
     }
+  }
+
+  void _showAlertBottomSheet(String errorMessage, {bool isBack = false}) {
+    showAlertDialog(
+      context: context,
+      content: errorMessage,
+      dismissible: false,
+      onClosed: () {
+        _isProcessing = false;
+        if (isBack) {
+          Navigator.pop(context);
+        }
+      },
+    );
   }
 
   void onFailedScanning(String message) {
