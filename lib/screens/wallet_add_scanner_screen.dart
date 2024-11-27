@@ -165,13 +165,31 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         model.syncFromVault(syncObject).then((value) {
           switch (value.result) {
             case SyncResult.newWalletAdded:
+              {
+                {
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, '/', (Route<dynamic> route) => false);
+                  break;
+                }
+              }
             case SyncResult.existingWalletNoUpdate:
+              {
+                Navigator.pushReplacementNamed(context, '/wallet-detail',
+                    arguments: {
+                      'id': value.walletId,
+                      'syncResult': value.result,
+                    });
+                break;
+              }
             case SyncResult.existingWalletUpdated:
-              Navigator.pushReplacementNamed(context, '/wallet-detail',
-                  arguments: {
-                    'id': value.walletId,
-                    'syncResult': value.result,
-                  });
+              {
+                Navigator.pushReplacementNamed(context, '/wallet-detail',
+                    arguments: {
+                      'id': value.walletId,
+                      'syncResult': value.result,
+                    });
+                break;
+              }
             case SyncResult.existingName:
               vibrateLightDouble();
               CustomDialogs.showCustomAlertDialog(context,
