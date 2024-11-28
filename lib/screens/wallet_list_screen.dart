@@ -48,25 +48,49 @@ class _WalletListScreenState extends State<WalletListScreen>
   Future showLastUpdateTimeAfterFewSeconds({int duration = 4}) async {
     if (isShowLastUpdateTime) return;
     await Future.delayed(Duration(seconds: duration));
-    setState(() {
-      isShowLastUpdateTime = true;
-    });
+    if (mounted) {
+      setState(() {
+        isShowLastUpdateTime = true;
+      });
+    }
   }
 
+  late AppStateModel _model;
   late AppSubStateModel _subModel;
   late AnimationController _animationController;
+  late ScrollController _scrollController;
+
+  late final AnimationController _newWalletAddAnimcontroller;
+  late final Animation<Offset> _newWalletAddanimation;
 
   @override
   void initState() {
     super.initState();
     _subModel = Provider.of<AppSubStateModel>(context, listen: false);
+    _model = Provider.of<AppStateModel>(context, listen: false);
 
     _animationController = BottomSheet.createAnimationController(this);
     _animationController.duration = const Duration(seconds: 2);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Logger.log('hasLaunchedBefore ? ${_subModel.hasLaunchedBefore}');
+    _scrollController = ScrollController();
 
+    _newWalletAddAnimcontroller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _newWalletAddanimation = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _newWalletAddAnimcontroller,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      Logger.log('hasLaunchedBefore ? ${_subModel.hasLaunchedBefore}');
       if (!_subModel.hasLaunchedBefore) {
         Future.delayed(const Duration(milliseconds: 1000)).then((_) {
           MyBottomSheet.showBottomSheet_100(
@@ -81,14 +105,36 @@ class _WalletListScreenState extends State<WalletListScreen>
         });
       }
 
+      if (_model.animatedWalletFlags.isNotEmpty &&
+          _model.animatedWalletFlags.last) {
+        /// 리스트에 추가되는 애니메이션 보여줍니다.
+        /// TODO: 최적화 필요, 현재는 build 함수 내 Selector 로 인해 수십번 rebuild 되기 때문에(원인 발견 못함) model의 _animatedWalletFlags를 통해 관리합니다.
+        /// animatedWalletFlags의 last가 가장 최근에 추가된 항목이며, 이는 model의 syncFromVault에서 case1 일 때 적용됩니다.
+        /// 애니메이션을 보여준 뒤에는 setAnimatedWalletFlags()를 실행해서 animatedWalletFlags를 모두 false로 설정해야 합니다.
+        await Future.delayed(const Duration(milliseconds: 500));
+        _scrollToBottom();
+        await Future.delayed(const Duration(milliseconds: 500));
+        _newWalletAddAnimcontroller.forward();
+        _model.setAnimatedWalletFlags();
+      }
+
       AppReviewService.showReviewScreenIfEligible(context,
           animationController: _animationController);
     });
   }
 
+  void _scrollToBottom() async {
+    if (_scrollController.hasClients) {
+      await _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final model = Provider.of<AppStateModel>(context, listen: false);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -116,6 +162,7 @@ class _WalletListScreenState extends State<WalletListScreen>
             body: Stack(
               children: [
                 CustomScrollView(
+                  controller: _scrollController,
                   semanticChildCount: wallets.length,
                   slivers: <Widget>[
                     FrostedAppBar(
@@ -131,7 +178,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                           isShowLastUpdateTime = false;
                         });
                         if (wallets.isNotEmpty) {
-                          model.initWallet();
+                          _model.initWallet();
                         }
                       },
                     ),
@@ -148,7 +195,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                 isShownErrorToast = true;
                                 CustomToast.showWarningToast(
                                     context: context,
-                                    text: model.walletInitError!.message,
+                                    text: _model.walletInitError!.message,
                                     seconds: 7);
                               });
                             } else {
@@ -201,7 +248,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                               onTap: isShowLastUpdateTime &&
                                       _subModel.lastUpdateTime != 0
                                   ? () {
-                                      model.initWallet();
+                                      _model.initWallet();
                                     }
                                   : null,
                               child: Container(
@@ -374,7 +421,22 @@ class _WalletListScreenState extends State<WalletListScreen>
                                       (base as MultisigWalletListItem).signers;
                                 }
 
-                                return WalletRowItem(
+                                return _model.animatedWalletFlags[index]
+                                    ? SlideTransition(
+                                  position: _newWalletAddanimation,
+                                  child: WalletRowItem(
+                                    id: id,
+                                    name: name,
+                                    balance: balance,
+                                    iconIndex: iconIndex,
+                                    colorIndex: colorIndex,
+                                    isLastItem:
+                                    index == wallets.length - 1,
+                                    isBalanceHidden:
+                                    _subModel.isBalanceHidden,
+                                  ),
+                                )
+                                    : WalletRowItem(
                                   id: id,
                                   name: name,
                                   balance: balance,
@@ -516,6 +578,8 @@ class _WalletListScreenState extends State<WalletListScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _scrollController.dispose();
+    _newWalletAddAnimcontroller.dispose();
     super.dispose();
   }
 }

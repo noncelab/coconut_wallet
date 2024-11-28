@@ -69,6 +69,10 @@ class AppStateModel extends ChangeNotifier {
   List<WalletListItemBase> _walletBaseItemList = [];
   List<WalletListItemBase> get walletBaseItemList => _walletBaseItemList;
 
+  // 리스트에 추가되는 애니메이션이 동작해야하면 true, 아니면 false를 담습니다.
+  List<bool> _animatedWalletFlags = [];
+  List<bool> get animatedWalletFlags => _animatedWalletFlags;
+
   String? txWaitingForSign;
   String? signedTransaction; // hex decode result
 
@@ -181,6 +185,15 @@ class AppStateModel extends ChangeNotifier {
     }
   }
 
+  void setAnimatedWalletFlags({int? index}) {
+    print('_walletList.length :: ${_walletBaseItemList.length} , index :: $index');
+    _animatedWalletFlags = List.filled(_walletBaseItemList.length, false);
+    if (index != null) {
+      _animatedWalletFlags[index - 1] = true;
+      print('_animatedWalletFlags = $_animatedWalletFlags');
+    }
+  }
+
   Future _initNodeConnectionWhenIsNull() async {
     if (_nodeConnector != null) return;
     _nodeConnector = await _initNodeConnection();
@@ -260,7 +273,9 @@ class AppStateModel extends ChangeNotifier {
         result = SyncResult.existingWalletUpdated;
 
         // 에러 발생 시 wallet_list_screen에서 toast로 알리게 하기 위해서 notifyListeners() 호출
-        _updateWalletInStorage().catchError((e) => notifyListeners());
+        _updateWalletInStorage().catchError((e) {
+          notifyListeners();
+        });
       } else {
         // case 3: 변경사항 없음
         return ResultOfSyncFromVault(
@@ -284,6 +299,8 @@ class AppStateModel extends ChangeNotifier {
     List<WalletListItemBase> updatedList = List.from(_walletBaseItemList);
     updatedList.add(newItem);
     _walletBaseItemList = updatedList;
+
+    setAnimatedWalletFlags(index: _walletBaseItemList.length);
     await initWallet(targetId: newItem.id, syncOthers: false);
 
     notifyListeners();
@@ -467,7 +484,7 @@ class AppStateModel extends ChangeNotifier {
     _walletBaseItemList = updatedList;
 
     _subStateModel.saveNotEmptyWalletList(_walletBaseItemList.isNotEmpty);
-
+    _animatedWalletFlags = List.filled(_walletBaseItemList.length, false);
     notifyListeners();
   }
 
