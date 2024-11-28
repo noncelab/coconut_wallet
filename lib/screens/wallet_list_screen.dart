@@ -423,29 +423,31 @@ class _WalletListScreenState extends State<WalletListScreen>
 
                                 return _model.animatedWalletFlags[index]
                                     ? SlideTransition(
-                                  position: _newWalletAddanimation,
-                                  child: WalletRowItem(
-                                    id: id,
-                                    name: name,
-                                    balance: balance,
-                                    iconIndex: iconIndex,
-                                    colorIndex: colorIndex,
-                                    isLastItem:
-                                    index == wallets.length - 1,
-                                    isBalanceHidden:
-                                    _subModel.isBalanceHidden,
-                                  ),
-                                )
+                                        position: _newWalletAddanimation,
+                                        child: WalletRowItem(
+                                          id: id,
+                                          name: name,
+                                          balance: balance,
+                                          iconIndex: iconIndex,
+                                          colorIndex: colorIndex,
+                                          isLastItem:
+                                              index == wallets.length - 1,
+                                          isBalanceHidden:
+                                              _subModel.isBalanceHidden,
+                                          signers: signers,
+                                        ),
+                                      )
                                     : WalletRowItem(
-                                  id: id,
-                                  name: name,
-                                  balance: balance,
-                                  iconIndex: iconIndex,
-                                  colorIndex: colorIndex,
-                                  isLastItem: index == wallets.length - 1,
-                                  isBalanceHidden: _subModel.isBalanceHidden,
-                                  signers: signers,
-                                );
+                                        id: id,
+                                        name: name,
+                                        balance: balance,
+                                        iconIndex: iconIndex,
+                                        colorIndex: colorIndex,
+                                        isLastItem: index == wallets.length - 1,
+                                        isBalanceHidden:
+                                            _subModel.isBalanceHidden,
+                                        signers: signers,
+                                      );
                               }
 
                               if (index == wallets.length && wallets.isEmpty) {
