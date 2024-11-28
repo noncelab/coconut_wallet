@@ -481,14 +481,16 @@ class AppStateModel extends ChangeNotifier {
       index = _walletBaseItemList
           .indexWhere((element) => element.id == walletListItem.id);
     } else {
-      index = _walletBaseItemList.indexWhere((element) =>
-          (element.walletBase as SingleSignatureWallet)
-                  .keyStore
-                  .masterFingerprint ==
-              (walletListItem.walletBase as SingleSignatureWallet)
-                  .keyStore
-                  .masterFingerprint &&
-          element.id == walletListItem.id);
+      index = _walletBaseItemList.indexWhere((element) {
+        if (element.walletType == WalletType.multiSignature) return false;
+        final baseMFP = (element.walletBase as SingleSignatureWallet)
+            .keyStore
+            .masterFingerprint;
+        final newMFP = (walletListItem.walletBase as SingleSignatureWallet)
+            .keyStore
+            .masterFingerprint;
+        return baseMFP == newMFP && element.id == walletListItem.id;
+      });
     }
 
     List<WalletListItemBase> updatedList = List.from(_walletBaseItemList);
