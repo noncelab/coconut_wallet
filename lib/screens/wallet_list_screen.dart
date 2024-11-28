@@ -60,8 +60,8 @@ class _WalletListScreenState extends State<WalletListScreen>
   late AnimationController _animationController;
   late ScrollController _scrollController;
 
-  late final AnimationController _newWalletAddAnimcontroller;
-  late final Animation<Offset> _newWalletAddanimation;
+  late AnimationController _newWalletAddAnimcontroller;
+  late Animation<Offset> _newWalletAddanimation;
 
   @override
   void initState() {
@@ -74,20 +74,7 @@ class _WalletListScreenState extends State<WalletListScreen>
 
     _scrollController = ScrollController();
 
-    _newWalletAddAnimcontroller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    _newWalletAddanimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _newWalletAddAnimcontroller,
-        curve: Curves.easeOut,
-      ),
-    );
+    initializeAnimationController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       Logger.log('hasLaunchedBefore ? ${_subModel.hasLaunchedBefore}');
@@ -105,22 +92,48 @@ class _WalletListScreenState extends State<WalletListScreen>
         });
       }
 
+      AppReviewService.showReviewScreenIfEligible(context,
+          animationController: _animationController);
+    });
+  }
+
+  void _onAddScannerPressed() async {
+    final bool result =
+        (await Navigator.pushNamed(context, '/wallet-add-scanner') as bool?) ??
+            false;
+    if (result) {
       if (_model.animatedWalletFlags.isNotEmpty &&
           _model.animatedWalletFlags.last) {
+        initializeAnimationController();
+
         /// 리스트에 추가되는 애니메이션 보여줍니다.
         /// TODO: 최적화 필요, 현재는 build 함수 내 Selector 로 인해 수십번 rebuild 되기 때문에(원인 발견 못함) model의 _animatedWalletFlags를 통해 관리합니다.
         /// animatedWalletFlags의 last가 가장 최근에 추가된 항목이며, 이는 model의 syncFromVault에서 case1 일 때 적용됩니다.
         /// 애니메이션을 보여준 뒤에는 setAnimatedWalletFlags()를 실행해서 animatedWalletFlags를 모두 false로 설정해야 합니다.
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 1000));
         _scrollToBottom();
         await Future.delayed(const Duration(milliseconds: 500));
         _newWalletAddAnimcontroller.forward();
         _model.setAnimatedWalletFlags();
       }
+    }
+  }
 
-      AppReviewService.showReviewScreenIfEligible(context,
-          animationController: _animationController);
-    });
+  void initializeAnimationController() {
+    _newWalletAddAnimcontroller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _newWalletAddanimation = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _newWalletAddAnimcontroller,
+        curve: Curves.easeOut,
+      ),
+    );
   }
 
   void _scrollToBottom() async {
@@ -171,6 +184,9 @@ class _WalletListScreenState extends State<WalletListScreen>
                         setState(() {
                           _isSeeMoreDropdown = true;
                         });
+                      },
+                      onTapAddScanner: () async {
+                        _onAddScannerPressed();
                       },
                     ),
                     CupertinoSliverRefreshControl(
@@ -421,7 +437,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   signers =
                                       (base as MultisigWalletListItem).signers;
                                 }
-
+                                print(
+                                    '_model.animatedWalletFlags[index] ::::; idex: $index :::::: ${_model.animatedWalletFlags[index]}');
                                 return _model.animatedWalletFlags[index]
                                     ? SlideTransition(
                                         position: _newWalletAddanimation,
@@ -473,9 +490,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                                       ),
                                       const SizedBox(height: 16),
                                       CupertinoButton(
-                                        onPressed: () {
-                                          Navigator.pushNamed(
-                                              context, '/wallet-add-scanner');
+                                        onPressed: () async {
+                                          _onAddScannerPressed();
                                         },
                                         borderRadius: BorderRadius.circular(10),
                                         padding: EdgeInsets.zero,

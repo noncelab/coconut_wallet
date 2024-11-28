@@ -166,8 +166,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             case SyncResult.newWalletAdded:
               {
                 {
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, '/', (Route<dynamic> route) => false);
+                  Navigator.pop(context, true);
                   break;
                 }
               }

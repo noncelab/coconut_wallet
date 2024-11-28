@@ -10,7 +10,12 @@ import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 
 class FrostedAppBar extends StatelessWidget {
   final Function onTapSeeMore;
-  const FrostedAppBar({super.key, required this.onTapSeeMore});
+  final Function onTapAddScanner;
+  const FrostedAppBar({
+    super.key,
+    required this.onTapSeeMore,
+    required this.onTapAddScanner,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +109,7 @@ class FrostedAppBar extends StatelessWidget {
                         Icons.add_rounded,
                       ),
                       onPressed: () {
-                        Navigator.pushNamed(context, '/wallet-add-scanner');
+                        onTapAddScanner();
                       },
                       color: MyColors.white,
                     ),
