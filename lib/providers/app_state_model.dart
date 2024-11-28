@@ -64,6 +64,10 @@ class AppStateModel extends ChangeNotifier {
   List<WalletListItem> _walletList = [];
   List<WalletListItem> get walletList => _walletList;
 
+  // 리스트에 추가되는 애니메이션이 동작해야하면 true, 아니면 false를 담습니다.
+  List<bool> _animatedWalletFlags = [];
+  List<bool> get animatedWalletFlags => _animatedWalletFlags;
+
   String? txWaitingForSign;
   String? signedTransaction; // hex decode result
 
@@ -176,6 +180,15 @@ class AppStateModel extends ChangeNotifier {
     }
   }
 
+  void setAnimatedWalletFlags({int? index}) {
+    print('_walletList.length :: ${_walletList.length} , index :: $index');
+    _animatedWalletFlags = List.filled(_walletList.length, false);
+    if (index != null) {
+      _animatedWalletFlags[index - 1] = true;
+      print('_animatedWalletFlags = $_animatedWalletFlags');
+    }
+  }
+
   Future _initNodeConnectionWhenIsNull() async {
     if (_nodeConnector != null) return;
     _nodeConnector = await _initNodeConnection();
@@ -258,7 +271,9 @@ class AppStateModel extends ChangeNotifier {
         result = SyncResult.existingWalletUpdated;
 
         // 에러 발생 시 wallet_list_screen에서 toast로 알리게 하기 위해서 notifyListeners() 호출
-        _updateWalletInStorage().catchError((e) => notifyListeners());
+        _updateWalletInStorage().catchError((e) {
+          notifyListeners();
+        });
       } else {
         // case 3
         result = SyncResult.existingWalletNoUpdate;
@@ -284,8 +299,10 @@ class AppStateModel extends ChangeNotifier {
       // Assign the new list back to _walletList
       _walletList = updatedList;
 
+      setAnimatedWalletFlags(index: _walletList.length);
       id = newItem.id;
       await initWallet(targetId: id, syncOthers: false);
+      result = SyncResult.newWalletAdded;
     }
     notifyListeners(); // 추가한 지갑이 목록에 바로 보이게 하기
     return ResultOfSyncFromVault(result: result, walletId: id);
@@ -399,6 +416,7 @@ class AppStateModel extends ChangeNotifier {
     _walletList = updatedList;
 
     _subStateModel.saveNotEmptyWalletList(_walletList.isNotEmpty);
+    _animatedWalletFlags = List.filled(_walletList.length, false);
 
     notifyListeners();
   }
