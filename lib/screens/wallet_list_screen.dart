@@ -163,6 +163,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               children: [
                 CustomScrollView(
                   controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
                   semanticChildCount: wallets.length,
                   slivers: <Widget>[
                     FrostedAppBar(

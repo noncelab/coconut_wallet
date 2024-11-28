@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item_factory.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
@@ -258,11 +259,27 @@ class AppStateModel extends ChangeNotifier {
     // 기존 지갑이 있는 경우
     if (index != -1) {
       final existingWallet = _walletBaseItemList[index];
+      bool isMultisigUpdated = false;
+      if (isMultisig) {
+        final existingMultiWallet = existingWallet as MultisigWalletListItem;
+        for (MultisigSigner signer in walletSync.signers!) {
+          int index = walletSync.signers!.indexOf(signer);
+          final existingSigner = existingMultiWallet.signers[index];
+          if (signer.name != existingSigner.name ||
+              signer.colorIndex != existingSigner.colorIndex ||
+              signer.iconIndex != existingSigner.iconIndex ||
+              signer.memo != existingSigner.memo) {
+            isMultisigUpdated = true;
+            break;
+          }
+        }
+      }
 
       // 변동사항이 있는지 체크
       if (existingWallet.name != walletSync.name ||
           existingWallet.colorIndex != walletSync.colorIndex ||
-          existingWallet.iconIndex != walletSync.iconIndex) {
+          existingWallet.iconIndex != walletSync.iconIndex ||
+          isMultisigUpdated) {
         // case 2: 업데이트
         final updateItem =
             await _createUpdatedWallet(existingWallet, walletSync, isMultisig);
@@ -553,7 +570,6 @@ class AppStateModel extends ChangeNotifier {
       for (int i = 0; i < walletListItems.length; i++) {
         final walletBaseItem = walletListItems[i];
 
-        // TODO: Check Multisig
         if (walletBaseItem.walletType == WalletType.multiSignature) {
           final multisigWallet =
               walletBaseItem.walletBase as MultisignatureWallet;
