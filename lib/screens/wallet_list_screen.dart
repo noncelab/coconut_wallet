@@ -72,8 +72,6 @@ class _WalletListScreenState extends State<WalletListScreen>
     _animationController = BottomSheet.createAnimationController(this);
     _animationController.duration = const Duration(seconds: 2);
 
-    _scrollController = ScrollController();
-
     initializeAnimationController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -120,6 +118,7 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   void initializeAnimationController() {
+    _scrollController = ScrollController();
     _newWalletAddAnimcontroller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
