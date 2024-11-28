@@ -24,10 +24,14 @@ class UtxoListScreen extends StatefulWidget {
 }
 
 class _UtxoListScreenState extends State<UtxoListScreen> {
+  static String changeField = 'change';
+  static String accountIndexField = 'accountIndex';
+
   int _current = 0; // for ordering
   late int? _balance;
   late List<model.UTXO> _utxoList;
   late WalletListItemBase _walletBaseItem;
+  late WalletType _walletType;
 
   @override
   void initState() {
@@ -35,8 +39,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     final model = Provider.of<AppStateModel>(context, listen: false);
     _walletBaseItem = model.getWalletById(widget.id);
     _balance = _walletBaseItem.balance;
+    _walletType = _walletBaseItem.walletType;
 
-    // TODO: Check Multisig
     if (_walletBaseItem.walletType == WalletType.multiSignature) {
       final multisigWallet = _walletBaseItem.walletBase as MultisignatureWallet;
       _utxoList = getUtxoListWithHoldingAddress(multisigWallet.getUtxoList());
@@ -47,17 +51,41 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     }
   }
 
+  Map<String, int> getChangeAndAccountElements(String derivationPath) {
+    var pathElements = derivationPath.split('/');
+    Map<String, int> result;
+
+    switch (_walletType) {
+      // m / purpose' / coin_type' / account' / change / address_index
+      case WalletType.singleSignature:
+        result = {
+          changeField: int.parse(pathElements[4]),
+          accountIndexField: int.parse(pathElements[5])
+        };
+        break;
+      // m / purpose' / coin_type' / account' / script_type' / change / address_index
+      case WalletType.multiSignature:
+        result = {
+          changeField: int.parse(pathElements[5]),
+          accountIndexField: int.parse(pathElements[6])
+        };
+        break;
+      default:
+        throw ArgumentError("wrong walletType: $_walletType");
+    }
+
+    return result;
+  }
+
   List<model.UTXO> getUtxoListWithHoldingAddress(List<UTXO> utxoEntities) {
     List<model.UTXO> utxos = [];
     for (var element in utxoEntities) {
-      var pathElements = element.derivationPath.split('/');
-      String accountIndex = pathElements.last;
-      // m/84'/1'/0'/1/1
-      String change = pathElements[4];
+      Map<String, int> changeAndAccountIndex =
+          getChangeAndAccountElements(element.derivationPath);
 
       String ownedAddress = _walletBaseItem.walletBase.getAddress(
-          int.parse(accountIndex),
-          isChange: int.parse(change) == 1);
+          changeAndAccountIndex[accountIndexField]!,
+          isChange: changeAndAccountIndex[changeField]! == 1);
 
       utxos.add(model.UTXO(
           element.timestamp.toString(),
