@@ -436,8 +436,6 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   signers =
                                       (base as MultisigWalletListItem).signers;
                                 }
-                                print(
-                                    '_model.animatedWalletFlags[index] ::::; idex: $index :::::: ${_model.animatedWalletFlags[index]}');
                                 return _model.animatedWalletFlags[index]
                                     ? SlideTransition(
                                         position: _newWalletAddanimation,

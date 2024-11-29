@@ -187,12 +187,9 @@ class AppStateModel extends ChangeNotifier {
   }
 
   void setAnimatedWalletFlags({int? index}) {
-    print(
-        '_walletList.length :: ${_walletBaseItemList.length} , index :: $index');
     _animatedWalletFlags = List.filled(_walletBaseItemList.length, false);
     if (index != null) {
       _animatedWalletFlags[index - 1] = true;
-      print('_animatedWalletFlags = $_animatedWalletFlags');
     }
   }
 
