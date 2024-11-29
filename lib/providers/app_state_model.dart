@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item_factory.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/app_error.dart';
@@ -424,7 +425,7 @@ class AppStateModel extends ChangeNotifier {
 
     try {
       jsonArrayString = await _storageService.read(key: WALLET_LIST);
-      Logger.log('>>>>> [AppStateModel] jsonArrayStr: $jsonArrayString');
+      printLongString('>>>>> [AppStateModel] jsonArrayStr: $jsonArrayString');
     } catch (e) {
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
       // 앱 삭제 후 재설치 했는데 위 에러가 발생하는 경우가 있습니다.
@@ -437,8 +438,7 @@ class AppStateModel extends ChangeNotifier {
         _fastLoadDone = true;
         notifyListeners();
       }
-
-      rethrow;
+      return;
     }
 
     if (jsonArrayString == null) {
@@ -451,17 +451,24 @@ class AppStateModel extends ChangeNotifier {
     }
 
     final List<dynamic> itemList = jsonDecode(jsonArrayString) as List;
+    List<WalletListItemBase> loadWallets = [];
     for (final item in itemList) {
       final Map<String, dynamic> walletData = item as Map<String, dynamic>;
-      if (walletData['walletType'] == 'singleSignature') {
-        final singleWallet = SinglesigWalletListItem.fromJson(walletData);
-        addOrUpdateWalletList(singleWallet);
-      } else if (walletData['walletType'] == 'multiSignature') {
-        final multiWallet = MultisigWalletListItem.fromJson(walletData);
-        addOrUpdateWalletList(multiWallet);
+      WalletListItemBase loadWallet;
+      if (walletData['walletType'] == null ||
+          walletData['walletType'] == WalletType.singleSignature.name) {
+        loadWallet = SinglesigWalletListItem.fromJson(walletData);
+      } else if (walletData['walletType'] == WalletType.multiSignature.name) {
+        loadWallet = MultisigWalletListItem.fromJson(walletData);
+      } else {
+        throw ArgumentError('wrong walletType: ${walletData['walletType']}');
       }
+
+      loadWallets.add(loadWallet);
     }
 
+    _walletBaseItemList = loadWallets;
+    _animatedWalletFlags = List.filled(_walletBaseItemList.length, false);
     _subStateModel.saveNotEmptyWalletList(_walletBaseItemList.isNotEmpty);
 
     // for wallet_list_screen
