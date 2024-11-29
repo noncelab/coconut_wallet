@@ -1,6 +1,8 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -16,6 +18,7 @@ class WalletRowItem extends StatefulWidget {
   final int colorIndex;
   final bool isLastItem;
   final bool isBalanceHidden;
+  final List<MultisigSigner>? signers;
 
   const WalletRowItem({
     super.key,
@@ -26,6 +29,7 @@ class WalletRowItem extends StatefulWidget {
     required this.colorIndex,
     required this.isLastItem,
     this.isBalanceHidden = false,
+    this.signers,
   });
 
   @override
@@ -33,31 +37,21 @@ class WalletRowItem extends StatefulWidget {
 }
 
 class _WalletRowItemState extends State<WalletRowItem> {
-  // TODO : 추후 로직 변경될 수 있음
-  bool _isMultiSig = false;
-
   @override
-  void initState() {
-    super.initState();
-
-    // TODO : 월렛 속성 업데이트
-    if (widget.name == '다중지갑') {
-      _isMultiSig = true;
-    }
+  void didUpdateWidget(covariant WalletRowItem oldWidget) {
+    // TODO: implement didUpdateWidget
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: gradient 적용
     final row = ShrinkAnimationButton(
-        onPressed: () => Navigator.pushNamed(context, '/wallet-detail',
-            arguments: {'id': widget.id}),
-        borderGradientColors: _isMultiSig
-            ? [
-                CustomColorHelper.getColorByIndex(0),
-                MyColors.borderLightgrey,
-                CustomColorHelper.getColorByIndex(4),
-              ]
+        onPressed: () {
+          Navigator.pushNamed(context, '/wallet-detail',
+              arguments: {'id': widget.id});
+        },
+        borderGradientColors: widget.signers?.isNotEmpty == true
+            ? CustomColorHelper.getGradientColors(widget.signers!)
             : null,
         child: Container(
             padding:
@@ -78,19 +72,19 @@ class _WalletRowItemState extends State<WalletRowItem> {
                           ColorPalette[widget.colorIndex], BlendMode.srcIn),
                       width: 20.0)),
               const SizedBox(width: 8.0),
-              Flexible(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.name,
+                      TextUtils.replaceNewlineWithSpace(widget.name),
                       style: const TextStyle(
                           fontFamily: 'Pretendard',
                           fontSize: 12.0,
                           fontWeight: FontWeight.w400,
                           color: MyColors.transparentWhite_70,
                           letterSpacing: 0.2),
-                      maxLines: 3,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Padding(

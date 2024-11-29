@@ -39,7 +39,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
-    _addressBook = model.getWalletById(widget.id).coconutWallet.addressBook;
+    _addressBook = model.getWalletById(widget.id).walletBase.addressBook;
     model.getCurrentBlockHeight().then((value) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {

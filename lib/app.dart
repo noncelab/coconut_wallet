@@ -19,6 +19,7 @@ import 'package:coconut_wallet/screens/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_multisig_screen.dart';
 import 'package:coconut_wallet/screens/wallet_setting_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -138,6 +139,10 @@ class _PowWalletAppState extends State<PowWalletApp> {
                 context,
                 (args) => WalletDetailScreen(
                     id: args['id'], syncResult: args['syncResult']),
+              ),
+          '/wallet-multisig': (context) => buildScreenWithArguments(
+                context,
+                (args) => WalletMultisigScreen(id: args['id']),
               ),
           '/wallet-setting': (context) => buildScreenWithArguments(
                 context,

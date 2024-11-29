@@ -74,7 +74,7 @@ dependencies:
   coconut_lib:
     git:
       url: https://github.com/noncelab/coconut_lib
-      ref: develop
+      ref: multisig
 
 dev_dependencies:
   flutter_test:
@@ -199,6 +199,7 @@ flutter:
     - assets/svg/github-logo.svg
     - assets/files/LICENSE
     - assets/files/CONTRIBUTING.md
+    - assets/svg/download.svg
 
   fonts:
     - family: SpaceGrotesk

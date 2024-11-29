@@ -151,24 +151,22 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     this.controller = controller;
     controller.scannedDataStream.listen((scanData) {
       if (_isProcessing || scanData.code == null) return;
-
       _isProcessing = true;
       context.loaderOverlay.show();
 
+      final model = Provider.of<AppStateModel>(context, listen: false);
       WalletSync syncObject;
       try {
         // 2. 유효한 데이터인지 확인 (WalletSyncObject)
         Map<String, dynamic> jsonData = jsonDecode(scanData.code!);
         syncObject = WalletSync.fromJson(jsonData);
 
-        final model = Provider.of<AppStateModel>(context, listen: false);
         model.syncFromVault(syncObject).then((value) {
           switch (value.result) {
             case SyncResult.newWalletAdded:
               {
                 {
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, '/', (Route<dynamic> route) => false);
+                  Navigator.pop(context, true);
                   break;
                 }
               }
@@ -215,6 +213,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       } catch (error) {
         vibrateLightDouble();
         context.loaderOverlay.hide();
+        Logger.log('Exception while QR Processing : $error');
         CustomDialogs.showCustomAlertDialog(context,
             title: '보기 전용 지갑 추가 실패', message: "잘못된 지갑 정보입니다.", onConfirm: () {
           _isProcessing = false;

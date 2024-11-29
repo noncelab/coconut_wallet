@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/widgets/animatedQR/animated_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animatedQR/animated_qr_view.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ class _UnsignedTransactionQrScreenState
     extends State<UnsignedTransactionQrScreen> {
   late final String _psbtBase64;
   late String _name;
+  bool _isMultisig = false;
 
   @override
   void initState() {
@@ -30,8 +32,9 @@ class _UnsignedTransactionQrScreenState
       throw "[unsigned_transaction_qr_screen] model.txWaitingForSign is null";
     }
     _psbtBase64 = model.txWaitingForSign!;
-
-    _name = model.getWalletById(widget.id).name;
+    final walletBaseItem = model.getWalletById(widget.id);
+    _name = walletBaseItem.name;
+    _isMultisig = walletBaseItem.walletType == WalletType.multiSignature;
   }
 
   @override
@@ -59,7 +62,7 @@ class _UnsignedTransactionQrScreenState
                     backgroundColor: MyColors.white.withOpacity(0.9),
                     richText: RichText(
                       text: TextSpan(
-                        text: '[1]',
+                        text: '[1] ',
                         style: const TextStyle(
                           fontFamily: 'Pretendard',
                           fontWeight: FontWeight.bold,
@@ -70,13 +73,14 @@ class _UnsignedTransactionQrScreenState
                         ),
                         children: <TextSpan>[
                           const TextSpan(
-                            text: ' 볼트에서',
+                            text: '볼트에서',
                             style: TextStyle(
                               fontWeight: FontWeight.normal,
                             ),
                           ),
                           TextSpan(
-                            text: ' $_name 선택, \'서명하기\'',
+                            text:
+                                ' $_name 선택, \'${_isMultisig ? '다중 서명하기' : '서명하기'}\'',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                             ),

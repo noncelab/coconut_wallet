@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -128,7 +130,11 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
       );
     }
     final model = Provider.of<AppStateModel>(context, listen: false);
-    final wallet = model.getWalletById(widget.id);
+    final singlesigListItem = model.getWalletById(widget.id);
+
+    // TODO: SingleSignatureWallet
+    final singlesigWallet =
+        singlesigListItem.walletBase as SingleSignatureWallet;
 
     return PopScope(
       canPop: true,
@@ -167,21 +173,23 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
                                           color: BackgroundColorPalette[
-                                              wallet.colorIndex],
+                                              singlesigListItem.colorIndex],
                                           borderRadius:
                                               BorderRadius.circular(18.0),
                                         ),
                                         child: SvgPicture.asset(
                                             CustomIcons.getPathByIndex(
-                                                wallet.iconIndex),
+                                                singlesigListItem.iconIndex),
                                             colorFilter: ColorFilter.mode(
-                                                ColorPalette[wallet.colorIndex],
+                                                ColorPalette[singlesigListItem
+                                                    .colorIndex],
                                                 BlendMode.srcIn),
                                             width: 24.0)),
                                     const SizedBox(width: 8.0),
                                     Expanded(
                                         child: Text(
-                                      wallet.name,
+                                      TextUtils.replaceNewlineWithSpace(
+                                          singlesigListItem.name),
                                       style: Styles.h3,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -196,8 +204,8 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                           CrossAxisAlignment.end,
                                       children: [
                                         Text(
-                                          wallet.coconutWallet.keyStore
-                                              .masterFingerprint,
+                                          singlesigWallet
+                                              .keyStore.masterFingerprint,
                                           style: Styles.h3.merge(TextStyle(
                                               fontFamily: CustomFonts
                                                   .number.getFontFamily)),
@@ -296,8 +304,7 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                                           MyBottomSheet.showBottomSheet_90(
                                                               context: context,
                                                               child: QrcodeBottomSheetScreen(
-                                                                  qrData: wallet
-                                                                      .coconutWallet
+                                                                  qrData: singlesigWallet
                                                                       .keyStore
                                                                       .extendedPublicKey
                                                                       .serialize(),
@@ -308,14 +315,12 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                             } else {
                                               MyBottomSheet.showBottomSheet_90(
                                                   context: context,
-                                                  child:
-                                                      QrcodeBottomSheetScreen(
-                                                          qrData: wallet
-                                                              .coconutWallet
-                                                              .keyStore
-                                                              .extendedPublicKey
-                                                              .serialize(),
-                                                          title: '확장 공개키'));
+                                                  child: QrcodeBottomSheetScreen(
+                                                      qrData: singlesigWallet
+                                                          .keyStore
+                                                          .extendedPublicKey
+                                                          .serialize(),
+                                                      title: '확장 공개키'));
                                             }
                                           },
                                         ),

@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +14,6 @@ import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/model/constants.dart';
 import 'package:coconut_wallet/model/enums.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/model/send_info.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
@@ -53,14 +55,15 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
   late AppStateModel _model;
   late UpbitConnectModel _upbitConnectModel;
-  late WalletListItem _walletListItem;
   late bool _isMaxMode;
   late bool _userBackFlag;
-  late SingleSignatureWallet _wallet;
+  late WalletBase _walletBase;
   late int _confirmedBalance;
 
   bool? _isNetworkOn;
   bool? _isRecommendedFeeFetchSuccess;
+
+  bool _isMultisig = false;
 
   @override
   void initState() {
@@ -68,9 +71,23 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     context.loaderOverlay.show(); // onChangedNetworkStatus 과정 중 hide 됨
     _model = Provider.of<AppStateModel>(context, listen: false);
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
-    _walletListItem = _model.getWalletById(widget.id);
-    _wallet = _walletListItem.coconutWallet;
-    _confirmedBalance = _wallet.getBalance();
+
+    final walletBaseItem = _model.getWalletById(widget.id);
+    if (walletBaseItem.walletType == WalletType.multiSignature) {
+      final multisigListItem = walletBaseItem as MultisigWalletListItem;
+      _walletBase = multisigListItem.walletBase;
+
+      final multisigWallet = _walletBase as MultisignatureWallet;
+      _confirmedBalance = multisigWallet.getBalance();
+      _isMultisig = true;
+    } else {
+      final singlesigListItem = walletBaseItem as SinglesigWalletListItem;
+      _walletBase = singlesigListItem.walletBase;
+
+      final singlesigWallet = _walletBase as SingleSignatureWallet;
+      _confirmedBalance = singlesigWallet.getBalance();
+    }
+
     _isMaxMode =
         _confirmedBalance == UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount);
     _userBackFlag = false;
@@ -134,13 +151,29 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       try {
         int? estimatedFee;
         if (_isMaxMode) {
-          estimatedFee = await _wallet.estimateFeeWithMaximum(
+          final walletBaseItem = _model.getWalletById(widget.id);
+          if (walletBaseItem.walletType == WalletType.multiSignature) {
+            final multisigListItem = walletBaseItem as MultisigWalletListItem;
+            _walletBase = multisigListItem.walletBase;
+
+            final multisigWallet = _walletBase as MultisignatureWallet;
+            _confirmedBalance = multisigWallet.getBalance();
+          } else {
+            final singlesigListItem = walletBaseItem as SinglesigWalletListItem;
+            _walletBase = singlesigListItem.walletBase;
+
+            final singlesigWallet = _walletBase as SingleSignatureWallet;
+            _confirmedBalance = singlesigWallet.getBalance();
+          }
+
+          estimatedFee = await _estimateFeeWithMaximum(
               widget.sendInfo.address, feeInfo.satsPerVb!);
         } else {
-          estimatedFee = await _wallet.estimateFee(
-              widget.sendInfo.address,
-              UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
-              feeInfo.satsPerVb!);
+          estimatedFee = await _estimateFee(
+            widget.sendInfo.address,
+            widget.sendInfo.amount,
+            feeInfo.satsPerVb!,
+          );
         }
         setState(() {
           setFeeInfo(feeInfo, estimatedFee!);
@@ -310,11 +343,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     try {
       int? estimatedFee;
       if (_isMaxMode) {
-        estimatedFee = await _wallet.estimateFeeWithMaximum(
+        estimatedFee = await _estimateFeeWithMaximum(
             widget.sendInfo.address, customSatsPerVb);
       } else {
-        estimatedFee = await _wallet.estimateFee(widget.sendInfo.address,
-            UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), customSatsPerVb);
+        estimatedFee = await _estimateFee(
+          widget.sendInfo.address,
+          widget.sendInfo.amount,
+          customSatsPerVb,
+        );
       }
 
       setState(() {
@@ -339,6 +375,27 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     }
     _customFeeController.clear();
     context.loaderOverlay.hide();
+  }
+
+  Future<int?> _estimateFeeWithMaximum(String address, int satsPerVb) async {
+    if (_isMultisig) {
+      return await (_walletBase as MultisignatureWallet)
+          .estimateFeeWithMaximum(address, satsPerVb);
+    } else {
+      return await (_walletBase as SingleSignatureWallet)
+          .estimateFeeWithMaximum(address, satsPerVb);
+    }
+  }
+
+  Future<int?> _estimateFee(
+      String address, double amount, int satsPerVb) async {
+    if (_isMultisig) {
+      return await (_walletBase as MultisignatureWallet)
+          .estimateFee(address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
+    } else {
+      return await (_walletBase as SingleSignatureWallet)
+          .estimateFee(address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
+    }
   }
 
   @override
@@ -381,8 +438,19 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         body: Consumer<AppStateModel>(
           builder: (context, state, child) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              onChangedNetworkStatus(state.isNetworkOn,
-                  state.getWalletById(widget.id).coconutWallet.getBalance());
+              final walletBase = state.getWalletById(widget.id);
+              if (walletBase.walletType == WalletType.multiSignature) {
+                final multisigWallet = state.getWalletById(widget.id).walletBase
+                    as MultisignatureWallet;
+                onChangedNetworkStatus(
+                    state.isNetworkOn, multisigWallet.getBalance());
+              } else {
+                final singlesigWallet = state
+                    .getWalletById(widget.id)
+                    .walletBase as SingleSignatureWallet;
+                onChangedNetworkStatus(
+                    state.isNetworkOn, singlesigWallet.getBalance());
+              }
             });
 
             return SafeArea(

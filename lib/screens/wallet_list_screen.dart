@@ -1,5 +1,9 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/model/data/multisig_signer.dart';
+import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/screens/settings/security_self_check_screen.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/screens/settings/terms_screen.dart';
@@ -12,7 +16,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
@@ -57,8 +60,8 @@ class _WalletListScreenState extends State<WalletListScreen>
   late AnimationController _animationController;
   late ScrollController _scrollController;
 
-  late final AnimationController _newWalletAddAnimcontroller;
-  late final Animation<Offset> _newWalletAddanimation;
+  late AnimationController _newWalletAddAnimcontroller;
+  late Animation<Offset> _newWalletAddanimation;
 
   @override
   void initState() {
@@ -69,22 +72,7 @@ class _WalletListScreenState extends State<WalletListScreen>
     _animationController = BottomSheet.createAnimationController(this);
     _animationController.duration = const Duration(seconds: 2);
 
-    _scrollController = ScrollController();
-
-    _newWalletAddAnimcontroller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    _newWalletAddanimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _newWalletAddAnimcontroller,
-        curve: Curves.easeOut,
-      ),
-    );
+    initializeAnimationController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       Logger.log('hasLaunchedBefore ? ${_subModel.hasLaunchedBefore}');
@@ -102,32 +90,65 @@ class _WalletListScreenState extends State<WalletListScreen>
         });
       }
 
-      if (_model.animatedWalletFlags.isNotEmpty &&
-          _model.animatedWalletFlags.last) {
-        /// 리스트에 추가되는 애니메이션 보여줍니다.
-        /// TODO: 최적화 필요, 현재는 build 함수 내 Selector 로 인해 수십번 rebuild 되기 때문에(원인 발견 못함) model의 _animatedWalletFlags를 통해 관리합니다.
-        /// animatedWalletFlags의 last가 가장 최근에 추가된 항목이며, 이는 model의 syncFromVault에서 case1 일 때 적용됩니다.
-        /// 애니메이션을 보여준 뒤에는 setAnimatedWalletFlags()를 실행해서 animatedWalletFlags를 모두 false로 설정해야 합니다.
-        await Future.delayed(const Duration(milliseconds: 500));
-        _scrollToBottom();
-        await Future.delayed(const Duration(milliseconds: 500));
-        _newWalletAddAnimcontroller.forward();
-        _model.setAnimatedWalletFlags();
-      }
-
       AppReviewService.showReviewScreenIfEligible(context,
           animationController: _animationController);
     });
   }
 
-  void _scrollToBottom() async {
-    if (_scrollController.hasClients) {
-      await _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+  void _onAddScannerPressed() async {
+    final bool result =
+        (await Navigator.pushNamed(context, '/wallet-add-scanner') as bool?) ??
+            false;
+    if (result) {
+      if (_model.animatedWalletFlags.isNotEmpty &&
+          _model.animatedWalletFlags.last) {
+        initializeAnimationController();
+
+        /// 리스트에 추가되는 애니메이션 보여줍니다.
+        /// TODO: 최적화 필요, 현재는 build 함수 내 Selector 로 인해 수십번 rebuild 되기 때문에(원인 발견 못함) model의 _animatedWalletFlags를 통해 관리합니다.
+        /// animatedWalletFlags의 last가 가장 최근에 추가된 항목이며, 이는 model의 syncFromVault에서 case1 일 때 적용됩니다.
+        /// 애니메이션을 보여준 뒤에는 setAnimatedWalletFlags()를 실행해서 animatedWalletFlags를 모두 false로 설정해야 합니다.
+        await Future.delayed(const Duration(milliseconds: 1000));
+        _scrollToBottom();
+        await Future.delayed(const Duration(milliseconds: 500));
+        _newWalletAddAnimcontroller.forward();
+        _model.setAnimatedWalletFlags();
+      }
     }
+  }
+
+  void initializeAnimationController() {
+    _scrollController = ScrollController();
+    _newWalletAddAnimcontroller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _newWalletAddanimation = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _newWalletAddAnimcontroller,
+        curve: Curves.easeOut,
+      ),
+    );
+  }
+
+  void _scrollToBottom() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        final maxScrollExtent = _scrollController.position.maxScrollExtent;
+
+        if (maxScrollExtent > 0) {
+          _scrollController.animateTo(
+            maxScrollExtent,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
   }
 
   @override
@@ -150,9 +171,9 @@ class _WalletListScreenState extends State<WalletListScreen>
           }
         }
       },
-      child: Selector<AppStateModel, List<WalletListItem>>(
+      child: Selector<AppStateModel, List<WalletListItemBase>>(
         shouldRebuild: (previous, next) => true,
-        selector: (_, selectorModel) => selectorModel.walletList,
+        selector: (_, selectorModel) => selectorModel.walletBaseItemList,
         builder: (context, wallets, child) {
           return Scaffold(
             backgroundColor: MyColors.black,
@@ -160,6 +181,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               children: [
                 CustomScrollView(
                   controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
                   semanticChildCount: wallets.length,
                   slivers: <Widget>[
                     FrostedAppBar(
@@ -167,6 +189,9 @@ class _WalletListScreenState extends State<WalletListScreen>
                         setState(() {
                           _isSeeMoreDropdown = true;
                         });
+                      },
+                      onTapAddScanner: () async {
+                        _onAddScannerPressed();
                       },
                     ),
                     CupertinoSliverRefreshControl(
@@ -386,7 +411,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                             selectorModel.fastLoadDone,
                         builder: (context, fastLoadDone, child) {
                           return SliverList(
-                            delegate: SliverChildBuilderDelegate((ctx, index) {
+                            delegate: SliverChildBuilderDelegate(
+                                childCount: wallets.length, (ctx, index) {
                               if (fastLoadDone == false) {
                                 if (index == 0) {
                                   return const Padding(
@@ -402,13 +428,21 @@ class _WalletListScreenState extends State<WalletListScreen>
                               }
 
                               if (index < wallets.length) {
-                                final WalletListItem(
+                                final WalletListItemBase(
                                   id: id,
                                   name: name,
                                   balance: balance,
                                   iconIndex: iconIndex,
                                   colorIndex: colorIndex
                                 ) = wallets[index];
+
+                                final base = wallets[index];
+                                List<MultisigSigner>? signers;
+                                if (base.walletType ==
+                                    WalletType.multiSignature) {
+                                  signers =
+                                      (base as MultisigWalletListItem).signers;
+                                }
                                 return _model.animatedWalletFlags[index]
                                     ? SlideTransition(
                                         position: _newWalletAddanimation,
@@ -422,6 +456,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                               index == wallets.length - 1,
                                           isBalanceHidden:
                                               _subModel.isBalanceHidden,
+                                          signers: signers,
                                         ),
                                       )
                                     : WalletRowItem(
@@ -433,6 +468,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                         isLastItem: index == wallets.length - 1,
                                         isBalanceHidden:
                                             _subModel.isBalanceHidden,
+                                        signers: signers,
                                       );
                               }
 
@@ -458,9 +494,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                                       ),
                                       const SizedBox(height: 16),
                                       CupertinoButton(
-                                        onPressed: () {
-                                          Navigator.pushNamed(
-                                              context, '/wallet-add-scanner');
+                                        onPressed: () async {
+                                          _onAddScannerPressed();
                                         },
                                         borderRadius: BorderRadius.circular(10),
                                         padding: EdgeInsets.zero,
