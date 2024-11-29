@@ -29,7 +29,6 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   bool _isProcessing = false;
   bool _isMultisig = false;
   QRViewController? controller;
-  final int _requiredSignature = 0;
 
   @override
   void initState() {
@@ -67,7 +66,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             .length;
         int difference = _multisigWallet!.requiredSignature - signedCount;
         if (difference > 0) {
-          _showAlertBottomSheet('$difference개의 서명이 더 필요해요', isBack: true);
+          _showAlert('$difference개의 서명이 더 필요해요', isBack: true);
           controller?.pauseCamera();
           await _stopCamera();
           return;
@@ -99,12 +98,12 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         } else {
           errorMessage = 'QR코드 스캔에 실패했어요. 다시 시도해 주세요.';
         }
-        _showAlertBottomSheet(errorMessage);
+        _showAlert(errorMessage);
       }
     }
   }
 
-  void _showAlertBottomSheet(String errorMessage, {bool isBack = false}) {
+  void _showAlert(String errorMessage, {bool isBack = false}) {
     showAlertDialog(
       context: context,
       content: errorMessage,
