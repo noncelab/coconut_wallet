@@ -182,7 +182,6 @@ class AppStateModel extends ChangeNotifier {
       vibrateLightDouble();
       Logger.log(
           ">>>>> ===================== initWallet catch!! notifyListeners() ${e.toString()}");
-      rethrow;
       notifyListeners();
       await _updateWalletInStorage();
     }
@@ -442,8 +441,7 @@ class AppStateModel extends ChangeNotifier {
         _fastLoadDone = true;
         notifyListeners();
       }
-
-      rethrow;
+      return;
     }
 
     if (jsonArrayString == null) {
