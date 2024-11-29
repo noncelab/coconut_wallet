@@ -294,7 +294,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
               // 이름
               Expanded(
                 child: Text(
-                  _multiWallet.name,
+                  TextUtils.replaceNewlineWithSpace(_multiWallet.name),
                   style: Styles.h3,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -456,11 +456,11 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
 
   Future _selectedKeyBottomSheet(
       MultisigSigner signer, KeyStore keystore) async {
-    final name = signer.name ?? '';
+    final name = signer.name ?? '외부지갑';
 
     MyBottomSheet.showBottomSheet(
       context: context,
-      title: name.length > 20 ? '${name.substring(0, 17)}...' : name,
+      title: TextUtils.ellipsisIfLonger(name, maxLength: 15),
       titleTextStyle: Styles.body1.copyWith(
         fontSize: 18,
       ),

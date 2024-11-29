@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -211,7 +212,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       )
                     : null,
                 title: Text(
-                  '${_walletBaseItem.name}의 주소',
+                  '${TextUtils.replaceNewlineWithSpace(_walletBaseItem.name)}의 주소',
                   style: Styles.appbarTitle,
                 ),
                 centerTitle: true,

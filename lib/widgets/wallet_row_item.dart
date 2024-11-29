@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -76,14 +77,14 @@ class _WalletRowItemState extends State<WalletRowItem> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.name,
+                      TextUtils.replaceNewlineWithSpace(widget.name),
                       style: const TextStyle(
                           fontFamily: 'Pretendard',
                           fontSize: 12.0,
                           fontWeight: FontWeight.w400,
                           color: MyColors.transparentWhite_70,
                           letterSpacing: 0.2),
-                      maxLines: 3,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Padding(

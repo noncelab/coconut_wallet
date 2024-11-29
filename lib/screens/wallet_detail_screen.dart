@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -291,7 +292,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             backgroundColor: MyColors.black,
             appBar: CustomAppBar.build(
               faucetIconKey: _faucetIconKey,
-              title: _walletBaseItem.name,
+              title: TextUtils.ellipsisIfLonger(
+                _walletBaseItem.name,
+                maxLength: 15,
+              ),
               context: context,
               hasRightIcon: true,
               onFaucetIconPressed: () async {

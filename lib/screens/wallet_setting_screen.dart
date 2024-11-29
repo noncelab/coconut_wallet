@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -187,7 +188,8 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                     const SizedBox(width: 8.0),
                                     Expanded(
                                         child: Text(
-                                      singlesigListItem.name,
+                                      TextUtils.replaceNewlineWithSpace(
+                                          singlesigListItem.name),
                                       style: Styles.h3,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
