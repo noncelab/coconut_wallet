@@ -136,13 +136,19 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   void _scrollToBottom() async {
-    if (_scrollController.hasClients) {
-      await _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        final maxScrollExtent = _scrollController.position.maxScrollExtent;
+
+        if (maxScrollExtent > 0) {
+          _scrollController.animateTo(
+            maxScrollExtent,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
   }
 
   @override
@@ -405,7 +411,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                             selectorModel.fastLoadDone,
                         builder: (context, fastLoadDone, child) {
                           return SliverList(
-                            delegate: SliverChildBuilderDelegate((ctx, index) {
+                            delegate: SliverChildBuilderDelegate(
+                                childCount: wallets.length, (ctx, index) {
                               if (fastLoadDone == false) {
                                 if (index == 0) {
                                   return const Padding(
