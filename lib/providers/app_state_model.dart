@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/data/singlesig_wallet_list_item_factory.dar
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/utils/print_util.dart';
+import 'package:coconut_wallet/screens/wallet_list_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/app_error.dart';
@@ -71,9 +72,9 @@ class AppStateModel extends ChangeNotifier {
   List<WalletListItemBase> _walletBaseItemList = [];
   List<WalletListItemBase> get walletBaseItemList => _walletBaseItemList;
 
-  // 리스트에 추가되는 애니메이션이 동작해야하면 true, 아니면 false를 담습니다.
-  List<bool> _animatedWalletFlags = [];
-  List<bool> get animatedWalletFlags => _animatedWalletFlags;
+  // 애니메이션이 동작해야하면 해당하는 ReturnPageResult.<add/update>, 아니면 ReturnPageResult.none을 담습니다.
+  List<ReturnPageResult> _animatedWalletFlags = [];
+  List<ReturnPageResult> get animatedWalletFlags => _animatedWalletFlags;
 
   String? txWaitingForSign;
   String? signedTransaction; // hex decode result
@@ -187,10 +188,12 @@ class AppStateModel extends ChangeNotifier {
     }
   }
 
-  void setAnimatedWalletFlags({int? index}) {
-    _animatedWalletFlags = List.filled(_walletBaseItemList.length, false);
+  void setAnimatedWalletFlags(
+      {int? index, ReturnPageResult type = ReturnPageResult.none}) {
+    _animatedWalletFlags =
+        List.filled(_walletBaseItemList.length, ReturnPageResult.none);
     if (index != null) {
-      _animatedWalletFlags[index - 1] = true;
+      _animatedWalletFlags[index - 1] = type;
     }
   }
 
@@ -287,8 +290,9 @@ class AppStateModel extends ChangeNotifier {
         _walletBaseItemList = updatedList;
 
         result = SyncResult.existingWalletUpdated;
-
         // 에러 발생 시 wallet_list_screen에서 toast로 알리게 하기 위해서 notifyListeners() 호출
+        setAnimatedWalletFlags(index: index + 1, type: ReturnPageResult.update);
+
         _updateWalletInStorage().catchError((e) {
           notifyListeners();
         });
@@ -316,7 +320,10 @@ class AppStateModel extends ChangeNotifier {
     updatedList.add(newItem);
     _walletBaseItemList = updatedList;
 
-    setAnimatedWalletFlags(index: _walletBaseItemList.length);
+    if (result == SyncResult.newWalletAdded) {
+      setAnimatedWalletFlags(
+          index: _walletBaseItemList.length, type: ReturnPageResult.add);
+    }
     await initWallet(targetId: newItem.id, syncOthers: false);
 
     notifyListeners();
@@ -438,6 +445,7 @@ class AppStateModel extends ChangeNotifier {
         _fastLoadDone = true;
         notifyListeners();
       }
+
       return;
     }
 
@@ -468,7 +476,8 @@ class AppStateModel extends ChangeNotifier {
     }
 
     _walletBaseItemList = loadWallets;
-    _animatedWalletFlags = List.filled(_walletBaseItemList.length, false);
+    _animatedWalletFlags =
+        List.filled(_walletBaseItemList.length, ReturnPageResult.none);
     _subStateModel.saveNotEmptyWalletList(_walletBaseItemList.isNotEmpty);
 
     // for wallet_list_screen
@@ -508,7 +517,8 @@ class AppStateModel extends ChangeNotifier {
     _walletBaseItemList = updatedList;
 
     _subStateModel.saveNotEmptyWalletList(_walletBaseItemList.isNotEmpty);
-    _animatedWalletFlags = List.filled(_walletBaseItemList.length, false);
+    _animatedWalletFlags =
+        List.filled(_walletBaseItemList.length, ReturnPageResult.none);
     notifyListeners();
   }
 
