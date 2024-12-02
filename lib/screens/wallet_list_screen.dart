@@ -695,7 +695,6 @@ class _WalletListScreenState extends State<WalletListScreen>
                                             ],
                                           )
                                         : WalletRowItem(
-                                            key: _itemKeys[index],
                                             id: id,
                                             name: name,
                                             balance: balance,
