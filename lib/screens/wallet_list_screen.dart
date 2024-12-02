@@ -66,6 +66,8 @@ class _WalletListScreenState extends State<WalletListScreen>
   late AnimationController _blinkAnimationController;
   late Animation<Offset> _slideAnimation;
   late Animation<Color?> _blinkAnimation;
+  late double itemCardWidth;
+  late double itemCardHeight;
 
   @override
   void initState() {
@@ -99,6 +101,14 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    itemCardWidth = MediaQuery.sizeOf(context).width;
+    itemCardHeight = 80;
+  }
+
   void _onAddScannerPressed() async {
     final Map<String, dynamic> result =
         (await Navigator.pushNamed(context, '/wallet-add-scanner')
@@ -126,6 +136,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       final int walletId = result['id'] as int;
       final int index = _model.walletBaseItemList
           .indexWhere((element) => element.id == walletId);
+
       if (index == -1) return;
       if (_model.animatedWalletFlags.isNotEmpty &&
           _model.animatedWalletFlags[index] == ReturnPageResult.update) {
@@ -133,6 +144,19 @@ class _WalletListScreenState extends State<WalletListScreen>
         await Future.delayed(const Duration(milliseconds: 600));
         scrollToItem(index);
         await Future.delayed(const Duration(milliseconds: 1000));
+
+        itemCardWidth =
+            (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
+                    .size
+                    .width +
+                20;
+        itemCardHeight =
+            (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
+                    .size
+                    .height -
+                10;
+
+        print('itemwidth = $itemCardWidth,  itemheight = $itemCardHeight');
 
         await _blinkAnimationController.forward();
         await _blinkAnimationController.reverse();
@@ -581,19 +605,15 @@ class _WalletListScreenState extends State<WalletListScreen>
                                                         borderRadius:
                                                             BorderRadius
                                                                 .circular(28)),
-                                                    width: MediaQuery.sizeOf(
-                                                            context)
-                                                        .width,
-                                                    height: 80,
-                                                    margin:
-                                                        const EdgeInsets.all(
-                                                            10),
+                                                    width: itemCardWidth,
+                                                    height: itemCardHeight,
                                                   );
                                                 },
                                               )
                                             ],
                                           )
                                         : WalletRowItem(
+                                            key: _itemKeys[index],
                                             id: id,
                                             name: name,
                                             balance: balance,
