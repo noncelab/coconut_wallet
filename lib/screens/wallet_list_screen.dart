@@ -300,6 +300,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                   physics: const AlwaysScrollableScrollPhysics(),
                   semanticChildCount: wallets.length,
                   slivers: <Widget>[
+                    // Appbar
                     FrostedAppBar(
                       onTapSeeMore: () {
                         setState(() {
@@ -310,6 +311,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                         _onAddScannerPressed();
                       },
                     ),
+                    // Pull to refresh, refresh indicator(hide)
                     CupertinoSliverRefreshControl(
                       onRefresh: () async {
                         setState(() {
@@ -320,69 +322,70 @@ class _WalletListScreenState extends State<WalletListScreen>
                         }
                       },
                     ),
-                    if (wallets.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Selector<AppStateModel, WalletInitState>(
-                          selector: (_, selectorModel) =>
-                              selectorModel.walletInitState,
-                          builder: (context, state, child) {
-                            // 지갑 정보 초기화 또는 갱신 중 에러가 발생했을 때 모두 toast로 알림
-                            if (state == WalletInitState.error) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (isShownErrorToast) return;
-                                isShownErrorToast = true;
-                                CustomToast.showWarningToast(
-                                    context: context,
-                                    text: _model.walletInitError!.message,
-                                    seconds: 7);
-                              });
-                            } else {
-                              isShownErrorToast = false;
-                            }
-
-                            String iconName = '';
-                            String text = '';
-                            Color color = MyColors.primary;
-
-                            switch (state) {
-                              case WalletInitState.impossible:
-                                iconName = 'impossible';
-                                text = '업데이트 불가';
-                                color = MyColors.warningRed;
-                              case WalletInitState.error:
-                                iconName = 'failure';
-                                text = '업데이트 실패';
-                                color = MyColors.failedYellow;
-                              case WalletInitState.finished:
-                                iconName = 'complete';
-                                text = '업데이트 완료';
-                                color = MyColors.primary;
-                              case WalletInitState.processing:
-                                iconName = 'loading';
-                                text = '업데이트 중';
-                                color = MyColors.primary;
-                              default:
-                                iconName = 'complete';
-                                text = '';
-                                color = Colors.transparent;
-                            }
-
+                    // Update Status, update indicator
+                    SliverToBoxAdapter(
+                      child: Selector<AppStateModel, WalletInitState>(
+                        selector: (_, selectorModel) =>
+                            selectorModel.walletInitState,
+                        builder: (context, state, child) {
+                          // 지갑 정보 초기화 또는 갱신 중 에러가 발생했을 때 모두 toast로 알림
+                          if (state == WalletInitState.error) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              state == WalletInitState.finished
-                                  ? showLastUpdateTimeAfterFewSeconds()
-                                  : setState(
-                                      () => isShowLastUpdateTime = false);
+                              if (isShownErrorToast) return;
+                              isShownErrorToast = true;
+                              CustomToast.showWarningToast(
+                                  context: context,
+                                  text: _model.walletInitError!.message,
+                                  seconds: 7);
                             });
+                          } else {
+                            isShownErrorToast = false;
+                          }
 
-                            if (isShowLastUpdateTime &&
-                                _subModel.lastUpdateTime != 0) {
-                              iconName = 'idle';
-                              text =
-                                  '마지막 업데이트 ${DateTimeUtil.formatLastUpdateTime(_subModel.lastUpdateTime)}';
-                              color = MyColors.transparentWhite_50;
-                            }
+                          String iconName = '';
+                          String text = '';
+                          Color color = MyColors.primary;
 
-                            return GestureDetector(
+                          switch (state) {
+                            case WalletInitState.impossible:
+                              iconName = 'impossible';
+                              text = '업데이트 불가';
+                              color = MyColors.warningRed;
+                            case WalletInitState.error:
+                              iconName = 'failure';
+                              text = '업데이트 실패';
+                              color = MyColors.failedYellow;
+                            case WalletInitState.finished:
+                              iconName = 'complete';
+                              text = '업데이트 완료';
+                              color = MyColors.primary;
+                            case WalletInitState.processing:
+                              iconName = 'loading';
+                              text = '업데이트 중';
+                              color = MyColors.primary;
+                            default:
+                              iconName = 'complete';
+                              text = '';
+                              color = Colors.transparent;
+                          }
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            state == WalletInitState.finished
+                                ? showLastUpdateTimeAfterFewSeconds()
+                                : setState(() => isShowLastUpdateTime = false);
+                          });
+
+                          if (isShowLastUpdateTime &&
+                              _subModel.lastUpdateTime != 0) {
+                            iconName = 'idle';
+                            text =
+                                '마지막 업데이트 ${DateTimeUtil.formatLastUpdateTime(_subModel.lastUpdateTime)}';
+                            color = MyColors.transparentWhite_50;
+                          }
+
+                          return Visibility(
+                            visible: wallets.isNotEmpty,
+                            child: GestureDetector(
                               onTap: isShowLastUpdateTime &&
                                       _subModel.lastUpdateTime != 0
                                   ? () {
@@ -426,99 +429,189 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   ],
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
-                    if (!_subModel.isOpenTermsScreen)
-                      SliverToBoxAdapter(
-                        child: GestureDetector(
-                          onTap: () {
-                            MyBottomSheet.showBottomSheet_90(
-                                context: context, child: const TermsScreen());
-                          },
-                          onTapDown: (_) {
-                            setState(() {
-                              _isTapped = true;
-                            });
-                          },
-                          onTapUp: (_) {
-                            setState(() {
-                              _isTapped = false;
-                            });
-                          },
-                          onTapCancel: () {
-                            setState(() {
-                              _isTapped = false;
-                            });
-                          },
-                          child: Container(
-                            width: double.maxFinite,
-                            decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: _isTapped
-                                    ? MyColors.transparentWhite_20
-                                    : MyColors.transparentWhite_12),
-                            margin: const EdgeInsets.only(
-                                left: 8, right: 8, bottom: 16),
-                            padding: const EdgeInsets.only(
-                                left: 26, top: 16, bottom: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('모르는 용어가 있으신가요?',
-                                        style: Styles.body1.merge(
-                                            const TextStyle(
-                                                fontWeight: FontWeight.w600))),
-                                    SizedBox(
-                                      width: MediaQuery.sizeOf(context).width -
-                                          100,
-                                      child: Text.rich(
-                                        TextSpan(
+                    ),
+                    // 용어집, 바로 추가하기, loading indicator
+                    SliverToBoxAdapter(
+                      child: Selector<AppStateModel, bool>(
+                        selector: (_, model) => model.fastLoadDone,
+                        builder: (context, fastLoadDone, child) {
+                          return Column(
+                            children: [
+                              // 용어집
+                              Visibility(
+                                visible: !_subModel.isOpenTermsScreen &&
+                                    fastLoadDone,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    MyBottomSheet.showBottomSheet_90(
+                                        context: context,
+                                        child: const TermsScreen());
+                                  },
+                                  onTapDown: (_) {
+                                    setState(() {
+                                      _isTapped = true;
+                                    });
+                                  },
+                                  onTapUp: (_) {
+                                    setState(() {
+                                      _isTapped = false;
+                                    });
+                                  },
+                                  onTapCancel: () {
+                                    setState(() {
+                                      _isTapped = false;
+                                    });
+                                  },
+                                  child: Container(
+                                    width: double.maxFinite,
+                                    decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        color: _isTapped
+                                            ? MyColors.transparentWhite_20
+                                            : MyColors.transparentWhite_12),
+                                    margin: const EdgeInsets.only(
+                                        left: 8, right: 8, bottom: 16),
+                                    padding: const EdgeInsets.only(
+                                        left: 26, top: 16, bottom: 16),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            const TextSpan(
-                                              text: '오른쪽 위 ',
-                                              style: Styles.label,
-                                            ),
-                                            TextSpan(
-                                              text: '•••',
-                                              style: Styles.label.merge(
-                                                  const TextStyle(
-                                                      letterSpacing: -2.0)),
-                                            ),
-                                            const TextSpan(
-                                              text: ' - 용어집 또는 여기를 눌러 바로가기',
-                                              style: Styles.label,
-                                            ),
+                                            Text('모르는 용어가 있으신가요?',
+                                                style: Styles.body1.merge(
+                                                    const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600))),
+                                            SizedBox(
+                                              width: MediaQuery.sizeOf(context)
+                                                      .width -
+                                                  100,
+                                              child: Text.rich(
+                                                TextSpan(
+                                                  children: [
+                                                    const TextSpan(
+                                                      text: '오른쪽 위 ',
+                                                      style: Styles.label,
+                                                    ),
+                                                    TextSpan(
+                                                      text: '•••',
+                                                      style: Styles.label.merge(
+                                                          const TextStyle(
+                                                              letterSpacing:
+                                                                  -2.0)),
+                                                    ),
+                                                    const TextSpan(
+                                                      text:
+                                                          ' - 용어집 또는 여기를 눌러 바로가기',
+                                                      style: Styles.label,
+                                                    ),
+                                                  ],
+                                                ),
+                                                maxLines: 2,
+                                              ),
+                                            )
                                           ],
                                         ),
-                                        maxLines: 2,
-                                      ),
-                                    )
-                                  ],
-                                ),
-                                GestureDetector(
-                                  onTap: _subModel.setIsOpenTermsScreen,
-                                  child: Container(
-                                    color: Colors.transparent,
-                                    padding: const EdgeInsets.all(16),
-                                    child: SvgPicture.asset(
-                                        'assets/svg/close.svg',
-                                        width: 10,
-                                        height: 10,
-                                        colorFilter: const ColorFilter.mode(
-                                            MyColors.white, BlendMode.srcIn)),
+                                        GestureDetector(
+                                          onTap: _subModel.setIsOpenTermsScreen,
+                                          child: Container(
+                                            color: Colors.transparent,
+                                            padding: const EdgeInsets.all(16),
+                                            child: SvgPicture.asset(
+                                                'assets/svg/close.svg',
+                                                width: 10,
+                                                height: 10,
+                                                colorFilter:
+                                                    const ColorFilter.mode(
+                                                        MyColors.white,
+                                                        BlendMode.srcIn)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
+                              ),
+                              // 바로 추가하기
+                              Visibility(
+                                visible: fastLoadDone && wallets.isEmpty,
+                                child: Container(
+                                  width: double.maxFinite,
+                                  decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      color: MyColors.transparentWhite_12),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  padding: const EdgeInsets.only(
+                                      top: 26, bottom: 24, left: 26, right: 26),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '보기 전용 지갑을 추가해 주세요',
+                                        style: Styles.title5,
+                                      ),
+                                      const Text(
+                                        '오른쪽 위 + 버튼을 눌러도 추가할 수 있어요',
+                                        style: Styles.label,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      CupertinoButton(
+                                        onPressed: () async {
+                                          _onAddScannerPressed();
+                                        },
+                                        borderRadius: BorderRadius.circular(10),
+                                        padding: EdgeInsets.zero,
+                                        color: MyColors.primary,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 28,
+                                            vertical: 12,
+                                          ),
+                                          child: Text(
+                                            '바로 추가하기',
+                                            style: Styles.label.merge(
+                                              const TextStyle(
+                                                color: MyColors.black,
+                                                fontWeight: FontWeight.w700,
+                                                // fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Indicator
+                              Visibility(
+                                visible: !fastLoadDone,
+                                child: const Padding(
+                                  padding: EdgeInsets.only(top: 40.0),
+                                  child: CupertinoActivityIndicator(
+                                    color: MyColors.white,
+                                    radius: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
+                    ),
+                    // 지갑 목록
                     SliverSafeArea(
                       top: false,
                       minimum: const EdgeInsets.symmetric(horizontal: 8),
@@ -529,20 +622,6 @@ class _WalletListScreenState extends State<WalletListScreen>
                           return SliverList(
                             delegate: SliverChildBuilderDelegate(
                                 childCount: wallets.length, (ctx, index) {
-                              if (fastLoadDone == false) {
-                                if (index == 0) {
-                                  return const Padding(
-                                    padding: EdgeInsets.only(top: 40.0),
-                                    child: CupertinoActivityIndicator(
-                                      color: MyColors.white,
-                                      radius: 20,
-                                    ),
-                                  );
-                                } else {
-                                  return null;
-                                }
-                              }
-
                               if (index < wallets.length) {
                                 final WalletListItemBase(
                                   id: id,
@@ -625,56 +704,6 @@ class _WalletListScreenState extends State<WalletListScreen>
                                                 _subModel.isBalanceHidden,
                                             signers: signers,
                                           );
-                              }
-
-                              if (index == wallets.length && wallets.isEmpty) {
-                                return Container(
-                                  width: double.maxFinite,
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      color: MyColors.transparentWhite_12),
-                                  padding: const EdgeInsets.only(
-                                      top: 26, bottom: 24, left: 26, right: 26),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        '보기 전용 지갑을 추가해 주세요',
-                                        style: Styles.title5,
-                                      ),
-                                      const Text(
-                                        '오른쪽 위 + 버튼을 눌러도 추가할 수 있어요',
-                                        style: Styles.label,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      CupertinoButton(
-                                        onPressed: () async {
-                                          _onAddScannerPressed();
-                                        },
-                                        borderRadius: BorderRadius.circular(10),
-                                        padding: EdgeInsets.zero,
-                                        color: MyColors.primary,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 28,
-                                            vertical: 12,
-                                          ),
-                                          child: Text(
-                                            '바로 추가하기',
-                                            style: Styles.label.merge(
-                                              const TextStyle(
-                                                color: MyColors.black,
-                                                fontWeight: FontWeight.w700,
-                                                // fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
                               }
                               return null;
                             }),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/multisig_signer.dart';
@@ -458,24 +459,13 @@ class AppStateModel extends ChangeNotifier {
       return;
     }
 
-    final List<dynamic> itemList = jsonDecode(jsonArrayString) as List;
-    List<WalletListItemBase> loadWallets = [];
-    for (final item in itemList) {
-      final Map<String, dynamic> walletData = item as Map<String, dynamic>;
-      WalletListItemBase loadWallet;
-      if (walletData['walletType'] == null ||
-          walletData['walletType'] == WalletType.singleSignature.name) {
-        loadWallet = SinglesigWalletListItem.fromJson(walletData);
-      } else if (walletData['walletType'] == WalletType.multiSignature.name) {
-        loadWallet = MultisigWalletListItem.fromJson(walletData);
-      } else {
-        throw ArgumentError('wrong walletType: ${walletData['walletType']}');
-      }
+    // isolate
+    final receivePort = ReceivePort();
+    await Isolate.spawn(
+        isolateEntryDecodeWallets, [receivePort.sendPort, jsonArrayString]);
+    final result = await receivePort.first as List<WalletListItemBase>;
 
-      loadWallets.add(loadWallet);
-    }
-
-    _walletBaseItemList = loadWallets;
+    _walletBaseItemList = result;
     _animatedWalletFlags =
         List.filled(_walletBaseItemList.length, ReturnPageResult.none);
     _subStateModel.saveNotEmptyWalletList(_walletBaseItemList.isNotEmpty);
@@ -484,6 +474,33 @@ class AppStateModel extends ChangeNotifier {
     if (!_fastLoadDone) {
       _fastLoadDone = true;
       notifyListeners();
+    }
+  }
+
+  static isolateEntryDecodeWallets(List<Object> args) async {
+    final SendPort sendPort = args[0] as SendPort;
+    final String jsonArrayString = args[1] as String;
+
+    try {
+      final List<dynamic> itemList = jsonDecode(jsonArrayString) as List;
+      List<WalletListItemBase> loadWallets = [];
+      for (final item in itemList) {
+        final Map<String, dynamic> walletData = item as Map<String, dynamic>;
+        WalletListItemBase loadWallet;
+        if (walletData['walletType'] == null ||
+            walletData['walletType'] == WalletType.singleSignature.name) {
+          loadWallet = SinglesigWalletListItem.fromJson(walletData);
+        } else if (walletData['walletType'] == WalletType.multiSignature.name) {
+          loadWallet = MultisigWalletListItem.fromJson(walletData);
+        } else {
+          throw ArgumentError('wrong walletType: ${walletData['walletType']}');
+        }
+        loadWallets.add(loadWallet);
+      }
+
+      sendPort.send(loadWallets);
+    } catch (e) {
+      sendPort.send([]);
     }
   }
 
