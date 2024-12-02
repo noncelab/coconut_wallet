@@ -674,20 +674,23 @@ class _WalletListScreenState extends State<WalletListScreen>
                                                     _subModel.isBalanceHidden,
                                                 signers: signers,
                                               ),
-                                              AnimatedBuilder(
-                                                animation: _blinkAnimation,
-                                                builder: (context, child) {
-                                                  return Container(
-                                                    decoration: BoxDecoration(
-                                                        color: _blinkAnimation
-                                                            .value,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(28)),
-                                                    width: itemCardWidth,
-                                                    height: itemCardHeight,
-                                                  );
-                                                },
+                                              IgnorePointer(
+                                                child: AnimatedBuilder(
+                                                  animation: _blinkAnimation,
+                                                  builder: (context, child) {
+                                                    return Container(
+                                                      decoration: BoxDecoration(
+                                                          color: _blinkAnimation
+                                                              .value,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                                      28)),
+                                                      width: itemCardWidth,
+                                                      height: itemCardHeight,
+                                                    );
+                                                  },
+                                                ),
                                               )
                                             ],
                                           )
