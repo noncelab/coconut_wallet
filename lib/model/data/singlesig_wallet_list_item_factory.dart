@@ -16,7 +16,7 @@ class SinglesigWalletListItemFactory implements WalletListItemFactory {
     final nextId = WalletListItemFactory.loadNextId();
     final newWallet = SinglesigWalletListItem(
       id: nextId,
-      name: name,
+      name: name..replaceAll('\n', ' '),
       colorIndex: colorIndex,
       iconIndex: iconIndex,
       descriptor: descriptor,
@@ -30,8 +30,8 @@ class SinglesigWalletListItemFactory implements WalletListItemFactory {
   SinglesigWalletListItem createFromJson(Map<String, dynamic> json) {
     final result = SinglesigWalletListItem.fromJson(json);
 
+    result.name = result.name.replaceAll('\n', ' ');
     result.walletBase = SingleSignatureWallet.fromDescriptor(result.descriptor);
-
     return result;
   }
 }

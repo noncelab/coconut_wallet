@@ -294,7 +294,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
               // 이름
               Expanded(
                 child: Text(
-                  TextUtils.replaceNewlineWithSpace(_multiWallet.name),
+                  _multiWallet.name,
                   style: Styles.h3,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

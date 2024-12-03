@@ -20,9 +20,14 @@ class MultisigWalletListItemFactory implements WalletListItemFactory {
     int requiredSignatureCount = secrets?[requiredSignatureCountField];
 
     final nextId = WalletListItemFactory.loadNextId();
+
+    for (var signer in signers) {
+      signer.name = signer.name?.replaceAll('\n', ' ');
+    }
+
     final newVault = MultisigWalletListItem(
         id: nextId,
-        name: name,
+        name: name.replaceAll('\n', ' '),
         colorIndex: colorIndex,
         iconIndex: iconIndex,
         descriptor: descriptor,
@@ -37,6 +42,12 @@ class MultisigWalletListItemFactory implements WalletListItemFactory {
   @override
   MultisigWalletListItem createFromJson(Map<String, dynamic> json) {
     final result = MultisigWalletListItem.fromJson(json);
+
+    for (var signer in result.signers) {
+      signer.name = signer.name?.replaceAll('\n', ' ');
+    }
+
+    result.name = result.name.replaceAll('\n', ' ');
     result.walletBase = MultisignatureWallet.fromDescriptor(result.descriptor);
     return result;
   }

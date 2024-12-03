@@ -36,10 +36,10 @@ Map<String, dynamic> _$SinglesigWalletListItemToJson(
         SinglesigWalletListItem instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'name': instance.name,
       'colorIndex': instance.colorIndex,
       'iconIndex': instance.iconIndex,
       'descriptor': instance.descriptor,
+      'name': instance.name,
       'walletType': _$WalletTypeEnumMap[instance.walletType]!,
       'balance': instance.balance,
       'txCount': instance.txCount,
