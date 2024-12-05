@@ -22,7 +22,9 @@ class MultisigSigner {
     this.iconIndex,
     this.colorIndex,
     this.memo,
-  });
+  }) {
+    name = name?.replaceAll('\n', ' ');
+  }
 
   Map<String, dynamic> toJson() => _$MultisigSignerToJson(this);
 

@@ -19,6 +19,7 @@ class MultisigWalletListItem extends WalletListItemBase {
     super.balance,
   }) : super(walletType: WalletType.multiSignature) {
     walletBase = MultisignatureWallet.fromDescriptor(descriptor);
+    name = name.replaceAll('\n', ' ');
   }
 
   @JsonKey(name: "signers")
