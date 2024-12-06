@@ -60,8 +60,14 @@ class _WalletListScreenState extends State<WalletListScreen>
   late AnimationController _animationController;
   late ScrollController _scrollController;
 
-  late AnimationController _newWalletAddAnimcontroller;
-  late Animation<Offset> _newWalletAddanimation;
+  List<GlobalKey> _itemKeys = [];
+
+  late AnimationController _slideAnimationController;
+  late AnimationController _blinkAnimationController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<Color?> _blinkAnimation;
+  late double itemCardWidth;
+  late double itemCardHeight;
 
   @override
   void initState() {
@@ -95,44 +101,153 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    itemCardWidth = MediaQuery.sizeOf(context).width;
+    itemCardHeight = 80;
+  }
+
   void _onAddScannerPressed() async {
-    final bool result =
-        (await Navigator.pushNamed(context, '/wallet-add-scanner') as bool?) ??
-            false;
-    if (result) {
+    final Map<String, dynamic> result =
+        (await Navigator.pushNamed(context, '/wallet-add-scanner')
+                as Map<String, dynamic>?) ??
+            {
+              'result': ReturnPageResult.none,
+            };
+    if (result['result'] as ReturnPageResult == ReturnPageResult.add) {
       if (_model.animatedWalletFlags.isNotEmpty &&
-          _model.animatedWalletFlags.last) {
+          _model.animatedWalletFlags.last == ReturnPageResult.add) {
         initializeAnimationController();
 
         /// 리스트에 추가되는 애니메이션 보여줍니다.
-        /// TODO: 최적화 필요, 현재는 build 함수 내 Selector 로 인해 수십번 rebuild 되기 때문에(원인 발견 못함) model의 _animatedWalletFlags를 통해 관리합니다.
         /// animatedWalletFlags의 last가 가장 최근에 추가된 항목이며, 이는 model의 syncFromVault에서 case1 일 때 적용됩니다.
         /// 애니메이션을 보여준 뒤에는 setAnimatedWalletFlags()를 실행해서 animatedWalletFlags를 모두 false로 설정해야 합니다.
         await Future.delayed(const Duration(milliseconds: 1000));
         _scrollToBottom();
         await Future.delayed(const Duration(milliseconds: 500));
-        _newWalletAddAnimcontroller.forward();
+        _slideAnimationController.forward();
+        _model.setAnimatedWalletFlags();
+      }
+    } else if (result['result'] as ReturnPageResult ==
+        ReturnPageResult.update) {
+      /// 변경사항이 업데이트된 경우 해당 카드에 깜빡임 효과를 부여합니다.
+      final int walletId = result['id'] as int;
+      final int index = _model.walletBaseItemList
+          .indexWhere((element) => element.id == walletId);
+
+      if (index == -1) return;
+      if (_model.animatedWalletFlags.isNotEmpty &&
+          _model.animatedWalletFlags[index] == ReturnPageResult.update) {
+        initializeAnimationController();
+        await Future.delayed(const Duration(milliseconds: 600));
+        scrollToItem(index);
+        await Future.delayed(const Duration(milliseconds: 1000));
+
+        itemCardWidth =
+            (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
+                    .size
+                    .width +
+                20;
+        itemCardHeight =
+            (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
+                    .size
+                    .height -
+                10;
+
+        print('itemwidth = $itemCardWidth,  itemheight = $itemCardHeight');
+
+        await _blinkAnimationController.forward();
+        await _blinkAnimationController.reverse();
+
+        _blinkAnimationController.reset();
         _model.setAnimatedWalletFlags();
       }
     }
   }
 
-  void initializeAnimationController() {
+  void initializeAnimationController(
+      {ReturnPageResult type = ReturnPageResult.add}) {
     _scrollController = ScrollController();
-    _newWalletAddAnimcontroller = AnimationController(
+
+    // create 일 때: 슬라이드 애니메이션
+    _slideAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
 
-    _newWalletAddanimation = Tween<Offset>(
+    // update 일 때: 깜빡임 애니메이션
+    _blinkAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _slideAnimation = Tween<Offset>(
       begin: const Offset(1.0, 0.0),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
-        parent: _newWalletAddAnimcontroller,
-        curve: Curves.easeOut,
+        parent: _slideAnimationController,
+        curve: Curves.easeInOut,
       ),
     );
+
+    _blinkAnimation = TweenSequence<Color?>(
+      [
+        TweenSequenceItem(
+          tween: ColorTween(
+            begin: Colors.transparent,
+            end: MyColors.transparentWhite_20,
+          ),
+          weight: 50,
+        ),
+        TweenSequenceItem(
+          tween: ColorTween(
+            begin: MyColors.transparentWhite_20,
+            end: Colors.transparent,
+          ),
+          weight: 50,
+        ),
+      ],
+    ).animate(_blinkAnimationController);
+  }
+
+  void scrollToItem(int index) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients && index < _itemKeys.length) {
+        final context = _itemKeys[index].currentContext;
+        if (context != null) {
+          final box = context.findRenderObject() as RenderBox;
+          var targetOffset = box.localToGlobal(Offset.zero).dy +
+              _scrollController.offset -
+              (MediaQuery.of(context).size.height / 2);
+
+          if (targetOffset >= _scrollController.position.maxScrollExtent) {
+            targetOffset = _scrollController.position.maxScrollExtent;
+          }
+
+          if (targetOffset < 0) {
+            // 음수 값일 때는 스크롤 되면서 ptr 되므로 이를 방지
+            _scrollController.animateTo(
+              _scrollController.position.minScrollExtent,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeInOut,
+            );
+
+            return;
+          }
+
+          _scrollController.animateTo(
+            targetOffset,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        } else {
+          _scrollToBottom();
+        }
+      }
+    });
   }
 
   void _scrollToBottom() async {
@@ -175,6 +290,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         shouldRebuild: (previous, next) => true,
         selector: (_, selectorModel) => selectorModel.walletBaseItemList,
         builder: (context, wallets, child) {
+          _itemKeys = List.generate(wallets.length, (index) => GlobalKey());
           return Scaffold(
             backgroundColor: MyColors.black,
             body: Stack(
@@ -184,6 +300,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                   physics: const AlwaysScrollableScrollPhysics(),
                   semanticChildCount: wallets.length,
                   slivers: <Widget>[
+                    // Appbar
                     FrostedAppBar(
                       onTapSeeMore: () {
                         setState(() {
@@ -194,6 +311,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                         _onAddScannerPressed();
                       },
                     ),
+                    // Pull to refresh, refresh indicator(hide)
                     CupertinoSliverRefreshControl(
                       onRefresh: () async {
                         setState(() {
@@ -204,69 +322,70 @@ class _WalletListScreenState extends State<WalletListScreen>
                         }
                       },
                     ),
-                    if (wallets.isNotEmpty)
-                      SliverToBoxAdapter(
-                        child: Selector<AppStateModel, WalletInitState>(
-                          selector: (_, selectorModel) =>
-                              selectorModel.walletInitState,
-                          builder: (context, state, child) {
-                            // 지갑 정보 초기화 또는 갱신 중 에러가 발생했을 때 모두 toast로 알림
-                            if (state == WalletInitState.error) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (isShownErrorToast) return;
-                                isShownErrorToast = true;
-                                CustomToast.showWarningToast(
-                                    context: context,
-                                    text: _model.walletInitError!.message,
-                                    seconds: 7);
-                              });
-                            } else {
-                              isShownErrorToast = false;
-                            }
-
-                            String iconName = '';
-                            String text = '';
-                            Color color = MyColors.primary;
-
-                            switch (state) {
-                              case WalletInitState.impossible:
-                                iconName = 'impossible';
-                                text = '업데이트 불가';
-                                color = MyColors.warningRed;
-                              case WalletInitState.error:
-                                iconName = 'failure';
-                                text = '업데이트 실패';
-                                color = MyColors.failedYellow;
-                              case WalletInitState.finished:
-                                iconName = 'complete';
-                                text = '업데이트 완료';
-                                color = MyColors.primary;
-                              case WalletInitState.processing:
-                                iconName = 'loading';
-                                text = '업데이트 중';
-                                color = MyColors.primary;
-                              default:
-                                iconName = 'complete';
-                                text = '';
-                                color = Colors.transparent;
-                            }
-
+                    // Update Status, update indicator
+                    SliverToBoxAdapter(
+                      child: Selector<AppStateModel, WalletInitState>(
+                        selector: (_, selectorModel) =>
+                            selectorModel.walletInitState,
+                        builder: (context, state, child) {
+                          // 지갑 정보 초기화 또는 갱신 중 에러가 발생했을 때 모두 toast로 알림
+                          if (state == WalletInitState.error) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              state == WalletInitState.finished
-                                  ? showLastUpdateTimeAfterFewSeconds()
-                                  : setState(
-                                      () => isShowLastUpdateTime = false);
+                              if (isShownErrorToast) return;
+                              isShownErrorToast = true;
+                              CustomToast.showWarningToast(
+                                  context: context,
+                                  text: _model.walletInitError!.message,
+                                  seconds: 7);
                             });
+                          } else {
+                            isShownErrorToast = false;
+                          }
 
-                            if (isShowLastUpdateTime &&
-                                _subModel.lastUpdateTime != 0) {
-                              iconName = 'idle';
-                              text =
-                                  '마지막 업데이트 ${DateTimeUtil.formatLastUpdateTime(_subModel.lastUpdateTime)}';
-                              color = MyColors.transparentWhite_50;
-                            }
+                          String iconName = '';
+                          String text = '';
+                          Color color = MyColors.primary;
 
-                            return GestureDetector(
+                          switch (state) {
+                            case WalletInitState.impossible:
+                              iconName = 'impossible';
+                              text = '업데이트 불가';
+                              color = MyColors.warningRed;
+                            case WalletInitState.error:
+                              iconName = 'failure';
+                              text = '업데이트 실패';
+                              color = MyColors.failedYellow;
+                            case WalletInitState.finished:
+                              iconName = 'complete';
+                              text = '업데이트 완료';
+                              color = MyColors.primary;
+                            case WalletInitState.processing:
+                              iconName = 'loading';
+                              text = '업데이트 중';
+                              color = MyColors.primary;
+                            default:
+                              iconName = 'complete';
+                              text = '';
+                              color = Colors.transparent;
+                          }
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            state == WalletInitState.finished
+                                ? showLastUpdateTimeAfterFewSeconds()
+                                : setState(() => isShowLastUpdateTime = false);
+                          });
+
+                          if (isShowLastUpdateTime &&
+                              _subModel.lastUpdateTime != 0) {
+                            iconName = 'idle';
+                            text =
+                                '마지막 업데이트 ${DateTimeUtil.formatLastUpdateTime(_subModel.lastUpdateTime)}';
+                            color = MyColors.transparentWhite_50;
+                          }
+
+                          return Visibility(
+                            visible: wallets.isNotEmpty,
+                            child: GestureDetector(
                               onTap: isShowLastUpdateTime &&
                                       _subModel.lastUpdateTime != 0
                                   ? () {
@@ -310,174 +429,129 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   ],
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
-                    if (!_subModel.isOpenTermsScreen)
-                      SliverToBoxAdapter(
-                        child: GestureDetector(
-                          onTap: () {
-                            MyBottomSheet.showBottomSheet_90(
-                                context: context, child: const TermsScreen());
-                          },
-                          onTapDown: (_) {
-                            setState(() {
-                              _isTapped = true;
-                            });
-                          },
-                          onTapUp: (_) {
-                            setState(() {
-                              _isTapped = false;
-                            });
-                          },
-                          onTapCancel: () {
-                            setState(() {
-                              _isTapped = false;
-                            });
-                          },
-                          child: Container(
-                            width: double.maxFinite,
-                            decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: _isTapped
-                                    ? MyColors.transparentWhite_20
-                                    : MyColors.transparentWhite_12),
-                            margin: const EdgeInsets.only(
-                                left: 8, right: 8, bottom: 16),
-                            padding: const EdgeInsets.only(
-                                left: 26, top: 16, bottom: 16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('모르는 용어가 있으신가요?',
-                                        style: Styles.body1.merge(
-                                            const TextStyle(
-                                                fontWeight: FontWeight.w600))),
-                                    SizedBox(
-                                      width: MediaQuery.sizeOf(context).width -
-                                          100,
-                                      child: Text.rich(
-                                        TextSpan(
+                    ),
+                    // 용어집, 바로 추가하기, loading indicator
+                    SliverToBoxAdapter(
+                      child: Selector<AppStateModel, bool>(
+                        selector: (_, model) => model.fastLoadDone,
+                        builder: (context, fastLoadDone, child) {
+                          return Column(
+                            children: [
+                              // 용어집
+                              Visibility(
+                                visible: !_subModel.isOpenTermsScreen &&
+                                    fastLoadDone,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    MyBottomSheet.showBottomSheet_90(
+                                        context: context,
+                                        child: const TermsScreen());
+                                  },
+                                  onTapDown: (_) {
+                                    setState(() {
+                                      _isTapped = true;
+                                    });
+                                  },
+                                  onTapUp: (_) {
+                                    setState(() {
+                                      _isTapped = false;
+                                    });
+                                  },
+                                  onTapCancel: () {
+                                    setState(() {
+                                      _isTapped = false;
+                                    });
+                                  },
+                                  child: Container(
+                                    width: double.maxFinite,
+                                    decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        color: _isTapped
+                                            ? MyColors.transparentWhite_20
+                                            : MyColors.transparentWhite_12),
+                                    margin: const EdgeInsets.only(
+                                        left: 8, right: 8, bottom: 16),
+                                    padding: const EdgeInsets.only(
+                                        left: 26, top: 16, bottom: 16),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            const TextSpan(
-                                              text: '오른쪽 위 ',
-                                              style: Styles.label,
-                                            ),
-                                            TextSpan(
-                                              text: '•••',
-                                              style: Styles.label.merge(
-                                                  const TextStyle(
-                                                      letterSpacing: -2.0)),
-                                            ),
-                                            const TextSpan(
-                                              text: ' - 용어집 또는 여기를 눌러 바로가기',
-                                              style: Styles.label,
-                                            ),
+                                            Text('모르는 용어가 있으신가요?',
+                                                style: Styles.body1.merge(
+                                                    const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600))),
+                                            SizedBox(
+                                              width: MediaQuery.sizeOf(context)
+                                                      .width -
+                                                  100,
+                                              child: Text.rich(
+                                                TextSpan(
+                                                  children: [
+                                                    const TextSpan(
+                                                      text: '오른쪽 위 ',
+                                                      style: Styles.label,
+                                                    ),
+                                                    TextSpan(
+                                                      text: '•••',
+                                                      style: Styles.label.merge(
+                                                          const TextStyle(
+                                                              letterSpacing:
+                                                                  -2.0)),
+                                                    ),
+                                                    const TextSpan(
+                                                      text:
+                                                          ' - 용어집 또는 여기를 눌러 바로가기',
+                                                      style: Styles.label,
+                                                    ),
+                                                  ],
+                                                ),
+                                                maxLines: 2,
+                                              ),
+                                            )
                                           ],
                                         ),
-                                        maxLines: 2,
-                                      ),
-                                    )
-                                  ],
-                                ),
-                                GestureDetector(
-                                  onTap: _subModel.setIsOpenTermsScreen,
-                                  child: Container(
-                                    color: Colors.transparent,
-                                    padding: const EdgeInsets.all(16),
-                                    child: SvgPicture.asset(
-                                        'assets/svg/close.svg',
-                                        width: 10,
-                                        height: 10,
-                                        colorFilter: const ColorFilter.mode(
-                                            MyColors.white, BlendMode.srcIn)),
+                                        GestureDetector(
+                                          onTap: _subModel.setIsOpenTermsScreen,
+                                          child: Container(
+                                            color: Colors.transparent,
+                                            padding: const EdgeInsets.all(16),
+                                            child: SvgPicture.asset(
+                                                'assets/svg/close.svg',
+                                                width: 10,
+                                                height: 10,
+                                                colorFilter:
+                                                    const ColorFilter.mode(
+                                                        MyColors.white,
+                                                        BlendMode.srcIn)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    SliverSafeArea(
-                      top: false,
-                      minimum: const EdgeInsets.symmetric(horizontal: 8),
-                      sliver: Selector<AppStateModel, bool>(
-                        selector: (_, selectorModel) =>
-                            selectorModel.fastLoadDone,
-                        builder: (context, fastLoadDone, child) {
-                          return SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                                childCount: wallets.length, (ctx, index) {
-                              if (fastLoadDone == false) {
-                                if (index == 0) {
-                                  return const Padding(
-                                    padding: EdgeInsets.only(top: 40.0),
-                                    child: CupertinoActivityIndicator(
-                                      color: MyColors.white,
-                                      radius: 20,
-                                    ),
-                                  );
-                                } else {
-                                  return null;
-                                }
-                              }
-
-                              if (index < wallets.length) {
-                                final WalletListItemBase(
-                                  id: id,
-                                  name: name,
-                                  balance: balance,
-                                  iconIndex: iconIndex,
-                                  colorIndex: colorIndex
-                                ) = wallets[index];
-
-                                final base = wallets[index];
-                                List<MultisigSigner>? signers;
-                                if (base.walletType ==
-                                    WalletType.multiSignature) {
-                                  signers =
-                                      (base as MultisigWalletListItem).signers;
-                                }
-                                return _model.animatedWalletFlags[index]
-                                    ? SlideTransition(
-                                        position: _newWalletAddanimation,
-                                        child: WalletRowItem(
-                                          id: id,
-                                          name: name,
-                                          balance: balance,
-                                          iconIndex: iconIndex,
-                                          colorIndex: colorIndex,
-                                          isLastItem:
-                                              index == wallets.length - 1,
-                                          isBalanceHidden:
-                                              _subModel.isBalanceHidden,
-                                          signers: signers,
-                                        ),
-                                      )
-                                    : WalletRowItem(
-                                        id: id,
-                                        name: name,
-                                        balance: balance,
-                                        iconIndex: iconIndex,
-                                        colorIndex: colorIndex,
-                                        isLastItem: index == wallets.length - 1,
-                                        isBalanceHidden:
-                                            _subModel.isBalanceHidden,
-                                        signers: signers,
-                                      );
-                              }
-
-                              if (index == wallets.length && wallets.isEmpty) {
-                                return Container(
+                              ),
+                              // 바로 추가하기
+                              Visibility(
+                                visible: fastLoadDone && wallets.isEmpty,
+                                child: Container(
                                   width: double.maxFinite,
                                   decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(16),
                                       color: MyColors.transparentWhite_12),
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 8),
                                   padding: const EdgeInsets.only(
                                       top: 26, bottom: 24, left: 26, right: 26),
                                   child: Column(
@@ -519,7 +593,119 @@ class _WalletListScreenState extends State<WalletListScreen>
                                       ),
                                     ],
                                   ),
-                                );
+                                ),
+                              ),
+                              // Indicator
+                              Visibility(
+                                visible: !fastLoadDone,
+                                child: const Padding(
+                                  padding: EdgeInsets.only(top: 40.0),
+                                  child: CupertinoActivityIndicator(
+                                    color: MyColors.white,
+                                    radius: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                    // 지갑 목록
+                    SliverSafeArea(
+                      top: false,
+                      minimum: const EdgeInsets.symmetric(horizontal: 8),
+                      sliver: Selector<AppStateModel, bool>(
+                        selector: (_, selectorModel) =>
+                            selectorModel.fastLoadDone,
+                        builder: (context, fastLoadDone, child) {
+                          return SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                                childCount: wallets.length, (ctx, index) {
+                              if (index < wallets.length) {
+                                final WalletListItemBase(
+                                  id: id,
+                                  name: name,
+                                  balance: balance,
+                                  iconIndex: iconIndex,
+                                  colorIndex: colorIndex
+                                ) = wallets[index];
+
+                                final base = wallets[index];
+                                List<MultisigSigner>? signers;
+                                if (base.walletType ==
+                                    WalletType.multiSignature) {
+                                  signers =
+                                      (base as MultisigWalletListItem).signers;
+                                }
+
+                                ReturnPageResult flag =
+                                    _model.animatedWalletFlags[index];
+                                return flag == ReturnPageResult.add
+                                    ? SlideTransition(
+                                        position: _slideAnimation,
+                                        child: WalletRowItem(
+                                          key: _itemKeys[index],
+                                          id: id,
+                                          name: name,
+                                          balance: balance,
+                                          iconIndex: iconIndex,
+                                          colorIndex: colorIndex,
+                                          isLastItem:
+                                              index == wallets.length - 1,
+                                          isBalanceHidden:
+                                              _subModel.isBalanceHidden,
+                                          signers: signers,
+                                        ),
+                                      )
+                                    : flag == ReturnPageResult.update
+                                        ? Stack(
+                                            children: [
+                                              WalletRowItem(
+                                                key: _itemKeys[index],
+                                                id: id,
+                                                name: name,
+                                                balance: balance,
+                                                iconIndex: iconIndex,
+                                                colorIndex: colorIndex,
+                                                isLastItem:
+                                                    index == wallets.length - 1,
+                                                isBalanceHidden:
+                                                    _subModel.isBalanceHidden,
+                                                signers: signers,
+                                              ),
+                                              IgnorePointer(
+                                                child: AnimatedBuilder(
+                                                  animation: _blinkAnimation,
+                                                  builder: (context, child) {
+                                                    return Container(
+                                                      decoration: BoxDecoration(
+                                                          color: _blinkAnimation
+                                                              .value,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(
+                                                                      28)),
+                                                      width: itemCardWidth,
+                                                      height: itemCardHeight,
+                                                    );
+                                                  },
+                                                ),
+                                              )
+                                            ],
+                                          )
+                                        : WalletRowItem(
+                                            id: id,
+                                            name: name,
+                                            balance: balance,
+                                            iconIndex: iconIndex,
+                                            colorIndex: colorIndex,
+                                            isLastItem:
+                                                index == wallets.length - 1,
+                                            isBalanceHidden:
+                                                _subModel.isBalanceHidden,
+                                            signers: signers,
+                                          );
                               }
                               return null;
                             }),
@@ -602,7 +788,10 @@ class _WalletListScreenState extends State<WalletListScreen>
   void dispose() {
     _animationController.dispose();
     _scrollController.dispose();
-    _newWalletAddAnimcontroller.dispose();
+    _slideAnimationController.dispose();
+    _blinkAnimationController.dispose();
     super.dispose();
   }
 }
+
+enum ReturnPageResult { none, add, update }

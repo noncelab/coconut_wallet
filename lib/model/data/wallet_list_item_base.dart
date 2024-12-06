@@ -6,14 +6,14 @@ import 'package:json_annotation/json_annotation.dart';
 abstract class WalletListItemBase {
   @JsonKey(name: "id")
   final int id;
-  @JsonKey(name: "name")
-  final String name;
   @JsonKey(name: "colorIndex")
   final int colorIndex;
   @JsonKey(name: "iconIndex")
   final int iconIndex;
   @JsonKey(name: "descriptor")
   final String descriptor;
+  @JsonKey(name: "name")
+  String name;
   @JsonKey(name: "walletType")
   WalletType walletType;
   @JsonKey(name: "balance")

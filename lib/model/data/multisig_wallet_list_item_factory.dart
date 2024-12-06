@@ -20,6 +20,7 @@ class MultisigWalletListItemFactory implements WalletListItemFactory {
     int requiredSignatureCount = secrets?[requiredSignatureCountField];
 
     final nextId = WalletListItemFactory.loadNextId();
+
     final newVault = MultisigWalletListItem(
         id: nextId,
         name: name,

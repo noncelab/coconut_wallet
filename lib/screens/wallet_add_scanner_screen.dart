@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coconut_wallet/screens/wallet_list_screen.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -165,27 +167,33 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           switch (value.result) {
             case SyncResult.newWalletAdded:
               {
-                {
-                  Navigator.pop(context, true);
-                  break;
-                }
+                Map<String, dynamic> returnValue = {
+                  'result': ReturnPageResult.add,
+                };
+                Navigator.pop(context, returnValue);
+                break;
               }
             case SyncResult.existingWalletNoUpdate:
               {
-                Navigator.pushReplacementNamed(context, '/wallet-detail',
-                    arguments: {
-                      'id': value.walletId,
-                      'syncResult': value.result,
-                    });
+                vibrateLightDouble();
+                CustomDialogs.showCustomAlertDialog(context,
+                    title: '업데이트 실패',
+                    message: "${TextUtils.ellipsisIfLonger(
+                      model.getWalletById(value.walletId!).name,
+                      maxLength: 15,
+                    )}에 업데이트할 정보가 없어요", onConfirm: () {
+                  _isProcessing = false;
+                  Navigator.pop(context);
+                });
                 break;
               }
             case SyncResult.existingWalletUpdated:
               {
-                Navigator.pushReplacementNamed(context, '/wallet-detail',
-                    arguments: {
-                      'id': value.walletId,
-                      'syncResult': value.result,
-                    });
+                Map<String, dynamic> returnValue = {
+                  'result': ReturnPageResult.update,
+                  'id': value.walletId!
+                };
+                Navigator.pop(context, returnValue);
                 break;
               }
             case SyncResult.existingName:
@@ -194,6 +202,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                   title: '이름 중복',
                   message: "같은 이름을 가진 지갑이 있습니다.\n이름을 변경한 후 동기화 해주세요.",
                   onConfirm: () {
+                _isProcessing = false;
                 Navigator.pop(context);
               });
           }

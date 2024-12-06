@@ -22,6 +22,8 @@ void main() {
     // This app is designed only to work vertically, so we limit
     // orientations to portrait up and down.
     WidgetsFlutterBinding.ensureInitialized();
+    final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
+    BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
     if (Platform.isAndroid) {
       try {
         const MethodChannel channel = MethodChannel(methodChannelOS);

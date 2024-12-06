@@ -29,9 +29,7 @@ class SinglesigWalletListItemFactory implements WalletListItemFactory {
   @override
   SinglesigWalletListItem createFromJson(Map<String, dynamic> json) {
     final result = SinglesigWalletListItem.fromJson(json);
-
     result.walletBase = SingleSignatureWallet.fromDescriptor(result.descriptor);
-
     return result;
   }
 }
