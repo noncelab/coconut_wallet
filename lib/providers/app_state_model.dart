@@ -478,6 +478,8 @@ class AppStateModel extends ChangeNotifier {
   }
 
   static isolateEntryDecodeWallets(List<Object> args) async {
+    BitcoinNetwork.setNetwork(BitcoinNetwork.regtest);
+
     final SendPort sendPort = args[0] as SendPort;
     final String jsonArrayString = args[1] as String;
 
