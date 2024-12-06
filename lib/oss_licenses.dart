@@ -1391,7 +1391,6 @@ Licensor: Nonce Lab''',
       PackageRef('bech32'),
       PackageRef('http'),
       PackageRef('json_annotation'),
-      PackageRef('objectbox'),
       PackageRef('bech32m_i'),
       PackageRef('decimal'),
       PackageRef('flat_buffers')
