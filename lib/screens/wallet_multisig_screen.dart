@@ -257,29 +257,27 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
         margin: const EdgeInsets.only(top: 20, left: 16, right: 16),
         decoration: BoxDecoration(
           color: MyColors.black,
-          borderRadius: BorderRadius.circular(30),
-          gradient: LinearGradient(
-            colors: CustomColorHelper.getGradientColors(_multiWallet.signers),
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
+          borderRadius: MyBorder.defaultRadius,
+          gradient: BoxDecorations.getMultisigLinearGradient(
+              CustomColorHelper.getGradientColors(_multiWallet.signers)),
         ),
         child: Container(
           margin: const EdgeInsets.all(2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           decoration: BoxDecoration(
             color: MyColors.black,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(
+                22), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 아이콘
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: BackgroundColorPalette[_multiWallet.colorIndex],
-                  borderRadius: BorderRadius.circular(18.0),
+                  borderRadius: BorderRadius.circular(14.0),
                 ),
                 child: SvgPicture.asset(
                   CustomIcons.getPathByIndex(_multiWallet.iconIndex),
@@ -287,7 +285,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                     ColorPalette[_multiWallet.colorIndex],
                     BlendMode.srcIn,
                   ),
-                  width: 24.0,
+                  width: 28.0,
                 ),
               ),
               const SizedBox(width: 8.0),
@@ -343,7 +341,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
           separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final item = _multiWallet.signers[index];
-            final isVaultKey = item.innerVaultId != null;
+            final isInnerWallet = item.innerVaultId != null;
             final name = item.name ?? '';
             final colorIndex = item.colorIndex ?? 0;
             final iconIndex = item.iconIndex ?? 0;
@@ -380,31 +378,31 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: MyColors.black,
-                          borderRadius: BorderRadius.circular(17),
+                          borderRadius: MyBorder.defaultRadius,
                           border: Border.all(color: MyColors.borderLightgrey),
                         ),
                         child: Row(
                           children: [
                             // 아이콘
                             Container(
-                                padding: EdgeInsets.all(isVaultKey ? 8 : 10),
+                                padding: EdgeInsets.all(isInnerWallet ? 8 : 10),
                                 decoration: BoxDecoration(
-                                  color: isVaultKey
+                                  color: isInnerWallet
                                       ? BackgroundColorPalette[colorIndex]
                                       : BackgroundColorPalette[8],
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(10.0),
                                 ),
                                 child: SvgPicture.asset(
-                                  isVaultKey
+                                  isInnerWallet
                                       ? CustomIcons.getPathByIndex(iconIndex)
                                       : 'assets/svg/download.svg',
                                   colorFilter: ColorFilter.mode(
-                                    isVaultKey
+                                    isInnerWallet
                                         ? ColorPalette[colorIndex]
                                         : ColorPalette[8],
                                     BlendMode.srcIn,
                                   ),
-                                  width: isVaultKey ? 20 : 15,
+                                  width: isInnerWallet ? 20 : 15,
                                 )),
 
                             const SizedBox(width: 12),
@@ -424,11 +422,8 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                                     visible: memo.isNotEmpty,
                                     child: Text(
                                       memo,
-                                      style: Styles.body2.copyWith(
-                                        color: MyColors.transparentWhite_60,
-                                        fontSize: 11,
-                                      ),
-                                      maxLines: 1,
+                                      style: Styles.caption2,
+                                      maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -439,8 +434,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                             // MFP 텍스트
                             Text(
                               _keystoreList[index].masterFingerprint,
-                              style:
-                                  Styles.body1.copyWith(color: MyColors.white),
+                              style: Styles.mfpH3,
                             ),
                           ],
                         ),

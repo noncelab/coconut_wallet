@@ -690,6 +690,7 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
           Navigator.pushNamed(context, '/transaction-detail',
               arguments: {'id': widget.id, 'tx': widget.tx});
         },
+        borderRadius: MyBorder.defaultRadiusValue,
         child: Container(
           height: 84,
           padding: Paddings.widgetContainer,

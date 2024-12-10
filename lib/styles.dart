@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
 abstract class MyColors {
   static const black = Color.fromRGBO(20, 19, 24, 1);
@@ -263,6 +264,13 @@ abstract class Styles {
       fontStyle: FontStyle.normal,
       fontWeight: FontWeight.w400);
 
+  static const TextStyle caption2 = TextStyle(
+      fontFamily: _fontText,
+      color: MyColors.transparentWhite_70,
+      fontSize: 10,
+      fontStyle: FontStyle.normal,
+      fontWeight: FontWeight.w400);
+
   static const TextStyle warning = TextStyle(
       fontFamily: _fontText,
       color: MyColors.red,
@@ -313,10 +321,19 @@ abstract class Styles {
     fontStyle: FontStyle.normal,
     fontWeight: FontWeight.w500,
   );
+
+  static const TextStyle mfpH3 = TextStyle(
+      fontFamily: _fontNumber,
+      color: MyColors.white,
+      fontSize: 16,
+      fontStyle: FontStyle.normal,
+      fontWeight: FontWeight.w400);
 }
 
 abstract class MyBorder {
-  static final BorderRadius defaultRadius = BorderRadius.circular(24);
+  static const double defaultRadiusValue = 24.0;
+  static final BorderRadius defaultRadius =
+      BorderRadius.circular(defaultRadiusValue);
   static final BorderRadius boxDecorationRadius = BorderRadius.circular(28);
 }
 
@@ -334,4 +351,12 @@ class BoxDecorations {
     borderRadius: MyBorder.boxDecorationRadius,
     color: MyColors.transparentWhite_06,
   );
+
+  static LinearGradient getMultisigLinearGradient(List<Color> colors) {
+    return LinearGradient(
+        colors: colors,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        transform: const GradientRotation(math.pi / 10));
+  }
 }
