@@ -152,9 +152,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                 20;
         itemCardHeight =
             (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
-                    .size
-                    .height -
-                10;
+                .size
+                .height;
 
         print('itemwidth = $itemCardWidth,  itemheight = $itemCardHeight');
 
