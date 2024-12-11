@@ -134,7 +134,7 @@ abstract class Styles {
   static const TextStyle appbarTitle = TextStyle(
       fontFamily: _fontText,
       color: MyColors.white,
-      fontSize: 16,
+      fontSize: 18,
       fontStyle: FontStyle.normal);
 
   static const TextStyle h3Number = TextStyle(
