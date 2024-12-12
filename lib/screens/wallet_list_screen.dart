@@ -66,8 +66,8 @@ class _WalletListScreenState extends State<WalletListScreen>
   late AnimationController _blinkAnimationController;
   late Animation<Offset> _slideAnimation;
   late Animation<Color?> _blinkAnimation;
-  late double itemCardWidth;
-  late double itemCardHeight;
+  double? itemCardWidth;
+  double? itemCardHeight;
 
   @override
   void initState() {
@@ -99,14 +99,6 @@ class _WalletListScreenState extends State<WalletListScreen>
       AppReviewService.showReviewScreenIfEligible(context,
           animationController: _animationController);
     });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    itemCardWidth = MediaQuery.sizeOf(context).width;
-    itemCardHeight = 80;
   }
 
   void _onAddScannerPressed() async {
@@ -154,6 +146,11 @@ class _WalletListScreenState extends State<WalletListScreen>
             (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
                 .size
                 .height;
+
+        // 마지막 아이템이 아닌 경우
+        if (index != _model.walletItemList.length - 1) {
+          itemCardHeight = itemCardHeight! - 10;
+        }
 
         await _blinkAnimationController.forward();
         await _blinkAnimationController.reverse();
