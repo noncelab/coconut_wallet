@@ -7,11 +7,9 @@ import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/screens/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/qrcode_bottom_sheet_screen.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/infomation_row_item.dart';
 import 'package:coconut_wallet/widgets/wallet_item_card.dart';
 import 'package:flutter/material.dart';
@@ -60,9 +58,8 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
           _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
       _walletTooltipIconPosition =
           _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
-      _tooltipTopPadding = MediaQuery.of(context).padding.top +
-          MediaQuery.paddingOf(context).top -
-          _walletTooltipIconRenderBox!.size.height;
+      _tooltipTopPadding =
+          MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
     });
   }
 
