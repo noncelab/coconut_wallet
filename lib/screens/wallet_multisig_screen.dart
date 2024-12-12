@@ -34,6 +34,8 @@ class WalletMultisigScreen extends StatefulWidget {
 
 class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
   final GlobalKey _walletTooltipKey = GlobalKey();
+  late RenderBox _walletTooltipIconRenderBox;
+  late Offset _walletTooltipIconPosition = Offset.zero;
 
   Timer? _tooltipTimer;
   int _tooltipRemainingTime = 0;
@@ -46,10 +48,17 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
 
   @override
   void initState() {
+    super.initState();
     _appStateModel = Provider.of<AppStateModel>(context, listen: false);
     _subModel = Provider.of<AppSubStateModel>(context, listen: false);
     _updateMultiWalletListItem();
-    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _walletTooltipIconRenderBox =
+          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
+      _walletTooltipIconPosition =
+          _walletTooltipIconRenderBox.localToGlobal(Offset.zero);
+    });
   }
 
   _updateMultiWalletListItem() {
@@ -213,8 +222,10 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                 Visibility(
                   visible: _tooltipRemainingTime > 0,
                   child: Positioned(
-                    top: tooltipTop,
-                    right: 16,
+                    top: _walletTooltipIconPosition.dy - tooltipTop - 5,
+                    right: MediaQuery.of(context).size.width -
+                        _walletTooltipIconPosition.dx -
+                        48,
                     child: GestureDetector(
                       onTap: () => _removeTooltip(),
                       child: ClipPath(
@@ -226,7 +237,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                             right: 10,
                             bottom: 10,
                           ),
-                          color: MyColors.darkgrey,
+                          color: MyColors.white,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -235,7 +246,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                                 style: Styles.caption.merge(TextStyle(
                                   height: 1.3,
                                   fontFamily: CustomFonts.text.getFontFamily,
-                                  color: MyColors.white,
+                                  color: MyColors.darkgrey,
                                 )),
                               ),
                             ],
