@@ -70,8 +70,8 @@ class AppStateModel extends ChangeNotifier {
 
   NodeConnector? _nodeConnector;
 
-  List<WalletListItemBase> _walletBaseItemList = [];
-  List<WalletListItemBase> get walletBaseItemList => _walletBaseItemList;
+  List<WalletListItemBase> _walletItemList = [];
+  List<WalletListItemBase> get walletItemList => _walletItemList;
 
   // 애니메이션이 동작해야하면 해당하는 ReturnPageResult.<add/update>, 아니면 ReturnPageResult.none을 담습니다.
   List<ReturnPageResult> _animatedWalletFlags = [];
@@ -192,7 +192,7 @@ class AppStateModel extends ChangeNotifier {
   void setAnimatedWalletFlags(
       {int? index, ReturnPageResult type = ReturnPageResult.none}) {
     _animatedWalletFlags =
-        List.filled(_walletBaseItemList.length, ReturnPageResult.none);
+        List.filled(_walletItemList.length, ReturnPageResult.none);
     if (index != null) {
       _animatedWalletFlags[index - 1] = type;
     }
@@ -229,15 +229,15 @@ class AppStateModel extends ChangeNotifier {
 
   // Returns a copy of the list of wallet list.
   List<SinglesigWalletListItem> getWallets() {
-    if (_walletBaseItemList.isEmpty) {
+    if (_walletItemList.isEmpty) {
       return [];
     }
 
-    return List.from(_walletBaseItemList);
+    return List.from(_walletItemList);
   }
 
   WalletListItemBase getWalletById(int id) {
-    return _walletBaseItemList.firstWhere((element) => element.id == id);
+    return _walletItemList.firstWhere((element) => element.id == id);
   }
 
   // syncFromVault start
@@ -253,14 +253,14 @@ class AppStateModel extends ChangeNotifier {
     }
 
     SyncResult result = SyncResult.newWalletAdded;
-    final index = _walletBaseItemList
+    final index = _walletItemList
         .indexWhere((element) => element.descriptor == walletSync.descriptor);
 
     bool isMultisig = walletSync.signers != null;
 
     // 기존 지갑이 있는 경우
     if (index != -1) {
-      final existingWallet = _walletBaseItemList[index];
+      final existingWallet = _walletItemList[index];
       bool isMultisigUpdated = false;
       if (isMultisig) {
         final existingMultiWallet = existingWallet as MultisigWalletListItem;
@@ -286,9 +286,9 @@ class AppStateModel extends ChangeNotifier {
         final updateItem =
             await _createUpdatedWallet(existingWallet, walletSync, isMultisig);
 
-        List<WalletListItemBase> updatedList = List.from(_walletBaseItemList);
+        List<WalletListItemBase> updatedList = List.from(_walletItemList);
         updatedList[index] = updateItem;
-        _walletBaseItemList = updatedList;
+        _walletItemList = updatedList;
 
         result = SyncResult.existingWalletUpdated;
         // 에러 발생 시 wallet_list_screen에서 toast로 알리게 하기 위해서 notifyListeners() 호출
@@ -308,7 +308,7 @@ class AppStateModel extends ChangeNotifier {
     }
 
     // 새 지갑 추가
-    final sameNameIndex = _walletBaseItemList
+    final sameNameIndex = _walletItemList
         .indexWhere((element) => element.name == walletSync.name);
     if (sameNameIndex != -1) {
       // case 4: 동일 이름 존재
@@ -317,13 +317,13 @@ class AppStateModel extends ChangeNotifier {
 
     // case 1: 새 지갑 생성
     final newItem = await _createNewWallet(walletSync, isMultisig);
-    List<WalletListItemBase> updatedList = List.from(_walletBaseItemList);
+    List<WalletListItemBase> updatedList = List.from(_walletItemList);
     updatedList.add(newItem);
-    _walletBaseItemList = updatedList;
+    _walletItemList = updatedList;
 
     if (result == SyncResult.newWalletAdded) {
       setAnimatedWalletFlags(
-          index: _walletBaseItemList.length, type: ReturnPageResult.add);
+          index: _walletItemList.length, type: ReturnPageResult.add);
     }
     await initWallet(targetId: newItem.id, syncOthers: false);
 
@@ -385,14 +385,14 @@ class AppStateModel extends ChangeNotifier {
   // syncFromVault end
 
   Future<void> deleteWallet(int id) async {
-    final index = _walletBaseItemList.indexWhere((item) => item.id == id);
+    final index = _walletItemList.indexWhere((item) => item.id == id);
     if (index == -1) {
       throw Exception('deleteVault: no wallet id is "$id"');
     }
 
-    _walletBaseItemList = List.from(_walletBaseItemList)..removeAt(index);
+    _walletItemList = List.from(_walletItemList)..removeAt(index);
 
-    if (_walletBaseItemList.isEmpty) {
+    if (_walletItemList.isEmpty) {
       _subStateModel.saveNotEmptyWalletList(false);
     }
 
@@ -465,10 +465,10 @@ class AppStateModel extends ChangeNotifier {
         isolateEntryDecodeWallets, [receivePort.sendPort, jsonArrayString]);
     final result = await receivePort.first as List<WalletListItemBase>;
 
-    _walletBaseItemList = result;
+    _walletItemList = result;
     _animatedWalletFlags =
-        List.filled(_walletBaseItemList.length, ReturnPageResult.none);
-    _subStateModel.saveNotEmptyWalletList(_walletBaseItemList.isNotEmpty);
+        List.filled(_walletItemList.length, ReturnPageResult.none);
+    _subStateModel.saveNotEmptyWalletList(_walletItemList.isNotEmpty);
 
     // for wallet_list_screen
     if (!_fastLoadDone) {
@@ -510,10 +510,10 @@ class AppStateModel extends ChangeNotifier {
   void addOrUpdateWalletList(WalletListItemBase walletListItem) {
     int index;
     if (walletListItem.walletType == WalletType.multiSignature) {
-      index = _walletBaseItemList
+      index = _walletItemList
           .indexWhere((element) => element.id == walletListItem.id);
     } else {
-      index = _walletBaseItemList.indexWhere((element) {
+      index = _walletItemList.indexWhere((element) {
         if (element.walletType == WalletType.multiSignature) return false;
         final baseMFP = (element.walletBase as SingleSignatureWallet)
             .keyStore
@@ -525,7 +525,7 @@ class AppStateModel extends ChangeNotifier {
       });
     }
 
-    List<WalletListItemBase> updatedList = List.from(_walletBaseItemList);
+    List<WalletListItemBase> updatedList = List.from(_walletItemList);
 
     if (index != -1) {
       updatedList[index] = walletListItem;
@@ -533,22 +533,22 @@ class AppStateModel extends ChangeNotifier {
       updatedList.add(walletListItem);
     }
 
-    _walletBaseItemList = updatedList;
+    _walletItemList = updatedList;
 
-    _subStateModel.saveNotEmptyWalletList(_walletBaseItemList.isNotEmpty);
+    _subStateModel.saveNotEmptyWalletList(_walletItemList.isNotEmpty);
     _animatedWalletFlags =
-        List.filled(_walletBaseItemList.length, ReturnPageResult.none);
+        List.filled(_walletItemList.length, ReturnPageResult.none);
     notifyListeners();
   }
 
   Future<void> _fetchAllWalletLatestInfo({int? exceptionalId}) async {
     //Logger.log(">>>>> [_fetchAllWalletLatestInfo] exceptionalId: $exceptionalId");
-    List<WalletListItemBase> targetWalletList = _walletBaseItemList;
+    List<WalletListItemBase> targetWalletList = _walletItemList;
     int? exceptionIndex;
     if (exceptionalId != null) {
-      exceptionIndex = _walletBaseItemList
-          .indexWhere((element) => element.id == exceptionalId);
-      targetWalletList = List<WalletListItemBase>.from(_walletBaseItemList)
+      exceptionIndex =
+          _walletItemList.indexWhere((element) => element.id == exceptionalId);
+      targetWalletList = List<WalletListItemBase>.from(_walletItemList)
         ..removeAt(exceptionIndex);
     }
 
@@ -557,11 +557,10 @@ class AppStateModel extends ChangeNotifier {
 
     if (exceptionalId != null) {
       assert(exceptionIndex != -1);
-      newWalletList.insert(
-          exceptionIndex!, _walletBaseItemList[exceptionIndex]);
+      newWalletList.insert(exceptionIndex!, _walletItemList[exceptionIndex]);
     }
     // for update _walletList and UI both
-    _walletBaseItemList = newWalletList;
+    _walletItemList = newWalletList;
 
     await _updateWalletInStorage();
     //_walletList = List.from(_walletList);
@@ -569,10 +568,9 @@ class AppStateModel extends ChangeNotifier {
 
   Future<void> _fetchWalletLatestInfo(int walletId) async {
     try {
-      int i =
-          _walletBaseItemList.indexWhere((element) => element.id == walletId);
+      int i = _walletItemList.indexWhere((element) => element.id == walletId);
 
-      final walletBaseItem = _walletBaseItemList[i];
+      final walletBaseItem = _walletItemList[i];
       WalletListItemBase existingWallet;
 
       if (walletBaseItem.walletType == WalletType.multiSignature) {
@@ -583,11 +581,11 @@ class AppStateModel extends ChangeNotifier {
 
       List<WalletListItemBase> fetchResult =
           await _fetchWalletsData([existingWallet]);
-      _walletBaseItemList[i] = fetchResult[0];
+      _walletItemList[i] = fetchResult[0];
     } finally {
       await _updateWalletInStorage();
       // UI 업데이트를 위해 _walletList reference를 변경해준다
-      _walletBaseItemList = List.from(_walletBaseItemList);
+      _walletItemList = List.from(_walletItemList);
     }
   }
 
@@ -759,13 +757,13 @@ class AppStateModel extends ChangeNotifier {
   // _fetchWalletsData end
 
   Future<void> _updateWalletInStorage() async {
-    final jsonString = jsonEncode(_walletBaseItemList
+    final jsonString = jsonEncode(_walletItemList
         .map((item) => item.walletType == WalletType.multiSignature
             ? (item as MultisigWalletListItem).toJson()
             : (item as SinglesigWalletListItem).toJson())
         .toList());
 
-    _subStateModel.saveNotEmptyWalletList(_walletBaseItemList.isNotEmpty);
+    _subStateModel.saveNotEmptyWalletList(_walletItemList.isNotEmpty);
 
     try {
       await _storageService.write(key: WALLET_LIST, value: jsonString);

@@ -134,8 +134,8 @@ class _WalletListScreenState extends State<WalletListScreen>
         ReturnPageResult.update) {
       /// 변경사항이 업데이트된 경우 해당 카드에 깜빡임 효과를 부여합니다.
       final int walletId = result['id'] as int;
-      final int index = _model.walletBaseItemList
-          .indexWhere((element) => element.id == walletId);
+      final int index =
+          _model.walletItemList.indexWhere((element) => element.id == walletId);
 
       if (index == -1) return;
       if (_model.animatedWalletFlags.isNotEmpty &&
@@ -285,7 +285,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       },
       child: Selector<AppStateModel, List<WalletListItemBase>>(
         shouldRebuild: (previous, next) => true,
-        selector: (_, selectorModel) => selectorModel.walletBaseItemList,
+        selector: (_, selectorModel) => selectorModel.walletItemList,
         builder: (context, wallets, child) {
           _itemKeys = List.generate(wallets.length, (index) => GlobalKey());
           return Scaffold(
