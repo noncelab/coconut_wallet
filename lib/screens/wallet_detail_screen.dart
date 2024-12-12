@@ -666,8 +666,8 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
       case TransactionStatus.sending:
         return Text(
           widget.currentUnit == Unit.btc
-              ? '-${satoshiToBitcoinString(widget.tx.amount!)}'
-              : '-${addCommasToIntegerPart(widget.tx.amount!.toDouble())}',
+              ? satoshiToBitcoinString(widget.tx.amount!)
+              : addCommasToIntegerPart(widget.tx.amount!.toDouble()),
           style: Styles.body1Number.merge(const TextStyle(
               color: MyColors.primary, fontWeight: FontWeight.w500)),
         );

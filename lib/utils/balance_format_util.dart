@@ -5,10 +5,11 @@ import 'package:coconut_lib/coconut_lib.dart';
 /// @param satoshi 사토시 단위 잔액
 /// @returns String 비트코인 단위 잔액 문자열 예) 00,000,000.0000 0000
 String satoshiToBitcoinString(int satoshi) {
-  var toBitcoin = UnitUtil.satoshiToBitcoin(satoshi);
+  double toBitcoin = UnitUtil.satoshiToBitcoin(satoshi);
 
   String bitcoinString;
   if (toBitcoin % 1 == 0) {
+    // 소숫점만 있을 때
     bitcoinString = toBitcoin.toInt().toString();
   } else {
     bitcoinString =
@@ -20,8 +21,9 @@ String satoshiToBitcoinString(int satoshi) {
   String integerPart = parts[0];
   String decimalPart = parts.length > 1 ? parts[1] : '';
 
-  final integerPartFormatted =
-      addCommasToIntegerPart(double.parse(integerPart));
+  final integerPartFormatted = integerPart == '-0'
+      ? '-0'
+      : addCommasToIntegerPart(double.parse(integerPart));
 
   // Group the decimal part into blocks of 4 digits
   final decimalPartGrouped = RegExp(r'.{1,4}')
