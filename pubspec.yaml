@@ -17,9 +17,9 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 # iOS
-#version: 2.0.0+1
+version: 2.0.0+3
 # AOS
-version: 2.0.0+12
+#version: 2.0.0+13
 
 environment:
   sdk: ">=3.3.1 <4.0.0"
@@ -71,10 +71,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  coconut_lib:
-    git:
-      url: https://github.com/noncelab/coconut_lib
-      ref: multisig
+  coconut_lib: ^0.8.0
 
 dev_dependencies:
   flutter_test:

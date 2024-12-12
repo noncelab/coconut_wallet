@@ -156,8 +156,6 @@ class _WalletListScreenState extends State<WalletListScreen>
                     .height -
                 10;
 
-        print('itemwidth = $itemCardWidth,  itemheight = $itemCardHeight');
-
         await _blinkAnimationController.forward();
         await _blinkAnimationController.reverse();
 
