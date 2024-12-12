@@ -23,7 +23,7 @@ class MultisigWalletListItem extends WalletListItemBase {
   }
 
   @JsonKey(name: "signers")
-  late final List<MultisigSigner> signers;
+  late List<MultisigSigner> signers;
 
   @JsonKey(name: "requiredSignatureCount")
   late final int requiredSignatureCount;

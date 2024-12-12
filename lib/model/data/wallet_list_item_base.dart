@@ -7,9 +7,9 @@ abstract class WalletListItemBase {
   @JsonKey(name: "id")
   final int id;
   @JsonKey(name: "colorIndex")
-  final int colorIndex;
+  int colorIndex;
   @JsonKey(name: "iconIndex")
-  final int iconIndex;
+  int iconIndex;
   @JsonKey(name: "descriptor")
   final String descriptor;
   @JsonKey(name: "name")

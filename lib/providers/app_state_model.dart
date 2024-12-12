@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item_factory.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
@@ -194,7 +193,7 @@ class AppStateModel extends ChangeNotifier {
     _animatedWalletFlags =
         List.filled(_walletItemList.length, ReturnPageResult.none);
     if (index != null) {
-      _animatedWalletFlags[index - 1] = type;
+      _animatedWalletFlags[index] = type;
     }
   }
 
@@ -258,53 +257,26 @@ class AppStateModel extends ChangeNotifier {
 
     bool isMultisig = walletSync.signers != null;
 
-    // 기존 지갑이 있는 경우
     if (index != -1) {
-      final existingWallet = _walletItemList[index];
-      bool isMultisigUpdated = false;
-      if (isMultisig) {
-        final existingMultiWallet = existingWallet as MultisigWalletListItem;
-        for (MultisigSigner signer in walletSync.signers!) {
-          int index = walletSync.signers!.indexOf(signer);
-          final existingSigner = existingMultiWallet.signers[index];
-          if (signer.name != existingSigner.name ||
-              signer.colorIndex != existingSigner.colorIndex ||
-              signer.iconIndex != existingSigner.iconIndex ||
-              signer.memo != existingSigner.memo) {
-            isMultisigUpdated = true;
-            break;
-          }
-        }
-      }
+      // case 3: 변경사항 없음
+      result = SyncResult.existingWalletNoUpdate;
 
-      // 변동사항이 있는지 체크
-      if (existingWallet.name != walletSync.name ||
-          existingWallet.colorIndex != walletSync.colorIndex ||
-          existingWallet.iconIndex != walletSync.iconIndex ||
-          isMultisigUpdated) {
-        // case 2: 업데이트
-        final updateItem =
-            await _createUpdatedWallet(existingWallet, walletSync, isMultisig);
-
+      // case 2: 변경 사항 체크하며 업데이트
+      if (_updateWalletUIInfo(_walletItemList[index], walletSync)) {
         List<WalletListItemBase> updatedList = List.from(_walletItemList);
-        updatedList[index] = updateItem;
         _walletItemList = updatedList;
 
-        result = SyncResult.existingWalletUpdated;
+        setAnimatedWalletFlags(index: index, type: ReturnPageResult.update);
         // 에러 발생 시 wallet_list_screen에서 toast로 알리게 하기 위해서 notifyListeners() 호출
-        setAnimatedWalletFlags(index: index + 1, type: ReturnPageResult.update);
-
         _updateWalletInStorage().catchError((e) {
           notifyListeners();
         });
-      } else {
-        // case 3: 변경사항 없음
-        return ResultOfSyncFromVault(
-            result: SyncResult.existingWalletNoUpdate,
-            walletId: existingWallet.id);
+
+        result = SyncResult.existingWalletUpdated;
       }
 
-      return ResultOfSyncFromVault(result: result, walletId: existingWallet.id);
+      return ResultOfSyncFromVault(
+          result: result, walletId: _walletItemList[index].id);
     }
 
     // 새 지갑 추가
@@ -323,7 +295,7 @@ class AppStateModel extends ChangeNotifier {
 
     if (result == SyncResult.newWalletAdded) {
       setAnimatedWalletFlags(
-          index: _walletItemList.length, type: ReturnPageResult.add);
+          index: _walletItemList.length - 1, type: ReturnPageResult.add);
     }
     await initWallet(targetId: newItem.id, syncOthers: false);
 
@@ -331,30 +303,38 @@ class AppStateModel extends ChangeNotifier {
     return ResultOfSyncFromVault(result: result, walletId: newItem.id);
   }
 
-  Future<WalletListItemBase> _createUpdatedWallet(
-      WalletListItemBase existingWallet,
-      WalletSync walletSync,
-      bool isMultisig) async {
-    if (isMultisig) {
-      return MultisigWalletListItem(
-        id: existingWallet.id,
-        name: walletSync.name,
-        colorIndex: walletSync.colorIndex,
-        iconIndex: walletSync.iconIndex,
-        descriptor: walletSync.descriptor,
-        requiredSignatureCount: walletSync.requiredSignatureCount ?? 0,
-        signers: walletSync.signers ?? [],
-        balance: existingWallet.balance,
-      );
+  /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
+  bool _updateWalletUIInfo(
+      WalletListItemBase existingWallet, WalletSync walletSync) {
+    bool hasChanged = false;
+
+    if (existingWallet.name != walletSync.name ||
+        existingWallet.colorIndex != walletSync.colorIndex ||
+        existingWallet.iconIndex != walletSync.iconIndex) {
+      existingWallet.name = walletSync.name;
+      existingWallet.colorIndex = walletSync.colorIndex;
+      existingWallet.iconIndex = walletSync.iconIndex;
+      hasChanged = true;
     }
 
-    return SinglesigWalletListItem(
-        id: existingWallet.id,
-        name: walletSync.name,
-        colorIndex: walletSync.colorIndex,
-        iconIndex: walletSync.iconIndex,
-        descriptor: walletSync.descriptor,
-        balance: (existingWallet as SinglesigWalletListItem).balance);
+    if (existingWallet is SinglesigWalletListItem) return hasChanged;
+
+    var multisigWallet = existingWallet as MultisigWalletListItem;
+    for (int i = 0; i < multisigWallet.signers.length; i++) {
+      if (multisigWallet.signers[i].name != walletSync.signers![i].name ||
+          multisigWallet.signers[i].colorIndex !=
+              walletSync.signers![i].colorIndex ||
+          multisigWallet.signers[i].iconIndex !=
+              walletSync.signers![i].iconIndex ||
+          multisigWallet.signers[i].memo != walletSync.signers![i].memo) {
+        // 한 개라도 다르면 전체 덮어씌운 후 for문 종료
+        multisigWallet.signers = walletSync.signers!;
+        hasChanged = true;
+        break;
+      }
+    }
+
+    return hasChanged;
   }
 
   Future<WalletListItemBase> _createNewWallet(
