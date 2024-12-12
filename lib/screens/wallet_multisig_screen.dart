@@ -349,7 +349,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
 
             return GestureDetector(
               onTap: () {
-                _selectedKeyBottomSheet(item, _keystoreList[index]);
+                //_selectedKeyBottomSheet(item, _keystoreList[index]);
               },
               child: Container(
                 color: Colors.transparent,
