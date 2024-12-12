@@ -60,9 +60,8 @@ class WalletItemCard extends StatelessWidget {
           : null,
       child: Container(
         margin: isMultisig ? const EdgeInsets.all(2) : const EdgeInsets.all(0),
-        padding: isMultisig
-            ? const EdgeInsets.symmetric(horizontal: 20, vertical: 16)
-            : const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding:
+            isMultisig ? const EdgeInsets.all(20) : const EdgeInsets.all(24),
         decoration: isMultisig
             ? BoxDecoration(
                 color: MyColors.black,
@@ -71,16 +70,14 @@ class WalletItemCard extends StatelessWidget {
               )
             : BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: MyColors.borderLightgrey, width: 0.5),
+                border: Border.all(color: MyColors.borderLightgrey, width: 1),
               ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // 아이콘
             Container(
-              padding: isMultisig
-                  ? const EdgeInsets.all(12)
-                  : const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: BackgroundColorPalette[colorIndex],
                 borderRadius: BorderRadius.circular(18),

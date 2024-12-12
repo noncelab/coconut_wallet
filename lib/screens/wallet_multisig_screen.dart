@@ -332,7 +332,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                                   color: isInnerWallet
                                       ? BackgroundColorPalette[colorIndex]
                                       : BackgroundColorPalette[8],
-                                  borderRadius: BorderRadius.circular(10.0),
+                                  borderRadius: BorderRadius.circular(14.0),
                                 ),
                                 child: SvgPicture.asset(
                                   isInnerWallet
