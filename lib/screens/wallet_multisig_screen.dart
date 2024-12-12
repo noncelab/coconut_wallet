@@ -13,6 +13,7 @@ import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/infomation_row_item.dart';
+import 'package:coconut_wallet/widgets/wallet_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -34,8 +35,9 @@ class WalletMultisigScreen extends StatefulWidget {
 
 class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
   final GlobalKey _walletTooltipKey = GlobalKey();
-  late RenderBox _walletTooltipIconRenderBox;
-  late Offset _walletTooltipIconPosition = Offset.zero;
+  RenderBox? _walletTooltipIconRenderBox;
+  Offset _walletTooltipIconPosition = Offset.zero;
+  double _tooltipTopPadding = 0;
 
   Timer? _tooltipTimer;
   int _tooltipRemainingTime = 0;
@@ -57,7 +59,10 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
       _walletTooltipIconRenderBox =
           _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
       _walletTooltipIconPosition =
-          _walletTooltipIconRenderBox.localToGlobal(Offset.zero);
+          _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
+      _tooltipTopPadding = MediaQuery.of(context).padding.top +
+          MediaQuery.paddingOf(context).top -
+          _walletTooltipIconRenderBox!.size.height;
     });
   }
 
@@ -191,7 +196,6 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tooltipTop = MediaQuery.of(context).padding.top + 38;
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, _) {},
@@ -222,7 +226,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                 Visibility(
                   visible: _tooltipRemainingTime > 0,
                   child: Positioned(
-                    top: _walletTooltipIconPosition.dy - tooltipTop - 5,
+                    top: _walletTooltipIconPosition.dy - _tooltipTopPadding,
                     right: MediaQuery.of(context).size.width -
                         _walletTooltipIconPosition.dx -
                         48,
@@ -264,82 +268,12 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
     );
   }
 
-  Widget _multisigWallet() => Container(
-        margin: const EdgeInsets.only(top: 20, left: 16, right: 16),
-        decoration: BoxDecoration(
-          color: MyColors.black,
-          borderRadius: MyBorder.defaultRadius,
-          gradient: BoxDecorations.getMultisigLinearGradient(
-              CustomColorHelper.getGradientColors(_multiWallet.signers)),
-        ),
-        child: Container(
-          margin: const EdgeInsets.all(2),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          decoration: BoxDecoration(
-            color: MyColors.black,
-            borderRadius: BorderRadius.circular(
-                22), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 아이콘
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: BackgroundColorPalette[_multiWallet.colorIndex],
-                  borderRadius: BorderRadius.circular(14.0),
-                ),
-                child: SvgPicture.asset(
-                  CustomIcons.getPathByIndex(_multiWallet.iconIndex),
-                  colorFilter: ColorFilter.mode(
-                    ColorPalette[_multiWallet.colorIndex],
-                    BlendMode.srcIn,
-                  ),
-                  width: 28.0,
-                ),
-              ),
-              const SizedBox(width: 8.0),
-              // 이름
-              Expanded(
-                child: Text(
-                  _multiWallet.name,
-                  style: Styles.h3,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(
-                width: 8,
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${_multiWallet.requiredSignatureCount}개 서명 가능',
-                    style: Styles.h3.merge(TextStyle(
-                        fontFamily: CustomFonts.number.getFontFamily)),
-                  ),
-                  TooltipButton(
-                    isSelected: false,
-                    text:
-                        '${_multiWallet.requiredSignatureCount}/${_multiWallet.signers.length}',
-                    isLeft: true,
-                    iconKey: _walletTooltipKey,
-                    containerMargin: EdgeInsets.zero,
-                    containerPadding: EdgeInsets.zero,
-                    iconPadding: const EdgeInsets.only(left: 10),
-                    onTap: () {},
-                    onTapDown: (details) {
-                      _showTooltip(context);
-                    },
-                  ),
-                ],
-              )
-            ],
-          ),
-        ),
+  Widget _multisigWallet() => Padding(
+        padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
+        child: WalletItemCard(
+            walletItem: _multiWallet,
+            onTooltipClicked: () => _showTooltip(context),
+            tooltipKey: _walletTooltipKey),
       );
 
   Widget _signerList() => Container(
@@ -389,7 +323,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: MyColors.black,
-                          borderRadius: MyBorder.defaultRadius,
+                          borderRadius: MyBorder.boxDecorationRadius,
                           border: Border.all(color: MyColors.borderLightgrey),
                         ),
                         child: Row(
