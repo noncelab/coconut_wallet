@@ -63,7 +63,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       case TransactionStatus.selfsending:
       case TransactionStatus.sent:
       case TransactionStatus.sending:
-        prefix = '-';
+        prefix = '';
         color = MyColors.primary;
         break;
       default:
