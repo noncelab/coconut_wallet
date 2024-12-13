@@ -36,7 +36,7 @@ class WalletItemCard extends StatelessWidget {
       signers = mutliWallet.signers;
       colorIndex = mutliWallet.colorIndex;
       iconIndex = mutliWallet.iconIndex;
-      rightText = '${mutliWallet.requiredSignatureCount}개 서명 가능';
+      rightText = '';
       tooltipText =
           '${mutliWallet.requiredSignatureCount}/${mutliWallet.signers.length}';
       isMultisig = true;
@@ -108,11 +108,12 @@ class WalletItemCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  rightText,
-                  style: Styles.h3.merge(
-                      TextStyle(fontFamily: CustomFonts.number.getFontFamily)),
-                ),
+                if (rightText.isNotEmpty)
+                  Text(
+                    rightText,
+                    style: Styles.h3.merge(TextStyle(
+                        fontFamily: CustomFonts.number.getFontFamily)),
+                  ),
                 TooltipButton(
                   isSelected: false,
                   text: tooltipText,
