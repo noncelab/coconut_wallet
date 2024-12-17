@@ -201,8 +201,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             top: _faucetIconPosition.dy + _faucetIconSize.height - 10,
             right: MediaQuery.of(context).size.width -
                 _faucetIconPosition.dx -
-                _faucetIconSize.width -
-                15,
+                _faucetIconSize.width +
+                5,
             child: AnimatedOpacity(
               opacity: _faucetTipVisible ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 1000),
@@ -316,7 +316,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       walletBaseItem: _walletBaseItem,
                     ));
               },
-              onRightIconPressed: () {
+              onTitlePressed: () {
                 if (_walletBaseItem.walletType == WalletType.multiSignature) {
                   Navigator.pushNamed(context, '/wallet-multisig',
                       arguments: {'id': widget.id});

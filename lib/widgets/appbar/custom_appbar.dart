@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/widgets/button/underlined_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -14,7 +15,7 @@ class CustomAppBar {
     required bool hasRightIcon,
     Key? faucetIconKey,
     VoidCallback? onFaucetIconPressed,
-    VoidCallback? onRightIconPressed,
+    VoidCallback? onTitlePressed,
     Color? backgroundColor,
     bool hasWalletIcon = false,
     IconButton? rightIconButton,
@@ -25,7 +26,16 @@ class CustomAppBar {
   }) {
     Widget? widget = Column(
       children: [
-        Text(title),
+        if (onTitlePressed == null) ...{
+          Text(title)
+        } else ...{
+          UnderlinedButton(
+            text: title,
+            onTap: onTitlePressed,
+            padding: const EdgeInsets.all(0),
+            fontSize: 18,
+          )
+        },
         showTestnetLabel
             ? const Column(
                 children: [
@@ -101,23 +111,7 @@ class CustomAppBar {
               }
             },
           ),
-        if (hasRightIcon && rightIconButton == null)
-          IconButton(
-            color: MyColors.white,
-            focusColor: MyColors.transparentGrey,
-            icon: SvgPicture.asset(
-              'assets/svg/wallet-info.svg',
-              width: 18,
-              height: 18,
-            ),
-            onPressed: () {
-              if (onRightIconPressed != null) {
-                onRightIconPressed();
-              }
-            },
-          )
-        else if (hasRightIcon && rightIconButton != null)
-          rightIconButton
+        if (hasRightIcon && rightIconButton != null) rightIconButton
       ],
       flexibleSpace: ClipRect(
         child: BackdropFilter(
