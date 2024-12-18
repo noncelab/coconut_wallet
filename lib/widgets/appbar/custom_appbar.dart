@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/widgets/button/appbar_button.dart';
+import 'package:coconut_wallet/widgets/button/underlined_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -14,7 +16,7 @@ class CustomAppBar {
     required bool hasRightIcon,
     Key? faucetIconKey,
     VoidCallback? onFaucetIconPressed,
-    VoidCallback? onRightIconPressed,
+    VoidCallback? onTitlePressed,
     Color? backgroundColor,
     bool hasWalletIcon = false,
     IconButton? rightIconButton,
@@ -25,7 +27,16 @@ class CustomAppBar {
   }) {
     Widget? widget = Column(
       children: [
-        Text(title),
+        if (onTitlePressed == null) ...{
+          Text(title)
+        } else ...{
+          UnderlinedButton(
+            text: title,
+            onTap: onTitlePressed,
+            padding: const EdgeInsets.all(0),
+            fontSize: 18,
+          )
+        },
         showTestnetLabel
             ? const Column(
                 children: [
@@ -101,23 +112,7 @@ class CustomAppBar {
               }
             },
           ),
-        if (hasRightIcon && rightIconButton == null)
-          IconButton(
-            color: MyColors.white,
-            focusColor: MyColors.transparentGrey,
-            icon: SvgPicture.asset(
-              'assets/svg/wallet-info.svg',
-              width: 18,
-              height: 18,
-            ),
-            onPressed: () {
-              if (onRightIconPressed != null) {
-                onRightIconPressed();
-              }
-            },
-          )
-        else if (hasRightIcon && rightIconButton != null)
-          rightIconButton
+        if (hasRightIcon && rightIconButton != null) rightIconButton
       ],
       flexibleSpace: ClipRect(
         child: BackdropFilter(
@@ -172,29 +167,13 @@ class CustomAppBar {
             : null,
         actions: [
           Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              child: GestureDetector(
-                  onTap: isActive ? onNextPressed : null,
-                  child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14.0),
-                        border: Border.all(
-                            color: isActive
-                                ? Colors.transparent
-                                : MyColors.transparentWhite_20),
-                        color: isActive ? MyColors.primary : MyColors.grey,
-                      ),
-                      child: Center(
-                          child: Text('다음',
-                              style: Styles.label2.merge(TextStyle(
-                                color: isActive
-                                    ? Colors.black
-                                    : MyColors.transparentWhite_70,
-                                fontWeight: isActive
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              )))))))
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            child: AppbarButton(
+              isActive: isActive,
+              text: '다음',
+              onPressed: onNextPressed,
+            ),
+          ),
         ],
         flexibleSpace: ClipRect(
             child: BackdropFilter(

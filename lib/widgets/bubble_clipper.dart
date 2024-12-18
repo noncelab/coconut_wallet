@@ -5,9 +5,9 @@ class RightTriangleBubbleClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     var path = Path();
     path.moveTo(size.width - 15, 15);
-    path.lineTo(size.width - 30, 15);
-    path.lineTo(size.width - 39, 5);
-    path.lineTo(size.width - 48, 15);
+    path.lineTo(size.width - 10, 15);
+    path.lineTo(size.width - 19, 5);
+    path.lineTo(size.width - 28, 15);
     path.lineTo(15, 15);
     path.quadraticBezierTo(0, 15, 0, 30);
     path.lineTo(0, size.height - 15);
@@ -16,7 +16,7 @@ class RightTriangleBubbleClipper extends CustomClipper<Path> {
     path.quadraticBezierTo(
         size.width, size.height, size.width, size.height - 15);
     path.lineTo(size.width, 30);
-    path.quadraticBezierTo(size.width, 15, size.width - 15, 15);
+    path.quadraticBezierTo(size.width, 15, size.width - 15, 14.5);
     return path;
   }
 

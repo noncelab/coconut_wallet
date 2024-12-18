@@ -225,8 +225,8 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                   child: Positioned(
                     top: _walletTooltipIconPosition.dy - _tooltipTopPadding,
                     right: MediaQuery.of(context).size.width -
-                        _walletTooltipIconPosition.dx -
-                        48,
+                        _walletTooltipIconPosition.dx +
+                        5,
                     child: GestureDetector(
                       onTap: () => _removeTooltip(),
                       child: ClipPath(
