@@ -64,9 +64,11 @@ class _UnderlinedButtonState extends State<UnderlinedButton> {
             decoration: TextDecoration.underline, // 밑줄 설정
             fontSize: widget.fontSize,
             fontFamily: 'Pretendard',
-            color: _isPressing
-                ? widget.pressingColor ?? MyColors.transparentWhite_40
-                : widget.defaultColor ?? MyColors.white,
+            color: widget.isEnable
+                ? _isPressing
+                    ? widget.pressingColor ?? MyColors.transparentWhite_40
+                    : widget.defaultColor ?? MyColors.white
+                : MyColors.transparentWhite_20,
           ),
         ),
       ),
