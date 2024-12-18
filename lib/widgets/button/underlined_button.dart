@@ -8,6 +8,7 @@ class UnderlinedButton extends StatefulWidget {
   final EdgeInsetsGeometry? padding;
   final Color? defaultColor;
   final Color? pressingColor;
+  final bool isEnable;
 
   const UnderlinedButton({
     super.key,
@@ -17,6 +18,7 @@ class UnderlinedButton extends StatefulWidget {
     this.padding,
     this.defaultColor,
     this.pressingColor,
+    this.isEnable = true,
   });
 
   @override
@@ -36,17 +38,20 @@ class _UnderlinedButtonState extends State<UnderlinedButton> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        if (!widget.isEnable) return;
         widget.onTap();
         setState(() {
           _isPressing = false;
         });
       },
       onTapDown: (details) {
+        if (!widget.isEnable) return;
         setState(() {
           _isPressing = true;
         });
       },
       onTapCancel: () {
+        if (!widget.isEnable) return;
         setState(() {
           _isPressing = false;
         });
