@@ -1,11 +1,13 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/model/constants.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/model/send_info.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -35,19 +37,32 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   String _input = '';
   int? _errorIndex;
   bool _enableNextButton = false;
-  late WalletListItem _walletListItem;
   late int _balance;
   late int _unconfirmedBalance;
-  late SingleSignatureWallet _wallet;
+  late WalletBase _walletBase;
 
   @override
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
-    _walletListItem = model.getWalletById(widget.id);
-    _wallet = _walletListItem.coconutWallet;
-    _balance = _wallet.getBalance();
-    _unconfirmedBalance = _wallet.getUnconfirmedBalance();
+
+    // TODO: Check Multisig
+    final walletBaseItem = model.getWalletById(widget.id);
+    if (walletBaseItem.walletType == WalletType.multiSignature) {
+      final multisigListItem = walletBaseItem as MultisigWalletListItem;
+      _walletBase = multisigListItem.walletBase;
+
+      final multisigWallet = _walletBase as MultisignatureWallet;
+      _balance = multisigWallet.getBalance();
+      _unconfirmedBalance = multisigWallet.getUnconfirmedBalance();
+    } else {
+      final singlesigListItem = walletBaseItem as SinglesigWalletListItem;
+      _walletBase = singlesigListItem.walletBase;
+
+      final singlesigWallet = _walletBase as SingleSignatureWallet;
+      _balance = singlesigWallet.getBalance();
+      _unconfirmedBalance = singlesigWallet.getUnconfirmedBalance();
+    }
   }
 
   void _onKeyTap(String value) {

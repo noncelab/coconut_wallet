@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/model/data/multisig_signer.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -15,16 +17,19 @@ class WalletRowItem extends StatefulWidget {
   final int colorIndex;
   final bool isLastItem;
   final bool isBalanceHidden;
+  final List<MultisigSigner>? signers;
 
-  const WalletRowItem(
-      {super.key,
-      required this.id,
-      required this.balance,
-      required this.name,
-      required this.iconIndex,
-      required this.colorIndex,
-      required this.isLastItem,
-      this.isBalanceHidden = false});
+  const WalletRowItem({
+    super.key,
+    required this.id,
+    required this.balance,
+    required this.name,
+    required this.iconIndex,
+    required this.colorIndex,
+    required this.isLastItem,
+    this.isBalanceHidden = false,
+    this.signers,
+  });
 
   @override
   State<WalletRowItem> createState() => _WalletRowItemState();
@@ -32,15 +37,21 @@ class WalletRowItem extends StatefulWidget {
 
 class _WalletRowItemState extends State<WalletRowItem> {
   @override
-  void initState() {
-    super.initState();
+  void didUpdateWidget(covariant WalletRowItem oldWidget) {
+    // TODO: implement didUpdateWidget
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
   Widget build(BuildContext context) {
     final row = ShrinkAnimationButton(
-        onPressed: () => Navigator.pushNamed(context, '/wallet-detail',
-            arguments: {'id': widget.id}),
+        onPressed: () {
+          Navigator.pushNamed(context, '/wallet-detail',
+              arguments: {'id': widget.id});
+        },
+        borderGradientColors: widget.signers?.isNotEmpty == true
+            ? CustomColorHelper.getGradientColors(widget.signers!)
+            : null,
         child: Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
@@ -60,7 +71,7 @@ class _WalletRowItemState extends State<WalletRowItem> {
                           ColorPalette[widget.colorIndex], BlendMode.srcIn),
                       width: 20.0)),
               const SizedBox(width: 8.0),
-              Flexible(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -72,7 +83,7 @@ class _WalletRowItemState extends State<WalletRowItem> {
                           fontWeight: FontWeight.w400,
                           color: MyColors.transparentWhite_70,
                           letterSpacing: 0.2),
-                      maxLines: 3,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Padding(

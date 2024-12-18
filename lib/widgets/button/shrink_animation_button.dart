@@ -8,15 +8,20 @@ class ShrinkAnimationButton extends StatefulWidget {
   final Color? defaultColor;
   final double borderRadius;
   final Border? border;
+  final double borderWidth;
+  final List<Color>? borderGradientColors;
 
-  const ShrinkAnimationButton(
-      {super.key,
-      required this.child,
-      required this.onPressed,
-      this.pressedColor = MyColors.darkgrey,
-      this.defaultColor = MyColors.defaultBackground,
-      this.borderRadius = 28.0,
-      this.border});
+  const ShrinkAnimationButton({
+    super.key,
+    required this.child,
+    required this.onPressed,
+    this.pressedColor = MyColors.darkgrey,
+    this.defaultColor = MyColors.defaultBackground,
+    this.borderRadius = 28.0,
+    this.borderWidth = 2.0,
+    this.border,
+    this.borderGradientColors,
+  });
 
   @override
   State<ShrinkAnimationButton> createState() => _ShrinkAnimationButtonState();
@@ -76,14 +81,29 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
         onTapCancel: _onTapCancel,
         child: ScaleTransition(
           scale: _animation,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
+          child: Container(
             decoration: BoxDecoration(
-              color: _isPressed ? widget.pressedColor : widget.defaultColor,
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              border: widget.border,
+              borderRadius: BorderRadius.circular(widget.borderRadius + 2),
+              gradient: widget.borderGradientColors != null
+                  ? BoxDecorations.getMultisigLinearGradient(
+                      widget.borderGradientColors!)
+                  : null,
             ),
-            child: widget.child,
+            child: AnimatedContainer(
+              margin: EdgeInsets.all(widget.borderWidth),
+              duration: const Duration(milliseconds: 100),
+              decoration: BoxDecoration(
+                color: MyColors.black,
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _isPressed ? widget.pressedColor : widget.defaultColor,
+                  borderRadius: BorderRadius.circular(widget.borderRadius),
+                ),
+                child: widget.child,
+              ),
+            ),
           ),
         ));
   }

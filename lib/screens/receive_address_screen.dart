@@ -1,7 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/screens/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -26,8 +25,8 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
-    final WalletListItem walletListItem = model.getWalletById(widget.id);
-    Address address = walletListItem.coconutWallet.getReceiveAddress();
+    Address address =
+        model.getWalletById(widget.id).walletBase.getReceiveAddress();
     _address = address.address;
     _derivationPath = address.derivationPath;
   }

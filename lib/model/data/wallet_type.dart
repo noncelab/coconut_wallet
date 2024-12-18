@@ -1,0 +1,4 @@
+enum WalletType {
+  singleSignature,
+  multiSignature,
+}

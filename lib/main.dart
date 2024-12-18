@@ -22,6 +22,8 @@ void main() {
     // This app is designed only to work vertically, so we limit
     // orientations to portrait up and down.
     WidgetsFlutterBinding.ensureInitialized();
+    final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
+    BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
     if (Platform.isAndroid) {
       try {
         const MethodChannel channel = MethodChannel(methodChannelOS);
@@ -58,9 +60,18 @@ void main() {
 
     await SharedPrefs().init();
 
+    // coconut 0.6 버전까지만 사용, 0.7버전부터 필요 없어짐
     final dbDirectory = await getAppDocumentDirectory(paths: ['objectbox']);
     dbDirectoryPath = dbDirectory.path;
-    Repository.initialize(dbDirectoryPath);
+    // coconut_lib 0.6까지 사용하던 db 경로 데이터 삭제
+    try {
+      if (dbDirectory.existsSync()) {
+        dbDirectory.deleteSync(recursive: true);
+      }
+    } catch (_) {
+      // ignore
+    }
+
     BitcoinNetwork.setNetwork(BitcoinNetwork.regtest);
 
     String envFile = '$appFlavor.env';

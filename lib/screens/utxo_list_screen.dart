@@ -1,9 +1,10 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/model/utxo.dart' as model;
-import 'package:coconut_wallet/model/wallet_list_item.dart';
 import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -23,32 +24,68 @@ class UtxoListScreen extends StatefulWidget {
 }
 
 class _UtxoListScreenState extends State<UtxoListScreen> {
+  static String changeField = 'change';
+  static String accountIndexField = 'accountIndex';
+
   int _current = 0; // for ordering
   late int? _balance;
   late List<model.UTXO> _utxoList;
-  late WalletListItem _walletListItem;
+  late WalletListItemBase _walletBaseItem;
+  late WalletType _walletType;
 
   @override
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
-    _walletListItem = model.getWalletById(widget.id);
-    _balance = _walletListItem.balance;
-    List<UTXO> utxoEntities = _walletListItem.coconutWallet.getUtxoList();
-    _utxoList = getUtxoListWithHoldingAddress(utxoEntities);
+    _walletBaseItem = model.getWalletById(widget.id);
+    _balance = _walletBaseItem.balance;
+    _walletType = _walletBaseItem.walletType;
+
+    if (_walletBaseItem.walletType == WalletType.multiSignature) {
+      final multisigWallet = _walletBaseItem.walletBase as MultisignatureWallet;
+      _utxoList = getUtxoListWithHoldingAddress(multisigWallet.getUtxoList());
+    } else {
+      final singlesigWallet =
+          _walletBaseItem.walletBase as SingleSignatureWallet;
+      _utxoList = getUtxoListWithHoldingAddress(singlesigWallet.getUtxoList());
+    }
+  }
+
+  Map<String, int> getChangeAndAccountElements(String derivationPath) {
+    var pathElements = derivationPath.split('/');
+    Map<String, int> result;
+
+    switch (_walletType) {
+      // m / purpose' / coin_type' / account' / change / address_index
+      case WalletType.singleSignature:
+        result = {
+          changeField: int.parse(pathElements[4]),
+          accountIndexField: int.parse(pathElements[5])
+        };
+        break;
+      // m / purpose' / coin_type' / account' / script_type' / change / address_index
+      case WalletType.multiSignature:
+        result = {
+          changeField: int.parse(pathElements[5]),
+          accountIndexField: int.parse(pathElements[6])
+        };
+        break;
+      default:
+        throw ArgumentError("wrong walletType: $_walletType");
+    }
+
+    return result;
   }
 
   List<model.UTXO> getUtxoListWithHoldingAddress(List<UTXO> utxoEntities) {
     List<model.UTXO> utxos = [];
     for (var element in utxoEntities) {
-      var pathElements = element.derivationPath.split('/');
-      String accountIndex = pathElements.last;
-      // m/84'/1'/0'/1/1
-      String change = pathElements[4];
+      Map<String, int> changeAndAccountIndex =
+          getChangeAndAccountElements(element.derivationPath);
 
-      String ownedAddress = _walletListItem.coconutWallet.getAddress(
-          int.parse(accountIndex),
-          isChange: int.parse(change) == 1);
+      String ownedAddress = _walletBaseItem.walletBase.getAddress(
+          changeAndAccountIndex[accountIndexField]!,
+          isChange: changeAndAccountIndex[changeField]! == 1);
 
       utxos.add(model.UTXO(
           element.timestamp.toString(),

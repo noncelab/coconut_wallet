@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/widgets/animatedQR/animated_qr_scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -24,13 +25,20 @@ class SignedPsbtScannerScreen extends StatefulWidget {
 class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   late AppStateModel _model;
+  MultisignatureWallet? _multisigWallet;
   bool _isProcessing = false;
+  bool _isMultisig = false;
   QRViewController? controller;
 
   @override
   void initState() {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
+    final walletBaseItem = _model.getWalletById(widget.id);
+    _isMultisig = walletBaseItem.walletType == WalletType.multiSignature;
+    if (_isMultisig) {
+      _multisigWallet = walletBaseItem.walletBase as MultisignatureWallet;
+    }
   }
 
   @override
@@ -50,8 +58,20 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     _isProcessing = true;
 
     try {
-      // signedPSBT는 Base64 인코딩 된 문자열입니다.
-      PSBT.parse(signedPsbt);
+      final psbt = PSBT.parse(signedPsbt);
+
+      if (_multisigWallet != null) {
+        int signedCount = _multisigWallet!.keyStoreList
+            .where((keyStore) => psbt.isSigned(keyStore))
+            .length;
+        int difference = _multisigWallet!.requiredSignature - signedCount;
+        if (difference > 0) {
+          _showAlert('$difference개의 서명이 더 필요해요', isBack: true);
+          controller?.pauseCamera();
+          await _stopCamera();
+          return;
+        }
+      }
 
       if (!validateSignedPsbt(signedPsbt)) {
         throw ('invalidSignedPsbt');
@@ -78,15 +98,23 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         } else {
           errorMessage = 'QR코드 스캔에 실패했어요. 다시 시도해 주세요.';
         }
-        showAlertDialog(
-            context: context,
-            content: errorMessage,
-            dismissible: false,
-            onClosed: () {
-              _isProcessing = false;
-            });
+        _showAlert(errorMessage);
       }
     }
+  }
+
+  void _showAlert(String errorMessage, {bool isBack = false}) {
+    showAlertDialog(
+      context: context,
+      content: errorMessage,
+      dismissible: false,
+      onClosed: () {
+        _isProcessing = false;
+        if (isBack) {
+          Navigator.pop(context);
+        }
+      },
+    );
   }
 
   void onFailedScanning(String message) {
@@ -173,7 +201,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
                         letterSpacing: 0.5,
                         color: MyColors.black,
                       ),
-                      children: <TextSpan>[
+                      children: [
                         TextSpan(
                           text:
                               '볼트 앱에서 생성된 서명 트랜잭션이 보이시나요? 이제, QR 코드를 스캔해 주세요.',

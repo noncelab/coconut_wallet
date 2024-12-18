@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coconut_wallet/screens/wallet_list_screen.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -151,33 +153,56 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     this.controller = controller;
     controller.scannedDataStream.listen((scanData) {
       if (_isProcessing || scanData.code == null) return;
-
       _isProcessing = true;
       context.loaderOverlay.show();
 
+      final model = Provider.of<AppStateModel>(context, listen: false);
       WalletSync syncObject;
       try {
         // 2. 유효한 데이터인지 확인 (WalletSyncObject)
         Map<String, dynamic> jsonData = jsonDecode(scanData.code!);
         syncObject = WalletSync.fromJson(jsonData);
 
-        final model = Provider.of<AppStateModel>(context, listen: false);
         model.syncFromVault(syncObject).then((value) {
           switch (value.result) {
             case SyncResult.newWalletAdded:
+              {
+                Map<String, dynamic> returnValue = {
+                  'result': ReturnPageResult.add,
+                };
+                Navigator.pop(context, returnValue);
+                break;
+              }
             case SyncResult.existingWalletNoUpdate:
+              {
+                vibrateLightDouble();
+                CustomDialogs.showCustomAlertDialog(context,
+                    title: '업데이트 실패',
+                    message: "${TextUtils.ellipsisIfLonger(
+                      model.getWalletById(value.walletId!).name,
+                      maxLength: 15,
+                    )}에 업데이트할 정보가 없어요", onConfirm: () {
+                  _isProcessing = false;
+                  Navigator.pop(context);
+                });
+                break;
+              }
             case SyncResult.existingWalletUpdated:
-              Navigator.pushReplacementNamed(context, '/wallet-detail',
-                  arguments: {
-                    'id': value.walletId,
-                    'syncResult': value.result,
-                  });
+              {
+                Map<String, dynamic> returnValue = {
+                  'result': ReturnPageResult.update,
+                  'id': value.walletId!
+                };
+                Navigator.pop(context, returnValue);
+                break;
+              }
             case SyncResult.existingName:
               vibrateLightDouble();
               CustomDialogs.showCustomAlertDialog(context,
                   title: '이름 중복',
                   message: "같은 이름을 가진 지갑이 있습니다.\n이름을 변경한 후 동기화 해주세요.",
                   onConfirm: () {
+                _isProcessing = false;
                 Navigator.pop(context);
               });
           }
@@ -197,6 +222,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       } catch (error) {
         vibrateLightDouble();
         context.loaderOverlay.hide();
+        Logger.log('Exception while QR Processing : $error');
         CustomDialogs.showCustomAlertDialog(context,
             title: '보기 전용 지갑 추가 실패', message: "잘못된 지갑 정보입니다.", onConfirm: () {
           _isProcessing = false;
