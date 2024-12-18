@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:coconut_wallet/widgets/button/appbar_button.dart';
 import 'package:coconut_wallet/widgets/button/underlined_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -166,29 +167,13 @@ class CustomAppBar {
             : null,
         actions: [
           Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              child: GestureDetector(
-                  onTap: isActive ? onNextPressed : null,
-                  child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14.0),
-                        border: Border.all(
-                            color: isActive
-                                ? Colors.transparent
-                                : MyColors.transparentWhite_20),
-                        color: isActive ? MyColors.primary : MyColors.grey,
-                      ),
-                      child: Center(
-                          child: Text('다음',
-                              style: Styles.label2.merge(TextStyle(
-                                color: isActive
-                                    ? Colors.black
-                                    : MyColors.transparentWhite_70,
-                                fontWeight: isActive
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              )))))))
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            child: AppbarButton(
+              isActive: isActive,
+              text: '다음',
+              onPressed: onNextPressed,
+            ),
+          ),
         ],
         flexibleSpace: ClipRect(
             child: BackdropFilter(

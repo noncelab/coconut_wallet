@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/widgets/button/appbar_button.dart';
 import 'package:coconut_wallet/widgets/button/underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:flutter/cupertino.dart';
@@ -143,27 +144,27 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                     ),
                   ),
                   Text(
-                    TagBottomSheetType.create == _type
-                        ? '새 태그'
-                        : TagBottomSheetType.select == _type
-                            ? '태그 편집'
-                            : '태그 관리',
+                    TagBottomSheetType.create == _type ? '새 태그' : '태그 편집',
                     style: Styles.body2Bold,
                   ),
                   if (_type == TagBottomSheetType.select) ...{
-                    _completeButton(
-                      isEnabled: _isSelectButtonEnabled,
-                      onTap: () {
+                    AppbarButton(
+                      isActive: _isSelectButtonEnabled,
+                      isActivePrimaryColor: false,
+                      text: '완료',
+                      onPressed: () {
                         _selectUtxo?.tags = _selectedTags;
                         widget.onComplete.call(_updateUtxoTags, _selectUtxo);
                         Navigator.pop(context);
                       },
                     ),
                   } else if (_type == TagBottomSheetType.create) ...{
-                    _completeButton(
-                      isEnabled: _updateTag.isNotEmpty &&
+                    AppbarButton(
+                      isActive: _updateTag.isNotEmpty &&
                           !_updateUtxoTags.any((tag) => tag.tag == _updateTag),
-                      onTap: () {
+                      isActivePrimaryColor: false,
+                      text: '완료',
+                      onPressed: () {
                         setState(() {
                           final createUtxoTag = UtxoTag(
                             tag: _updateTag,
@@ -181,9 +182,11 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                       },
                     ),
                   } else ...{
-                    _completeButton(
-                      isEnabled: _isManageButtonEnabled,
-                      onTap: () {
+                    AppbarButton(
+                      isActive: _isManageButtonEnabled,
+                      isActivePrimaryColor: false,
+                      text: '완료',
+                      onPressed: () {
                         if (widget.manageUtxoTag != null) {
                           int tagIndex =
                               _updateUtxoTags.indexOf(widget.manageUtxoTag!);
@@ -349,36 +352,6 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                 ),
               },
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _completeButton({
-    required bool isEnabled,
-    required VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: isEnabled ? onTap : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isEnabled ? MyColors.white : MyColors.transparentWhite_30,
-          ),
-          color: isEnabled ? MyColors.white : MyColors.transparentWhite_15,
-        ),
-        child: Center(
-          child: Text(
-            '완료',
-            style: Styles.label2.merge(
-              TextStyle(
-                color:
-                    isEnabled ? MyColors.black : MyColors.transparentWhite_30,
-              ),
-            ),
           ),
         ),
       ),
