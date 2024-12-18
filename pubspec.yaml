@@ -197,6 +197,7 @@ flutter:
     - assets/files/LICENSE
     - assets/files/CONTRIBUTING.md
     - assets/svg/download.svg
+    - assets/svg/text-field-clear.svg
 
   fonts:
     - family: SpaceGrotesk
