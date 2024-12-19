@@ -1,7 +1,8 @@
 import 'package:coconut_wallet/model/utxo.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
-import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_screen.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
+import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
+import 'package:coconut_wallet/widgets/button/custom_tag_chip.dart';
+import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
@@ -33,7 +34,7 @@ void main() {
       UTXO? resultUtxo;
 
       await tester.pumpWidget(MaterialApp(
-        home: TagBottomSheetScreen(
+        home: TagBottomSheetContainer(
           type: TagBottomSheetType.select,
           utxoTags: mockTags,
           selectUtxo: mockUtxo,
@@ -43,16 +44,25 @@ void main() {
         ),
       ));
 
-      // CustomTagChip 확인
-      expect(find.byType(CustomTagChip), findsWidgets);
-
       // kyc 클릭
-      await tester.tap(find.byWidgetPredicate(
-          (widget) => widget is CustomTagChip && widget.tag == 'kyc'));
+      final gestureFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is GestureDetector &&
+            widget.child is CustomTagChip &&
+            (widget.child as CustomTagChip).tag == 'kyc',
+      );
+      expect(gestureFinder, findsOneWidget);
+      await tester.tap(gestureFinder);
 
       // strike 클릭
-      await tester.tap(find.byWidgetPredicate(
-          (widget) => widget is CustomTagChip && widget.tag == 'strike'));
+      final gestureFinder2 = find.byWidgetPredicate(
+        (widget) =>
+            widget is GestureDetector &&
+            widget.child is CustomTagChip &&
+            (widget.child as CustomTagChip).tag == 'strike',
+      );
+      expect(gestureFinder2, findsOneWidget);
+      await tester.tap(gestureFinder2);
 
       await tester.pumpAndSettle();
 
@@ -60,8 +70,6 @@ void main() {
       await tester.tap(find.text('완료'));
       await tester.pump();
 
-      // expect(resultTags, isNotNull);
-      // expect(resultTags!.map((e) => e.tag), contains('strike'));
       expect(resultUtxo, isNotNull);
       expect(resultUtxo!.tags, isNot(contains('kyc'))); // 제외
       expect(resultUtxo!.tags, contains('coconut'));
@@ -73,7 +81,7 @@ void main() {
       List<UtxoTag>? resultTags;
 
       await tester.pumpWidget(MaterialApp(
-        home: TagBottomSheetScreen(
+        home: TagBottomSheetContainer(
           type: TagBottomSheetType.create,
           utxoTags: mockTags,
           onComplete: (utxoTags, _) {
@@ -90,8 +98,8 @@ void main() {
       await tester.enterText(textFieldFinder, '#keystone');
       await tester.pumpAndSettle();
 
-      // CustomTagChipButton 찾기
-      final chipButtonFinder = find.byType(CustomTagChipButton);
+      // CustomTagColorSelector 찾기
+      final chipButtonFinder = find.byType(CustomTagChipColorButton);
       expect(chipButtonFinder, findsOneWidget);
 
       // CustomTagChipButton 2회 클릭
@@ -122,7 +130,7 @@ void main() {
       List<UtxoTag>? resultTags;
 
       await tester.pumpWidget(MaterialApp(
-        home: TagBottomSheetScreen(
+        home: TagBottomSheetContainer(
           type: TagBottomSheetType.manage,
           utxoTags: mockTags,
           manageUtxoTag: mockTags[2],
@@ -140,11 +148,11 @@ void main() {
       await tester.enterText(textFieldFinder, '#nunchuk');
       await tester.pumpAndSettle();
 
-      // CustomTagChipButton 찾기
-      final chipButtonFinder = find.byType(CustomTagChipButton);
+      // CustomTagColorSelectButton 찾기
+      final chipButtonFinder = find.byType(CustomTagChipColorButton);
       expect(chipButtonFinder, findsOneWidget);
 
-      // CustomTagChipButton 3회 클릭
+      // CustomTagColorSelectButton 3회 클릭
       await tester.tap(chipButtonFinder);
       await tester.pump();
       await tester.tap(chipButtonFinder);

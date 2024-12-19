@@ -1,22 +1,22 @@
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/button/appbar_button.dart';
-import 'package:coconut_wallet/widgets/button/underlined_button.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
+import 'package:coconut_wallet/widgets/button/custom_tag_chip.dart';
+import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/model/utxo.dart';
 
 enum TagBottomSheetType { select, create, manage }
 
-class TagBottomSheetScreen extends StatefulWidget {
+class TagBottomSheetContainer extends StatefulWidget {
   final TagBottomSheetType type;
   final Function(List<UtxoTag>?, UTXO?) onComplete;
   final List<UtxoTag> utxoTags;
   final UTXO? selectUtxo;
   final UtxoTag? manageUtxoTag;
-  const TagBottomSheetScreen({
+  const TagBottomSheetContainer({
     super.key,
     required this.type,
     required this.onComplete,
@@ -26,10 +26,11 @@ class TagBottomSheetScreen extends StatefulWidget {
   });
 
   @override
-  State<TagBottomSheetScreen> createState() => _TagBottomSheetScreenState();
+  State<TagBottomSheetContainer> createState() =>
+      _TagBottomSheetContainerState();
 }
 
-class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
+class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
   List<UtxoTag> _updateUtxoTags = [];
   UTXO? _selectUtxo;
   List<String> _selectedTags = [];
@@ -148,7 +149,7 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                     style: Styles.body2Bold,
                   ),
                   if (_type == TagBottomSheetType.select) ...{
-                    AppbarButton(
+                    CustomAppbarButton(
                       isActive: _isSelectButtonEnabled,
                       isActivePrimaryColor: false,
                       text: '완료',
@@ -159,7 +160,7 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                       },
                     ),
                   } else if (_type == TagBottomSheetType.create) ...{
-                    AppbarButton(
+                    CustomAppbarButton(
                       isActive: _updateTag.isNotEmpty &&
                           !_updateUtxoTags.any((tag) => tag.tag == _updateTag),
                       isActivePrimaryColor: false,
@@ -182,7 +183,7 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                       },
                     ),
                   } else ...{
-                    AppbarButton(
+                    CustomAppbarButton(
                       isActive: _isManageButtonEnabled,
                       isActivePrimaryColor: false,
                       text: '완료',
@@ -220,12 +221,9 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                       children: List.generate(
                         _updateUtxoTags.length,
                         (index) => IntrinsicWidth(
-                          child: CustomTagChip(
-                            tag: _updateUtxoTags[index].tag,
-                            colorIndex: _updateUtxoTags[index].colorIndex,
-                            isSelected: _selectedTags
-                                .contains(_updateUtxoTags[index].tag),
-                            onTap: (tag) {
+                          child: GestureDetector(
+                            onTap: () {
+                              final tag = _updateUtxoTags[index].tag;
                               setState(() {
                                 if (_selectedTags.contains(tag)) {
                                   _selectedTags.remove(tag);
@@ -235,6 +233,14 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                                 _checkSelectButtonEnabled();
                               });
                             },
+                            child: CustomTagChip(
+                              tag: _updateUtxoTags[index].tag,
+                              colorIndex: _updateUtxoTags[index].colorIndex,
+                              type: _selectedTags
+                                      .contains(_updateUtxoTags[index].tag)
+                                  ? CustomTagChipType.select
+                                  : CustomTagChipType.disable,
+                            ),
                           ),
                         ),
                       ),
@@ -243,7 +249,7 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                 ),
                 const SizedBox(height: 10),
                 // Create new tag button
-                UnderlinedButton(
+                CustomUnderlinedButton(
                   text: '새 태그 만들기',
                   onTap: () {
                     setState(() {
@@ -262,7 +268,7 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                     // Color Selector, TextField
                     Row(
                       children: [
-                        CustomTagChipButton(
+                        CustomTagChipColorButton(
                           colorIndex: widget.manageUtxoTag?.colorIndex ?? 0,
                           onTap: (index) {
                             _updateTagColorIndex = index;
@@ -271,61 +277,30 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                                border: Border.all(color: MyColors.white),
-                                borderRadius: BorderRadius.circular(12),
-                                color: MyColors.transparentWhite_15),
-                            child: CupertinoTextField(
-                              focusNode: _focusNode,
-                              controller: _controller,
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 20, 16, 20),
-                              style: Styles.body2,
-                              decoration: const BoxDecoration(
-                                color: Colors.transparent,
-                              ),
-                              maxLength: 11,
-                              maxLines: 1,
-                              suffix: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _updateTag = '';
-                                    _controller.text = '#';
-                                  });
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.only(right: 13),
-                                  child: SvgPicture.asset(
-                                    'assets/svg/text-field-clear.svg',
-                                    colorFilter: const ColorFilter.mode(
-                                      MyColors.white,
-                                      BlendMode.srcIn,
-                                    ),
-                                    width: 15,
-                                    height: 15,
-                                  ),
-                                ),
-                              ),
-                              onChanged: (text) {
-                                _updateTag = text
-                                    .replaceAll('#', '')
-                                    .replaceAll(' ', '');
-                                if (text.isEmpty) {
-                                  _controller.text = '#';
-                                } else if (text.substring(1).contains('#') ||
-                                    text.contains(' ')) {
-                                  _controller.text = '#$_updateTag';
-                                }
+                          child: CustomLimitTextField(
+                            controller: _controller,
+                            onChanged: (text) {
+                              _updateTag =
+                                  text.replaceAll('#', '').replaceAll(' ', '');
+                              if (text.isEmpty) {
+                                _controller.text = '#';
+                              } else if (text.substring(1).contains('#') ||
+                                  text.contains(' ')) {
+                                _controller.text = '#$_updateTag';
+                              }
 
-                                if (_type == TagBottomSheetType.manage) {
-                                  _checkManageButtonEnabled();
-                                }
+                              if (_type == TagBottomSheetType.manage) {
+                                _checkManageButtonEnabled();
+                              }
 
-                                setState(() {});
-                                // _controller.text = '#$_updateTagTitle';
-                              },
-                            ),
+                              setState(() {});
+                            },
+                            onClear: () {
+                              setState(() {
+                                _updateTag = '';
+                                _controller.text = '#';
+                              });
+                            },
                           ),
                         ),
                       ],
@@ -352,68 +327,6 @@ class _TagBottomSheetScreenState extends State<TagBottomSheetScreen> {
                 ),
               },
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class CustomTagChipButton extends StatefulWidget {
-  final Function(int) onTap;
-  final int colorIndex;
-  const CustomTagChipButton(
-      {super.key, required this.onTap, required this.colorIndex});
-
-  @override
-  State<CustomTagChipButton> createState() => _CustomTagChipButtonState();
-}
-
-class _CustomTagChipButtonState extends State<CustomTagChipButton> {
-  int _colorIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _colorIndex = widget.colorIndex;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (_colorIndex < BackgroundColorPalette.length - 1) {
-          setState(() {
-            _colorIndex += 1;
-          });
-        } else {
-          setState(() {
-            _colorIndex = 0;
-          });
-        }
-        widget.onTap.call(_colorIndex);
-      },
-      child: Container(
-        width: 55,
-        height: 28,
-        decoration: BoxDecoration(
-          color: BackgroundColorPalette[_colorIndex].withOpacity(0.3),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: ColorPalette[_colorIndex].withOpacity(1),
-            width: 1,
-          ),
-        ),
-        child: const Center(
-          child: Text(
-            '색 변경',
-            style: TextStyle(
-              decoration: TextDecoration.underline, // 밑줄 설정
-              height: 0.5,
-              fontSize: 10,
-              fontFamily: 'Pretendard',
-              color: MyColors.white,
-            ),
           ),
         ),
       ),

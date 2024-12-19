@@ -1,23 +1,23 @@
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/button/appbar_button.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
+import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
-class MemoBottomSheetScreen extends StatefulWidget {
+class MemoBottomSheetContainer extends StatefulWidget {
   final String updateMemo;
   final Function(String) onComplete;
-  const MemoBottomSheetScreen({
+  const MemoBottomSheetContainer({
     super.key,
     required this.updateMemo,
     required this.onComplete,
   });
 
   @override
-  State<MemoBottomSheetScreen> createState() => _MemoBottomSheetScreenState();
+  State<MemoBottomSheetContainer> createState() =>
+      _MemoBottomSheetContainerState();
 }
 
-class _MemoBottomSheetScreenState extends State<MemoBottomSheetScreen> {
+class _MemoBottomSheetContainerState extends State<MemoBottomSheetContainer> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   String _updateMemo = '';
@@ -79,7 +79,7 @@ class _MemoBottomSheetScreenState extends State<MemoBottomSheetScreen> {
                     '거래 메모',
                     style: Styles.body2Bold,
                   ),
-                  AppbarButton(
+                  CustomAppbarButton(
                     isActive: _isCompleteButtonEnabled,
                     isActivePrimaryColor: false,
                     text: '완료',
@@ -97,49 +97,23 @@ class _MemoBottomSheetScreenState extends State<MemoBottomSheetScreen> {
                 mainAxisSize: MainAxisSize.min, // 컨텐츠 크기에 맞추기
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Color Selector, TextField
-                  Container(
-                    decoration: BoxDecoration(
-                        border: Border.all(color: MyColors.white),
-                        borderRadius: BorderRadius.circular(12),
-                        color: MyColors.transparentWhite_15),
-                    child: CupertinoTextField(
-                      focusNode: _focusNode,
-                      controller: _controller,
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-                      style: Styles.body2,
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent,
-                      ),
-                      maxLength: 30,
-                      suffix: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _updateMemo = '';
-                            _controller.text = '';
-                            _isCompleteButtonEnabled = false;
-                          });
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 13),
-                          child: SvgPicture.asset(
-                            'assets/svg/text-field-clear.svg',
-                            colorFilter: const ColorFilter.mode(
-                              MyColors.white,
-                              BlendMode.srcIn,
-                            ),
-                            width: 15,
-                            height: 15,
-                          ),
-                        ),
-                      ),
-                      onChanged: (text) {
+                  // TextField
+                  CustomLimitTextField(
+                    controller: _controller,
+                    onChanged: (text) {
+                      setState(() {
                         _updateMemo = text;
                         _isCompleteButtonEnabled = _updateMemo.isNotEmpty &&
                             _updateMemo != widget.updateMemo;
-                        setState(() {});
-                      },
-                    ),
+                      });
+                    },
+                    onClear: () {
+                      setState(() {
+                        _controller.clear();
+                        _updateMemo = '';
+                        _isCompleteButtonEnabled = false;
+                      });
+                    },
                   ),
 
                   // 글자 수 표시

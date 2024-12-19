@@ -1,21 +1,21 @@
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
-class CoconutDropdown extends StatefulWidget {
+class CustomDropdown extends StatefulWidget {
   final List<String> buttons;
   final Function onTapButton;
   final int dividerIndex;
-  const CoconutDropdown(
+  const CustomDropdown(
       {super.key,
       required this.buttons,
       required this.onTapButton,
       this.dividerIndex = 0});
 
   @override
-  State<CoconutDropdown> createState() => _CoconutDropdownState();
+  State<CustomDropdown> createState() => _CustomDropdownState();
 }
 
-class _CoconutDropdownState extends State<CoconutDropdown> {
+class _CustomDropdownState extends State<CustomDropdown> {
   int _selectedIndex = 0;
   final buttonHeight = 44.0;
 

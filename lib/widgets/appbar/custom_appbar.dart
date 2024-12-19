@@ -1,7 +1,7 @@
 import 'dart:ui';
 
-import 'package:coconut_wallet/widgets/button/appbar_button.dart';
-import 'package:coconut_wallet/widgets/button/underlined_button.dart';
+import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -30,7 +30,7 @@ class CustomAppBar {
         if (onTitlePressed == null) ...{
           Text(title)
         } else ...{
-          UnderlinedButton(
+          CustomUnderlinedButton(
             text: title,
             onTap: onTitlePressed,
             padding: const EdgeInsets.all(0),
@@ -168,7 +168,7 @@ class CustomAppBar {
         actions: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            child: AppbarButton(
+            child: CustomAppbarButton(
               isActive: isActive,
               text: '다음',
               onPressed: onNextPressed,

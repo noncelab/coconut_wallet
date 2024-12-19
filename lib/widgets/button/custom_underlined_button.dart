@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
-class UnderlinedButton extends StatefulWidget {
+class CustomUnderlinedButton extends StatefulWidget {
   final String text;
   final double fontSize;
   final VoidCallback onTap;
@@ -10,7 +10,7 @@ class UnderlinedButton extends StatefulWidget {
   final Color? pressingColor;
   final bool isEnable;
 
-  const UnderlinedButton({
+  const CustomUnderlinedButton({
     super.key,
     required this.text,
     required this.onTap,
@@ -22,10 +22,10 @@ class UnderlinedButton extends StatefulWidget {
   });
 
   @override
-  State<UnderlinedButton> createState() => _UnderlinedButtonState();
+  State<CustomUnderlinedButton> createState() => _CustomUnderlinedButtonState();
 }
 
-class _UnderlinedButtonState extends State<UnderlinedButton> {
+class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
   late bool _isPressing;
 
   @override

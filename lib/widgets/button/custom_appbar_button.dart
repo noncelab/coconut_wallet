@@ -1,13 +1,13 @@
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
-class AppbarButton extends StatelessWidget {
+class CustomAppbarButton extends StatelessWidget {
   final bool isActive;
   final bool isActivePrimaryColor;
   final VoidCallback? onPressed;
   final String text;
 
-  const AppbarButton({
+  const CustomAppbarButton({
     super.key,
     required this.isActive,
     required this.onPressed,
