@@ -4,6 +4,7 @@ import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/model/utxo.dart';
@@ -228,6 +229,13 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                                 if (_selectedTags.contains(tag)) {
                                   _selectedTags.remove(tag);
                                 } else {
+                                  if (_selectedTags.length == 5) {
+                                    CustomToast.showToast(
+                                        context: context,
+                                        text: "태그는 최대 5개 지정할 수 있어요",
+                                        seconds: 2);
+                                    return;
+                                  }
                                   _selectedTags.add(tag);
                                 }
                                 _checkSelectButtonEnabled();

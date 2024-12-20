@@ -14,6 +14,7 @@ class CustomAppBar {
     required String title,
     required BuildContext context,
     required bool hasRightIcon,
+    Key? entireWidgetKey,
     Key? faucetIconKey,
     VoidCallback? onFaucetIconPressed,
     VoidCallback? onTitlePressed,
@@ -70,8 +71,10 @@ class CustomAppBar {
     }
 
     return AppBar(
+      key: entireWidgetKey,
       toolbarHeight: 62,
       title: widget,
+      scrolledUnderElevation: 0,
       centerTitle: true,
       backgroundColor: backgroundColor ?? Colors.transparent,
       titleTextStyle: Styles.appbarTitle,
@@ -114,14 +117,16 @@ class CustomAppBar {
           ),
         if (hasRightIcon && rightIconButton != null) rightIconButton
       ],
-      flexibleSpace: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            color: Colors.transparent,
-          ),
-        ),
-      ),
+      flexibleSpace: backgroundColor == null
+          ? ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Container(
+                  color: Colors.transparent,
+                ),
+              ),
+            )
+          : null,
     );
   }
 

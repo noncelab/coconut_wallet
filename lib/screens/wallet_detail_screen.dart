@@ -8,11 +8,15 @@ import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/widgets/custom_dropdown.dart';
+import 'package:coconut_wallet/widgets/utxo_item_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:coconut_wallet/model/app_error.dart';
+import 'package:coconut_wallet/model/utxo.dart' as model;
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/screens/faucet_request_screen.dart';
 import 'package:coconut_wallet/screens/receive_address_screen.dart';
@@ -45,20 +49,60 @@ class WalletDetailScreen extends StatefulWidget {
 
 enum Unit { btc, sats }
 
+enum SelectedListType { Transaction, UTXO }
+
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
   static const SizedBox gapOfTxRowItems = SizedBox(
     height: 8,
   );
   final GlobalKey _faucetIconKey = GlobalKey();
+  final GlobalKey _appBarKey = GlobalKey();
+  final GlobalKey _topToggleButtonKey = GlobalKey();
+  final GlobalKey _topSelectorWidgetKey = GlobalKey();
+  final GlobalKey _topHeaderWidgetKey = GlobalKey();
+  final GlobalKey _positionedTopWidgetKey = GlobalKey();
+  final GlobalKey _filterDropdownButtonKey = GlobalKey();
+  final GlobalKey _scrolledFilterDropdownButtonKey = GlobalKey();
+  late RenderBox _faucetRenderBox;
+  late RenderBox _appBarRenderBox;
+  late RenderBox _topToggleButtonRenderBox;
+  late RenderBox _topSelectorWidgetRenderBox;
+  late RenderBox _topHeaderWidgetRenderBox;
+  late RenderBox _positionedTopWidgetRenderBox;
+  late RenderBox _filterDropdownButtonRenderBox;
+  RenderBox? _scrolledFilterDropdownButtonRenderBox;
+  late Size _faucetIconSize;
+  Size _appBarSize = const Size(0, 0);
+  Size _topToggleButtonSize = const Size(0, 0); // BTC sats 버튼
+  Size _topSelectorWidgetSize = const Size(0, 0); // 원화 영역
+  Size _topHeaderWidgetSize = const Size(0, 0); // 거래내역 - UTXO 리스트 위젯 영역
+  Size _positionedTopWidgetSize = const Size(0, 0); // 거래내역 - UTXO 리스트 위젯 영역
+  Size _filterDropdownButtonSize = const Size(0, 0); // 필터 버튼(확장형)
+  Size _scrolledFilterDropdownButtonSize = const Size(0, 0); // 필터 버튼(축소형))
+  late Offset _faucetIconPosition;
+  late Offset _filterDropdownButtonPosition;
+  late Offset _scrolledFilterDropdownButtonPosition;
+  double topPadding = 0;
+
+  SelectedListType _selectedListType = SelectedListType.Transaction;
+
+  bool _positionedTopWidgetVisible = false; // 스크롤시 상단에 붙어있는 위젯
+  bool _isFilterDropdownVisible = false; // 필터 드롭다운(확장형)
+  bool _isScrolledFilterDropdownVisible = false; // 필터 드롭다운(축소형)
+
   int _selectedAccountIndex = 0;
   Unit _current = Unit.btc;
   List<Transfer> _txList = [];
+
+// 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
+  late List<model.UTXO> _utxoList;
+  late WalletType _walletType;
+  static String changeField = 'change';
+  static String accountIndexField = 'accountIndex';
+
   bool _isPullToRefeshing = false;
   late WalletListItemBase _walletBaseItem;
   String faucetTip = '테스트용 비트코인으로 마음껏 테스트 해보세요';
-  late RenderBox _faucetRenderBox;
-  late Size _faucetIconSize;
-  late Offset _faucetIconPosition;
   bool _faucetTipVisible = false;
   bool _faucetTooltipVisible = false;
 
@@ -69,23 +113,35 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   final SharedPrefs _sharedPrefs = SharedPrefs();
 
+  late final ScrollController _scrollController;
+
   @override
   void initState() {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
     _prevWalletInitState = _model.walletInitState;
+    _scrollController = ScrollController();
 
     _walletBaseItem = _model.getWalletById(widget.id);
+    _walletType = _walletBaseItem.walletType;
+
     if (_walletBaseItem.walletType == WalletType.multiSignature) {
       final multisigListItem = _walletBaseItem as MultisigWalletListItem;
       _prevTxCount = multisigListItem.txCount;
       _prevIsLatestTxBlockHeightZero =
           multisigListItem.isLatestTxBlockHeightZero;
+
+      final multisigWallet = _walletBaseItem.walletBase as MultisignatureWallet;
+      _utxoList = getUtxoListWithHoldingAddress(multisigWallet.getUtxoList());
     } else {
       final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
       _prevTxCount = singlesigListItem.txCount;
       _prevIsLatestTxBlockHeightZero =
           singlesigListItem.isLatestTxBlockHeightZero;
+
+      final singlesigWallet =
+          _walletBaseItem.walletBase as SingleSignatureWallet;
+      _utxoList = getUtxoListWithHoldingAddress(singlesigWallet.getUtxoList());
     }
 
     List<Transfer>? newTxList = loadTxListFromSharedPref();
@@ -96,6 +152,67 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _model.addListener(_stateListener);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _appBarRenderBox =
+          _appBarKey.currentContext?.findRenderObject() as RenderBox;
+      _topToggleButtonRenderBox =
+          _topToggleButtonKey.currentContext?.findRenderObject() as RenderBox;
+      _topSelectorWidgetRenderBox =
+          _topSelectorWidgetKey.currentContext?.findRenderObject() as RenderBox;
+      _topHeaderWidgetRenderBox =
+          _topHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
+      _positionedTopWidgetRenderBox = _positionedTopWidgetKey.currentContext
+          ?.findRenderObject() as RenderBox;
+
+      // _filterDropdownButtonKey가 할당된 오브젝트가 생성되기 전이기 때문에 기본값으로 초기화 합니다.
+      _filterDropdownButtonRenderBox = RenderConstrainedBox(
+          additionalConstraints:
+              const BoxConstraints.tightFor(width: 0, height: 0));
+
+      _filterDropdownButtonPosition = Offset.zero;
+      _scrolledFilterDropdownButtonPosition = Offset.zero;
+
+      _appBarSize = _appBarRenderBox.size;
+      _topToggleButtonSize = _topToggleButtonRenderBox.size;
+      _topSelectorWidgetSize = _topSelectorWidgetRenderBox.size;
+      _topHeaderWidgetSize = _topHeaderWidgetRenderBox.size;
+      _positionedTopWidgetSize = _positionedTopWidgetRenderBox.size;
+      _filterDropdownButtonSize = const Size(0, 0);
+      _scrolledFilterDropdownButtonSize = const Size(0, 0);
+
+      topPadding = _topToggleButtonSize.height +
+          _topSelectorWidgetSize.height +
+          _topHeaderWidgetSize.height -
+          _positionedTopWidgetSize.height;
+      _scrollController.addListener(() {
+        if (_scrollController.offset > topPadding) {
+          if (!_isPullToRefeshing) {
+            setState(() {
+              _positionedTopWidgetVisible = true;
+              _isFilterDropdownVisible = false;
+            });
+            if (_scrolledFilterDropdownButtonRenderBox == null &&
+                _utxoList.isNotEmpty &&
+                _selectedListType == SelectedListType.UTXO) {
+              _scrolledFilterDropdownButtonRenderBox =
+                  _scrolledFilterDropdownButtonKey.currentContext
+                      ?.findRenderObject() as RenderBox;
+              _scrolledFilterDropdownButtonPosition =
+                  _scrolledFilterDropdownButtonRenderBox!
+                      .localToGlobal(Offset.zero);
+              _scrolledFilterDropdownButtonSize =
+                  _scrolledFilterDropdownButtonRenderBox!.size;
+            }
+          }
+        } else {
+          if (!_isPullToRefeshing) {
+            setState(() {
+              _positionedTopWidgetVisible = false;
+              _isScrolledFilterDropdownVisible = false;
+            });
+          }
+        }
+      });
+
       _faucetRenderBox =
           _faucetIconKey.currentContext?.findRenderObject() as RenderBox;
       _faucetIconPosition = _faucetRenderBox.localToGlobal(Offset.zero);
@@ -134,6 +251,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _model.removeListener(_stateListener);
     super.dispose();
   }
@@ -191,8 +309,360 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     });
   }
 
+  void _toggleListType(SelectedListType type) async {
+    if (type == SelectedListType.Transaction) {
+      setState(() {
+        _selectedListType = SelectedListType.Transaction;
+      });
+    } else {
+      setState(() {
+        _selectedListType = SelectedListType.UTXO;
+      });
+      if (_utxoList.isNotEmpty) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        _filterDropdownButtonRenderBox = _filterDropdownButtonKey.currentContext
+            ?.findRenderObject() as RenderBox;
+        _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
+
+        _filterDropdownButtonPosition =
+            _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+        debugPrint(
+            '_filterDropdownButtonPosition : $_filterDropdownButtonPosition');
+      }
+    }
+  }
+
   void changeSelectedAccount(int index) {
     setState(() => _selectedAccountIndex = index);
+  }
+
+  Widget _listTypeSelectionRow() {
+    return Row(
+      children: [
+        CupertinoButton(
+          pressedOpacity: 0.8,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          minSize: 0,
+          onPressed: () {
+            _toggleListType(SelectedListType.Transaction);
+          },
+          child: Text(
+            '거래 내역',
+            style: Styles.h3.merge(
+              TextStyle(
+                color: _selectedListType == SelectedListType.Transaction
+                    ? MyColors.white
+                    : MyColors.transparentWhite_50,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(
+          width: 24,
+        ),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          pressedOpacity: 0.8,
+          // focusColor: MyColors.white,
+          minSize: 0,
+          onPressed: () {
+            _toggleListType(SelectedListType.UTXO);
+          },
+          child: Text.rich(TextSpan(
+              text: 'UTXO 목록',
+              style: Styles.h3.merge(
+                TextStyle(
+                  color: _selectedListType == SelectedListType.UTXO
+                      ? MyColors.white
+                      : MyColors.transparentWhite_50,
+                ),
+              ),
+              children: [
+                if (_utxoList.isNotEmpty) ...{
+                  TextSpan(
+                    text: ' (${_utxoList.length}개)',
+                    style: Styles.caption.merge(
+                      TextStyle(
+                        color: _selectedListType == SelectedListType.UTXO
+                            ? MyColors.transparentWhite_70
+                            : MyColors.transparentWhite_50,
+                        fontFamily: 'Pretendard',
+                      ),
+                    ),
+                  ),
+                }
+              ])),
+        ),
+      ],
+    );
+  }
+
+  /// 필터 드롭다운 위젯
+  Widget _filterDropDownWidget() {
+    return Material(
+      borderRadius: BorderRadius.circular(16),
+      child: CustomDropdown(
+        buttons: const [
+          '최신순',
+          '오래된 순',
+          '큰 금액순',
+          '작은 금액순',
+        ],
+        dividerColor: Colors.black,
+        onTapButton: (index) {
+          setState(() {
+            _isFilterDropdownVisible = _isScrolledFilterDropdownVisible = false;
+          });
+          switch (index) {
+            case 0: // 최신순
+              debugPrint('최신순 필터링');
+              break;
+            case 1: // 오래된 순
+              debugPrint('오래된 순 필터링');
+              break;
+            case 2: // 큰 금액순
+              debugPrint('쿤 금액순 필터링');
+              break;
+            case 3: // 작은 금액순
+              debugPrint('작은 금액순 필터링');
+              break;
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _afterScrolledWidget() {
+    return Positioned(
+      top: _appBarSize.height,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        ignoring: !_positionedTopWidgetVisible,
+        child: AnimatedOpacity(
+          opacity: _positionedTopWidgetVisible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 200),
+          child: Column(
+            key: _positionedTopWidgetKey,
+            children: [
+              Container(
+                color: MyColors.black,
+                padding: const EdgeInsets.only(
+                  left: 16.0,
+                  right: 16,
+                  top: 20.0,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          text: _walletBaseItem.balance != null
+                              ? (_current == Unit.btc
+                                  ? satoshiToBitcoinString(
+                                      _walletBaseItem.balance!)
+                                  : addCommasToIntegerPart(
+                                      _walletBaseItem.balance!.toDouble()))
+                              : '잔액 조회 불가',
+                          style: Styles.h2Number,
+                          children: [
+                            TextSpan(
+                              text: _walletBaseItem.balance != null
+                                  ? _current == Unit.btc
+                                      ? ' BTC'
+                                      : ' sats'
+                                  : '잔액 조회 불가',
+                              style: Styles.label.merge(
+                                TextStyle(
+                                  fontFamily: CustomFonts.number.getFontFamily,
+                                  color: MyColors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    CupertinoButton(
+                      onPressed: () {
+                        if (!_checkStateAndShowToast()) return;
+                        if (!_checkBalanceIsNotNullAndShowToast()) return;
+                        MyBottomSheet.showBottomSheet_90(
+                            context: context,
+                            child: ReceiveAddressScreen(id: widget.id));
+                      },
+                      borderRadius: BorderRadius.circular(8.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      minSize: 0,
+                      color: MyColors.white,
+                      child: SizedBox(
+                        width: 30,
+                        child: Center(
+                          child: Text(
+                            '받기',
+                            style: Styles.caption2.merge(
+                              const TextStyle(
+                                  color: MyColors.black,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 8,
+                    ),
+                    CupertinoButton(
+                      onPressed: () {
+                        if (_walletBaseItem.balance == null) {
+                          CustomToast.showToast(
+                              context: context, text: "잔액이 없습니다.");
+                          return;
+                        }
+                        if (!_checkStateAndShowToast()) return;
+                        if (!_checkBalanceIsNotNullAndShowToast()) return;
+                        Navigator.pushNamed(context, '/send-address',
+                            arguments: {'id': widget.id});
+                      },
+                      borderRadius: BorderRadius.circular(8.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      minSize: 0,
+                      color: MyColors.primary,
+                      child: SizedBox(
+                        width: 30,
+                        child: Center(
+                          child: Text(
+                            '보내기',
+                            style: Styles.caption2.merge(
+                              const TextStyle(
+                                  color: MyColors.black,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Stack(
+                children: [
+                  Column(
+                    children: [
+                      Container(
+                        width: MediaQuery.sizeOf(context).width,
+                        padding: const EdgeInsets.only(
+                            left: 16, right: 16, bottom: 9),
+                        decoration: const BoxDecoration(
+                          color: MyColors.black,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color.fromRGBO(255, 255, 255, 0.2),
+                              offset: Offset(0, 3),
+                              blurRadius: 4,
+                              spreadRadius: 0,
+                            ),
+                          ],
+                        ),
+                        child: Visibility(
+                          visible: _selectedListType == SelectedListType.UTXO &&
+                              _utxoList.isNotEmpty,
+                          maintainAnimation: true,
+                          maintainState: true,
+                          maintainSize: true,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(),
+                              ),
+                              CupertinoButton(
+                                padding: const EdgeInsets.only(
+                                  top: 10,
+                                ),
+                                minSize: 0,
+                                onPressed: () {
+                                  setState(() {
+                                    _isScrolledFilterDropdownVisible = true;
+                                  });
+                                },
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      key: _scrolledFilterDropdownButtonKey,
+                                      '큰 금액순',
+
+                                      /// TODO: 정렬 Text 대입
+                                      style: Styles.caption2.merge(
+                                        const TextStyle(
+                                          color: MyColors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: 5,
+                                    ),
+                                    SvgPicture.asset(
+                                        'assets/svg/arrow-down.svg'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 16,
+                        child: Container(),
+                      ),
+                    ],
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: MyColors.black,
+                            border: Border.all(
+                                color: MyColors.transparentWhite_50,
+                                width: 0.5),
+                            borderRadius: BorderRadius.circular(
+                              16,
+                            ),
+                          ),
+                          child: Text(
+                            _selectedListType == SelectedListType.Transaction
+                                ? '거래 내역'
+                                : 'UTXO 목록', // TODO: 선택된 리스트 대입
+                            style: Styles.caption2.merge(
+                              const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                color: MyColors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _faucetTooltipWidget(BuildContext context) {
@@ -251,6 +721,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     });
   }
 
+  void _removeFilterDropdown() {
+    setState(() {
+      _isFilterDropdownVisible = false;
+      _isScrolledFilterDropdownVisible = false;
+    });
+  }
+
   bool _checkStateAndShowToast() {
     var appState = Provider.of<AppStateModel>(context, listen: false);
 
@@ -279,182 +756,366 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return true;
   }
 
+  /// 거래 내역 리스트
+  Widget _transactionListWidget() {
+    return SliverSafeArea(
+      minimum: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+      sliver: _txList.isNotEmpty
+          ? SliverList(
+              delegate: SliverChildBuilderDelegate((ctx, index) {
+              return Column(children: [
+                TransactionRowItem(
+                    tx: _txList[index], currentUnit: _current, id: widget.id),
+                gapOfTxRowItems,
+                if (index == _txList.length - 1)
+                  const SizedBox(
+                    height: 80,
+                  )
+              ]);
+            }, childCount: _txList.length))
+          : const SliverFillRemaining(
+              fillOverscroll: false,
+              hasScrollBody: false,
+              child: Padding(
+                  padding: EdgeInsets.only(top: 100),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Text('거래 내역이 없어요', style: Styles.body1),
+                  )),
+            ),
+    );
+  }
+
+  /// UTXO 목록
+  Widget _utxoListWidget() {
+    return SliverSafeArea(
+      minimum: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: _utxoList.isNotEmpty
+          ? SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  return UTXOItemCard(
+                    utxo: _utxoList[index],
+                  );
+                },
+                childCount: _utxoList.length, // 항목 개수 지정
+              ),
+            )
+          : const SliverFillRemaining(
+              fillOverscroll: false,
+              hasScrollBody: false,
+              child: Padding(
+                  padding: EdgeInsets.only(top: 100),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Text(
+                      '사용 가능한 UTXO가 없어요\n새로운 거래를 통해 UTXO를 추가할 수 있어요',
+                      style: Styles.body1,
+                      textAlign: TextAlign.center,
+                    ),
+                  )),
+            ),
+    );
+  }
+
+  List<model.UTXO> getUtxoListWithHoldingAddress(List<UTXO> utxoEntities) {
+    List<model.UTXO> utxos = [];
+    for (var element in utxoEntities) {
+      Map<String, int> changeAndAccountIndex =
+          getChangeAndAccountElements(element.derivationPath);
+
+      String ownedAddress = _walletBaseItem.walletBase.getAddress(
+          changeAndAccountIndex[accountIndexField]!,
+          isChange: changeAndAccountIndex[changeField]! == 1);
+
+      utxos.add(model.UTXO(
+          element.timestamp.toString(),
+          element.blockHeight.toString(),
+          element.amount,
+          ownedAddress,
+          element.derivationPath,
+          element.transactionHash));
+    }
+    return utxos;
+  }
+
+  Map<String, int> getChangeAndAccountElements(String derivationPath) {
+    var pathElements = derivationPath.split('/');
+    Map<String, int> result;
+
+    switch (_walletType) {
+      // m / purpose' / coin_type' / account' / change / address_index
+      case WalletType.singleSignature:
+        result = {
+          changeField: int.parse(pathElements[4]),
+          accountIndexField: int.parse(pathElements[5])
+        };
+        break;
+      // m / purpose' / coin_type' / account' / script_type' / change / address_index
+      case WalletType.multiSignature:
+        result = {
+          changeField: int.parse(pathElements[5]),
+          accountIndexField: int.parse(pathElements[6])
+        };
+        break;
+      default:
+        throw ArgumentError("wrong walletType: $_walletType");
+    }
+
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, _) {
         _removeFaucetTooltip();
+        _removeFilterDropdown();
       },
-      child: Stack(
-        children: [
-          Scaffold(
-            backgroundColor: MyColors.black,
-            appBar: CustomAppBar.build(
-              faucetIconKey: _faucetIconKey,
-              title: TextUtils.ellipsisIfLonger(
-                _walletBaseItem.name,
-                maxLength: 15,
+      child: GestureDetector(
+        onVerticalDragDown: (details) => _removeFilterDropdown(),
+        child: Stack(
+          children: [
+            Scaffold(
+              backgroundColor: MyColors.black,
+              appBar: CustomAppBar.build(
+                entireWidgetKey: _appBarKey,
+                faucetIconKey: _faucetIconKey,
+                backgroundColor: MyColors.black,
+                title: TextUtils.ellipsisIfLonger(
+                  _walletBaseItem.name,
+                  maxLength: 15,
+                ),
+                context: context,
+                hasRightIcon: true,
+                onFaucetIconPressed: () async {
+                  _removeFaucetTooltip();
+                  if (!_checkStateAndShowToast()) return;
+                  if (!_checkBalanceIsNotNullAndShowToast()) return;
+                  await MyBottomSheet.showBottomSheet_50(
+                      context: context,
+                      child: FaucetRequestScreen(
+                        onRequestSuccess: () {
+                          Navigator.pop(context, true); // 성공 시 true 반환
+                          // 1초 후에 이 지갑만 sync 요청
+                          Future.delayed(const Duration(seconds: 1), () {
+                            _model.initWallet(
+                                targetId: widget.id, syncOthers: false);
+                          });
+                        },
+                        walletBaseItem: _walletBaseItem,
+                      ));
+                },
+                onTitlePressed: () {
+                  if (_walletBaseItem.walletType == WalletType.multiSignature) {
+                    Navigator.pushNamed(context, '/wallet-multisig',
+                        arguments: {'id': widget.id});
+                  } else {
+                    Navigator.pushNamed(context, '/wallet-setting',
+                        arguments: {'id': widget.id});
+                  }
+                },
+                showFaucetIcon: true,
               ),
-              context: context,
-              hasRightIcon: true,
-              onFaucetIconPressed: () async {
-                _removeFaucetTooltip();
-                if (!_checkStateAndShowToast()) return;
-                if (!_checkBalanceIsNotNullAndShowToast()) return;
-                await MyBottomSheet.showBottomSheet_50(
-                    context: context,
-                    child: FaucetRequestScreen(
-                      onRequestSuccess: () {
-                        Navigator.pop(context, true); // 성공 시 true 반환
-                        // 1초 후에 이 지갑만 sync 요청
-                        Future.delayed(const Duration(seconds: 1), () {
-                          _model.initWallet(
-                              targetId: widget.id, syncOthers: false);
-                        });
-                      },
-                      walletBaseItem: _walletBaseItem,
-                    ));
-              },
-              onTitlePressed: () {
-                if (_walletBaseItem.walletType == WalletType.multiSignature) {
-                  Navigator.pushNamed(context, '/wallet-multisig',
-                      arguments: {'id': widget.id});
-                } else {
-                  Navigator.pushNamed(context, '/wallet-setting',
-                      arguments: {'id': widget.id});
-                }
-              },
-              showFaucetIcon: true,
-            ),
-            body: CustomScrollView(
-                //controller: _scrollController,
-                semanticChildCount: _txList.isEmpty ? 1 : _txList.length,
-                slivers: [
-                  CupertinoSliverRefreshControl(
-                    onRefresh: () async {
-                      _isPullToRefeshing = true;
-                      try {
-                        if (!_checkStateAndShowToast()) {
-                          return;
+              body: CustomScrollView(
+                  controller: _scrollController,
+                  semanticChildCount: _txList.isEmpty ? 1 : _txList.length,
+                  slivers: [
+                    CupertinoSliverRefreshControl(
+                      onRefresh: () async {
+                        _isPullToRefeshing = true;
+                        try {
+                          if (!_checkStateAndShowToast()) {
+                            return;
+                          }
+                          _model.initWallet(targetId: widget.id);
+                        } finally {
+                          _isPullToRefeshing = false;
                         }
-                        _model.initWallet(targetId: widget.id);
-                      } finally {
-                        _isPullToRefeshing = false;
-                      }
-                    },
-                  ),
-                  // Unit 전환 버튼
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 20.0),
-                      child: Center(
-                          child: SmallActionButton(
-                              onPressed: _toggleUnit,
-                              height: 32,
-                              width: 64,
-                              child: Text(_current == Unit.btc ? 'BTC' : 'sats',
-                                  style: Styles.label.merge(TextStyle(
-                                      fontFamily:
-                                          CustomFonts.number.getFontFamily,
-                                      color: MyColors.white))))),
+                      },
                     ),
-                  ),
-                  Selector<UpbitConnectModel, int?>(
-                      selector: (context, model) => model.bitcoinPriceKrw,
-                      builder: (context, bitcoinPriceKrw, child) {
-                        return SliverToBoxAdapter(
-                            child: BalanceAndButtons(
-                          balance: _walletBaseItem.balance,
-                          walletId: widget.id,
-                          accountIndex: _selectedAccountIndex,
-                          currentUnit: _current,
-                          btcPriceInKrw: bitcoinPriceKrw,
-                          checkPrerequisites: () {
-                            return _checkStateAndShowToast() &&
-                                _checkBalanceIsNotNullAndShowToast();
-                          },
-                        ));
-                      }),
-                  SliverToBoxAdapter(
-                      child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        key: _topToggleButtonKey,
+                        padding: const EdgeInsets.only(top: 20.0),
+                        child: Center(
+                          child: SmallActionButton(
+                            onPressed: () {
+                              _toggleUnit();
+                            },
+                            height: 32,
+                            width: 64,
+                            child: Text(
+                              _current == Unit.btc ? 'BTC' : 'sats',
+                              style: Styles.label.merge(
+                                TextStyle(
+                                    fontFamily:
+                                        CustomFonts.number.getFontFamily,
+                                    color: MyColors.white),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Selector<UpbitConnectModel, int?>(
+                        selector: (context, model) => model.bitcoinPriceKrw,
+                        builder: (context, bitcoinPriceKrw, child) {
+                          return SliverToBoxAdapter(
+                              child: BalanceAndButtons(
+                            key: _topSelectorWidgetKey,
+                            balance: _walletBaseItem.balance,
+                            walletId: widget.id,
+                            accountIndex: _selectedAccountIndex,
+                            currentUnit: _current,
+                            btcPriceInKrw: bitcoinPriceKrw,
+                            checkPrerequisites: () {
+                              return _checkStateAndShowToast() &&
+                                  _checkBalanceIsNotNullAndShowToast();
+                            },
+                          ));
+                        }),
+                    SliverToBoxAdapter(
+                        child: Column(
+                      key: _topHeaderWidgetKey,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
                           padding: const EdgeInsets.only(
                               left: 16.0, right: 16.0, bottom: 12.0, top: 30),
                           child: Selector<AppStateModel, WalletInitState>(
                               selector: (_, selectorModel) =>
                                   selectorModel.walletInitState,
                               builder: (context, state, child) {
-                                if (!_isPullToRefeshing &&
-                                    state == WalletInitState.processing) {
-                                  return Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text('거래 내역', style: Styles.h3),
-                                        Row(
+                                return Column(
+                                  children: [
+                                    if (!_isPullToRefeshing &&
+                                        state ==
+                                            WalletInitState.processing) ...{
+                                      Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
-                                            const Text(
-                                              '업데이트 중',
-                                              style: TextStyle(
-                                                fontFamily: 'Pretendard',
-                                                color: MyColors.primary,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                fontStyle: FontStyle.normal,
-                                              ),
+                                            _listTypeSelectionRow(),
+                                            Row(
+                                              children: [
+                                                const Text(
+                                                  '업데이트 중',
+                                                  style: TextStyle(
+                                                    fontFamily: 'Pretendard',
+                                                    color: MyColors.primary,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontStyle: FontStyle.normal,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                LottieBuilder.asset(
+                                                  'assets/files/status_loading.json',
+                                                  width: 20,
+                                                  height: 20,
+                                                ),
+                                              ],
+                                            )
+                                          ]),
+                                    } else ...{
+                                      Column(
+                                        children: [
+                                          _listTypeSelectionRow(),
+                                        ],
+                                      ),
+                                    },
+                                    if (_selectedListType ==
+                                            SelectedListType.UTXO &&
+                                        _utxoList.isNotEmpty) ...{
+                                      const SizedBox(height: 8),
+                                      IgnorePointer(
+                                        ignoring: _positionedTopWidgetVisible,
+                                        child: Visibility(
+                                          maintainSize: true,
+                                          maintainAnimation: true,
+                                          maintainState: true,
+                                          maintainSemantics: false,
+                                          maintainInteractivity: false,
+                                          visible: !_positionedTopWidgetVisible,
+                                          child: CupertinoButton(
+                                            onPressed: () {
+                                              setState(
+                                                () {
+                                                  _removeFilterDropdown();
+                                                  _isFilterDropdownVisible =
+                                                      true;
+                                                },
+                                              );
+                                              debugPrint(
+                                                  'dx dy = ${_filterDropdownButtonPosition.dx} ${_filterDropdownButtonPosition.dy}');
+                                            },
+                                            minSize: 0,
+                                            padding:
+                                                const EdgeInsets.only(left: 8),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  key: _filterDropdownButtonKey,
+                                                  '큰 금액순',
+
+                                                  /// TODO: 정렬 Text 대입
+                                                  style: Styles.caption2.merge(
+                                                    const TextStyle(
+                                                      color: MyColors.white,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(
+                                                  width: 4,
+                                                ),
+                                                SvgPicture.asset(
+                                                  'assets/svg/arrow-down.svg',
+                                                ),
+                                              ],
                                             ),
-                                            const SizedBox(width: 8),
-                                            LottieBuilder.asset(
-                                              'assets/files/status_loading.json',
-                                              width: 20,
-                                              height: 20,
-                                            ),
-                                          ],
-                                        )
-                                      ]);
-                                } else {
-                                  return const Text('거래 내역', style: Styles.h3);
-                                }
-                              })),
-                    ],
-                  )),
-                  SliverSafeArea(
-                      minimum: const EdgeInsets.symmetric(
-                          vertical: 0, horizontal: 10),
-                      sliver: _txList.isNotEmpty
-                          ? SliverList(
-                              delegate:
-                                  SliverChildBuilderDelegate((ctx, index) {
-                              return Column(children: [
-                                TransactionRowItem(
-                                    tx: _txList[index],
-                                    currentUnit: _current,
-                                    id: widget.id),
-                                gapOfTxRowItems,
-                                if (index == _txList.length - 1)
-                                  const SizedBox(
-                                    height: 80,
-                                  )
-                              ]);
-                            }, childCount: _txList.length))
-                          : const SliverFillRemaining(
-                              fillOverscroll: false,
-                              hasScrollBody: false,
-                              child: Padding(
-                                  padding: EdgeInsets.all(20),
-                                  child: Align(
-                                    alignment: Alignment.topCenter,
-                                    child:
-                                        Text('거래 내역이 없어요', style: Styles.body1),
-                                  )),
-                            )),
-                ]),
-          ),
-          _faucetTooltipWidget(context),
-        ],
+                                          ),
+                                        ),
+                                      ),
+                                    },
+                                  ],
+                                );
+                              }),
+                        ),
+                      ],
+                    )),
+                    _selectedListType == SelectedListType.Transaction
+                        ? _transactionListWidget()
+                        : _utxoListWidget()
+                  ]),
+            ),
+            _afterScrolledWidget(),
+            _faucetTooltipWidget(context),
+            if (_isFilterDropdownVisible && _utxoList.isNotEmpty) ...{
+              Positioned(
+                top: _filterDropdownButtonPosition.dy +
+                    _filterDropdownButtonSize.height +
+                    8 -
+                    _scrollController.offset,
+                right: 16,
+                child: _filterDropDownWidget(),
+              ),
+            },
+            if (_isScrolledFilterDropdownVisible && _utxoList.isNotEmpty) ...{
+              Positioned(
+                top: _scrolledFilterDropdownButtonPosition.dy +
+                    _scrolledFilterDropdownButtonSize.height +
+                    8,
+                right: 16,
+                child: _filterDropDownWidget(),
+              ),
+            },
+          ],
+        ),
       ),
     );
   }
@@ -486,7 +1147,7 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -519,14 +1180,14 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
                             context: context,
                             child: ReceiveAddressScreen(id: widget.walletId));
                       },
-                      borderRadius: BorderRadius.circular(15.0),
+                      borderRadius: BorderRadius.circular(12.0),
                       padding: EdgeInsets.zero,
                       color: MyColors.white,
                       child: Text('받기',
                           style: Styles.label.merge(const TextStyle(
                               color: MyColors.black,
                               fontWeight: FontWeight.w600))))),
-              const SizedBox(width: 8.0),
+              const SizedBox(width: 12.0),
               Expanded(
                   child: CupertinoButton(
                       onPressed: () {
@@ -541,7 +1202,7 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
                         Navigator.pushNamed(context, '/send-address',
                             arguments: {'id': widget.walletId});
                       },
-                      borderRadius: BorderRadius.circular(15.0),
+                      borderRadius: BorderRadius.circular(12.0),
                       padding: EdgeInsets.zero,
                       color: MyColors.primary,
                       child: Text('보내기',

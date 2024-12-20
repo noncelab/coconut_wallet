@@ -4,6 +4,7 @@ import 'dart:math' as math;
 abstract class MyColors {
   static const black = Color.fromRGBO(20, 19, 24, 1);
   static const nero = Color.fromRGBO(26, 26, 26, 1);
+  static const shadowGray = Color.fromRGBO(34, 33, 38, 1);
   static const transparentBlack = Color.fromRGBO(0, 0, 0, 0.7);
   static const transparentBlack_03 = Color.fromRGBO(0, 0, 0, 0.03);
   static const grey = Color.fromRGBO(48, 47, 52, 1);
@@ -105,6 +106,13 @@ abstract class Styles {
       fontFamily: _fontNumber,
       color: MyColors.white,
       fontSize: 32,
+      fontStyle: FontStyle.normal,
+      fontWeight: FontWeight.w700);
+
+  static const TextStyle h2Number = TextStyle(
+      fontFamily: _fontNumber,
+      color: MyColors.white,
+      fontSize: 18,
       fontStyle: FontStyle.normal,
       fontWeight: FontWeight.w700);
 

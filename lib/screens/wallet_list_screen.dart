@@ -728,6 +728,11 @@ class _WalletListScreenState extends State<WalletListScreen>
                       Align(
                         alignment: Alignment.topRight,
                         child: CustomDropdown(
+                          margin: EdgeInsets.only(
+                              top: (84 + MediaQuery.of(context).padding.top) -
+                                  (MediaQuery.of(context).padding.top / 2),
+                              right: 20),
+                          backgroundColor: MyColors.grey,
                           buttons: const [
                             '용어집',
                             '니모닉 문구 단어집',
