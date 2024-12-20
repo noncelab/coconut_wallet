@@ -89,13 +89,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   bool _positionedTopWidgetVisible = false; // 스크롤시 상단에 붙어있는 위젯
   bool _isFilterDropdownVisible = false; // 필터 드롭다운(확장형)
   bool _isScrolledFilterDropdownVisible = false; // 필터 드롭다운(축소형)
+  bool _isUtxoListLoadComplete = false;
 
   int _selectedAccountIndex = 0;
   Unit _current = Unit.btc;
   List<Transfer> _txList = [];
 
 // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
-  late List<model.UTXO> _utxoList;
+  List<model.UTXO> _utxoList = [];
   late WalletType _walletType;
   static String changeField = 'change';
   static String accountIndexField = 'accountIndex';
@@ -130,18 +131,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       _prevTxCount = multisigListItem.txCount;
       _prevIsLatestTxBlockHeightZero =
           multisigListItem.isLatestTxBlockHeightZero;
-
-      final multisigWallet = _walletBaseItem.walletBase as MultisignatureWallet;
-      _utxoList = getUtxoListWithHoldingAddress(multisigWallet.getUtxoList());
     } else {
       final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
       _prevTxCount = singlesigListItem.txCount;
       _prevIsLatestTxBlockHeightZero =
           singlesigListItem.isLatestTxBlockHeightZero;
-
-      final singlesigWallet =
-          _walletBaseItem.walletBase as SingleSignatureWallet;
-      _utxoList = getUtxoListWithHoldingAddress(singlesigWallet.getUtxoList());
     }
 
     List<Transfer>? newTxList = loadTxListFromSharedPref();
@@ -261,14 +255,26 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     // _prevWalletInitState != WalletInitState.finished 조건 걸어주지 않으면 삭제 시 getWalletById 과정에서 에러 발생
     if (_prevWalletInitState != WalletInitState.finished &&
         _model.walletInitState == WalletInitState.finished) {
-      _walletBaseItem = _model.getWalletById(widget.id);
-
       if (_walletBaseItem.walletType == WalletType.multiSignature) {
         final multi = _walletBaseItem as MultisigWalletListItem;
         _checkTxCount(multi.txCount, multi.isLatestTxBlockHeightZero);
+
+        final multisigWallet =
+            _walletBaseItem.walletBase as MultisignatureWallet;
+        _utxoList = getUtxoListWithHoldingAddress(multisigWallet.getUtxoList());
       } else {
         final single = _walletBaseItem as SinglesigWalletListItem;
         _checkTxCount(single.txCount, single.isLatestTxBlockHeightZero);
+
+        final singlesigWallet =
+            _walletBaseItem.walletBase as SingleSignatureWallet;
+        _utxoList =
+            getUtxoListWithHoldingAddress(singlesigWallet.getUtxoList());
+      }
+      if (mounted) {
+        setState(() {
+          _isUtxoListLoadComplete = true;
+        });
       }
     }
     _prevWalletInitState = _model.walletInitState;
@@ -801,18 +807,22 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                 childCount: _utxoList.length, // 항목 개수 지정
               ),
             )
-          : const SliverFillRemaining(
+          : SliverFillRemaining(
               fillOverscroll: false,
               hasScrollBody: false,
               child: Padding(
-                  padding: EdgeInsets.only(top: 100),
+                  padding: const EdgeInsets.only(top: 100),
                   child: Align(
                     alignment: Alignment.topCenter,
-                    child: Text(
-                      '사용 가능한 UTXO가 없어요\n새로운 거래를 통해 UTXO를 추가할 수 있어요',
-                      style: Styles.body1,
-                      textAlign: TextAlign.center,
-                    ),
+                    child: !_isUtxoListLoadComplete
+                        ? const CircularProgressIndicator(
+                            color: MyColors.white,
+                          )
+                        : const Text(
+                            '사용 가능한 UTXO가 없어요\n새로운 거래를 통해 UTXO를 추가할 수 있어요',
+                            style: Styles.body1,
+                            textAlign: TextAlign.center,
+                          ),
                   )),
             ),
     );
