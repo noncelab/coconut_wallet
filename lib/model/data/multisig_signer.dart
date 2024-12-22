@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:core';
 
 import 'package:json_annotation/json_annotation.dart';
@@ -30,4 +31,15 @@ class MultisigSigner {
 
   factory MultisigSigner.fromJson(Map<String, dynamic> json) =>
       _$MultisigSignerFromJson(json);
+
+  static String toJsonList(List<MultisigSigner> signers) {
+    return jsonEncode(signers.map((signer) => signer.toJson()).toList());
+  }
+
+  static List<MultisigSigner> fromJsonList(String jsonString) {
+    final List<dynamic> jsonList = jsonDecode(jsonString);
+    return jsonList
+        .map((json) => MultisigSigner.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
 }

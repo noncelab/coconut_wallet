@@ -1,9 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -67,8 +64,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   late int? _prevTxCount;
   late bool _prevIsLatestTxBlockHeightZero;
 
-  final SharedPrefs _sharedPrefs = SharedPrefs();
-
   @override
   void initState() {
     super.initState();
@@ -76,19 +71,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _prevWalletInitState = _model.walletInitState;
 
     _walletBaseItem = _model.getWalletById(widget.id);
-    if (_walletBaseItem.walletType == WalletType.multiSignature) {
-      final multisigListItem = _walletBaseItem as MultisigWalletListItem;
-      _prevTxCount = multisigListItem.txCount;
-      _prevIsLatestTxBlockHeightZero =
-          multisigListItem.isLatestTxBlockHeightZero;
-    } else {
-      final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
-      _prevTxCount = singlesigListItem.txCount;
-      _prevIsLatestTxBlockHeightZero =
-          singlesigListItem.isLatestTxBlockHeightZero;
-    }
+    _prevTxCount = _walletBaseItem.txCount;
+    _prevIsLatestTxBlockHeightZero = _walletBaseItem.isLatestTxBlockHeightZero;
 
-    List<Transfer>? newTxList = loadTxListFromSharedPref();
+    List<Transfer>? newTxList = _model.getTxList(widget.id);
     if (newTxList != null) {
       _txList = newTxList;
     }
@@ -144,28 +130,24 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (_prevWalletInitState != WalletInitState.finished &&
         _model.walletInitState == WalletInitState.finished) {
       _walletBaseItem = _model.getWalletById(widget.id);
-
-      if (_walletBaseItem.walletType == WalletType.multiSignature) {
-        final multi = _walletBaseItem as MultisigWalletListItem;
-        _checkTxCount(multi.txCount, multi.isLatestTxBlockHeightZero);
-      } else {
-        final single = _walletBaseItem as SinglesigWalletListItem;
-        _checkTxCount(single.txCount, single.isLatestTxBlockHeightZero);
-      }
+      _checkTxCount(
+          _walletBaseItem.txCount, _walletBaseItem.isLatestTxBlockHeightZero);
     }
     _prevWalletInitState = _model.walletInitState;
   }
 
   _checkTxCount(int? txCount, bool isLatestTxBlockHeightZero) {
-    Logger.log('>>>>>> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
+    Logger.log('--> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
     Logger.log(
-        '>>>>>> prevIsZero: $_prevIsLatestTxBlockHeightZero, wallet.isZero: $isLatestTxBlockHeightZero');
+        '--> prevIsZero: $_prevIsLatestTxBlockHeightZero, wallet.isZero: $isLatestTxBlockHeightZero');
 
     /// _walletListItem의 txCount, isLatestTxBlockHeightZero가 변경되었을 때만 트랜잭션 목록 업데이트
     if (_prevTxCount != txCount ||
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
-      List<Transfer>? newTxList = loadTxListFromSharedPref();
+      // TODO: pagination?
+      List<Transfer>? newTxList = _model.getTxList(widget.id);
       if (newTxList != null) {
+        print('--> [detail화면] newTxList.length: ${newTxList.length}');
         _txList = newTxList;
         setState(() {});
       }
@@ -174,16 +156,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;
   }
   // setListener end
-
-  List<Transfer>? loadTxListFromSharedPref() {
-    final String? txListString = _sharedPrefs.getTxList(widget.id);
-    if (txListString == null || txListString.isEmpty) {
-      return null;
-    }
-
-    List<dynamic> jsonList = jsonDecode(txListString);
-    return TransferListDeserialization.fromJsonList(jsonList);
-  }
 
   void _toggleUnit() {
     setState(() {
@@ -682,7 +654,7 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
   @override
   Widget build(BuildContext context) {
     List<String>? transactionTimeStamp = widget.tx.timestamp != null
-        ? DateTimeUtil.formatTimeStamp(widget.tx.timestamp!)
+        ? DateTimeUtil.formatTimeStamp(widget.tx.timestamp!.toLocal())
         : null;
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,

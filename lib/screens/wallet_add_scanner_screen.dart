@@ -228,6 +228,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           _isProcessing = false;
           Navigator.pop(context);
         });
+        rethrow;
       }
     });
   }

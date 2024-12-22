@@ -72,6 +72,7 @@ dependencies:
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
   coconut_lib: ^0.8.1
+  realm: ^20.0.0
 
 dev_dependencies:
   flutter_test:
