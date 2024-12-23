@@ -28,7 +28,7 @@ class WalletDataManager {
   static final WalletDataManager _instance = WalletDataManager._internal();
   factory WalletDataManager() => _instance;
 
-  late Realm realm;
+  late Realm _realm;
 
   List<WalletListItemBase>? _walletList;
   get walletList => _walletList;
@@ -42,16 +42,16 @@ class WalletDataManager {
       RealmTransaction.schema,
       RealmIntegerId.schema
     ]);
-    realm = Realm(config);
+    _realm = Realm(config);
   }
 
   Future<List<WalletListItemBase>> loadFromDB() async {
     _walletList = [];
     int multisigWalletIndex = 0;
     var walletBases =
-        realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
+        _realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
     var multisigWallets =
-        realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id ASC)');
+        _realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id ASC)');
     for (var i = 0; i < walletBases.length; i++) {
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
         _walletList!
@@ -76,8 +76,8 @@ class WalletDataManager {
         walletSync.descriptor,
         walletSync.name,
         WalletType.singleSignature.name);
-    realm.write(() {
-      realm.add(wallet);
+    _realm.write(() {
+      _realm.add(wallet);
     });
     _recordNextWalletId();
 
@@ -108,9 +108,9 @@ class WalletDataManager {
         MultisigSigner.toJsonList(walletSync.signers!),
         walletSync.requiredSignatureCount!,
         walletBase: realmWalletBase);
-    realm.write(() {
-      realm.add(realmWalletBase);
-      realm.add(realmMultisigWallet);
+    _realm.write(() {
+      _realm.add(realmWalletBase);
+      _realm.add(realmMultisigWallet);
     });
     _recordNextWalletId();
 
@@ -170,7 +170,7 @@ class WalletDataManager {
     if (noNeedToUpdate.length == targets.length) return false;
 
     // TODO: 정렬 되는지 확인하기.
-    final realmWallets = realm
+    final realmWallets = _realm
         .all<RealmWalletBase>()
         .query(r'id IN $0 SORT(id ASC)', [needToUpdateIds]);
 
@@ -196,7 +196,7 @@ class WalletDataManager {
     RealmResults<RealmTransaction>? updateTargets;
     // 전송 중, 받는 중인 트랜잭션이 있는 경우
     if (walletItem.isLatestTxBlockHeightZero) {
-      updateTargets = realm
+      updateTargets = _realm
           .all<RealmTransaction>()
           .query(r'walletBase.id = $0', [realmWallet.id]);
       // db에서 blockHeight가 0인 tx 중 가장 작은 id
@@ -217,8 +217,8 @@ class WalletDataManager {
     List<Transfer> newTxList =
         walletFeature.getTransferList(cursor: 0, count: newTxCount);
     print('--> newTxList length: ${newTxList.length}');
-    int nextId = generateNextId(realm, (RealmTransaction).toString());
-    realm.write(() {
+    int nextId = generateNextId(_realm, (RealmTransaction).toString());
+    _realm.write(() {
       for (int i = newTxList.length - 1; i >= 0; i--) {
         RealmTransaction? existingTx;
         if (walletItem.isLatestTxBlockHeightZero &&
@@ -240,7 +240,7 @@ class WalletDataManager {
           nextId++;
         }
 
-        realm.add<RealmTransaction>(saveTarget, update: existingTx != null);
+        _realm.add<RealmTransaction>(saveTarget, update: existingTx != null);
       }
 
       realmWallet.txCount = syncResult.transactionList.length;
@@ -250,7 +250,7 @@ class WalletDataManager {
       realmWallet.balance =
           walletFeature.getBalance() + walletFeature.getUnconfirmedBalance();
     });
-    saveNextId(realm, (RealmTransaction).toString(), nextId);
+    saveNextId(_realm, (RealmTransaction).toString(), nextId);
 
     _walletList!.firstWhere((w) => w.id == realmWallet.id)
       ..txCount = realmWallet.txCount
@@ -268,15 +268,15 @@ class WalletDataManager {
 
   void updateWalletUI(int id, WalletSync walletSync) {
     final RealmWalletBase wallet =
-        realm.all<RealmWalletBase>().query('id = $id').first;
+        _realm.all<RealmWalletBase>().query('id = $id').first;
     final RealmMultisigWallet? multisigWallet =
-        realm.all<RealmMultisigWallet>().query('id = $id').firstOrNull;
+        _realm.all<RealmMultisigWallet>().query('id = $id').firstOrNull;
     if (wallet.walletType == WalletType.multiSignature.name) {
       assert(multisigWallet != null);
     }
 
     // ui 정보 변경하기
-    realm.write(() {
+    _realm.write(() {
       wallet.name = walletSync.name;
       wallet.colorIndex = walletSync.colorIndex;
       wallet.iconIndex = walletSync.iconIndex;
@@ -302,26 +302,26 @@ class WalletDataManager {
 
   void deleteWallet(int id) {
     final RealmWalletBase walletBase =
-        realm.all<RealmWalletBase>().query('id == $id').first;
+        _realm.all<RealmWalletBase>().query('id == $id').first;
     final transactions =
-        realm.all<RealmTransaction>().query('walletBase.id == $id');
+        _realm.all<RealmTransaction>().query('walletBase.id == $id');
     // TODO: utxos
 
     final realmMultisigWallet =
         walletBase.walletType == WalletType.multiSignature.name
-            ? realm.all<RealmMultisigWallet>().query('id == $id').first
+            ? _realm.all<RealmMultisigWallet>().query('id == $id').first
             : null;
 
-    realm.write(() {
-      realm.delete(walletBase);
-      realm.deleteMany(transactions);
+    _realm.write(() {
+      _realm.delete(walletBase);
+      _realm.deleteMany(transactions);
       if (realmMultisigWallet != null) {
-        realm.delete(realmMultisigWallet);
+        _realm.delete(realmMultisigWallet);
       }
     });
 
     final RealmWalletBase? walletBase2 =
-        realm.all<RealmWalletBase>().query('id == $id').firstOrNull;
+        _realm.all<RealmWalletBase>().query('id == $id').firstOrNull;
     print('--> 삭제 후 조회: $walletBase2');
     // TODO: 삭제 후 조회 시 안찾아지는지 확인하기
 
@@ -340,7 +340,7 @@ class WalletDataManager {
   }
 
   List<Transfer>? getTxList(int id) {
-    final transactions = realm
+    final transactions = _realm
         .all<RealmTransaction>()
         .query('walletBase.id == $id SORT(timestamp DESC)');
 
@@ -353,11 +353,17 @@ class WalletDataManager {
   }
 
   void reset() {
-    realm.deleteAll();
+    _realm.write(() {
+      _realm.deleteAll<RealmWalletBase>();
+      _realm.deleteAll<RealmMultisigWallet>();
+      _realm.deleteAll<RealmTransaction>();
+      // TODO: tag 추가
+    });
+
     _walletList = [];
   }
 
   void dispose() {
-    realm.close();
+    _realm.close();
   }
 }
