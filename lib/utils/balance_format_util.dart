@@ -45,6 +45,36 @@ String satoshiToBitcoinString(int satoshi) {
   return result;
 }
 
+extension NormalizeTo11Characters on String {
+  /// 문자열을 11자로 포맷하는 확장 메서드
+  String normalizeTo11Characters() {
+    // Step 1: 쉼표 제거
+    String noCommas = replaceAll(',', '');
+
+    // Step 2: 정수인지 확인
+    if (!noCommas.contains('.')) {
+      // 정수라면 ".0000 0000" 추가
+      return "$noCommas.0000 0000".substring(0, 11);
+    }
+
+    // Step 3: 정수부와 소수부로 분리
+    List<String> parts = noCommas.split('.');
+    String integerPart = parts[0];
+    String decimalPart = parts.length > 1 ? parts[1] : '';
+
+    String decimalGrouped = decimalPart;
+
+    // Step 4: 정수부와 소수부 결합
+    String formatted = '$integerPart.$decimalGrouped';
+    print(
+        'for ${formatted.substring(0, 11)}    ${formatted.padRight(11, ' ')}');
+    // Step 5: 결과 문자열을 정확히 11자리로 조정
+    return formatted.length > 11
+        ? formatted.substring(0, 11)
+        : formatted.padRight(11, ' ');
+  }
+}
+
 String addCommasToIntegerPart(double number) {
   // 정수 부분 추출
   String integerPart = number.toInt().toString();
