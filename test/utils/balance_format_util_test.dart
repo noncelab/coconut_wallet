@@ -32,5 +32,11 @@ void main() {
       String result = satoshiToBitcoinString(-2000044444);
       expect(result, '-20.0004 4444');
     });
+
+    test('양수, 글자 수에 맞추기 위해 작은단위부터 생략', () {
+      String result =
+          satoshiToBitcoinString(1120000000).normalizeTo11Characters();
+      expect(result, '11.2000 000');
+    });
   });
 }
