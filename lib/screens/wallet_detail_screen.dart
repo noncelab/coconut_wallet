@@ -1,13 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
+import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/utxo_item_card.dart';
@@ -104,6 +102,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   bool _isPullToRefeshing = false;
   late WalletListItemBase _walletBaseItem;
+  late WalletFeature _walletFeature;
   String faucetTip = '테스트용 비트코인으로 마음껏 테스트 해보세요';
   bool _faucetTipVisible = false;
   bool _faucetTooltipVisible = false;
@@ -125,38 +124,22 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _scrollController = ScrollController();
 
     _walletBaseItem = _model.getWalletById(widget.id);
+    _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
+    _prevTxCount = _walletBaseItem.txCount;
+    _prevIsLatestTxBlockHeightZero = _walletBaseItem.isLatestTxBlockHeightZero;
+
     _walletType = _walletBaseItem.walletType;
-
-    if (_walletBaseItem.walletType == WalletType.multiSignature) {
-      final multisigListItem = _walletBaseItem as MultisigWalletListItem;
-      _prevTxCount = multisigListItem.txCount;
-      _prevIsLatestTxBlockHeightZero =
-          multisigListItem.isLatestTxBlockHeightZero;
-      if (_model.walletInitState == WalletInitState.finished) {
-        final multisigWallet =
-            _walletBaseItem.walletBase as MultisignatureWallet;
-        _utxoList = getUtxoListWithHoldingAddress(multisigWallet.getUtxoList());
-      }
-    } else {
-      final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
-      _prevTxCount = singlesigListItem.txCount;
-      _prevIsLatestTxBlockHeightZero =
-          singlesigListItem.isLatestTxBlockHeightZero;
-
-      if (_model.walletInitState == WalletInitState.finished) {
-        final singlesigWallet =
-            _walletBaseItem.walletBase as SingleSignatureWallet;
-        _utxoList =
-            getUtxoListWithHoldingAddress(singlesigWallet.getUtxoList());
-      }
+    if (_model.walletInitState == WalletInitState.finished) {
+      _utxoList = getUtxoListWithHoldingAddress(_walletFeature.getUtxoList());
     }
+
     if (_utxoList.isNotEmpty && mounted) {
       setState(() {
         _isUtxoListLoadComplete = true;
       });
     }
 
-    List<Transfer>? newTxList = loadTxListFromSharedPref();
+    List<Transfer>? newTxList = _model.getTxList(widget.id);
     if (newTxList != null) {
       _txList = newTxList;
     }
@@ -273,22 +256,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     // _prevWalletInitState != WalletInitState.finished 조건 걸어주지 않으면 삭제 시 getWalletById 과정에서 에러 발생
     if (_prevWalletInitState != WalletInitState.finished &&
         _model.walletInitState == WalletInitState.finished) {
-      if (_walletBaseItem.walletType == WalletType.multiSignature) {
-        final multi = _walletBaseItem as MultisigWalletListItem;
-        _checkTxCount(multi.txCount, multi.isLatestTxBlockHeightZero);
-
-        final multisigWallet =
-            _walletBaseItem.walletBase as MultisignatureWallet;
-        _utxoList = getUtxoListWithHoldingAddress(multisigWallet.getUtxoList());
-      } else {
-        final single = _walletBaseItem as SinglesigWalletListItem;
-        _checkTxCount(single.txCount, single.isLatestTxBlockHeightZero);
-
-        final singlesigWallet =
-            _walletBaseItem.walletBase as SingleSignatureWallet;
-        _utxoList =
-            getUtxoListWithHoldingAddress(singlesigWallet.getUtxoList());
-      }
+      _checkTxCount(
+          _walletBaseItem.txCount, _walletBaseItem.isLatestTxBlockHeightZero);
+      _utxoList = getUtxoListWithHoldingAddress(_walletFeature.getUtxoList());
       if (mounted) {
         setState(() {
           _isUtxoListLoadComplete = true;
@@ -299,15 +269,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   _checkTxCount(int? txCount, bool isLatestTxBlockHeightZero) {
-    Logger.log('>>>>>> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
+    Logger.log('--> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
     Logger.log(
-        '>>>>>> prevIsZero: $_prevIsLatestTxBlockHeightZero, wallet.isZero: $isLatestTxBlockHeightZero');
+        '--> prevIsZero: $_prevIsLatestTxBlockHeightZero, wallet.isZero: $isLatestTxBlockHeightZero');
 
     /// _walletListItem의 txCount, isLatestTxBlockHeightZero가 변경되었을 때만 트랜잭션 목록 업데이트
     if (_prevTxCount != txCount ||
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
-      List<Transfer>? newTxList = loadTxListFromSharedPref();
+      // TODO: pagination?
+      List<Transfer>? newTxList = _model.getTxList(widget.id);
       if (newTxList != null) {
+        print('--> [detail화면] newTxList.length: ${newTxList.length}');
         _txList = newTxList;
         setState(() {});
       }
@@ -316,16 +288,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;
   }
   // setListener end
-
-  List<Transfer>? loadTxListFromSharedPref() {
-    final String? txListString = _sharedPrefs.getTxList(widget.id);
-    if (txListString == null || txListString.isEmpty) {
-      return null;
-    }
-
-    List<dynamic> jsonList = jsonDecode(txListString);
-    return TransferListDeserialization.fromJsonList(jsonList);
-  }
 
   void _toggleUnit() {
     setState(() {
@@ -1389,7 +1351,7 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
   @override
   Widget build(BuildContext context) {
     List<String>? transactionTimeStamp = widget.tx.timestamp != null
-        ? DateTimeUtil.formatTimeStamp(widget.tx.timestamp!)
+        ? DateTimeUtil.formatTimeStamp(widget.tx.timestamp!.toLocal())
         : null;
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,

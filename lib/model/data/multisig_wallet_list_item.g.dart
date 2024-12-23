@@ -22,19 +22,7 @@ MultisigWalletListItem _$MultisigWalletListItemFromJson(
     )
       ..walletType = $enumDecode(_$WalletTypeEnumMap, json['walletType'])
       ..txCount = (json['txCount'] as num?)?.toInt()
-      ..isLatestTxBlockHeightZero = json['isLatestTxBlockHeightZero'] as bool
-      ..addressBalanceMap =
-          (json['addressBalanceMap'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(
-            int.parse(k),
-            (e as Map<String, dynamic>).map(
-              (k, e) => MapEntry(int.parse(k), (e as num).toInt()),
-            )),
-      )
-      ..usedIndexList = (json['usedIndexList'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(int.parse(k),
-            (e as List<dynamic>).map((e) => (e as num).toInt()).toList()),
-      );
+      ..isLatestTxBlockHeightZero = json['isLatestTxBlockHeightZero'] as bool;
 
 Map<String, dynamic> _$MultisigWalletListItemToJson(
         MultisigWalletListItem instance) =>
@@ -46,14 +34,10 @@ Map<String, dynamic> _$MultisigWalletListItemToJson(
       'name': instance.name,
       'walletType': _$WalletTypeEnumMap[instance.walletType]!,
       'balance': instance.balance,
-      'signers': instance.signers,
-      'requiredSignatureCount': instance.requiredSignatureCount,
       'txCount': instance.txCount,
       'isLatestTxBlockHeightZero': instance.isLatestTxBlockHeightZero,
-      'addressBalanceMap': instance.addressBalanceMap?.map((k, e) =>
-          MapEntry(k.toString(), e.map((k, e) => MapEntry(k.toString(), e)))),
-      'usedIndexList':
-          instance.usedIndexList?.map((k, e) => MapEntry(k.toString(), e)),
+      'signers': instance.signers,
+      'requiredSignatureCount': instance.requiredSignatureCount,
     };
 
 const _$WalletTypeEnumMap = {
