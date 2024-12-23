@@ -35,7 +35,7 @@ class HighlightedInfoArea extends StatelessWidget {
                 child: Container(
                   width: 1,
                   height: 12,
-                  color: MyColors.transparentWhite_70,
+                  color: MyColors.transparentWhite_40,
                 ),
               )
             ])
@@ -60,7 +60,7 @@ class HighlightedInfoArea extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         decoration: BoxDecoration(
           borderRadius: MyBorder.defaultRadius,
-          color: MyColors.transparentWhite_15,
+          color: MyColors.transparentWhite_10,
         ),
         width: width, // 넘겨받은 width가 적용되거나 null이면 자동으로 조절됩니다.
         height: height, // 넘겨받은 height가 적용되거나 null이면 자동으로 조절됩니다.

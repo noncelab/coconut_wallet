@@ -198,6 +198,9 @@ flutter:
     - assets/files/CONTRIBUTING.md
     - assets/svg/download.svg
     - assets/svg/text-field-clear.svg
+    - assets/svg/question-mark.svg
+    - assets/svg/circle-arrow-right.svg
+    - assets/svg/circle-pick.svg
 
   fonts:
     - family: SpaceGrotesk
