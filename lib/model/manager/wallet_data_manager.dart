@@ -204,21 +204,21 @@ class WalletDataManager {
       final firstProcessingTx =
           updateTargets.query('blockHeight == 0 SORT(id ASC)').first;
 
-      updateTargets = updateTargets.query(r'id >= $0', [firstProcessingTx.id]);
+      updateTargets = updateTargets.query('id >= ${firstProcessingTx.id}');
       print('--> updateTargets: ${updateTargets.length}');
       newTxCount = newTxCount + updateTargets.length;
     }
     print(
-        '--> nexTxCount 계산: ${syncResult.transactionList.length} ${realmWallet.txCount}');
-    print('--> newTxCount: $newTxCount');
+        '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${updateTargets?.length} = $newTxCount');
     if (newTxCount == 0) return;
 
     var walletFeature = getWalletFeatureByWalletType(walletItem);
-    // TODO: 라이브러리 수정 필요
+    // 항상 최신순으로 반환
     List<Transfer> newTxList =
         walletFeature.getTransferList(cursor: 0, count: newTxCount);
     print('--> newTxList length: ${newTxList.length}');
     int nextId = generateNextId(_realm, (RealmTransaction).toString());
+    List<int> matchedUpdateTargetIds = [];
     _realm.write(() {
       for (int i = newTxList.length - 1; i >= 0; i--) {
         RealmTransaction? existingTx;
@@ -233,19 +233,33 @@ class WalletDataManager {
 
         RealmTransaction saveTarget;
         if (existingTx != null) {
-          saveTarget = mapTransferToRealmTransaction(
-              newTxList[i], realmWallet, existingTx.id);
+          existingTx
+            ..timestamp = newTxList[i].timestamp
+            ..blockHeight = newTxList[i].blockHeight;
+          matchedUpdateTargetIds.add(existingTx.id);
+          // saveTarget = mapTransferToRealmTransaction(
+          //     newTxList[i], realmWallet, existingTx.id);
         } else {
           saveTarget =
               mapTransferToRealmTransaction(newTxList[i], realmWallet, nextId);
           nextId++;
+          _realm.add<RealmTransaction>(saveTarget);
         }
+      }
 
-        _realm.add<RealmTransaction>(saveTarget, update: existingTx != null);
+      // INFO: RBF(Replace-By-Fee)에 의해서 처리되지 않은 트랜잭션이 삭제된 경우를 대비
+      // INFO: 추후에는 삭제가 아니라 '무효화됨'으로 표기될 수 있음
+      // TODO: TEST
+      if (updateTargets != null && updateTargets.isNotEmpty) {
+        for (var ut in updateTargets) {
+          var index = matchedUpdateTargetIds.indexWhere((x) => x == ut.id);
+          if (index == -1) {
+            _realm.delete(ut);
+          }
+        }
       }
 
       realmWallet.txCount = syncResult.transactionList.length;
-      // TODO: 라이브러리 동작에 따라 달라짐
       realmWallet.isLatestTxBlockHeightZero =
           newTxList.isNotEmpty && newTxList[0].blockHeight == 0;
       realmWallet.balance =
