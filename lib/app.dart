@@ -10,6 +10,7 @@ import 'package:coconut_wallet/screens/send/send_address_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/send/send_confirm_screen.dart';
 import 'package:coconut_wallet/screens/send/send_fee_selection_screen.dart';
+import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 import 'package:coconut_wallet/screens/signed_psbt_scanner_screen.dart';
@@ -197,6 +198,12 @@ class _PowWalletAppState extends State<PowWalletApp> {
                 context,
                 (args) => CustomLoadingOverlay(
                     child: SendFeeSelectionScreen(
+                        id: args['id'], sendInfo: args['sendInfo'])),
+              ),
+          '/utxo-selection': (context) => buildScreenWithArguments(
+                context,
+                (args) => CustomLoadingOverlay(
+                    child: SendUtxoSelectionScreen(
                         id: args['id'], sendInfo: args['sendInfo'])),
               ),
           '/send-confirm': (context) => buildScreenWithArguments(

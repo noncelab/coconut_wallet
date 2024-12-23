@@ -3,6 +3,7 @@ import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/model/app_error.dart';
@@ -179,6 +180,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
+                                    // 최대
                                     GestureDetector(
                                         onTap: () {
                                           setState(() {
@@ -239,6 +241,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                               : MyColors
                                                                   .white))),
                                             ])))),
+                                    // BTC
                                     Text(
                                       _input.isEmpty ? '0 BTC' : "$_input BTC",
                                       style: TextStyle(
@@ -253,6 +256,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 1,
                                     ),
+                                    // Error
                                     Text(
                                       _errorIndex != null
                                           ? errorMessages[_errorIndex!]
@@ -261,6 +265,26 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                           const TextStyle(
                                               color: MyColors.warningRed)),
                                     ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: CustomUnderlinedButton(
+                                        text: 'UTXO 고르기',
+                                        isEnable: _errorIndex == null &&
+                                            _input.isNotEmpty,
+                                        onTap: () {
+                                          Navigator.pushNamed(
+                                              context, '/utxo-selection',
+                                              arguments: {
+                                                'id': widget.id,
+                                                'sendInfo': SendInfo(
+                                                    address: widget.recipient,
+                                                    amount:
+                                                        double.parse(_input))
+                                              });
+                                        },
+                                      ),
+                                    )
                                   ],
                                 ),
                               ),
