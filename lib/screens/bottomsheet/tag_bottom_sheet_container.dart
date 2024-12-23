@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
-import 'package:coconut_wallet/widgets/button/custom_tag_chip.dart';
+import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
@@ -95,7 +95,8 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
     final prevTag = widget.manageUtxoTag?.tag ?? '';
     final prevColorIndex = widget.manageUtxoTag?.colorIndex ?? 0;
     setState(() {
-      _isManageButtonEnabled = _updateTag != prevTag &&
+      _isManageButtonEnabled = _updateTag.isNotEmpty &&
+              _updateTag != prevTag &&
               !_updateUtxoTags.any((tag) => tag.tag == _updateTag) ||
           _updateTag == prevTag && _updateTagColorIndex != prevColorIndex;
     });
@@ -207,7 +208,6 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                 ],
               ),
               const SizedBox(height: 24),
-
               if (_type == TagBottomSheetType.select) ...{
                 // Tags
                 Container(
@@ -276,24 +276,28 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                     // Color Selector, TextField
                     Row(
                       children: [
-                        CustomTagChipColorButton(
-                          colorIndex: widget.manageUtxoTag?.colorIndex ?? 0,
-                          onTap: (index) {
-                            _updateTagColorIndex = index;
-                            _checkManageButtonEnabled();
-                          },
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: CustomTagChipColorButton(
+                            colorIndex: widget.manageUtxoTag?.colorIndex ?? 0,
+                            onTap: (index) {
+                              _updateTagColorIndex = index;
+                              _checkManageButtonEnabled();
+                            },
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: CustomLimitTextField(
                             controller: _controller,
+                            focusNode: _focusNode,
                             onChanged: (text) {
                               _updateTag =
                                   text.replaceAll('#', '').replaceAll(' ', '');
                               if (text.isEmpty) {
                                 _controller.text = '#';
                               } else if (text.substring(1).contains('#') ||
-                                  text.contains(' ')) {
+                                  text.substring(1).contains(' ')) {
                                 _controller.text = '#$_updateTag';
                               }
 
@@ -312,24 +316,6 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                           ),
                         ),
                       ],
-                    ),
-
-                    // 글자 수 표시
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 4, right: 4),
-                        child: Text(
-                          '${_updateTag.length}/10',
-                          style: TextStyle(
-                            color: _updateTag.length == 10
-                                ? MyColors.white
-                                : MyColors.transparentWhite_50,
-                            fontSize: 12,
-                            fontFamily: CustomFonts.text.getFontFamily,
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 ),

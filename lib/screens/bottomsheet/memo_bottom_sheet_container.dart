@@ -100,6 +100,7 @@ class _MemoBottomSheetContainerState extends State<MemoBottomSheetContainer> {
                   // TextField
                   CustomLimitTextField(
                     controller: _controller,
+                    focusNode: _focusNode,
                     onChanged: (text) {
                       setState(() {
                         _updateMemo = text;

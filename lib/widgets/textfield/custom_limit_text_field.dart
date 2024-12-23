@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class CustomLimitTextField extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode focusNode;
   final Function(String) onChanged;
   final VoidCallback onClear;
   final int maxLength;
@@ -12,6 +13,7 @@ class CustomLimitTextField extends StatelessWidget {
   const CustomLimitTextField({
     super.key,
     required this.controller,
+    required this.focusNode,
     required this.onChanged,
     required this.onClear,
     this.maxLength = 30,
@@ -19,8 +21,6 @@ class CustomLimitTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final FocusNode focusNode = FocusNode();
-
     return Column(
       mainAxisSize: MainAxisSize.min, // 컨텐츠 크기에 맞추기
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -43,7 +43,6 @@ class CustomLimitTextField extends StatelessWidget {
             maxLength: maxLength,
             suffix: GestureDetector(
               onTap: () {
-                focusNode.unfocus();
                 onClear();
               },
               child: Container(

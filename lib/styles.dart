@@ -54,6 +54,7 @@ abstract class MyColors {
   static const failedYellow = Color.fromRGBO(218, 152, 65, 1);
 
   static const Color bottomSheetBackground = Color(0xFF232222);
+  static const Color selectBackground = Color(0xFF393939);
 }
 
 const List<Color> ColorPalette = [

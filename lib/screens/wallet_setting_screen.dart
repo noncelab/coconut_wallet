@@ -129,15 +129,14 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                       ),
                       const SizedBox(height: 32),
                       Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Container(
+                          decoration: BoxDecorations.boxDecoration,
                           child: Container(
-                              decoration: BoxDecorations.boxDecoration,
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 24),
-                                child: Column(
-                                  children: [
-                                    InformationRowItem(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Column(
+                              children: [
+                                /*InformationRowItem(
                                       label: '잔액 상세 보기',
                                       showIcon: true,
                                       onPressed: () {
@@ -157,143 +156,164 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                     ),
                                     const Divider(
                                         color: MyColors.transparentWhite_12,
-                                        height: 1),
-                                    InformationRowItem(
-                                      label: '전체 주소 보기',
-                                      showIcon: true,
-                                      onPressed: () {
-                                        if (model.walletInitState ==
-                                            WalletInitState.processing) {
-                                          CustomToast.showToast(
-                                              context: context,
-                                              text:
-                                                  "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
-                                          return;
-                                        }
-                                        _removeTooltip();
-                                        Navigator.pushNamed(
-                                            context, '/address-list',
-                                            arguments: {'id': widget.id});
-                                      },
+                                        height: 1),*/
+                                InformationRowItem(
+                                  label: '전체 주소 보기',
+                                  showIcon: true,
+                                  onPressed: () {
+                                    if (model.walletInitState ==
+                                        WalletInitState.processing) {
+                                      CustomToast.showToast(
+                                          context: context,
+                                          text:
+                                              "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
+                                      return;
+                                    }
+                                    _removeTooltip();
+                                    Navigator.pushNamed(
+                                        context, '/address-list',
+                                        arguments: {'id': widget.id});
+                                  },
+                                ),
+                                const Divider(
+                                    color: MyColors.transparentWhite_12,
+                                    height: 1),
+                                InformationRowItem(
+                                  label: '확장 공개키 보기',
+                                  showIcon: true,
+                                  onPressed: () async {
+                                    _removeTooltip();
+                                    if (_subModel.isSetPin) {
+                                      _subModel.shuffleNumbers();
+                                      await MyBottomSheet.showBottomSheet_90(
+                                          context: context,
+                                          child: CustomLoadingOverlay(
+                                              child: PinCheckScreen(
+                                            onComplete: () {
+                                              MyBottomSheet.showBottomSheet_90(
+                                                  context: context,
+                                                  child: QrcodeBottomSheetScreen(
+                                                      qrData: singlesigWallet
+                                                          .keyStore
+                                                          .extendedPublicKey
+                                                          .serialize(),
+                                                      title: '확장 공개키'));
+                                            },
+                                          )));
+                                    } else {
+                                      MyBottomSheet.showBottomSheet_90(
+                                          context: context,
+                                          child: QrcodeBottomSheetScreen(
+                                              qrData: singlesigWallet
+                                                  .keyStore.extendedPublicKey
+                                                  .serialize(),
+                                              title: '확장 공개키'));
+                                    }
+                                  },
+                                ),
+                                const Divider(
+                                    color: MyColors.transparentWhite_12,
+                                    height: 1),
+                                InformationRowItem(
+                                  label: '태그 관리',
+                                  showIcon: true,
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/utxo-tag');
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: Container(
+                          width: 65,
+                          height: 1,
+                          margin: const EdgeInsets.symmetric(vertical: 20),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(1),
+                            color: MyColors.white,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Container(
+                          decoration: BoxDecorations.boxDecoration,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Column(
+                              children: [
+                                InformationRowItem(
+                                  showIcon: true,
+                                  label: '삭제하기',
+                                  rightIcon: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                        color: MyColors.defaultBackground,
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    child: SvgPicture.asset(
+                                      'assets/svg/trash.svg',
+                                      width: 16,
+                                      colorFilter: const ColorFilter.mode(
+                                        MyColors.warningRed,
+                                        BlendMode.srcIn,
+                                      ),
                                     ),
-                                    const Divider(
-                                        color: MyColors.transparentWhite_12,
-                                        height: 1),
-                                    InformationRowItem(
-                                      label: '확장 공개키 보기',
-                                      showIcon: true,
-                                      onPressed: () async {
-                                        _removeTooltip();
+                                  ),
+                                  onPressed: () {
+                                    if (model.walletInitState ==
+                                        WalletInitState.processing) {
+                                      CustomToast.showToast(
+                                        context: context,
+                                        text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.",
+                                      );
+                                      return;
+                                    }
+                                    _removeTooltip();
+                                    CustomDialogs.showCustomAlertDialog(
+                                      context,
+                                      title: '지갑 삭제',
+                                      message: '지갑을 정말 삭제하시겠어요?',
+                                      onConfirm: () async {
                                         if (_subModel.isSetPin) {
-                                          _subModel.shuffleNumbers();
                                           await MyBottomSheet
                                               .showBottomSheet_90(
-                                                  context: context,
-                                                  child: CustomLoadingOverlay(
-                                                      child: PinCheckScreen(
-                                                    onComplete: () {
-                                                      MyBottomSheet.showBottomSheet_90(
-                                                          context: context,
-                                                          child: QrcodeBottomSheetScreen(
-                                                              qrData: singlesigWallet
-                                                                  .keyStore
-                                                                  .extendedPublicKey
-                                                                  .serialize(),
-                                                              title: '확장 공개키'));
-                                                    },
-                                                  )));
+                                            context: context,
+                                            child: CustomLoadingOverlay(
+                                              child: PinCheckScreen(
+                                                onComplete: () async {
+                                                  await model
+                                                      .deleteWallet(widget.id);
+                                                  removedWalletId = widget.id;
+                                                  Navigator.popUntil(context,
+                                                      (route) => route.isFirst);
+                                                },
+                                              ),
+                                            ),
+                                          );
                                         } else {
-                                          MyBottomSheet.showBottomSheet_90(
-                                              context: context,
-                                              child: QrcodeBottomSheetScreen(
-                                                  qrData: singlesigWallet
-                                                      .keyStore
-                                                      .extendedPublicKey
-                                                      .serialize(),
-                                                  title: '확장 공개키'));
+                                          await model.deleteWallet(widget.id);
+                                          removedWalletId = widget.id;
+                                          Navigator.popUntil(context,
+                                              (route) => route.isFirst);
                                         }
                                       },
-                                    ),
-                                  ],
-                                ),
-                              ))),
-                      const SizedBox(height: 32),
-                      Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Container(
-                              decoration: BoxDecorations.boxDecoration,
-                              child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 24),
-                                child: Column(
-                                  children: [
-                                    InformationRowItem(
-                                      showIcon: true,
-                                      label: '삭제하기',
-                                      rightIcon: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                              color: MyColors.defaultBackground,
-                                              borderRadius:
-                                                  BorderRadius.circular(10)),
-                                          child: SvgPicture.asset(
-                                              'assets/svg/trash.svg',
-                                              width: 16,
-                                              colorFilter:
-                                                  const ColorFilter.mode(
-                                                      MyColors.warningRed,
-                                                      BlendMode.srcIn))),
-                                      onPressed: () {
-                                        if (model.walletInitState ==
-                                            WalletInitState.processing) {
-                                          CustomToast.showToast(
-                                              context: context,
-                                              text:
-                                                  "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
-                                          return;
-                                        }
-                                        _removeTooltip();
-                                        CustomDialogs.showCustomAlertDialog(
-                                            context,
-                                            title: '지갑 삭제',
-                                            message: '지갑을 정말 삭제하시겠어요?',
-                                            onConfirm: () async {
-                                          if (_subModel.isSetPin) {
-                                            await MyBottomSheet
-                                                .showBottomSheet_90(
-                                                    context: context,
-                                                    child: CustomLoadingOverlay(
-                                                      child: PinCheckScreen(
-                                                        onComplete: () async {
-                                                          await model
-                                                              .deleteWallet(
-                                                                  widget.id);
-                                                          removedWalletId =
-                                                              widget.id;
-                                                          Navigator.popUntil(
-                                                              context,
-                                                              (route) => route
-                                                                  .isFirst);
-                                                        },
-                                                      ),
-                                                    ));
-                                          } else {
-                                            await model.deleteWallet(widget.id);
-                                            removedWalletId = widget.id;
-                                            Navigator.popUntil(context,
-                                                (route) => route.isFirst);
-                                          }
-                                        }, onCancel: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                            confirmButtonText: '삭제',
-                                            confirmButtonColor:
-                                                MyColors.warningRed);
+                                      onCancel: () {
+                                        Navigator.of(context).pop();
                                       },
-                                    ),
-                                  ],
+                                      confirmButtonText: '삭제',
+                                      confirmButtonColor: MyColors.warningRed,
+                                    );
+                                  },
                                 ),
-                              ))),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
