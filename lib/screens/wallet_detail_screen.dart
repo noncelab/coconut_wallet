@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/utxo_item_card.dart';
@@ -131,11 +132,28 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       _prevTxCount = multisigListItem.txCount;
       _prevIsLatestTxBlockHeightZero =
           multisigListItem.isLatestTxBlockHeightZero;
+      if (_model.walletInitState == WalletInitState.finished) {
+        final multisigWallet =
+            _walletBaseItem.walletBase as MultisignatureWallet;
+        _utxoList = getUtxoListWithHoldingAddress(multisigWallet.getUtxoList());
+      }
     } else {
       final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
       _prevTxCount = singlesigListItem.txCount;
       _prevIsLatestTxBlockHeightZero =
           singlesigListItem.isLatestTxBlockHeightZero;
+
+      if (_model.walletInitState == WalletInitState.finished) {
+        final singlesigWallet =
+            _walletBaseItem.walletBase as SingleSignatureWallet;
+        _utxoList =
+            getUtxoListWithHoldingAddress(singlesigWallet.getUtxoList());
+      }
+    }
+    if (_utxoList.isNotEmpty && mounted) {
+      setState(() {
+        _isUtxoListLoadComplete = true;
+      });
     }
 
     List<Transfer>? newTxList = loadTxListFromSharedPref();
@@ -800,11 +818,29 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           ? SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  return UTXOItemCard(
-                    utxo: _utxoList[index],
+                  if (index.isOdd) {
+                    // 분리자
+                    return const Divider(
+                      height: 12,
+                      color: Colors.transparent,
+                    );
+                  }
+
+                  // 실제 아이템
+                  final itemIndex = index ~/ 2; // 실제 아이템 인덱스
+                  return ShrinkAnimationButton(
+                    defaultColor: Colors.transparent,
+                    borderRadius: 20,
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/utxo-detail',
+                          arguments: {'utxo': _utxoList[itemIndex]});
+                    },
+                    child: UTXOItemCard(
+                      utxo: _utxoList[itemIndex],
+                    ),
                   );
                 },
-                childCount: _utxoList.length, // 항목 개수 지정
+                childCount: _utxoList.length * 2 - 1, // 항목 개수 지정
               ),
             )
           : SliverFillRemaining(

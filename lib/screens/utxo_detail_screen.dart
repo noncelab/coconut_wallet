@@ -1,15 +1,20 @@
+import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
+import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/custom_chip.dart';
+import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/utxo.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:coconut_wallet/widgets/label_value.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -26,91 +31,221 @@ class UtxoDetailScreen extends StatefulWidget {
 }
 
 class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
+  late List<String> dateString;
+  @override
+  void initState() {
+    super.initState();
+    dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp).split('|');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: MyColors.black,
-        appBar: CustomAppBar.build(
-          title: '',
-          context: context,
-          hasRightIcon: false,
-          isBottom: true,
+      backgroundColor: MyColors.black,
+      appBar: CustomAppBar.build(
+        title: 'UTXO',
+        context: context,
+        showTestnetLabel: false,
+        hasRightIcon: true,
+        rightIconButton: IconButton(
+          icon: SvgPicture.asset('assets/svg/question-mark.svg'),
+          onPressed: () {},
         ),
-        body: SafeArea(
-            child: SingleChildScrollView(
-                child: Container(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(children: [
-                      Center(
-                          child: RichText(
-                              text: TextSpan(
-                                  text: satoshiToBitcoinString(
-                                      widget.utxo.amount),
-                                  style: Styles.h1Number,
-                                  children: const <TextSpan>[
-                            TextSpan(text: ' BTC', style: Styles.unit)
-                          ]))),
-                      Center(
-                          child: Selector<UpbitConnectModel, int?>(
-                        selector: (context, model) => model.bitcoinPriceKrw,
-                        builder: (context, bitcoinPriceKrw, child) {
-                          return Text(
-                            bitcoinPriceKrw != null
-                                ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())}'
-                                : '',
-                            style: Styles.balance2,
-                          );
-                        },
-                      )),
-                      const SizedBox(height: 20),
-                      InfoRow(
-                          label: '블록 번호',
-                          value: Text(
-                            widget.utxo.blockHeight,
-                            style: Styles.body1Number,
-                          )),
-                      _divider,
-                      InfoRow(
-                          label: '일시',
-                          value: Text(
-                            DateTimeUtil.formatDatetime(widget.utxo.timestamp),
-                            style: Styles.body1Number,
-                          )),
-                      _divider,
-                      InfoRow(
-                          label: '보유 주소',
-                          subLabel: widget.utxo.derivationPath,
-                          value: Text(
-                            widget.utxo.to,
-                            style: Styles.body1Number,
-                          )),
-                      _divider,
-                      InfoRow(
-                          label: '트랜잭션 ID',
-                          value: Text(
-                            widget.utxo.txHash,
-                            style: Styles.body1Number,
-                          )),
-                      _divider,
-                      const SizedBox(
-                        height: 40,
-                      ),
-                      SmallActionButton(
-                        text: '멤풀에서 보기',
-                        borderRadius: BorderRadius.circular(12),
-                        backgroundColor: MyColors.transparentWhite_20,
-                        onPressed: () {
-                          Logger.log(widget.utxo.to);
-                          launchUrl(Uri.parse(
-                              "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}"));
-                        },
-                        textStyle: const TextStyle(
-                            color: MyColors.white, fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(
-                        height: 40,
-                      ),
-                    ])))));
+        isBottom: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 20,
+            ),
+            child: Column(
+              children: [
+                HighlightedInfoArea(
+                  textList: dateString,
+                  textStyle: Styles.body2Number.merge(
+                    const TextStyle(
+                      color: MyColors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 24,
+                ),
+                Center(
+                    child: RichText(
+                        text: TextSpan(
+                            text: satoshiToBitcoinString(widget.utxo.amount),
+                            style: Styles.h1Number,
+                            children: const <TextSpan>[
+                      TextSpan(text: ' BTC', style: Styles.unit)
+                    ]))),
+                Center(
+                    child: Selector<UpbitConnectModel, int?>(
+                  selector: (context, model) => model.bitcoinPriceKrw,
+                  builder: (context, bitcoinPriceKrw, child) {
+                    return Text(
+                      bitcoinPriceKrw != null
+                          ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())}'
+                          : '',
+                      style: Styles.balance2,
+                    );
+                  },
+                )),
+                const SizedBox(height: 20),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: MyColors.transparentWhite_12),
+                  child: Column(children: [
+                    const InputOutputDetailRow(
+                      address: 'bcrtTestDataTestDataTestData',
+                      balance: 4001234,
+                      rowType: InputOutputRowType.input,
+                    ),
+                    const SizedBox(height: 8),
+                    const InputOutputDetailRow(
+                      address: 'bcrtTestDataTestDataTestData',
+                      balance: 4001234,
+                      rowType: InputOutputRowType.input,
+                    ),
+                    const SizedBox(height: 8),
+                    const InputOutputDetailRow(
+                      address: 'bcrtTestDataTestDataTestData',
+                      balance: 4001234,
+                      rowType: InputOutputRowType.input,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '...',
+                      style: Styles.caption.merge(const TextStyle(
+                          color: MyColors.transparentWhite_40, height: 8 / 12)),
+                    ),
+                    const SizedBox(height: 8),
+                    const InputOutputDetailRow(
+                      address: '수수료',
+                      balance: 142,
+                      rowType: InputOutputRowType.fee,
+                    ),
+                    const SizedBox(height: 8),
+                    const InputOutputDetailRow(
+                      address: 'bcrtTestDataTestDataTestData',
+                      balance: 4001234,
+                      rowType: InputOutputRowType.output,
+                      isCurrentAddress: true,
+                    ),
+                    const SizedBox(height: 8),
+                    const InputOutputDetailRow(
+                      address: 'bcrtTestDataTestDataTestData',
+                      balance: 4001234,
+                      rowType: InputOutputRowType.output,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '...',
+                      style: Styles.caption.merge(const TextStyle(
+                          color: MyColors.transparentWhite_40, height: 8 / 12)),
+                    ),
+                  ]),
+                ),
+                const SizedBox(height: 25),
+                InfoRow(
+                    label: '보유 주소',
+                    subLabel: '멤풀 보기',
+                    onSubLabelClicked: () => launchUrl(Uri.parse(
+                        "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+                    isChangeTagVisible:
+                        widget.utxo.derivationPath.split('/')[4] == '1',
+                    value: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.utxo.to,
+                          style: Styles.body2Number
+                              .merge(const TextStyle(height: 22 / 14)),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          widget.utxo.derivationPath,
+                          style: Styles.caption2.merge(const TextStyle(
+                              color: MyColors.white, height: 16 / 10)),
+                        )
+                      ],
+                    )),
+                _divider,
+                const InfoRow(
+                    // TODO: 메모 불러오기
+                    label: '거래 메모',
+                    value: Text(
+                      '-',
+                      style: Styles.body1Number,
+                    )),
+                _divider,
+                InfoRow(
+                    // TODO: 태그 불러오기
+                    label: '태그',
+                    subLabel: '편집',
+                    onSubLabelClicked: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: MyColors.black,
+                        builder: (context) => TagBottomSheetContainer(
+                          type: TagBottomSheetType.select,
+                          onComplete: (_, utxo) => debugPrint(utxo.toString()),
+                          utxoTags: const [
+                            UtxoTag(tag: 'kyc', colorIndex: 0),
+                            UtxoTag(tag: 'coconut', colorIndex: 2),
+                            UtxoTag(tag: 'strike', colorIndex: 7),
+                            UtxoTag(tag: '1', colorIndex: 7),
+                            UtxoTag(tag: '2', colorIndex: 7),
+                            UtxoTag(tag: '3', colorIndex: 7),
+                            UtxoTag(tag: '4', colorIndex: 7),
+                            UtxoTag(tag: '5', colorIndex: 7),
+                          ],
+                        ),
+                      );
+                    },
+                    value: const Text(
+                      '-',
+                      style: Styles.body1Number,
+                    )),
+                _divider,
+                InfoRow(
+                  label: '트랜잭션 ID',
+                  subLabel: '거래 자세히 보기',
+                  onSubLabelClicked: () {
+                    // Navigator.pushNamed(context, '/transaction-detail',
+                    //     arguments: {'id': widget.id, 'tx': widget.tx});
+                  },
+                  value: Text(
+                    widget.utxo.txHash,
+                    style: Styles.body1Number,
+                  ),
+                ),
+                _divider,
+                InfoRow(
+                    label: '블록 번호',
+                    subLabel: '멤풀 보기',
+                    onSubLabelClicked: () => launchUrl(Uri.parse(
+                        "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+                    value: Text(
+                      widget.utxo.blockHeight,
+                      style: Styles.body1Number,
+                    )),
+                const SizedBox(
+                  height: 40,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -118,11 +253,18 @@ const _divider = Divider(color: MyColors.transparentWhite_15);
 
 class InfoRow extends StatelessWidget {
   final String label;
+  final bool isChangeTagVisible;
   final Widget value;
   final String? subLabel;
+  final VoidCallback? onSubLabelClicked;
 
   const InfoRow(
-      {super.key, required this.label, required this.value, this.subLabel});
+      {super.key,
+      required this.label,
+      this.isChangeTagVisible = false,
+      required this.value,
+      this.subLabel,
+      this.onSubLabelClicked});
 
   @override
   Widget build(BuildContext context) {
@@ -133,13 +275,24 @@ class InfoRow extends StatelessWidget {
         children: [
           Row(children: [
             Label(text: label),
+            const SizedBox(width: 6),
+            if (isChangeTagVisible) const CustomChip(text: '잔돈'),
             if (subLabel != null)
               Expanded(
-                  child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(subLabel!,
-                          style: Styles.label.merge(TextStyle(
-                              fontFamily: CustomFonts.number.getFontFamily)))))
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: CustomUnderlinedButton(
+                    text: subLabel!,
+                    onTap: () {
+                      if (onSubLabelClicked != null) {
+                        onSubLabelClicked!();
+                      }
+                    },
+                    fontSize: 10,
+                    lineHeight: 16,
+                  ),
+                ),
+              ),
           ]),
           const SizedBox(height: 8),
           value
@@ -148,3 +301,88 @@ class InfoRow extends StatelessWidget {
     );
   }
 }
+
+class InputOutputDetailRow extends StatelessWidget {
+  final String address;
+  final int balance;
+  final InputOutputRowType rowType;
+  final bool isCurrentAddress;
+
+  const InputOutputDetailRow({
+    super.key,
+    required this.address,
+    required this.balance,
+    required this.rowType,
+    this.isCurrentAddress = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 4,
+          child: Text(
+            TextUtils.truncateNameMax20(address),
+            style: Styles.body2Number.merge(
+              TextStyle(
+                color: isCurrentAddress
+                    ? MyColors.white
+                    : MyColors.transparentWhite_40,
+                fontSize: 12,
+                height: 16 / 12,
+              ),
+            ),
+            maxLines: 1,
+          ),
+        ),
+        Expanded(
+          flex: 6,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (rowType == InputOutputRowType.output ||
+                  rowType == InputOutputRowType.fee)
+                Row(
+                  children: [
+                    SvgPicture.asset(
+                        (rowType == InputOutputRowType.output)
+                            ? 'assets/svg/circle-arrow-right.svg'
+                            : 'assets/svg/circle-pick.svg',
+                        width: 12,
+                        height: 12,
+                        colorFilter: isCurrentAddress
+                            ? const ColorFilter.mode(
+                                MyColors.white, BlendMode.srcIn)
+                            : null),
+                    const SizedBox(width: 6),
+                  ],
+                ),
+              Text(
+                '${satoshiToBitcoinString(balance).normalizeTo11Characters()} BTC',
+                style: Styles.body2Number.merge(
+                  TextStyle(
+                    color: isCurrentAddress
+                        ? MyColors.white
+                        : MyColors.transparentWhite_40,
+                    fontSize: 12,
+                    height: 16 / 12,
+                  ),
+                ),
+              ),
+              if (rowType == InputOutputRowType.input)
+                Row(
+                  children: [
+                    const SizedBox(width: 6),
+                    SvgPicture.asset('assets/svg/circle-arrow-right.svg')
+                  ],
+                )
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+enum InputOutputRowType { input, output, fee }
