@@ -1,6 +1,7 @@
 import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
@@ -45,12 +46,6 @@ class WalletDataManager {
   }
 
   Future<List<WalletListItemBase>> loadFromDB() async {
-    // RealmWalletBase를 모두 조회
-    // RealmMultisigWallet을 모두 조회
-    // RealmWalletBase의 타입이 싱글이면 SinglesigWalletListItem 생성
-    // 타입이 멀티면 MultisigWalletListItem을 생성.
-    // 멀티 지갑 생성 시 RealmMultisigWallet에서 id가 같은 것을 찾아서 필요한 정보를 써서 만들면 됨
-    // TODO: 임시 초기화!!!!
     _walletList = [];
     int multisigWalletIndex = 0;
     var walletBases =
@@ -133,19 +128,6 @@ class WalletDataManager {
     return multisigWallet;
   }
 
-  // RealmResults<RealmWalletBase> getAll() {
-  //   var list = realm.all<RealmWalletBase>();
-
-  // }
-  void getAll() {
-    // TODO: 임시 초기화!!!!
-    _walletList = [];
-    var list = realm.all<RealmWalletBase>();
-    for (var i = 0; i < list.length; i++) {
-      print('--> ${list[i].name}');
-    }
-  }
-
   /// 업데이트 해야 되는 지갑과 업데이트 내용에 따라 db와 _walletList 업데이트 합니다.
   /// 만약 업데이트 과정에서 에러 발생시, 에러를 반환합니다.
   /// 변경이 있었으면 true, 없었으면 false를 반환
@@ -158,7 +140,12 @@ class WalletDataManager {
     List<int> needToUpdateIds = [];
     for (int i = 0; i < targets.length; i++) {
       WalletFeature coconutWallet = _getWalletFeatureByWalletType(targets[i]);
-      await coconutWallet.fetchOnChainData(nodeConnector);
+      try {
+        await coconutWallet.fetchOnChainData(nodeConnector);
+      } catch (e) {
+        // TODO:
+        throw ErrorCodes.syncFailedError;
+      }
       // assert(coconutWallet.walletStatus != null);
       WalletStatus syncResult = coconutWallet.walletStatus!;
       // check need to update
@@ -188,7 +175,7 @@ class WalletDataManager {
         .query(r'id IN $0 SORT(id ASC)', [needToUpdateIds]);
 
     for (int i = 0; i < realmWallets.length; i++) {
-      _updateWalletBaseDBAndWalletList(
+      _updateDBAndWalletListAsLatest(
           needToUpdateList[i], realmWallets[i], syncResults[i]);
     }
 
@@ -196,7 +183,8 @@ class WalletDataManager {
     return true;
   }
 
-  void _updateWalletBaseDBAndWalletList(WalletListItemBase walletItem,
+  // TODO: 함수명, 리팩토링
+  void _updateDBAndWalletListAsLatest(WalletListItemBase walletItem,
       RealmWalletBase realmWallet, WalletStatus syncResult) {
     // 갱신해야 하는 txList 개수 구하기
     int newTxCount = 0;
@@ -244,8 +232,6 @@ class WalletDataManager {
 
         RealmTransaction saveTarget;
         if (existingTx != null) {
-          // TODO: 업데이트 해야하는 정보가 blockHeight 뿐인지 확실하지 않음
-          // TODO: 업데이트 해야 하는 정보만 확실하면 그것만 업데이트할것.
           saveTarget = mapTransferToRealmTransaction(
               newTxList[i], realmWallet, existingTx.id);
         } else {
@@ -258,6 +244,7 @@ class WalletDataManager {
       }
 
       realmWallet.txCount = syncResult.transactionList.length;
+      // TODO: 라이브러리 동작에 따라 달라짐
       realmWallet.isLatestTxBlockHeightZero =
           newTxList.isNotEmpty && newTxList[0].blockHeight == 0;
       realmWallet.balance =
@@ -276,6 +263,40 @@ class WalletDataManager {
       return walletItem.walletBase as SingleSignatureWallet;
     } else {
       return walletItem.walletBase as MultisignatureWallet;
+    }
+  }
+
+  void updateWalletUI(int id, WalletSync walletSync) {
+    final RealmWalletBase wallet =
+        realm.all<RealmWalletBase>().query('id = $id').first;
+    final RealmMultisigWallet? multisigWallet =
+        realm.all<RealmMultisigWallet>().query('id = $id').firstOrNull;
+    if (wallet.walletType == WalletType.multiSignature.name) {
+      assert(multisigWallet != null);
+    }
+
+    // ui 정보 변경하기
+    realm.write(() {
+      wallet.name = walletSync.name;
+      wallet.colorIndex = walletSync.colorIndex;
+      wallet.iconIndex = walletSync.iconIndex;
+
+      if (multisigWallet != null) {
+        multisigWallet.signersInJsonSerialization =
+            MultisigSigner.toJsonList(walletSync.signers!);
+      }
+    });
+
+    WalletListItemBase walletListItemBase =
+        _walletList!.firstWhere((wallet) => wallet.id == id);
+    walletListItemBase
+      ..name = walletSync.name
+      ..colorIndex = walletSync.colorIndex
+      ..iconIndex = walletSync.iconIndex;
+
+    if (wallet.walletType == WalletType.multiSignature.name) {
+      (walletListItemBase as MultisigWalletListItem).signers =
+          walletSync.signers!;
     }
   }
 
@@ -308,10 +329,6 @@ class WalletDataManager {
     _walletList!.removeAt(index);
   }
 
-  void dispose() {
-    realm.close();
-  }
-
   int _getNextWalletId() {
     return _sharedPrefs.getInt(nextIdField);
   }
@@ -333,5 +350,14 @@ class WalletDataManager {
       result.add(mapRealmTransactionToTransfer(t));
     }
     return result;
+  }
+
+  void reset() {
+    realm.deleteAll();
+    _walletList = [];
+  }
+
+  void dispose() {
+    realm.close();
   }
 }
