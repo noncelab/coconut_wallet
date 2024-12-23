@@ -1,21 +1,28 @@
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
-class CoconutDropdown extends StatefulWidget {
+class CustomDropdown extends StatefulWidget {
   final List<String> buttons;
   final Function onTapButton;
   final int dividerIndex;
-  const CoconutDropdown(
+  final Color dividerColor;
+  final Color backgroundColor;
+  final EdgeInsets margin;
+
+  const CustomDropdown(
       {super.key,
       required this.buttons,
       required this.onTapButton,
-      this.dividerIndex = 0});
+      this.dividerIndex = 0,
+      this.dividerColor = MyColors.borderGrey,
+      this.backgroundColor = MyColors.shadowGray,
+      this.margin = EdgeInsets.zero});
 
   @override
-  State<CoconutDropdown> createState() => _CoconutDropdownState();
+  State<CustomDropdown> createState() => _CustomDropdownState();
 }
 
-class _CoconutDropdownState extends State<CoconutDropdown> {
+class _CustomDropdownState extends State<CustomDropdown> {
   int _selectedIndex = 0;
   final buttonHeight = 44.0;
 
@@ -28,11 +35,8 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
   @override
   Widget build(BuildContext context) {
     // frosted_appbar height + status bar height - margin
-    final status = MediaQuery.of(context).padding.top;
-    final topMargin = (84 + status) - (status / 2);
-
     return Container(
-      margin: EdgeInsets.only(top: topMargin, right: 20),
+      margin: widget.margin,
       width: 152,
       decoration: BoxDecoration(
         boxShadow: [
@@ -50,6 +54,8 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
           return _button(
             widget.buttons[index],
             index,
+            widget.dividerColor,
+            widget.backgroundColor,
             dividerHeight:
                 widget.dividerIndex > 0 && widget.dividerIndex == index + 1
                     ? 5
@@ -62,8 +68,15 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
     );
   }
 
-  Widget _button(String title, int index,
-      {double dividerHeight = 1, bool isFirst = false, bool isLast = false}) {
+  Widget _button(
+    String title,
+    int index,
+    Color dividerColor,
+    Color backgroundColor, {
+    double dividerHeight = 1,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
     return Column(
       children: [
         InkWell(
@@ -97,8 +110,9 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
                           bottomLeft: Radius.circular(16),
                           bottomRight: Radius.circular(16))
                       : null,
-              color:
-                  _selectedIndex == index ? MyColors.borderGrey : MyColors.grey,
+              color: _selectedIndex == index
+                  ? MyColors.borderGrey
+                  : backgroundColor,
             ),
             child: Text(
               title,
@@ -115,7 +129,7 @@ class _CoconutDropdownState extends State<CoconutDropdown> {
         if (!isLast)
           Container(
               height: dividerHeight,
-              color: dividerHeight == 1 ? MyColors.borderGrey : MyColors.nero),
+              color: dividerHeight == 1 ? dividerColor : MyColors.nero),
       ],
     );
   }

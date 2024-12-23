@@ -7,7 +7,7 @@ import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/screens/settings/security_self_check_screen.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/screens/settings/terms_screen.dart';
-import 'package:coconut_wallet/widgets/coconut_dropdown.dart';
+import 'package:coconut_wallet/widgets/custom_dropdown.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -727,7 +727,12 @@ class _WalletListScreenState extends State<WalletListScreen>
                       ),
                       Align(
                         alignment: Alignment.topRight,
-                        child: CoconutDropdown(
+                        child: CustomDropdown(
+                          margin: EdgeInsets.only(
+                              top: (84 + MediaQuery.of(context).padding.top) -
+                                  (MediaQuery.of(context).padding.top / 2),
+                              right: 20),
+                          backgroundColor: MyColors.grey,
                           buttons: const [
                             '용어집',
                             '니모닉 문구 단어집',

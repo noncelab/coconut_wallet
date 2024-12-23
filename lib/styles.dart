@@ -4,12 +4,14 @@ import 'dart:math' as math;
 abstract class MyColors {
   static const black = Color.fromRGBO(20, 19, 24, 1);
   static const nero = Color.fromRGBO(26, 26, 26, 1);
+  static const shadowGray = Color.fromRGBO(34, 33, 38, 1);
   static const transparentBlack = Color.fromRGBO(0, 0, 0, 0.7);
   static const transparentBlack_03 = Color.fromRGBO(0, 0, 0, 0.03);
   static const grey = Color.fromRGBO(48, 47, 52, 1);
   static const white = Color.fromRGBO(255, 255, 255, 1);
   static const transparentWhite = Color.fromRGBO(255, 255, 255, 0.2);
   static const transparentWhite_06 = Color.fromRGBO(255, 255, 255, 0.06);
+  static const transparentWhite_10 = Color.fromRGBO(255, 255, 255, 0.10);
   static const transparentWhite_12 = Color.fromRGBO(255, 255, 255, 0.12);
   static const transparentWhite_15 = Color.fromRGBO(255, 255, 255, 0.15);
   static const transparentWhite_20 = Color.fromRGBO(255, 255, 255, 0.2);
@@ -51,6 +53,9 @@ abstract class MyColors {
   static const warningYellowBackground = Color.fromRGBO(255, 243, 190, 1.0);
 
   static const failedYellow = Color.fromRGBO(218, 152, 65, 1);
+
+  static const Color bottomSheetBackground = Color(0xFF232222);
+  static const Color selectBackground = Color(0xFF393939);
 }
 
 const List<Color> ColorPalette = [
@@ -103,6 +108,13 @@ abstract class Styles {
       fontFamily: _fontNumber,
       color: MyColors.white,
       fontSize: 32,
+      fontStyle: FontStyle.normal,
+      fontWeight: FontWeight.w700);
+
+  static const TextStyle h2Number = TextStyle(
+      fontFamily: _fontNumber,
+      color: MyColors.white,
+      fontSize: 18,
       fontStyle: FontStyle.normal,
       fontWeight: FontWeight.w700);
 

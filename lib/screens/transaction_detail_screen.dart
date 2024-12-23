@@ -133,6 +133,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           title: '거래 자세히 보기',
           context: context,
           hasRightIcon: false,
+          showTestnetLabel: false,
         ),
         body: SingleChildScrollView(
           child: Container(

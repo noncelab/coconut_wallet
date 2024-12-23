@@ -5,13 +5,10 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/model/utxo.dart' as model;
-import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:provider/provider.dart';
 
 class UtxoListScreen extends StatefulWidget {
@@ -178,9 +175,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                                       .derivationPath
                                       .split('/')
                                       .last;*/
-                                  return UTXOItem(
-                                      utxo: sortedUTXOs[index],
-                                      btcPrice: bitcointPriceKrw ?? 0);
+                                  // return UTXOItem(
+                                  //     utxo: sortedUTXOs[index],
+                                  //     btcPrice: bitcointPriceKrw ?? 0);
+                                  return Container();
                                 }))
                       ]));
             }));
@@ -196,53 +194,5 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     List<model.UTXO> sortedList = List.from(utxos);
     sortedList.sort((a, b) => b.amount.compareTo(a.amount));
     return sortedList;
-  }
-}
-
-class UTXOItem extends StatelessWidget {
-  final model.UTXO utxo;
-  final int btcPrice;
-
-  const UTXOItem({
-    super.key,
-    required this.utxo,
-    required this.btcPrice,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-        onTap: () {
-          MyBottomSheet.showBottomSheet_90(
-              context: context,
-              child: UtxoDetailScreen(utxo: utxo, btcPrice: btcPrice));
-        },
-        child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: MyColors.transparentWhite_06),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(DateTimeUtil.formatDatetime(utxo.timestamp),
-                        style: Styles.caption),
-                    Expanded(
-                        child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(satoshiToBitcoinString(utxo.amount),
-                                style: Styles.h3.merge(TextStyle(
-                                    fontFamily:
-                                        CustomFonts.number.getFontFamily)))))
-                  ],
-                ),
-                Text(utxo.to,
-                    style: Styles.caption.merge(
-                        const TextStyle(color: MyColors.transparentWhite_50)))
-              ],
-            )));
   }
 }

@@ -15,7 +15,9 @@ import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 import 'package:coconut_wallet/screens/signed_psbt_scanner_screen.dart';
 import 'package:coconut_wallet/screens/transaction_detail_screen.dart';
 import 'package:coconut_wallet/screens/unsigned_transaction_qr_screen.dart';
+import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/utxo_list_screen.dart';
+import 'package:coconut_wallet/screens/utxo_tag_screen.dart';
 import 'package:coconut_wallet/screens/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_list_screen.dart';
@@ -208,9 +210,15 @@ class _PowWalletAppState extends State<PowWalletApp> {
                 (args) =>
                     CustomLoadingOverlay(child: UtxoListScreen(id: args['id'])),
               ),
+          '/utxo-detail': (context) => buildScreenWithArguments(
+                context,
+                (args) => CustomLoadingOverlay(
+                    child: UtxoDetailScreen(utxo: args['utxo'])),
+              ),
           '/positive-feedback': (context) => const PositiveFeedbackScreen(),
           '/negative-feedback': (context) => const NegativeFeedbackScreen(),
           '/mnemonic-word-list': (context) => const Bip39ListScreen(),
+          '/utxo-tag': (context) => const UtxoTagScreen(),
         },
       ),
     );
