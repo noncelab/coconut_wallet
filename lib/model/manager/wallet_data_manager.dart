@@ -15,6 +15,7 @@ import 'package:coconut_wallet/model/manager/realm/realm_id_service.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:realm/realm.dart';
 
 class WalletDataManager {
@@ -139,7 +140,7 @@ class WalletDataManager {
     List<WalletStatus> syncResults = [];
     List<int> needToUpdateIds = [];
     for (int i = 0; i < targets.length; i++) {
-      WalletFeature coconutWallet = _getWalletFeatureByWalletType(targets[i]);
+      WalletFeature coconutWallet = getWalletFeatureByWalletType(targets[i]);
       try {
         await coconutWallet.fetchOnChainData(nodeConnector);
       } catch (e) {
@@ -212,7 +213,7 @@ class WalletDataManager {
     print('--> newTxCount: $newTxCount');
     if (newTxCount == 0) return;
 
-    var walletFeature = _getWalletFeatureByWalletType(walletItem);
+    var walletFeature = getWalletFeatureByWalletType(walletItem);
     // TODO: 라이브러리 수정 필요
     List<Transfer> newTxList =
         walletFeature.getTransferList(cursor: 0, count: newTxCount);
@@ -256,14 +257,6 @@ class WalletDataManager {
       ..txCount = realmWallet.txCount
       ..isLatestTxBlockHeightZero = realmWallet.isLatestTxBlockHeightZero
       ..balance = realmWallet.balance;
-  }
-
-  WalletFeature _getWalletFeatureByWalletType(WalletListItemBase walletItem) {
-    if (walletItem.walletType == WalletType.singleSignature) {
-      return walletItem.walletBase as SingleSignatureWallet;
-    } else {
-      return walletItem.walletBase as MultisignatureWallet;
-    }
   }
 
   void updateWalletUI(int id, WalletSync walletSync) {
