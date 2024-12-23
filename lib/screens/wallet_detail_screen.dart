@@ -128,10 +128,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _prevTxCount = _walletBaseItem.txCount;
     _prevIsLatestTxBlockHeightZero = _walletBaseItem.isLatestTxBlockHeightZero;
 
+    _walletType = _walletBaseItem.walletType;
     if (_model.walletInitState == WalletInitState.finished) {
       _utxoList = getUtxoListWithHoldingAddress(_walletFeature.getUtxoList());
     }
-    _walletType = _walletBaseItem.walletType;
 
     if (_utxoList.isNotEmpty && mounted) {
       setState(() {
