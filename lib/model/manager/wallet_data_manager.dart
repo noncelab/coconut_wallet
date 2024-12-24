@@ -41,7 +41,8 @@ class WalletDataManager {
       RealmWalletBase.schema,
       RealmMultisigWallet.schema,
       RealmTransaction.schema,
-      RealmIntegerId.schema
+      RealmIntegerId.schema,
+      TempBroadcastTimeRecord.schema
     ]);
     _realm = Realm(config);
   }
@@ -189,10 +190,14 @@ class WalletDataManager {
       RealmWalletBase realmWallet, WalletStatus syncResult) {
     // 갱신해야 하는 txList 개수 구하기
     int newTxCount = 0;
+    // 지갑에서 보내기 한 내역
+    RealmResults<TempBroadcastTimeRecord>? tempBroadcastTimeRecord;
     if (realmWallet.txCount == null ||
         realmWallet.txCount != syncResult.transactionList.length) {
       newTxCount =
           syncResult.transactionList.length - (realmWallet.txCount ?? 0);
+      // 새로 조회된 트랜잭션의 createdAt값 조회를 위해
+      tempBroadcastTimeRecord = _realm.all<TempBroadcastTimeRecord>();
     }
     RealmResults<RealmTransaction>? updateTargets;
     List<RealmTransaction>?
@@ -240,13 +245,18 @@ class WalletDataManager {
             ..timestamp = newTxList[i].timestamp
             ..blockHeight = newTxList[i].blockHeight;
           matchedUpdateTargetIds.add(existingTx.id);
-          // saveTarget = mapTransferToRealmTransaction(
-          //     newTxList[i], realmWallet, existingTx.id);
         } else {
-          saveTarget =
-              mapTransferToRealmTransaction(newTxList[i], realmWallet, nextId);
+          TempBroadcastTimeRecord? record = tempBroadcastTimeRecord
+              ?.query('transactionHash = ${newTxList[i].transactionHash}')
+              .firstOrNull;
+          saveTarget = mapTransferToRealmTransaction(
+              newTxList[i], realmWallet, nextId, record?.createdAt);
           nextId++;
+
           _realm.add<RealmTransaction>(saveTarget);
+          if (record != null) {
+            _realm.delete<TempBroadcastTimeRecord>(record);
+          }
         }
       }
 
@@ -362,6 +372,13 @@ class WalletDataManager {
       result.add(mapRealmTransactionToTransfer(t));
     }
     return result;
+  }
+
+  Future<void> recordTemporaryBroadcastTime(
+      String txHash, DateTime createdAt) async {
+    await _realm.writeAsync(() {
+      _realm.add(TempBroadcastTimeRecord(txHash, createdAt));
+    });
   }
 
   void reset() {

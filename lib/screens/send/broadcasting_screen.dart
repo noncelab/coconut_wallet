@@ -52,13 +52,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     }
 
     final walletBaseItem = _model.getWalletById(widget.id);
-    if (walletBaseItem.walletType == WalletType.multiSignature) {
-      final multisigListItem = walletBaseItem as MultisigWalletListItem;
-      _walletBase = multisigListItem.walletBase;
-    } else {
-      final singlesigListItem = walletBaseItem as SinglesigWalletListItem;
-      _walletBase = singlesigListItem.walletBase;
-    }
+    _walletBase = walletBaseItem.walletBase;
 
     WidgetsBinding.instance.addPostFrameCallback((duration) {
       setOverlayLoading(true);
@@ -136,8 +130,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     Transaction signedTx = psbt.getSignedTransaction(_walletBase.addressType);
 
     try {
-      Result<String, CoconutError> result =
-          await model.broadcast(signedTx.serialize());
+      Result<String, CoconutError> result = await model.broadcast(signedTx);
 
       setOverlayLoading(false);
 

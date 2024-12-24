@@ -731,11 +731,17 @@ class AppStateModel extends ChangeNotifier {
     }
   }
 
-  Future<Result<String, CoconutError>> broadcast(String signedTx) async {
+  Future<Result<String, CoconutError>> broadcast(Transaction signedTx) async {
     await _initNodeConnectionWhenIsNull();
 
     Result<String, CoconutError> result =
-        await _nodeConnector!.broadcast(signedTx);
+        await _nodeConnector!.broadcast(signedTx.serialize());
+    _walletDataManager
+        .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
+        .catchError((_) {
+      // ignore intentionally
+      Logger.error(_);
+    });
     return result;
   }
 }
