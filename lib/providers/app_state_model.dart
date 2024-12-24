@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
 import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/screens/wallet_list_screen.dart';
@@ -586,7 +587,7 @@ class AppStateModel extends ChangeNotifier {
   //   }
   // }
 
-  List<Transfer>? getTxList(int walletId) {
+  List<TransferDTO>? getTxList(int walletId) {
     return _walletDataManager.getTxList(walletId);
   }
 

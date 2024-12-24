@@ -73,4 +73,12 @@ class TransferDTO extends Transfer {
       super.outputAddressList,
       this.note,
       this.createdAt);
+
+  DateTime? getDateTimeToDisplay() {
+    if (blockHeight != null && blockHeight == 0 && createdAt != null) {
+      return createdAt;
+    }
+
+    return timestamp;
+  }
 }
