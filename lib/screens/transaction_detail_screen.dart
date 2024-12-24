@@ -1,4 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
+import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/enums.dart';
@@ -33,6 +36,7 @@ class TransactionDetailScreen extends StatefulWidget {
 
 class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   late AddressBook _addressBook;
+  late TransactionStatus status;
   int? _currentBlockHeight;
 
   @override
@@ -40,6 +44,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
     _addressBook = model.getWalletById(widget.id).walletBase.addressBook;
+    status = TransactionUtil.getStatus(widget.tx) ?? TransactionStatus.sent;
     model.getCurrentBlockHeight().then((value) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {
@@ -57,10 +62,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       case TransactionStatus.receiving:
       case TransactionStatus.received:
         prefix = '+';
-        color = MyColors.white;
+        color = MyColors.secondary;
         break;
       case TransactionStatus.self:
       case TransactionStatus.selfsending:
+        prefix = '';
+        color = MyColors.white;
+        break;
       case TransactionStatus.sent:
       case TransactionStatus.sending:
         prefix = '';
@@ -73,17 +81,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
     return Text(
       '$prefix${satoshiToBitcoinString(widget.tx.amount!)}',
-      style: Styles.body1Number.merge(TextStyle(
-        color: color,
-        fontWeight: FontWeight.bold,
-        fontSize: 20,
-      )),
+      style: Styles.h1Number.merge(
+        TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
+          height: 1,
+        ),
+      ),
     );
   }
 
-  Widget _confirmedCountText() {
+  String _confirmedCountText() {
     if (_currentBlockHeight == null) {
-      return const Text('');
+      return '';
     }
 
     if (widget.tx.blockHeight != null &&
@@ -92,14 +103,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       final confirmationCount =
           _currentBlockHeight! - widget.tx.blockHeight! + 1;
       if (confirmationCount > 0) {
-        return Text(
-          '($confirmationCount 승인)',
-          style: Styles.body1
-              .merge(const TextStyle(color: MyColors.transparentWhite_70)),
-        );
+        return confirmationCount.toString();
       }
     }
-    return const Text('');
+    return '';
   }
 
   Widget _addressText(List<String> addresses) {
@@ -136,8 +143,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           showTestnetLabel: false,
         ),
         body: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 20,
+            ),
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -146,54 +157,149 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         textList:
                             DateTimeUtil.formatTimeStamp(widget.tx.timestamp!)),
                   const SizedBox(
-                    height: 20,
+                    height: 24,
                   ),
-                  TransactionInfo(
-                      label: '수량',
-                      value: Row(children: [
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         _amountText(),
-                        const Text(' BTC', style: Styles.unit),
-                        const SizedBox(width: 4),
-                        _confirmedCountText()
-                      ])),
+                        const SizedBox(
+                          width: 2,
+                        ),
+                        const Text(' BTC', style: Styles.body2),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
+                  Center(
+                      child: Selector<UpbitConnectModel, int?>(
+                    selector: (context, model) => model.bitcoinPriceKrw,
+                    builder: (context, bitcoinPriceKrw, child) {
+                      return Text(
+                        bitcoinPriceKrw != null
+                            ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.tx.amount!, bitcoinPriceKrw).toDouble())}'
+                            : '',
+                        style: Styles.balance2,
+                      );
+                    },
+                  )),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 16),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: MyColors.transparentWhite_12),
+                    child: Column(children: [
+                      for (var inputAddress in widget.tx.inputAddressList) ...{
+                        InputOutputDetailRow(
+                          address: inputAddress,
+                          balance: 123123,
+                          rowType: InputOutputRowType.input,
+                        ),
+                      },
+                      const SizedBox(height: 8),
+                      InputOutputDetailRow(
+                        address: '수수료',
+                        balance: widget.tx.fee!,
+                        rowType: InputOutputRowType.fee,
+                      ),
+                      // const SizedBox(height: 8),
+                      // const InputOutputDetailRow(
+                      //   address: 'bcrtTestDataTestDataTestData',
+                      //   balance: 4001234,
+                      //   rowType: InputOutputRowType.input,
+                      // ),
+                      // const SizedBox(height: 8),
+                      // const InputOutputDetailRow(
+                      //   address: 'bcrtTestDataTestDataTestData',
+                      //   balance: 4001234,
+                      //   rowType: InputOutputRowType.input,
+                      // ),
+                      // const SizedBox(height: 8),
+                      // Text(
+                      //   '...',
+                      //   style: Styles.caption.merge(const TextStyle(
+                      //       color: MyColors.transparentWhite_40, height: 8 / 12)),
+                      // ),
+                      // const SizedBox(height: 8),
+                      // const InputOutputDetailRow(
+                      //   address: '수수료',
+                      //   balance: 142,
+                      //   rowType: InputOutputRowType.fee,
+                      // ),
+                      // const SizedBox(height: 8),
+                      // const InputOutputDetailRow(
+                      //   address: 'bcrtTestDataTestDataTestData',
+                      //   balance: 4001234,
+                      //   rowType: InputOutputRowType.output,
+                      //   isCurrentAddress: true,
+                      // ),
+                      // const SizedBox(height: 8),
+                      // const InputOutputDetailRow(
+                      //   address: 'bcrtTestDataTestDataTestData',
+                      //   balance: 4001234,
+                      //   rowType: InputOutputRowType.output,
+                      // ),
+                      // const SizedBox(height: 8),
+                      // Text(
+                      //   '...',
+                      //   style: Styles.caption.merge(const TextStyle(
+                      //       color: MyColors.transparentWhite_40, height: 8 / 12)),
+                      // ),
+                    ]),
+                  ),
+                  const SizedBox(height: 12),
+                  InfoRow(
+                    label: '블록 번호',
+                    subLabel: '멤풀 보기',
+                    onSubLabelClicked: () {
+                      launchUrl(Uri.parse(
+                          "${PowWalletApp.kMempoolHost}/tx/${widget.tx.transactionHash}"));
+                    },
+                    value: Text(
+                      '${widget.tx.blockHeight.toString() ?? ''} (${_confirmedCountText()} 승인)',
+                      style: Styles.body1Number,
+                    ),
+                  ),
                   TransactionDetailScreen._divider,
-                  TransactionInfo(
-                      label: '수수료',
-                      value: Text(
-                        widget.tx.fee != null
-                            ? '${satoshiToBitcoinString(widget.tx.fee!)} BTC'
-                            : "알 수 없음",
-                        style: Styles.body1Number,
-                      )),
-                  TransactionDetailScreen._divider,
-                  TransactionInfo(
+                  InfoRow(
                       label: '트랜잭션 ID',
+                      subLabel: '멤풀 보기',
+                      onSubLabelClicked: () {
+                        // TODO: 멤풀 주소
+                        launchUrl(Uri.parse(
+                            "${PowWalletApp.kMempoolHost}/tx/${widget.tx.transactionHash}"));
+                      },
                       value: Text(
                         widget.tx.transactionHash,
                         style: Styles.body1Number,
                       )),
                   TransactionDetailScreen._divider,
-                  TransactionInfo(
-                      label: '보낸 주소',
-                      value: _addressText(widget.tx.inputAddressList)),
+                  InfoRow(
+                      label: '거래 메모',
+                      subLabel: '편집',
+                      onSubLabelClicked: () {
+                        // TODO: 멤풀 주소
+                        launchUrl(Uri.parse(
+                            "${PowWalletApp.kMempoolHost}/tx/${widget.tx.transactionHash}"));
+                      },
+                      value: const Text(
+                        '-',
+                        style: Styles.body1Number,
+                      )),
                   TransactionDetailScreen._divider,
-                  TransactionInfo(
-                      label: '받은 주소',
-                      value: _addressText(widget.tx.outputAddressList)),
-                  const SizedBox(
-                    height: 40,
-                  ),
-                  SmallActionButton(
-                    text: '멤풀에서 보기',
-                    backgroundColor: MyColors.transparentWhite_20,
-                    borderRadius: BorderRadius.circular(12),
-                    onPressed: () {
-                      launchUrl(Uri.parse(
-                          "${PowWalletApp.kMempoolHost}/tx/${widget.tx.transactionHash}"));
-                    },
-                    textStyle: const TextStyle(
-                        color: MyColors.white, fontWeight: FontWeight.w500),
-                  ),
+                  // InfoRow(
+                  //     label: '보낸 주소',
+                  //     value: _addressText(widget.tx.inputAddressList)),
+                  // TransactionDetailScreen._divider,
+                  // InfoRow(
+                  //     label: '받은 주소',
+                  //     value: _addressText(widget.tx.outputAddressList)),
                   const SizedBox(
                     height: 40,
                   ),

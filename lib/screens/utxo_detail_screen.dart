@@ -51,7 +51,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           icon: SvgPicture.asset('assets/svg/question-mark.svg'),
           onPressed: () {},
         ),
-        isBottom: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -78,10 +77,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     child: RichText(
                         text: TextSpan(
                             text: satoshiToBitcoinString(widget.utxo.amount),
-                            style: Styles.h1Number,
+                            style: Styles.h1Number.merge(
+                                const TextStyle(fontSize: 24, height: 1)),
                             children: const <TextSpan>[
-                      TextSpan(text: ' BTC', style: Styles.unit)
+                      TextSpan(text: ' BTC', style: Styles.body2)
                     ]))),
+                const SizedBox(
+                  height: 8,
+                ),
                 Center(
                     child: Selector<UpbitConnectModel, int?>(
                   selector: (context, model) => model.bitcoinPriceKrw,
@@ -104,19 +107,19 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                       color: MyColors.transparentWhite_12),
                   child: Column(children: [
                     const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
+                      address: 'bcrtTestDataTestDataTestDataTestData',
                       balance: 4001234,
                       rowType: InputOutputRowType.input,
                     ),
                     const SizedBox(height: 8),
                     const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
+                      address: 'bcrtTestDataTestDataTestDataTestData',
                       balance: 4001234,
                       rowType: InputOutputRowType.input,
                     ),
                     const SizedBox(height: 8),
                     const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
+                      address: 'bcrtTestDataTestDataTestDataTestData',
                       balance: 4001234,
                       rowType: InputOutputRowType.input,
                     ),
@@ -134,14 +137,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
+                      address: 'bcrtTestDataTestDataTestDataTestData',
                       balance: 4001234,
                       rowType: InputOutputRowType.output,
                       isCurrentAddress: true,
                     ),
                     const SizedBox(height: 8),
                     const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
+                      address: 'bcrtTestDataTestDataTestDataTestDataTestData',
                       balance: 4001234,
                       rowType: InputOutputRowType.output,
                     ),
@@ -269,7 +272,7 @@ class InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -321,23 +324,23 @@ class InputOutputDetailRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          flex: 4,
+          flex: 5,
           child: Text(
-            TextUtils.truncateNameMax20(address),
+            TextUtils.truncateNameMax19(address),
             style: Styles.body2Number.merge(
               TextStyle(
                 color: isCurrentAddress
                     ? MyColors.white
                     : MyColors.transparentWhite_40,
-                fontSize: 12,
-                height: 16 / 12,
+                fontSize: 14,
+                height: 16 / 14,
               ),
             ),
             maxLines: 1,
           ),
         ),
         Expanded(
-          flex: 6,
+          flex: 5,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -365,8 +368,8 @@ class InputOutputDetailRow extends StatelessWidget {
                     color: isCurrentAddress
                         ? MyColors.white
                         : MyColors.transparentWhite_40,
-                    fontSize: 12,
-                    height: 16 / 12,
+                    fontSize: 14,
+                    height: 16 / 14,
                   ),
                 ),
               ),
