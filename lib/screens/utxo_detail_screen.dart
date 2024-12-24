@@ -41,7 +41,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late Offset _utxoTooltipIconPosition;
 
   final String _utxoTip =
-      'UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요.\n비트코인에는 잔액 개념이 없어요.\n지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
+      'UTXO란 Unspent Tx Output을 줄인 말로\n아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요.\n지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
 
   @override
   void initState() {
@@ -66,6 +66,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         _removeUtxoTooltip();
       },
       child: GestureDetector(
+        onTap: () => _removeUtxoTooltip(),
         child: Stack(
           children: [
             Scaffold(
@@ -76,8 +77,15 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                 showTestnetLabel: false,
                 hasRightIcon: true,
                 rightIconButton: IconButton(
+                  key: _utxoTooltipIconKey,
                   icon: SvgPicture.asset('assets/svg/question-mark.svg'),
-                  onPressed: () {},
+                  onPressed: () {
+                    if (mounted) {
+                      setState(() {
+                        _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
+                      });
+                    }
+                  },
                 ),
               ),
               body: SafeArea(
@@ -189,13 +197,107 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             ),
                           ]),
                         ),
-                        _utxoTooltipWidget(context),
+                        const SizedBox(height: 25),
+                        InfoRow(
+                            label: '보유 주소',
+                            subLabel: '멤풀 보기',
+                            onSubLabelClicked: () => launchUrl(Uri.parse(
+                                "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+                            isChangeTagVisible:
+                                widget.utxo.derivationPath.split('/')[4] == '1',
+                            value: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.utxo.to,
+                                  style: Styles.body2Number
+                                      .merge(const TextStyle(height: 22 / 14)),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.utxo.derivationPath,
+                                  style: Styles.caption.merge(const TextStyle(
+                                      color: MyColors.white,
+                                      height: 18 / 12,
+                                      fontFamily: 'Pretendard')),
+                                )
+                              ],
+                            )),
+                        _divider,
+                        InfoRow(
+                            // TODO: 메모 불러오기
+                            label: '거래 메모',
+                            value: Text(
+                              '-',
+                              style: Styles.body2Number
+                                  .merge(const TextStyle(height: 22 / 14)),
+                            )),
+                        _divider,
+                        InfoRow(
+                            // TODO: 태그 불러오기
+                            label: '태그',
+                            subLabel: '편집',
+                            onSubLabelClicked: () {
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: MyColors.black,
+                                builder: (context) => TagBottomSheetContainer(
+                                  type: TagBottomSheetType.select,
+                                  onComplete: (_, utxo) =>
+                                      debugPrint(utxo.toString()),
+                                  utxoTags: const [
+                                    UtxoTag(tag: 'kyc', colorIndex: 0),
+                                    UtxoTag(tag: 'coconut', colorIndex: 2),
+                                    UtxoTag(tag: 'strike', colorIndex: 7),
+                                    UtxoTag(tag: '1', colorIndex: 7),
+                                    UtxoTag(tag: '2', colorIndex: 7),
+                                    UtxoTag(tag: '3', colorIndex: 7),
+                                    UtxoTag(tag: '4', colorIndex: 7),
+                                    UtxoTag(tag: '5', colorIndex: 7),
+                                  ],
+                                ),
+                              );
+                            },
+                            value: Text(
+                              '-',
+                              style: Styles.body2Number
+                                  .merge(const TextStyle(height: 22 / 14)),
+                            )),
+                        _divider,
+                        InfoRow(
+                          label: '트랜잭션 ID',
+                          subLabel: '거래 자세히 보기',
+                          onSubLabelClicked: () {
+                            // Navigator.pushNamed(context, '/transaction-detail',
+                            //     arguments: {'id': widget.id, 'tx': widget.tx});
+                          },
+                          value: Text(
+                            widget.utxo.txHash,
+                            style: Styles.body2Number
+                                .merge(const TextStyle(height: 22 / 14)),
+                          ),
+                        ),
+                        _divider,
+                        InfoRow(
+                            label: '블록 번호',
+                            subLabel: '멤풀 보기',
+                            onSubLabelClicked: () => launchUrl(Uri.parse(
+                                "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+                            value: Text(
+                              widget.utxo.blockHeight,
+                              style: Styles.body2Number
+                                  .merge(const TextStyle(height: 22 / 14)),
+                            )),
+                        const SizedBox(
+                          height: 40,
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
             ),
+            _utxoTooltipWidget(context),
           ],
         ),
       ),
@@ -274,12 +376,23 @@ class InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        vertical: 16,
+        horizontal: 2,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(children: [
-            Label(text: label),
+            Text(
+              label,
+              style: Styles.body2.merge(
+                const TextStyle(
+                  color: MyColors.transparentWhite_70,
+                  height: 21 / 14,
+                ),
+              ),
+            ),
             const SizedBox(width: 6),
             if (isChangeTagVisible) const CustomChip(text: '잔돈'),
             if (subLabel != null)
@@ -293,13 +406,13 @@ class InfoRow extends StatelessWidget {
                         onSubLabelClicked!();
                       }
                     },
-                    fontSize: 10,
-                    lineHeight: 16,
+                    fontSize: 12,
+                    lineHeight: 18,
                   ),
                 ),
               ),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           value
         ],
       ),
@@ -359,7 +472,8 @@ class InputOutputDetailRow extends StatelessWidget {
                         colorFilter: isCurrentAddress
                             ? const ColorFilter.mode(
                                 MyColors.white, BlendMode.srcIn)
-                            : null),
+                            : const ColorFilter.mode(
+                                MyColors.transparentWhite_40, BlendMode.srcIn)),
                     const SizedBox(width: 6),
                   ],
                 ),
@@ -379,7 +493,14 @@ class InputOutputDetailRow extends StatelessWidget {
                 Row(
                   children: [
                     const SizedBox(width: 6),
-                    SvgPicture.asset('assets/svg/circle-arrow-right.svg')
+                    SvgPicture.asset(
+                      'assets/svg/circle-arrow-right.svg',
+                      colorFilter: isCurrentAddress
+                          ? const ColorFilter.mode(
+                              MyColors.white, BlendMode.srcIn)
+                          : const ColorFilter.mode(
+                              MyColors.transparentWhite_40, BlendMode.srcIn),
+                    ),
                   ],
                 )
             ],

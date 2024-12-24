@@ -1,10 +1,8 @@
 import 'package:coconut_wallet/model/utxo.dart' as model;
 import 'package:coconut_wallet/model/utxo_tag.dart';
-import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
@@ -80,10 +78,11 @@ class UTXOItemCard extends StatelessWidget {
                       ),
                       Text(
                         satoshiToBitcoinString(utxo.amount),
-                        style: Styles.h3.merge(
-                          TextStyle(
-                            fontFamily: CustomFonts.number.getFontFamily,
-                          ),
+                        style: Styles.body1Number.merge(
+                          const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              height: 24 / 16,
+                              letterSpacing: 16 * 0.01),
                         ),
                       ),
                     ],
@@ -96,7 +95,7 @@ class UTXOItemCard extends StatelessWidget {
             ),
             Text(
               utxo.to,
-              style: Styles.caption.merge(
+              style: Styles.body2Number.merge(
                 const TextStyle(
                   color: MyColors.transparentWhite_50,
                 ),

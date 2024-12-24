@@ -7,7 +7,7 @@ class DateTimeUtil {
         "${dateTime.year % 100}.${dateTime.month >= 10 ? dateTime.month : "0${dateTime.month}"}."
         "${dateTime.day >= 10 ? dateTime.day : "0${dateTime.day}"}";
     String formattedTime =
-        "${dateTime.hour}:${dateTime.minute >= 10 ? dateTime.minute : "0${dateTime.minute}"}";
+        "${dateTime.hour >= 10 ? dateTime.hour : '0${dateTime.hour}'}:${dateTime.minute >= 10 ? dateTime.minute : "0${dateTime.minute}"}";
 
     return [formattedDate, formattedTime];
   }

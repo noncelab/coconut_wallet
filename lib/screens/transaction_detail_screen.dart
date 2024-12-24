@@ -197,7 +197,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     child: Column(children: [
                       for (var inputAddress in widget.tx.inputAddressList) ...{
                         InputOutputDetailRow(
-                          address: inputAddress,
+                          address: inputAddress.address,
                           balance: 123123,
                           rowType: InputOutputRowType.input,
                         ),

@@ -85,6 +85,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
           isChange: changeAndAccountIndex[changeField]! == 1);
 
       utxos.add(model.UTXO(
+          1, //TODO: index
           element.timestamp.toString(),
           element.blockHeight.toString(),
           element.amount,

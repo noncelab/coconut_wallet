@@ -19,6 +19,7 @@ void main() {
         const UtxoTag(tag: 'strike', colorIndex: 7),
       ];
       mockUtxo = UTXO(
+        1,
         'timestamp',
         'blockHeight',
         0,
