@@ -173,13 +173,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         style: Styles.body1Number,
                       )),
                   TransactionDetailScreen._divider,
-                  TransactionInfo(
-                      label: '보낸 주소',
-                      value: _addressText(widget.tx.inputAddressList)),
-                  TransactionDetailScreen._divider,
-                  TransactionInfo(
-                      label: '받은 주소',
-                      value: _addressText(widget.tx.outputAddressList)),
+                  // TransactionInfo(
+                  //     label: '보낸 주소',
+                  //     value: _addressText(widget.tx.inputAddressList)),
+                  // TransactionDetailScreen._divider,
+                  // TransactionInfo(
+                  //     label: '받은 주소',
+                  //     value: _addressText(widget.tx.outputAddressList)),
                   const SizedBox(
                     height: 40,
                   ),

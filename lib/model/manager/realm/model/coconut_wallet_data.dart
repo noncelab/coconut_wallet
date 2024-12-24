@@ -43,6 +43,7 @@ class _RealmTransaction {
   int? fee;
   late List<String> inputAddressList;
   late List<String> outputAddressList;
+  String? note;
 }
 
 @RealmModel()

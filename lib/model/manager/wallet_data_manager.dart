@@ -80,7 +80,7 @@ class WalletDataManager {
     _realm.write(() {
       _realm.add(wallet);
     });
-    _recordNextWalletId();
+    _recordNextWalletId(id + 1);
 
     var singlesigWallet = SinglesigWalletListItem(
         id: id,
@@ -113,7 +113,7 @@ class WalletDataManager {
       _realm.add(realmWalletBase);
       _realm.add(realmMultisigWallet);
     });
-    _recordNextWalletId();
+    _recordNextWalletId(id + 1);
 
     var multisigWallet = MultisigWalletListItem(
         id: id,
@@ -195,6 +195,8 @@ class WalletDataManager {
           syncResult.transactionList.length - (realmWallet.txCount ?? 0);
     }
     RealmResults<RealmTransaction>? updateTargets;
+    List<RealmTransaction>?
+        finalUpdateTargets; // 새로운 row 추가 시 updateTargets 결과가 변경되기 때문에 처음 결과를 이 변수에 저장
     // 전송 중, 받는 중인 트랜잭션이 있는 경우
     if (walletItem.isLatestTxBlockHeightZero) {
       updateTargets = _realm
@@ -204,21 +206,22 @@ class WalletDataManager {
       final firstProcessingTx =
           updateTargets.query('blockHeight == 0 SORT(id ASC)').first;
 
-      updateTargets = updateTargets.query(r'id >= $0', [firstProcessingTx.id]);
+      updateTargets = updateTargets.query('id >= ${firstProcessingTx.id}');
       print('--> updateTargets: ${updateTargets.length}');
       newTxCount = newTxCount + updateTargets.length;
+      finalUpdateTargets = updateTargets.toList();
     }
     print(
-        '--> nexTxCount 계산: ${syncResult.transactionList.length} ${realmWallet.txCount}');
-    print('--> newTxCount: $newTxCount');
+        '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${finalUpdateTargets?.length} = $newTxCount');
     if (newTxCount == 0) return;
 
     var walletFeature = getWalletFeatureByWalletType(walletItem);
-    // TODO: 라이브러리 수정 필요
+    // 항상 최신순으로 반환
     List<Transfer> newTxList =
         walletFeature.getTransferList(cursor: 0, count: newTxCount);
     print('--> newTxList length: ${newTxList.length}');
     int nextId = generateNextId(_realm, (RealmTransaction).toString());
+    List<int> matchedUpdateTargetIds = [];
     _realm.write(() {
       for (int i = newTxList.length - 1; i >= 0; i--) {
         RealmTransaction? existingTx;
@@ -233,19 +236,33 @@ class WalletDataManager {
 
         RealmTransaction saveTarget;
         if (existingTx != null) {
-          saveTarget = mapTransferToRealmTransaction(
-              newTxList[i], realmWallet, existingTx.id);
+          existingTx
+            ..timestamp = newTxList[i].timestamp
+            ..blockHeight = newTxList[i].blockHeight;
+          matchedUpdateTargetIds.add(existingTx.id);
+          // saveTarget = mapTransferToRealmTransaction(
+          //     newTxList[i], realmWallet, existingTx.id);
         } else {
           saveTarget =
               mapTransferToRealmTransaction(newTxList[i], realmWallet, nextId);
           nextId++;
+          _realm.add<RealmTransaction>(saveTarget);
         }
+      }
 
-        _realm.add<RealmTransaction>(saveTarget, update: existingTx != null);
+      // INFO: RBF(Replace-By-Fee)에 의해서 처리되지 않은 트랜잭션이 삭제된 경우를 대비
+      // INFO: 추후에는 삭제가 아니라 '무효화됨'으로 표기될 수 있음
+      // TODO: TEST
+      if (finalUpdateTargets != null && finalUpdateTargets.isNotEmpty) {
+        for (var ut in finalUpdateTargets) {
+          var index = matchedUpdateTargetIds.indexWhere((x) => x == ut.id);
+          if (index == -1) {
+            _realm.delete(ut);
+          }
+        }
       }
 
       realmWallet.txCount = syncResult.transactionList.length;
-      // TODO: 라이브러리 동작에 따라 달라짐
       realmWallet.isLatestTxBlockHeightZero =
           newTxList.isNotEmpty && newTxList[0].blockHeight == 0;
       realmWallet.balance =
@@ -323,13 +340,15 @@ class WalletDataManager {
   }
 
   int _getNextWalletId() {
-    return _sharedPrefs.getInt(nextIdField);
+    var id = _sharedPrefs.getInt(nextIdField);
+    if (id == 0) {
+      return 1;
+    }
+    return id;
   }
 
-  void _recordNextWalletId() {
-    final int nextId = _getNextWalletId();
-    print('--> nextId: $nextId');
-    _sharedPrefs.setInt(nextIdField, nextId + 1);
+  void _recordNextWalletId(int value) {
+    _sharedPrefs.setInt(nextIdField, value);
   }
 
   List<Transfer>? getTxList(int id) {
