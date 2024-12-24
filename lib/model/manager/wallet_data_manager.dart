@@ -195,6 +195,8 @@ class WalletDataManager {
           syncResult.transactionList.length - (realmWallet.txCount ?? 0);
     }
     RealmResults<RealmTransaction>? updateTargets;
+    List<RealmTransaction>?
+        finalUpdateTargets; // 새로운 row 추가 시 updateTargets 결과가 변경되기 때문에 처음 결과를 이 변수에 저장
     // 전송 중, 받는 중인 트랜잭션이 있는 경우
     if (walletItem.isLatestTxBlockHeightZero) {
       updateTargets = _realm
@@ -207,9 +209,10 @@ class WalletDataManager {
       updateTargets = updateTargets.query('id >= ${firstProcessingTx.id}');
       print('--> updateTargets: ${updateTargets.length}');
       newTxCount = newTxCount + updateTargets.length;
+      finalUpdateTargets = updateTargets.toList();
     }
     print(
-        '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${updateTargets?.length} = $newTxCount');
+        '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${finalUpdateTargets?.length} = $newTxCount');
     if (newTxCount == 0) return;
 
     var walletFeature = getWalletFeatureByWalletType(walletItem);
@@ -250,8 +253,8 @@ class WalletDataManager {
       // INFO: RBF(Replace-By-Fee)에 의해서 처리되지 않은 트랜잭션이 삭제된 경우를 대비
       // INFO: 추후에는 삭제가 아니라 '무효화됨'으로 표기될 수 있음
       // TODO: TEST
-      if (updateTargets != null && updateTargets.isNotEmpty) {
-        for (var ut in updateTargets) {
+      if (finalUpdateTargets != null && finalUpdateTargets.isNotEmpty) {
+        for (var ut in finalUpdateTargets) {
           var index = matchedUpdateTargetIds.indexWhere((x) => x == ut.id);
           if (index == -1) {
             _realm.delete(ut);
