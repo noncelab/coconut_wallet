@@ -80,7 +80,7 @@ class WalletDataManager {
     _realm.write(() {
       _realm.add(wallet);
     });
-    _recordNextWalletId();
+    _recordNextWalletId(id + 1);
 
     var singlesigWallet = SinglesigWalletListItem(
         id: id,
@@ -113,7 +113,7 @@ class WalletDataManager {
       _realm.add(realmWalletBase);
       _realm.add(realmMultisigWallet);
     });
-    _recordNextWalletId();
+    _recordNextWalletId(id + 1);
 
     var multisigWallet = MultisigWalletListItem(
         id: id,
@@ -340,13 +340,15 @@ class WalletDataManager {
   }
 
   int _getNextWalletId() {
-    return _sharedPrefs.getInt(nextIdField);
+    var id = _sharedPrefs.getInt(nextIdField);
+    if (id == 0) {
+      return 1;
+    }
+    return id;
   }
 
-  void _recordNextWalletId() {
-    final int nextId = _getNextWalletId();
-    print('--> nextId: $nextId');
-    _sharedPrefs.setInt(nextIdField, nextId + 1);
+  void _recordNextWalletId(int value) {
+    _sharedPrefs.setInt(nextIdField, value);
   }
 
   List<Transfer>? getTxList(int id) {
