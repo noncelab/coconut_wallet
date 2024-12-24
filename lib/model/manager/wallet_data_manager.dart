@@ -191,13 +191,13 @@ class WalletDataManager {
   void _updateDBAndWalletListAsLatest(WalletListItemBase walletItem,
       RealmWalletBase realmWallet, WalletStatus syncResult) {
     // 갱신해야 하는 txList 개수 구하기
-    int newTxCount = 0;
+    int getTxCount = 0;
     // 지갑에서 보내기 한 내역 조회, createdAt값 저장을 위해
     RealmResults<TempBroadcastTimeRecord>? tempBroadcastTimeRecord =
         _realm.all<TempBroadcastTimeRecord>();
     if (realmWallet.txCount == null ||
         realmWallet.txCount != syncResult.transactionList.length) {
-      newTxCount =
+      getTxCount =
           syncResult.transactionList.length - (realmWallet.txCount ?? 0);
     }
     RealmResults<RealmTransaction>? updateTargets;
@@ -214,17 +214,16 @@ class WalletDataManager {
 
       updateTargets = updateTargets.query('id >= ${firstProcessingTx.id}');
       print('--> updateTargets: ${updateTargets.length}');
-      newTxCount = newTxCount + updateTargets.length;
+      getTxCount = getTxCount + updateTargets.length;
       finalUpdateTargets = updateTargets.toList();
     }
     print(
-        '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${finalUpdateTargets?.length} = $newTxCount');
-    if (newTxCount == 0) return;
+        '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${finalUpdateTargets?.length} = $getTxCount');
 
     var walletFeature = getWalletFeatureByWalletType(walletItem);
     // 항상 최신순으로 반환
     List<Transfer> newTxList =
-        walletFeature.getTransferList(cursor: 0, count: newTxCount);
+        walletFeature.getTransferList(cursor: 0, count: getTxCount);
     print('--> newTxList length: ${newTxList.length}');
     int nextId = generateNextId(_realm, (RealmTransaction).toString());
     List<int> matchedUpdateTargetIds = [];
