@@ -23,15 +23,15 @@ class UTXOItemCard extends StatelessWidget {
         DateTimeUtil.formatDatetime(utxo.timestamp).split('|');
     bool isChange = utxo.derivationPath.split('/')[4] == '1';
     List<UtxoTag> utxoTags = [
-      const UtxoTag(tag: 'THESE', colorIndex: 0),
-      const UtxoTag(tag: 'ARE', colorIndex: 1),
-      const UtxoTag(tag: 'TEST', colorIndex: 2),
-      const UtxoTag(tag: 'DATA', colorIndex: 3),
-      const UtxoTag(tag: 'SO', colorIndex: 4),
-      const UtxoTag(tag: 'YOU', colorIndex: 5),
-      const UtxoTag(tag: 'HAVE', colorIndex: 6),
-      const UtxoTag(tag: 'TO', colorIndex: 7),
-      const UtxoTag(tag: 'FIX', colorIndex: 8),
+      const UtxoTag(name: 'THESE', colorIndex: 0),
+      const UtxoTag(name: 'ARE', colorIndex: 1),
+      const UtxoTag(name: 'TEST', colorIndex: 2),
+      const UtxoTag(name: 'DATA', colorIndex: 3),
+      const UtxoTag(name: 'SO', colorIndex: 4),
+      const UtxoTag(name: 'YOU', colorIndex: 5),
+      const UtxoTag(name: 'HAVE', colorIndex: 6),
+      const UtxoTag(name: 'TO', colorIndex: 7),
+      const UtxoTag(name: 'FIX', colorIndex: 8),
     ];
 
     return GestureDetector(
@@ -133,7 +133,7 @@ class UTXOItemCard extends StatelessWidget {
                     utxoTags.length,
                     (index) => IntrinsicWidth(
                       child: CustomTagChip(
-                        tag: utxoTags[index].tag,
+                        tag: utxoTags[index].name,
                         colorIndex: utxoTags[index].colorIndex,
                         type: CustomTagChipType.fix,
                       ),

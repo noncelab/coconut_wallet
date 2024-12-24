@@ -13,7 +13,7 @@ enum TagBottomSheetType { select, create, manage }
 
 class TagBottomSheetContainer extends StatefulWidget {
   final TagBottomSheetType type;
-  final Function(List<UtxoTag>?, UTXO?) onComplete;
+  final Function(List<UtxoTag>?, UtxoTag?, UTXO?) onComplete;
   final List<UtxoTag> utxoTags;
   final UTXO? selectUtxo;
   final UtxoTag? manageUtxoTag;
@@ -33,6 +33,7 @@ class TagBottomSheetContainer extends StatefulWidget {
 
 class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
   List<UtxoTag> _updateUtxoTags = [];
+  UtxoTag? _manageUtxoTag;
   UTXO? _selectUtxo;
   List<String> _selectedTags = [];
 
@@ -45,7 +46,7 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
 
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  String _updateTag = '';
+  String _updateTagName = '';
   int _updateTagColorIndex = 0;
 
   @override
@@ -62,10 +63,11 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
     }
 
     if (widget.manageUtxoTag != null) {
-      _updateTag = widget.manageUtxoTag!.tag;
+      _updateTagName = widget.manageUtxoTag!.name;
       _updateTagColorIndex = widget.manageUtxoTag!.colorIndex;
+      _manageUtxoTag = widget.manageUtxoTag;
     }
-    _controller.text = '#$_updateTag';
+    _controller.text = '#$_updateTagName';
     _controller.selection = TextSelection.fromPosition(
       TextPosition(offset: _controller.text.length),
     );
@@ -76,7 +78,7 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
       _isTwoDepth = false;
       _type = TagBottomSheetType.select;
       _controller.text = '#';
-      _updateTag = '';
+      _updateTagName = '';
       _updateTagColorIndex = 0;
     });
   }
@@ -92,13 +94,13 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
   }
 
   _checkManageButtonEnabled() {
-    final prevTag = widget.manageUtxoTag?.tag ?? '';
+    final prevTag = widget.manageUtxoTag?.name ?? '';
     final prevColorIndex = widget.manageUtxoTag?.colorIndex ?? 0;
     setState(() {
-      _isManageButtonEnabled = _updateTag.isNotEmpty &&
-              _updateTag != prevTag &&
-              !_updateUtxoTags.any((tag) => tag.tag == _updateTag) ||
-          _updateTag == prevTag && _updateTagColorIndex != prevColorIndex;
+      _isManageButtonEnabled = _updateTagName.isNotEmpty &&
+              _updateTagName != prevTag &&
+              !_updateUtxoTags.any((tag) => tag.name == _updateTagName) ||
+          _updateTagName == prevTag && _updateTagColorIndex != prevColorIndex;
     });
   }
 
@@ -157,29 +159,33 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                       text: '완료',
                       onPressed: () {
                         _selectUtxo?.tags = _selectedTags;
-                        widget.onComplete.call(_updateUtxoTags, _selectUtxo);
+                        widget.onComplete
+                            .call(_updateUtxoTags, _manageUtxoTag, _selectUtxo);
                         Navigator.pop(context);
                       },
                     ),
                   } else if (_type == TagBottomSheetType.create) ...{
                     CustomAppbarButton(
-                      isActive: _updateTag.isNotEmpty &&
-                          !_updateUtxoTags.any((tag) => tag.tag == _updateTag),
+                      isActive: _updateTagName.isNotEmpty &&
+                          !_updateUtxoTags
+                              .any((tag) => tag.name == _updateTagName),
                       isActivePrimaryColor: false,
                       text: '완료',
                       onPressed: () {
+                        final createUtxoTag = UtxoTag(
+                          name: _updateTagName,
+                          colorIndex: _updateTagColorIndex,
+                        );
+
                         setState(() {
-                          final createUtxoTag = UtxoTag(
-                            tag: _updateTag,
-                            colorIndex: _updateTagColorIndex,
-                          );
                           _updateUtxoTags.insert(0, createUtxoTag);
                           _isSelectButtonEnabled = true;
                         });
                         if (_isTwoDepth) {
                           _resetCreate();
                         } else {
-                          widget.onComplete(_updateUtxoTags, null);
+                          widget.onComplete(
+                              _updateUtxoTags, createUtxoTag, _selectUtxo);
                           Navigator.pop(context);
                         }
                       },
@@ -196,10 +202,16 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
 
                           _updateUtxoTags[tagIndex] = _updateUtxoTags[tagIndex]
                               .copyWith(
-                                  tag: _updateTag,
+                                  name: _updateTagName,
                                   colorIndex: _updateTagColorIndex);
 
-                          widget.onComplete(_updateUtxoTags, null);
+                          final updateUtxoTag = _manageUtxoTag?.copyWith(
+                            name: _updateTagName,
+                            colorIndex: _updateTagColorIndex,
+                          );
+
+                          widget.onComplete(
+                              _updateUtxoTags, updateUtxoTag, _selectUtxo);
                           Navigator.pop(context);
                         }
                       },
@@ -224,7 +236,7 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                         (index) => IntrinsicWidth(
                           child: GestureDetector(
                             onTap: () {
-                              final tag = _updateUtxoTags[index].tag;
+                              final tag = _updateUtxoTags[index].name;
                               setState(() {
                                 if (_selectedTags.contains(tag)) {
                                   _selectedTags.remove(tag);
@@ -242,10 +254,10 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                               });
                             },
                             child: CustomTagChip(
-                              tag: _updateUtxoTags[index].tag,
+                              tag: _updateUtxoTags[index].name,
                               colorIndex: _updateUtxoTags[index].colorIndex,
                               type: _selectedTags
-                                      .contains(_updateUtxoTags[index].tag)
+                                      .contains(_updateUtxoTags[index].name)
                                   ? CustomTagChipType.select
                                   : CustomTagChipType.disable,
                             ),
@@ -292,13 +304,13 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                             controller: _controller,
                             focusNode: _focusNode,
                             onChanged: (text) {
-                              _updateTag =
+                              _updateTagName =
                                   text.replaceAll('#', '').replaceAll(' ', '');
                               if (text.isEmpty) {
                                 _controller.text = '#';
                               } else if (text.substring(1).contains('#') ||
                                   text.substring(1).contains(' ')) {
-                                _controller.text = '#$_updateTag';
+                                _controller.text = '#$_updateTagName';
                               }
 
                               if (_type == TagBottomSheetType.manage) {
@@ -309,7 +321,7 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                             },
                             onClear: () {
                               setState(() {
-                                _updateTag = '';
+                                _updateTagName = '';
                                 _controller.text = '#';
                               });
                             },

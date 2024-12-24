@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
+import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/screens/wallet_list_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
@@ -64,6 +65,9 @@ class AppStateModel extends ChangeNotifier {
   List<WalletListItemBase> _walletItemList = [];
   List<WalletListItemBase> get walletItemList => _walletItemList;
 
+  List<UtxoTag> _utxoTagList = [];
+  List<UtxoTag> get utxoTagList => _utxoTagList;
+
   // 애니메이션이 동작해야하면 해당하는 ReturnPageResult.<add/update>, 아니면 ReturnPageResult.none을 담습니다.
   List<ReturnPageResult> _animatedWalletFlags = [];
   List<ReturnPageResult> get animatedWalletFlags => _animatedWalletFlags;
@@ -83,7 +87,30 @@ class AppStateModel extends ChangeNotifier {
     // TODO:
     //_walletDataManager.getAll();
     //_walletDataManager.loadFromDB();
+    loadUtxoTagList();
     initWallet();
+  }
+
+  void loadUtxoTagList() async {
+    _utxoTagList = await _walletDataManager.loadUtxoTagList();
+    notifyListeners();
+  }
+
+  void addUtxoTag(String name, int colorIndex) {
+    _walletDataManager.addUtxoTag(name, colorIndex);
+    loadUtxoTagList();
+  }
+
+  void updateUtxoTag(String originName, String? changeName, int colorIndex,
+      List<String> utxoIdList) {
+    _walletDataManager.updateUtxoTag(
+        originName, changeName, colorIndex, utxoIdList);
+    loadUtxoTagList();
+  }
+
+  void deleteUtxoTag(String name) {
+    _walletDataManager.deleteUtxoTag(name);
+    loadUtxoTagList();
   }
 
   /// [_subStateModel]의 변동사항 업데이트

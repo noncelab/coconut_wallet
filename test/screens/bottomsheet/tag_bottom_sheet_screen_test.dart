@@ -14,9 +14,9 @@ void main() {
 
     setUp(() {
       mockTags = [
-        const UtxoTag(tag: 'kyc', colorIndex: 0),
-        const UtxoTag(tag: 'coconut', colorIndex: 2),
-        const UtxoTag(tag: 'strike', colorIndex: 7),
+        const UtxoTag(name: 'kyc', colorIndex: 0),
+        const UtxoTag(name: 'coconut', colorIndex: 2),
+        const UtxoTag(name: 'strike', colorIndex: 7),
       ];
       mockUtxo = UTXO(
         'timestamp',
@@ -25,6 +25,7 @@ void main() {
         'address',
         'derivationPath',
         'txHash',
+        1,
         tags: const ['kyc', 'coconut'],
       );
     });
@@ -38,7 +39,7 @@ void main() {
           type: TagBottomSheetType.select,
           utxoTags: mockTags,
           selectUtxo: mockUtxo,
-          onComplete: (_, utxo) {
+          onComplete: (_, utxoTag, utxo) {
             resultUtxo = utxo;
           },
         ),
@@ -84,7 +85,7 @@ void main() {
         home: TagBottomSheetContainer(
           type: TagBottomSheetType.create,
           utxoTags: mockTags,
-          onComplete: (utxoTags, _) {
+          onComplete: (utxoTags, utxoTag, _) {
             resultTags = utxoTags;
           },
         ),
@@ -117,7 +118,7 @@ void main() {
       // onComplete 콜백 결과 검증
       expect(resultTags, isNotNull);
       final newTag = resultTags!.firstWhere(
-        (tag) => tag.tag == 'keystone',
+        (tag) => tag.name == 'keystone',
         orElse: () => throw Exception('Tag "keystone" not found'),
       );
 
@@ -134,7 +135,7 @@ void main() {
           type: TagBottomSheetType.manage,
           utxoTags: mockTags,
           manageUtxoTag: mockTags[2],
-          onComplete: (utxoTags, _) {
+          onComplete: (utxoTags, utxoTag, _) {
             resultTags = utxoTags;
           },
         ),
@@ -169,7 +170,7 @@ void main() {
       // onComplete 콜백 결과 검증
       expect(resultTags, isNotNull);
       final newTag = resultTags!.firstWhere(
-        (tag) => tag.tag == 'nunchuk',
+        (tag) => tag.name == 'nunchuk',
         orElse: () => throw Exception('Tag "nunchuk" not found'),
       );
 

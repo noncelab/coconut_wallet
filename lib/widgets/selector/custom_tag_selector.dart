@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 class CustomTagSelector extends StatefulWidget {
   final List<UtxoTag> tags;
   final Function(UtxoTag) onSelectedTag;
+  final String? changeSelectedTag;
   const CustomTagSelector({
     super.key,
     required this.tags,
     required this.onSelectedTag,
+    this.changeSelectedTag,
   });
 
   @override
@@ -20,6 +22,11 @@ class _CustomTagSelectorState extends State<CustomTagSelector> {
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedTag.isNotEmpty && _selectedTag != widget.changeSelectedTag) {
+      _selectedTag = widget.changeSelectedTag ?? '';
+      setState(() {});
+    }
+
     return ListView.builder(
       itemCount: widget.tags.length,
       itemBuilder: (BuildContext context, int index) {
@@ -27,15 +34,15 @@ class _CustomTagSelectorState extends State<CustomTagSelector> {
         return GestureDetector(
           onTap: () {
             setState(() {
-              _selectedTag = utxoTag.tag;
+              _selectedTag = utxoTag.name;
             });
             widget.onSelectedTag.call(utxoTag);
           },
           child: CustomTagSelectorItem(
-            tag: utxoTag.tag,
+            tag: utxoTag.name,
             colorIndex: utxoTag.colorIndex,
-            usedCount: utxoTag.usedCount,
-            isSelected: _selectedTag == utxoTag.tag,
+            usedCount: utxoTag.utxoIdList?.length ?? 0,
+            isSelected: _selectedTag == utxoTag.name,
           ),
         );
       },

@@ -196,16 +196,17 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         backgroundColor: MyColors.black,
                         builder: (context) => TagBottomSheetContainer(
                           type: TagBottomSheetType.select,
-                          onComplete: (_, utxo) => debugPrint(utxo.toString()),
+                          onComplete: (_, utxoTag, utxo) =>
+                              debugPrint(utxo.toString()),
                           utxoTags: const [
-                            UtxoTag(tag: 'kyc', colorIndex: 0),
-                            UtxoTag(tag: 'coconut', colorIndex: 2),
-                            UtxoTag(tag: 'strike', colorIndex: 7),
-                            UtxoTag(tag: '1', colorIndex: 7),
-                            UtxoTag(tag: '2', colorIndex: 7),
-                            UtxoTag(tag: '3', colorIndex: 7),
-                            UtxoTag(tag: '4', colorIndex: 7),
-                            UtxoTag(tag: '5', colorIndex: 7),
+                            UtxoTag(name: 'kyc', colorIndex: 0),
+                            UtxoTag(name: 'coconut', colorIndex: 2),
+                            UtxoTag(name: 'strike', colorIndex: 7),
+                            UtxoTag(name: '1', colorIndex: 7),
+                            UtxoTag(name: '2', colorIndex: 7),
+                            UtxoTag(name: '3', colorIndex: 7),
+                            UtxoTag(name: '4', colorIndex: 7),
+                            UtxoTag(name: '5', colorIndex: 7),
                           ],
                         ),
                       );

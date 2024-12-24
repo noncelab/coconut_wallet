@@ -8,8 +8,10 @@ import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/manager/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/model/manager/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
+import 'package:coconut_wallet/model/manager/converter/utxo_tag_converter.dart';
 import 'package:coconut_wallet/model/manager/realm/model/coconut_wallet_data.dart';
 import 'package:coconut_wallet/model/manager/realm/realm_id_service.dart';
+import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
@@ -32,15 +34,23 @@ class WalletDataManager {
   List<WalletListItemBase>? _walletList;
   get walletList => _walletList;
 
+  List<UtxoTag> _utxoTagList = [];
+  // get utxoTagList => _utxoTagList;
+
   WalletDataManager._internal();
 
   void init() {
-    var config = Configuration.local([
-      RealmWalletBase.schema,
-      RealmMultisigWallet.schema,
-      RealmTransaction.schema,
-      RealmIntegerId.schema
-    ]);
+    var config = Configuration.local(
+      [
+        RealmWalletBase.schema,
+        RealmMultisigWallet.schema,
+        RealmTransaction.schema,
+        RealmIntegerId.schema,
+        RealmUtxoTag.schema,
+        RealmUtxoId.schema,
+      ],
+      schemaVersion: 1,
+    );
     _realm = Realm(config);
   }
 
@@ -337,6 +347,68 @@ class WalletDataManager {
     _walletList!.removeAt(index);
   }
 
+  Future<List<UtxoTag>> loadUtxoTagList() async {
+    _utxoTagList = [];
+    final utxoList =
+        _realm.all<RealmUtxoTag>().query('TRUEPREDICATE SORT(createAt DESC)');
+    for (var i = 0; i < utxoList.length; i++) {
+      _utxoTagList.add(mapRealmUtxoTagToUtxoTag(utxoList[i]));
+    }
+
+    return _utxoTagList;
+  }
+
+  void addUtxoTag(String name, int colorIndex) {
+    final utxoTag = RealmUtxoTag(name, colorIndex, DateTime.now());
+    _realm.write(() {
+      _realm.add(utxoTag);
+    });
+  }
+
+  void deleteUtxoTag(String name) {
+    final tags = _realm.query<RealmUtxoTag>("name == '$name'");
+
+    if (tags.isEmpty) return;
+
+    _realm.write(() {
+      _realm.delete(tags.first);
+    });
+  }
+
+  void updateUtxoTag(String originName, String? changeName, int colorIndex,
+      List<String> utxoIdList) {
+    final tags = _realm.query<RealmUtxoTag>("name == '$originName'");
+
+    if (tags.isEmpty) {
+      return;
+    }
+
+    final utxoTag = tags.first;
+    // 삭제시 utxoTag는 더이상 사용할 수 없게됨
+    final createAt = utxoTag.createAt.copyWith();
+
+    // name primaryKey 이므로 변경시 삭제후 다시 추가
+    if (changeName != null && changeName != originName) {
+      deleteUtxoTag(originName);
+
+      _realm.write(() {
+        _realm.add(RealmUtxoTag(
+          changeName,
+          colorIndex,
+          createAt,
+          utxoIdList: utxoIdList.map((id) => mapStringToRealmUtxoId(id)),
+        ));
+      });
+    } else {
+      _realm.write(() {
+        utxoTag.colorIndex = colorIndex;
+        utxoTag.utxoIdList.clear();
+        utxoTag.utxoIdList
+            .addAll(utxoIdList.map((id) => mapStringToRealmUtxoId(id)));
+      });
+    }
+  }
+
   int _getNextWalletId() {
     var id = _sharedPrefs.getInt(nextIdField);
     if (id == 0) {
@@ -367,7 +439,8 @@ class WalletDataManager {
       _realm.deleteAll<RealmWalletBase>();
       _realm.deleteAll<RealmMultisigWallet>();
       _realm.deleteAll<RealmTransaction>();
-      // TODO: tag 추가
+      _realm.deleteAll<RealmUtxoTag>();
+      _realm.deleteAll<RealmUtxoId>();
     });
 
     _walletList = [];

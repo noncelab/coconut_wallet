@@ -85,12 +85,14 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
           isChange: changeAndAccountIndex[changeField]! == 1);
 
       utxos.add(model.UTXO(
-          element.timestamp.toString(),
-          element.blockHeight.toString(),
-          element.amount,
-          ownedAddress,
-          element.derivationPath,
-          element.transactionHash));
+        element.timestamp.toString(),
+        element.blockHeight.toString(),
+        element.amount,
+        ownedAddress,
+        element.derivationPath,
+        element.transactionHash,
+        element.index,
+      ));
     }
     return utxos;
   }

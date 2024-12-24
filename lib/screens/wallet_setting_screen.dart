@@ -95,7 +95,6 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
     final model = Provider.of<AppStateModel>(context, listen: false);
     final singlesigListItem = model.getWalletById(widget.id);
 
-    // TODO: SingleSignatureWallet
     final singlesigWallet =
         singlesigListItem.walletBase as SingleSignatureWallet;
 
@@ -136,27 +135,6 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 24),
                             child: Column(
                               children: [
-                                /*InformationRowItem(
-                                      label: '잔액 상세 보기',
-                                      showIcon: true,
-                                      onPressed: () {
-                                        if (model.walletInitState ==
-                                            WalletInitState.processing) {
-                                          CustomToast.showToast(
-                                              context: context,
-                                              text:
-                                                  "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
-                                          return;
-                                        }
-                                        _removeTooltip();
-                                        Navigator.pushNamed(
-                                            context, '/utxo-list',
-                                            arguments: {'id': widget.id});
-                                      },
-                                    ),
-                                    const Divider(
-                                        color: MyColors.transparentWhite_12,
-                                        height: 1),*/
                                 InformationRowItem(
                                   label: '전체 주소 보기',
                                   showIcon: true,

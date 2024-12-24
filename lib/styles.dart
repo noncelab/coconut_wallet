@@ -8,6 +8,7 @@ abstract class MyColors {
   static const transparentBlack = Color.fromRGBO(0, 0, 0, 0.7);
   static const transparentBlack_03 = Color.fromRGBO(0, 0, 0, 0.03);
   static const grey = Color.fromRGBO(48, 47, 52, 1);
+  static const gray200 = Color(0xFFEFEFEF);
   static const white = Color.fromRGBO(255, 255, 255, 1);
   static const transparentWhite = Color.fromRGBO(255, 255, 255, 0.2);
   static const transparentWhite_06 = Color.fromRGBO(255, 255, 255, 0.06);

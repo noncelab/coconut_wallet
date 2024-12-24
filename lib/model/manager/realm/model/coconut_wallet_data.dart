@@ -52,3 +52,18 @@ class _RealmIntegerId {
   late String key; // "RealmTransaction"처럼 테이블 이름
   late int value; // 마지막으로 사용한 id
 }
+
+@RealmModel()
+class _RealmUtxoTag {
+  @PrimaryKey()
+  late String name; // tag는 중복이 없음므로 id로 사용
+  late int colorIndex;
+  late List<_RealmUtxoId> utxoIdList;
+  late DateTime createAt;
+}
+
+@RealmModel()
+class _RealmUtxoId {
+  @PrimaryKey()
+  late String id;
+}
