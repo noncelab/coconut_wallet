@@ -138,6 +138,7 @@ class CustomAppBar {
     VoidCallback? onBackPressed,
     bool isActive = true,
     bool isBottom = false,
+    String nextButtonTitle = '다음',
   }) {
     return AppBar(
         title: Text(title),
@@ -175,7 +176,7 @@ class CustomAppBar {
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             child: CustomAppbarButton(
               isActive: isActive,
-              text: '다음',
+              text: nextButtonTitle,
               onPressed: onNextPressed,
             ),
           ),

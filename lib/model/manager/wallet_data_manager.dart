@@ -1,5 +1,3 @@
-import 'dart:isolate';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/data/multisig_signer.dart';
