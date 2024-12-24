@@ -36,7 +36,6 @@ class UTXOItemCard extends StatelessWidget {
 
     return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             color: MyColors.transparentWhite_12),
@@ -54,7 +53,14 @@ class UTXOItemCard extends StatelessWidget {
                     const SizedBox(
                       width: 8,
                     ),
-                    const Text('|'),
+                    Text(
+                      '|',
+                      style: Styles.caption.merge(
+                        const TextStyle(
+                          color: MyColors.transparentWhite_40,
+                        ),
+                      ),
+                    ),
                     const SizedBox(
                       width: 8,
                     ),
