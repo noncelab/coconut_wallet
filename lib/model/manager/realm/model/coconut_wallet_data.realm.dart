@@ -285,6 +285,7 @@ class RealmTransaction extends _RealmTransaction
     int? fee,
     Iterable<String> inputAddressList = const [],
     Iterable<String> outputAddressList = const [],
+    String? note,
   }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'transactionHash', transactionHash);
@@ -299,6 +300,7 @@ class RealmTransaction extends _RealmTransaction
         this, 'inputAddressList', RealmList<String>(inputAddressList));
     RealmObjectBase.set<RealmList<String>>(
         this, 'outputAddressList', RealmList<String>(outputAddressList));
+    RealmObjectBase.set(this, 'note', note);
   }
 
   RealmTransaction._();
@@ -375,6 +377,11 @@ class RealmTransaction extends _RealmTransaction
       throw RealmUnsupportedSetError();
 
   @override
+  String? get note => RealmObjectBase.get<String>(this, 'note') as String?;
+  @override
+  set note(String? value) => RealmObjectBase.set(this, 'note', value);
+
+  @override
   Stream<RealmObjectChanges<RealmTransaction>> get changes =>
       RealmObjectBase.getChanges<RealmTransaction>(this);
 
@@ -400,6 +407,7 @@ class RealmTransaction extends _RealmTransaction
       'fee': fee.toEJson(),
       'inputAddressList': inputAddressList.toEJson(),
       'outputAddressList': outputAddressList.toEJson(),
+      'note': note.toEJson(),
     };
   }
 
@@ -423,6 +431,7 @@ class RealmTransaction extends _RealmTransaction
           fee: fromEJson(ejson['fee']),
           inputAddressList: fromEJson(ejson['inputAddressList']),
           outputAddressList: fromEJson(ejson['outputAddressList']),
+          note: fromEJson(ejson['note']),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -437,7 +446,8 @@ class RealmTransaction extends _RealmTransaction
       SchemaProperty('transactionHash', RealmPropertyType.string),
       SchemaProperty('walletBase', RealmPropertyType.object,
           optional: true, linkTarget: 'RealmWalletBase'),
-      SchemaProperty('timestamp', RealmPropertyType.timestamp, optional: true),
+      SchemaProperty('timestamp', RealmPropertyType.timestamp,
+          optional: true, indexType: RealmIndexType.regular),
       SchemaProperty('blockHeight', RealmPropertyType.int, optional: true),
       SchemaProperty('transferType', RealmPropertyType.string, optional: true),
       SchemaProperty('memo', RealmPropertyType.string, optional: true),
@@ -447,6 +457,7 @@ class RealmTransaction extends _RealmTransaction
           collectionType: RealmCollectionType.list),
       SchemaProperty('outputAddressList', RealmPropertyType.string,
           collectionType: RealmCollectionType.list),
+      SchemaProperty('note', RealmPropertyType.string, optional: true),
     ]);
   }();
 
