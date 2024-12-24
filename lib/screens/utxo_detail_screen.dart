@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
@@ -282,7 +283,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             label: '블록 번호',
                             subLabel: '멤풀 보기',
                             onSubLabelClicked: () => launchUrl(Uri.parse(
-                                "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+                                "${PowWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
                             value: Text(
                               widget.utxo.blockHeight,
                               style: Styles.body2Number
@@ -425,6 +426,7 @@ class InputOutputDetailRow extends StatelessWidget {
   final int balance;
   final InputOutputRowType rowType;
   final bool isCurrentAddress;
+  final TransactionStatus? transactionStatus;
 
   const InputOutputDetailRow({
     super.key,
@@ -432,10 +434,118 @@ class InputOutputDetailRow extends StatelessWidget {
     required this.balance,
     required this.rowType,
     this.isCurrentAddress = false,
+    this.transactionStatus,
   });
 
   @override
   Widget build(BuildContext context) {
+    Color leftItemColor = MyColors.white;
+    Color rightItemColor = MyColors.white;
+    String assetAddress = 'assets/svg/circle-arrow-right-white.svg';
+
+    if (transactionStatus != null) {
+      /// transactionStatus가 null이 아니면 거래 자세히 보기 화면
+      if (transactionStatus == TransactionStatus.received ||
+          transactionStatus == TransactionStatus.receiving) {
+        /// transaction 받기 결과
+        if (rowType == InputOutputRowType.input) {
+          /// 인풋
+          if (isCurrentAddress) {
+            /// 현재 주소인 경우
+            leftItemColor = rightItemColor = MyColors.white;
+            assetAddress = 'assets/svg/circle-arrow-right-white.svg';
+          } else {
+            /// 현재 주소가 아닌 경우
+            leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          }
+        } else if (rowType == InputOutputRowType.output) {
+          /// 아웃풋
+          if (isCurrentAddress) {
+            /// 현재 주소인 경우
+            leftItemColor = MyColors.white;
+            rightItemColor = MyColors.secondary;
+            assetAddress = 'assets/svg/circle-arrow-right-blue.svg';
+          } else {
+            /// 현재 주소가 아닌 경우
+            leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          }
+        } else {
+          /// 수수료
+          leftItemColor = rightItemColor = MyColors.white;
+          assetAddress = 'assets/svg/circle-pick-white.svg';
+        }
+      } else if (transactionStatus == TransactionStatus.sending ||
+          transactionStatus == TransactionStatus.sent) {
+        /// transaction 보내기 결과
+        if (rowType == InputOutputRowType.input) {
+          /// 안풋
+          leftItemColor = MyColors.white;
+          rightItemColor = MyColors.primary;
+          assetAddress = 'assets/svg/circle-arrow-right-green.svg';
+        } else if (rowType == InputOutputRowType.output) {
+          /// 아웃풋
+          if (isCurrentAddress) {
+            /// 현재 주소인 경우
+            leftItemColor = MyColors.white;
+            rightItemColor = MyColors.white;
+            assetAddress = 'assets/svg/circle-arrow-right-white.svg';
+          } else {
+            /// 현재 주소가 아닌 경우
+            leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          }
+        } else {
+          /// 수수료
+          leftItemColor = rightItemColor = MyColors.white;
+          assetAddress = 'assets/svg/circle-pick-white.svg';
+        }
+      } else if (transactionStatus == TransactionStatus.self ||
+          transactionStatus == TransactionStatus.selfsending) {
+        if (rowType == InputOutputRowType.input) {
+          if (isCurrentAddress) {
+            leftItemColor = MyColors.white;
+            rightItemColor = MyColors.primary;
+            assetAddress = 'assets/svg/circle-arrow-right-green.svg';
+          } else {
+            leftItemColor = MyColors.transparentWhite_40;
+            rightItemColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          }
+        } else if (rowType == InputOutputRowType.output) {
+          leftItemColor = MyColors.transparentWhite_40;
+          rightItemColor = MyColors.transparentWhite_40;
+          assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+        } else {
+          leftItemColor = MyColors.white;
+          rightItemColor = MyColors.white;
+          assetAddress = 'assets/svg/circle-pick-white.svg';
+        }
+      }
+    } else {
+      /// transactionStatus가 null이면 UTXO 상세 화면
+      if (rowType == InputOutputRowType.input) {
+        /// 인풋
+        leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+        assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+      } else if (rowType == InputOutputRowType.output) {
+        /// 아웃풋
+        if (isCurrentAddress) {
+          /// 현재 주소인 경우
+          leftItemColor = rightItemColor = MyColors.white;
+        } else {
+          /// 현재 주소가 아닌 경우
+          leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+          assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+        }
+      } else {
+        /// 수수료
+        leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+        assetAddress = 'assets/svg/circle-pick-transparent.svg';
+      }
+    }
+
     return Row(
       children: [
         Expanded(
@@ -444,9 +554,7 @@ class InputOutputDetailRow extends StatelessWidget {
             TextUtils.truncateNameMax19(address),
             style: Styles.body2Number.merge(
               TextStyle(
-                color: isCurrentAddress
-                    ? MyColors.white
-                    : MyColors.transparentWhite_40,
+                color: leftItemColor,
                 fontSize: 14,
                 height: 16 / 14,
               ),
@@ -464,16 +572,10 @@ class InputOutputDetailRow extends StatelessWidget {
                 Row(
                   children: [
                     SvgPicture.asset(
-                        (rowType == InputOutputRowType.output)
-                            ? 'assets/svg/circle-arrow-right.svg'
-                            : 'assets/svg/circle-pick.svg',
-                        width: 12,
-                        height: 12,
-                        colorFilter: isCurrentAddress
-                            ? const ColorFilter.mode(
-                                MyColors.white, BlendMode.srcIn)
-                            : const ColorFilter.mode(
-                                MyColors.transparentWhite_40, BlendMode.srcIn)),
+                      assetAddress,
+                      width: 16,
+                      height: 12,
+                    ),
                     const SizedBox(width: 6),
                   ],
                 ),
@@ -481,9 +583,7 @@ class InputOutputDetailRow extends StatelessWidget {
                 '${satoshiToBitcoinString(balance).normalizeTo11Characters()} BTC',
                 style: Styles.body2Number.merge(
                   TextStyle(
-                    color: isCurrentAddress
-                        ? MyColors.white
-                        : MyColors.transparentWhite_40,
+                    color: rightItemColor,
                     fontSize: 14,
                     height: 16 / 14,
                   ),
@@ -494,12 +594,9 @@ class InputOutputDetailRow extends StatelessWidget {
                   children: [
                     const SizedBox(width: 6),
                     SvgPicture.asset(
-                      'assets/svg/circle-arrow-right.svg',
-                      colorFilter: isCurrentAddress
-                          ? const ColorFilter.mode(
-                              MyColors.white, BlendMode.srcIn)
-                          : const ColorFilter.mode(
-                              MyColors.transparentWhite_40, BlendMode.srcIn),
+                      assetAddress,
+                      width: 16,
+                      height: 12,
                     ),
                   ],
                 )
@@ -512,3 +609,19 @@ class InputOutputDetailRow extends StatelessWidget {
 }
 
 enum InputOutputRowType { input, output, fee }
+
+enum InputOutputDetailRowStatus {
+  /// input, output 컬럼의 색상구분을 편하게 하기 위해 enum으로 관리하였습니다.
+  txInputSend,
+  txInputReceive,
+  txOutputSend,
+  txOutputReceive,
+  txOutputFee,
+  txInputReceiveCurrentAddress,
+  txOutputSendCurrentAddress,
+  txOutputReceiveCurrentAddress,
+  utxoInput,
+  utxoOutput,
+  utxoOutputFee,
+  utxoOutputCurrentAddress,
+}

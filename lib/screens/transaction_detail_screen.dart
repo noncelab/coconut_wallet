@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/enums.dart';
@@ -36,15 +37,18 @@ class TransactionDetailScreen extends StatefulWidget {
 
 class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   late AddressBook _addressBook;
-  late TransactionStatus status;
   int? _currentBlockHeight;
+  late bool canSeeMoreInputs;
+  late bool canSeeMoreOutputs;
+  int itemsToShowInput = 5;
+  int itemsToShowOutput = 5;
 
   @override
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
     _addressBook = model.getWalletById(widget.id).walletBase.addressBook;
-    status = TransactionUtil.getStatus(widget.tx) ?? TransactionStatus.sent;
+    _initSeeMoreButtons();
     model.getCurrentBlockHeight().then((value) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {
@@ -52,6 +56,33 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         });
       });
     });
+  }
+
+  void _initSeeMoreButtons() {
+    int initialInputMaxCount = (widget.status == TransactionStatus.sending ||
+            widget.status == TransactionStatus.sent ||
+            widget.status == TransactionStatus.self ||
+            widget.status == TransactionStatus.selfsending)
+        ? 5
+        : 2;
+    int initialOutputMaxCount = (widget.status == TransactionStatus.sending ||
+            widget.status == TransactionStatus.sent ||
+            widget.status == TransactionStatus.self ||
+            widget.status == TransactionStatus.selfsending)
+        ? 3
+        : 4;
+    if (widget.tx.inputAddressList.length <= initialInputMaxCount) {
+      canSeeMoreInputs = false;
+      itemsToShowInput = widget.tx.inputAddressList.length;
+    } else {
+      canSeeMoreInputs = true;
+    }
+    if (widget.tx.outputAddressList.length <= initialOutputMaxCount) {
+      canSeeMoreOutputs = false;
+      itemsToShowOutput = widget.tx.outputAddressList.length;
+    } else {
+      canSeeMoreOutputs = true;
+    }
   }
 
   Widget _amountText() {
@@ -194,63 +225,96 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         color: MyColors.transparentWhite_12),
-                    child: Column(children: [
-                      for (var inputAddress in widget.tx.inputAddressList) ...{
-                        InputOutputDetailRow(
-                          address: inputAddress.address,
-                          balance: 123123,
-                          rowType: InputOutputRowType.input,
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: itemsToShowInput,
+                        padding: EdgeInsets.zero,
+                        itemBuilder: (context, index) {
+                          return Column(
+                            children: [
+                              InputOutputDetailRow(
+                                address:
+                                    widget.tx.inputAddressList[index].address,
+                                balance:
+                                    widget.tx.inputAddressList[index].amount,
+                                rowType: InputOutputRowType.input,
+                                isCurrentAddress: _addressBook.contains(
+                                    widget.tx.inputAddressList[index].address),
+                                transactionStatus: widget.status,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          );
+                        },
+                      ),
+                      Visibility(
+                        visible: canSeeMoreInputs,
+                        child: Center(
+                          child: CustomUnderlinedButton(
+                            text: '더보기',
+                            onTap: () {
+                              setState(() {
+                                itemsToShowInput = (itemsToShowInput + 5).clamp(
+                                    0,
+                                    widget.tx.inputAddressList
+                                        .length); // 최대 길이를 초과하지 않도록 제한
+                                if (itemsToShowInput ==
+                                    widget.tx.inputAddressList.length) {
+                                  canSeeMoreInputs = false;
+                                }
+                              });
+                            },
+                            fontSize: 12,
+                            lineHeight: 14,
+                          ),
                         ),
-                      },
-                      const SizedBox(height: 8),
+                      ),
+                      SizedBox(height: canSeeMoreInputs ? 8 : 16),
                       InputOutputDetailRow(
                         address: '수수료',
                         balance: widget.tx.fee!,
                         rowType: InputOutputRowType.fee,
+                        transactionStatus: widget.status,
                       ),
-                      // const SizedBox(height: 8),
-                      // const InputOutputDetailRow(
-                      //   address: 'bcrtTestDataTestDataTestData',
-                      //   balance: 4001234,
-                      //   rowType: InputOutputRowType.input,
-                      // ),
-                      // const SizedBox(height: 8),
-                      // const InputOutputDetailRow(
-                      //   address: 'bcrtTestDataTestDataTestData',
-                      //   balance: 4001234,
-                      //   rowType: InputOutputRowType.input,
-                      // ),
-                      // const SizedBox(height: 8),
-                      // Text(
-                      //   '...',
-                      //   style: Styles.caption.merge(const TextStyle(
-                      //       color: MyColors.transparentWhite_40, height: 8 / 12)),
-                      // ),
-                      // const SizedBox(height: 8),
-                      // const InputOutputDetailRow(
-                      //   address: '수수료',
-                      //   balance: 142,
-                      //   rowType: InputOutputRowType.fee,
-                      // ),
-                      // const SizedBox(height: 8),
-                      // const InputOutputDetailRow(
-                      //   address: 'bcrtTestDataTestDataTestData',
-                      //   balance: 4001234,
-                      //   rowType: InputOutputRowType.output,
-                      //   isCurrentAddress: true,
-                      // ),
-                      // const SizedBox(height: 8),
-                      // const InputOutputDetailRow(
-                      //   address: 'bcrtTestDataTestDataTestData',
-                      //   balance: 4001234,
-                      //   rowType: InputOutputRowType.output,
-                      // ),
-                      // const SizedBox(height: 8),
-                      // Text(
-                      //   '...',
-                      //   style: Styles.caption.merge(const TextStyle(
-                      //       color: MyColors.transparentWhite_40, height: 8 / 12)),
-                      // ),
+                      const SizedBox(
+                        height: 8,
+                      ),
+                      for (var inputAddress in widget.tx.outputAddressList) ...{
+                        InputOutputDetailRow(
+                          address: inputAddress.address,
+                          balance: inputAddress.amount,
+                          rowType: InputOutputRowType.output,
+                          isCurrentAddress:
+                              _addressBook.contains(inputAddress.address),
+                          transactionStatus: widget.status,
+                        ),
+                        const SizedBox(height: 8),
+                      },
+                      Visibility(
+                        visible: canSeeMoreOutputs,
+                        child: Center(
+                          child: CustomUnderlinedButton(
+                            text: '더보기',
+                            onTap: () {
+                              setState(() {
+                                itemsToShowOutput = (itemsToShowOutput + 5)
+                                    .clamp(
+                                        0,
+                                        widget.tx.outputAddressList
+                                            .length); // 최대 길이를 초과하지 않도록 제한
+                                if (itemsToShowOutput ==
+                                    widget.tx.outputAddressList.length) {
+                                  canSeeMoreOutputs = false;
+                                }
+                              });
+                            },
+                            fontSize: 12,
+                            lineHeight: 14,
+                          ),
+                        ),
+                      ),
                     ]),
                   ),
                   const SizedBox(height: 12),
@@ -259,7 +323,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     subLabel: '멤풀 보기',
                     onSubLabelClicked: () {
                       launchUrl(Uri.parse(
-                          "${PowWalletApp.kMempoolHost}/tx/${widget.tx.transactionHash}"));
+                          "${PowWalletApp.kMempoolHost}/block/${widget.tx.blockHeight}"));
                     },
                     value: Text(
                       '${widget.tx.blockHeight.toString() ?? ''} (${_confirmedCountText()} 승인)',
