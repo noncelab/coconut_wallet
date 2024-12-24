@@ -11,7 +11,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/label_value.dart';
 import 'package:provider/provider.dart';
@@ -281,17 +280,29 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       const SizedBox(
                         height: 8,
                       ),
-                      for (var inputAddress in widget.tx.outputAddressList) ...{
-                        InputOutputDetailRow(
-                          address: inputAddress.address,
-                          balance: inputAddress.amount,
-                          rowType: InputOutputRowType.output,
-                          isCurrentAddress:
-                              _addressBook.contains(inputAddress.address),
-                          transactionStatus: widget.status,
-                        ),
-                        const SizedBox(height: 8),
-                      },
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: itemsToShowOutput,
+                        padding: EdgeInsets.zero,
+                        itemBuilder: (context, index) {
+                          return Column(
+                            children: [
+                              InputOutputDetailRow(
+                                address:
+                                    widget.tx.outputAddressList[index].address,
+                                balance:
+                                    widget.tx.outputAddressList[index].amount,
+                                rowType: InputOutputRowType.output,
+                                isCurrentAddress: _addressBook.contains(
+                                    widget.tx.outputAddressList[index].address),
+                                transactionStatus: widget.status,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          );
+                        },
+                      ),
                       Visibility(
                         visible: canSeeMoreOutputs,
                         child: Center(
@@ -357,13 +368,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         style: Styles.body1Number,
                       )),
                   TransactionDetailScreen._divider,
-                  // InfoRow(
-                  //     label: '보낸 주소',
-                  //     value: _addressText(widget.tx.inputAddressList)),
-                  // TransactionDetailScreen._divider,
-                  // InfoRow(
-                  //     label: '받은 주소',
-                  //     value: _addressText(widget.tx.outputAddressList)),
                   const SizedBox(
                     height: 40,
                   ),

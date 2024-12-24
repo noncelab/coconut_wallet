@@ -1,5 +1,7 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
+import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -10,18 +12,17 @@ import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/model/utxo.dart';
+import 'package:coconut_wallet/model/utxo.dart' as model;
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/label_value.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UtxoDetailScreen extends StatefulWidget {
-  final UTXO utxo;
+  final model.UTXO utxo;
 
   const UtxoDetailScreen({
     super.key,
@@ -35,6 +36,7 @@ class UtxoDetailScreen extends StatefulWidget {
 class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late List<String> _dateString;
   late bool _isUtxoTooltipVisible;
+  late Transfer transaction;
 
   final GlobalKey _utxoTooltipIconKey = GlobalKey();
   late RenderBox _utxoTooltipIconRenderBox;
@@ -44,11 +46,17 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   final String _utxoTip =
       'UTXO란 Unspent Tx Output을 줄인 말로\n아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요.\n지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
 
+  int initialInputMaxCount = 3;
+  int initialOutputMaxCount = 2;
   @override
   void initState() {
     super.initState();
     _dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp).split('|');
     _isUtxoTooltipVisible = false;
+
+    final model = Provider.of<AppStateModel>(context, listen: false);
+    transaction = model.getTransaction(widget.utxo.txHash);
+    _initMaxCount();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _utxoTooltipIconRenderBox =
@@ -57,6 +65,15 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           _utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
       _utxoTooltipIconSize = _utxoTooltipIconRenderBox.size;
     });
+  }
+
+  void _initMaxCount() {
+    if (transaction.inputAddressList.length <= initialInputMaxCount) {
+      initialInputMaxCount = transaction.inputAddressList.length;
+    }
+    if (transaction.outputAddressList.length <= initialOutputMaxCount) {
+      initialOutputMaxCount = transaction.outputAddressList.length;
+    }
   }
 
   @override
@@ -144,30 +161,41 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                           decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
                               color: MyColors.transparentWhite_12),
-                          child: Column(children: [
-                            const InputOutputDetailRow(
-                              address: 'bcrtTestDataTestDataTestDataTestData',
-                              balance: 4001234,
-                              rowType: InputOutputRowType.input,
+                          child:
+                              Column(mainAxisSize: MainAxisSize.min, children: [
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: initialInputMaxCount,
+                              padding: EdgeInsets.zero,
+                              itemBuilder: (context, index) {
+                                return Column(
+                                  children: [
+                                    InputOutputDetailRow(
+                                      address: transaction
+                                          .inputAddressList[index].address,
+                                      balance: transaction
+                                          .inputAddressList[index].amount,
+                                      rowType: InputOutputRowType.input,
+                                      isCurrentAddress: transaction
+                                              .inputAddressList[index]
+                                              .address ==
+                                          widget.utxo.to,
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+                                );
+                              },
                             ),
-                            const SizedBox(height: 8),
-                            const InputOutputDetailRow(
-                              address: 'bcrtTestDataTestDataTestDataTestData',
-                              balance: 4001234,
-                              rowType: InputOutputRowType.input,
-                            ),
-                            const SizedBox(height: 8),
-                            const InputOutputDetailRow(
-                              address: 'bcrtTestDataTestDataTestDataTestData',
-                              balance: 4001234,
-                              rowType: InputOutputRowType.input,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '...',
-                              style: Styles.caption.merge(const TextStyle(
-                                  color: MyColors.transparentWhite_40,
-                                  height: 8 / 12)),
+                            Visibility(
+                              visible: transaction.inputAddressList.length >
+                                  initialInputMaxCount,
+                              child: Text(
+                                '...',
+                                style: Styles.caption.merge(const TextStyle(
+                                    color: MyColors.transparentWhite_40,
+                                    height: 8 / 12)),
+                              ),
                             ),
                             const SizedBox(height: 8),
                             const InputOutputDetailRow(
@@ -176,25 +204,39 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                               rowType: InputOutputRowType.fee,
                             ),
                             const SizedBox(height: 8),
-                            const InputOutputDetailRow(
-                              address: 'bcrtTestDataTestDataTestDataTestData',
-                              balance: 4001234,
-                              rowType: InputOutputRowType.output,
-                              isCurrentAddress: true,
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: initialOutputMaxCount,
+                              padding: EdgeInsets.zero,
+                              itemBuilder: (context, index) {
+                                return Column(
+                                  children: [
+                                    InputOutputDetailRow(
+                                      address: transaction
+                                          .outputAddressList[index].address,
+                                      balance: transaction
+                                          .outputAddressList[index].amount,
+                                      rowType: InputOutputRowType.output,
+                                      isCurrentAddress: transaction
+                                              .outputAddressList[index]
+                                              .address ==
+                                          widget.utxo.to,
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+                                );
+                              },
                             ),
-                            const SizedBox(height: 8),
-                            const InputOutputDetailRow(
-                              address:
-                                  'bcrtTestDataTestDataTestDataTestDataTestData',
-                              balance: 4001234,
-                              rowType: InputOutputRowType.output,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '...',
-                              style: Styles.caption.merge(const TextStyle(
-                                  color: MyColors.transparentWhite_40,
-                                  height: 8 / 12)),
+                            Visibility(
+                              visible: transaction.outputAddressList.length >
+                                  initialOutputMaxCount,
+                              child: Text(
+                                '...',
+                                style: Styles.caption.merge(const TextStyle(
+                                    color: MyColors.transparentWhite_40,
+                                    height: 8 / 12)),
+                              ),
                             ),
                           ]),
                         ),
@@ -562,47 +604,69 @@ class InputOutputDetailRow extends StatelessWidget {
             maxLines: 1,
           ),
         ),
-        Expanded(
-          flex: 5,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (rowType == InputOutputRowType.output ||
-                  rowType == InputOutputRowType.fee)
+        if (rowType == InputOutputRowType.output ||
+            rowType == InputOutputRowType.fee)
+          Expanded(
+            flex: 4,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Row(
                   children: [
+                    const SizedBox(
+                      width: 10,
+                    ),
                     SvgPicture.asset(
                       assetAddress,
                       width: 16,
                       height: 12,
                     ),
-                    const SizedBox(width: 6),
                   ],
                 ),
-              Text(
-                '${satoshiToBitcoinString(balance).normalizeTo11Characters()} BTC',
-                style: Styles.body2Number.merge(
-                  TextStyle(
-                    color: rightItemColor,
-                    fontSize: 14,
-                    height: 16 / 14,
+                Text(
+                  '${satoshiToBitcoinString(balance).normalizeTo11Characters()} BTC',
+                  style: Styles.body2Number.merge(
+                    TextStyle(
+                      color: rightItemColor,
+                      fontSize: 14,
+                      height: 16 / 14,
+                    ),
                   ),
                 ),
-              ),
-              if (rowType == InputOutputRowType.input)
+              ],
+            ),
+          ),
+        if (rowType == InputOutputRowType.input)
+          Expanded(
+            flex: 4,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Row(
                   children: [
-                    const SizedBox(width: 6),
-                    SvgPicture.asset(
-                      assetAddress,
-                      width: 16,
-                      height: 12,
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    Text(
+                      '${satoshiToBitcoinString(balance).normalizeTo11Characters()} BTC',
+                      style: Styles.body2Number.merge(
+                        TextStyle(
+                          color: rightItemColor,
+                          fontSize: 14,
+                          height: 16 / 14,
+                        ),
+                      ),
                     ),
                   ],
-                )
-            ],
+                ),
+                SvgPicture.asset(
+                  assetAddress,
+                  width: 16,
+                  height: 12,
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }

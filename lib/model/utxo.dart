@@ -1,5 +1,4 @@
 class UTXO {
-  final int index;
   final String timestamp;
   final String blockHeight;
   final int amount;
@@ -8,7 +7,7 @@ class UTXO {
   final String txHash;
   List<String>? tags;
 
-  UTXO(this.index, this.timestamp, this.blockHeight, this.amount, this.to,
+  UTXO(this.timestamp, this.blockHeight, this.amount, this.to,
       this.derivationPath, this.txHash,
       {this.tags});
 }
