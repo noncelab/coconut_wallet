@@ -23,7 +23,6 @@ import 'package:coconut_wallet/repositories/faucet_repository.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/serialization_extensions.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 
 // ignore: constant_identifier_names

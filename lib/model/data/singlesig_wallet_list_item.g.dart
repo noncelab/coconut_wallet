@@ -15,10 +15,10 @@ SinglesigWalletListItem _$SinglesigWalletListItemFromJson(
       iconIndex: (json['iconIndex'] as num).toInt(),
       descriptor: json['descriptor'] as String,
       balance: (json['balance'] as num?)?.toInt(),
-    )
-      ..walletType = $enumDecode(_$WalletTypeEnumMap, json['walletType'])
-      ..txCount = (json['txCount'] as num?)?.toInt()
-      ..isLatestTxBlockHeightZero = json['isLatestTxBlockHeightZero'] as bool;
+      txCount: (json['txCount'] as num?)?.toInt(),
+      isLatestTxBlockHeightZero:
+          json['isLatestTxBlockHeightZero'] as bool? ?? false,
+    )..walletType = $enumDecode(_$WalletTypeEnumMap, json['walletType']);
 
 Map<String, dynamic> _$SinglesigWalletListItemToJson(
         SinglesigWalletListItem instance) =>
