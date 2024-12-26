@@ -34,6 +34,8 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 
+enum ApproachScreen { splash, main, pinCheck }
+
 class PowWalletApp extends StatefulWidget {
   static late String kElectrumHost;
   static late int kElectrumPort;
@@ -48,10 +50,10 @@ class PowWalletApp extends StatefulWidget {
 
 class _PowWalletAppState extends State<PowWalletApp> {
   /// 0 = splash, 1 = main, 2 = pin check
-  int _screenStatus = 0;
+  ApproachScreen _screenStatus = ApproachScreen.splash;
 
   /// startSplash 완료 콜백
-  void _completeSplash(int status) {
+  void _completeSplash(ApproachScreen status) {
     setState(() {
       _screenStatus = status;
     });
@@ -67,7 +69,7 @@ class _PowWalletAppState extends State<PowWalletApp> {
         ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
 
         /// main 에서만 사용하는 모델
-        if (_screenStatus == 1) ...{
+        if (_screenStatus == ApproachScreen.main) ...{
           ChangeNotifierProxyProvider<AppSubStateModel, AppStateModel>(
             create: (_) =>
                 AppStateModel(Provider.of<AppSubStateModel>(_, listen: false)),
@@ -76,11 +78,6 @@ class _PowWalletAppState extends State<PowWalletApp> {
           ),
         },
       ],
-      // child: setRouter(_screenStatus == 0
-      //     ? _createSplashRouter()
-      //     : _screenStatus == 1
-      //         ? goRouter
-      //         : _createPinCheckRouter()),
       child: CupertinoApp(
         localizationsDelegates: const [
           DefaultMaterialLocalizations.delegate,
@@ -118,16 +115,16 @@ class _PowWalletAppState extends State<PowWalletApp> {
           barBackgroundColor: MyColors.black, // AppBar 배경 색상
         ),
         color: MyColors.black,
-        home: _screenStatus == 0
+        home: _screenStatus == ApproachScreen.splash
             ? StartScreen(onComplete: _completeSplash)
-            : _screenStatus == 1
+            : _screenStatus == ApproachScreen.main
                 ? const AppGuard(child: WalletListScreen())
                 : CustomLoadingOverlay(
                     child: PinCheckScreen(
                       appEntrance: true,
                       onComplete: () {
                         setState(() {
-                          _screenStatus = 1;
+                          _screenStatus = ApproachScreen.main;
                         });
                       },
                     ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
@@ -15,7 +16,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class StartScreen extends StatefulWidget {
-  final void Function(int status) onComplete;
+  final void Function(ApproachScreen nextScreen) onComplete;
 
   const StartScreen({super.key, required this.onComplete});
 
@@ -68,9 +69,9 @@ class _StartScreenState extends State<StartScreen> {
     }
 
     if (!_subModel.isNotEmptyWalletList || !_subModel.isSetPin) {
-      widget.onComplete(1);
+      widget.onComplete(ApproachScreen.main);
     } else {
-      widget.onComplete(2);
+      widget.onComplete(ApproachScreen.pinCheck);
     }
   }
 
