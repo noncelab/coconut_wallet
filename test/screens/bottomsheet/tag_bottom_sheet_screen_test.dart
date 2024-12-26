@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 void main() {
   group('TagBottomSheetScreen Tests', () {
     late List<UtxoTag> mockTags;
-    late UTXO mockUtxo;
+    late List<String> mockSelectedTags;
 
     setUp(() {
       mockTags = [
@@ -18,16 +18,7 @@ void main() {
         const UtxoTag(id: 'uuid2', walletId: 2, name: 'coconut', colorIndex: 2),
         const UtxoTag(id: 'uuid3', walletId: 3, name: 'strike', colorIndex: 7),
       ];
-      mockUtxo = UTXO(
-        'timestamp',
-        'blockHeight',
-        0,
-        'address',
-        'derivationPath',
-        'txHash',
-        1,
-        tags: const ['kyc', 'coconut'],
-      );
+      mockSelectedTags = const ['kyc', 'coconut'];
     });
 
     testWidgets('calls onComplete with correct data when selecting tags',
@@ -38,9 +29,9 @@ void main() {
         home: TagBottomSheetContainer(
           type: TagBottomSheetType.select,
           utxoTags: mockTags,
-          selectUtxo: mockUtxo,
-          onComplete: (_, utxoTag, utxo) {
-            resultUtxo = utxo;
+          selectedUtxoTagNames: mockSelectedTags,
+          onSelected: (selectedUtxoTagNames) {
+            mockSelectedTags = List.from(selectedUtxoTagNames);
           },
         ),
       ));
@@ -71,22 +62,22 @@ void main() {
       await tester.tap(find.text('완료'));
       await tester.pump();
 
-      expect(resultUtxo, isNotNull);
-      expect(resultUtxo!.tags, isNot(contains('kyc'))); // 제외
-      expect(resultUtxo!.tags, contains('coconut'));
-      expect(resultUtxo!.tags, contains('strike')); // 등록
+      expect(mockSelectedTags, isNotEmpty);
+      expect(mockSelectedTags, isNot(contains('kyc'))); // 제외
+      expect(mockSelectedTags, contains('coconut'));
+      expect(mockSelectedTags, contains('strike')); // 등록
     });
 
     testWidgets('calls onComplete with correct data when creating tags',
         (WidgetTester tester) async {
-      List<UtxoTag>? resultTags;
+      UtxoTag? resultTag;
 
       await tester.pumpWidget(MaterialApp(
         home: TagBottomSheetContainer(
           type: TagBottomSheetType.create,
           utxoTags: mockTags,
-          onComplete: (utxoTags, utxoTag, _) {
-            resultTags = utxoTags;
+          onUpdated: (createdUtxoTag) {
+            resultTag = createdUtxoTag!;
           },
         ),
       ));
@@ -116,27 +107,22 @@ void main() {
       await tester.pumpAndSettle();
 
       // onComplete 콜백 결과 검증
-      expect(resultTags, isNotNull);
-      final newTag = resultTags!.firstWhere(
-        (tag) => tag.name == 'keystone',
-        orElse: () => throw Exception('Tag "keystone" not found'),
-      );
-
-      // 태그와 colorIndex 확인
-      expect(newTag.colorIndex, equals(2));
+      expect(resultTag, isNotNull);
+      expect(resultTag!.name, equals('keystone'));
+      expect(resultTag!.colorIndex, equals(2));
     });
 
     testWidgets('calls onComplete with correct data when updating tags',
         (WidgetTester tester) async {
-      List<UtxoTag>? resultTags;
+      UtxoTag? resultTag;
 
       await tester.pumpWidget(MaterialApp(
         home: TagBottomSheetContainer(
-          type: TagBottomSheetType.manage,
+          type: TagBottomSheetType.update,
           utxoTags: mockTags,
-          manageUtxoTag: mockTags[2],
-          onComplete: (utxoTags, utxoTag, _) {
-            resultTags = utxoTags;
+          updateUtxoTag: mockTags[2],
+          onUpdated: (updatedUtxoTag) {
+            resultTag = updatedUtxoTag;
           },
         ),
       ));
@@ -167,15 +153,10 @@ void main() {
       await tester.tap(completeButtonFinder);
       await tester.pumpAndSettle();
 
-      // onComplete 콜백 결과 검증
-      expect(resultTags, isNotNull);
-      final newTag = resultTags!.firstWhere(
-        (tag) => tag.name == 'nunchuk',
-        orElse: () => throw Exception('Tag "nunchuk" not found'),
-      );
-
       // 태그와 colorIndex 확인
-      expect(newTag.colorIndex, equals(0));
+      expect(resultTag, isNotNull);
+      expect(resultTag!.name, equals('nunchuk'));
+      expect(resultTag!.colorIndex, equals(0));
     });
   });
 }

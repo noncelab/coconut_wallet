@@ -196,8 +196,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         backgroundColor: MyColors.black,
                         builder: (context) => TagBottomSheetContainer(
                           type: TagBottomSheetType.select,
-                          onComplete: (_, utxoTag, utxo) =>
-                              debugPrint(utxo.toString()),
+                          onSelected: (selectedUtxoTagNames) =>
+                              debugPrint(selectedUtxoTagNames.toString()),
                           utxoTags: const [
                             UtxoTag(
                                 id: 'uuid1',

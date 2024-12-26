@@ -7,23 +7,35 @@ import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/model/utxo.dart';
 
-enum TagBottomSheetType { select, create, manage }
+/// [TagBottomSheetType]
+/// - [select] : 태그 목록 선택 변경 및 새 태그 생성
+/// - [create] : 새 태그 생성
+/// - [update] : 선택된 태그 수정
+enum TagBottomSheetType { select, create, update }
 
+/// [TagBottomSheetContainer] : 태그 선택 변경, 태그 수정, 태그 생성 BottomSheet
+/// [type] : BottomSheet Type
+/// [utxoTags] : 지갑에 생성된 UtxoTag 전체 목록
+/// [selectedUtxoTagNames] : select type only, 선택된 UTXO name 목록
+/// [updateUtxoTag] : update type only, 기존 태그를 수정하기 위한 UtxoTag 객체
+/// [onSelected] : select type only, 태그 목록 선택 변경 및 새태그 생성 완료 콜백
+/// [onUpdated] : create type, update type 선택된 태그 편집 및 새 태그 생성 완료 콜백
 class TagBottomSheetContainer extends StatefulWidget {
   final TagBottomSheetType type;
-  final Function(List<UtxoTag>?, UtxoTag?, UTXO?) onComplete;
   final List<UtxoTag> utxoTags;
-  final UTXO? selectUtxo;
-  final UtxoTag? manageUtxoTag;
+  final List<String>? selectedUtxoTagNames;
+  final UtxoTag? updateUtxoTag;
+  final Function(List<String>)? onSelected;
+  final Function(UtxoTag?)? onUpdated;
   const TagBottomSheetContainer({
     super.key,
     required this.type,
-    required this.onComplete,
     required this.utxoTags,
-    this.selectUtxo,
-    this.manageUtxoTag,
+    this.selectedUtxoTagNames,
+    this.updateUtxoTag,
+    this.onSelected,
+    this.onUpdated,
   });
 
   @override
@@ -32,40 +44,50 @@ class TagBottomSheetContainer extends StatefulWidget {
 }
 
 class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
-  List<UtxoTag> _updateUtxoTags = [];
-  UtxoTag? _manageUtxoTag;
-  UTXO? _selectUtxo;
-  List<String> _selectedTags = [];
+  /// UtxoTag 전체 목록 - create type 에서 변경될 수 있음
+  List<UtxoTag> _utxoTags = [];
 
+  /// 선택된 UTXO의 UtxoTag name 목록 - select type 에서 변경될 수 있음
+  List<String> _selectedUtxoTagNames = [];
+
+  /// 선택된 UtxoTag - update type 에서 변경될 수 있음
+  UtxoTag? _updateUtxoTag;
+
+  /// BottomSheet 상태 - select type 에서 create 로 변경될 수 있음
   TagBottomSheetType _type = TagBottomSheetType.select;
-  bool _isSelectButtonEnabled = false;
-  bool _isManageButtonEnabled = false;
 
   /// [TagBottomSheetType.select] 에서 [TagBottomSheetType.create] 호출할 때 사용
   bool _isTwoDepth = false;
 
+  /// select type 에서 완료 버튼 활성화 여부
+  bool _isSelectButtonEnabled = false;
+
+  /// update type 에서 완료 버튼 활성화 여부
+  bool _isUpdateButtonEnabled = false;
+
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
+  /// [CustomLimitTextField] 에서 변경된 TagName
   String _updateTagName = '';
+
+  /// [CustomTagChipColorButton] 에서 변경된 TagColorIndex
   int _updateTagColorIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _type = widget.type;
-    _updateUtxoTags = List.from(widget.utxoTags);
+    _utxoTags = List.from(widget.utxoTags);
 
-    if (widget.selectUtxo != null) {
-      _selectUtxo = widget.selectUtxo!;
-      if (widget.selectUtxo!.tags != null) {
-        _selectedTags = List.from(widget.selectUtxo!.tags!);
-      }
+    if (widget.selectedUtxoTagNames != null) {
+      _selectedUtxoTagNames = List.from(widget.selectedUtxoTagNames!);
     }
 
-    if (widget.manageUtxoTag != null) {
-      _updateTagName = widget.manageUtxoTag!.name;
-      _updateTagColorIndex = widget.manageUtxoTag!.colorIndex;
-      _manageUtxoTag = widget.manageUtxoTag;
+    if (widget.updateUtxoTag != null) {
+      _updateTagName = widget.updateUtxoTag!.name;
+      _updateTagColorIndex = widget.updateUtxoTag!.colorIndex;
+      _updateUtxoTag = widget.updateUtxoTag;
     }
     _controller.text = '#$_updateTagName';
     _controller.selection = TextSelection.fromPosition(
@@ -83,23 +105,26 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
     });
   }
 
+  /// select type 에서 완료 버튼 활성화 여부 업데이트 함수
   _checkSelectButtonEnabled() {
-    if (widget.utxoTags.length != _updateUtxoTags.length) return;
-    final prevTags = widget.selectUtxo?.tags ?? [];
+    if (widget.utxoTags.length != _utxoTags.length) return;
+    final prevTags = widget.selectedUtxoTagNames ?? [];
     setState(() {
-      _isSelectButtonEnabled = _selectedTags.length != prevTags.length ||
-          _selectedTags.length == prevTags.length &&
-              !Set.from(prevTags).containsAll(_selectedTags);
+      _isSelectButtonEnabled =
+          _selectedUtxoTagNames.length != prevTags.length ||
+              _selectedUtxoTagNames.length == prevTags.length &&
+                  !Set.from(prevTags).containsAll(_selectedUtxoTagNames);
     });
   }
 
-  _checkManageButtonEnabled() {
-    final prevTag = widget.manageUtxoTag?.name ?? '';
-    final prevColorIndex = widget.manageUtxoTag?.colorIndex ?? 0;
+  /// update type 에서 완료 버튼 활성화 여부 업데이트 함수
+  _checkUpdateButtonEnabled() {
+    final prevTag = widget.updateUtxoTag?.name ?? '';
+    final prevColorIndex = widget.updateUtxoTag?.colorIndex ?? 0;
     setState(() {
-      _isManageButtonEnabled = _updateTagName.isNotEmpty &&
+      _isUpdateButtonEnabled = _updateTagName.isNotEmpty &&
               _updateTagName != prevTag &&
-              !_updateUtxoTags.any((tag) => tag.name == _updateTagName) ||
+              !_utxoTags.any((tag) => tag.name == _updateTagName) ||
           _updateTagName == prevTag && _updateTagColorIndex != prevColorIndex;
     });
   }
@@ -158,21 +183,18 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                       isActivePrimaryColor: false,
                       text: '완료',
                       onPressed: () {
-                        _selectUtxo?.tags = _selectedTags;
-                        widget.onComplete
-                            .call(_updateUtxoTags, _manageUtxoTag, _selectUtxo);
+                        widget.onSelected?.call(_selectedUtxoTagNames);
                         Navigator.pop(context);
                       },
                     ),
                   } else if (_type == TagBottomSheetType.create) ...{
                     CustomAppbarButton(
                       isActive: _updateTagName.isNotEmpty &&
-                          !_updateUtxoTags
-                              .any((tag) => tag.name == _updateTagName),
+                          !_utxoTags.any((tag) => tag.name == _updateTagName),
                       isActivePrimaryColor: false,
                       text: '완료',
                       onPressed: () {
-                        final createUtxoTag = UtxoTag(
+                        final createdUtxoTag = UtxoTag(
                           id: '',
                           walletId: 0,
                           name: _updateTagName,
@@ -180,40 +202,37 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                         );
 
                         setState(() {
-                          _updateUtxoTags.insert(0, createUtxoTag);
+                          _utxoTags.insert(0, createdUtxoTag);
                           _isSelectButtonEnabled = true;
                         });
                         if (_isTwoDepth) {
                           _resetCreate();
                         } else {
-                          widget.onComplete(
-                              _updateUtxoTags, createUtxoTag, _selectUtxo);
+                          widget.onUpdated?.call(createdUtxoTag);
                           Navigator.pop(context);
                         }
                       },
                     ),
                   } else ...{
                     CustomAppbarButton(
-                      isActive: _isManageButtonEnabled,
+                      isActive: _isUpdateButtonEnabled,
                       isActivePrimaryColor: false,
                       text: '완료',
                       onPressed: () {
-                        if (widget.manageUtxoTag != null) {
+                        if (widget.updateUtxoTag != null) {
                           int tagIndex =
-                              _updateUtxoTags.indexOf(widget.manageUtxoTag!);
+                              _utxoTags.indexOf(widget.updateUtxoTag!);
 
-                          _updateUtxoTags[tagIndex] = _updateUtxoTags[tagIndex]
-                              .copyWith(
-                                  name: _updateTagName,
-                                  colorIndex: _updateTagColorIndex);
+                          _utxoTags[tagIndex] = _utxoTags[tagIndex].copyWith(
+                              name: _updateTagName,
+                              colorIndex: _updateTagColorIndex);
 
-                          final updateUtxoTag = _manageUtxoTag?.copyWith(
+                          final updateUtxoTag = _updateUtxoTag?.copyWith(
                             name: _updateTagName,
                             colorIndex: _updateTagColorIndex,
                           );
 
-                          widget.onComplete(
-                              _updateUtxoTags, updateUtxoTag, _selectUtxo);
+                          widget.onUpdated?.call(updateUtxoTag);
                           Navigator.pop(context);
                         }
                       },
@@ -234,32 +253,32 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                       spacing: 8,
                       runSpacing: 8,
                       children: List.generate(
-                        _updateUtxoTags.length,
+                        _utxoTags.length,
                         (index) => IntrinsicWidth(
                           child: GestureDetector(
                             onTap: () {
-                              final tag = _updateUtxoTags[index].name;
+                              final tag = _utxoTags[index].name;
                               setState(() {
-                                if (_selectedTags.contains(tag)) {
-                                  _selectedTags.remove(tag);
+                                if (_selectedUtxoTagNames.contains(tag)) {
+                                  _selectedUtxoTagNames.remove(tag);
                                 } else {
-                                  if (_selectedTags.length == 5) {
+                                  if (_selectedUtxoTagNames.length == 5) {
                                     CustomToast.showToast(
                                         context: context,
                                         text: "태그는 최대 5개 지정할 수 있어요",
                                         seconds: 2);
                                     return;
                                   }
-                                  _selectedTags.add(tag);
+                                  _selectedUtxoTagNames.add(tag);
                                 }
                                 _checkSelectButtonEnabled();
                               });
                             },
                             child: CustomTagChip(
-                              tag: _updateUtxoTags[index].name,
-                              colorIndex: _updateUtxoTags[index].colorIndex,
-                              type: _selectedTags
-                                      .contains(_updateUtxoTags[index].name)
+                              tag: _utxoTags[index].name,
+                              colorIndex: _utxoTags[index].colorIndex,
+                              type: _selectedUtxoTagNames
+                                      .contains(_utxoTags[index].name)
                                   ? CustomTagChipType.select
                                   : CustomTagChipType.disable,
                             ),
@@ -293,10 +312,10 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           child: CustomTagChipColorButton(
-                            colorIndex: widget.manageUtxoTag?.colorIndex ?? 0,
+                            colorIndex: widget.updateUtxoTag?.colorIndex ?? 0,
                             onTap: (index) {
                               _updateTagColorIndex = index;
-                              _checkManageButtonEnabled();
+                              _checkUpdateButtonEnabled();
                             },
                           ),
                         ),
@@ -315,8 +334,8 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                                 _controller.text = '#$_updateTagName';
                               }
 
-                              if (_type == TagBottomSheetType.manage) {
-                                _checkManageButtonEnabled();
+                              if (_type == TagBottomSheetType.update) {
+                                _checkUpdateButtonEnabled();
                               }
 
                               setState(() {});

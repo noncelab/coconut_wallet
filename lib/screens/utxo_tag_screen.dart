@@ -47,11 +47,11 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                   builder: (context) => TagBottomSheetContainer(
                     type: TagBottomSheetType.create,
                     utxoTags: model.utxoTagList,
-                    onComplete: (_, utxoTag, utxo) {
+                    onUpdated: (createUtxoTag) {
                       model.addUtxoTag(
                         walletId: widget.id,
-                        name: utxoTag?.name ?? '',
-                        colorIndex: utxoTag?.colorIndex ?? 0,
+                        name: createUtxoTag?.name ?? '',
+                        colorIndex: createUtxoTag?.colorIndex ?? 0,
                       );
                     },
                   ),
@@ -93,27 +93,31 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                               context: context,
                               isScrollControlled: true,
                               builder: (context) => TagBottomSheetContainer(
-                                type: TagBottomSheetType.manage,
+                                type: TagBottomSheetType.update,
                                 utxoTags: model.utxoTagList,
-                                manageUtxoTag: _selectedUtxoTag,
-                                onComplete: (_, utxoTag, utxo) {
+                                updateUtxoTag: _selectedUtxoTag,
+                                onUpdated: (updatedUtxoTag) {
                                   if (_selectedUtxoTag?.name.isNotEmpty ==
                                       true) {
                                     model.updateUtxoTag(
-                                      id: utxoTag?.id ?? '',
-                                      walletId: utxoTag?.walletId ?? 0,
-                                      name: utxoTag?.name ?? '',
-                                      colorIndex: utxoTag?.colorIndex ?? 0,
-                                      utxoIdList: utxoTag?.utxoIdList ?? [],
+                                      id: updatedUtxoTag?.id ?? '',
+                                      walletId: updatedUtxoTag?.walletId ?? 0,
+                                      name: updatedUtxoTag?.name ?? '',
+                                      colorIndex:
+                                          updatedUtxoTag?.colorIndex ?? 0,
+                                      utxoIdList:
+                                          updatedUtxoTag?.utxoIdList ?? [],
                                     );
 
                                     setState(() {
-                                      _changeUtxoTagName = utxoTag?.name;
+                                      _changeUtxoTagName = updatedUtxoTag?.name;
                                       _selectedUtxoTag =
                                           _selectedUtxoTag?.copyWith(
-                                        name: utxoTag?.name,
-                                        colorIndex: utxoTag?.colorIndex ?? 0,
-                                        utxoIdList: utxoTag?.utxoIdList ?? [],
+                                        name: updatedUtxoTag?.name,
+                                        colorIndex:
+                                            updatedUtxoTag?.colorIndex ?? 0,
+                                        utxoIdList:
+                                            updatedUtxoTag?.utxoIdList ?? [],
                                       );
                                     });
                                   }
@@ -162,7 +166,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                   Expanded(
                     child: CustomTagSelector(
                       tags: model.utxoTagList,
-                      changeSelectedTag: _changeUtxoTagName,
+                      externalUpdatedTagName: _changeUtxoTagName,
                       onSelectedTag: (tag) {
                         setState(() {
                           _changeUtxoTagName = tag.name;
