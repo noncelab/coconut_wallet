@@ -17,6 +17,7 @@ import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/repositories/faucet_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:uuid/uuid.dart';
 
 // ignore: constant_identifier_names
 const String WALLET_LIST = "WALLET_LIST";
@@ -87,30 +88,42 @@ class AppStateModel extends ChangeNotifier {
     // TODO:
     //_walletDataManager.getAll();
     //_walletDataManager.loadFromDB();
-    loadUtxoTagList();
+    //loadUtxoTagList();
     initWallet();
   }
 
-  void loadUtxoTagList() async {
-    _utxoTagList = await _walletDataManager.loadUtxoTagList();
+  void loadUtxoTagListWithWalletId(int walletId) async {
+    _utxoTagList = await _walletDataManager.loadUtxoTagList(walletId);
     notifyListeners();
   }
 
-  void addUtxoTag(String name, int colorIndex) {
-    _walletDataManager.addUtxoTag(name, colorIndex);
-    loadUtxoTagList();
+  void addUtxoTag({
+    required int walletId,
+    required String name,
+    required int colorIndex,
+  }) {
+    final id = const Uuid().v4();
+    _walletDataManager.addUtxoTagWithWalletId(id, walletId, name, colorIndex);
+    loadUtxoTagListWithWalletId(walletId);
   }
 
-  void updateUtxoTag(String originName, String? changeName, int colorIndex,
-      List<String> utxoIdList) {
-    _walletDataManager.updateUtxoTag(
-        originName, changeName, colorIndex, utxoIdList);
-    loadUtxoTagList();
+  void updateUtxoTag({
+    required String id,
+    required int walletId,
+    required String name,
+    required int colorIndex,
+    required List<String> utxoIdList,
+  }) {
+    _walletDataManager.updateUtxoTagWithId(id, name, colorIndex, utxoIdList);
+    loadUtxoTagListWithWalletId(walletId);
   }
 
-  void deleteUtxoTag(String name) {
-    _walletDataManager.deleteUtxoTag(name);
-    loadUtxoTagList();
+  void deleteUtxoTag(String id, int walletId) {
+    _walletDataManager.deleteUtxoTagWithId(id);
+    _utxoTagList =
+        _utxoTagList.where((tag) => tag.walletId != walletId).toList();
+    notifyListeners();
+    //loadUtxoTagListWithWalletId(utxoIndex);
   }
 
   /// [_subStateModel]의 변동사항 업데이트

@@ -225,7 +225,8 @@ class _PowWalletAppState extends State<PowWalletApp> {
           '/positive-feedback': (context) => const PositiveFeedbackScreen(),
           '/negative-feedback': (context) => const NegativeFeedbackScreen(),
           '/mnemonic-word-list': (context) => const Bip39ListScreen(),
-          '/utxo-tag': (context) => const UtxoTagScreen(),
+          '/utxo-tag': (context) => buildScreenWithArguments(
+              context, (args) => UtxoTagScreen(id: args['id'])),
         },
       ),
     );

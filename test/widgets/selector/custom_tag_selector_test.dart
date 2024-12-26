@@ -7,9 +7,23 @@ void main() {
   group('CustomTagSelector', () {
     final tags = [
       const UtxoTag(
-          name: 'Tag1', colorIndex: 0, utxoIdList: ['a', 'b', 'c', 'd', 'e']),
-      const UtxoTag(name: 'Tag2', colorIndex: 1, utxoIdList: []),
-      const UtxoTag(name: 'Tag3', colorIndex: 2, utxoIdList: ['a', 'b']),
+          id: 'uuid1',
+          walletId: 1,
+          name: 'Tag1',
+          colorIndex: 0,
+          utxoIdList: ['a', 'b', 'c', 'd', 'e']),
+      const UtxoTag(
+          id: 'uuid2',
+          walletId: 2,
+          name: 'Tag2',
+          colorIndex: 1,
+          utxoIdList: []),
+      const UtxoTag(
+          id: 'uuid3',
+          walletId: 3,
+          name: 'Tag3',
+          colorIndex: 2,
+          utxoIdList: ['a', 'b']),
     ];
 
     testWidgets('태그 리스트 렌더링', (tester) async {

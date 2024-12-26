@@ -56,7 +56,10 @@ class _RealmIntegerId {
 @RealmModel()
 class _RealmUtxoTag {
   @PrimaryKey()
-  late String name; // tag는 중복이 없음므로 id로 사용
+  late String id; // UUID 사용
+  late int walletId;
+  late _RealmWalletBase? walletBase;
+  late String name;
   late int colorIndex;
   late List<_RealmUtxoId> utxoIdList;
   late DateTime createAt;

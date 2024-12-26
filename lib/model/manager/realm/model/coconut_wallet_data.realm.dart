@@ -539,11 +539,17 @@ class RealmIntegerId extends _RealmIntegerId
 class RealmUtxoTag extends _RealmUtxoTag
     with RealmEntity, RealmObjectBase, RealmObject {
   RealmUtxoTag(
+    String id,
+    int walletId,
     String name,
     int colorIndex,
     DateTime createAt, {
+    RealmWalletBase? walletBase,
     Iterable<RealmUtxoId> utxoIdList = const [],
   }) {
+    RealmObjectBase.set(this, 'id', id);
+    RealmObjectBase.set(this, 'walletId', walletId);
+    RealmObjectBase.set(this, 'walletBase', walletBase);
     RealmObjectBase.set(this, 'name', name);
     RealmObjectBase.set(this, 'colorIndex', colorIndex);
     RealmObjectBase.set<RealmList<RealmUtxoId>>(
@@ -552,6 +558,24 @@ class RealmUtxoTag extends _RealmUtxoTag
   }
 
   RealmUtxoTag._();
+
+  @override
+  String get id => RealmObjectBase.get<String>(this, 'id') as String;
+  @override
+  set id(String value) => RealmObjectBase.set(this, 'id', value);
+
+  @override
+  int get walletId => RealmObjectBase.get<int>(this, 'walletId') as int;
+  @override
+  set walletId(int value) => RealmObjectBase.set(this, 'walletId', value);
+
+  @override
+  RealmWalletBase? get walletBase =>
+      RealmObjectBase.get<RealmWalletBase>(this, 'walletBase')
+          as RealmWalletBase?;
+  @override
+  set walletBase(covariant RealmWalletBase? value) =>
+      RealmObjectBase.set(this, 'walletBase', value);
 
   @override
   String get name => RealmObjectBase.get<String>(this, 'name') as String;
@@ -591,6 +615,9 @@ class RealmUtxoTag extends _RealmUtxoTag
 
   EJsonValue toEJson() {
     return <String, dynamic>{
+      'id': id.toEJson(),
+      'walletId': walletId.toEJson(),
+      'walletBase': walletBase.toEJson(),
       'name': name.toEJson(),
       'colorIndex': colorIndex.toEJson(),
       'utxoIdList': utxoIdList.toEJson(),
@@ -603,14 +630,19 @@ class RealmUtxoTag extends _RealmUtxoTag
     if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
     return switch (ejson) {
       {
+        'id': EJsonValue id,
+        'walletId': EJsonValue walletId,
         'name': EJsonValue name,
         'colorIndex': EJsonValue colorIndex,
         'createAt': EJsonValue createAt,
       } =>
         RealmUtxoTag(
+          fromEJson(id),
+          fromEJson(walletId),
           fromEJson(name),
           fromEJson(colorIndex),
           fromEJson(createAt),
+          walletBase: fromEJson(ejson['walletBase']),
           utxoIdList: fromEJson(ejson['utxoIdList']),
         ),
       _ => raiseInvalidEJson(ejson),
@@ -622,7 +654,11 @@ class RealmUtxoTag extends _RealmUtxoTag
     register(_toEJson, _fromEJson);
     return const SchemaObject(
         ObjectType.realmObject, RealmUtxoTag, 'RealmUtxoTag', [
-      SchemaProperty('name', RealmPropertyType.string, primaryKey: true),
+      SchemaProperty('id', RealmPropertyType.string, primaryKey: true),
+      SchemaProperty('walletId', RealmPropertyType.int),
+      SchemaProperty('walletBase', RealmPropertyType.object,
+          optional: true, linkTarget: 'RealmWalletBase'),
+      SchemaProperty('name', RealmPropertyType.string),
       SchemaProperty('colorIndex', RealmPropertyType.int),
       SchemaProperty('utxoIdList', RealmPropertyType.object,
           linkTarget: 'RealmUtxoId', collectionType: RealmCollectionType.list),

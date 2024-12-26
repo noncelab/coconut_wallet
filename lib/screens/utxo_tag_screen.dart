@@ -10,7 +10,8 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:provider/provider.dart';
 
 class UtxoTagScreen extends StatefulWidget {
-  const UtxoTagScreen({super.key});
+  final int id;
+  const UtxoTagScreen({super.key, required this.id});
 
   @override
   State<UtxoTagScreen> createState() => _UtxoTagScreenState();
@@ -19,6 +20,13 @@ class UtxoTagScreen extends StatefulWidget {
 class _UtxoTagScreenState extends State<UtxoTagScreen> {
   UtxoTag? _selectedUtxoTag;
   String? _changeUtxoTagName;
+
+  @override
+  void initState() {
+    super.initState();
+    final model = Provider.of<AppStateModel>(context, listen: false);
+    model.loadUtxoTagListWithWalletId(widget.id);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,8 +49,9 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                     utxoTags: model.utxoTagList,
                     onComplete: (_, utxoTag, utxo) {
                       model.addUtxoTag(
-                        utxoTag?.name ?? '',
-                        utxoTag?.colorIndex ?? 0,
+                        walletId: widget.id,
+                        name: utxoTag?.name ?? '',
+                        colorIndex: utxoTag?.colorIndex ?? 0,
                       );
                     },
                   ),
@@ -91,10 +100,11 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                                   if (_selectedUtxoTag?.name.isNotEmpty ==
                                       true) {
                                     model.updateUtxoTag(
-                                      _selectedUtxoTag!.name,
-                                      utxoTag?.name,
-                                      utxoTag?.colorIndex ?? 0,
-                                      utxoTag?.utxoIdList ?? [],
+                                      id: utxoTag?.id ?? '',
+                                      walletId: utxoTag?.walletId ?? 0,
+                                      name: utxoTag?.name ?? '',
+                                      colorIndex: utxoTag?.colorIndex ?? 0,
+                                      utxoIdList: utxoTag?.utxoIdList ?? [],
                                     );
 
                                     setState(() {
@@ -124,7 +134,10 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                                   '#${_selectedUtxoTag?.name}를 정말로 삭제하시겠어요?\n${_selectedUtxoTag?.utxoIdList?.isNotEmpty == true ? '${_selectedUtxoTag?.utxoIdList?.length}개 UTXO에 적용되어 있어요.' : ''}',
                               onConfirm: () async {
                                 if (_selectedUtxoTag?.name.isNotEmpty == true) {
-                                  model.deleteUtxoTag(_selectedUtxoTag!.name);
+                                  model.deleteUtxoTag(
+                                    _selectedUtxoTag!.id,
+                                    _selectedUtxoTag!.walletId,
+                                  );
                                   Navigator.of(context).pop();
 
                                   setState(() {

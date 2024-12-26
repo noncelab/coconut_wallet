@@ -196,7 +196,8 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                   label: '태그 관리',
                                   showIcon: true,
                                   onPressed: () {
-                                    Navigator.pushNamed(context, '/utxo-tag');
+                                    Navigator.pushNamed(context, '/utxo-tag',
+                                        arguments: {'id': widget.id});
                                   },
                                 ),
                               ],

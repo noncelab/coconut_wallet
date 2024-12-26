@@ -23,15 +23,15 @@ class UTXOItemCard extends StatelessWidget {
         DateTimeUtil.formatDatetime(utxo.timestamp).split('|');
     bool isChange = utxo.derivationPath.split('/')[4] == '1';
     List<UtxoTag> utxoTags = [
-      const UtxoTag(name: 'THESE', colorIndex: 0),
-      const UtxoTag(name: 'ARE', colorIndex: 1),
-      const UtxoTag(name: 'TEST', colorIndex: 2),
-      const UtxoTag(name: 'DATA', colorIndex: 3),
-      const UtxoTag(name: 'SO', colorIndex: 4),
-      const UtxoTag(name: 'YOU', colorIndex: 5),
-      const UtxoTag(name: 'HAVE', colorIndex: 6),
-      const UtxoTag(name: 'TO', colorIndex: 7),
-      const UtxoTag(name: 'FIX', colorIndex: 8),
+      const UtxoTag(id: 'uuid1', walletId: 1, name: 'THESE', colorIndex: 0),
+      const UtxoTag(id: 'uuid2', walletId: 2, name: 'ARE', colorIndex: 1),
+      const UtxoTag(id: 'uuid3', walletId: 3, name: 'TEST', colorIndex: 2),
+      const UtxoTag(id: 'uuid4', walletId: 4, name: 'DATA', colorIndex: 3),
+      const UtxoTag(id: 'uuid5', walletId: 5, name: 'SO', colorIndex: 4),
+      const UtxoTag(id: 'uuid6', walletId: 6, name: 'YOU', colorIndex: 5),
+      const UtxoTag(id: 'uuid7', walletId: 7, name: 'HAVE', colorIndex: 6),
+      const UtxoTag(id: 'uuid8', walletId: 8, name: 'TO', colorIndex: 7),
+      const UtxoTag(id: 'uuid9', walletId: 9, name: 'FIX', colorIndex: 8),
     ];
 
     return GestureDetector(

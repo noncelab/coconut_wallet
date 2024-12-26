@@ -347,10 +347,11 @@ class WalletDataManager {
     _walletList!.removeAt(index);
   }
 
-  Future<List<UtxoTag>> loadUtxoTagList() async {
+  Future<List<UtxoTag>> loadUtxoTagList(int walletId) async {
     _utxoTagList = [];
-    final utxoList =
-        _realm.all<RealmUtxoTag>().query('TRUEPREDICATE SORT(createAt DESC)');
+    final utxoList = _realm
+        .all<RealmUtxoTag>()
+        .query("walletId == '$walletId' SORT(createAt DESC)");
     for (var i = 0; i < utxoList.length; i++) {
       _utxoTagList.add(mapRealmUtxoTagToUtxoTag(utxoList[i]));
     }
@@ -358,15 +359,17 @@ class WalletDataManager {
     return _utxoTagList;
   }
 
-  void addUtxoTag(String name, int colorIndex) {
-    final utxoTag = RealmUtxoTag(name, colorIndex, DateTime.now());
+  void addUtxoTagWithWalletId(
+      String id, int walletId, String name, int colorIndex) {
+    final utxoTag =
+        RealmUtxoTag(id, walletId, name, colorIndex, DateTime.now());
     _realm.write(() {
       _realm.add(utxoTag);
     });
   }
 
-  void deleteUtxoTag(String name) {
-    final tags = _realm.query<RealmUtxoTag>("name == '$name'");
+  void deleteUtxoTagWithId(String id) {
+    final tags = _realm.query<RealmUtxoTag>("id == '$id'");
 
     if (tags.isEmpty) return;
 
@@ -375,38 +378,23 @@ class WalletDataManager {
     });
   }
 
-  void updateUtxoTag(String originName, String? changeName, int colorIndex,
-      List<String> utxoIdList) {
-    final tags = _realm.query<RealmUtxoTag>("name == '$originName'");
+  void updateUtxoTagWithId(
+      String id, String name, int colorIndex, List<String> utxoIdList) {
+    final tags = _realm.query<RealmUtxoTag>("id == '$id'");
 
     if (tags.isEmpty) {
       return;
     }
 
     final utxoTag = tags.first;
-    // 삭제시 utxoTag는 더이상 사용할 수 없게됨
-    final createAt = utxoTag.createAt.copyWith();
 
-    // name primaryKey 이므로 변경시 삭제후 다시 추가
-    if (changeName != null && changeName != originName) {
-      deleteUtxoTag(originName);
-
-      _realm.write(() {
-        _realm.add(RealmUtxoTag(
-          changeName,
-          colorIndex,
-          createAt,
-          utxoIdList: utxoIdList.map((id) => mapStringToRealmUtxoId(id)),
-        ));
-      });
-    } else {
-      _realm.write(() {
-        utxoTag.colorIndex = colorIndex;
-        utxoTag.utxoIdList.clear();
-        utxoTag.utxoIdList
-            .addAll(utxoIdList.map((id) => mapStringToRealmUtxoId(id)));
-      });
-    }
+    _realm.write(() {
+      utxoTag.name = name;
+      utxoTag.colorIndex = colorIndex;
+      utxoTag.utxoIdList.clear();
+      utxoTag.utxoIdList
+          .addAll(utxoIdList.map((id) => mapStringToRealmUtxoId(id)));
+    });
   }
 
   int _getNextWalletId() {

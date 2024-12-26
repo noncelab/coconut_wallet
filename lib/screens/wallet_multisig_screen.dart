@@ -152,7 +152,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
 
   _moveToUtxoTag() {
     _removeTooltip();
-    Navigator.pushNamed(context, '/utxo-tag');
+    Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
   }
 
   _showXPubBottomSheet(String qrData) async {

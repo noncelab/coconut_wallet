@@ -199,14 +199,46 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                           onComplete: (_, utxoTag, utxo) =>
                               debugPrint(utxo.toString()),
                           utxoTags: const [
-                            UtxoTag(name: 'kyc', colorIndex: 0),
-                            UtxoTag(name: 'coconut', colorIndex: 2),
-                            UtxoTag(name: 'strike', colorIndex: 7),
-                            UtxoTag(name: '1', colorIndex: 7),
-                            UtxoTag(name: '2', colorIndex: 7),
-                            UtxoTag(name: '3', colorIndex: 7),
-                            UtxoTag(name: '4', colorIndex: 7),
-                            UtxoTag(name: '5', colorIndex: 7),
+                            UtxoTag(
+                                id: 'uuid1',
+                                walletId: 1,
+                                name: 'kyc',
+                                colorIndex: 0),
+                            UtxoTag(
+                                id: 'uuid2',
+                                walletId: 2,
+                                name: 'coconut',
+                                colorIndex: 1),
+                            UtxoTag(
+                                id: 'uuid3',
+                                walletId: 3,
+                                name: 'strike',
+                                colorIndex: 2),
+                            UtxoTag(
+                                id: 'uuid4',
+                                walletId: 4,
+                                name: '1',
+                                colorIndex: 3),
+                            UtxoTag(
+                                id: 'uuid5',
+                                walletId: 5,
+                                name: '2',
+                                colorIndex: 4),
+                            UtxoTag(
+                                id: 'uuid6',
+                                walletId: 6,
+                                name: '3',
+                                colorIndex: 5),
+                            UtxoTag(
+                                id: 'uuid7',
+                                walletId: 7,
+                                name: '4',
+                                colorIndex: 6),
+                            UtxoTag(
+                                id: 'uuid8',
+                                walletId: 8,
+                                name: '5',
+                                colorIndex: 7),
                           ],
                         ),
                       );

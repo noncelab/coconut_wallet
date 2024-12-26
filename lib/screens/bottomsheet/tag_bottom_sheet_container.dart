@@ -173,6 +173,8 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                       text: '완료',
                       onPressed: () {
                         final createUtxoTag = UtxoTag(
+                          id: '',
+                          walletId: 0,
                           name: _updateTagName,
                           colorIndex: _updateTagColorIndex,
                         );

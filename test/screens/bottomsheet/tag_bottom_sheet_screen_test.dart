@@ -14,9 +14,9 @@ void main() {
 
     setUp(() {
       mockTags = [
-        const UtxoTag(name: 'kyc', colorIndex: 0),
-        const UtxoTag(name: 'coconut', colorIndex: 2),
-        const UtxoTag(name: 'strike', colorIndex: 7),
+        const UtxoTag(id: 'uuid1', walletId: 1, name: 'kyc', colorIndex: 0),
+        const UtxoTag(id: 'uuid2', walletId: 2, name: 'coconut', colorIndex: 2),
+        const UtxoTag(id: 'uuid3', walletId: 3, name: 'strike', colorIndex: 7),
       ];
       mockUtxo = UTXO(
         'timestamp',
