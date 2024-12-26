@@ -44,7 +44,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late Offset _utxoTooltipIconPosition;
 
   final String _utxoTip =
-      'UTXO란 Unspent Tx Output을 줄인 말로\n아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요.\n지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
+      'UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
 
   int initialInputMaxCount = 3;
   int initialOutputMaxCount = 2;
@@ -360,6 +360,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               child: ClipPath(
                 clipper: RightTriangleBubbleClipper(),
                 child: Container(
+                  width: MediaQuery.sizeOf(context).width * 0.68,
                   padding: const EdgeInsets.only(
                     top: 25,
                     left: 18,
@@ -367,18 +368,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     bottom: 10,
                   ),
                   color: MyColors.skybule,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _utxoTip,
-                        style: Styles.caption.merge(TextStyle(
-                          height: 1.3,
-                          fontFamily: CustomFonts.text.getFontFamily,
-                          color: MyColors.darkgrey,
-                        )),
-                      ),
-                    ],
+                  child: Text(
+                    _utxoTip,
+                    style: Styles.caption.merge(TextStyle(
+                      height: 1.3,
+                      fontFamily: CustomFonts.text.getFontFamily,
+                      color: MyColors.darkgrey,
+                    )),
                   ),
                 ),
               ),
