@@ -88,7 +88,6 @@ class AppStateModel extends ChangeNotifier {
     // TODO:
     //_walletDataManager.getAll();
     //_walletDataManager.loadFromDB();
-    //loadUtxoTagList();
     initWallet();
   }
 

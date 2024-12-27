@@ -20,18 +20,20 @@ class UtxoTagScreen extends StatefulWidget {
 class _UtxoTagScreenState extends State<UtxoTagScreen> {
   UtxoTag? _selectedUtxoTag;
   String? _changeUtxoTagName;
+  late AppStateModel _appModel;
 
   @override
   void initState() {
     super.initState();
-    final model = Provider.of<AppStateModel>(context, listen: false);
-    model.loadUtxoTagListWithWalletId(widget.id);
+    _appModel = Provider.of<AppStateModel>(context, listen: false);
+    _appModel.loadUtxoTagListWithWalletId(widget.id);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppStateModel>(
-      builder: (context, model, child) {
+    return Selector<AppStateModel, List<UtxoTag>>(
+      selector: (_, model) => model.utxoTagList,
+      builder: (context, utxoTagList, child) {
         return Scaffold(
           backgroundColor: MyColors.black,
           appBar: CustomAppBar.build(
@@ -46,9 +48,9 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                   isScrollControlled: true,
                   builder: (context) => TagBottomSheetContainer(
                     type: TagBottomSheetType.create,
-                    utxoTags: model.utxoTagList,
+                    utxoTags: utxoTagList,
                     onUpdated: (createUtxoTag) {
-                      model.addUtxoTag(
+                      _appModel.addUtxoTag(
                         walletId: widget.id,
                         name: createUtxoTag?.name ?? '',
                         colorIndex: createUtxoTag?.colorIndex ?? 0,
@@ -66,7 +68,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  if (model.utxoTagList.isEmpty) ...{
+                  if (utxoTagList.isEmpty) ...{
                     const SizedBox(height: 56),
                     Text(
                       '태그가 없어요',
@@ -81,8 +83,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                           .copyWith(fontSize: 12, color: MyColors.gray200),
                     ),
                   },
-                  if (model.utxoTagList.isNotEmpty &&
-                      _selectedUtxoTag != null) ...{
+                  if (utxoTagList.isNotEmpty && _selectedUtxoTag != null) ...{
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -94,12 +95,12 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                               isScrollControlled: true,
                               builder: (context) => TagBottomSheetContainer(
                                 type: TagBottomSheetType.update,
-                                utxoTags: model.utxoTagList,
+                                utxoTags: utxoTagList,
                                 updateUtxoTag: _selectedUtxoTag,
                                 onUpdated: (updatedUtxoTag) {
                                   if (_selectedUtxoTag?.name.isNotEmpty ==
                                       true) {
-                                    model.updateUtxoTag(
+                                    _appModel.updateUtxoTag(
                                       id: updatedUtxoTag?.id ?? '',
                                       walletId: updatedUtxoTag?.walletId ?? 0,
                                       name: updatedUtxoTag?.name ?? '',
@@ -138,7 +139,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                                   '#${_selectedUtxoTag?.name}를 정말로 삭제하시겠어요?\n${_selectedUtxoTag?.utxoIdList?.isNotEmpty == true ? '${_selectedUtxoTag?.utxoIdList?.length}개 UTXO에 적용되어 있어요.' : ''}',
                               onConfirm: () async {
                                 if (_selectedUtxoTag?.name.isNotEmpty == true) {
-                                  model.deleteUtxoTag(
+                                  _appModel.deleteUtxoTag(
                                     _selectedUtxoTag!.id,
                                     _selectedUtxoTag!.walletId,
                                   );
@@ -165,7 +166,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                   },
                   Expanded(
                     child: CustomTagSelector(
-                      tags: model.utxoTagList,
+                      tags: utxoTagList,
                       externalUpdatedTagName: _changeUtxoTagName,
                       onSelectedTag: (tag) {
                         setState(() {
