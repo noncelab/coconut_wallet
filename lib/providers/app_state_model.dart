@@ -67,9 +67,6 @@ class AppStateModel extends ChangeNotifier {
   List<WalletListItemBase> _walletItemList = [];
   List<WalletListItemBase> get walletItemList => _walletItemList;
 
-  List<UtxoTag> _utxoTagList = [];
-  List<UtxoTag> get utxoTagList => _utxoTagList;
-
   // 애니메이션이 동작해야하면 해당하는 ReturnPageResult.<add/update>, 아니면 ReturnPageResult.none을 담습니다.
   List<ReturnPageResult> _animatedWalletFlags = [];
   List<ReturnPageResult> get animatedWalletFlags => _animatedWalletFlags;
@@ -92,38 +89,31 @@ class AppStateModel extends ChangeNotifier {
     initWallet();
   }
 
+  /// 태그 관리 화면에서 사용됨
+  List<UtxoTag> _utxoTagList = [];
+  List<UtxoTag> get utxoTagList => _utxoTagList;
+
   void loadUtxoTagListWithWalletId(int walletId) async {
     _utxoTagList = await _walletDataManager.loadUtxoTagList(walletId);
     notifyListeners();
   }
 
-  void addUtxoTag({
-    required int walletId,
-    required String name,
-    required int colorIndex,
-  }) {
+  void addUtxoTag(UtxoTag utxoTag) {
     final id = const Uuid().v4();
-    _walletDataManager.addUtxoTagWithWalletId(id, walletId, name, colorIndex);
-    loadUtxoTagListWithWalletId(walletId);
+    _walletDataManager.addUtxoTagWithWalletId(
+        id, utxoTag.walletId, utxoTag.name, utxoTag.colorIndex);
+    loadUtxoTagListWithWalletId(utxoTag.walletId);
   }
 
-  void updateUtxoTag({
-    required String id,
-    required int walletId,
-    required String name,
-    required int colorIndex,
-    required List<String> utxoIdList,
-  }) {
-    _walletDataManager.updateUtxoTagWithId(id, name, colorIndex, utxoIdList);
-    loadUtxoTagListWithWalletId(walletId);
+  void updateUtxoTag(UtxoTag utxoTag) {
+    _walletDataManager.updateUtxoTagWithId(
+        utxoTag.id, utxoTag.name, utxoTag.colorIndex, utxoTag.utxoIdList ?? []);
+    loadUtxoTagListWithWalletId(utxoTag.walletId);
   }
 
-  void deleteUtxoTag(String id, int walletId) {
-    _walletDataManager.deleteUtxoTagWithId(id);
-    _utxoTagList =
-        _utxoTagList.where((tag) => tag.walletId != walletId).toList();
-    notifyListeners();
-    //loadUtxoTagListWithWalletId(utxoIndex);
+  void deleteUtxoTag(UtxoTag utxoTag) {
+    _walletDataManager.deleteUtxoTagWithId(utxoTag.id);
+    loadUtxoTagListWithWalletId(utxoTag.walletId);
   }
 
   /// [_subStateModel]의 변동사항 업데이트

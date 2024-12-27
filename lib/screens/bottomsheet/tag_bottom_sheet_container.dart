@@ -27,7 +27,7 @@ class TagBottomSheetContainer extends StatefulWidget {
   final List<String>? selectedUtxoTagNames;
   final UtxoTag? updateUtxoTag;
   final Function(List<String>)? onSelected;
-  final Function(UtxoTag?)? onUpdated;
+  final Function(UtxoTag)? onUpdated;
   const TagBottomSheetContainer({
     super.key,
     required this.type,
@@ -231,7 +231,7 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                             colorIndex: _updateTagColorIndex,
                           );
 
-                          widget.onUpdated?.call(updateUtxoTag);
+                          widget.onUpdated?.call(updateUtxoTag!);
                           Navigator.pop(context);
                         }
                       },

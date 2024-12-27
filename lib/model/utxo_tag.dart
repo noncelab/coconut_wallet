@@ -18,11 +18,12 @@ class UtxoTag extends Equatable {
   UtxoTag copyWith({
     String? name,
     int? colorIndex,
+    int? walletId,
     List<String>? utxoIdList,
   }) {
     return UtxoTag(
       id: id,
-      walletId: walletId,
+      walletId: walletId ?? this.walletId,
       name: name ?? this.name,
       colorIndex: colorIndex ?? this.colorIndex,
       utxoIdList: utxoIdList ?? this.utxoIdList,

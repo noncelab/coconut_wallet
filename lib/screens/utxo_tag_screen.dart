@@ -9,6 +9,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:provider/provider.dart';
 
+/// [id] - wallet id 기반으로 태그 관리
 class UtxoTagScreen extends StatefulWidget {
   final int id;
   const UtxoTagScreen({super.key, required this.id});
@@ -18,9 +19,15 @@ class UtxoTagScreen extends StatefulWidget {
 }
 
 class _UtxoTagScreenState extends State<UtxoTagScreen> {
-  UtxoTag? _selectedUtxoTag;
-  String? _changeUtxoTagName;
+  /// UtxoTag 가져오기, 추가, 편집, 삭제 메소드 호출
   late AppStateModel _appModel;
+
+  /// CustomTagSelector 에서 사용자가 선택하여 콜백 반환 된 UtxoTag
+  UtxoTag? _selectedUtxoTag;
+
+  /// 태그 편집 바텀시트에서 변경된 UtxoTag name
+  /// - CustomTagSelector 상태 업데이트
+  String? _updateUtxoTagName;
 
   @override
   void initState() {
@@ -49,12 +56,9 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                   builder: (context) => TagBottomSheetContainer(
                     type: TagBottomSheetType.create,
                     utxoTags: utxoTagList,
-                    onUpdated: (createUtxoTag) {
-                      _appModel.addUtxoTag(
-                        walletId: widget.id,
-                        name: createUtxoTag?.name ?? '',
-                        colorIndex: createUtxoTag?.colorIndex ?? 0,
-                      );
+                    onUpdated: (utxoTag) {
+                      final createUTag = utxoTag.copyWith(walletId: widget.id);
+                      _appModel.addUtxoTag(createUTag);
                     },
                   ),
                 );
@@ -97,28 +101,17 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                                 type: TagBottomSheetType.update,
                                 utxoTags: utxoTagList,
                                 updateUtxoTag: _selectedUtxoTag,
-                                onUpdated: (updatedUtxoTag) {
+                                onUpdated: (utxoTag) {
                                   if (_selectedUtxoTag?.name.isNotEmpty ==
                                       true) {
-                                    _appModel.updateUtxoTag(
-                                      id: updatedUtxoTag?.id ?? '',
-                                      walletId: updatedUtxoTag?.walletId ?? 0,
-                                      name: updatedUtxoTag?.name ?? '',
-                                      colorIndex:
-                                          updatedUtxoTag?.colorIndex ?? 0,
-                                      utxoIdList:
-                                          updatedUtxoTag?.utxoIdList ?? [],
-                                    );
-
+                                    _appModel.updateUtxoTag(utxoTag);
                                     setState(() {
-                                      _changeUtxoTagName = updatedUtxoTag?.name;
+                                      _updateUtxoTagName = utxoTag.name;
                                       _selectedUtxoTag =
                                           _selectedUtxoTag?.copyWith(
-                                        name: updatedUtxoTag?.name,
-                                        colorIndex:
-                                            updatedUtxoTag?.colorIndex ?? 0,
-                                        utxoIdList:
-                                            updatedUtxoTag?.utxoIdList ?? [],
+                                        name: utxoTag.name,
+                                        colorIndex: utxoTag.colorIndex,
+                                        utxoIdList: utxoTag.utxoIdList ?? [],
                                       );
                                     });
                                   }
@@ -136,19 +129,12 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                               context,
                               title: '태그 삭제',
                               message:
-                                  '#${_selectedUtxoTag?.name}를 정말로 삭제하시겠어요?\n${_selectedUtxoTag?.utxoIdList?.isNotEmpty == true ? '${_selectedUtxoTag?.utxoIdList?.length}개 UTXO에 적용되어 있어요.' : ''}',
+                                  '#${_selectedUtxoTag?.name}를 정말로 삭제하시겠어요?'
+                                  '\n${_selectedUtxoTag?.utxoIdList?.isNotEmpty == true ? '${_selectedUtxoTag?.utxoIdList?.length}개 UTXO에 적용되어 있어요.' : ''}',
                               onConfirm: () async {
-                                if (_selectedUtxoTag?.name.isNotEmpty == true) {
-                                  _appModel.deleteUtxoTag(
-                                    _selectedUtxoTag!.id,
-                                    _selectedUtxoTag!.walletId,
-                                  );
+                                if (_selectedUtxoTag != null) {
+                                  _appModel.deleteUtxoTag(_selectedUtxoTag!);
                                   Navigator.of(context).pop();
-
-                                  setState(() {
-                                    _selectedUtxoTag = null;
-                                    _changeUtxoTagName = null;
-                                  });
                                 }
                               },
                               onCancel: () {
@@ -167,10 +153,9 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                   Expanded(
                     child: CustomTagSelector(
                       tags: utxoTagList,
-                      externalUpdatedTagName: _changeUtxoTagName,
+                      externalUpdatedTagName: _updateUtxoTagName,
                       onSelectedTag: (tag) {
                         setState(() {
-                          _changeUtxoTagName = tag.name;
                           _selectedUtxoTag = tag;
                         });
                       },

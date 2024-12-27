@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// [CustomTagSelector] : 태그 목록을 보여주고 선택할 수 있는 위젯
 /// [tags] : 표시할 태그 목록
 /// [onSelectedTag] : 태그를 선택했을 때 호출되는 콜백 함수
-/// [externalUpdatedTagName] : 외부에서 태그명이 변경되었을 때 선택 상태를 업데이트하기 위한 태그명
+/// [externalUpdatedTagName] : 선택된 태그명이 외부에서 변경되었을 때 선택 상태를 업데이트
 class CustomTagSelector extends StatefulWidget {
   final List<UtxoTag> tags;
   final Function(UtxoTag) onSelectedTag;
@@ -23,22 +23,29 @@ class CustomTagSelector extends StatefulWidget {
 
 class _CustomTagSelectorState extends State<CustomTagSelector> {
   /// 사용자가 선택한 태그명
-  /// - 초기값은 빈 문자열이며, 선택 상태를 관리하기 위해 사용
   String _selectedTagName = '';
 
-  /// 외부에서 태그명이 업데이트된 경우 선택 상태를 반영하는 함수
-  /// - initState에서 호출되는 경우 다시 호출되지 않는 이슈로 인해 build 함수에서 실행
-  _updateSelectedTagName() {
-    if (_selectedTagName.isNotEmpty &&
-        _selectedTagName != widget.externalUpdatedTagName) {
-      _selectedTagName = widget.externalUpdatedTagName ?? '';
-      setState(() {});
+  @override
+  void initState() {
+    super.initState();
+    // 초기 상태 설정: 외부에서 전달된 태그명을 반영
+    _selectedTagName = widget.externalUpdatedTagName ?? '';
+  }
+
+  @override
+  void didUpdateWidget(covariant CustomTagSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 외부 태그명이 변경되었을 경우 상태 업데이트
+    if (widget.externalUpdatedTagName != oldWidget.externalUpdatedTagName &&
+        widget.externalUpdatedTagName != _selectedTagName) {
+      setState(() {
+        _selectedTagName = widget.externalUpdatedTagName ?? '';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    _updateSelectedTagName();
     return ListView.builder(
       itemCount: widget.tags.length,
       itemBuilder: (BuildContext context, int index) {

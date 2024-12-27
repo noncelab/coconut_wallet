@@ -30,8 +30,8 @@ void main() {
           type: TagBottomSheetType.select,
           utxoTags: mockTags,
           selectedUtxoTagNames: mockSelectedTags,
-          onSelected: (selectedUtxoTagNames) {
-            mockSelectedTags = List.from(selectedUtxoTagNames);
+          onSelected: (utxoTagNames) {
+            mockSelectedTags = List.from(utxoTagNames);
           },
         ),
       ));
@@ -76,8 +76,8 @@ void main() {
         home: TagBottomSheetContainer(
           type: TagBottomSheetType.create,
           utxoTags: mockTags,
-          onUpdated: (createdUtxoTag) {
-            resultTag = createdUtxoTag!;
+          onUpdated: (utxoTag) {
+            resultTag = utxoTag;
           },
         ),
       ));
@@ -121,8 +121,8 @@ void main() {
           type: TagBottomSheetType.update,
           utxoTags: mockTags,
           updateUtxoTag: mockTags[2],
-          onUpdated: (updatedUtxoTag) {
-            resultTag = updatedUtxoTag;
+          onUpdated: (utxoTag) {
+            resultTag = utxoTag;
           },
         ),
       ));
