@@ -1,15 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
-import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/screens/wallet_list_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
@@ -19,8 +15,6 @@ import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/request/faucet_request.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/repositories/faucet_repository.dart';
-import 'package:coconut_wallet/services/secure_storage_service.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 

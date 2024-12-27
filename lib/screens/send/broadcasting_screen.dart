@@ -1,7 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
