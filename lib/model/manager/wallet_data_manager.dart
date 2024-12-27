@@ -39,8 +39,12 @@ class WalletDataManager {
       RealmWalletBase.schema,
       RealmMultisigWallet.schema,
       RealmTransaction.schema,
-      RealmIntegerId.schema
-    ]);
+      RealmIntegerId.schema,
+      TempBroadcastTimeRecord.schema
+    ], schemaVersion: 1, migrationCallback: (migration, oldVersion) {
+      // if (oldVersion < 1) {
+      // }
+    });
     _realm = Realm(config);
   }
 
@@ -178,7 +182,6 @@ class WalletDataManager {
           needToUpdateList[i], realmWallets[i], syncResults[i]);
     }
 
-    //realm.writeAsync(writeCallback) // TODO: 언제 쓰는건지 테스트 필요..
     return true;
   }
 
@@ -186,10 +189,13 @@ class WalletDataManager {
   void _updateDBAndWalletListAsLatest(WalletListItemBase walletItem,
       RealmWalletBase realmWallet, WalletStatus syncResult) {
     // 갱신해야 하는 txList 개수 구하기
-    int newTxCount = 0;
+    int getTxCount = 0;
+    // 지갑에서 보내기 한 내역 조회, createdAt값 저장을 위해
+    RealmResults<TempBroadcastTimeRecord>? tempBroadcastTimeRecord =
+        _realm.all<TempBroadcastTimeRecord>();
     if (realmWallet.txCount == null ||
         realmWallet.txCount != syncResult.transactionList.length) {
-      newTxCount =
+      getTxCount =
           syncResult.transactionList.length - (realmWallet.txCount ?? 0);
     }
     RealmResults<RealmTransaction>? updateTargets;
@@ -206,17 +212,16 @@ class WalletDataManager {
 
       updateTargets = updateTargets.query('id >= ${firstProcessingTx.id}');
       print('--> updateTargets: ${updateTargets.length}');
-      newTxCount = newTxCount + updateTargets.length;
+      getTxCount = getTxCount + updateTargets.length;
       finalUpdateTargets = updateTargets.toList();
     }
     print(
-        '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${finalUpdateTargets?.length} = $newTxCount');
-    if (newTxCount == 0) return;
+        '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${finalUpdateTargets?.length} = $getTxCount');
 
     var walletFeature = getWalletFeatureByWalletType(walletItem);
     // 항상 최신순으로 반환
     List<Transfer> newTxList =
-        walletFeature.getTransferList(cursor: 0, count: newTxCount);
+        walletFeature.getTransferList(cursor: 0, count: getTxCount);
     print('--> newTxList length: ${newTxList.length}');
     int nextId = generateNextId(_realm, (RealmTransaction).toString());
     List<int> matchedUpdateTargetIds = [];
@@ -233,18 +238,29 @@ class WalletDataManager {
             '--> existingTx: $existingTx, nextId: $nextId, timestamp: ${newTxList[i].timestamp}');
 
         RealmTransaction saveTarget;
+        TempBroadcastTimeRecord? record = tempBroadcastTimeRecord
+            .query('transactionHash = \'${newTxList[i].transactionHash}\'')
+            .firstOrNull;
         if (existingTx != null) {
           existingTx
             ..timestamp = newTxList[i].timestamp
             ..blockHeight = newTxList[i].blockHeight;
           matchedUpdateTargetIds.add(existingTx.id);
-          // saveTarget = mapTransferToRealmTransaction(
-          //     newTxList[i], realmWallet, existingTx.id);
         } else {
-          saveTarget =
-              mapTransferToRealmTransaction(newTxList[i], realmWallet, nextId);
+          saveTarget = mapTransferToRealmTransaction(
+              newTxList[i], realmWallet, nextId, record?.createdAt);
           nextId++;
+
           _realm.add<RealmTransaction>(saveTarget);
+        }
+
+        // 코코넛 월렛 안의 지갑끼리 주고받은 경우를 위해 삭제 시점을 아래로 변경
+        // 컨펌된 트랜잭션의 TempBroadcastTimeRecord 삭제
+        print(
+            '--> record: $record, newTxList[i].blockHeight: ${newTxList[i].blockHeight}');
+        if (record != null && newTxList[i].blockHeight != 0) {
+          print('--> delete record!!!!');
+          _realm.delete<TempBroadcastTimeRecord>(record);
         }
       }
 
@@ -349,17 +365,35 @@ class WalletDataManager {
     _sharedPrefs.setInt(nextIdField, value);
   }
 
-  List<Transfer>? getTxList(int id) {
-    final transactions = _realm
-        .all<RealmTransaction>()
-        .query('walletBase.id == $id SORT(timestamp DESC)');
+  /// 최신순으로 반환하지만, unconfirmed가 createdAt 순으로 가장 상위에 위치
+  /// confirmed는 timestamp 순
+  List<TransferDTO>? getTxList(int id) {
+    final transactions =
+        _realm.all<RealmTransaction>().query('walletBase.id == $id');
 
     if (transactions.isEmpty) return null;
-    List<Transfer> result = [];
-    for (var t in transactions) {
+    List<TransferDTO> result = [];
+
+    final unconfirmed =
+        transactions.query('blockHeight = 0 SORT(createdAt DESC)');
+    final confirmed =
+        transactions.query('blockHeight != 0 SORT(timestamp DESC)');
+
+    for (var t in unconfirmed) {
       result.add(mapRealmTransactionToTransfer(t));
     }
+    for (var t in confirmed) {
+      result.add(mapRealmTransactionToTransfer(t));
+    }
+
     return result;
+  }
+
+  Future<void> recordTemporaryBroadcastTime(
+      String txHash, DateTime createdAt) async {
+    await _realm.writeAsync(() {
+      _realm.add(TempBroadcastTimeRecord(txHash, createdAt));
+    });
   }
 
   void reset() {

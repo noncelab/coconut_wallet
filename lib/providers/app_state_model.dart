@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
 import 'package:coconut_wallet/screens/wallet_list_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -580,7 +581,7 @@ class AppStateModel extends ChangeNotifier {
   //   }
   // }
 
-  List<Transfer>? getTxList(int walletId) {
+  List<TransferDTO>? getTxList(int walletId) {
     return _walletDataManager.getTxList(walletId);
   }
 
@@ -725,11 +726,17 @@ class AppStateModel extends ChangeNotifier {
     }
   }
 
-  Future<Result<String, CoconutError>> broadcast(String signedTx) async {
+  Future<Result<String, CoconutError>> broadcast(Transaction signedTx) async {
     await _initNodeConnectionWhenIsNull();
 
     Result<String, CoconutError> result =
-        await _nodeConnector!.broadcast(signedTx);
+        await _nodeConnector!.broadcast(signedTx.serialize());
+    _walletDataManager
+        .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
+        .catchError((_) {
+      // ignore intentionally
+      Logger.error(_);
+    });
     return result;
   }
 }

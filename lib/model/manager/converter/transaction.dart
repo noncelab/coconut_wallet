@@ -4,8 +4,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/manager/realm/model/coconut_wallet_data.dart';
 
 // Transfer -> _RealmTransaction 변환 함수
-RealmTransaction mapTransferToRealmTransaction(
-    Transfer transfer, RealmWalletBase realmWalletBase, int id) {
+RealmTransaction mapTransferToRealmTransaction(Transfer transfer,
+    RealmWalletBase realmWalletBase, int id, DateTime? createdAt) {
   return RealmTransaction(id, transfer.transactionHash,
       walletBase: realmWalletBase,
       timestamp: transfer.timestamp,
@@ -19,7 +19,8 @@ RealmTransaction mapTransferToRealmTransaction(
           .toList(),
       outputAddressList: transfer.outputAddressList
           .map((address) => jsonEncode(addressToJson(address)))
-          .toList());
+          .toList(),
+      createdAt: createdAt);
 }
 
 // note(트랜잭션 메모) 정보가 추가로 필요하여 TransferDTO를 반환
@@ -38,7 +39,8 @@ TransferDTO mapRealmTransactionToTransfer(RealmTransaction realmTransaction) {
       realmTransaction.outputAddressList
           .map((element) => jsonToAddress(jsonDecode(element)))
           .toList(),
-      realmTransaction.note);
+      realmTransaction.note,
+      realmTransaction.createdAt);
 }
 
 Map<String, dynamic> addressToJson(Address address) {
@@ -57,6 +59,7 @@ Address jsonToAddress(Map<String, dynamic> json) {
 
 class TransferDTO extends Transfer {
   String? note;
+  DateTime? createdAt;
 
   TransferDTO(
       super.transactionHash,
@@ -68,5 +71,14 @@ class TransferDTO extends Transfer {
       super.fee,
       super.inputAddressList,
       super.outputAddressList,
-      this.note);
+      this.note,
+      this.createdAt);
+
+  DateTime? getDateTimeToDisplay() {
+    if (blockHeight != null && blockHeight == 0 && createdAt != null) {
+      return createdAt;
+    }
+
+    return timestamp;
+  }
 }

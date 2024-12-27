@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -90,7 +91,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   int _selectedAccountIndex = 0;
   Unit _current = Unit.btc;
-  List<Transfer> _txList = [];
+  List<TransferDTO> _txList = [];
 
 // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
   List<model.UTXO> _utxoList = [];
@@ -109,8 +110,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   late WalletInitState _prevWalletInitState;
   late int? _prevTxCount;
   late bool _prevIsLatestTxBlockHeightZero;
-
-  final SharedPrefs _sharedPrefs = SharedPrefs();
 
   late final ScrollController _scrollController;
 
@@ -137,7 +136,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       });
     }
 
-    List<Transfer>? newTxList = _model.getTxList(widget.id);
+    List<TransferDTO>? newTxList = _model.getTxList(widget.id);
     if (newTxList != null) {
       _txList = newTxList;
     }
@@ -275,7 +274,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (_prevTxCount != txCount ||
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
       // TODO: pagination?
-      List<Transfer>? newTxList = _model.getTxList(widget.id);
+      List<TransferDTO>? newTxList = _model.getTxList(widget.id);
       if (newTxList != null) {
         print('--> [detail화면] newTxList.length: ${newTxList.length}');
         _txList = newTxList;
@@ -1224,7 +1223,7 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
 }
 
 class TransactionRowItem extends StatefulWidget {
-  final Transfer tx;
+  final TransferDTO tx;
   final Unit currentUnit;
   final int id;
 
@@ -1348,9 +1347,11 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
 
   @override
   Widget build(BuildContext context) {
-    List<String>? transactionTimeStamp = widget.tx.timestamp != null
-        ? DateTimeUtil.formatTimeStamp(widget.tx.timestamp!.toLocal())
-        : null;
+    List<String>? timestamp = widget.tx.getDateTimeToDisplay() == null
+        ? null
+        : DateTimeUtil.formatTimeStamp(
+            widget.tx.getDateTimeToDisplay()!.toLocal());
+
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,
         onPressed: () {
@@ -1369,9 +1370,7 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                transactionTimeStamp != null
-                    ? '${transactionTimeStamp[0]} | ${transactionTimeStamp[1]}'
-                    : '',
+                timestamp == null ? '' : '${timestamp[0]} | ${timestamp[1]}',
                 style: Styles.caption,
               ),
               const SizedBox(
