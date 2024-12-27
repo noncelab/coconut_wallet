@@ -286,6 +286,7 @@ class RealmTransaction extends _RealmTransaction
     Iterable<String> inputAddressList = const [],
     Iterable<String> outputAddressList = const [],
     String? note,
+    DateTime? createdAt,
   }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'transactionHash', transactionHash);
@@ -301,6 +302,7 @@ class RealmTransaction extends _RealmTransaction
     RealmObjectBase.set<RealmList<String>>(
         this, 'outputAddressList', RealmList<String>(outputAddressList));
     RealmObjectBase.set(this, 'note', note);
+    RealmObjectBase.set(this, 'createdAt', createdAt);
   }
 
   RealmTransaction._();
@@ -382,6 +384,13 @@ class RealmTransaction extends _RealmTransaction
   set note(String? value) => RealmObjectBase.set(this, 'note', value);
 
   @override
+  DateTime? get createdAt =>
+      RealmObjectBase.get<DateTime>(this, 'createdAt') as DateTime?;
+  @override
+  set createdAt(DateTime? value) =>
+      RealmObjectBase.set(this, 'createdAt', value);
+
+  @override
   Stream<RealmObjectChanges<RealmTransaction>> get changes =>
       RealmObjectBase.getChanges<RealmTransaction>(this);
 
@@ -408,6 +417,7 @@ class RealmTransaction extends _RealmTransaction
       'inputAddressList': inputAddressList.toEJson(),
       'outputAddressList': outputAddressList.toEJson(),
       'note': note.toEJson(),
+      'createdAt': createdAt.toEJson(),
     };
   }
 
@@ -432,6 +442,7 @@ class RealmTransaction extends _RealmTransaction
           inputAddressList: fromEJson(ejson['inputAddressList']),
           outputAddressList: fromEJson(ejson['outputAddressList']),
           note: fromEJson(ejson['note']),
+          createdAt: fromEJson(ejson['createdAt']),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -458,6 +469,7 @@ class RealmTransaction extends _RealmTransaction
       SchemaProperty('outputAddressList', RealmPropertyType.string,
           collectionType: RealmCollectionType.list),
       SchemaProperty('note', RealmPropertyType.string, optional: true),
+      SchemaProperty('createdAt', RealmPropertyType.timestamp, optional: true),
     ]);
   }();
 
@@ -529,6 +541,83 @@ class RealmIntegerId extends _RealmIntegerId
         ObjectType.realmObject, RealmIntegerId, 'RealmIntegerId', [
       SchemaProperty('key', RealmPropertyType.string, primaryKey: true),
       SchemaProperty('value', RealmPropertyType.int),
+    ]);
+  }();
+
+  @override
+  SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
+}
+
+class TempBroadcastTimeRecord extends _TempBroadcastTimeRecord
+    with RealmEntity, RealmObjectBase, RealmObject {
+  TempBroadcastTimeRecord(
+    String transactionHash,
+    DateTime createdAt,
+  ) {
+    RealmObjectBase.set(this, 'transactionHash', transactionHash);
+    RealmObjectBase.set(this, 'createdAt', createdAt);
+  }
+
+  TempBroadcastTimeRecord._();
+
+  @override
+  String get transactionHash =>
+      RealmObjectBase.get<String>(this, 'transactionHash') as String;
+  @override
+  set transactionHash(String value) =>
+      RealmObjectBase.set(this, 'transactionHash', value);
+
+  @override
+  DateTime get createdAt =>
+      RealmObjectBase.get<DateTime>(this, 'createdAt') as DateTime;
+  @override
+  set createdAt(DateTime value) =>
+      RealmObjectBase.set(this, 'createdAt', value);
+
+  @override
+  Stream<RealmObjectChanges<TempBroadcastTimeRecord>> get changes =>
+      RealmObjectBase.getChanges<TempBroadcastTimeRecord>(this);
+
+  @override
+  Stream<RealmObjectChanges<TempBroadcastTimeRecord>> changesFor(
+          [List<String>? keyPaths]) =>
+      RealmObjectBase.getChangesFor<TempBroadcastTimeRecord>(this, keyPaths);
+
+  @override
+  TempBroadcastTimeRecord freeze() =>
+      RealmObjectBase.freezeObject<TempBroadcastTimeRecord>(this);
+
+  EJsonValue toEJson() {
+    return <String, dynamic>{
+      'transactionHash': transactionHash.toEJson(),
+      'createdAt': createdAt.toEJson(),
+    };
+  }
+
+  static EJsonValue _toEJson(TempBroadcastTimeRecord value) => value.toEJson();
+  static TempBroadcastTimeRecord _fromEJson(EJsonValue ejson) {
+    if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
+    return switch (ejson) {
+      {
+        'transactionHash': EJsonValue transactionHash,
+        'createdAt': EJsonValue createdAt,
+      } =>
+        TempBroadcastTimeRecord(
+          fromEJson(transactionHash),
+          fromEJson(createdAt),
+        ),
+      _ => raiseInvalidEJson(ejson),
+    };
+  }
+
+  static final schema = () {
+    RealmObjectBase.registerFactory(TempBroadcastTimeRecord._);
+    register(_toEJson, _fromEJson);
+    return const SchemaObject(ObjectType.realmObject, TempBroadcastTimeRecord,
+        'TempBroadcastTimeRecord', [
+      SchemaProperty('transactionHash', RealmPropertyType.string,
+          primaryKey: true),
+      SchemaProperty('createdAt', RealmPropertyType.timestamp),
     ]);
   }();
 
