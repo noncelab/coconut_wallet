@@ -157,8 +157,8 @@ class _PowWalletAppState extends State<PowWalletApp> {
               ),
           '/transaction-detail': (context) => buildScreenWithArguments(
                 context,
-                (args) =>
-                    TransactionDetailScreen(tx: args['tx'], id: args['id']),
+                (args) => TransactionDetailScreen(
+                    id: args['id'], txHash: args['txHash']),
               ),
           '/receive-address': (context) => buildScreenWithArguments(
                 context,

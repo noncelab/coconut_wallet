@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+/// [CustomLimitTextField] : 최대입력 글자를 입력하고 TextFiled 아래에 표기하는 위젯
+/// (controller.text.length/maxLength) = (1/30)
 class CustomLimitTextField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;

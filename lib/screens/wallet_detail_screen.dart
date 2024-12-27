@@ -1357,8 +1357,10 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,
         onPressed: () {
-          Navigator.pushNamed(context, '/transaction-detail',
-              arguments: {'id': widget.id, 'tx': widget.tx});
+          Navigator.pushNamed(context, '/transaction-detail', arguments: {
+            'id': widget.id,
+            'txHash': widget.tx.transactionHash
+          });
         },
         borderRadius: MyBorder.defaultRadiusValue,
         child: Container(

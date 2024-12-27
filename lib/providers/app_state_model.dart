@@ -619,6 +619,22 @@ class AppStateModel extends ChangeNotifier {
     return _walletDataManager.getTxList(walletId);
   }
 
+  /// TODO: 협의 필요
+  /// txList가 모델에서 관리되면 DB 업데이트 성공 이후
+  Transfer? _transaction;
+  Transfer? get transaction => _transaction;
+
+  void loadTransaction(int id, String txHash) {
+    _transaction =
+        _walletDataManager.loadTransferDTOWithIdAndTxHash(id, txHash);
+    notifyListeners();
+  }
+
+  void updateTransactionMemoWithTxHash(int id, String txHash, String memo) {
+    _walletDataManager.updateTransactionMemoWithTxHash(id, txHash, memo);
+    loadTransaction(id, txHash);
+  }
+
   // Future<void> _updateMultisigWallet(
   //     MultisigWalletListItem wallet, WalletStatus syncResult) async {
   //   final multisigWallet = wallet.walletBase as MultisignatureWallet;

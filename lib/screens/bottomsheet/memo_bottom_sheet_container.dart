@@ -3,6 +3,9 @@ import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 
+/// [MemoBottomSheetContainer] : 트랜잭션 메모 등록/수정 BottomSheet
+/// [updateMemo] : 변경할 트랜잭션 메모, default empty
+/// [onComplete] : 수정/등록할 메모 반환 콜백
 class MemoBottomSheetContainer extends StatefulWidget {
   final String updateMemo;
   final Function(String) onComplete;
@@ -20,8 +23,11 @@ class MemoBottomSheetContainer extends StatefulWidget {
 class _MemoBottomSheetContainerState extends State<MemoBottomSheetContainer> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
+  /// [CustomLimitTextField]에서 입력된 메모
   String _updateMemo = '';
 
+  /// 완료 버튼 활성화 여부
   bool _isCompleteButtonEnabled = false;
 
   @override

@@ -458,6 +458,32 @@ class WalletDataManager {
     return result;
   }
 
+  TransferDTO? loadTransferDTOWithIdAndTxHash(int id, String txHash) {
+    final transactions = _realm.query<RealmTransaction>(
+        "walletBase.id == '$id' And transactionHash == '$txHash'");
+
+    if (transactions.isEmpty) {
+      return null;
+    }
+
+    return mapRealmTransactionToTransfer(transactions.first);
+  }
+
+  void updateTransactionMemoWithTxHash(int id, String txHash, String memo) {
+    final transactions = _realm.query<RealmTransaction>(
+        "walletBase.id == '$id' And transactionHash == '$txHash'");
+
+    if (transactions.isEmpty) {
+      return;
+    }
+
+    final transaction = transactions.first;
+
+    _realm.write(() {
+      transaction.memo = memo;
+    });
+  }
+
   Future<void> recordTemporaryBroadcastTime(
       String txHash, DateTime createdAt) async {
     await _realm.writeAsync(() {
