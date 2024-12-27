@@ -372,6 +372,18 @@ class WalletDataManager {
     return _utxoTagList;
   }
 
+  void deleteAllUtxoTagWithWalletId(int walletId) {
+    final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
+
+    if (tags.isEmpty) return;
+
+    _realm.write(() {
+      for (var tag in tags) {
+        _realm.delete(tag);
+      }
+    });
+  }
+
   void addUtxoTagWithWalletId(
       String id, int walletId, String name, int colorIndex) {
     final utxoTag =

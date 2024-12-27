@@ -98,6 +98,10 @@ class AppStateModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void deleteAllUtxoTagWithWalletId(int walletId) {
+    _walletDataManager.deleteAllUtxoTagWithWalletId(walletId);
+  }
+
   void addUtxoTag(UtxoTag utxoTag) {
     final id = const Uuid().v4();
     _walletDataManager.addUtxoTagWithWalletId(
@@ -379,6 +383,7 @@ class AppStateModel extends ChangeNotifier {
 
   Future<void> deleteWallet(int id) async {
     _walletDataManager.deleteWallet(id);
+    _walletDataManager.deleteAllUtxoTagWithWalletId(id);
     _walletItemList = _walletDataManager.walletList;
     if (_walletItemList.isEmpty) {
       _subStateModel.saveNotEmptyWalletList(false);
