@@ -18,7 +18,7 @@ enum TagBottomSheetType { select, create, update }
 /// [type] : BottomSheet Type
 /// [utxoTags] : 지갑에 생성된 UtxoTag 전체 목록
 /// [selectedUtxoTagNames] : select type only, 선택된 UTXO name 목록
-/// [updateUtxoTag] : update type only, 기존 태그를 수정하기 위한 UtxoTag 객체
+/// [updateUtxoTag] : update type only, 선택된 태그를 수정하기 위한 UtxoTag 객체
 /// [onSelected] : select type only, 태그 목록 선택 변경 및 새태그 생성 완료 콜백
 /// [onUpdated] : create type, update type 선택된 태그 편집 및 새 태그 생성 완료 콜백
 class TagBottomSheetContainer extends StatefulWidget {
@@ -44,14 +44,11 @@ class TagBottomSheetContainer extends StatefulWidget {
 }
 
 class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
-  /// UtxoTag 전체 목록 - create type 에서 변경될 수 있음
+  /// UtxoTag 전체 목록 - select type 에서 변경될 수 있음
   List<UtxoTag> _utxoTags = [];
 
   /// 선택된 UTXO의 UtxoTag name 목록 - select type 에서 변경될 수 있음
   List<String> _selectedUtxoTagNames = [];
-
-  /// 선택된 UtxoTag - update type 에서 변경될 수 있음
-  UtxoTag? _updateUtxoTag;
 
   /// BottomSheet 상태 - select type 에서 create 로 변경될 수 있음
   TagBottomSheetType _type = TagBottomSheetType.select;
@@ -62,17 +59,19 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
   /// select type 에서 완료 버튼 활성화 여부
   bool _isSelectButtonEnabled = false;
 
+  /// 선택된 UtxoTag - update type 에서 변경될 수 있음
+  UtxoTag? _updateUtxoTag;
+
   /// update type 에서 완료 버튼 활성화 여부
   bool _isUpdateButtonEnabled = false;
-
-  final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
 
   /// [CustomLimitTextField] 에서 변경된 TagName
   String _updateTagName = '';
 
   /// [CustomTagChipColorButton] 에서 변경된 TagColorIndex
   int _updateTagColorIndex = 0;
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
