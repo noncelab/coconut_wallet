@@ -585,6 +585,10 @@ class AppStateModel extends ChangeNotifier {
     return _walletDataManager.getTxList(walletId);
   }
 
+  Transfer getTransaction(String txHash) {
+    return _walletDataManager.getTransaction(txHash);
+  }
+
   // Future<void> _updateMultisigWallet(
   //     MultisigWalletListItem wallet, WalletStatus syncResult) async {
   //   final multisigWallet = wallet.walletBase as MultisignatureWallet;

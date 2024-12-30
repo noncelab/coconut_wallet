@@ -1243,70 +1243,100 @@ class TransactionRowItem extends StatefulWidget {
 
 class _TransactionRowItemState extends State<TransactionRowItem> {
   Widget _getStatusWidget() {
+    TextStyle fontStyle = Styles.body2.merge(
+      const TextStyle(
+        fontWeight: FontWeight.w500,
+        height: 21 / 14,
+      ),
+    );
     switch (widget.status) {
       case TransactionStatus.received:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-received.svg'),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-received.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '받기 완료',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.receiving:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-receiving.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-receiving.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '받는 중',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.sent:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-sent.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-sent.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '보내기 완료',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.sending:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-sending.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-sending.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '보내는 중',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.self:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-self.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-self.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '받기 완료',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.selfsending:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-self-sending.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-self-sending.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '보내는 중',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
@@ -1323,8 +1353,9 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
           widget.currentUnit == Unit.btc
               ? '+${satoshiToBitcoinString(widget.tx.amount!)}'
               : '+${addCommasToIntegerPart(widget.tx.amount!.toDouble())}',
-          style: Styles.body1Number.merge(const TextStyle(
-              color: MyColors.white, fontWeight: FontWeight.w500)),
+          style: Styles.body1Number.merge(
+            const TextStyle(color: MyColors.white, height: 24 / 16),
+          ),
         );
       case TransactionStatus.self:
       case TransactionStatus.selfsending:
@@ -1347,10 +1378,9 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
 
   @override
   Widget build(BuildContext context) {
-    List<String>? timestamp = widget.tx.getDateTimeToDisplay() == null
-        ? null
-        : DateTimeUtil.formatTimeStamp(
-            widget.tx.getDateTimeToDisplay()!.toLocal());
+    List<String>? transactionTimeStamp = widget.tx.timestamp != null
+        ? DateTimeUtil.formatTimeStamp(widget.tx.timestamp!.toLocal())
+        : null;
 
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,
@@ -1369,12 +1399,34 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                timestamp == null ? '' : '${timestamp[0]} | ${timestamp[1]}',
-                style: Styles.caption,
+              Row(
+                children: [
+                  Text(
+                    transactionTimeStamp != null ? transactionTimeStamp[0] : '',
+                    style: Styles.caption,
+                  ),
+                  const SizedBox(
+                    width: 8,
+                  ),
+                  Text(
+                    '|',
+                    style: Styles.caption.merge(
+                      const TextStyle(
+                        color: MyColors.transparentWhite_40,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 8,
+                  ),
+                  Text(
+                    transactionTimeStamp != null ? transactionTimeStamp[1] : '',
+                    style: Styles.caption,
+                  ),
+                ],
               ),
               const SizedBox(
-                height: 4.0,
+                height: 5.0,
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
