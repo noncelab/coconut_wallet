@@ -205,6 +205,10 @@ flutter:
     - assets/svg/question-mark.svg
     - assets/svg/circle-arrow-right.svg
     - assets/svg/circle-pick.svg
+    - assets/svg/circle-check-green.svg
+    - assets/svg/circle-check-gray.svg
+    - assets/svg/row-divider.svg
+    
 
   fonts:
     - family: SpaceGrotesk

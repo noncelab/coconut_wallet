@@ -143,6 +143,7 @@ class CustomAppBar {
     return AppBar(
         title: Text(title),
         centerTitle: true,
+        scrolledUnderElevation: 0,
         backgroundColor: backgroundColor ?? Colors.transparent,
         titleTextStyle:
             Styles.navHeader.merge(const TextStyle(color: MyColors.white)),
