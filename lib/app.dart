@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/appGuard.dart';
+import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/address_list_screen.dart';
 import 'package:coconut_wallet/screens/receive_address_screen.dart';
@@ -71,8 +72,11 @@ class _PowWalletAppState extends State<PowWalletApp> {
         /// main 에서만 사용하는 모델
         if (_screenStatus == ApproachScreen.main) ...{
           ChangeNotifierProxyProvider<AppSubStateModel, AppStateModel>(
-            create: (_) =>
-                AppStateModel(Provider.of<AppSubStateModel>(_, listen: false)),
+            create: (_) {
+              return AppStateModel(
+                  Provider.of<AppSubStateModel>(_, listen: false),
+                  WalletDataManager());
+            },
             update: (_, subStateModel, appStateModel) =>
                 appStateModel!..updateWithSubState(subStateModel),
           ),

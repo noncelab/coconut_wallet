@@ -65,7 +65,8 @@ class _SettingsScreen extends State<SettingsScreen> {
                               ),
                             );
                           } else {
-                            _subModel.deletePin();
+                            Provider.of<AppStateModel>(context, listen: false)
+                                .deletePin();
                           }
                         })),
                 if (_subModel.canCheckBiometrics && _subModel.isSetPin)

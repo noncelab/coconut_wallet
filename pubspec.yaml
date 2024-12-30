@@ -76,6 +76,7 @@ dependencies:
       url: https://github.com/noncelab/coconut_lib
       ref: develop
   realm: ^20.0.0
+  cryptography: ^2.7.0
 
 dev_dependencies:
   flutter_test:

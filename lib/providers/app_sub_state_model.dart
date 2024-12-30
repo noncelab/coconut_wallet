@@ -176,9 +176,9 @@ class AppSubStateModel with ChangeNotifier {
   }
 
   /// 비밀번호 저장
-  Future<void> savePinSet(String pin) async {
-    String hashed = hashString(pin);
-    await _secureStorageService.write(key: kSecureStoragePinKey, value: hashed);
+  Future<void> savePinSet(String hashedPin) async {
+    await _secureStorageService.write(
+        key: kSecureStoragePinKey, value: hashedPin);
     _isSetPin = true;
     _sharedPrefs.setBool(SharedPrefs.kIsSetPin, _isSetPin);
     notifyListeners();
@@ -210,9 +210,11 @@ class AppSubStateModel with ChangeNotifier {
     _isSetPin = false;
     _isBalanceHidden = false;
     _lastUpdateTime = 0;
-    WalletDataManager()
-      ..init()
-      ..reset();
+
+    var wdm = WalletDataManager();
+    await wdm.init(false);
+    wdm.reset();
+
     await SecureStorageService().deleteAll();
     await SharedPrefs().clearSharedPref();
     await checkDeviceBiometrics();

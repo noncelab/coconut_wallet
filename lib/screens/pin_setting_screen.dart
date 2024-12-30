@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/providers/app_state_model.dart';
+import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -140,9 +142,11 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           await _subModel.checkDeviceBiometrics();
         }
 
-        _subModel.savePinSet(pin).then((_) async {
+        Provider.of<AppStateModel>(context, listen: false)
+            .setPin(hashString(pin))
+            .then((_) async {
           _showPinSetDialog();
-          await Future.delayed(const Duration(seconds: 3));
+
           Navigator.pop(context);
           Navigator.pop(context);
         }).catchError((_) {
