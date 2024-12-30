@@ -197,8 +197,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 children: [
                   if (widget.tx.timestamp != null)
                     HighlightedInfoArea(
-                        textList:
-                            DateTimeUtil.formatTimeStamp(widget.tx.timestamp!)),
+                        textList: DateTimeUtil.formatTimeStamp(
+                            widget.tx.timestamp!.toLocal())),
                   const SizedBox(
                     height: 24,
                   ),
