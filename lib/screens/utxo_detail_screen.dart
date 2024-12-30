@@ -39,12 +39,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late Transfer transaction;
 
   final GlobalKey _utxoTooltipIconKey = GlobalKey();
-  late RenderBox _utxoTooltipIconRenderBox;
   late Size _utxoTooltipIconSize;
   late Offset _utxoTooltipIconPosition;
 
   final String _utxoTip =
       'UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
+
+  final GlobalKey _balanceWidthKey = GlobalKey();
+  Size _balanceWidthSize = const Size(0, 0);
 
   int initialInputMaxCount = 3;
   int initialOutputMaxCount = 2;
@@ -57,13 +59,20 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     final model = Provider.of<AppStateModel>(context, listen: false);
     transaction = model.getTransaction(widget.utxo.txHash);
     _initMaxCount();
+    _sortOutputAddressList();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _utxoTooltipIconRenderBox =
+      RenderBox utxoTooltipIconRenderBox =
           _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox;
       _utxoTooltipIconPosition =
-          _utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
-      _utxoTooltipIconSize = _utxoTooltipIconRenderBox.size;
+          utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
+
+      RenderBox balanceWidthRenderBox =
+          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
+      setState(() {
+        _balanceWidthSize = balanceWidthRenderBox.size;
+      });
     });
   }
 
@@ -73,6 +82,16 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     }
     if (transaction.outputAddressList.length <= initialOutputMaxCount) {
       initialOutputMaxCount = transaction.outputAddressList.length;
+    }
+  }
+
+  void _sortOutputAddressList() {
+    if (transaction.outputAddressList.isNotEmpty) {
+      transaction.outputAddressList.sort((a, b) {
+        if (a.address == widget.utxo.to) return -1;
+        if (b.address == widget.utxo.to) return 1;
+        return 0;
+      });
     }
   }
 
@@ -136,7 +155,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                         const TextStyle(
                                             fontSize: 24, height: 1)),
                                     children: const <TextSpan>[
-                              TextSpan(text: ' BTC', style: Styles.body2)
+                              TextSpan(text: ' BTC', style: Styles.body2Number)
                             ]))),
                         const SizedBox(
                           height: 8,
@@ -176,6 +195,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                           .inputAddressList[index].address,
                                       balance: transaction
                                           .inputAddressList[index].amount,
+                                      balanceMaxWidth: _balanceWidthSize.width,
                                       rowType: InputOutputRowType.input,
                                       isCurrentAddress: transaction
                                               .inputAddressList[index]
@@ -198,9 +218,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const InputOutputDetailRow(
+                            InputOutputDetailRow(
                               address: '수수료',
                               balance: 142,
+                              balanceMaxWidth: _balanceWidthSize.width,
                               rowType: InputOutputRowType.fee,
                             ),
                             const SizedBox(height: 8),
@@ -217,6 +238,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                           .outputAddressList[index].address,
                                       balance: transaction
                                           .outputAddressList[index].amount,
+                                      balanceMaxWidth: _balanceWidthSize.width,
                                       rowType: InputOutputRowType.output,
                                       isCurrentAddress: transaction
                                               .outputAddressList[index]
@@ -333,6 +355,18 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             )),
                         const SizedBox(
                           height: 40,
+                        ),
+                        Text(
+                          /// inputOutput 위젯에 들어갈 balance 최대 너비 체크용
+                          key: _balanceWidthKey,
+                          '0.0000 0000',
+                          style: Styles.body2Number.merge(
+                            const TextStyle(
+                              color: Colors.transparent,
+                              fontSize: 14,
+                              height: 16 / 14,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -462,6 +496,7 @@ class InfoRow extends StatelessWidget {
 class InputOutputDetailRow extends StatelessWidget {
   final String address;
   final int balance;
+  final double balanceMaxWidth;
   final InputOutputRowType rowType;
   final bool isCurrentAddress;
   final TransactionStatus? transactionStatus;
@@ -470,6 +505,7 @@ class InputOutputDetailRow extends StatelessWidget {
     super.key,
     required this.address,
     required this.balance,
+    required this.balanceMaxWidth,
     required this.rowType,
     this.isCurrentAddress = false,
     this.transactionStatus,
@@ -586,46 +622,42 @@ class InputOutputDetailRow extends StatelessWidget {
 
     return Row(
       children: [
-        Expanded(
-          flex: 5,
-          child: Text(
-            TextUtils.truncateNameMax19(address),
-            style: Styles.body2Number.merge(
-              TextStyle(
-                color: leftItemColor,
-                fontSize: 14,
-                height: 16 / 14,
-              ),
+        Text(
+          TextUtils.truncateNameMax19(address),
+          style: Styles.body2Number.merge(
+            TextStyle(
+              color: leftItemColor,
+              fontSize: 14,
+              height: 16 / 14,
             ),
-            maxLines: 1,
           ),
+          maxLines: 1,
         ),
         if (rowType == InputOutputRowType.output ||
             rowType == InputOutputRowType.fee)
           Expanded(
-            flex: 4,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Row(
-                  children: [
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    SvgPicture.asset(
-                      assetAddress,
-                      width: 16,
-                      height: 12,
-                    ),
-                  ],
+                SvgPicture.asset(
+                  assetAddress,
+                  width: 16,
+                  height: 12,
                 ),
-                Text(
-                  '${satoshiToBitcoinString(balance).normalizeTo11Characters()} BTC',
-                  style: Styles.body2Number.merge(
-                    TextStyle(
-                      color: rightItemColor,
-                      fontSize: 14,
-                      height: 16 / 14,
+                const SizedBox(
+                  width: 10,
+                ),
+                SizedBox(
+                  width: balanceMaxWidth,
+                  child: Text(
+                    textAlign: TextAlign.end,
+                    satoshiToBitcoinString(balance).normalizeTo11Characters(),
+                    style: Styles.body2Number.merge(
+                      TextStyle(
+                        color: rightItemColor,
+                        fontSize: 14,
+                        height: 16 / 14,
+                      ),
                     ),
                   ),
                 ),
@@ -634,26 +666,24 @@ class InputOutputDetailRow extends StatelessWidget {
           ),
         if (rowType == InputOutputRowType.input)
           Expanded(
-            flex: 4,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Row(
-                  children: [
-                    const SizedBox(
-                      width: 10,
-                    ),
-                    Text(
-                      '${satoshiToBitcoinString(balance).normalizeTo11Characters()} BTC',
-                      style: Styles.body2Number.merge(
-                        TextStyle(
-                          color: rightItemColor,
-                          fontSize: 14,
-                          height: 16 / 14,
-                        ),
+                SizedBox(
+                  width: balanceMaxWidth,
+                  child: Text(
+                    satoshiToBitcoinString(balance).normalizeTo11Characters(),
+                    style: Styles.body2Number.merge(
+                      TextStyle(
+                        color: rightItemColor,
+                        fontSize: 14,
+                        height: 16 / 14,
                       ),
                     ),
-                  ],
+                  ),
+                ),
+                const SizedBox(
+                  width: 10,
                 ),
                 SvgPicture.asset(
                   assetAddress,

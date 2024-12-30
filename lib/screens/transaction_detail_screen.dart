@@ -42,16 +42,29 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   int itemsToShowInput = 5;
   int itemsToShowOutput = 5;
 
+  final GlobalKey _balanceWidthKey = GlobalKey();
+  Size _balanceWidthSize = const Size(0, 0);
+
   @override
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
     _addressBook = model.getWalletById(widget.id).walletBase.addressBook;
+    if (widget.tx.outputAddressList.isNotEmpty) {
+      widget.tx.outputAddressList.sort((a, b) {
+        if (_addressBook.contains(a.address)) return -1;
+        if (_addressBook.contains(b.address)) return 1;
+        return 0;
+      });
+    }
     _initSeeMoreButtons();
     model.getCurrentBlockHeight().then((value) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        RenderBox balanceWidthRenderBox =
+            _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
         setState(() {
           _currentBlockHeight = value;
+          _balanceWidthSize = balanceWidthRenderBox.size;
         });
       });
     });
@@ -210,7 +223,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     builder: (context, bitcoinPriceKrw, child) {
                       return Text(
                         bitcoinPriceKrw != null
-                            ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.tx.amount!, bitcoinPriceKrw).toDouble())}'
+                            ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.tx.amount!, bitcoinPriceKrw).toDouble().abs())}'
                             : '',
                         style: Styles.balance2,
                       );
@@ -238,6 +251,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                     widget.tx.inputAddressList[index].address,
                                 balance:
                                     widget.tx.inputAddressList[index].amount,
+                                balanceMaxWidth: _balanceWidthSize.width,
                                 rowType: InputOutputRowType.input,
                                 isCurrentAddress: _addressBook.contains(
                                     widget.tx.inputAddressList[index].address),
@@ -274,6 +288,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       InputOutputDetailRow(
                         address: '수수료',
                         balance: widget.tx.fee!,
+                        balanceMaxWidth: _balanceWidthSize.width,
                         rowType: InputOutputRowType.fee,
                         transactionStatus: widget.status,
                       ),
@@ -293,6 +308,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                     widget.tx.outputAddressList[index].address,
                                 balance:
                                     widget.tx.outputAddressList[index].amount,
+                                balanceMaxWidth: _balanceWidthSize.width,
                                 rowType: InputOutputRowType.output,
                                 isCurrentAddress: _addressBook.contains(
                                     widget.tx.outputAddressList[index].address),
@@ -367,9 +383,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         '-',
                         style: Styles.body1Number,
                       )),
-                  TransactionDetailScreen._divider,
                   const SizedBox(
                     height: 40,
+                  ),
+                  Text(
+                    /// inputOutput 위젯에 들어갈 balance 최대 너비 체크용
+                    key: _balanceWidthKey,
+                    '0.0000 0000',
+                    style: Styles.body2Number.merge(
+                      const TextStyle(
+                        color: Colors.transparent,
+                        fontSize: 14,
+                        height: 16 / 14,
+                      ),
+                    ),
                   ),
                 ]),
           ),
