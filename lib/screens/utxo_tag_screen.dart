@@ -57,8 +57,8 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                     type: TagBottomSheetType.create,
                     utxoTags: utxoTagList,
                     onUpdated: (utxoTag) {
-                      final createUTag = utxoTag.copyWith(walletId: widget.id);
-                      _appModel.addUtxoTag(createUTag);
+                      final createTag = utxoTag.copyWith(walletId: widget.id);
+                      _appModel.addUtxoTag(createTag);
                     },
                   ),
                 );

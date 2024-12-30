@@ -26,7 +26,7 @@ class TagBottomSheetContainer extends StatefulWidget {
   final List<UtxoTag> utxoTags;
   final List<String>? selectedUtxoTagNames;
   final UtxoTag? updateUtxoTag;
-  final Function(List<String>)? onSelected;
+  final Function(List<String>, List<UtxoTag>)? onSelected;
   final Function(UtxoTag)? onUpdated;
   const TagBottomSheetContainer({
     super.key,
@@ -47,7 +47,10 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
   /// UtxoTag 전체 목록 - select type 에서 변경될 수 있음
   List<UtxoTag> _utxoTags = [];
 
-  /// 선택된 UTXO의 UtxoTag name 목록 - select type 에서 변경될 수 있음
+  /// UtxoTag 생성 목록 - select type 에서 변경될 수 있음
+  final List<UtxoTag> _createdUtxoTags = [];
+
+  /// 선택된 UTXO 의 UtxoTag name 목록 - select type 에서 변경될 수 있음
   List<String> _selectedUtxoTagNames = [];
 
   /// BottomSheet 상태 - select type 에서 create 로 변경될 수 있음
@@ -182,7 +185,8 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                       isActivePrimaryColor: false,
                       text: '완료',
                       onPressed: () {
-                        widget.onSelected?.call(_selectedUtxoTagNames);
+                        widget.onSelected
+                            ?.call(_selectedUtxoTagNames, _createdUtxoTags);
                         Navigator.pop(context);
                       },
                     ),
@@ -202,6 +206,7 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
 
                         setState(() {
                           _utxoTags.insert(0, createdUtxoTag);
+                          _createdUtxoTags.add(createdUtxoTag);
                           _isSelectButtonEnabled = true;
                         });
                         if (_isTwoDepth) {

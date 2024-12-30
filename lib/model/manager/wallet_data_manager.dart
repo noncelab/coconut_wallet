@@ -372,7 +372,26 @@ class WalletDataManager {
     return _utxoTagList;
   }
 
-  void deleteAllUtxoTagWithWalletId(int walletId) {
+  Future<List<UtxoTag>> loadUtxoTagListWithIdAndTxHash(
+      int walletId, String txHash) async {
+    _utxoTagList = [];
+    final utxoList = _realm
+        .all<RealmUtxoTag>()
+        .query("walletId == '$walletId' SORT(createAt DESC)");
+
+    for (var i = 0; i < utxoList.length; i++) {
+      for (var item in utxoList[i].utxoIdList) {
+        if (txHash == item.id) {
+          _utxoTagList.add(mapRealmUtxoTagToUtxoTag(utxoList[i]));
+          break;
+        }
+      }
+    }
+
+    return _utxoTagList;
+  }
+
+  void deleteAllUtxoTagWithWalletWalletId(int walletId) {
     final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
 
     if (tags.isEmpty) return;
@@ -422,6 +441,43 @@ class WalletDataManager {
     });
   }
 
+  void deleteTxHashFromUtxoIdListWithWalletId(int walletId, String txHash) {
+    final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
+
+    if (tags.isEmpty) return;
+
+    _realm.write(() {
+      for (var tag in tags) {
+        for (var item in tag.utxoIdList) {
+          if (txHash == item.id) {
+            tag.utxoIdList.remove(item);
+            break;
+          }
+        }
+      }
+    });
+  }
+
+  void addTxHashFromUtxoIdListWithWalletIdAndName(
+      int walletId, String name, String txHash) {
+    final tags = _realm
+        .query<RealmUtxoTag>("walletId == '$walletId' AND name == '$name'");
+
+    if (tags.isEmpty) return;
+
+    _realm.write(() {
+      for (var tag in tags) {
+        // 기존 RealmUtxoId를 검색
+        final existingId =
+            _realm.query<RealmUtxoId>("id == '$txHash'").firstOrNull;
+        final id = existingId ?? mapStringToRealmUtxoId(txHash);
+        if (!tag.utxoIdList.contains(id)) {
+          tag.utxoIdList.add(id);
+        }
+      }
+    });
+  }
+
   int _getNextWalletId() {
     var id = _sharedPrefs.getInt(nextIdField);
     if (id == 0) {
@@ -458,7 +514,7 @@ class WalletDataManager {
     return result;
   }
 
-  TransferDTO? loadTransferDTOWithIdAndTxHash(int id, String txHash) {
+  TransferDTO? loadTransactionWithIdAndTxHash(int id, String txHash) {
     final transactions = _realm.query<RealmTransaction>(
         "walletBase.id == '$id' And transactionHash == '$txHash'");
 
@@ -489,13 +545,6 @@ class WalletDataManager {
     await _realm.writeAsync(() {
       _realm.add(TempBroadcastTimeRecord(txHash, createdAt));
     });
-  }
-
-  Transfer getTransaction(String txHash) {
-    final transaction =
-        _realm.all<RealmTransaction>().query("transactionHash == '$txHash'");
-
-    return mapRealmTransactionToTransfer(transaction.first);
   }
 
   void reset() {

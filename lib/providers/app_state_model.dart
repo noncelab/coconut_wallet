@@ -89,37 +89,6 @@ class AppStateModel extends ChangeNotifier {
     initWallet();
   }
 
-  /// 태그 관리 화면에서 사용됨
-  List<UtxoTag> _utxoTagList = [];
-  List<UtxoTag> get utxoTagList => _utxoTagList;
-
-  void loadUtxoTagListWithWalletId(int walletId) async {
-    _utxoTagList = await _walletDataManager.loadUtxoTagList(walletId);
-    notifyListeners();
-  }
-
-  void deleteAllUtxoTagWithWalletId(int walletId) {
-    _walletDataManager.deleteAllUtxoTagWithWalletId(walletId);
-  }
-
-  void addUtxoTag(UtxoTag utxoTag) {
-    final id = const Uuid().v4();
-    _walletDataManager.addUtxoTagWithWalletId(
-        id, utxoTag.walletId, utxoTag.name, utxoTag.colorIndex);
-    loadUtxoTagListWithWalletId(utxoTag.walletId);
-  }
-
-  void updateUtxoTag(UtxoTag utxoTag) {
-    _walletDataManager.updateUtxoTagWithId(
-        utxoTag.id, utxoTag.name, utxoTag.colorIndex, utxoTag.utxoIdList ?? []);
-    loadUtxoTagListWithWalletId(utxoTag.walletId);
-  }
-
-  void deleteUtxoTag(UtxoTag utxoTag) {
-    _walletDataManager.deleteUtxoTagWithId(utxoTag.id);
-    loadUtxoTagListWithWalletId(utxoTag.walletId);
-  }
-
   /// [_subStateModel]의 변동사항 업데이트
   void updateWithSubState(AppSubStateModel subStateModel) {
     _subStateModel = subStateModel;
@@ -383,7 +352,7 @@ class AppStateModel extends ChangeNotifier {
 
   Future<void> deleteWallet(int id) async {
     _walletDataManager.deleteWallet(id);
-    _walletDataManager.deleteAllUtxoTagWithWalletId(id);
+    _walletDataManager.deleteAllUtxoTagWithWalletWalletId(id);
     _walletItemList = _walletDataManager.walletList;
     if (_walletItemList.isEmpty) {
       _subStateModel.saveNotEmptyWalletList(false);
@@ -619,26 +588,6 @@ class AppStateModel extends ChangeNotifier {
     return _walletDataManager.getTxList(walletId);
   }
 
-  /// TODO: 협의 필요
-  /// txList가 모델에서 관리되면 DB 업데이트 성공 이후
-  Transfer? _transaction;
-  Transfer? get transaction => _transaction;
-
-  void loadTransaction(int id, String txHash) {
-    _transaction =
-        _walletDataManager.loadTransferDTOWithIdAndTxHash(id, txHash);
-    notifyListeners();
-  }
-
-  void updateTransactionMemoWithTxHash(int id, String txHash, String memo) {
-    _walletDataManager.updateTransactionMemoWithTxHash(id, txHash, memo);
-    loadTransaction(id, txHash);
-  }
-
-  Transfer getTransaction(String txHash) {
-    return _walletDataManager.getTransaction(txHash);
-  }
-
   // Future<void> _updateMultisigWallet(
   //     MultisigWalletListItem wallet, WalletStatus syncResult) async {
   //   final multisigWallet = wallet.walletBase as MultisignatureWallet;
@@ -792,6 +741,87 @@ class AppStateModel extends ChangeNotifier {
       Logger.error(_);
     });
     return result;
+  }
+
+  /// TODO: Model 분리 ----------------------------------------------------------
+  /// 태그 관리 화면에서 사용됨
+  List<UtxoTag> _utxoTagList = [];
+  List<UtxoTag> get utxoTagList => _utxoTagList;
+
+  Future<List<UtxoTag>> loadUtxoTagListWithIdAndTxHash(
+      int walletId, String txHash) {
+    return _walletDataManager.loadUtxoTagListWithIdAndTxHash(walletId, txHash);
+  }
+
+  void loadUtxoTagListWithWalletId(int walletId) async {
+    _utxoTagList = await _walletDataManager.loadUtxoTagList(walletId);
+    notifyListeners();
+  }
+
+  void addUtxoTag(UtxoTag utxoTag) {
+    final id = const Uuid().v4();
+    _walletDataManager.addUtxoTagWithWalletId(
+        id, utxoTag.walletId, utxoTag.name, utxoTag.colorIndex);
+    loadUtxoTagListWithWalletId(utxoTag.walletId);
+  }
+
+  void updateSelectedUtxoTagList({
+    required List<String> selectedNames,
+    required List<UtxoTag> addTags,
+    required int walletId,
+    required String txHash,
+  }) {
+    // utxo Id list 초기화
+    _walletDataManager.deleteTxHashFromUtxoIdListWithWalletId(walletId, txHash);
+
+    // 새로운 태그 추가
+    for (var utxoTag in addTags) {
+      final id = const Uuid().v4();
+      _walletDataManager.addUtxoTagWithWalletId(
+        id,
+        walletId,
+        utxoTag.name,
+        utxoTag.colorIndex,
+      );
+    }
+
+    // 선택
+    for (var name in selectedNames) {
+      _walletDataManager.addTxHashFromUtxoIdListWithWalletIdAndName(
+          walletId, name, txHash);
+    }
+
+    loadUtxoTagListWithWalletId(walletId);
+  }
+
+  void updateUtxoTag(UtxoTag utxoTag) {
+    _walletDataManager.updateUtxoTagWithId(
+        utxoTag.id, utxoTag.name, utxoTag.colorIndex, utxoTag.utxoIdList ?? []);
+    loadUtxoTagListWithWalletId(utxoTag.walletId);
+  }
+
+  void deleteUtxoTag(UtxoTag utxoTag) {
+    _walletDataManager.deleteUtxoTagWithId(utxoTag.id);
+    loadUtxoTagListWithWalletId(utxoTag.walletId);
+  }
+
+  void deleteAllUtxoTagWithWalletId(int walletId) {
+    _walletDataManager.deleteAllUtxoTagWithWalletWalletId(walletId);
+  }
+
+  /// txList가 모델에서 관리되면 DB 업데이트 성공 이후
+  Transfer? _transaction;
+  Transfer? get transaction => _transaction;
+
+  void loadTransaction(int id, String txHash) {
+    _transaction =
+        _walletDataManager.loadTransactionWithIdAndTxHash(id, txHash);
+    notifyListeners();
+  }
+
+  void updateTransactionMemoWithTxHash(int id, String txHash, String memo) {
+    _walletDataManager.updateTransactionMemoWithTxHash(id, txHash, memo);
+    loadTransaction(id, txHash);
   }
 }
 

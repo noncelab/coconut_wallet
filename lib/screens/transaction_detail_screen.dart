@@ -36,8 +36,8 @@ class TransactionDetailScreen extends StatefulWidget {
 }
 
 class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
-  late AddressBook _addressBook;
   late AppStateModel _model;
+  late AddressBook _addressBook;
   // TransactionStatus? status = TransactionStatus.received;
   int? _currentBlockHeight;
   bool canSeeMoreInputs = false;
@@ -153,37 +153,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     return '';
   }
 
-  // Widget _addressText(List<String> addresses) {
-  //   List<TextSpan> textSpans = List.generate(addresses.length, (index) {
-  //     String address = addresses[index];
-  //     bool isLast = index == addresses.length - 1;
-  //     return TextSpan(
-  //       text: isLast ? address : '$address\n',
-  //       style: TextStyle(
-  //         color: _addressBook.contains(address)
-  //             ? MyColors.white
-  //             : MyColors.borderGrey,
-  //       ),
-  //     );
-  //   });
-  //
-  //   return RichText(
-  //     text: TextSpan(
-  //       children: textSpans,
-  //       style: Styles.body1.merge(
-  //           const TextStyle(fontFamily: 'SpaceGrotesk', letterSpacing: 0)),
-  //     ),
-  //   );
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Selector<AppStateModel, Transfer?>(
       selector: (_, model) => model.transaction,
       builder: (context, tx, child) {
-        if (tx == null) {
-          return Container();
-        }
+        if (tx == null) return Container();
 
         final status = TransactionUtil.getStatus(tx);
 

@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/model/utxo.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
@@ -23,15 +22,17 @@ void main() {
 
     testWidgets('calls onComplete with correct data when selecting tags',
         (WidgetTester tester) async {
-      UTXO? resultUtxo;
+      List<String> resultTagNames = [];
+      // List<UtxoTag> resultUtxoTags = [];
 
       await tester.pumpWidget(MaterialApp(
         home: TagBottomSheetContainer(
           type: TagBottomSheetType.select,
           utxoTags: mockTags,
           selectedUtxoTagNames: mockSelectedTags,
-          onSelected: (utxoTagNames) {
-            mockSelectedTags = List.from(utxoTagNames);
+          onSelected: (utxoTagNames, createdUtxoTags) {
+            resultTagNames = utxoTagNames;
+            // resultUtxoTags = createdUtxoTags;
           },
         ),
       ));
@@ -62,10 +63,13 @@ void main() {
       await tester.tap(find.text('완료'));
       await tester.pump();
 
-      expect(mockSelectedTags, isNotEmpty);
-      expect(mockSelectedTags, isNot(contains('kyc'))); // 제외
-      expect(mockSelectedTags, contains('coconut'));
-      expect(mockSelectedTags, contains('strike')); // 등록
+      expect(resultTagNames, isNotEmpty);
+      expect(resultTagNames, isNot(contains('kyc'))); // 제외
+      expect(resultTagNames, contains('coconut'));
+      expect(resultTagNames, contains('strike')); // 등록
+
+      // expect(resultUtxoTags, isNotEmpty);
+      // expect(resultUtxoTags.first.name, contains('strike')); // 등록
     });
 
     testWidgets('calls onComplete with correct data when creating tags',

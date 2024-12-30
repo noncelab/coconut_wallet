@@ -1,4 +1,3 @@
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:realm/realm.dart';
 
 part 'coconut_wallet_data.realm.dart'; // dart run realm generate

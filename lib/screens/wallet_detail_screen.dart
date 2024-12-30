@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
+import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -117,6 +118,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   void initState() {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
+    _model.loadUtxoTagListWithWalletId(widget.id);
     _prevWalletInitState = _model.walletInitState;
     _scrollController = ScrollController();
 
@@ -779,9 +781,30 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   return ShrinkAnimationButton(
                     defaultColor: Colors.transparent,
                     borderRadius: 20,
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/utxo-detail',
-                          arguments: {'utxo': _utxoList[itemIndex]});
+                    onPressed: () async {
+                      final txHash = _utxoList[itemIndex].txHash;
+                      final result = await Navigator.pushNamed(
+                          context, '/utxo-detail', arguments: {
+                        'utxo': _utxoList[itemIndex],
+                        'id': widget.id
+                      });
+
+                      if (result != null && result is Map<String, dynamic>) {
+                        final isUpdated = result['isUpdated'];
+                        final tags = result['tags'];
+                        if (isUpdated) {
+                          if (tags is List<UtxoTag>) {
+                            for (var utxo in _utxoList) {
+                              if (utxo.txHash == txHash) {
+                                utxo.tags?.clear();
+                                utxo.tags?.addAll(tags);
+                                setState(() {});
+                                break;
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     child: UTXOItemCard(
                       utxo: _utxoList[itemIndex],
@@ -823,6 +846,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           changeAndAccountIndex[accountIndexField]!,
           isChange: changeAndAccountIndex[changeField]! == 1);
 
+      final tags = await _model.loadUtxoTagListWithIdAndTxHash(
+          widget.id, element.transactionHash);
+
+      // print(tags.length);
+
       utxos.add(model.UTXO(
         element.timestamp.toString(),
         element.blockHeight.toString(),
@@ -831,11 +859,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         element.derivationPath,
         element.transactionHash,
         element.index,
+        tags: tags,
       ));
     }
-
     _utxoList = utxos;
-    if (_utxoList.isNotEmpty && mounted) {
+
+    if (utxos.isNotEmpty) {
       _isUtxoListLoadComplete = true;
     }
     setState(() {});

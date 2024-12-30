@@ -220,7 +220,8 @@ class _PowWalletAppState extends State<PowWalletApp> {
           '/utxo-detail': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
-                    child: UtxoDetailScreen(utxo: args['utxo'])),
+                    child:
+                        UtxoDetailScreen(utxo: args['utxo'], id: args['id'])),
               ),
           '/positive-feedback': (context) => const PositiveFeedbackScreen(),
           '/negative-feedback': (context) => const NegativeFeedbackScreen(),
