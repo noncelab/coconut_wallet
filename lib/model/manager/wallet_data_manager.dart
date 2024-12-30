@@ -491,6 +491,13 @@ class WalletDataManager {
     });
   }
 
+  Transfer getTransaction(String txHash) {
+    final transaction =
+        _realm.all<RealmTransaction>().query("transactionHash == '$txHash'");
+
+    return mapRealmTransactionToTransfer(transaction.first);
+  }
+
   void reset() {
     _realm.write(() {
       _realm.deleteAll<RealmWalletBase>();

@@ -1,25 +1,27 @@
-import 'package:coconut_wallet/model/utxo_tag.dart';
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/enums.dart';
+import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/model/utxo.dart';
+import 'package:coconut_wallet/model/utxo.dart' as model;
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/label_value.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UtxoDetailScreen extends StatefulWidget {
-  final UTXO utxo;
+  final model.UTXO utxo;
 
   const UtxoDetailScreen({
     super.key,
@@ -31,254 +33,389 @@ class UtxoDetailScreen extends StatefulWidget {
 }
 
 class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
-  late List<String> dateString;
+  late List<String> _dateString;
+  late bool _isUtxoTooltipVisible;
+  late Transfer transaction;
+
+  final GlobalKey _utxoTooltipIconKey = GlobalKey();
+  late Size _utxoTooltipIconSize;
+  late Offset _utxoTooltipIconPosition;
+
+  final String _utxoTip =
+      'UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
+
+  final GlobalKey _balanceWidthKey = GlobalKey();
+  Size _balanceWidthSize = const Size(0, 0);
+
+  int initialInputMaxCount = 3;
+  int initialOutputMaxCount = 2;
   @override
   void initState() {
     super.initState();
-    dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp).split('|');
+    _dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp).split('|');
+    _isUtxoTooltipVisible = false;
+
+    final model = Provider.of<AppStateModel>(context, listen: false);
+    transaction = model.getTransaction(widget.utxo.txHash);
+    _initMaxCount();
+    _sortOutputAddressList();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      RenderBox utxoTooltipIconRenderBox =
+          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox;
+      _utxoTooltipIconPosition =
+          utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
+
+      RenderBox balanceWidthRenderBox =
+          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
+      setState(() {
+        _balanceWidthSize = balanceWidthRenderBox.size;
+      });
+    });
+  }
+
+  void _initMaxCount() {
+    if (transaction.inputAddressList.length <= initialInputMaxCount) {
+      initialInputMaxCount = transaction.inputAddressList.length;
+    }
+    if (transaction.outputAddressList.length <= initialOutputMaxCount) {
+      initialOutputMaxCount = transaction.outputAddressList.length;
+    }
+  }
+
+  void _sortOutputAddressList() {
+    if (transaction.outputAddressList.isNotEmpty) {
+      transaction.outputAddressList.sort((a, b) {
+        if (a.address == widget.utxo.to) return -1;
+        if (b.address == widget.utxo.to) return 1;
+        return 0;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: MyColors.black,
-      appBar: CustomAppBar.build(
-        title: 'UTXO',
-        context: context,
-        showTestnetLabel: false,
-        hasRightIcon: true,
-        rightIconButton: IconButton(
-          icon: SvgPicture.asset('assets/svg/question-mark.svg'),
-          onPressed: () {},
-        ),
-        isBottom: true,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 20,
-            ),
-            child: Column(
-              children: [
-                HighlightedInfoArea(
-                  textList: dateString,
-                  textStyle: Styles.body2Number.merge(
-                    const TextStyle(
-                      color: MyColors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(
-                  height: 24,
-                ),
-                Center(
-                    child: RichText(
-                        text: TextSpan(
-                            text: satoshiToBitcoinString(widget.utxo.amount),
-                            style: Styles.h1Number,
-                            children: const <TextSpan>[
-                      TextSpan(text: ' BTC', style: Styles.unit)
-                    ]))),
-                Center(
-                    child: Selector<UpbitConnectModel, int?>(
-                  selector: (context, model) => model.bitcoinPriceKrw,
-                  builder: (context, bitcoinPriceKrw, child) {
-                    return Text(
-                      bitcoinPriceKrw != null
-                          ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())}'
-                          : '',
-                      style: Styles.balance2,
-                    );
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        _removeUtxoTooltip();
+      },
+      child: GestureDetector(
+        onTap: () => _removeUtxoTooltip(),
+        child: Stack(
+          children: [
+            Scaffold(
+              backgroundColor: MyColors.black,
+              appBar: CustomAppBar.build(
+                title: 'UTXO',
+                context: context,
+                showTestnetLabel: false,
+                hasRightIcon: true,
+                rightIconButton: IconButton(
+                  key: _utxoTooltipIconKey,
+                  icon: SvgPicture.asset('assets/svg/question-mark.svg'),
+                  onPressed: () {
+                    if (mounted) {
+                      setState(() {
+                        _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
+                      });
+                    }
                   },
-                )),
-                const SizedBox(height: 20),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: MyColors.transparentWhite_12),
-                  child: Column(children: [
-                    const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
-                      balance: 4001234,
-                      rowType: InputOutputRowType.input,
-                    ),
-                    const SizedBox(height: 8),
-                    const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
-                      balance: 4001234,
-                      rowType: InputOutputRowType.input,
-                    ),
-                    const SizedBox(height: 8),
-                    const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
-                      balance: 4001234,
-                      rowType: InputOutputRowType.input,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '...',
-                      style: Styles.caption.merge(const TextStyle(
-                          color: MyColors.transparentWhite_40, height: 8 / 12)),
-                    ),
-                    const SizedBox(height: 8),
-                    const InputOutputDetailRow(
-                      address: '수수료',
-                      balance: 142,
-                      rowType: InputOutputRowType.fee,
-                    ),
-                    const SizedBox(height: 8),
-                    const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
-                      balance: 4001234,
-                      rowType: InputOutputRowType.output,
-                      isCurrentAddress: true,
-                    ),
-                    const SizedBox(height: 8),
-                    const InputOutputDetailRow(
-                      address: 'bcrtTestDataTestDataTestData',
-                      balance: 4001234,
-                      rowType: InputOutputRowType.output,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '...',
-                      style: Styles.caption.merge(const TextStyle(
-                          color: MyColors.transparentWhite_40, height: 8 / 12)),
-                    ),
-                  ]),
                 ),
-                const SizedBox(height: 25),
-                InfoRow(
-                    label: '보유 주소',
-                    subLabel: '멤풀 보기',
-                    onSubLabelClicked: () => launchUrl(Uri.parse(
-                        "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
-                    isChangeTagVisible:
-                        widget.utxo.derivationPath.split('/')[4] == '1',
-                    value: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 20,
+                    ),
+                    child: Column(
                       children: [
-                        Text(
-                          widget.utxo.to,
-                          style: Styles.body2Number
-                              .merge(const TextStyle(height: 22 / 14)),
+                        HighlightedInfoArea(
+                          textList: _dateString,
+                          textStyle: Styles.body2Number.merge(
+                            const TextStyle(
+                              color: MyColors.white,
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(
+                          height: 24,
+                        ),
+                        Center(
+                            child: RichText(
+                                text: TextSpan(
+                                    text: satoshiToBitcoinString(
+                                        widget.utxo.amount),
+                                    style: Styles.h1Number.merge(
+                                        const TextStyle(
+                                            fontSize: 24, height: 1)),
+                                    children: const <TextSpan>[
+                              TextSpan(text: ' BTC', style: Styles.body2Number)
+                            ]))),
+                        const SizedBox(
+                          height: 8,
+                        ),
+                        Center(
+                            child: Selector<UpbitConnectModel, int?>(
+                          selector: (context, model) => model.bitcoinPriceKrw,
+                          builder: (context, bitcoinPriceKrw, child) {
+                            return Text(
+                              bitcoinPriceKrw != null
+                                  ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())}'
+                                  : '',
+                              style: Styles.balance2,
+                            );
+                          },
+                        )),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 16),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: MyColors.transparentWhite_12),
+                          child:
+                              Column(mainAxisSize: MainAxisSize.min, children: [
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: initialInputMaxCount,
+                              padding: EdgeInsets.zero,
+                              itemBuilder: (context, index) {
+                                return Column(
+                                  children: [
+                                    InputOutputDetailRow(
+                                      address: transaction
+                                          .inputAddressList[index].address,
+                                      balance: transaction
+                                          .inputAddressList[index].amount,
+                                      balanceMaxWidth: _balanceWidthSize.width,
+                                      rowType: InputOutputRowType.input,
+                                      isCurrentAddress: transaction
+                                              .inputAddressList[index]
+                                              .address ==
+                                          widget.utxo.to,
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+                                );
+                              },
+                            ),
+                            Visibility(
+                              visible: transaction.inputAddressList.length >
+                                  initialInputMaxCount,
+                              child: Text(
+                                '...',
+                                style: Styles.caption.merge(const TextStyle(
+                                    color: MyColors.transparentWhite_40,
+                                    height: 8 / 12)),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            InputOutputDetailRow(
+                              address: '수수료',
+                              balance: 142,
+                              balanceMaxWidth: _balanceWidthSize.width,
+                              rowType: InputOutputRowType.fee,
+                            ),
+                            const SizedBox(height: 8),
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: initialOutputMaxCount,
+                              padding: EdgeInsets.zero,
+                              itemBuilder: (context, index) {
+                                return Column(
+                                  children: [
+                                    InputOutputDetailRow(
+                                      address: transaction
+                                          .outputAddressList[index].address,
+                                      balance: transaction
+                                          .outputAddressList[index].amount,
+                                      balanceMaxWidth: _balanceWidthSize.width,
+                                      rowType: InputOutputRowType.output,
+                                      isCurrentAddress: transaction
+                                              .outputAddressList[index]
+                                              .address ==
+                                          widget.utxo.to,
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+                                );
+                              },
+                            ),
+                            Visibility(
+                              visible: transaction.outputAddressList.length >
+                                  initialOutputMaxCount,
+                              child: Text(
+                                '...',
+                                style: Styles.caption.merge(const TextStyle(
+                                    color: MyColors.transparentWhite_40,
+                                    height: 8 / 12)),
+                              ),
+                            ),
+                          ]),
+                        ),
+                        const SizedBox(height: 25),
+                        InfoRow(
+                            label: '보유 주소',
+                            subLabel: '멤풀 보기',
+                            onSubLabelClicked: () => launchUrl(Uri.parse(
+                                "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+                            isChangeTagVisible:
+                                widget.utxo.derivationPath.split('/')[4] == '1',
+                            value: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.utxo.to,
+                                  style: Styles.body2Number
+                                      .merge(const TextStyle(height: 22 / 14)),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.utxo.derivationPath,
+                                  style: Styles.caption.merge(const TextStyle(
+                                      color: MyColors.white,
+                                      height: 18 / 12,
+                                      fontFamily: 'Pretendard')),
+                                )
+                              ],
+                            )),
+                        _divider,
+                        InfoRow(
+                            label: '거래 메모',
+                            value: Text(
+                              transaction.memo?.isNotEmpty == true ? transaction.memo! : '-',
+                              style: Styles.body2Number
+                                  .merge(const TextStyle(height: 22 / 14)),
+                            )),
+                        _divider,
+                        InfoRow(
+                            // TODO: 태그 불러오기
+                            label: '태그',
+                            subLabel: '편집',
+                            onSubLabelClicked: () {
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: MyColors.black,
+                                builder: (context) => TagBottomSheetContainer(
+                                  type: TagBottomSheetType.select,
+                                  onSelected: (selectedUtxo) {
+                                    // TODO
+                                  },
+                                  utxoTags: [],
+                                ),
+                              );
+                            },
+                            value: Text(
+                              '-',
+                              style: Styles.body2Number
+                                  .merge(const TextStyle(height: 22 / 14)),
+                            )),
+                        _divider,
+                        InfoRow(
+                          label: '트랜잭션 ID',
+                          subLabel: '거래 자세히 보기',
+                          onSubLabelClicked: () {
+                            // Navigator.pushNamed(context, '/transaction-detail',
+                            //     arguments: {'id': widget.id, 'tx': widget.tx});
+                          },
+                          value: Text(
+                            widget.utxo.txHash,
+                            style: Styles.body2Number
+                                .merge(const TextStyle(height: 22 / 14)),
+                          ),
+                        ),
+                        _divider,
+                        InfoRow(
+                            label: '블록 번호',
+                            subLabel: '멤풀 보기',
+                            onSubLabelClicked: () => launchUrl(Uri.parse(
+                                "${PowWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
+                            value: Text(
+                              widget.utxo.blockHeight,
+                              style: Styles.body2Number
+                                  .merge(const TextStyle(height: 22 / 14)),
+                            )),
+                        const SizedBox(
+                          height: 40,
+                        ),
                         Text(
-                          widget.utxo.derivationPath,
-                          style: Styles.caption2.merge(const TextStyle(
-                              color: MyColors.white, height: 16 / 10)),
-                        )
+                          /// inputOutput 위젯에 들어갈 balance 최대 너비 체크용
+                          key: _balanceWidthKey,
+                          '0.0000 0000',
+                          style: Styles.body2Number.merge(
+                            const TextStyle(
+                              color: Colors.transparent,
+                              fontSize: 14,
+                              height: 16 / 14,
+                            ),
+                          ),
+                        ),
                       ],
-                    )),
-                _divider,
-                const InfoRow(
-                    // TODO: 메모 불러오기
-                    label: '거래 메모',
-                    value: Text(
-                      '-',
-                      style: Styles.body1Number,
-                    )),
-                _divider,
-                InfoRow(
-                    // TODO: 태그 불러오기
-                    label: '태그',
-                    subLabel: '편집',
-                    onSubLabelClicked: () {
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: MyColors.black,
-                        builder: (context) => TagBottomSheetContainer(
-                          type: TagBottomSheetType.select,
-                          onSelected: (selectedUtxoTagNames) =>
-                              debugPrint(selectedUtxoTagNames.toString()),
-                          utxoTags: const [
-                            UtxoTag(
-                                id: 'uuid1',
-                                walletId: 1,
-                                name: 'kyc',
-                                colorIndex: 0),
-                            UtxoTag(
-                                id: 'uuid2',
-                                walletId: 2,
-                                name: 'coconut',
-                                colorIndex: 1),
-                            UtxoTag(
-                                id: 'uuid3',
-                                walletId: 3,
-                                name: 'strike',
-                                colorIndex: 2),
-                            UtxoTag(
-                                id: 'uuid4',
-                                walletId: 4,
-                                name: '1',
-                                colorIndex: 3),
-                            UtxoTag(
-                                id: 'uuid5',
-                                walletId: 5,
-                                name: '2',
-                                colorIndex: 4),
-                            UtxoTag(
-                                id: 'uuid6',
-                                walletId: 6,
-                                name: '3',
-                                colorIndex: 5),
-                            UtxoTag(
-                                id: 'uuid7',
-                                walletId: 7,
-                                name: '4',
-                                colorIndex: 6),
-                            UtxoTag(
-                                id: 'uuid8',
-                                walletId: 8,
-                                name: '5',
-                                colorIndex: 7),
-                          ],
-                        ),
-                      );
-                    },
-                    value: const Text(
-                      '-',
-                      style: Styles.body1Number,
-                    )),
-                _divider,
-                InfoRow(
-                  label: '트랜잭션 ID',
-                  subLabel: '거래 자세히 보기',
-                  onSubLabelClicked: () {
-                    // Navigator.pushNamed(context, '/transaction-detail',
-                    //     arguments: {'id': widget.id, 'tx': widget.tx});
-                  },
-                  value: Text(
-                    widget.utxo.txHash,
-                    style: Styles.body1Number,
+                    ),
                   ),
                 ),
-                _divider,
-                InfoRow(
-                    label: '블록 번호',
-                    subLabel: '멤풀 보기',
-                    onSubLabelClicked: () => launchUrl(Uri.parse(
-                        "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
-                    value: Text(
-                      widget.utxo.blockHeight,
-                      style: Styles.body1Number,
-                    )),
-                const SizedBox(
-                  height: 40,
-                ),
-              ],
+              ),
             ),
-          ),
+            _utxoTooltipWidget(context),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _utxoTooltipWidget(BuildContext context) {
+    return _isUtxoTooltipVisible
+        ? Positioned(
+            top: _utxoTooltipIconPosition.dy + _utxoTooltipIconSize.height - 10,
+            right: MediaQuery.of(context).size.width -
+                _utxoTooltipIconPosition.dx -
+                _utxoTooltipIconSize.width +
+                5,
+            child: GestureDetector(
+              onTap: _removeUtxoTooltip,
+              child: ClipPath(
+                clipper: RightTriangleBubbleClipper(),
+                child: Container(
+                  width: MediaQuery.sizeOf(context).width * 0.68,
+                  padding: const EdgeInsets.only(
+                    top: 25,
+                    left: 18,
+                    right: 18,
+                    bottom: 10,
+                  ),
+                  color: MyColors.skybule,
+                  child: Text(
+                    _utxoTip,
+                    style: Styles.caption.merge(TextStyle(
+                      height: 1.3,
+                      fontFamily: CustomFonts.text.getFontFamily,
+                      color: MyColors.darkgrey,
+                    )),
+                  ),
+                ),
+              ),
+            ),
+          )
+        : Container();
+  }
+
+  void _removeUtxoTooltip() {
+    // if (_overlayEntry != null) {
+    //   _faucetTipVisible = false;
+    //   _overlayEntry!.remove();
+    //   _overlayEntry = null;
+    // }
+    setState(() {
+      _isUtxoTooltipVisible = false;
+    });
   }
 }
 
@@ -302,12 +439,23 @@ class InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        vertical: 16,
+        horizontal: 2,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(children: [
-            Label(text: label),
+            Text(
+              label,
+              style: Styles.body2.merge(
+                const TextStyle(
+                  color: MyColors.transparentWhite_70,
+                  height: 21 / 14,
+                ),
+              ),
+            ),
             const SizedBox(width: 6),
             if (isChangeTagVisible) const CustomChip(text: '잔돈'),
             if (subLabel != null)
@@ -321,13 +469,13 @@ class InfoRow extends StatelessWidget {
                         onSubLabelClicked!();
                       }
                     },
-                    fontSize: 10,
-                    lineHeight: 16,
+                    fontSize: 12,
+                    lineHeight: 18,
                   ),
                 ),
               ),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           value
         ],
       ),
@@ -338,84 +486,222 @@ class InfoRow extends StatelessWidget {
 class InputOutputDetailRow extends StatelessWidget {
   final String address;
   final int balance;
+  final double balanceMaxWidth;
   final InputOutputRowType rowType;
   final bool isCurrentAddress;
+  final TransactionStatus? transactionStatus;
 
   const InputOutputDetailRow({
     super.key,
     required this.address,
     required this.balance,
+    required this.balanceMaxWidth,
     required this.rowType,
     this.isCurrentAddress = false,
+    this.transactionStatus,
   });
 
   @override
   Widget build(BuildContext context) {
+    Color leftItemColor = MyColors.white;
+    Color rightItemColor = MyColors.white;
+    String assetAddress = 'assets/svg/circle-arrow-right-white.svg';
+
+    if (transactionStatus != null) {
+      /// transactionStatus가 null이 아니면 거래 자세히 보기 화면
+      if (transactionStatus == TransactionStatus.received ||
+          transactionStatus == TransactionStatus.receiving) {
+        /// transaction 받기 결과
+        if (rowType == InputOutputRowType.input) {
+          /// 인풋
+          if (isCurrentAddress) {
+            /// 현재 주소인 경우
+            leftItemColor = rightItemColor = MyColors.white;
+            assetAddress = 'assets/svg/circle-arrow-right-white.svg';
+          } else {
+            /// 현재 주소가 아닌 경우
+            leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          }
+        } else if (rowType == InputOutputRowType.output) {
+          /// 아웃풋
+          if (isCurrentAddress) {
+            /// 현재 주소인 경우
+            leftItemColor = MyColors.white;
+            rightItemColor = MyColors.secondary;
+            assetAddress = 'assets/svg/circle-arrow-right-blue.svg';
+          } else {
+            /// 현재 주소가 아닌 경우
+            leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          }
+        } else {
+          /// 수수료
+          leftItemColor = rightItemColor = MyColors.white;
+          assetAddress = 'assets/svg/circle-pick-white.svg';
+        }
+      } else if (transactionStatus == TransactionStatus.sending ||
+          transactionStatus == TransactionStatus.sent) {
+        /// transaction 보내기 결과
+        if (rowType == InputOutputRowType.input) {
+          /// 안풋
+          leftItemColor = MyColors.white;
+          rightItemColor = MyColors.primary;
+          assetAddress = 'assets/svg/circle-arrow-right-green.svg';
+        } else if (rowType == InputOutputRowType.output) {
+          /// 아웃풋
+          if (isCurrentAddress) {
+            /// 현재 주소인 경우
+            leftItemColor = MyColors.white;
+            rightItemColor = MyColors.white;
+            assetAddress = 'assets/svg/circle-arrow-right-white.svg';
+          } else {
+            /// 현재 주소가 아닌 경우
+            leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          }
+        } else {
+          /// 수수료
+          leftItemColor = rightItemColor = MyColors.white;
+          assetAddress = 'assets/svg/circle-pick-white.svg';
+        }
+      } else if (transactionStatus == TransactionStatus.self ||
+          transactionStatus == TransactionStatus.selfsending) {
+        if (rowType == InputOutputRowType.input) {
+          if (isCurrentAddress) {
+            leftItemColor = MyColors.white;
+            rightItemColor = MyColors.primary;
+            assetAddress = 'assets/svg/circle-arrow-right-green.svg';
+          } else {
+            leftItemColor = MyColors.transparentWhite_40;
+            rightItemColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          }
+        } else if (rowType == InputOutputRowType.output) {
+          leftItemColor = MyColors.transparentWhite_40;
+          rightItemColor = MyColors.transparentWhite_40;
+          assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+        } else {
+          leftItemColor = MyColors.white;
+          rightItemColor = MyColors.white;
+          assetAddress = 'assets/svg/circle-pick-white.svg';
+        }
+      }
+    } else {
+      /// transactionStatus가 null이면 UTXO 상세 화면
+      if (rowType == InputOutputRowType.input) {
+        /// 인풋
+        leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+        assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+      } else if (rowType == InputOutputRowType.output) {
+        /// 아웃풋
+        if (isCurrentAddress) {
+          /// 현재 주소인 경우
+          leftItemColor = rightItemColor = MyColors.white;
+        } else {
+          /// 현재 주소가 아닌 경우
+          leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+          assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+        }
+      } else {
+        /// 수수료
+        leftItemColor = rightItemColor = MyColors.transparentWhite_40;
+        assetAddress = 'assets/svg/circle-pick-transparent.svg';
+      }
+    }
+
     return Row(
       children: [
-        Expanded(
-          flex: 4,
-          child: Text(
-            TextUtils.truncateNameMax20(address),
-            style: Styles.body2Number.merge(
-              TextStyle(
-                color: isCurrentAddress
-                    ? MyColors.white
-                    : MyColors.transparentWhite_40,
-                fontSize: 12,
-                height: 16 / 12,
-              ),
+        Text(
+          TextUtils.truncateNameMax19(address),
+          style: Styles.body2Number.merge(
+            TextStyle(
+              color: leftItemColor,
+              fontSize: 14,
+              height: 16 / 14,
             ),
-            maxLines: 1,
           ),
+          maxLines: 1,
         ),
-        Expanded(
-          flex: 6,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (rowType == InputOutputRowType.output ||
-                  rowType == InputOutputRowType.fee)
-                Row(
-                  children: [
-                    SvgPicture.asset(
-                        (rowType == InputOutputRowType.output)
-                            ? 'assets/svg/circle-arrow-right.svg'
-                            : 'assets/svg/circle-pick.svg',
-                        width: 12,
-                        height: 12,
-                        colorFilter: isCurrentAddress
-                            ? const ColorFilter.mode(
-                                MyColors.white, BlendMode.srcIn)
-                            : null),
-                    const SizedBox(width: 6),
-                  ],
+        if (rowType == InputOutputRowType.output ||
+            rowType == InputOutputRowType.fee)
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SvgPicture.asset(
+                  assetAddress,
+                  width: 16,
+                  height: 12,
                 ),
-              Text(
-                '${satoshiToBitcoinString(balance).normalizeTo11Characters()} BTC',
-                style: Styles.body2Number.merge(
-                  TextStyle(
-                    color: isCurrentAddress
-                        ? MyColors.white
-                        : MyColors.transparentWhite_40,
-                    fontSize: 12,
-                    height: 16 / 12,
+                const SizedBox(
+                  width: 10,
+                ),
+                SizedBox(
+                  width: balanceMaxWidth,
+                  child: Text(
+                    textAlign: TextAlign.end,
+                    satoshiToBitcoinString(balance).normalizeTo11Characters(),
+                    style: Styles.body2Number.merge(
+                      TextStyle(
+                        color: rightItemColor,
+                        fontSize: 14,
+                        height: 16 / 14,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              if (rowType == InputOutputRowType.input)
-                Row(
-                  children: [
-                    const SizedBox(width: 6),
-                    SvgPicture.asset('assets/svg/circle-arrow-right.svg')
-                  ],
-                )
-            ],
+              ],
+            ),
           ),
-        ),
+        if (rowType == InputOutputRowType.input)
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SizedBox(
+                  width: balanceMaxWidth,
+                  child: Text(
+                    satoshiToBitcoinString(balance).normalizeTo11Characters(),
+                    style: Styles.body2Number.merge(
+                      TextStyle(
+                        color: rightItemColor,
+                        fontSize: 14,
+                        height: 16 / 14,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  width: 10,
+                ),
+                SvgPicture.asset(
+                  assetAddress,
+                  width: 16,
+                  height: 12,
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
 }
 
 enum InputOutputRowType { input, output, fee }
+
+enum InputOutputDetailRowStatus {
+  /// input, output 컬럼의 색상구분을 편하게 하기 위해 enum으로 관리하였습니다.
+  txInputSend,
+  txInputReceive,
+  txOutputSend,
+  txOutputReceive,
+  txOutputFee,
+  txInputReceiveCurrentAddress,
+  txOutputSendCurrentAddress,
+  txOutputReceiveCurrentAddress,
+  utxoInput,
+  utxoOutput,
+  utxoOutputFee,
+  utxoOutputCurrentAddress,
+}
