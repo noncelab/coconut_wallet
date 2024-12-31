@@ -30,7 +30,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
   String? _updateUtxoTagName;
 
   // TODO: AppStateModel 분리 후 제거
-  bool _isDeleted = false;
+  bool _isUpdated = false;
 
   @override
   void initState() {
@@ -52,7 +52,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
             hasRightIcon: true,
             showTestnetLabel: false,
             onBackPressed: () {
-              Navigator.pop(context, _isDeleted);
+              Navigator.pop(context, _isUpdated);
             },
             rightIconButton: IconButton(
               onPressed: () {
@@ -112,6 +112,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                                       true) {
                                     _appModel.updateUtxoTag(utxoTag);
                                     setState(() {
+                                      _isUpdated = true;
                                       _updateUtxoTagName = utxoTag.name;
                                       _selectedUtxoTag =
                                           _selectedUtxoTag?.copyWith(
@@ -139,7 +140,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                                   '\n${_selectedUtxoTag?.utxoIdList?.isNotEmpty == true ? '${_selectedUtxoTag?.utxoIdList?.length}개 UTXO에 적용되어 있어요.' : ''}',
                               onConfirm: () async {
                                 if (_selectedUtxoTag != null) {
-                                  _isDeleted = true;
+                                  _isUpdated = true;
                                   _appModel.deleteUtxoTag(_selectedUtxoTag!);
                                   Navigator.of(context).pop();
                                 }
