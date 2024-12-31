@@ -948,11 +948,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     isUpdated = await Navigator.pushNamed(
                         context, '/wallet-setting',
                         arguments: {'id': widget.id});
+                  }
 
-                    if (isUpdated != null && isUpdated is bool && isUpdated) {
-                      getUtxoListWithHoldingAddress(
-                          _walletFeature.getUtxoList());
-                    }
+                  if (isUpdated != null && isUpdated is bool && isUpdated) {
+                    getUtxoListWithHoldingAddress(_walletFeature.getUtxoList());
                   }
                 },
                 showFaucetIcon: true,
