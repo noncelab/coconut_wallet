@@ -94,7 +94,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   Unit _current = Unit.btc;
   List<TransferDTO> _txList = [];
 
-// 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
+  // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
   List<model.UTXO> _utxoList = [];
   late WalletType _walletType;
   static String changeField = 'change';
@@ -938,13 +938,21 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         walletBaseItem: _walletBaseItem,
                       ));
                 },
-                onTitlePressed: () {
+                onTitlePressed: () async {
+                  Object? isUpdated;
                   if (_walletBaseItem.walletType == WalletType.multiSignature) {
-                    Navigator.pushNamed(context, '/wallet-multisig',
+                    isUpdated = await Navigator.pushNamed(
+                        context, '/wallet-multisig',
                         arguments: {'id': widget.id});
                   } else {
-                    Navigator.pushNamed(context, '/wallet-setting',
+                    isUpdated = await Navigator.pushNamed(
+                        context, '/wallet-setting',
                         arguments: {'id': widget.id});
+
+                    if (isUpdated != null && isUpdated is bool && isUpdated) {
+                      getUtxoListWithHoldingAddress(
+                          _walletFeature.getUtxoList());
+                    }
                   }
                 },
                 showFaucetIcon: true,

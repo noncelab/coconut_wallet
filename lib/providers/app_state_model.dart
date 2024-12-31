@@ -584,10 +584,6 @@ class AppStateModel extends ChangeNotifier {
   //   }
   // }
 
-  List<TransferDTO>? getTxList(int walletId) {
-    return _walletDataManager.getTxList(walletId);
-  }
-
   // Future<void> _updateMultisigWallet(
   //     MultisigWalletListItem wallet, WalletStatus syncResult) async {
   //   final multisigWallet = wallet.walletBase as MultisignatureWallet;
@@ -809,7 +805,7 @@ class AppStateModel extends ChangeNotifier {
     _walletDataManager.deleteAllUtxoTagWithWalletWalletId(walletId);
   }
 
-  /// txList가 모델에서 관리되면 DB 업데이트 성공 이후
+  /// transaction detail, utxo detail
   Transfer? _transaction;
   Transfer? get transaction => _transaction;
 
@@ -822,6 +818,11 @@ class AppStateModel extends ChangeNotifier {
   void updateTransactionMemoWithTxHash(int id, String txHash, String memo) {
     _walletDataManager.updateTransactionMemoWithTxHash(id, txHash, memo);
     loadTransaction(id, txHash);
+  }
+
+  /// wallet detail
+  List<TransferDTO>? getTxList(int walletId) {
+    return _walletDataManager.getTxList(walletId);
   }
 }
 

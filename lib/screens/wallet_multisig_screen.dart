@@ -46,6 +46,9 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
   late MultisigWalletListItem _multiWallet;
   late List<KeyStore> _keystoreList;
 
+  // TODO: AppStateModel 분리 후 제거
+  Object? _navigatorPopResult;
+
   @override
   void initState() {
     super.initState();
@@ -150,9 +153,10 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
     Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
   }
 
-  _moveToUtxoTag() {
+  _moveToUtxoTag() async {
     _removeTooltip();
-    Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
+    _navigatorPopResult = await Navigator.pushNamed(context, '/utxo-tag',
+        arguments: {'id': widget.id});
   }
 
   _showXPubBottomSheet(String qrData) async {
@@ -192,10 +196,12 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
       child: Scaffold(
         backgroundColor: MyColors.black,
         appBar: CustomAppBar.build(
-          title: '${_multiWallet.name} 정보',
-          context: context,
-          hasRightIcon: false,
-        ),
+            title: '${_multiWallet.name} 정보',
+            context: context,
+            hasRightIcon: false,
+            onBackPressed: () {
+              Navigator.pop(context, _navigatorPopResult);
+            }),
         body: SafeArea(
           child: SingleChildScrollView(
             child: Stack(

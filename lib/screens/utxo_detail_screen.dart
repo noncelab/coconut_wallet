@@ -54,8 +54,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   int initialInputMaxCount = 3;
   int initialOutputMaxCount = 2;
 
+  // TODO: AppStateModel 분리 후 제거
   List<UtxoTag> _selectedUtxoTags = [];
   bool _isUpdated = false;
+
   @override
   void initState() {
     super.initState();
@@ -359,20 +361,34 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   ),
                                 );
                               },
-                              value: Wrap(
-                                spacing: 4,
-                                runSpacing: 4,
-                                children: List.generate(
-                                  _selectedUtxoTags.length,
-                                  (index) => IntrinsicWidth(
-                                    child: CustomTagChip(
-                                      tag: _selectedUtxoTags[index].name,
-                                      colorIndex:
-                                          _selectedUtxoTags[index].colorIndex,
-                                      type: CustomTagChipType.fix,
+                              value: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (_selectedUtxoTags.isEmpty) ...{
+                                    Text(
+                                      '-',
+                                      style: Styles.body2Number.merge(
+                                        const TextStyle(height: 22 / 14),
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  } else ...{
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: List.generate(
+                                        _selectedUtxoTags.length,
+                                        (index) => IntrinsicWidth(
+                                          child: CustomTagChip(
+                                            tag: _selectedUtxoTags[index].name,
+                                            colorIndex: _selectedUtxoTags[index]
+                                                .colorIndex,
+                                            type: CustomTagChipType.fix,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  },
+                                ],
                               ),
                             ),
                             _divider,
