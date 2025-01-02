@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -76,14 +77,14 @@ void main() {
 
     String envFile = '$appFlavor.env';
     await dotenv.load(fileName: envFile);
-    PowWalletApp.kElectrumHost = dotenv.env['ELECTRUM_HOST'] ?? '';
-    String? portString = dotenv.env['ELECTRUM_PORT'];
+    PowWalletApp.kElectrumHost = dotenv.env[DotenvKeys.electrumHost] ?? '';
+    String? portString = dotenv.env[DotenvKeys.electrumPort];
     PowWalletApp.kElectrumPort =
         portString != null ? int.tryParse(portString) ?? 0 : 0;
     PowWalletApp.kElectrumIsSSL =
-        dotenv.env['ELECTRUM_IS_SSL']?.toLowerCase() == 'true';
-    PowWalletApp.kMempoolHost = dotenv.env['MEMPOOL_HOST'] ?? '';
-    PowWalletApp.kFaucetHost = dotenv.env['API_HOST'] ?? '';
+        dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
+    PowWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
+    PowWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
     runApp(const PowWalletApp());
   }, (error, stackTrace) {
     Logger.log(">>>>> runZoneGuarded error: $error");

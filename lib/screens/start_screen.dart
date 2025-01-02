@@ -16,7 +16,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class StartScreen extends StatefulWidget {
-  final void Function(ApproachScreen nextScreen) onComplete;
+  final void Function(AccessFlow nextScreen) onComplete;
 
   const StartScreen({super.key, required this.onComplete});
 
@@ -69,9 +69,9 @@ class _StartScreenState extends State<StartScreen> {
     }
 
     if (!_subModel.isNotEmptyWalletList || !_subModel.isSetPin) {
-      widget.onComplete(ApproachScreen.main);
+      widget.onComplete(AccessFlow.main);
     } else {
-      widget.onComplete(ApproachScreen.pinCheck);
+      widget.onComplete(AccessFlow.pinCheck);
     }
   }
 

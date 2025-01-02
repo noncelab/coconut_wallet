@@ -35,7 +35,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 
-enum ApproachScreen { splash, main, pinCheck }
+enum AccessFlow { splash, main, pinCheck }
 
 class PowWalletApp extends StatefulWidget {
   static late String kElectrumHost;
@@ -51,10 +51,10 @@ class PowWalletApp extends StatefulWidget {
 
 class _PowWalletAppState extends State<PowWalletApp> {
   /// 0 = splash, 1 = main, 2 = pin check
-  ApproachScreen _screenStatus = ApproachScreen.splash;
+  AccessFlow _screenStatus = AccessFlow.splash;
 
   /// startSplash 완료 콜백
-  void _completeSplash(ApproachScreen status) {
+  void _completeSplash(AccessFlow status) {
     setState(() {
       _screenStatus = status;
     });
@@ -70,7 +70,7 @@ class _PowWalletAppState extends State<PowWalletApp> {
         ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
 
         /// main 에서만 사용하는 모델
-        if (_screenStatus == ApproachScreen.main) ...{
+        if (_screenStatus == AccessFlow.main) ...{
           ChangeNotifierProxyProvider<AppSubStateModel, AppStateModel>(
             create: (_) {
               return AppStateModel(
@@ -119,16 +119,16 @@ class _PowWalletAppState extends State<PowWalletApp> {
           barBackgroundColor: MyColors.black, // AppBar 배경 색상
         ),
         color: MyColors.black,
-        home: _screenStatus == ApproachScreen.splash
+        home: _screenStatus == AccessFlow.splash
             ? StartScreen(onComplete: _completeSplash)
-            : _screenStatus == ApproachScreen.main
+            : _screenStatus == AccessFlow.main
                 ? const AppGuard(child: WalletListScreen())
                 : CustomLoadingOverlay(
                     child: PinCheckScreen(
                       appEntrance: true,
                       onComplete: () {
                         setState(() {
-                          _screenStatus = ApproachScreen.main;
+                          _screenStatus = AccessFlow.main;
                         });
                       },
                     ),

@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/app_info.dart';
+import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
@@ -17,14 +19,14 @@ import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class WalletDataManager {
-  static const String vaultListField = 'VAULT_LIST';
   static const String nextIdField = 'nextId';
   static const String nonceField = 'nonce';
-  static const String pinField = 'pin'; // TODO: kSecureStoragePinKey와 중복
+  static const String pinField = kSecureStoragePinKey;
 
   final SecureStorageService _storageService = SecureStorageService();
   final SharedPrefs _sharedPrefs = SharedPrefs();
@@ -70,11 +72,11 @@ class WalletDataManager {
     _cryptography = WalletDataManagerCryptography(
         nonce: nonce == null ? null : base64Decode(nonce));
     await _cryptography!.initialize(
-        iterations: int.parse(dotenv.env['PBKDF2_ITERATION']!),
+        iterations: int.parse(dotenv.env[DotenvKeys.pbkdf2Iteration]!),
         hashedPin: hashedPin);
   }
 
-  void _ensureInitialized() {
+  void _checkInitialized() {
     if (!_isInitialized) {
       throw StateError(
           'WalletDataManager is not initialized. Call initialize first.');
@@ -82,7 +84,7 @@ class WalletDataManager {
   }
 
   Future<List<WalletListItemBase>> loadFromDB() async {
-    _ensureInitialized();
+    _checkInitialized();
 
     _walletList = [];
     int multisigWalletIndex = 0;
@@ -110,10 +112,9 @@ class WalletDataManager {
     return List.from(_walletList!);
   }
 
-  // TODO: 암호화 여부에 따라 description 암호화 해야 함
   Future<SinglesigWalletListItem> addSinglesigWallet(
       WalletSync walletSync) async {
-    _ensureInitialized();
+    _checkInitialized();
 
     var id = _getNextWalletId();
     String descriptor = _cryptography != null
@@ -146,7 +147,7 @@ class WalletDataManager {
 
   Future<MultisigWalletListItem> addMultisigWallet(
       WalletSync walletSync) async {
-    _ensureInitialized();
+    _checkInitialized();
 
     var id = _getNextWalletId();
     String descriptor = _cryptography != null
@@ -188,12 +189,10 @@ class WalletDataManager {
   /// 업데이트 해야 되는 지갑과 업데이트 내용에 따라 db와 _walletList 업데이트 합니다.
   /// 만약 업데이트 과정에서 에러 발생시, 에러를 반환합니다.
   /// 변경이 있었으면 true, 없었으면 false를 반환
-  // TODO: 암호화 여부에 따라 description 암호화 해야 함
   Future<bool> syncWithLatest(
       List<WalletListItemBase> targets, NodeConnector nodeConnector) async {
-    _ensureInitialized();
+    _checkInitialized();
 
-    // TODO: same with _fetchWalletsData
     List<int> noNeedToUpdate = [];
     List<WalletListItemBase> needToUpdateList = [];
     List<WalletStatus> syncResults = [];
@@ -209,11 +208,11 @@ class WalletDataManager {
       // assert(coconutWallet.walletStatus != null);
       WalletStatus syncResult = coconutWallet.walletStatus!;
       // check need to update
-      print(
+      Logger.log(
           '--> targets[i].isLatestTxBlockHeightZero: ${targets[i].isLatestTxBlockHeightZero}');
-      print(
+      Logger.log(
           '--> syncResult.transactionList.length, targets[i].txCount: ${syncResult.transactionList.length} ${targets[i].txCount}');
-      print('--> targets[i].balance: ${targets[i].balance}');
+      Logger.log('--> targets[i].balance: ${targets[i].balance}');
       if (!targets[i].isLatestTxBlockHeightZero &&
           syncResult.transactionList.length == targets[i].txCount &&
           targets[i].balance != null) {
@@ -225,8 +224,8 @@ class WalletDataManager {
       needToUpdateList.add(targets[i]);
       syncResults.add(syncResult);
     }
-    print('--> noNeedToUpdate: ${noNeedToUpdate.length}');
-    print('--> needToUpdateIds: ${needToUpdateIds.length}');
+    Logger.log('--> noNeedToUpdate: ${noNeedToUpdate.length}');
+    Logger.log('--> needToUpdateIds: ${needToUpdateIds.length}');
     if (noNeedToUpdate.length == targets.length) return false;
 
     // TODO: 정렬 되는지 확인하기.
@@ -245,7 +244,7 @@ class WalletDataManager {
   // TODO: 함수명, 리팩토링
   void _updateDBAndWalletListAsLatest(WalletListItemBase walletItem,
       RealmWalletBase realmWallet, WalletStatus syncResult) {
-    _ensureInitialized();
+    _checkInitialized();
 
     // 갱신해야 하는 txList 개수 구하기
     int newTxCount = 0;
@@ -267,11 +266,11 @@ class WalletDataManager {
           updateTargets.query('blockHeight == 0 SORT(id ASC)').first;
 
       updateTargets = updateTargets.query('id >= ${firstProcessingTx.id}');
-      print('--> updateTargets: ${updateTargets.length}');
+      Logger.log('--> updateTargets: ${updateTargets.length}');
       newTxCount = newTxCount + updateTargets.length;
       finalUpdateTargets = updateTargets.toList();
     }
-    print(
+    Logger.log(
         '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${finalUpdateTargets?.length} = $newTxCount');
     if (newTxCount == 0) return;
 
@@ -279,7 +278,7 @@ class WalletDataManager {
     // 항상 최신순으로 반환
     List<Transfer> newTxList =
         walletFeature.getTransferList(cursor: 0, count: newTxCount);
-    print('--> newTxList length: ${newTxList.length}');
+    Logger.log('--> newTxList length: ${newTxList.length}');
     int nextId = generateNextId(_realm, (RealmTransaction).toString());
     List<int> matchedUpdateTargetIds = [];
     _realm.write(() {
@@ -291,7 +290,7 @@ class WalletDataManager {
           existingTx = updateTargets.query(r'transactionHash = $0',
               [newTxList[i].transactionHash]).firstOrNull;
         }
-        print(
+        Logger.log(
             '--> existingTx: $existingTx, nextId: $nextId, timestamp: ${newTxList[i].timestamp}');
 
         RealmTransaction saveTarget;
@@ -337,7 +336,7 @@ class WalletDataManager {
   }
 
   void updateWalletUI(int id, WalletSync walletSync) {
-    _ensureInitialized();
+    _checkInitialized();
 
     final RealmWalletBase wallet =
         _realm.all<RealmWalletBase>().query('id = $id').first;
@@ -373,7 +372,7 @@ class WalletDataManager {
   }
 
   void deleteWallet(int id) {
-    _ensureInitialized();
+    _checkInitialized();
 
     final RealmWalletBase walletBase =
         _realm.all<RealmWalletBase>().query('id == $id').first;
@@ -399,7 +398,7 @@ class WalletDataManager {
   }
 
   int _getNextWalletId() {
-    _ensureInitialized();
+    _checkInitialized();
 
     var id = _sharedPrefs.getInt(nextIdField);
     if (id == 0) {
@@ -409,13 +408,13 @@ class WalletDataManager {
   }
 
   void _recordNextWalletId(int value) {
-    _ensureInitialized();
+    _checkInitialized();
 
     _sharedPrefs.setInt(nextIdField, value);
   }
 
   List<Transfer>? getTxList(int id) {
-    _ensureInitialized();
+    _checkInitialized();
 
     final transactions = _realm
         .all<RealmTransaction>()
@@ -430,7 +429,7 @@ class WalletDataManager {
   }
 
   void reset() {
-    _ensureInitialized();
+    _checkInitialized();
 
     _realm.write(() {
       _realm.deleteAll<RealmWalletBase>();
@@ -465,7 +464,7 @@ class WalletDataManager {
   }
 
   Future encrypt(String hashedPin) async {
-    _ensureInitialized();
+    _checkInitialized();
 
     var walletBases =
         _realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
@@ -492,7 +491,7 @@ class WalletDataManager {
 
   /// 기존 암호화 정보 복호화해서 저장
   Future decrypt() async {
-    _ensureInitialized();
+    _checkInitialized();
 
     var walletBases =
         _realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
