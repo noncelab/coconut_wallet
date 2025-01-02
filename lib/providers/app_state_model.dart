@@ -77,13 +77,9 @@ class AppStateModel extends ChangeNotifier {
 
   final FaucetRepository _faucetRepository = FaucetRepository();
 
-  final WalletDataManager _walletDataManager = WalletDataManager();
+  late final WalletDataManager _walletDataManager;
 
-  AppStateModel(this._subStateModel) {
-    _walletDataManager.init();
-    // TODO:
-    //_walletDataManager.getAll();
-    //_walletDataManager.loadFromDB();
+  AppStateModel(this._subStateModel, this._walletDataManager) {
     initWallet();
   }
 
@@ -350,7 +346,7 @@ class AppStateModel extends ChangeNotifier {
 
   Future<void> deleteWallet(int id) async {
     _walletDataManager.deleteWallet(id);
-    _walletItemList = _walletDataManager.walletList;
+    _walletItemList = List.from(_walletDataManager.walletList);
     if (_walletItemList.isEmpty) {
       _subStateModel.saveNotEmptyWalletList(false);
     }
@@ -385,6 +381,9 @@ class AppStateModel extends ChangeNotifier {
   Future<void> _loadWalletFromLocal() async {
     List<WalletListItemBase> wallets;
     try {
+      if (!_walletDataManager.isInitialized) {
+        await _walletDataManager.init(_subStateModel.isSetPin);
+      }
       wallets = await _walletDataManager.loadFromDB();
     } catch (e) {
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
@@ -562,11 +561,11 @@ class AppStateModel extends ChangeNotifier {
   //   return needToUpdateList;
   // }
 
-  bool _needsUpdate(dynamic walletItem, WalletStatus syncResult) {
-    return walletItem.isLatestTxBlockHeightZero ||
-        syncResult.transactionList.length != walletItem.txCount ||
-        walletItem.balance == null;
-  }
+  // bool _needsUpdate(dynamic walletItem, WalletStatus syncResult) {
+  //   return walletItem.isLatestTxBlockHeightZero ||
+  //       syncResult.transactionList.length != walletItem.txCount ||
+  //       walletItem.balance == null;
+  // }
 
   // Future<void> _updateWalletStates(
   //     List<WalletListItemBase> wallets, List<WalletStatus> syncResults) async {
@@ -742,6 +741,16 @@ class AppStateModel extends ChangeNotifier {
       Logger.error(_);
     });
     return result;
+  }
+
+  Future setPin(String hashedPin) async {
+    await _walletDataManager.encrypt(hashedPin);
+    await _subStateModel.savePinSet(hashedPin);
+  }
+
+  Future deletePin() async {
+    await _walletDataManager.decrypt();
+    await _subStateModel.deletePin();
   }
 }
 

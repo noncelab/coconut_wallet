@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/app_info.dart';
+import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
@@ -10,22 +14,30 @@ import 'package:coconut_wallet/model/manager/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/model/manager/realm/model/coconut_wallet_data.dart';
 import 'package:coconut_wallet/model/manager/realm/realm_id_service.dart';
+import 'package:coconut_wallet/model/manager/wallet_data_manager_cryptography.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class WalletDataManager {
-  static String vaultListField = 'VAULT_LIST';
-  static String nextIdField = 'nextId';
-  static String vaultTypeField = WalletListItemBase.walletTypeField;
+  static const String nextIdField = 'nextId';
+  static const String nonceField = 'nonce';
+  static const String pinField = kSecureStoragePinKey;
 
   final SecureStorageService _storageService = SecureStorageService();
   final SharedPrefs _sharedPrefs = SharedPrefs();
 
   static final WalletDataManager _instance = WalletDataManager._internal();
   factory WalletDataManager() => _instance;
+
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
+
+  WalletDataManagerCryptography? _cryptography;
 
   late Realm _realm;
 
@@ -34,7 +46,7 @@ class WalletDataManager {
 
   WalletDataManager._internal();
 
-  void init() {
+  void _initRealm() {
     var config = Configuration.local([
       RealmWalletBase.schema,
       RealmMultisigWallet.schema,
@@ -48,7 +60,36 @@ class WalletDataManager {
     _realm = Realm(config);
   }
 
+  Future init(bool isSetPin) async {
+    _initRealm();
+
+    if (isSetPin) {
+      var nonce = await _storageService.read(key: nonceField);
+      var hashedPin = await _storageService.read(key: pinField);
+      await _initCryptography(nonce!, hashedPin!);
+    }
+
+    _isInitialized = true;
+  }
+
+  Future _initCryptography(String? nonce, String hashedPin) async {
+    _cryptography = WalletDataManagerCryptography(
+        nonce: nonce == null ? null : base64Decode(nonce));
+    await _cryptography!.initialize(
+        iterations: int.parse(dotenv.env[DotenvKeys.pbkdf2Iteration]!),
+        hashedPin: hashedPin);
+  }
+
+  void _checkInitialized() {
+    if (!_isInitialized) {
+      throw StateError(
+          'WalletDataManager is not initialized. Call initialize first.');
+    }
+  }
+
   Future<List<WalletListItemBase>> loadFromDB() async {
+    _checkInitialized();
+
     _walletList = [];
     int multisigWalletIndex = 0;
     var walletBases =
@@ -56,27 +97,39 @@ class WalletDataManager {
     var multisigWallets =
         _realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id ASC)');
     for (var i = 0; i < walletBases.length; i++) {
+      String? decryptedDescriptor;
+      if (_cryptography != null) {
+        decryptedDescriptor =
+            await _cryptography!.decrypt(walletBases[i].descriptor);
+      }
+
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
-        _walletList!
-            .add(mapRealmWalletBaseToSinglesigWalletListItem(walletBases[i]));
+        _walletList!.add(mapRealmWalletBaseToSinglesigWalletListItem(
+            walletBases[i], decryptedDescriptor));
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         _walletList!.add(mapRealmMultisigWalletToMultisigWalletListItem(
-            multisigWallets[multisigWalletIndex]));
+            multisigWallets[multisigWalletIndex], decryptedDescriptor));
       }
     }
 
-    return _walletList!;
+    return List.from(_walletList!);
   }
 
   Future<SinglesigWalletListItem> addSinglesigWallet(
       WalletSync walletSync) async {
+    _checkInitialized();
+
     var id = _getNextWalletId();
+    String descriptor = _cryptography != null
+        ? await _cryptography!.encrypt(walletSync.descriptor)
+        : walletSync.descriptor;
+
     var wallet = RealmWalletBase(
         id,
         walletSync.colorIndex,
         walletSync.iconIndex,
-        walletSync.descriptor,
+        descriptor,
         walletSync.name,
         WalletType.singleSignature.name);
     _realm.write(() {
@@ -98,12 +151,18 @@ class WalletDataManager {
 
   Future<MultisigWalletListItem> addMultisigWallet(
       WalletSync walletSync) async {
+    _checkInitialized();
+
     var id = _getNextWalletId();
+    String descriptor = _cryptography != null
+        ? await _cryptography!.encrypt(walletSync.descriptor)
+        : walletSync.descriptor;
+
     var realmWalletBase = RealmWalletBase(
         id,
         walletSync.colorIndex,
         walletSync.iconIndex,
-        walletSync.descriptor,
+        descriptor,
         walletSync.name,
         WalletType.multiSignature.name);
     var realmMultisigWallet = RealmMultisigWallet(
@@ -136,7 +195,8 @@ class WalletDataManager {
   /// 변경이 있었으면 true, 없었으면 false를 반환
   Future<bool> syncWithLatest(
       List<WalletListItemBase> targets, NodeConnector nodeConnector) async {
-    // TODO: same with _fetchWalletsData
+    _checkInitialized();
+
     List<int> noNeedToUpdate = [];
     List<WalletListItemBase> needToUpdateList = [];
     List<WalletStatus> syncResults = [];
@@ -152,11 +212,11 @@ class WalletDataManager {
       // assert(coconutWallet.walletStatus != null);
       WalletStatus syncResult = coconutWallet.walletStatus!;
       // check need to update
-      print(
+      Logger.log(
           '--> targets[i].isLatestTxBlockHeightZero: ${targets[i].isLatestTxBlockHeightZero}');
-      print(
+      Logger.log(
           '--> syncResult.transactionList.length, targets[i].txCount: ${syncResult.transactionList.length} ${targets[i].txCount}');
-      print('--> targets[i].balance: ${targets[i].balance}');
+      Logger.log('--> targets[i].balance: ${targets[i].balance}');
       if (!targets[i].isLatestTxBlockHeightZero &&
           syncResult.transactionList.length == targets[i].txCount &&
           targets[i].balance != null) {
@@ -168,8 +228,8 @@ class WalletDataManager {
       needToUpdateList.add(targets[i]);
       syncResults.add(syncResult);
     }
-    print('--> noNeedToUpdate: ${noNeedToUpdate.length}');
-    print('--> needToUpdateIds: ${needToUpdateIds.length}');
+    Logger.log('--> noNeedToUpdate: ${noNeedToUpdate.length}');
+    Logger.log('--> needToUpdateIds: ${needToUpdateIds.length}');
     if (noNeedToUpdate.length == targets.length) return false;
 
     // TODO: 정렬 되는지 확인하기.
@@ -188,6 +248,8 @@ class WalletDataManager {
   // TODO: 함수명, 리팩토링
   void _updateDBAndWalletListAsLatest(WalletListItemBase walletItem,
       RealmWalletBase realmWallet, WalletStatus syncResult) {
+    _checkInitialized();
+
     // 갱신해야 하는 txList 개수 구하기
     int getTxCount = 0;
     // 지갑에서 보내기 한 내역 조회, createdAt값 저장을 위해
@@ -211,18 +273,18 @@ class WalletDataManager {
           updateTargets.query('blockHeight == 0 SORT(id ASC)').first;
 
       updateTargets = updateTargets.query('id >= ${firstProcessingTx.id}');
-      print('--> updateTargets: ${updateTargets.length}');
+      Logger.log('--> updateTargets: ${updateTargets.length}');
       getTxCount = getTxCount + updateTargets.length;
       finalUpdateTargets = updateTargets.toList();
     }
-    print(
-        '--> newTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${finalUpdateTargets?.length} = $getTxCount');
+    Logger.log(
+        '--> getTxCount 계산: ${syncResult.transactionList.length} - ${realmWallet.txCount} + ${finalUpdateTargets?.length} = $getTxCount');
 
     var walletFeature = getWalletFeatureByWalletType(walletItem);
     // 항상 최신순으로 반환
     List<Transfer> newTxList =
         walletFeature.getTransferList(cursor: 0, count: getTxCount);
-    print('--> newTxList length: ${newTxList.length}');
+    Logger.log('--> newTxList length: ${newTxList.length}');
     int nextId = generateNextId(_realm, (RealmTransaction).toString());
     List<int> matchedUpdateTargetIds = [];
     _realm.write(() {
@@ -234,7 +296,7 @@ class WalletDataManager {
           existingTx = updateTargets.query(r'transactionHash = $0',
               [newTxList[i].transactionHash]).firstOrNull;
         }
-        print(
+        Logger.log(
             '--> existingTx: $existingTx, nextId: $nextId, timestamp: ${newTxList[i].timestamp}');
 
         RealmTransaction saveTarget;
@@ -291,6 +353,8 @@ class WalletDataManager {
   }
 
   void updateWalletUI(int id, WalletSync walletSync) {
+    _checkInitialized();
+
     final RealmWalletBase wallet =
         _realm.all<RealmWalletBase>().query('id = $id').first;
     final RealmMultisigWallet? multisigWallet =
@@ -325,6 +389,8 @@ class WalletDataManager {
   }
 
   void deleteWallet(int id) {
+    _checkInitialized();
+
     final RealmWalletBase walletBase =
         _realm.all<RealmWalletBase>().query('id == $id').first;
     final transactions =
@@ -344,16 +410,13 @@ class WalletDataManager {
       }
     });
 
-    final RealmWalletBase? walletBase2 =
-        _realm.all<RealmWalletBase>().query('id == $id').firstOrNull;
-    print('--> 삭제 후 조회: $walletBase2');
-    // TODO: 삭제 후 조회 시 안찾아지는지 확인하기
-
     final index = _walletList!.indexWhere((item) => item.id == id);
     _walletList!.removeAt(index);
   }
 
   int _getNextWalletId() {
+    _checkInitialized();
+
     var id = _sharedPrefs.getInt(nextIdField);
     if (id == 0) {
       return 1;
@@ -362,14 +425,17 @@ class WalletDataManager {
   }
 
   void _recordNextWalletId(int value) {
+    _checkInitialized();
+
     _sharedPrefs.setInt(nextIdField, value);
   }
 
-  /// 최신순으로 반환하지만, unconfirmed가 createdAt 순으로 가장 상위에 위치
-  /// confirmed는 timestamp 순
   List<TransferDTO>? getTxList(int id) {
-    final transactions =
-        _realm.all<RealmTransaction>().query('walletBase.id == $id');
+    _checkInitialized();
+
+    final transactions = _realm
+        .all<RealmTransaction>()
+        .query('walletBase.id == $id SORT(timestamp DESC)');
 
     if (transactions.isEmpty) return null;
     List<TransferDTO> result = [];
@@ -404,6 +470,8 @@ class WalletDataManager {
   }
 
   void reset() {
+    _checkInitialized();
+
     _realm.write(() {
       _realm.deleteAll<RealmWalletBase>();
       _realm.deleteAll<RealmMultisigWallet>();
@@ -414,6 +482,74 @@ class WalletDataManager {
     _walletList = [];
   }
 
+  Future<List<String>> _createEncryptedDescriptionList(
+      List<String> plainTexts) async {
+    List<String> encryptedDescriptions = [];
+    for (var i = 0; i < plainTexts.length; i++) {
+      var encrypted = await _cryptography!.encrypt(plainTexts[i]);
+      encryptedDescriptions.add(encrypted);
+    }
+
+    return encryptedDescriptions;
+  }
+
+  Future<List<String>> _createDecryptedDescriptionList(
+      RealmResults<RealmWalletBase> walletBases) async {
+    List<String> decryptedDescriptions = [];
+    for (var i = 0; i < walletBases.length; i++) {
+      var encrypted = await _cryptography!.decrypt(walletBases[i].descriptor);
+      decryptedDescriptions.add(encrypted);
+    }
+
+    return decryptedDescriptions;
+  }
+
+  Future encrypt(String hashedPin) async {
+    _checkInitialized();
+
+    var walletBases =
+        _realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
+
+    // 비밀번호 변경 시
+    List<String>? decryptedDescriptions;
+    if (_cryptography != null) {
+      decryptedDescriptions =
+          await _createDecryptedDescriptionList(walletBases);
+    }
+
+    await _initCryptography(null, hashedPin);
+    List<String> encryptedDescriptions = await _createEncryptedDescriptionList(
+        decryptedDescriptions ??
+            walletBases.map((walletBase) => walletBase.descriptor).toList());
+    await _realm.writeAsync(() {
+      for (var i = 0; i < walletBases.length; i++) {
+        walletBases[i].descriptor = encryptedDescriptions[i];
+      }
+    });
+
+    await _storageService.write(key: nonceField, value: _cryptography!.nonce);
+  }
+
+  /// 기존 암호화 정보 복호화해서 저장
+  Future decrypt() async {
+    _checkInitialized();
+
+    var walletBases =
+        _realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
+    List<String> decryptedDescriptions =
+        await _createDecryptedDescriptionList(walletBases);
+
+    await _realm.writeAsync(() {
+      for (var i = 0; i < walletBases.length; i++) {
+        walletBases[i].descriptor = decryptedDescriptions[i];
+      }
+    });
+
+    await _storageService.delete(key: nonceField);
+    _cryptography = null;
+  }
+
+  // not used
   void dispose() {
     _realm.close();
   }
