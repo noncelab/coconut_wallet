@@ -57,7 +57,6 @@ dependencies:
   screen_capture_event: ^1.1.1
   crypto: ^3.0.3
   local_auth: ^2.2.0
-  objectbox_flutter_libs: any
   path: ^1.9.0
   web_socket_channel: ^2.4.5
   uuid: ^4.4.0
