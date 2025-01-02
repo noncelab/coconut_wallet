@@ -55,12 +55,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     _addressBook = _model.getWalletById(widget.id).walletBase.addressBook;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _model.loadTransaction(widget.id, widget.txHash);
-    });
+      _model.initTransactionDetailScreenTagData(widget.id, widget.txHash);
 
-    // TODO: 깜빡이는 현상
-    _model.getCurrentBlockHeight().then((value) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      // TODO: 깜빡이는 현상
+      _model.getCurrentBlockHeight().then((value) {
         RenderBox balanceWidthRenderBox =
             _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
         setState(() {
@@ -375,7 +373,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                               builder: (context) => MemoBottomSheetContainer(
                                 updateMemo: tx.memo ?? '',
                                 onComplete: (updateMemo) {
-                                  _model.updateTransactionMemoWithTxHash(
+                                  _model.updateTransactionMemo(
                                       widget.id, widget.txHash, updateMemo);
                                 },
                               ),

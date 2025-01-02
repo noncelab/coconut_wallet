@@ -29,14 +29,13 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
   /// - CustomTagSelector 상태 업데이트
   String? _updateUtxoTagName;
 
-  // TODO: AppStateModel 분리 후 제거
-  bool _isUpdated = false;
-
   @override
   void initState() {
     super.initState();
     _appModel = Provider.of<AppStateModel>(context, listen: false);
-    _appModel.loadUtxoTagListWithWalletId(widget.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _appModel.initUtxoTagScreenTagData(widget.id);
+    });
   }
 
   @override
@@ -52,7 +51,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
             hasRightIcon: true,
             showTestnetLabel: false,
             onBackPressed: () {
-              Navigator.pop(context, _isUpdated);
+              Navigator.pop(context);
             },
             rightIconButton: IconButton(
               onPressed: () {
@@ -112,7 +111,6 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                                       true) {
                                     _appModel.updateUtxoTag(utxoTag);
                                     setState(() {
-                                      _isUpdated = true;
                                       _updateUtxoTagName = utxoTag.name;
                                       _selectedUtxoTag =
                                           _selectedUtxoTag?.copyWith(
@@ -140,7 +138,6 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                                   '\n${_selectedUtxoTag?.utxoIdList?.isNotEmpty == true ? '${_selectedUtxoTag?.utxoIdList?.length}개 UTXO에 적용되어 있어요.' : ''}',
                               onConfirm: () async {
                                 if (_selectedUtxoTag != null) {
-                                  _isUpdated = true;
                                   _appModel.deleteUtxoTag(_selectedUtxoTag!);
                                   Navigator.of(context).pop();
                                 }

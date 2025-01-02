@@ -4,7 +4,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
-import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -118,7 +117,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   void initState() {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
-    _model.loadUtxoTagListWithWalletId(widget.id);
     _prevWalletInitState = _model.walletInitState;
     _scrollController = ScrollController();
 
@@ -140,6 +138,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _model.addListener(_stateListener);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // _model.initWalletDetailScreenTagData(widget.id);
+
       _appBarRenderBox =
           _appBarKey.currentContext?.findRenderObject() as RenderBox;
       _topToggleButtonRenderBox =
@@ -783,25 +783,23 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     borderRadius: 20,
                     onPressed: () async {
                       final txHash = _utxoList[itemIndex].txHash;
-                      final result = await Navigator.pushNamed(
-                          context, '/utxo-detail', arguments: {
-                        'utxo': _utxoList[itemIndex],
-                        'id': widget.id
-                      });
+                      await Navigator.pushNamed(
+                        context,
+                        '/utxo-detail',
+                        arguments: {
+                          'utxo': _utxoList[itemIndex],
+                          'id': widget.id,
+                        },
+                      );
 
-                      if (result != null && result is Map<String, dynamic>) {
-                        final isUpdated = result['isUpdated'];
-                        final tags = result['tags'];
-                        if (isUpdated) {
-                          if (tags is List<UtxoTag>) {
-                            for (var utxo in _utxoList) {
-                              if (utxo.txHash == txHash) {
-                                utxo.tags?.clear();
-                                utxo.tags?.addAll(tags);
-                                setState(() {});
-                                break;
-                              }
-                            }
+                      if (_model.isUpdateSelectedTagList) {
+                        _model.setIsUpdateSelectedTagList(false);
+                        for (var utxo in _utxoList) {
+                          if (utxo.txHash == txHash) {
+                            utxo.tags?.clear();
+                            utxo.tags?.addAll(_model.selectedTagList);
+                            setState(() {});
+                            break;
                           }
                         }
                       }
@@ -836,7 +834,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     );
   }
 
-  void getUtxoListWithHoldingAddress(List<UTXO> utxoEntities) async {
+  void getUtxoListWithHoldingAddress(List<UTXO> utxoEntities) {
     List<model.UTXO> utxos = [];
     for (var element in utxoEntities) {
       Map<String, int> changeAndAccountIndex =
@@ -846,9 +844,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           changeAndAccountIndex[accountIndexField]!,
           isChange: changeAndAccountIndex[changeField]! == 1);
 
-      final tags = await _model.loadUtxoTagListWithIdAndTxHash(
-          widget.id, element.transactionHash);
+      final txHashIndex = '${element.transactionHash}${element.index}';
 
+      final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, txHashIndex);
       // print(tags.length);
 
       utxos.add(model.UTXO(
@@ -939,18 +937,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       ));
                 },
                 onTitlePressed: () async {
-                  Object? isUpdated;
                   if (_walletBaseItem.walletType == WalletType.multiSignature) {
-                    isUpdated = await Navigator.pushNamed(
-                        context, '/wallet-multisig',
+                    await Navigator.pushNamed(context, '/wallet-multisig',
                         arguments: {'id': widget.id});
                   } else {
-                    isUpdated = await Navigator.pushNamed(
-                        context, '/wallet-setting',
+                    await Navigator.pushNamed(context, '/wallet-setting',
                         arguments: {'id': widget.id});
                   }
 
-                  if (isUpdated != null && isUpdated is bool && isUpdated) {
+                  if (_model.isUpdateSelectedTagList) {
+                    _model.setIsUpdateSelectedTagList(false);
                     getUtxoListWithHoldingAddress(_walletFeature.getUtxoList());
                   }
                 },

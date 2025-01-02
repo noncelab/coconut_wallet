@@ -54,22 +54,22 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   int initialInputMaxCount = 3;
   int initialOutputMaxCount = 2;
 
+  String _txHashIndex = '';
   // TODO: AppStateModel 분리 후 제거
-  List<UtxoTag> _selectedUtxoTags = [];
-  bool _isUpdated = false;
+  // List<UtxoTag> _selectedUtxoTags = [];
+  // bool _isUpdated = false;
 
   @override
   void initState() {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
-    _model.loadUtxoTagListWithWalletId(widget.id);
+    _txHashIndex = '${widget.utxo.txHash}${widget.utxo.index}';
     _dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp).split('|');
     _isUtxoTooltipVisible = false;
 
-    _selectedUtxoTags = widget.utxo.tags ?? [];
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _model.loadTransaction(widget.id, widget.utxo.txHash);
+      _model.initUtxoDetailScreenTagData(
+          widget.id, widget.utxo.txHash, widget.utxo.index);
 
       RenderBox utxoTooltipIconRenderBox =
           _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox;
@@ -96,9 +96,18 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         onTap: () => _removeUtxoTooltip(),
         child: Stack(
           children: [
-            Selector<AppStateModel, Transfer?>(
-              selector: (_, model) => model.transaction,
-              builder: (context, tx, child) {
+            Selector<AppStateModel, Map<String, dynamic>>(
+              selector: (_, model) => {
+                'transaction': model.transaction,
+                'utxoTagList': model.utxoTagList,
+                'selectedUtxoTags': model.selectedTagList,
+              },
+              builder: (context, dataMap, child) {
+                final tx = dataMap['transaction'] as Transfer?;
+                final utxoTagList = dataMap['utxoTagList'] as List<UtxoTag>;
+                final selectedUtxoTags =
+                    dataMap['selectedUtxoTags'] as List<UtxoTag>;
+
                 if (tx == null) return Container();
 
                 if (tx.inputAddressList.length <= initialInputMaxCount) {
@@ -124,8 +133,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     showTestnetLabel: false,
                     hasRightIcon: true,
                     onBackPressed: () {
-                      Navigator.pop(context,
-                          {'tags': _selectedUtxoTags, 'isUpdated': _isUpdated});
+                      Navigator.pop(context);
                     },
                     rightIconButton: IconButton(
                       key: _utxoTooltipIconKey,
@@ -340,23 +348,17 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   isScrollControlled: true,
                                   builder: (context) => TagBottomSheetContainer(
                                     type: TagBottomSheetType.select,
-                                    utxoTags: _model.utxoTagList,
-                                    selectedUtxoTagNames: _selectedUtxoTags
+                                    utxoTags: utxoTagList,
+                                    selectedUtxoTagNames: selectedUtxoTags
                                         .map((e) => e.name)
                                         .toList(),
-                                    onSelected: (selectedNames, addTags) async {
-                                      _model.updateSelectedUtxoTagList(
+                                    onSelected: (selectedNames, addTags) {
+                                      _model.updateUtxoTagList(
                                         selectedNames: selectedNames,
                                         addTags: addTags,
                                         walletId: widget.id,
-                                        txHash: tx.transactionHash,
+                                        txHashIndex: _txHashIndex,
                                       );
-
-                                      _selectedUtxoTags = await _model
-                                          .loadUtxoTagListWithIdAndTxHash(
-                                              widget.id, widget.utxo.txHash);
-                                      _isUpdated = true;
-                                      setState(() {});
                                     },
                                   ),
                                 );
@@ -364,7 +366,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                               value: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (_selectedUtxoTags.isEmpty) ...{
+                                  if (selectedUtxoTags.isEmpty) ...{
                                     Text(
                                       '-',
                                       style: Styles.body2Number.merge(
@@ -376,11 +378,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       spacing: 4,
                                       runSpacing: 4,
                                       children: List.generate(
-                                        _selectedUtxoTags.length,
+                                        selectedUtxoTags.length,
                                         (index) => IntrinsicWidth(
                                           child: CustomTagChip(
-                                            tag: _selectedUtxoTags[index].name,
-                                            colorIndex: _selectedUtxoTags[index]
+                                            tag: selectedUtxoTags[index].name,
+                                            colorIndex: selectedUtxoTags[index]
                                                 .colorIndex,
                                             type: CustomTagChipType.fix,
                                           ),
