@@ -370,16 +370,21 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         _selectedUtxoList.isNotEmpty;
   }
 
-  void _applyFilter(UtxoOrderEnum orderEnum) {
+  void _applyFilter(UtxoOrderEnum orderEnum) async {
     if (orderEnum == _selectedFilter) return;
     _scrollController.jumpTo(0);
-
+    _isLastData = false;
     setState(() {
       _selectedFilter = orderEnum;
       _selectedUtxoList.clear();
       _utxoList.clear();
-      _utxoList = _getUtxoList(orderEnum: _selectedFilter);
     });
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) {
+      setState(() {
+        _utxoList = _getUtxoList(orderEnum: _selectedFilter);
+      });
+    }
   }
 
   List<model.UTXO> _getUtxoList(
@@ -633,6 +638,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         : _isFilterDropdownVisible) {
                       _removeFilterDropdown();
                     } else {
+                      _scrollController.jumpTo(_scrollController.offset);
+
                       if (isAfterScrolled) {
                         _isScrolledFilterDropdownVisible = true;
                       } else {
