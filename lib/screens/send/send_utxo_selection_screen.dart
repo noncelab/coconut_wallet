@@ -224,7 +224,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   Future<void> setRecommendedFees(TransactionFeeLevel? transactionFeeLevel,
       {int? estimatedFee}) async {
     if (recommendedFees == null) {
-      debugPrint('recommendedFees == null');
       setState(() {
         _isRecommendedFeeFetchSuccess = false;
         _isRecommendedFeeFetching = false;
