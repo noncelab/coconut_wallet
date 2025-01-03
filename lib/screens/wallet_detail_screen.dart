@@ -819,16 +819,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   padding: const EdgeInsets.only(top: 100),
                   child: Align(
                     alignment: Alignment.topCenter,
-                    // TODO: 로직 확인 필요
-                    child: !_isUtxoListLoadComplete && _utxoList.isNotEmpty
-                        ? const CircularProgressIndicator(
-                            color: MyColors.white,
-                          )
-                        : const Text(
-                            '사용 가능한 UTXO가 없어요\n새로운 거래를 통해 UTXO를 추가할 수 있어요',
-                            style: Styles.body1,
-                            textAlign: TextAlign.center,
-                          ),
+                    child: Text(
+                      _isUtxoListLoadComplete ? 'UTXO가 없어요' : 'UTXO를 확인하는 중이예요',
+                      style: Styles.body1,
+                      textAlign: TextAlign.center,
+                    ),
                   )),
             ),
     );
@@ -861,10 +856,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       ));
     }
     _utxoList = utxos;
-
-    if (utxos.isNotEmpty) {
-      _isUtxoListLoadComplete = true;
-    }
+    _isUtxoListLoadComplete = true;
     setState(() {});
   }
 

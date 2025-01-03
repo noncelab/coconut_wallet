@@ -55,9 +55,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   int initialOutputMaxCount = 2;
 
   String _txHashIndex = '';
-  // TODO: AppStateModel 분리 후 제거
-  // List<UtxoTag> _selectedUtxoTags = [];
-  // bool _isUpdated = false;
 
   @override
   void initState() {
@@ -67,9 +64,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     _dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp).split('|');
     _isUtxoTooltipVisible = false;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _model.initUtxoDetailScreenTagData(
           widget.id, widget.utxo.txHash, widget.utxo.index);
+
+      await Future.delayed(const Duration(milliseconds: 100));
 
       RenderBox utxoTooltipIconRenderBox =
           _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox;
@@ -224,7 +223,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                                   .inputAddressList[index]
                                                   .amount,
                                               balanceMaxWidth:
-                                                  _balanceWidthSize.width,
+                                                  _balanceWidthSize.width > 0
+                                                      ? _balanceWidthSize.width
+                                                      : 100,
                                               rowType: InputOutputRowType.input,
                                               isCurrentAddress: tx
                                                       .inputAddressList[index]
@@ -252,7 +253,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                     InputOutputDetailRow(
                                       address: '수수료',
                                       balance: 142,
-                                      balanceMaxWidth: _balanceWidthSize.width,
+                                      balanceMaxWidth:
+                                          _balanceWidthSize.width > 0
+                                              ? _balanceWidthSize.width
+                                              : 100,
                                       rowType: InputOutputRowType.fee,
                                     ),
                                     const SizedBox(height: 8),
@@ -273,7 +277,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                                   .outputAddressList[index]
                                                   .amount,
                                               balanceMaxWidth:
-                                                  _balanceWidthSize.width,
+                                                  _balanceWidthSize.width > 0
+                                                      ? _balanceWidthSize.width
+                                                      : 100,
                                               rowType:
                                                   InputOutputRowType.output,
                                               isCurrentAddress: tx
@@ -353,6 +359,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                         .map((e) => e.name)
                                         .toList(),
                                     onSelected: (selectedNames, addTags) {
+                                      // print(addTags);
                                       _model.updateUtxoTagList(
                                         selectedNames: selectedNames,
                                         addTags: addTags,

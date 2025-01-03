@@ -54,10 +54,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     _model = Provider.of<AppStateModel>(context, listen: false);
     _addressBook = _model.getWalletById(widget.id).walletBase.addressBook;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _model.initTransactionDetailScreenTagData(widget.id, widget.txHash);
 
-      // TODO: 깜빡이는 현상
+      await Future.delayed(const Duration(milliseconds: 100));
+
       _model.getCurrentBlockHeight().then((value) {
         RenderBox balanceWidthRenderBox =
             _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
@@ -243,7 +244,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                   InputOutputDetailRow(
                                     address: tx.inputAddressList[index].address,
                                     balance: tx.inputAddressList[index].amount,
-                                    balanceMaxWidth: _balanceWidthSize.width,
+                                    balanceMaxWidth: _balanceWidthSize.width > 0
+                                        ? _balanceWidthSize.width
+                                        : 100,
                                     rowType: InputOutputRowType.input,
                                     isCurrentAddress: _addressBook.contains(
                                         tx.inputAddressList[index].address),
@@ -281,7 +284,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           InputOutputDetailRow(
                             address: '수수료',
                             balance: tx.fee!,
-                            balanceMaxWidth: _balanceWidthSize.width,
+                            balanceMaxWidth: _balanceWidthSize.width > 0
+                                ? _balanceWidthSize.width
+                                : 100,
                             rowType: InputOutputRowType.fee,
                             transactionStatus: status,
                           ),
@@ -300,7 +305,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                     address:
                                         tx.outputAddressList[index].address,
                                     balance: tx.outputAddressList[index].amount,
-                                    balanceMaxWidth: _balanceWidthSize.width,
+                                    balanceMaxWidth: _balanceWidthSize.width > 0
+                                        ? _balanceWidthSize.width
+                                        : 100,
                                     rowType: InputOutputRowType.output,
                                     isCurrentAddress: _addressBook.contains(
                                         tx.outputAddressList[index].address),

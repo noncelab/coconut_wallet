@@ -207,6 +207,9 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                         setState(() {
                           _utxoTags.insert(0, createdUtxoTag);
                           _createdUtxoTags.add(createdUtxoTag);
+                          if (_selectedUtxoTagNames.length < 5) {
+                            _selectedUtxoTagNames.add(_updateTagName);
+                          }
                           _isSelectButtonEnabled = true;
                         });
                         if (_isTwoDepth) {

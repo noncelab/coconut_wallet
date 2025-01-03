@@ -122,24 +122,6 @@ class _MemoBottomSheetContainerState extends State<MemoBottomSheetContainer> {
                       });
                     },
                   ),
-
-                  // 글자 수 표시
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 4, right: 4),
-                      child: Text(
-                        '${_updateMemo.length}/30',
-                        style: TextStyle(
-                          color: _updateMemo.length == 30
-                              ? MyColors.white
-                              : MyColors.transparentWhite_50,
-                          fontSize: 12,
-                          fontFamily: CustomFonts.text.getFontFamily,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],

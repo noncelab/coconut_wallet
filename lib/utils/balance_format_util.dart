@@ -66,8 +66,8 @@ extension NormalizeTo11Characters on String {
 
     // Step 4: 정수부와 소수부 결합
     String formatted = '$integerPart.$decimalGrouped';
-    print(
-        'for ${formatted.substring(0, 11)}    ${formatted.padRight(11, ' ')}');
+    // print(
+    //     'for ${formatted.substring(0, 11)}    ${formatted.padRight(11, ' ')}');
     // Step 5: 결과 문자열을 정확히 11자리로 조정
     return formatted.length > 11
         ? formatted.substring(0, 11)
