@@ -20,7 +20,6 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -237,8 +236,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     feeInfos[0].satsPerVb = recommendedFees!.fastestFee;
     feeInfos[1].satsPerVb = recommendedFees!.halfHourFee;
     feeInfos[2].satsPerVb = recommendedFees!.hourFee;
-    debugPrint(
-        'tran : ${transactionFeeLevel.toString()} estimate: $estimatedFee index; $index');
 
     if (index != 3) {
       /// halfHour가 default
@@ -528,7 +525,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                 ),
                               ),
                             )
-                          : Container(),
+                          : Text(
+                              '',
+                              style: Styles.warning.merge(
+                                const TextStyle(
+                                  height: 16 / 12,
+                                ),
+                              ),
+                            ),
                 )
               : Container(),
         ),
