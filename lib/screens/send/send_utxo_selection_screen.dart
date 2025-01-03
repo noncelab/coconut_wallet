@@ -91,6 +91,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   ];
 
   bool _isRecommendedFeeFetchSuccess = false;
+  bool _isRecommendedFeeFetching = true;
 
   int? _isEnableToGetChange;
 
@@ -223,8 +224,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   Future<void> setRecommendedFees(TransactionFeeLevel? transactionFeeLevel,
       {int? estimatedFee}) async {
     if (recommendedFees == null) {
+      debugPrint('recommendedFees == null');
       setState(() {
         _isRecommendedFeeFetchSuccess = false;
+        _isRecommendedFeeFetching = false;
       });
       return;
     }
@@ -289,6 +292,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         setState(() {
           setFeeInfo(feeInfo, estimatedFee!);
           _isRecommendedFeeFetchSuccess = true;
+          _isRecommendedFeeFetching = false;
         });
       } catch (error) {
         int? estimatedFee = handleFeeEstimationError(error as Exception);
@@ -296,9 +300,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           setState(() {
             setFeeInfo(feeInfo, estimatedFee);
             _isRecommendedFeeFetchSuccess = true;
+            _isRecommendedFeeFetching = false;
           });
         } else {
-          _isRecommendedFeeFetchSuccess = false;
+          setState(() {
+            _isRecommendedFeeFetchSuccess = false;
+            _isRecommendedFeeFetching = false;
+          });
           // custom 수수료 조회 실패 알림
           WidgetsBinding.instance.addPostFrameCallback((duration) {
             CustomToast.showWarningToast(
@@ -318,6 +326,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           _fiatValue = _customFeeInfo?.fiatValue;
           _customSelected = true;
           _satsPerVb = 0;
+          _isRecommendedFeeFetchSuccess = true;
+          _isRecommendedFeeFetching = false;
         });
       }
     }
@@ -553,43 +563,57 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           duration: const Duration(milliseconds: 300),
           child: !_afterScrolledHeaderContainerVisible
               ? Visibility(
-                  visible: _selectedUtxoList.isEmpty ||
-                      _getSelectedUtxoTotalSatoshi() <
-                          UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount) +
-                              (_estimatedFee ?? 0),
+                  visible: (!_isRecommendedFeeFetchSuccess &&
+                          !_isRecommendedFeeFetching) ||
+                      (_selectedUtxoList.isEmpty ||
+                          _getSelectedUtxoTotalSatoshi() <
+                              UnitUtil.bitcoinToSatoshi(
+                                      widget.sendInfo.amount) +
+                                  (_estimatedFee ?? 0)),
                   maintainSize: true,
                   maintainState: true,
                   maintainAnimation: true,
-                  child: _selectedUtxoList.isEmpty
+                  child: !_isRecommendedFeeFetching &&
+                          !_isRecommendedFeeFetchSuccess
                       ? Text(
-                          '아래 목록에서 UTXO를 선택해 주세요',
+                          '추천 수수료를 조회하지 못했어요.\n\'변경\'버튼을 눌러서 수수료를 직접 입력해 주세요.',
                           style: Styles.warning.merge(
                             const TextStyle(
-                              color: MyColors.white,
                               height: 16 / 12,
                             ),
                           ),
+                          textAlign: TextAlign.center,
                         )
-                      : _getSelectedUtxoTotalSatoshi() <
-                              UnitUtil.bitcoinToSatoshi(
-                                      widget.sendInfo.amount) +
-                                  (_estimatedFee ?? 0)
+                      : _selectedUtxoList.isEmpty
                           ? Text(
-                              'UTXO 합계가 모자라요',
+                              '아래 목록에서 UTXO를 선택해 주세요',
                               style: Styles.warning.merge(
                                 const TextStyle(
+                                  color: MyColors.white,
                                   height: 16 / 12,
                                 ),
                               ),
                             )
-                          : Text(
-                              '',
-                              style: Styles.warning.merge(
-                                const TextStyle(
-                                  height: 16 / 12,
+                          : _getSelectedUtxoTotalSatoshi() <
+                                  UnitUtil.bitcoinToSatoshi(
+                                          widget.sendInfo.amount) +
+                                      (_estimatedFee ?? 0)
+                              ? Text(
+                                  'UTXO 합계가 모자라요',
+                                  style: Styles.warning.merge(
+                                    const TextStyle(
+                                      height: 16 / 12,
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  '',
+                                  style: Styles.warning.merge(
+                                    const TextStyle(
+                                      height: 16 / 12,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
                 )
               : Container(),
         ),
@@ -707,7 +731,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           title: 'UTXO 고르기',
           context: context,
           nextButtonTitle: '완료',
-          isActive: _isRecommendedFeeFetchSuccess && _estimatedFee != null
+          isActive: _isRecommendedFeeFetchSuccess &&
+                  _estimatedFee != null &&
+                  !_isRecommendedFeeFetching
               ? _isSelectedUtxoEnough()
                   ? true
                   : false
@@ -797,13 +823,21 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
+                                  Text(
                                     '수수료',
-                                    style: Styles.body2Bold,
+                                    style: !_isRecommendedFeeFetching &&
+                                            !_isRecommendedFeeFetchSuccess
+                                        ? Styles.body2Bold.merge(
+                                            const TextStyle(
+                                              color:
+                                                  MyColors.transparentWhite_40,
+                                            ),
+                                          )
+                                        : Styles.body2Bold,
                                   ),
                                   CustomUnderlinedButton(
                                       text: '변경',
-                                      isEnable: _isRecommendedFeeFetchSuccess,
+                                      isEnable: true,
                                       onTap: () async {
                                         Map<String, dynamic>? result =
                                             await MyBottomSheet
@@ -833,38 +867,63 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                         }
                                       }),
                                   Expanded(
-                                      child: _isRecommendedFeeFetchSuccess
-                                          ? Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  '${satoshiToBitcoinString(_estimatedFee ?? 0).toString()} BTC',
-                                                  style: Styles.body2Number,
-                                                ),
-                                                if (_satsPerVb != 0) ...{
-                                                  Text(
-                                                    '${_selectedLevel.expectedTime} ($_satsPerVb sats/vb)',
-                                                    style: Styles.caption,
-                                                  ),
-                                                }
-                                              ],
-                                            )
-                                          : const Row(
+                                      child: !_isRecommendedFeeFetchSuccess &&
+                                              !_isRecommendedFeeFetching
+                                          ? Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.end,
                                               children: [
-                                                SizedBox(
-                                                  width: 15,
-                                                  height: 15,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                    color: MyColors.white,
-                                                    strokeWidth: 2,
+                                                Text(
+                                                  '- ',
+                                                  style: Styles.body2Bold.merge(
+                                                      const TextStyle(
+                                                          color: MyColors
+                                                              .transparentWhite_40)),
+                                                ),
+                                                Text(
+                                                  'BTC',
+                                                  style:
+                                                      Styles.body2Number.merge(
+                                                    const TextStyle(
+                                                      color: Colors.transparent,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
-                                            )),
+                                            )
+                                          : _isRecommendedFeeFetchSuccess &&
+                                                  !_isRecommendedFeeFetching
+                                              ? Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.end,
+                                                  children: [
+                                                    Text(
+                                                      '${satoshiToBitcoinString(_estimatedFee ?? 0).toString()} BTC',
+                                                      style: Styles.body2Number,
+                                                    ),
+                                                    if (_satsPerVb != 0) ...{
+                                                      Text(
+                                                        '${_selectedLevel.expectedTime} ($_satsPerVb sats/vb)',
+                                                        style: Styles.caption,
+                                                      ),
+                                                    }
+                                                  ],
+                                                )
+                                              : const Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 15,
+                                                      height: 15,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        color: MyColors.white,
+                                                        strokeWidth: 2,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )),
                                 ],
                               ),
                               _divider(),
