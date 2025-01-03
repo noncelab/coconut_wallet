@@ -497,7 +497,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           child: !_afterScrolledHeaderContainerVisible
               ? Visibility(
                   visible: _selectedUtxoList.isEmpty ||
-                      _getSelectedUtxoTotalSatoshi() >=
+                      _getSelectedUtxoTotalSatoshi() <
                           UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount) +
                               (_estimatedFee ?? 0),
                   maintainSize: true,
