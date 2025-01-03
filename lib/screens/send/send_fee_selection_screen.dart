@@ -27,9 +27,14 @@ import 'package:provider/provider.dart';
 class SendFeeSelectionScreen extends StatefulWidget {
   final SendInfo sendInfo;
   final int id;
+  final bool isFromUtxoSelection;
 
-  const SendFeeSelectionScreen(
-      {super.key, required this.sendInfo, required this.id});
+  const SendFeeSelectionScreen({
+    super.key,
+    required this.sendInfo,
+    required this.id,
+    this.isFromUtxoSelection = false,
+  });
 
   @override
   State<SendFeeSelectionScreen> createState() => _SendFeeSelectionScreenState();
@@ -68,7 +73,10 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   @override
   void initState() {
     super.initState();
-    context.loaderOverlay.show(); // onChangedNetworkStatus 과정 중 hide 됨
+    if (!widget.isFromUtxoSelection) {
+      /// 알 수 없는 이유로 UTXO 고르기 -> 수수료 편집 버튼을 통해 들어온 경우 이전 스택 화면에 loaderOverlay가 호출된 뒤 사라지지 않음
+      context.loaderOverlay.show(); // onChangedNetworkStatus 과정 중 hide 됨
+    }
     _model = Provider.of<AppStateModel>(context, listen: false);
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
 
@@ -100,9 +108,12 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       showAlertAndGoHome("네트워크 상태가 좋지 않아 처음으로 돌아갑니다.");
       return;
     }
+    debugPrint('isNetworkOn = $isNetworkOn _isNetworkOn = $_isNetworkOn');
 
     if (_isNetworkOn == isNetworkOn) return; // 네트워크 상태가 기존과 같으면 할 일이 없음
+
     context.loaderOverlay.show();
+
     setState(() {
       _isNetworkOn = isNetworkOn;
     });
@@ -133,7 +144,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Future<void> setRecommendedFees() async {
-    var recommendedFees = await fetchRecommendedFees();
+    var recommendedFees = await fetchRecommendedFees(_model);
     if (recommendedFees == null) {
       setState(() {
         _isRecommendedFeeFetchSuccess = false;
@@ -166,14 +177,15 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
             _confirmedBalance = singlesigWallet.getBalance();
           }
 
-          estimatedFee = await _estimateFeeWithMaximum(
-              widget.sendInfo.address, feeInfo.satsPerVb!);
+          estimatedFee = await estimateFeeWithMaximum(widget.sendInfo.address,
+              feeInfo.satsPerVb!, _isMultisig, _walletBase);
         } else {
-          estimatedFee = await _estimateFee(
-            widget.sendInfo.address,
-            widget.sendInfo.amount,
-            feeInfo.satsPerVb!,
-          );
+          estimatedFee = await estimateFee(
+              widget.sendInfo.address,
+              widget.sendInfo.amount,
+              feeInfo.satsPerVb!,
+              _isMultisig,
+              _walletBase);
         }
         setState(() {
           setFeeInfo(feeInfo, estimatedFee!);
@@ -220,67 +232,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     }
   }
 
-  int? handleFeeEstimationError(Exception e) {
-    try {
-      if (e.toString().contains("Insufficient amount. Estimated fee is")) {
-        // get finalFee from error message : 'Insufficient amount. Estimated fee is $finalFee'
-        var estimatedFee = int.parse(
-            e.toString().split("Insufficient amount. Estimated fee is ")[1]);
-        return estimatedFee;
-      }
-
-      if (e.toString().contains("Not enough amount for sending. (Fee")) {
-        // get finalFee from error message : 'Not enough amount for sending. (Fee : $finalFee)'
-        var estimatedFee = int.parse(e
-            .toString()
-            .split("Not enough amount for sending. (Fee : ")[1]
-            .split(")")[0]);
-        return estimatedFee;
-      }
-    } catch (_) {
-      return null;
-    }
-
-    return null;
-  }
-
-  Future<RecommendedFee> getRecommendFee() async {
-    String urlString = '${PowWalletApp.kMempoolHost}/api/v1/fees/recommended';
-    final url = Uri.parse(urlString);
-    final response = await get(url);
-
-    Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-    return RecommendedFee.fromJson(jsonMap);
-  }
-
-  Future<RecommendedFee?> fetchRecommendedFees() async {
-    try {
-      RecommendedFee recommendedFee = await getRecommendFee();
-
-      /// 포우 월렛은 수수료를 너무 낮게 보내서 1시간 이상 트랜잭션이 펜딩되는 것을 막는 방향으로 구현하자고 결정되었습니다.
-      /// 따라서 트랜잭션 전송 시점에, 네트워크 상 최소 수수료 값 미만으로는 수수료를 설정할 수 없게 해야 합니다.
-      Result<int, CoconutError>? minimumFeeResult =
-          await _model.getMinimumNetworkFeeRate();
-      if (minimumFeeResult != null &&
-          minimumFeeResult.isSuccess &&
-          minimumFeeResult.value != null) {
-        return RecommendedFee(
-            recommendedFee.fastestFee,
-            recommendedFee.halfHourFee,
-            recommendedFee.hourFee,
-            recommendedFee.economyFee,
-            minimumFeeResult.value!);
-      }
-
-      //RecommendedFee recommendedFee = RecommendedFee(20, 19, 12, 3, 3);
-      return recommendedFee;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  bool _enoughBalance() {
+  bool enoughBalance() {
     if (_estimatedFee == null) {
       return false;
     }
@@ -297,7 +249,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         _confirmedBalance;
   }
 
-  bool _canGoNext() {
+  bool canGoNext() {
     int? satsPerVb = _customSelected
         ? _customFeeInfo?.satsPerVb
         : feeInfos
@@ -305,12 +257,12 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
             .satsPerVb;
 
     return (satsPerVb != null && satsPerVb > 0) &&
-        _enoughBalance() &&
+        enoughBalance() &&
         _estimatedFee != null &&
         _estimatedFee! < maxFeeLimit;
   }
 
-  void _handleCustomFeeInput(String input) async {
+  void handleCustomFeeInput(String input) async {
     if (input.isEmpty) {
       return;
     }
@@ -343,14 +295,11 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     try {
       int? estimatedFee;
       if (_isMaxMode) {
-        estimatedFee = await _estimateFeeWithMaximum(
-            widget.sendInfo.address, customSatsPerVb);
+        estimatedFee = await estimateFeeWithMaximum(
+            widget.sendInfo.address, customSatsPerVb, _isMultisig, _walletBase);
       } else {
-        estimatedFee = await _estimateFee(
-          widget.sendInfo.address,
-          widget.sendInfo.amount,
-          customSatsPerVb,
-        );
+        estimatedFee = await estimateFee(widget.sendInfo.address,
+            widget.sendInfo.amount, customSatsPerVb, _isMultisig, _walletBase);
       }
 
       setState(() {
@@ -377,27 +326,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     context.loaderOverlay.hide();
   }
 
-  Future<int?> _estimateFeeWithMaximum(String address, int satsPerVb) async {
-    if (_isMultisig) {
-      return await (_walletBase as MultisignatureWallet)
-          .estimateFeeWithMaximum(address, satsPerVb);
-    } else {
-      return await (_walletBase as SingleSignatureWallet)
-          .estimateFeeWithMaximum(address, satsPerVb);
-    }
-  }
-
-  Future<int?> _estimateFee(
-      String address, double amount, int satsPerVb) async {
-    if (_isMultisig) {
-      return await (_walletBase as MultisignatureWallet)
-          .estimateFee(address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
-    } else {
-      return await (_walletBase as SingleSignatureWallet)
-          .estimateFee(address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -405,8 +333,26 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         appBar: CustomAppBar.buildWithNext(
             title: "수수료",
             context: context,
-            isActive: _canGoNext(),
+            isActive: canGoNext(),
+            onBackPressed: () {
+              if (widget.isFromUtxoSelection) {
+                context.loaderOverlay.hide();
+              }
+              Navigator.pop(context);
+            },
+            nextButtonTitle: '완료',
             onNextPressed: () {
+              if (widget.isFromUtxoSelection) {
+                context.loaderOverlay.hide();
+                Map<String, dynamic> returnData = {
+                  'transactionFeeLevel': null,
+                  'estimatedFee': _estimatedFee,
+                };
+
+                Navigator.pop(context, returnData);
+                return;
+              }
+
               if (_isNetworkOn != true) {
                 CustomToast.showWarningToast(
                     context: context, text: ErrorCodes.networkError.message);
@@ -516,7 +462,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                         type: TooltipType.warning),
                   if (_estimatedFee != null &&
                       _estimatedFee! != 0 &&
-                      !_enoughBalance() &&
+                      !enoughBalance() &&
                       _estimatedFee! < maxFeeLimit)
                     CustomTooltip(
                         richText:
@@ -554,7 +500,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                   controller: _customFeeController,
                                   textInputType: TextInputType.number,
                                   onPressed: () {
-                                    _handleCustomFeeInput(
+                                    handleCustomFeeInput(
                                         _customFeeController.text);
                                   });
                             },
@@ -574,6 +520,88 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
           },
         ));
   }
+}
+
+Future<RecommendedFee> getRecommendFee() async {
+  String urlString = '${PowWalletApp.kMempoolHost}/api/v1/fees/recommended';
+  final url = Uri.parse(urlString);
+  final response = await get(url);
+
+  Map<String, dynamic> jsonMap = jsonDecode(response.body);
+
+  return RecommendedFee.fromJson(jsonMap);
+}
+
+Future<RecommendedFee?> fetchRecommendedFees(AppStateModel model) async {
+  try {
+    RecommendedFee recommendedFee = await getRecommendFee();
+
+    /// 포우 월렛은 수수료를 너무 낮게 보내서 1시간 이상 트랜잭션이 펜딩되는 것을 막는 방향으로 구현하자고 결정되었습니다.
+    /// 따라서 트랜잭션 전송 시점에, 네트워크 상 최소 수수료 값 미만으로는 수수료를 설정할 수 없게 해야 합니다.
+    Result<int, CoconutError>? minimumFeeResult =
+        await model.getMinimumNetworkFeeRate();
+    if (minimumFeeResult != null &&
+        minimumFeeResult.isSuccess &&
+        minimumFeeResult.value != null) {
+      return RecommendedFee(
+          recommendedFee.fastestFee,
+          recommendedFee.halfHourFee,
+          recommendedFee.hourFee,
+          recommendedFee.economyFee,
+          minimumFeeResult.value!);
+    }
+
+    //RecommendedFee recommendedFee = RecommendedFee(20, 19, 12, 3, 3);
+    return recommendedFee;
+  } catch (e) {
+    return null;
+  }
+}
+
+Future<int?> estimateFeeWithMaximum(String address, int satsPerVb,
+    bool isMultisig, WalletBase walletBase) async {
+  if (isMultisig) {
+    return await (walletBase as MultisignatureWallet)
+        .estimateFeeWithMaximum(address, satsPerVb);
+  } else {
+    return await (walletBase as SingleSignatureWallet)
+        .estimateFeeWithMaximum(address, satsPerVb);
+  }
+}
+
+Future<int?> estimateFee(String address, double amount, int satsPerVb,
+    bool isMultisig, WalletBase walletBase) async {
+  if (isMultisig) {
+    return await (walletBase as MultisignatureWallet)
+        .estimateFee(address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
+  } else {
+    return await (walletBase as SingleSignatureWallet)
+        .estimateFee(address, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
+  }
+}
+
+int? handleFeeEstimationError(Exception e) {
+  try {
+    if (e.toString().contains("Insufficient amount. Estimated fee is")) {
+      // get finalFee from error message : 'Insufficient amount. Estimated fee is $finalFee'
+      var estimatedFee = int.parse(
+          e.toString().split("Insufficient amount. Estimated fee is ")[1]);
+      return estimatedFee;
+    }
+
+    if (e.toString().contains("Not enough amount for sending. (Fee")) {
+      // get finalFee from error message : 'Not enough amount for sending. (Fee : $finalFee)'
+      var estimatedFee = int.parse(e
+          .toString()
+          .split("Not enough amount for sending. (Fee : ")[1]
+          .split(")")[0]);
+      return estimatedFee;
+    }
+  } catch (_) {
+    return null;
+  }
+
+  return null;
 }
 
 class FeeSelectionItem extends StatelessWidget {
