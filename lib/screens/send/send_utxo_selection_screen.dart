@@ -94,6 +94,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   int? _isEnableToGetChange;
 
+  bool _isLoadingMore = false;
+  bool _isLastData = false;
+  final int _takeLength = 15; // 스크롤시 가져올 데이터 수(페이징)
+  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc;
+
   @override
   void initState() {
     super.initState();
@@ -107,8 +112,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
     _walletType = _walletBaseItem.walletType;
     if (_model.walletInitState == WalletInitState.finished) {
-      _utxoList = getUtxoListWithHoldingAddress(_walletFeature.getUtxoList(),
-          _walletBaseItem, accountIndexField, changeField, _walletType);
+      _utxoList = _getUtxoList();
       _selectedUtxoList = [];
     } else {
       _utxoList = _selectedUtxoList = [];
@@ -141,7 +145,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _scrollController.addListener(() {
       double threshold = _headerTopContainerSize.height + 20;
       double offset = _scrollController.offset;
-
+      if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
+        _removeFilterDropdown();
+      }
       setState(() {
         _afterScrolledHeaderContainerVisible = offset >= threshold;
 
@@ -160,6 +166,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           _totalUtxoAmountWidgetPaddingBottom = 20 - (5 * progress);
         }
       });
+      if (_scrollController.position.extentAfter < 100) {
+        _loadMoreData();
+      }
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -316,16 +325,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   /// UTXO 선택 상태를 토글하는 함수
   void _toggleSelection(model.UTXO utxo) {
+    _removeFilterDropdown();
     setState(() {
       if (_selectedUtxoList.contains(utxo)) {
         _selectedUtxoList.remove(utxo);
-        debugPrint('contains == ${utxo.amount}');
-
-        /// 이미 선택된 경우 제거
       } else {
         _selectedUtxoList.add(utxo);
-
-        /// 선택되지 않은 경우 추가
       }
 
       /// 잔돈 계산
@@ -356,6 +361,58 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         _selectedUtxoList.isNotEmpty;
   }
 
+  void _applyFilter(UtxoOrderEnum orderEnum) {
+    if (orderEnum == _selectedFilter) return;
+    _scrollController.jumpTo(0);
+
+    setState(() {
+      _selectedFilter = orderEnum;
+      _selectedUtxoList.clear();
+      _utxoList.clear();
+      _utxoList = _getUtxoList(orderEnum: _selectedFilter);
+    });
+  }
+
+  List<model.UTXO> _getUtxoList(
+      {UtxoOrderEnum orderEnum = UtxoOrderEnum.byTimestampDesc,
+      int cursor = 0}) {
+    return getUtxoListWithHoldingAddress(
+      _walletFeature.getUtxoList(
+          order: orderEnum, cursor: cursor, count: _takeLength),
+      _walletBaseItem,
+      accountIndexField,
+      changeField,
+      _walletType,
+    );
+  }
+
+  Future<void> _loadMoreData() async {
+    if (_isLoadingMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    await Future.delayed(const Duration(milliseconds: 1000));
+
+    List<model.UTXO> newList =
+        _getUtxoList(orderEnum: _selectedFilter, cursor: _utxoList.length);
+
+    setState(() {
+      _utxoList.addAll(newList);
+      if (newList.length < _takeLength) {
+        _isLastData = true;
+      }
+    });
+
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) {
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
+  }
+
   Widget _divider() => Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: const Divider(
@@ -377,23 +434,23 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         ],
         dividerColor: Colors.black,
         onTapButton: (index) {
+          switch (index) {
+            case 0: // 최신순
+              _applyFilter(UtxoOrderEnum.byTimestampDesc);
+              break;
+            case 1: // 오래된 순
+              _applyFilter(UtxoOrderEnum.byTimestampAsc);
+              break;
+            case 2: // 큰 금액순
+              _applyFilter(UtxoOrderEnum.byAmountDesc);
+              break;
+            case 3: // 작은 금액순
+              _applyFilter(UtxoOrderEnum.byAmountAsc);
+              break;
+          }
           setState(() {
             _isFilterDropdownVisible = _isScrolledFilterDropdownVisible = false;
           });
-          switch (index) {
-            case 0: // 최신순
-              debugPrint('최신순 필터링');
-              break;
-            case 1: // 오래된 순
-              debugPrint('오래된 순 필터링');
-              break;
-            case 2: // 큰 금액순
-              debugPrint('쿤 금액순 필터링');
-              break;
-            case 3: // 작은 금액순
-              debugPrint('작은 금액순 필터링');
-              break;
-          }
         },
       ),
     );
@@ -585,6 +642,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: '모두 해제',
                     onTap: () {
+                      _removeFilterDropdown();
                       setState(() {
                         _selectedUtxoList = [];
                       });
@@ -595,6 +653,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: '모두 선택',
                     onTap: () {
+                      _removeFilterDropdown();
                       setState(() {
                         _selectedUtxoList = List.from(_utxoList);
                       });
@@ -623,6 +682,18 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         .reduce((value, element) => value + element);
   }
 
+  String _getCurrentFilter() {
+    if (_selectedFilter == UtxoOrderEnum.byTimestampDesc) {
+      return '최신순';
+    } else if (_selectedFilter == UtxoOrderEnum.byTimestampAsc) {
+      return '오래된 순';
+    } else if (_selectedFilter == UtxoOrderEnum.byAmountDesc) {
+      return '큰 금액순';
+    } else {
+      return '작은 금액순';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -630,311 +701,313 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       onPopInvokedWithResult: (didPop, _) {
         _removeFilterDropdown();
       },
-      child: GestureDetector(
-        onVerticalDragDown: (details) => _removeFilterDropdown(),
-        child: Scaffold(
-          appBar: CustomAppBar.buildWithNext(
-            backgroundColor: MyColors.black,
-            title: 'UTXO 고르기',
-            context: context,
-            nextButtonTitle: '완료',
-            isActive: _isRecommendedFeeFetchSuccess && _estimatedFee != null
-                ? _isSelectedUtxoEnough()
-                    ? true
-                    : false
-                : false,
-            onNextPressed: () {},
-          ),
-          body: Stack(
-            children: [
-              SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        top: 10,
-                        bottom: 10,
-                      ),
-                      alignment: Alignment.center,
-                      color: MyColors.black,
-                      child: Column(
-                        children: [
-                          Container(
-                            key: _headerTopContainerKey,
-                            width: MediaQuery.sizeOf(context).width,
-                            decoration: BoxDecoration(
-                              color: MyColors.transparentWhite_10,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            padding: const EdgeInsets.only(
-                              left: 24,
-                              right: 24,
-                              top: 24,
-                              bottom: 20,
-                            ),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      '보낼 수량',
-                                      style: Styles.body2Bold,
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            '${satoshiToBitcoinString(
-                                              _isMaxMode
-                                                  ? UnitUtil.bitcoinToSatoshi(
-                                                        widget.sendInfo.amount,
-                                                      ) -
-                                                      (_estimatedFee ?? 0)
-                                                  : UnitUtil.bitcoinToSatoshi(
-                                                      widget.sendInfo.amount,
-                                                    ),
-                                            ).normalizeToFullCharacters()} BTC',
-                                            style: Styles.body2Number,
-                                          ),
-                                          Selector<UpbitConnectModel, int?>(
-                                            selector: (context, model) =>
-                                                model.bitcoinPriceKrw,
-                                            builder: (context, bitcoinPriceKrw,
-                                                child) {
-                                              return Text(
-                                                bitcoinPriceKrw != null
-                                                    ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())}'
-                                                    : '',
-                                                style: Styles.balance2,
-                                              );
-                                            },
-                                          )
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                _divider(),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      '수수료',
-                                      style: Styles.body2Bold,
-                                    ),
-                                    CustomUnderlinedButton(
-                                        text: '변경',
-                                        isEnable: _isRecommendedFeeFetchSuccess,
-                                        onTap: () async {
-                                          Map<String, dynamic>? result =
-                                              await MyBottomSheet
-                                                  .showBottomSheet_90(
-                                                      context: context,
-                                                      child:
-                                                          SendFeeSelectionScreen(
-                                                        id: widget.id,
-                                                        sendInfo:
-                                                            widget.sendInfo,
-                                                        isFromUtxoSelection:
-                                                            true,
-                                                      ));
-                                          if (result != null) {
-                                            if (result['transactionFeeLevel'] !=
-                                                null) {
-                                              /// 선택 입력
-                                              await setRecommendedFees(
-                                                result['transactionFeeLevel'],
-                                              );
-                                            } else {
-                                              /// 직접 입력
-                                              await setRecommendedFees(
-                                                result['transactionFeeLevel'],
-                                                estimatedFee:
-                                                    result['estimatedFee'],
-                                              );
-                                            }
-                                          }
-                                        }),
-                                    Expanded(
-                                        child: _isRecommendedFeeFetchSuccess
-                                            ? Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.end,
-                                                children: [
-                                                  Text(
-                                                    '${satoshiToBitcoinString(_estimatedFee ?? 0).toString()} BTC',
-                                                    style: Styles.body2Number,
-                                                  ),
-                                                  if (_satsPerVb != 0) ...{
-                                                    Text(
-                                                      '${_selectedLevel.expectedTime} ($_satsPerVb sats/vb)',
-                                                      style: Styles.caption,
-                                                    ),
-                                                  }
-                                                ],
-                                              )
-                                            : const Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                children: [
-                                                  SizedBox(
-                                                    width: 15,
-                                                    height: 15,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      color: MyColors.white,
-                                                      strokeWidth: 2,
-                                                    ),
-                                                  ),
-                                                ],
-                                              )),
-                                  ],
-                                ),
-                                _divider(),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '잔돈',
-                                      style: _isEnableToGetChange != null &&
-                                              _isEnableToGetChange! > 0
-                                          ? Styles.body2Bold
-                                          : Styles.body2Bold.merge(
-                                              const TextStyle(
-                                                color: MyColors
-                                                    .transparentWhite_40,
-                                              ),
-                                            ),
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            // Transaction.estimatedFee,
-                                            _isEnableToGetChange != null &&
-                                                    _isEnableToGetChange! > 0
-                                                ? '${satoshiToBitcoinString(_isEnableToGetChange!)} BTC'
-                                                : '- BTC',
-                                            style: _isEnableToGetChange !=
-                                                        null &&
-                                                    _isEnableToGetChange! > 0
-                                                ? Styles.body2Bold
-                                                : Styles.body2Bold.merge(
-                                                    const TextStyle(
-                                                      color: MyColors
-                                                          .transparentWhite_40,
-                                                    ),
-                                                  ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+      child: Scaffold(
+        appBar: CustomAppBar.buildWithNext(
+          backgroundColor: MyColors.black,
+          title: 'UTXO 고르기',
+          context: context,
+          nextButtonTitle: '완료',
+          isActive: _isRecommendedFeeFetchSuccess && _estimatedFee != null
+              ? _isSelectedUtxoEnough()
+                  ? true
+                  : false
+              : false,
+          onNextPressed: () {
+            _removeFilterDropdown();
+          },
+        ),
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              controller: _scrollController,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      top: 10,
+                      bottom: 10,
+                    ),
+                    alignment: Alignment.center,
+                    color: MyColors.black,
+                    child: Column(
+                      children: [
+                        Container(
+                          key: _headerTopContainerKey,
+                          width: MediaQuery.sizeOf(context).width,
+                          decoration: BoxDecoration(
+                            color: MyColors.transparentWhite_10,
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                          _totalUtxoAmountWidget(
-                            Text(
-                              key: _filterDropdownButtonKey,
-                              '큰 금액순',
-
-                              /// TODO: 정렬 Text 대입
-                              style: Styles.caption2.merge(
-                                const TextStyle(
-                                  color: MyColors.white,
-                                  fontSize: 12,
-                                ),
+                          padding: const EdgeInsets.only(
+                            left: 24,
+                            right: 24,
+                            top: 24,
+                            bottom: 20,
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    '보낼 수량',
+                                    style: Styles.body2Bold,
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '${satoshiToBitcoinString(
+                                            _isMaxMode
+                                                ? UnitUtil.bitcoinToSatoshi(
+                                                      widget.sendInfo.amount,
+                                                    ) -
+                                                    (_estimatedFee ?? 0)
+                                                : UnitUtil.bitcoinToSatoshi(
+                                                    widget.sendInfo.amount,
+                                                  ),
+                                          ).normalizeToFullCharacters()} BTC',
+                                          style: Styles.body2Number,
+                                        ),
+                                        Selector<UpbitConnectModel, int?>(
+                                          selector: (context, model) =>
+                                              model.bitcoinPriceKrw,
+                                          builder: (context, bitcoinPriceKrw,
+                                              child) {
+                                            return Text(
+                                              bitcoinPriceKrw != null
+                                                  ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())}'
+                                                  : '',
+                                              style: Styles.balance2,
+                                            );
+                                          },
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              _divider(),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    '수수료',
+                                    style: Styles.body2Bold,
+                                  ),
+                                  CustomUnderlinedButton(
+                                      text: '변경',
+                                      isEnable: _isRecommendedFeeFetchSuccess,
+                                      onTap: () async {
+                                        Map<String, dynamic>? result =
+                                            await MyBottomSheet
+                                                .showBottomSheet_90(
+                                                    context: context,
+                                                    child:
+                                                        SendFeeSelectionScreen(
+                                                      id: widget.id,
+                                                      sendInfo: widget.sendInfo,
+                                                      isFromUtxoSelection: true,
+                                                    ));
+                                        if (result != null) {
+                                          if (result['transactionFeeLevel'] !=
+                                              null) {
+                                            /// 선택 입력
+                                            await setRecommendedFees(
+                                              result['transactionFeeLevel'],
+                                            );
+                                          } else {
+                                            /// 직접 입력
+                                            await setRecommendedFees(
+                                              result['transactionFeeLevel'],
+                                              estimatedFee:
+                                                  result['estimatedFee'],
+                                            );
+                                          }
+                                        }
+                                      }),
+                                  Expanded(
+                                      child: _isRecommendedFeeFetchSuccess
+                                          ? Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  '${satoshiToBitcoinString(_estimatedFee ?? 0).toString()} BTC',
+                                                  style: Styles.body2Number,
+                                                ),
+                                                if (_satsPerVb != 0) ...{
+                                                  Text(
+                                                    '${_selectedLevel.expectedTime} ($_satsPerVb sats/vb)',
+                                                    style: Styles.caption,
+                                                  ),
+                                                }
+                                              ],
+                                            )
+                                          : const Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                SizedBox(
+                                                  width: 15,
+                                                  height: 15,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    color: MyColors.white,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                ),
+                                              ],
+                                            )),
+                                ],
+                              ),
+                              _divider(),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '잔돈',
+                                    style: _isEnableToGetChange != null &&
+                                            _isEnableToGetChange! > 0
+                                        ? Styles.body2Bold
+                                        : Styles.body2Bold.merge(
+                                            const TextStyle(
+                                              color:
+                                                  MyColors.transparentWhite_40,
+                                            ),
+                                          ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          // Transaction.estimatedFee,
+                                          _isEnableToGetChange != null &&
+                                                  _isEnableToGetChange! > 0
+                                              ? '${satoshiToBitcoinString(_isEnableToGetChange!)} BTC'
+                                              : '- BTC',
+                                          style: _isEnableToGetChange != null &&
+                                                  _isEnableToGetChange! > 0
+                                              ? Styles.body2Bold
+                                              : Styles.body2Bold.merge(
+                                                  const TextStyle(
+                                                    color: MyColors
+                                                        .transparentWhite_40,
+                                                  ),
+                                                ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        _totalUtxoAmountWidget(
+                          Text(
+                            key: _filterDropdownButtonKey,
+                            _getCurrentFilter(),
+                            style: Styles.caption2.merge(
+                              const TextStyle(
+                                color: MyColors.white,
+                                fontSize: 12,
                               ),
                             ),
-                            isAfterScrolled: false,
                           ),
-                        ],
-                      ),
+                          isAfterScrolled: false,
+                        ),
+                      ],
                     ),
-                    ListView.separated(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.only(
-                            top: 0, bottom: 30, left: 16, right: 16),
-                        itemCount: _utxoList.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
+                  ),
+                  ListView.separated(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.only(
+                          top: 0, bottom: 30, left: 16, right: 16),
+                      itemCount: _utxoList.length + 1,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        if (index < _utxoList.length) {
                           return UtxoSelectableCard(
                             utxo: _utxoList[index],
                             isSelected:
                                 _selectedUtxoList.contains(_utxoList[index]),
                             onSelected: _toggleSelection,
                           );
-                        }),
-                  ],
-                ),
+                        } else {
+                          return _isLoadingMore && !_isLastData
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: MyColors.white,
+                                  ),
+                                )
+                              : const SizedBox();
+                        }
+                      }),
+                ],
               ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: IgnorePointer(
-                  ignoring: !_afterScrolledHeaderContainerVisible,
-                  child: Opacity(
-                    opacity: _afterScrolledHeaderContainerVisible ? 1 : 0,
-                    child: Container(
-                      color: MyColors.black,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                      child: _totalUtxoAmountWidget(
-                        Text(
-                          key: _scrolledFilterDropdownButtonKey,
-                          '큰 금액순',
-
-                          /// TODO: 정렬 Text 대입
-                          style: Styles.caption2.merge(
-                            const TextStyle(
-                              color: MyColors.white,
-                              fontSize: 12,
-                            ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                ignoring: !_afterScrolledHeaderContainerVisible,
+                child: Opacity(
+                  opacity: _afterScrolledHeaderContainerVisible ? 1 : 0,
+                  child: Container(
+                    color: MyColors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                    ),
+                    child: _totalUtxoAmountWidget(
+                      Text(
+                        key: _scrolledFilterDropdownButtonKey,
+                        _getCurrentFilter(),
+                        style: Styles.caption2.merge(
+                          const TextStyle(
+                            color: MyColors.white,
+                            fontSize: 12,
                           ),
                         ),
-                        isAfterScrolled: true,
                       ),
+                      isAfterScrolled: true,
                     ),
                   ),
                 ),
               ),
-              if (_isFilterDropdownVisible && _utxoList.isNotEmpty) ...{
-                Positioned(
-                  top: _filterDropdownButtonPosition.dy -
-                      _scrollController.offset -
-                      MediaQuery.of(context).padding.top -
-                      20,
-                  left: 16,
-                  child: _filterDropDownWidget(),
-                ),
-              },
-              if (_isScrolledFilterDropdownVisible && _utxoList.isNotEmpty) ...{
-                Positioned(
-                  top: _scrolledFilterDropdownButtonPosition.dy -
-                      MediaQuery.of(context).padding.top -
-                      65,
-                  left: 16,
-                  child: _filterDropDownWidget(),
-                ),
-              }
-            ],
-          ),
+            ),
+            if (_isFilterDropdownVisible && _utxoList.isNotEmpty) ...{
+              Positioned(
+                top: _filterDropdownButtonPosition.dy -
+                    _scrollController.offset -
+                    MediaQuery.of(context).padding.top -
+                    20,
+                left: 16,
+                child: _filterDropDownWidget(),
+              ),
+            },
+            if (_isScrolledFilterDropdownVisible && _utxoList.isNotEmpty) ...{
+              Positioned(
+                top: _scrolledFilterDropdownButtonPosition.dy -
+                    MediaQuery.of(context).padding.top -
+                    65,
+                left: 16,
+                child: _filterDropDownWidget(),
+              ),
+            }
+          ],
         ),
       ),
     );
