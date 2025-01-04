@@ -6,12 +6,10 @@ import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/send_info.dart';
-import 'package:coconut_wallet/model/utxo.dart' as model;
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/send/send_fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection/fee_selection_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
@@ -55,6 +53,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   static String changeField = 'change';
   static String accountIndexField = 'accountIndex';
   late final ScrollController _scrollController;
+  late List<UTXO> _confirmedUtxoList;
   late List<UTXO> _utxoList;
   late List<UTXO> _selectedUtxoList;
 
@@ -116,8 +115,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
     _walletBaseItem = _model.getWalletById(widget.id);
     _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
-
     _walletType = _walletBaseItem.walletType;
+
+    _confirmedUtxoList = _getAllConfirmedUtxoList(_walletFeature);
+
     // TODO: 동기화 중일 때 이 화면까지 진입 안되는 거 확인 후 삭제 여부 결정
     if (_model.walletInitState == WalletInitState.finished) {
       // TODO: getUtxoList()에서 unconfirmedList는 제외해야함
@@ -477,6 +478,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         _utxoList = _getUtxoList(orderEnum: _selectedFilter);
       });
     }
+  }
+
+  List<UTXO> _getAllConfirmedUtxoList(WalletFeature wallet) {
+    return wallet.walletStatus!.utxoList
+        .where((utxo) => utxo.blockHeight != 0)
+        .toList();
   }
 
   List<UTXO> _getUtxoList(
