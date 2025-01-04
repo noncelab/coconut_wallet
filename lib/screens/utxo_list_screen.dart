@@ -90,7 +90,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
           element.amount,
           ownedAddress,
           element.derivationPath,
-          element.transactionHash));
+          element.transactionHash,
+          element.index));
     }
     return utxos;
   }

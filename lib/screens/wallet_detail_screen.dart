@@ -1101,7 +1101,8 @@ List<model.UTXO> getUtxoListWithHoldingAddress(
         element.amount,
         ownedAddress,
         element.derivationPath,
-        element.transactionHash));
+        element.transactionHash,
+        element.index));
   }
   return utxos;
 }

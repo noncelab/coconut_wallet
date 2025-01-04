@@ -25,6 +25,7 @@ void main() {
         'address',
         'derivationPath',
         'txHash',
+        0,
         tags: const ['kyc', 'coconut'],
       );
     });
