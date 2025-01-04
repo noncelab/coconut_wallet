@@ -16,6 +16,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -53,8 +54,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   static String changeField = 'change';
   static String accountIndexField = 'accountIndex';
   late final ScrollController _scrollController;
-  late List<model.UTXO> _utxoList;
-  late List<model.UTXO> _selectedUtxoList;
+  late List<UTXO> _utxoList;
+  late List<UTXO> _selectedUtxoList;
 
   final GlobalKey _filterDropdownButtonKey = GlobalKey();
   final GlobalKey _scrolledFilterDropdownButtonKey = GlobalKey();
@@ -100,6 +101,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   final int _takeLength = 15; // 스크롤시 가져올 데이터 수(페이징)
   UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc;
 
+  Transaction? _transaction;
+
   @override
   void initState() {
     super.initState();
@@ -112,7 +115,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
 
     _walletType = _walletBaseItem.walletType;
+    // TODO: 동기화 중일 때 이 화면까지 진입 안되는 거 확인 후 삭제 여부 결정
     if (_model.walletInitState == WalletInitState.finished) {
+      // TODO: getUtxoList()에서 unconfirmedList는 제외해야함
       _utxoList = _getUtxoList();
       _selectedUtxoList = [];
     } else {
@@ -191,6 +196,60 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
       recommendedFees = await fetchRecommendedFees(_model);
       await setRecommendedFees(TransactionFeeLevel.halfhour);
+    });
+
+    // TODO: feeRate
+    _transaction = createTransaction(_isMaxMode, 1, _walletBase);
+    // TODO: feeRate
+    _estimatedFee = _estimateFee2(1);
+    syncSelectedUtxosWithTransaction();
+    printTransactionUtxos();
+    //_transaction!.removeInputWithUtxo(utxoToRemove, feeRate, wallet)
+  }
+
+  // TODO: must delete
+  void printTransactionUtxos() {
+    for (var utxo in _transaction!.utxoList) {
+      Logger.log(
+          '--> _transaction.utxoList: ${utxo.transactionHash} / ${utxo.index}');
+    }
+  }
+
+  // TODO: feeRate 계산이 된 후에 호출 가능
+  Transaction createTransaction(
+      bool isMaxMode, int feeRate, WalletBase walletBase) {
+    if (isMaxMode) {
+      return Transaction.forSweep(widget.sendInfo.address, feeRate, walletBase);
+    }
+
+    return Transaction.forPayment(widget.sendInfo.address,
+        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), feeRate, walletBase);
+  }
+
+  int _estimateFee2(int feeRate) {
+    assert(_transaction != null);
+    int? requiredSignature;
+    int? totalSigner;
+    if (_walletBaseItem.walletType == WalletType.multiSignature) {
+      requiredSignature =
+          (_walletBaseItem as MultisigWalletListItem).requiredSignatureCount;
+      totalSigner = (_walletBaseItem as MultisigWalletListItem).signers.length;
+    }
+
+    return _transaction!.estimateFee(feeRate, _walletBase.addressType,
+        requiredSignature: requiredSignature, totalSinger: totalSigner);
+  }
+
+  void syncSelectedUtxosWithTransaction() {
+    var inputs = _transaction!.inputs;
+    List<UTXO> result = [];
+    for (int i = 0; i < inputs.length; i++) {
+      result.add(_utxoList.firstWhere((utxo) =>
+          utxo.transactionHash == inputs[i].transactionHash &&
+          utxo.index == inputs[i].index));
+    }
+    setState(() {
+      _selectedUtxoList = result;
     });
   }
 
@@ -333,12 +392,19 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   /// UTXO 선택 상태를 토글하는 함수
-  void _toggleSelection(model.UTXO utxo) {
+  void _toggleSelection(UTXO utxo) {
     _removeFilterDropdown();
+
     setState(() {
       if (_selectedUtxoList.contains(utxo)) {
+        // TODO: feeRate
+        _transaction!.removeInputWithUtxo(utxo, 1, _walletBase);
+        _estimatedFee = _estimateFee2(1);
         _selectedUtxoList.remove(utxo);
       } else {
+        // TODO: feeRate
+        _transaction!.addIntputWithUtxo(utxo, 1, _walletBase);
+        _estimatedFee = _estimateFee2(1);
         _selectedUtxoList.add(utxo);
       }
 
@@ -355,6 +421,29 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         _isEnableToGetChange = 0;
       }
     });
+  }
+
+  void selectAll() {
+    _removeFilterDropdown();
+    // TODO: 로드 안 된 utxo도 다 가져와야 함
+    setState(() {
+      _selectedUtxoList = List.from(_utxoList);
+    });
+    // TODO: feeRate
+    _transaction = Transaction.fromUtxoList(_utxoList, widget.sendInfo.address,
+        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), 1, _walletBase);
+    _estimatedFee = _estimateFee2(1);
+  }
+
+  void deselectAll() {
+    _removeFilterDropdown();
+    setState(() {
+      _selectedUtxoList = [];
+    });
+    // TODO: feeRate
+    _transaction = Transaction.fromUtxoList([], widget.sendInfo.address,
+        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), 1, _walletBase);
+    _estimatedFee = _estimateFee2(1);
   }
 
   bool _isSelectedUtxoEnough() {
@@ -376,23 +465,17 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
     setState(() {
       _selectedFilter = orderEnum;
-      _selectedUtxoList.clear();
+      //_selectedUtxoList.clear();
       _utxoList.clear();
       _utxoList = _getUtxoList(orderEnum: _selectedFilter);
     });
   }
 
-  List<model.UTXO> _getUtxoList(
+  List<UTXO> _getUtxoList(
       {UtxoOrderEnum orderEnum = UtxoOrderEnum.byTimestampDesc,
       int cursor = 0}) {
-    return getUtxoListWithHoldingAddress(
-      _walletFeature.getUtxoList(
-          order: orderEnum, cursor: cursor, count: _takeLength),
-      _walletBaseItem,
-      accountIndexField,
-      changeField,
-      _walletType,
-    );
+    return _walletFeature.getUtxoList(
+        order: orderEnum, cursor: cursor, count: _takeLength);
   }
 
   Future<void> _loadMoreData() async {
@@ -404,7 +487,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
     await Future.delayed(const Duration(milliseconds: 1000));
 
-    List<model.UTXO> newList =
+    List<UTXO> newList =
         _getUtxoList(orderEnum: _selectedFilter, cursor: _utxoList.length);
 
     setState(() {
@@ -1073,9 +1156,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 }
 
 class UtxoSelectableCard extends StatefulWidget {
-  final model.UTXO utxo;
+  final UTXO utxo;
   final bool isSelected;
-  final Function(model.UTXO) onSelected;
+  final Function(UTXO) onSelected;
 
   const UtxoSelectableCard({
     super.key,
@@ -1096,7 +1179,8 @@ class _UtxoSelectableCardState extends State<UtxoSelectableCard> {
   void initState() {
     super.initState();
     _isPressing = false;
-    dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp).split('|');
+    dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp.toString())
+        .split('|');
     dateString[0] = dateString[0].replaceAll('.', '/');
   }
 
