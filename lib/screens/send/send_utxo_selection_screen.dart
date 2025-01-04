@@ -5,9 +5,11 @@ import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/enums.dart';
+import 'package:coconut_wallet/model/fee_info.dart';
 import 'package:coconut_wallet/model/send_info.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+// TODO: remove below import
 import 'package:coconut_wallet/screens/send/send_fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -16,6 +18,7 @@ import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -102,7 +105,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   final int _takeLength = 15; // 스크롤시 가져올 데이터 수(페이징)
   UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc;
 
-  Transaction? _transaction;
+  late Transaction? _transaction;
 
   @override
   void initState() {
@@ -202,7 +205,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       await setRecommendedFees(TransactionFeeLevel.halfhour);
     });
 
-    // TODO: feeRate
     _transaction = createTransaction(_isMaxMode, 1, _walletBase);
     // TODO: feeRate
     _estimatedFee = _estimateFee2(1);
@@ -1097,7 +1099,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                   Expanded(
                                       child: !_isRecommendedFeeFetchSuccess &&
                                               !_isRecommendedFeeFetching &&
-                                              _customSelected != true
+                                              !_customSelected
                                           ? Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.end,
@@ -1122,7 +1124,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                             )
                                           : (_isRecommendedFeeFetchSuccess &&
                                                       !_isRecommendedFeeFetching) ||
-                                                  _customSelected == true
+                                                  _customSelected
                                               ? Column(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.end,

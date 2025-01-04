@@ -1,15 +1,14 @@
-import 'dart:convert';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/fee_info.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/repositories/recommend_fee_repository.dart';
+import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/model/constants.dart';
@@ -522,42 +521,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 }
 
-Future<RecommendedFee> getRecommendFee() async {
-  String urlString = '${PowWalletApp.kMempoolHost}/api/v1/fees/recommended';
-  final url = Uri.parse(urlString);
-  final response = await get(url);
-
-  Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-  return RecommendedFee.fromJson(jsonMap);
-}
-
-Future<RecommendedFee?> fetchRecommendedFees(AppStateModel model) async {
-  try {
-    RecommendedFee recommendedFee = await getRecommendFee();
-
-    /// 포우 월렛은 수수료를 너무 낮게 보내서 1시간 이상 트랜잭션이 펜딩되는 것을 막는 방향으로 구현하자고 결정되었습니다.
-    /// 따라서 트랜잭션 전송 시점에, 네트워크 상 최소 수수료 값 미만으로는 수수료를 설정할 수 없게 해야 합니다.
-    Result<int, CoconutError>? minimumFeeResult =
-        await model.getMinimumNetworkFeeRate();
-    if (minimumFeeResult != null &&
-        minimumFeeResult.isSuccess &&
-        minimumFeeResult.value != null) {
-      return RecommendedFee(
-          recommendedFee.fastestFee,
-          recommendedFee.halfHourFee,
-          recommendedFee.hourFee,
-          recommendedFee.economyFee,
-          minimumFeeResult.value!);
-    }
-
-    //RecommendedFee recommendedFee = RecommendedFee(20, 19, 12, 3, 3);
-    return recommendedFee;
-  } catch (e) {
-    return null;
-  }
-}
-
 Future<int?> estimateFeeWithMaximum(String address, int satsPerVb,
     bool isMultisig, WalletBase walletBase) async {
   if (isMultisig) {
@@ -729,32 +692,4 @@ class FeeSelectionItem extends StatelessWidget {
       ),
     );
   }
-}
-
-class FeeInfoWithLevel extends FeeInfo {
-  final TransactionFeeLevel level;
-
-  FeeInfoWithLevel({
-    required this.level,
-    super.estimatedFee,
-    super.fiatValue,
-    super.satsPerVb,
-    super.failedEstimation, // 현재 활용 안함
-    super.isEstimating, // 현재 활용 안함
-  });
-}
-
-class FeeInfo {
-  int? estimatedFee;
-  int? fiatValue;
-  int? satsPerVb;
-  bool failedEstimation;
-  bool isEstimating;
-
-  FeeInfo(
-      {this.estimatedFee,
-      this.fiatValue,
-      this.satsPerVb,
-      this.failedEstimation = false,
-      this.isEstimating = false});
 }
