@@ -88,14 +88,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
     FeeInfoWithLevel(level: TransactionFeeLevel.hour),
   ];
+
   FeeInfoWithLevel? get _selectedFeeInfoWithLevel => _selectedLevel == null
       ? null
       : feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel);
+
   int? get _satsPerVb =>
       _selectedFeeInfoWithLevel?.satsPerVb ?? _customFeeInfo?.satsPerVb;
 
-  //bool _isRecommendedFeeFetchSuccess = false;
-  //bool _isRecommendedFeeFetching = true;
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
       RecommendedFeeFetchStatus.fetching;
 
@@ -205,13 +205,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               as RenderBox;
       _headerTopContainerSize = headerTopContainerRenderBox.size;
 
-      await setRecommendedFees();
+      await _setRecommendedFees();
+      if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed) {
+        _transaction.updateFeeRate(_satsPerVb!, _walletBase);
+      }
     });
   }
 
   // TODO: must delete
   void printTransactionUtxos() {
-    for (var utxo in _transaction!.utxoList) {
+    for (var utxo in _transaction.utxoList) {
       Logger.log(
           '--> _transaction.utxoList: ${utxo.transactionHash} / ${utxo.index}');
     }
@@ -272,7 +275,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
   }
 
-  Future<void> setRecommendedFees() async {
+  Future<void> _setRecommendedFees() async {
     var recommendedFees = await fetchRecommendedFees(_model);
     if (recommendedFees == null) {
       setState(() {
