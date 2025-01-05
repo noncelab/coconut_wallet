@@ -4,7 +4,6 @@ import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/fee_info.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/repositories/recommend_fee_repository.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +49,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   int? _minimumSatsPerVb;
   TransactionFeeLevel _selectedLevel = TransactionFeeLevel.halfhour;
   bool _customSelected = false;
-  String? _selectedOption = TransactionFeeLevel.halfhour.text;
+  String? _selectedFeeLevel = TransactionFeeLevel.halfhour.text;
   int? _estimatedFee = 0;
   int? _fiatValue = 0;
 
@@ -224,7 +223,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     }
 
     if (feeInfo is! FeeInfoWithLevel) {
-      _selectedOption = '직접 입력';
+      _selectedFeeLevel = '직접 입력';
       _estimatedFee = estimatedFee;
       _fiatValue = _customFeeInfo?.fiatValue;
       _customSelected = true;
@@ -416,7 +415,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                           color: MyColors.transparentWhite_06,
                           border: Border.all(
                               color: MyColors.transparentWhite_12, width: 1)),
-                      child: Text(_selectedOption ?? "", style: Styles.caption),
+                      child:
+                          Text(_selectedFeeLevel ?? "", style: Styles.caption),
                     ),
                     Text(
                         _estimatedFee != null
@@ -482,7 +482,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                   onPressed: () {
                                     setState(() {
                                       _selectedLevel = feeInfos[index].level;
-                                      _selectedOption =
+                                      _selectedFeeLevel =
                                           feeInfos[index].level.text;
                                       _estimatedFee =
                                           feeInfos[index].estimatedFee;

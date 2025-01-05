@@ -9,8 +9,6 @@ import 'package:coconut_wallet/model/fee_info.dart';
 import 'package:coconut_wallet/model/send_info.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-// TODO: remove below import
-import 'package:coconut_wallet/screens/send/send_fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -28,6 +26,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+
+enum RecommendedFeeFetchStatus { fetching, succeed, failed }
 
 class SendUtxoSelectionScreen extends StatefulWidget {
   final int id;
@@ -50,13 +50,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   late WalletBase _walletBase;
   late WalletFeature _walletFeature;
   late WalletType _walletType;
-
   late UpbitConnectModel _upbitConnectModel;
-
-  static String changeField = 'change';
-  static String accountIndexField = 'accountIndex';
   late final ScrollController _scrollController;
-  late List<UTXO> _confirmedUtxoList;
+
+  late List<UTXO> _confirmedUtxoList; // TODO: 언제 써야하는지 확인하고 초기화 해야 함
   late List<UTXO> _utxoList;
   late List<UTXO> _selectedUtxoList;
 
@@ -82,20 +79,25 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   bool _isMultisig = false;
   TransactionFeeLevel? _selectedLevel = TransactionFeeLevel.halfhour;
   RecommendedFee? recommendedFees;
-  bool _customSelected = false;
+  bool get _customSelected => _selectedLevel == null;
+
   FeeInfo? _customFeeInfo;
-  String _selectedOption = TransactionFeeLevel.halfhour.text;
   int? _estimatedFee = 0;
-  int? _fiatValue = 0;
-  int? _satsPerVb = 0;
   List<FeeInfoWithLevel> feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
     FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
     FeeInfoWithLevel(level: TransactionFeeLevel.hour),
   ];
+  FeeInfoWithLevel? get _selectedFeeInfoWithLevel => _selectedLevel == null
+      ? null
+      : feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel);
+  int? get _satsPerVb =>
+      _selectedFeeInfoWithLevel?.satsPerVb ?? _customFeeInfo?.satsPerVb;
 
-  bool _isRecommendedFeeFetchSuccess = false;
-  bool _isRecommendedFeeFetching = true;
+  //bool _isRecommendedFeeFetchSuccess = false;
+  //bool _isRecommendedFeeFetching = true;
+  RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
+      RecommendedFeeFetchStatus.fetching;
 
   int? _isEnableToGetChange;
 
@@ -105,7 +107,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   final int _takeLength = 15; // 스크롤시 가져올 데이터 수(페이징)
   UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc;
 
-  late Transaction? _transaction;
+  late Transaction _transaction;
 
   @override
   void initState() {
@@ -149,7 +151,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _isMaxMode =
         _confirmedBalance == UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount);
 
-    _customSelected = false;
+    _transaction = createTransaction(_isMaxMode, 1, _walletBase);
+    syncSelectedUtxosWithTransaction();
+    printTransactionUtxos();
 
     _totalUtxoAmountWidgetPaddingLeft = _totalUtxoAmountWidgetPaddingRight =
         _totalUtxoAmountWidgetPaddingTop = 24;
@@ -201,16 +205,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               as RenderBox;
       _headerTopContainerSize = headerTopContainerRenderBox.size;
 
-      recommendedFees = await fetchRecommendedFees(_model);
-      await setRecommendedFees(TransactionFeeLevel.halfhour);
+      await setRecommendedFees();
     });
-
-    _transaction = createTransaction(_isMaxMode, 1, _walletBase);
-    // TODO: feeRate
-    _estimatedFee = _estimateFee2(1);
-    syncSelectedUtxosWithTransaction();
-    printTransactionUtxos();
-    //_transaction!.removeInputWithUtxo(utxoToRemove, feeRate, wallet)
   }
 
   // TODO: must delete
@@ -221,7 +217,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
   }
 
-  // TODO: feeRate 계산이 된 후에 호출 가능
   Transaction createTransaction(
       bool isMaxMode, int feeRate, WalletBase walletBase) {
     if (isMaxMode) {
@@ -232,8 +227,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), feeRate, walletBase);
   }
 
-  int _estimateFee2(int feeRate) {
-    assert(_transaction != null);
+  int _estimateFee(int feeRate) {
     int? requiredSignature;
     int? totalSigner;
     if (_walletBaseItem.walletType == WalletType.multiSignature) {
@@ -265,7 +259,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     super.dispose();
   }
 
-  void setFeeInfo(FeeInfo feeInfo, int estimatedFee) {
+  void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
     feeInfo.estimatedFee = estimatedFee;
     feeInfo.fiatValue = _upbitConnectModel.bitcoinPriceKrw != null
         ? FiatUtil.calculateFiatAmount(
@@ -274,127 +268,47 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
     if (feeInfo is FeeInfoWithLevel && feeInfo.level == _selectedLevel) {
       _estimatedFee = estimatedFee;
-      _fiatValue = feeInfo.fiatValue;
       return;
-    }
-
-    if (feeInfo is! FeeInfoWithLevel) {
-      _selectedOption = '직접 입력';
-      _estimatedFee = estimatedFee;
-      _fiatValue = _customFeeInfo?.fiatValue;
-      _customSelected = true;
     }
   }
 
-  Future<void> setRecommendedFees(TransactionFeeLevel? transactionFeeLevel,
-      {int? estimatedFee}) async {
+  Future<void> setRecommendedFees() async {
+    var recommendedFees = await fetchRecommendedFees(_model);
     if (recommendedFees == null) {
       setState(() {
-        _isRecommendedFeeFetchSuccess = false;
-        _isRecommendedFeeFetching = false;
+        _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
       });
       return;
     }
-    int index;
-    if (transactionFeeLevel == null) {
-      index = 3;
-    } else {
-      switch (transactionFeeLevel) {
-        case TransactionFeeLevel.fastest:
-          index = 0;
-        case TransactionFeeLevel.halfhour:
-          index = 1;
-        case TransactionFeeLevel.hour:
-          index = 2;
-          break;
-      }
-    }
-    feeInfos[0].satsPerVb = recommendedFees!.fastestFee;
-    feeInfos[1].satsPerVb = recommendedFees!.halfHourFee;
-    feeInfos[2].satsPerVb = recommendedFees!.hourFee;
 
-    if (index != 3) {
-      /// halfHour가 default
-      setState(() {
-        _selectedLevel = feeInfos[index].level;
-        _selectedOption = feeInfos[index].level.text;
-        _estimatedFee = feeInfos[index].estimatedFee;
-        _fiatValue = feeInfos[index].fiatValue;
-        _satsPerVb = feeInfos[index].satsPerVb;
-      });
-    }
+    feeInfos[0].satsPerVb = recommendedFees.fastestFee;
+    feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
+    feeInfos[2].satsPerVb = recommendedFees.hourFee;
 
     for (var feeInfo in feeInfos) {
       try {
-        int? estimatedFee;
-        if (_isMaxMode) {
-          final walletBaseItem = _model.getWalletById(widget.id);
-          if (walletBaseItem.walletType == WalletType.multiSignature) {
-            final multisigListItem = walletBaseItem as MultisigWalletListItem;
-            _walletBase = multisigListItem.walletBase;
-
-            final multisigWallet = _walletBase as MultisignatureWallet;
-            _confirmedBalance = multisigWallet.getBalance();
-          } else {
-            final singlesigListItem = walletBaseItem as SinglesigWalletListItem;
-            _walletBase = singlesigListItem.walletBase;
-
-            final singlesigWallet = _walletBase as SingleSignatureWallet;
-            _confirmedBalance = singlesigWallet.getBalance();
-          }
-
-          estimatedFee = await estimateFeeWithMaximum(widget.sendInfo.address,
-              feeInfo.satsPerVb!, _isMultisig, _walletBase);
-        } else {
-          estimatedFee = await estimateFee(
-              widget.sendInfo.address,
-              widget.sendInfo.amount,
-              feeInfo.satsPerVb!,
-              _isMultisig,
-              _walletBase);
-        }
+        int estimatedFee = _estimateFee(feeInfo.satsPerVb!);
         setState(() {
-          setFeeInfo(feeInfo, estimatedFee!);
-          _isRecommendedFeeFetchSuccess = true;
-          _isRecommendedFeeFetching = false;
+          _initFeeInfo(feeInfo, estimatedFee);
         });
       } catch (error) {
-        int? estimatedFee = handleFeeEstimationError(error as Exception);
-        if (estimatedFee != null) {
-          setState(() {
-            setFeeInfo(feeInfo, estimatedFee);
-            _isRecommendedFeeFetchSuccess = true;
-            _isRecommendedFeeFetching = false;
-          });
-        } else {
-          setState(() {
-            _isRecommendedFeeFetchSuccess = false;
-            _isRecommendedFeeFetching = false;
-          });
-          // custom 수수료 조회 실패 알림
-          WidgetsBinding.instance.addPostFrameCallback((duration) {
-            CustomToast.showWarningToast(
-                context: context,
-                text: ErrorCodes.withMessage(
-                        ErrorCodes.feeEstimationError, error.toString())
-                    .message);
-          });
-        }
-      }
-
-      if (index == 3) {
-        /// 직접 입력했을 때
         setState(() {
-          _selectedOption = '직접 입력';
-          _estimatedFee = estimatedFee;
-          _fiatValue = _customFeeInfo?.fiatValue;
-          _customSelected = true;
-          _satsPerVb = 0;
-          _isRecommendedFeeFetchSuccess = true;
-          _isRecommendedFeeFetching = false;
+          _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
         });
+        // 수수료 조회 실패 알림
+        WidgetsBinding.instance.addPostFrameCallback((duration) {
+          CustomToast.showWarningToast(
+              context: context,
+              text: ErrorCodes.withMessage(
+                      ErrorCodes.feeEstimationError, error.toString())
+                  .message);
+        });
+        return;
       }
     }
+    setState(() {
+      _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
+    });
   }
 
   /// UTXO 선택 상태를 토글하는 함수
@@ -404,13 +318,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     setState(() {
       if (_selectedUtxoList.contains(utxo)) {
         // TODO: feeRate
-        _transaction!.removeInputWithUtxo(utxo, 1, _walletBase);
-        _estimatedFee = _estimateFee2(1);
+        _transaction.removeInputWithUtxo(utxo, _satsPerVb!, _walletBase);
+        _estimatedFee = _estimateFee(1);
         _selectedUtxoList.remove(utxo);
       } else {
         // TODO: feeRate
-        _transaction!.addIntputWithUtxo(utxo, 1, _walletBase);
-        _estimatedFee = _estimateFee2(1);
+        _transaction.addIntputWithUtxo(utxo, _satsPerVb!, _walletBase);
+        _estimatedFee = _estimateFee(1);
         _selectedUtxoList.add(utxo);
       }
 
@@ -436,9 +350,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _selectedUtxoList = List.from(_utxoList);
     });
     // TODO: feeRate
-    _transaction = Transaction.fromUtxoList(_utxoList, widget.sendInfo.address,
-        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), 1, _walletBase);
-    _estimatedFee = _estimateFee2(1);
+    _transaction = Transaction.fromUtxoList(
+        _utxoList,
+        widget.sendInfo.address,
+        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
+        _satsPerVb!,
+        _walletBase);
+    _estimatedFee = _estimateFee(1);
   }
 
   void deselectAll() {
@@ -447,9 +365,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _selectedUtxoList = [];
     });
     // TODO: feeRate
-    _transaction = Transaction.fromUtxoList([], widget.sendInfo.address,
-        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), 1, _walletBase);
-    _estimatedFee = _estimateFee2(1);
+    _transaction = Transaction.fromUtxoList([],
+        widget.sendInfo.address,
+        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
+        _satsPerVb!,
+        _walletBase);
+    _estimatedFee = _estimateFee(1);
   }
 
   bool _isSelectedUtxoEnough() {
@@ -573,7 +494,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         Container(
           width: MediaQuery.sizeOf(context).width,
           decoration: BoxDecoration(
-            color: _isRecommendedFeeFetchSuccess &&
+            color: _recommendedFeeFetchStatus ==
+                        RecommendedFeeFetchStatus.succeed &&
                     _estimatedFee != null &&
                     _selectedUtxoList.isNotEmpty
                 ? _isSelectedUtxoEnough()
@@ -601,7 +523,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     TextStyle(
                       color: _selectedUtxoList.isEmpty
                           ? MyColors.white
-                          : _isRecommendedFeeFetchSuccess &&
+                          : _recommendedFeeFetchStatus ==
+                                      RecommendedFeeFetchStatus.succeed &&
                                   _estimatedFee != null
                               ? _isSelectedUtxoEnough()
                                   ? MyColors.white
@@ -620,7 +543,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     style: Styles.caption.merge(
                       TextStyle(
                           fontFamily: 'Pretendard',
-                          color: _isRecommendedFeeFetchSuccess &&
+                          color: _recommendedFeeFetchStatus ==
+                                      RecommendedFeeFetchStatus.succeed &&
                                   _estimatedFee != null
                               ? _isSelectedUtxoEnough()
                                   ? MyColors.transparentWhite_70
@@ -639,7 +563,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                             ? '0 BTC'
                             : '${satoshiToBitcoinString(_getSelectedUtxoTotalSatoshi()).normalizeToFullCharacters()} BTC',
                         style: Styles.body2Number.merge(TextStyle(
-                            color: _isRecommendedFeeFetchSuccess &&
+                            color: _recommendedFeeFetchStatus ==
+                                        RecommendedFeeFetchStatus.succeed &&
                                     _estimatedFee != null &&
                                     _selectedUtxoList.isNotEmpty
                                 ? _isSelectedUtxoEnough()
@@ -663,8 +588,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           duration: const Duration(milliseconds: 300),
           child: !_afterScrolledHeaderContainerVisible
               ? Visibility(
-                  visible: (!_isRecommendedFeeFetchSuccess &&
-                          !_isRecommendedFeeFetching) ||
+                  visible: _recommendedFeeFetchStatus ==
+                          RecommendedFeeFetchStatus.failed ||
                       (_selectedUtxoList.isEmpty ||
                           _getSelectedUtxoTotalSatoshi() <
                               UnitUtil.bitcoinToSatoshi(
@@ -672,8 +597,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   maintainSize: true,
                   maintainState: true,
                   maintainAnimation: true,
-                  child: !_isRecommendedFeeFetching &&
-                          !_isRecommendedFeeFetchSuccess &&
+                  child: _recommendedFeeFetchStatus ==
+                              RecommendedFeeFetchStatus.failed &&
                           !_customSelected
                       ? Text(
                           '추천 수수료를 조회하지 못했어요.\n\'변경\'버튼을 눌러서 수수료를 직접 입력해 주세요.',
@@ -854,6 +779,26 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
   }
 
+  void _onFeeRateChanged(Map<String, dynamic> feeSelectionResult) {
+    setState(() {
+      _selectedLevel =
+          feeSelectionResult[FeeSelectionScreen.selectedOptionField];
+      _estimatedFee =
+          (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
+              .estimatedFee;
+    });
+    _customFeeInfo =
+        feeSelectionResult[FeeSelectionScreen.selectedOptionField] == null
+            ? (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
+            : null;
+
+    var satsPerVb = _customFeeInfo?.satsPerVb! ??
+        feeInfos
+            .firstWhere((feeInfo) => feeInfo.level == _selectedLevel)
+            .satsPerVb!;
+    _transaction.updateFeeRate(satsPerVb, _walletBase);
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -868,10 +813,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           context: context,
           nextButtonTitle: '완료',
           isActive: (_model.isNetworkOn ?? false) &&
-                      (_isRecommendedFeeFetchSuccess &&
-                          _estimatedFee != null &&
-                          !_isRecommendedFeeFetching) ||
-                  (!_isRecommendedFeeFetchSuccess &&
+                      (_recommendedFeeFetchStatus ==
+                              RecommendedFeeFetchStatus.succeed &&
+                          _estimatedFee != null) ||
+                  (_recommendedFeeFetchStatus ==
+                          RecommendedFeeFetchStatus.failed &&
                       _estimatedFee != null &&
                       _customSelected)
               ? _isSelectedUtxoEnough()
@@ -963,8 +909,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                 children: [
                                   Text(
                                     '수수료',
-                                    style: !_isRecommendedFeeFetching &&
-                                            !_isRecommendedFeeFetchSuccess &&
+                                    style: _recommendedFeeFetchStatus ==
+                                                RecommendedFeeFetchStatus
+                                                    .failed &&
                                             !_customSelected
                                         ? Styles.body2Bold.merge(
                                             const TextStyle(
@@ -976,129 +923,37 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                   ),
                                   CustomUnderlinedButton(
                                       text: '변경',
-                                      isEnable: !_isRecommendedFeeFetching,
+                                      isEnable: _recommendedFeeFetchStatus !=
+                                          RecommendedFeeFetchStatus.fetching,
                                       onTap: () async {
-                                        Map<String, dynamic>? result =
+                                        Result<int, CoconutError>?
+                                            minimumFeeRate = await _model
+                                                .getMinimumNetworkFeeRate();
+                                        Map<String, dynamic>?
+                                            feeSelectionResult =
                                             await MyBottomSheet
                                                 .showBottomSheet_90(
                                           context: context,
                                           child: FeeSelectionScreen(
-                                            feeInfos: [
-                                              /// TODO: 각 레벨에 맞는 estimatedFee를 넣어줘야 합니다.
-                                              feeInfos[0],
-                                              feeInfos[1],
-                                              feeInfos[2],
-                                            ],
-                                            selectedFeeLevel: _selectedLevel,
-                                            estimatedFeeOfCustomFeeRate:
-                                                _customSelected
-                                                    ? _estimatedFee
-                                                    : null,
-                                            isRecommendedFeeFetchSuccess:
-                                                _isRecommendedFeeFetchSuccess,
-                                            onCustomSelected: (satsPerVb,
-                                                customFeeController) async {
-                                              if (satsPerVb.isEmpty) {
-                                                return null;
-                                              }
-
-                                              int customSatsPerVb;
-                                              try {
-                                                customSatsPerVb =
-                                                    int.parse(satsPerVb.trim());
-                                                if (recommendedFees
-                                                            ?.minimumFee !=
-                                                        null &&
-                                                    customSatsPerVb <
-                                                        recommendedFees
-                                                            ?.minimumFee) {
-                                                  CustomToast.showToast(
-                                                      context: context,
-                                                      text:
-                                                          "현재 최소 수수료는 ${recommendedFees?.minimumFee} sats/vb 입니다.");
-                                                  customFeeController.clear();
-                                                  return null;
-                                                }
-                                              } catch (_) {
-                                                customFeeController.clear();
-                                                return null;
-                                              }
-
-                                              // 이미 입력했던 값이랑 동일한 값인 경우 재계산 하지 않음
-                                              if (_customSelected == true &&
-                                                  _customFeeInfo != null &&
-                                                  _customFeeInfo?.satsPerVb !=
-                                                      null &&
-                                                  _customFeeInfo?.satsPerVb! ==
-                                                      customSatsPerVb) {
-                                                return null;
-                                              }
-
-                                              try {
-                                                int? estimatedFee;
-                                                if (_isMaxMode) {
-                                                  estimatedFee =
-                                                      await estimateFeeWithMaximum(
-                                                          widget
-                                                              .sendInfo.address,
-                                                          customSatsPerVb,
-                                                          _isMultisig,
-                                                          _walletBase);
-                                                } else {
-                                                  estimatedFee =
-                                                      await estimateFee(
-                                                          widget
-                                                              .sendInfo.address,
-                                                          widget
-                                                              .sendInfo.amount,
-                                                          customSatsPerVb,
-                                                          _isMultisig,
-                                                          _walletBase);
-                                                }
-
-                                                return estimatedFee;
-                                              } catch (error) {
-                                                int? estimatedFee =
-                                                    handleFeeEstimationError(
-                                                        error as Exception);
-                                                if (estimatedFee != null) {
-                                                  return estimatedFee;
-                                                } else {
-                                                  // custom 수수료 조회 실패 알림
-                                                  CustomToast.showWarningToast(
-                                                      context: context,
-                                                      text: ErrorCodes.withMessage(
-                                                              ErrorCodes
-                                                                  .feeEstimationError,
-                                                              error.toString())
-                                                          .message);
-                                                }
-                                              }
-                                              customFeeController.clear();
-                                              return null;
-                                            },
-                                          ),
+                                              feeInfos: feeInfos,
+                                              selectedFeeLevel: _selectedLevel,
+                                              networkMinimumFeeRate:
+                                                  minimumFeeRate?.value,
+                                              customFeeInfo: _customFeeInfo,
+                                              isRecommendedFeeFetchSuccess:
+                                                  _recommendedFeeFetchStatus ==
+                                                      RecommendedFeeFetchStatus
+                                                          .succeed,
+                                              estimateFee: _estimateFee),
                                         );
-                                        if (result != null) {
-                                          setState(() {
-                                            _selectedLevel =
-                                                result['selectedFeeLevel'];
-                                            _estimatedFee =
-                                                result['estimatedFee'];
-                                            _customSelected = false;
-                                          });
-                                          if (_selectedLevel == null) {
-                                            debugPrint(
-                                                '_isRecommendedFeeFetchSuccess $_isRecommendedFeeFetchSuccess  _isRecommendedFeeFetching: $_isRecommendedFeeFetching');
-                                            setState(() {
-                                              _customSelected = true;
-                                            });
-                                          }
+                                        if (feeSelectionResult != null) {
+                                          _onFeeRateChanged(feeSelectionResult);
                                         }
                                       }),
                                   Expanded(
-                                      child: !_isRecommendedFeeFetchSuccess &&
-                                              !_isRecommendedFeeFetching &&
+                                      child: _recommendedFeeFetchStatus ==
+                                                  RecommendedFeeFetchStatus
+                                                      .failed &&
                                               !_customSelected
                                           ? Row(
                                               mainAxisAlignment:
@@ -1116,14 +971,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                                   style:
                                                       Styles.body2Number.merge(
                                                     const TextStyle(
-                                                      color: Colors.transparent,
+                                                      color: MyColors
+                                                          .transparentWhite_40,
                                                     ),
                                                   ),
                                                 ),
                                               ],
                                             )
-                                          : (_isRecommendedFeeFetchSuccess &&
-                                                      !_isRecommendedFeeFetching) ||
+                                          : _recommendedFeeFetchStatus ==
+                                                      RecommendedFeeFetchStatus
+                                                          .succeed ||
                                                   _customSelected
                                               ? Column(
                                                   crossAxisAlignment:
@@ -1133,14 +990,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                                       '${satoshiToBitcoinString(_estimatedFee ?? 0).toString()} BTC',
                                                       style: Styles.body2Number,
                                                     ),
-                                                    if (_selectedLevel !=
-                                                            null &&
-                                                        _satsPerVb != 0) ...{
+                                                    if (_satsPerVb != null) ...{
                                                       Text(
-                                                        '${_selectedLevel!.expectedTime} ($_satsPerVb sats/vb)',
+                                                        '${_selectedLevel?.expectedTime ?? ''} ($_satsPerVb sats/vb)',
                                                         style: Styles.caption,
                                                       ),
-                                                    }
+                                                    },
                                                   ],
                                                 )
                                               : const Row(
@@ -1190,13 +1045,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                               : '- BTC',
                                           style: _isEnableToGetChange != null &&
                                                   _isEnableToGetChange! > 0
-                                              ? Styles.body2Bold
-                                              : Styles.body2Bold.merge(
-                                                  const TextStyle(
-                                                    color: MyColors
-                                                        .transparentWhite_40,
-                                                  ),
-                                                ),
+                                              ? Styles.body2Number
+                                              : Styles.body2Number
+                                                  .merge(const TextStyle(
+                                                  color: MyColors
+                                                      .transparentWhite_40,
+                                                )),
                                         ),
                                       ],
                                     ),

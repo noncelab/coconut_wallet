@@ -9,26 +9,30 @@ import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
+import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class FeeSelectionScreen extends StatefulWidget {
+  static const String selectedOptionField = 'selectedOption';
+  static const String feeInfoField = 'feeInfo';
+
   final List<FeeInfoWithLevel> feeInfos;
-  final Future<int?> Function(
-          String satsPerVb, TextEditingController customFeeController)
-      onCustomSelected;
+  final int Function(int satsPerVb) estimateFee;
+  final int? networkMinimumFeeRate;
   final TransactionFeeLevel? selectedFeeLevel; // null인 경우 직접 입력한 경우
-  final int? estimatedFeeOfCustomFeeRate; // feeRate을 직접 입력한 경우의 예상 수수료
+  final FeeInfo? customFeeInfo; // feeRate을 직접 입력한 경우
   final bool isRecommendedFeeFetchSuccess;
 
   const FeeSelectionScreen(
       {super.key,
       required this.feeInfos,
-      required this.onCustomSelected,
+      required this.estimateFee,
+      required this.networkMinimumFeeRate,
       this.selectedFeeLevel,
-      this.estimatedFeeOfCustomFeeRate,
+      this.customFeeInfo,
       this.isRecommendedFeeFetchSuccess = true});
 
   @override
@@ -36,10 +40,19 @@ class FeeSelectionScreen extends StatefulWidget {
 }
 
 class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
-  String? _selectedOption = TransactionFeeLevel.halfhour.text;
-  int? _estimatedFee = 0;
-  int? _fiatValue = 0;
+  late int? _estimatedFee;
   bool? _isNetworkOn;
+  int? customSatsPerVb;
+  int? bitcoinPriceKrw;
+
+  double? get fiatValueInKrw {
+    if (_estimatedFee != null && bitcoinPriceKrw != null) {
+      return FiatUtil.calculateFiatAmount(_estimatedFee!, bitcoinPriceKrw!)
+          .toDouble();
+    }
+
+    return null;
+  }
 
   TransactionFeeLevel? _selectedFeeLevel;
 
@@ -49,40 +62,19 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   void initState() {
     super.initState();
     _selectedFeeLevel = widget.selectedFeeLevel;
-    if (_selectedFeeLevel == null &&
-        widget.estimatedFeeOfCustomFeeRate != null) {
-      _estimatedFee = widget.estimatedFeeOfCustomFeeRate;
-      _selectedOption = '직접 입력';
-    } else if (_selectedFeeLevel != null) {
-      _estimatedFee = getEstimatedFeeByLevel(_selectedFeeLevel!);
-      _selectedOption = getSelectedOptionTextByLevel(_selectedFeeLevel!);
+    if (_selectedFeeLevel == null && widget.customFeeInfo != null) {
+      _estimatedFee = widget.customFeeInfo!.estimatedFee ?? 0;
+      customSatsPerVb = widget.customFeeInfo!.satsPerVb;
+    } else if (_selectedFeeLevel != null && widget.customFeeInfo == null) {
+      _estimatedFee =
+          findFeeInfoWithLevel(_selectedFeeLevel!).estimatedFee ?? 0;
     }
   }
 
-  int getEstimatedFeeByLevel(TransactionFeeLevel transactionFeeLevel) {
-    int index;
-    if (transactionFeeLevel == TransactionFeeLevel.fastest) {
-      index = 0;
-    } else if (transactionFeeLevel == TransactionFeeLevel.halfhour) {
-      index = 1;
-    } else {
-      index = 2;
-    }
-
-    return widget.feeInfos[index].estimatedFee ?? 0;
-  }
-
-  String getSelectedOptionTextByLevel(TransactionFeeLevel transactionFeeLevel) {
-    int index;
-    if (transactionFeeLevel == TransactionFeeLevel.fastest) {
-      index = 0;
-    } else if (transactionFeeLevel == TransactionFeeLevel.halfhour) {
-      index = 1;
-    } else {
-      index = 2;
-    }
-
-    return widget.feeInfos[index].level.text;
+  FeeInfoWithLevel findFeeInfoWithLevel(
+      TransactionFeeLevel transactionFeeLevel) {
+    return widget.feeInfos
+        .firstWhere((feeInfo) => feeInfo.level == transactionFeeLevel);
   }
 
   Future<void> onChangedNetworkStatus(bool? isNetworkOn) async {
@@ -93,6 +85,56 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
     setState(() {
       _isNetworkOn = isNetworkOn;
     });
+  }
+
+  void onCustomFeeRateInput() async {
+    if (_customFeeController.text.isEmpty) {
+      return;
+    }
+
+    int customSatsPerVb = int.parse(_customFeeController.text);
+    if (widget.networkMinimumFeeRate != null &&
+        customSatsPerVb < widget.networkMinimumFeeRate!) {
+      CustomToast.showToast(
+          context: context,
+          text: "현재 최소 수수료는 ${widget.networkMinimumFeeRate} sats/vb 입니다.");
+      _customFeeController.clear();
+      return null;
+    }
+
+    try {
+      int result = widget.estimateFee(customSatsPerVb);
+      this.customSatsPerVb = customSatsPerVb;
+      if (mounted) {
+        setState(() {
+          _estimatedFee = result;
+          _selectedFeeLevel = null;
+        });
+      }
+    } catch (e) {
+      CustomToast.showWarningToast(
+          context: context,
+          text: ErrorCodes.withMessage(
+                  ErrorCodes.feeEstimationError, e.toString())
+              .message);
+    } finally {
+      _customFeeController.clear();
+    }
+  }
+
+  void onDone() {
+    Map<String, dynamic> returnData = {
+      FeeSelectionScreen.selectedOptionField: _selectedFeeLevel,
+      FeeSelectionScreen.feeInfoField:
+          (_selectedFeeLevel == null && customSatsPerVb != null)
+              ? FeeInfo(
+                  estimatedFee: _estimatedFee,
+                  fiatValue: fiatValueInKrw?.toInt(),
+                  satsPerVb: customSatsPerVb)
+              : findFeeInfoWithLevel(_selectedFeeLevel!),
+    };
+
+    Navigator.pop(context, returnData);
   }
 
   @override
@@ -115,13 +157,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                   Navigator.pop(context);
                 },
                 nextButtonTitle: '완료',
-                onNextPressed: () {
-                  Map<String, dynamic> returnData = {
-                    'selectedFeeLevel': _selectedFeeLevel,
-                    'estimatedFee': _estimatedFee,
-                  };
-                  Navigator.pop(context, returnData);
-                }),
+                onNextPressed: onDone),
             body: Consumer<AppStateModel>(
               builder: (context, state, child) {
                 return SafeArea(
@@ -143,7 +179,10 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                               border: Border.all(
                                   color: MyColors.transparentWhite_12,
                                   width: 1)),
-                          child: Text(_selectedOption ?? "",
+                          child: Text(
+                              _selectedFeeLevel == null
+                                  ? '직접 입력'
+                                  : _selectedFeeLevel!.text,
                               style: Styles.caption),
                         ),
                         Text(
@@ -154,9 +193,10 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                         Selector<UpbitConnectModel, int?>(
                           selector: (context, model) => model.bitcoinPriceKrw,
                           builder: (context, bitcoinPriceKrw, child) {
+                            this.bitcoinPriceKrw = bitcoinPriceKrw;
                             return Text(
-                                _fiatValue != null && bitcoinPriceKrw != null
-                                    ? '₩${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(_estimatedFee!, bitcoinPriceKrw).toDouble())}'
+                                fiatValueInKrw != null
+                                    ? '₩${addCommasToIntegerPart(fiatValueInKrw!)}'
                                     : '',
                                 style: Styles.balance2);
                           },
@@ -189,20 +229,15 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                   3,
                                   (index) => FeeSelectionItem(
                                       feeInfo: widget.feeInfos[index],
-                                      isSelected: _selectedFeeLevel == null
-                                          ? false
-                                          : _selectedFeeLevel ==
-                                              widget.feeInfos[index].level,
+                                      isSelected: _selectedFeeLevel ==
+                                          widget.feeInfos[index].level,
                                       onPressed: () {
                                         setState(() {
                                           _selectedFeeLevel =
                                               widget.feeInfos[index].level;
-                                          _selectedOption =
-                                              widget.feeInfos[index].level.text;
                                           _estimatedFee = widget
                                               .feeInfos[index].estimatedFee;
-                                          _fiatValue =
-                                              widget.feeInfos[index].fiatValue;
+                                          customSatsPerVb = null;
 
                                           debugPrint(
                                               'selectedFeeLevel : ${widget.selectedFeeLevel}');
@@ -216,21 +251,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                     content: '수수료를 자연수로 입력해 주세요.',
                                     controller: _customFeeController,
                                     textInputType: TextInputType.number,
-                                    onPressed: () async {
-                                      ///TODO: TEST
-                                      int? result =
-                                          await widget.onCustomSelected(
-                                        _customFeeController.text,
-                                        _customFeeController,
-                                      );
-                                      if (result != null && mounted) {
-                                        setState(() {
-                                          _estimatedFee = result;
-                                          _selectedOption = '직접 입력';
-                                          _selectedFeeLevel = null;
-                                        });
-                                      }
-                                    },
+                                    onPressed: onCustomFeeRateInput,
                                   );
                                 },
                                 child: Text(
