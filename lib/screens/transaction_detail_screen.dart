@@ -76,24 +76,26 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             widget.status == TransactionStatus.self ||
             widget.status == TransactionStatus.selfsending)
         ? 5
-        : 2;
+        : 3;
     int initialOutputMaxCount = (widget.status == TransactionStatus.sending ||
             widget.status == TransactionStatus.sent ||
             widget.status == TransactionStatus.self ||
             widget.status == TransactionStatus.selfsending)
-        ? 3
+        ? 2
         : 4;
     if (widget.tx.inputAddressList.length <= initialInputMaxCount) {
       canSeeMoreInputs = false;
       itemsToShowInput = widget.tx.inputAddressList.length;
     } else {
       canSeeMoreInputs = true;
+      itemsToShowInput = initialInputMaxCount;
     }
     if (widget.tx.outputAddressList.length <= initialOutputMaxCount) {
       canSeeMoreOutputs = false;
       itemsToShowOutput = widget.tx.outputAddressList.length;
     } else {
       canSeeMoreOutputs = true;
+      itemsToShowOutput = initialOutputMaxCount;
     }
   }
 
