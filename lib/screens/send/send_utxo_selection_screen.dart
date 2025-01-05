@@ -105,7 +105,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('widget: ${widget.sendInfo.amount}');
     _model = Provider.of<AppStateModel>(context, listen: false);
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
 
@@ -996,8 +995,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                             _customSelected = false;
                                           });
                                           if (_selectedLevel == null) {
-                                            debugPrint(
-                                                '_isRecommendedFeeFetchSuccess $_isRecommendedFeeFetchSuccess  _isRecommendedFeeFetching: $_isRecommendedFeeFetching');
                                             setState(() {
                                               _customSelected = true;
                                             });
