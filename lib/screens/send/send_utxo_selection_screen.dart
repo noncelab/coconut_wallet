@@ -100,7 +100,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   bool _isLastData = false;
   bool _isSelectingAll = false;
   final int _takeLength = 15; // 스크롤시 가져올 데이터 수(페이징)
-  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc;
+  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byAmountDesc;
 
   @override
   void initState() {
@@ -390,8 +390,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   List<model.UTXO> _getUtxoList(
-      {UtxoOrderEnum orderEnum = UtxoOrderEnum.byTimestampDesc,
-      int cursor = 0}) {
+      {UtxoOrderEnum orderEnum = UtxoOrderEnum.byAmountDesc, int cursor = 0}) {
     return getUtxoListWithHoldingAddress(
       _walletFeature.getUtxoList(
           order: orderEnum, cursor: cursor, count: _takeLength),
@@ -444,25 +443,25 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       borderRadius: BorderRadius.circular(16),
       child: CustomDropdown(
         buttons: const [
-          '최신순',
-          '오래된 순',
           '큰 금액순',
           '작은 금액순',
+          '최신순',
+          '오래된 순',
         ],
         dividerColor: Colors.black,
         onTapButton: (index) {
           switch (index) {
-            case 0: // 최신순
-              _applyFilter(UtxoOrderEnum.byTimestampDesc);
-              break;
-            case 1: // 오래된 순
-              _applyFilter(UtxoOrderEnum.byTimestampAsc);
-              break;
-            case 2: // 큰 금액순
+            case 0: // 큰 금액순
               _applyFilter(UtxoOrderEnum.byAmountDesc);
               break;
-            case 3: // 작은 금액순
+            case 1: // 작은 금액순
               _applyFilter(UtxoOrderEnum.byAmountAsc);
+              break;
+            case 2: // 최신순
+              _applyFilter(UtxoOrderEnum.byTimestampDesc);
+              break;
+            case 3: // 오래된 순
+              _applyFilter(UtxoOrderEnum.byTimestampAsc);
               break;
           }
           setState(() {
