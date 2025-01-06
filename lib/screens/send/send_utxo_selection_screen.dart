@@ -347,18 +347,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   void selectAll() {
     _removeFilterDropdown();
-    // TODO: 로드 안 된 utxo도 다 가져와야 함
     setState(() {
       _selectedUtxoList = List.from(_utxoList);
     });
-    // TODO: feeRate
     _transaction = Transaction.fromUtxoList(
         _utxoList,
         widget.sendInfo.address,
         UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
         _satsPerVb!,
         _walletBase);
-    _estimatedFee = _estimateFee(1);
+    _estimatedFee = _estimateFee(_satsPerVb!);
   }
 
   void deselectAll() {
@@ -366,13 +364,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     setState(() {
       _selectedUtxoList = [];
     });
-    // TODO: feeRate
     _transaction = Transaction.fromUtxoList([],
         widget.sendInfo.address,
         UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
         _satsPerVb!,
         _walletBase);
-    _estimatedFee = _estimateFee(1);
+    _estimatedFee = _estimateFee(_satsPerVb!);
   }
 
   bool _isSelectedUtxoEnough() {
