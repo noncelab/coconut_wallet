@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
@@ -717,31 +715,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       ],
     );
   }
-
-  // void _selectAll() async {
-  //   setState(() {
-  //     _isSelectingAll = true;
-  //   });
-
-  //   await _loadAllData();
-
-  //   if (mounted) {
-  //     setState(() {
-  //       _selectedUtxoList = List.from(_confirmedUtxoList);
-  //       _isSelectingAll = false;
-  //     });
-  //   }
-  // }
-
-  // Future<void> _loadAllData() async {
-  //   if (_isLastData) return;
-
-  //   // 데이터가 모두 로드될 때까지 반복적으로 호출
-  //   while (!_isLastData) {
-  //     await _loadMoreData();
-  //     if (!mounted) break;
-  //   }
-  // }
 
   void _removeFilterDropdown() {
     setState(() {
