@@ -25,13 +25,11 @@ import 'package:provider/provider.dart';
 class SendFeeSelectionScreen extends StatefulWidget {
   final SendInfo sendInfo;
   final int id;
-  final bool isFromUtxoSelection;
 
   const SendFeeSelectionScreen({
     super.key,
     required this.sendInfo,
     required this.id,
-    this.isFromUtxoSelection = false,
   });
 
   @override
@@ -71,10 +69,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   @override
   void initState() {
     super.initState();
-    if (!widget.isFromUtxoSelection) {
-      /// 알 수 없는 이유로 UTXO 고르기 -> 수수료 편집 버튼을 통해 들어온 경우 이전 스택 화면에 loaderOverlay가 호출된 뒤 사라지지 않음
-      context.loaderOverlay.show(); // onChangedNetworkStatus 과정 중 hide 됨
-    }
     _model = Provider.of<AppStateModel>(context, listen: false);
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
 
@@ -333,24 +327,10 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
             context: context,
             isActive: canGoNext(),
             onBackPressed: () {
-              if (widget.isFromUtxoSelection) {
-                context.loaderOverlay.hide();
-              }
               Navigator.pop(context);
             },
             nextButtonTitle: '완료',
             onNextPressed: () {
-              if (widget.isFromUtxoSelection) {
-                context.loaderOverlay.hide();
-                Map<String, dynamic> returnData = {
-                  'transactionFeeLevel': null,
-                  'estimatedFee': _estimatedFee,
-                };
-
-                Navigator.pop(context, returnData);
-                return;
-              }
-
               if (_isNetworkOn != true) {
                 CustomToast.showWarningToast(
                     context: context, text: ErrorCodes.networkError.message);
