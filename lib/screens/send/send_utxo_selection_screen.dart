@@ -137,6 +137,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       // TODO: getUtxoList()에서 unconfirmedList는 제외해야함
       _confirmedUtxoList = _getAllConfirmedUtxoList(_walletFeature);
       _selectedUtxoList = [];
+      UTXO.sortUTXO(_confirmedUtxoList, _selectedFilter);
     } else {
       _confirmedUtxoList = _selectedUtxoList = [];
     }
