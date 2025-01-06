@@ -105,14 +105,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   bool _isLastData = false;
   bool _isSelectingAll = false;
   final int _takeLength = 15; // 스크롤시 가져올 데이터 수(페이징)
-  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc;
+  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byAmountDesc;
 
   late Transaction _transaction;
 
   @override
   void initState() {
     super.initState();
-    debugPrint('widget: ${widget.sendInfo.amount}');
     _model = Provider.of<AppStateModel>(context, listen: false);
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
 
@@ -239,12 +238,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       totalSigner = (_walletBaseItem as MultisigWalletListItem).signers.length;
     }
 
-    return _transaction!.estimateFee(feeRate, _walletBase.addressType,
+    return _transaction.estimateFee(feeRate, _walletBase.addressType,
         requiredSignature: requiredSignature, totalSinger: totalSigner);
   }
 
   void syncSelectedUtxosWithTransaction() {
-    var inputs = _transaction!.inputs;
+    var inputs = _transaction.inputs;
     List<UTXO> result = [];
     for (int i = 0; i < inputs.length; i++) {
       result.add(_utxoList.firstWhere((utxo) =>
@@ -413,8 +412,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   List<UTXO> _getUtxoList(
-      {UtxoOrderEnum orderEnum = UtxoOrderEnum.byTimestampDesc,
-      int cursor = 0}) {
+      {UtxoOrderEnum orderEnum = UtxoOrderEnum.byAmountDesc, int cursor = 0}) {
     return _walletFeature.getUtxoList(
         order: orderEnum, cursor: cursor, count: _takeLength);
   }
@@ -461,25 +459,25 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       borderRadius: BorderRadius.circular(16),
       child: CustomDropdown(
         buttons: const [
-          '최신순',
-          '오래된 순',
           '큰 금액순',
           '작은 금액순',
+          '최신순',
+          '오래된 순',
         ],
         dividerColor: Colors.black,
         onTapButton: (index) {
           switch (index) {
-            case 0: // 최신순
-              _applyFilter(UtxoOrderEnum.byTimestampDesc);
-              break;
-            case 1: // 오래된 순
-              _applyFilter(UtxoOrderEnum.byTimestampAsc);
-              break;
-            case 2: // 큰 금액순
+            case 0: // 큰 금액순
               _applyFilter(UtxoOrderEnum.byAmountDesc);
               break;
-            case 3: // 작은 금액순
+            case 1: // 작은 금액순
               _applyFilter(UtxoOrderEnum.byAmountAsc);
+              break;
+            case 2: // 최신순
+              _applyFilter(UtxoOrderEnum.byTimestampDesc);
+              break;
+            case 3: // 오래된 순
+              _applyFilter(UtxoOrderEnum.byTimestampAsc);
               break;
           }
           setState(() {
