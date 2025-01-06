@@ -59,6 +59,7 @@ abstract class MyColors {
 
   static const Color bottomSheetBackground = Color(0xFF232222);
   static const Color selectBackground = Color(0xFF393939);
+  static const Color gray800 = Color(0xFF303030);
 }
 
 const List<Color> ColorPalette = [

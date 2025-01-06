@@ -3,7 +3,7 @@ import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/selector/custom_tag_selector.dart';
+import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -156,7 +156,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                     const SizedBox(height: 12),
                   },
                   Expanded(
-                    child: CustomTagSelector(
+                    child: CustomTagVerticalSelector(
                       tags: utxoTagList,
                       externalUpdatedTagName: _updateUtxoTagName,
                       onSelectedTag: (tag) {

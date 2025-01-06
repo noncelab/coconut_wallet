@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/widgets/selector/custom_tag_selector.dart';
+import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
@@ -30,7 +30,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomTagSelector(
+            body: CustomTagVerticalSelector(
               tags: tags,
               onSelectedTag: (tag) {},
             ),
@@ -49,7 +49,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomTagSelector(
+            body: CustomTagVerticalSelector(
               tags: tags,
               onSelectedTag: (tag) {
                 selectedTag = tag;
@@ -96,7 +96,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomTagSelector(
+            body: CustomTagVerticalSelector(
               tags: tags,
               onSelectedTag: (tag) {},
             ),
@@ -111,7 +111,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomTagSelector(
+            body: CustomTagVerticalSelector(
               tags: tags,
               onSelectedTag: (tag) {},
             ),

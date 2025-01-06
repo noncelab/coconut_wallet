@@ -2,15 +2,15 @@ import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
-/// [CustomTagSelector] : 태그 목록을 보여주고 선택할 수 있는 위젯
+/// [CustomTagVerticalSelector] : 태그 목록을 보여주고 선택할 수 있는 위젯 (세로)
 /// [tags] : 표시할 태그 목록
-/// [onSelectedTag] : 태그를 선택했을 때 호출되는 콜백 함수
+/// [onSelectedTag] : 태그 선택시 호출되는 콜백
 /// [externalUpdatedTagName] : 선택된 태그명이 외부에서 변경되었을 때 선택 상태를 업데이트
-class CustomTagSelector extends StatefulWidget {
+class CustomTagVerticalSelector extends StatefulWidget {
   final List<UtxoTag> tags;
   final Function(UtxoTag) onSelectedTag;
   final String? externalUpdatedTagName;
-  const CustomTagSelector({
+  const CustomTagVerticalSelector({
     super.key,
     required this.tags,
     required this.onSelectedTag,
@@ -18,11 +18,11 @@ class CustomTagSelector extends StatefulWidget {
   });
 
   @override
-  State<CustomTagSelector> createState() => _CustomTagSelectorState();
+  State<CustomTagVerticalSelector> createState() =>
+      _CustomTagVerticalSelectorState();
 }
 
-class _CustomTagSelectorState extends State<CustomTagSelector> {
-  /// 사용자가 선택한 태그명
+class _CustomTagVerticalSelectorState extends State<CustomTagVerticalSelector> {
   String _selectedTagName = '';
 
   @override
@@ -33,7 +33,7 @@ class _CustomTagSelectorState extends State<CustomTagSelector> {
   }
 
   @override
-  void didUpdateWidget(covariant CustomTagSelector oldWidget) {
+  void didUpdateWidget(covariant CustomTagVerticalSelector oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 외부 태그명이 변경되었을 경우 상태 업데이트
     if (widget.externalUpdatedTagName != oldWidget.externalUpdatedTagName &&

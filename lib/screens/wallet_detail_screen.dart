@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
-import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -885,8 +884,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   if (_model.isUpdateSelectedTagList) {
                     _model.setIsUpdateSelectedTagList(false);
                     getUtxoListWithHoldingAddress(
-                        _walletFeature.getUtxoList(), _walletBaseItem,
-                        accountIndexField, changeField, _walletType);
+                        _walletFeature.getUtxoList(),
+                        _walletBaseItem,
+                        accountIndexField,
+                        changeField,
+                        _walletType);
                   }
                 },
                 showFaucetIcon: true,
