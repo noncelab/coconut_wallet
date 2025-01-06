@@ -290,18 +290,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
   }
 
-  String _getCurrentFilter() {
-    if (_selectedFilter == UtxoOrderEnum.byTimestampDesc) {
-      return '최신순';
-    } else if (_selectedFilter == UtxoOrderEnum.byTimestampAsc) {
-      return '오래된 순';
-    } else if (_selectedFilter == UtxoOrderEnum.byAmountDesc) {
-      return '큰 금액순';
-    } else {
-      return '작은 금액순';
-    }
-  }
-
   _checkTxCount(int? txCount, bool isLatestTxBlockHeightZero) {
     Logger.log('--> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
     Logger.log(
@@ -620,7 +608,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                   children: [
                                     Text(
                                       key: _scrolledFilterDropdownButtonKey,
-                                      _getCurrentFilter(),
+                                      _selectedFilter.text,
                                       style: Styles.caption2.merge(
                                         const TextStyle(
                                           color: MyColors.white,
@@ -1106,7 +1094,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                             children: [
                                               Text(
                                                 key: _filterDropdownButtonKey,
-                                                _getCurrentFilter(),
+                                                _selectedFilter.text,
                                                 style: Styles.caption2.merge(
                                                   const TextStyle(
                                                     color: MyColors.white,
