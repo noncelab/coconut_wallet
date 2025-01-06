@@ -75,6 +75,22 @@ extension NormalizeTo11Characters on String {
   }
 }
 
+extension NormalizeToFullCharacters on String {
+  /// 정수형 BTC 단위도 소수점 자리에 0을 포함하여 반환합니다.
+  String normalizeToFullCharacters() {
+    // Step 1: 쉼표 제거
+    String noCommas = replaceAll(',', '');
+
+    // Step 2: 정수인지 확인
+    if (!noCommas.contains('.')) {
+      // 정수라면 ".0000 0000" 추가
+      return "$noCommas.0000 0000";
+    }
+
+    return this;
+  }
+}
+
 String addCommasToIntegerPart(double number) {
   // 정수 부분 추출
   String integerPart = number.toInt().toString();

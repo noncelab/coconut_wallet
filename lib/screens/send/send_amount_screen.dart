@@ -270,8 +270,10 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                       padding: const EdgeInsets.only(top: 4),
                                       child: CustomUnderlinedButton(
                                         text: 'UTXO 고르기',
+                                        fontSize: 14,
+                                        lineHeight: 21,
                                         isEnable: _errorIndex == null &&
-                                            _input.isNotEmpty,
+                                            _enableNextButton,
                                         onTap: () {
                                           Navigator.pushNamed(
                                               context, '/utxo-selection',

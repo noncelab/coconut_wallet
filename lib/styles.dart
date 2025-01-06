@@ -30,6 +30,7 @@ abstract class MyColors {
   static const transparentGrey = Color.fromRGBO(20, 19, 24, 0.15);
   static const lightgrey = Color.fromRGBO(244, 244, 245, 1);
   static const red = Color.fromRGBO(255, 0, 0, 1);
+  static const transparentRed = Color.fromRGBO(242, 147, 146, 0.15);
   // tesnet tag
   static const cyanblue = Color.fromRGBO(69, 204, 238, 1);
   static const skybule = Color.fromRGBO(179, 240, 255, 1);
@@ -44,6 +45,7 @@ abstract class MyColors {
   static const defaultText = Color.fromRGBO(221, 219, 230, 1);
 
   static const warningRed = Color.fromRGBO(218, 65, 92, 1.0); // color6Red
+  static const transparentWarningRed = Color.fromRGBO(218, 65, 92, 0.7);
   static const backgroundActive =
       Color.fromRGBO(145, 179, 242, 0.67); // color4Blue
 
