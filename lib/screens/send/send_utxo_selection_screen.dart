@@ -77,9 +77,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   late int _confirmedBalance;
   late bool _isMaxMode;
   bool _isMultisig = false;
+  RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
+      RecommendedFeeFetchStatus.fetching;
   TransactionFeeLevel? _selectedLevel = TransactionFeeLevel.halfhour;
   RecommendedFee? recommendedFees;
-  bool get _customSelected => _selectedLevel == null;
+  bool get _customFeeSelected => _selectedLevel == null;
 
   FeeInfo? _customFeeInfo;
   int? _estimatedFee = 0;
@@ -96,10 +98,22 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   int? get _satsPerVb =>
       _selectedFeeInfoWithLevel?.satsPerVb ?? _customFeeInfo?.satsPerVb;
 
-  RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
-      RecommendedFeeFetchStatus.fetching;
+  int? get _change {
+    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) {
+      return null;
+    }
 
-  int? _isEnableToGetChange;
+    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
+        _customFeeInfo == null) {
+      return null;
+    }
+
+    var change = _transaction.getChangeAmount(_walletBase.addressBook);
+    if (change != 0) return change;
+    if (_estimatedFee == null) return null;
+    // utxo가 모자랄 때도 change = 0으로 반환되기 때문에 진짜 잔돈이 0인지 아닌지 확인이 필요
+    return _isSelectedUtxoEnough() ? change : null;
+  }
 
   bool _isLoadingMore = false;
   bool _isLastData = false;
@@ -320,28 +334,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
     setState(() {
       if (_selectedUtxoList.contains(utxo)) {
-        // TODO: feeRate
         _transaction.removeInputWithUtxo(utxo, _satsPerVb!, _walletBase);
-        _estimatedFee = _estimateFee(1);
+        _estimatedFee = _estimateFee(_satsPerVb!);
         _selectedUtxoList.remove(utxo);
       } else {
-        // TODO: feeRate
         _transaction.addIntputWithUtxo(utxo, _satsPerVb!, _walletBase);
-        _estimatedFee = _estimateFee(1);
+        _estimatedFee = _estimateFee(_satsPerVb!);
         _selectedUtxoList.add(utxo);
-      }
-
-      /// 잔돈 계산
-      if (_estimatedFee != null) {
-        if (_selectedUtxoList.isEmpty) {
-          _isEnableToGetChange = 0;
-          return;
-        }
-        _isEnableToGetChange = _getSelectedUtxoTotalSatoshi() -
-            (UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount) +
-                _estimatedFee!);
-      } else {
-        _isEnableToGetChange = 0;
       }
     });
   }
@@ -377,16 +376,20 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   bool _isSelectedUtxoEnough() {
+    if (_selectedUtxoList.isEmpty) return false;
+
     if (_isMaxMode) {
-      return _selectedUtxoList.isNotEmpty &&
-          _getSelectedUtxoTotalSatoshi() >=
-              UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount);
+      return _calculateTotalAmountOfUtxoList(_selectedUtxoList) ==
+          _calculateTotalAmountOfUtxoList(_confirmedUtxoList);
     }
 
-    return _selectedUtxoList.isNotEmpty &&
-        _getSelectedUtxoTotalSatoshi() >=
-            UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount) +
-                (_estimatedFee ?? 0);
+    if (_estimatedFee == null) {
+      throw StateError("EstimatedFee has not been calculated yet");
+    }
+
+    return _calculateTotalAmountOfUtxoList(_selectedUtxoList) >=
+        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount) +
+            (_estimatedFee ?? 0);
   }
 
   void _applyFilter(UtxoOrderEnum orderEnum) async {
@@ -602,7 +605,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   maintainAnimation: true,
                   child: _recommendedFeeFetchStatus ==
                               RecommendedFeeFetchStatus.failed &&
-                          !_customSelected
+                          !_customFeeSelected
                       ? Text(
                           '추천 수수료를 조회하지 못했어요.\n\'변경\'버튼을 눌러서 수수료를 직접 입력해 주세요.',
                           style: Styles.warning.merge(
@@ -622,23 +625,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                 ),
                               ),
                             )
-                          : _isSelectedUtxoEnough()
-                              ? Text(
-                                  '',
-                                  style: Styles.warning.merge(
-                                    const TextStyle(
-                                      height: 16 / 12,
-                                    ),
-                                  ),
-                                )
-                              : Text(
-                                  'UTXO 합계가 모자라요',
-                                  style: Styles.warning.merge(
-                                    const TextStyle(
-                                      height: 16 / 12,
-                                    ),
-                                  ),
+                          : Text(
+                              _estimatedFee != null && _isSelectedUtxoEnough()
+                                  ? ''
+                                  : 'UTXO 합계가 모자라요',
+                              style: Styles.warning.merge(
+                                const TextStyle(
+                                  height: 16 / 12,
                                 ),
+                              ),
+                            ),
                 )
               : Container(),
         ),
@@ -770,6 +766,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         .reduce((value, element) => value + element);
   }
 
+  int _calculateTotalAmountOfUtxoList(List<UTXO> utxos) {
+    return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
+  }
+
   String _getCurrentFilter() {
     if (_selectedFilter == UtxoOrderEnum.byTimestampDesc) {
       return '최신순';
@@ -784,11 +784,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   void _onFeeRateChanged(Map<String, dynamic> feeSelectionResult) {
     setState(() {
-      _selectedLevel =
-          feeSelectionResult[FeeSelectionScreen.selectedOptionField];
       _estimatedFee =
           (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
               .estimatedFee;
+      _selectedLevel =
+          feeSelectionResult[FeeSelectionScreen.selectedOptionField];
     });
     _customFeeInfo =
         feeSelectionResult[FeeSelectionScreen.selectedOptionField] == null
@@ -822,8 +822,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   (_recommendedFeeFetchStatus ==
                           RecommendedFeeFetchStatus.failed &&
                       _estimatedFee != null &&
-                      _customSelected)
-              ? _isSelectedUtxoEnough()
+                      _customFeeSelected)
+              ? _change != null
               : false,
           onNextPressed: () {
             _removeFilterDropdown();
@@ -915,7 +915,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                     style: _recommendedFeeFetchStatus ==
                                                 RecommendedFeeFetchStatus
                                                     .failed &&
-                                            !_customSelected
+                                            !_customFeeSelected
                                         ? Styles.body2Bold.merge(
                                             const TextStyle(
                                               color:
@@ -957,7 +957,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                       child: _recommendedFeeFetchStatus ==
                                                   RecommendedFeeFetchStatus
                                                       .failed &&
-                                              !_customSelected
+                                              !_customFeeSelected
                                           ? Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment.end,
@@ -984,7 +984,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                           : _recommendedFeeFetchStatus ==
                                                       RecommendedFeeFetchStatus
                                                           .succeed ||
-                                                  _customSelected
+                                                  _customFeeSelected
                                               ? Column(
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.end,
@@ -1025,8 +1025,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                 children: [
                                   Text(
                                     '잔돈',
-                                    style: _isEnableToGetChange != null &&
-                                            _isEnableToGetChange! > 0
+                                    style: _change != null
                                         ? Styles.body2Bold
                                         : Styles.body2Bold.merge(
                                             const TextStyle(
@@ -1041,13 +1040,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                           CrossAxisAlignment.end,
                                       children: [
                                         Text(
-                                          // Transaction.estimatedFee,
-                                          _isEnableToGetChange != null &&
-                                                  _isEnableToGetChange! > 0
-                                              ? '${satoshiToBitcoinString(_isEnableToGetChange!)} BTC'
+                                          _change != null
+                                              ? '${satoshiToBitcoinString(_change!)} BTC'
                                               : '- BTC',
-                                          style: _isEnableToGetChange != null &&
-                                                  _isEnableToGetChange! > 0
+                                          style: _change != null
                                               ? Styles.body2Number
                                               : Styles.body2Number
                                                   .merge(const TextStyle(
