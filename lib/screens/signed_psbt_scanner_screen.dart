@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/widgets/animatedQR/animated_qr_scanner.dart';
@@ -117,9 +119,17 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     );
   }
 
+  Timer? _failedScanningTimer;
   void onFailedScanning(String message) {
     if (_isProcessing) return;
     _isProcessing = true;
+
+    // _isProcessing 상관 없이 2번 연속 호출되는 현상으로 추가됨
+    if (_failedScanningTimer?.isActive ?? false) {
+      return;
+    }
+    _failedScanningTimer = Timer(const Duration(milliseconds: 500), () {});
+
     Logger.log("[SignedPsbtScannerScreen] onFailed: $message");
 
     String errorMessage;

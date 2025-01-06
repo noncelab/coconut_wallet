@@ -4,7 +4,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -237,14 +236,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
   void _validateAddress(String? recipient) async {
     if (recipient == null || (recipient.isEmpty || recipient.length < 26)) {
-      Fluttertoast.showToast(
-          msg: "올바른 주소가 아니에요",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          backgroundColor: MyColors.warningRed,
-          textColor: Colors.white,
-          fontSize: 16.0);
+      CustomToast.showToast(context: context, text: '올바른 주소가 아니에요.');
       _isProcessing = false;
       return;
     }
@@ -253,15 +245,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
       if (recipient.startsWith('1') ||
           recipient.startsWith('3') ||
           recipient.startsWith('bc1')) {
-        Fluttertoast.showToast(
-          msg: "테스트넷 주소가 아니에요",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.TOP,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.white,
-          textColor: MyColors.darkgrey,
-          fontSize: 16.0,
-        );
+        CustomToast.showToast(context: context, text: '테스트넷 주소가 아니에요.');
         _isProcessing = false;
         return;
       }
@@ -270,29 +254,13 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
           recipient.startsWith('n') ||
           recipient.startsWith('2') ||
           recipient.startsWith('tb1')) {
-        Fluttertoast.showToast(
-          msg: "메인넷 주소가 아니에요",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.TOP,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.white,
-          textColor: MyColors.darkgrey,
-          fontSize: 16.0,
-        );
+        CustomToast.showToast(context: context, text: '메인넷 주소가 아니에요.');
         _isProcessing = false;
         return;
       }
     } else if (BitcoinNetwork.currentNetwork == BitcoinNetwork.regtest) {
       if (!recipient.startsWith('bcrt1')) {
-        Fluttertoast.showToast(
-          msg: "레그테스트넷 주소가 아니에요",
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.TOP,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.white,
-          textColor: MyColors.darkgrey,
-          fontSize: 16.0,
-        );
+        CustomToast.showToast(context: context, text: '레그테스트넷 주소가 아니에요.');
         _isProcessing = false;
         return;
       }
@@ -302,30 +270,13 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     try {
       result = WalletUtility.validateAddress(recipient);
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: "올바른 주소가 아니에요 ${e.toString()}",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.TOP,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.white,
-        textColor: MyColors.darkgrey,
-        fontSize: 16.0,
-      );
+      CustomToast.showToast(context: context, text: '올바른 주소가 아니에요.');
       _isProcessing = false;
       return;
     }
 
     if (!result) {
-      // showAlertDialog(context: context, content: "유효하지 않은 주소입니다.", onClosed: () => _isProcessing = false);
-      Fluttertoast.showToast(
-        msg: "올바른 주소가 아니에요",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.TOP,
-        timeInSecForIosWeb: 1,
-        backgroundColor: Colors.white,
-        textColor: MyColors.darkgrey,
-        fontSize: 16.0,
-      );
+      CustomToast.showToast(context: context, text: '올바른 주소가 아니에요.');
       _isProcessing = false;
       return;
     }
