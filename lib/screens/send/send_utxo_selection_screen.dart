@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
@@ -54,7 +56,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   late final ScrollController _scrollController;
 
   late List<UTXO> _confirmedUtxoList; // TODO: 언제 써야하는지 확인하고 초기화 해야 함
-  late List<UTXO> _utxoList;
   late List<UTXO> _selectedUtxoList;
 
   final GlobalKey _filterDropdownButtonKey = GlobalKey();
@@ -115,18 +116,15 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     return _isSelectedUtxoEnough() ? change : null;
   }
 
-  bool _isLoadingMore = false;
-  bool _isLastData = false;
-  bool _isSelectingAll = false;
+  final bool _isSelectingAll = false;
   final int _takeLength = 15; // 스크롤시 가져올 데이터 수(페이징)
-  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc;
+  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byAmountDesc;
 
   late Transaction _transaction;
 
   @override
   void initState() {
     super.initState();
-    debugPrint('widget: ${widget.sendInfo.amount}');
     _model = Provider.of<AppStateModel>(context, listen: false);
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
 
@@ -136,15 +134,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
     _walletType = _walletBaseItem.walletType;
 
-    _confirmedUtxoList = _getAllConfirmedUtxoList(_walletFeature);
-
     // TODO: 동기화 중일 때 이 화면까지 진입 안되는 거 확인 후 삭제 여부 결정
     if (_model.walletInitState == WalletInitState.finished) {
       // TODO: getUtxoList()에서 unconfirmedList는 제외해야함
-      _utxoList = _getUtxoList();
+      _confirmedUtxoList = _getAllConfirmedUtxoList(_walletFeature);
       _selectedUtxoList = [];
     } else {
-      _utxoList = _selectedUtxoList = [];
+      _confirmedUtxoList = _selectedUtxoList = [];
     }
 
     if (_walletType == WalletType.multiSignature) {
@@ -197,9 +193,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           _totalUtxoAmountWidgetPaddingBottom = 20 - (5 * progress);
         }
       });
-      if (_scrollController.position.extentAfter < 100) {
-        _loadMoreData();
-      }
+      // if (_scrollController.position.extentAfter < 100) {
+      //   /// 페이징
+      //   _loadMoreData();
+      // }
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -253,15 +250,15 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       totalSigner = (_walletBaseItem as MultisigWalletListItem).signers.length;
     }
 
-    return _transaction!.estimateFee(feeRate, _walletBase.addressType,
+    return _transaction.estimateFee(feeRate, _walletBase.addressType,
         requiredSignature: requiredSignature, totalSinger: totalSigner);
   }
 
   void syncSelectedUtxosWithTransaction() {
-    var inputs = _transaction!.inputs;
+    var inputs = _transaction.inputs;
     List<UTXO> result = [];
     for (int i = 0; i < inputs.length; i++) {
-      result.add(_utxoList.firstWhere((utxo) =>
+      result.add(_confirmedUtxoList.firstWhere((utxo) =>
           utxo.transactionHash == inputs[i].transactionHash &&
           utxo.index == inputs[i].index));
     }
@@ -331,7 +328,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   /// UTXO 선택 상태를 토글하는 함수
   void _toggleSelection(UTXO utxo) {
     _removeFilterDropdown();
-
     setState(() {
       if (_selectedUtxoList.contains(utxo)) {
         _transaction.removeInputWithUtxo(utxo, _satsPerVb!, _walletBase);
@@ -349,16 +345,17 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _removeFilterDropdown();
     // TODO: 로드 안 된 utxo도 다 가져와야 함
     setState(() {
-      _selectedUtxoList = List.from(_utxoList);
+      _selectedUtxoList = List.from(_confirmedUtxoList);
     });
+
     // TODO: feeRate
     _transaction = Transaction.fromUtxoList(
-        _utxoList,
+        _selectedUtxoList,
         widget.sendInfo.address,
         UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
         _satsPerVb!,
         _walletBase);
-    _estimatedFee = _estimateFee(1);
+    _estimatedFee = _estimateFee(_satsPerVb!);
   }
 
   void deselectAll() {
@@ -395,16 +392,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   void _applyFilter(UtxoOrderEnum orderEnum) async {
     if (orderEnum == _selectedFilter) return;
     _scrollController.jumpTo(0);
-    _isLastData = false;
     setState(() {
       _selectedFilter = orderEnum;
       //_selectedUtxoList.clear();
-      _utxoList.clear();
     });
     await Future.delayed(const Duration(milliseconds: 100));
     if (mounted) {
       setState(() {
-        _utxoList = _getUtxoList(orderEnum: _selectedFilter);
+        UTXO.sortUTXO(_confirmedUtxoList, orderEnum);
       });
     }
   }
@@ -416,39 +411,41 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   List<UTXO> _getUtxoList(
-      {UtxoOrderEnum orderEnum = UtxoOrderEnum.byTimestampDesc,
+
+      /// 사용 안함
+      {UtxoOrderEnum orderEnum = UtxoOrderEnum.byAmountDesc,
       int cursor = 0}) {
     return _walletFeature.getUtxoList(
         order: orderEnum, cursor: cursor, count: _takeLength);
   }
 
-  Future<void> _loadMoreData() async {
-    if (_isLoadingMore) return;
+  // Future<void> _loadMoreData() async {
+  //   if (_isLoadingMore) return;
 
-    setState(() {
-      _isLoadingMore = true;
-    });
+  //   setState(() {
+  //     _isLoadingMore = true;
+  //   });
 
-    await Future.delayed(const Duration(milliseconds: 1000));
+  //   await Future.delayed(const Duration(milliseconds: 1000));
 
-    List<UTXO> newList =
-        _getUtxoList(orderEnum: _selectedFilter, cursor: _utxoList.length);
-    if (mounted) {
-      setState(() {
-        _utxoList.addAll(newList);
-        if (newList.length < _takeLength) {
-          _isLastData = true;
-        }
-      });
-    }
+  //   List<UTXO> newList = _getUtxoList(
+  //       orderEnum: _selectedFilter, cursor: _confirmedUtxoList.length);
+  //   if (mounted) {
+  //     setState(() {
+  //       _confirmedUtxoList.addAll(newList);
+  //       if (newList.length < _takeLength) {
+  //         _isLastData = true;
+  //       }
+  //     });
+  //   }
 
-    await Future.delayed(const Duration(milliseconds: 100));
-    if (mounted) {
-      setState(() {
-        _isLoadingMore = false;
-      });
-    }
-  }
+  //   await Future.delayed(const Duration(milliseconds: 100));
+  //   if (mounted) {
+  //     setState(() {
+  //       _isLoadingMore = false;
+  //     });
+  //   }
+  // }
 
   Widget _divider() => Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -464,25 +461,25 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       borderRadius: BorderRadius.circular(16),
       child: CustomDropdown(
         buttons: const [
-          '최신순',
-          '오래된 순',
           '큰 금액순',
           '작은 금액순',
+          '최신순',
+          '오래된 순',
         ],
         dividerColor: Colors.black,
         onTapButton: (index) {
           switch (index) {
-            case 0: // 최신순
-              _applyFilter(UtxoOrderEnum.byTimestampDesc);
-              break;
-            case 1: // 오래된 순
-              _applyFilter(UtxoOrderEnum.byTimestampAsc);
-              break;
-            case 2: // 큰 금액순
+            case 0: // 큰 금액순
               _applyFilter(UtxoOrderEnum.byAmountDesc);
               break;
-            case 3: // 작은 금액순
+            case 1: // 작은 금액순
               _applyFilter(UtxoOrderEnum.byAmountAsc);
+              break;
+            case 2: // 최신순
+              _applyFilter(UtxoOrderEnum.byTimestampDesc);
+              break;
+            case 3: // 오래된 순
+              _applyFilter(UtxoOrderEnum.byTimestampAsc);
               break;
           }
           setState(() {
@@ -703,9 +700,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     text: '모두 해제',
                     onTap: () {
                       _removeFilterDropdown();
-                      setState(() {
-                        _selectedUtxoList = [];
-                      });
+                      deselectAll();
                     },
                   ),
                   SvgPicture.asset('assets/svg/row-divider.svg'),
@@ -715,7 +710,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     text: '모두 선택',
                     onTap: () async {
                       _removeFilterDropdown();
-                      _selectAll();
+                      selectAll();
                     },
                   )
                 ],
@@ -727,30 +722,30 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     );
   }
 
-  void _selectAll() async {
-    setState(() {
-      _isSelectingAll = true;
-    });
+  // void _selectAll() async {
+  //   setState(() {
+  //     _isSelectingAll = true;
+  //   });
 
-    await _loadAllData();
+  //   await _loadAllData();
 
-    if (mounted) {
-      setState(() {
-        _selectedUtxoList = List.from(_utxoList);
-        _isSelectingAll = false;
-      });
-    }
-  }
+  //   if (mounted) {
+  //     setState(() {
+  //       _selectedUtxoList = List.from(_confirmedUtxoList);
+  //       _isSelectingAll = false;
+  //     });
+  //   }
+  // }
 
-  Future<void> _loadAllData() async {
-    if (_isLastData) return;
+  // Future<void> _loadAllData() async {
+  //   if (_isLastData) return;
 
-    // 데이터가 모두 로드될 때까지 반복적으로 호출
-    while (!_isLastData) {
-      await _loadMoreData();
-      if (!mounted) break;
-    }
-  }
+  //   // 데이터가 모두 로드될 때까지 반복적으로 호출
+  //   while (!_isLastData) {
+  //     await _loadMoreData();
+  //     if (!mounted) break;
+  //   }
+  // }
 
   void _removeFilterDropdown() {
     setState(() {
@@ -1080,25 +1075,21 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                       shrinkWrap: true,
                       padding: const EdgeInsets.only(
                           top: 0, bottom: 30, left: 16, right: 16),
-                      itemCount: _utxoList.length + 1,
+                      itemCount: _confirmedUtxoList.length + 1,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 8),
                       itemBuilder: (context, index) {
-                        if (index < _utxoList.length) {
+                        if (index < _confirmedUtxoList.length) {
                           return UtxoSelectableCard(
-                            utxo: _utxoList[index],
-                            isSelected:
-                                _selectedUtxoList.contains(_utxoList[index]),
+                            key: ValueKey(
+                                _confirmedUtxoList[index].transactionHash),
+                            utxo: _confirmedUtxoList[index],
+                            isSelected: _selectedUtxoList
+                                .contains(_confirmedUtxoList[index]),
                             onSelected: _toggleSelection,
                           );
                         } else {
-                          return _isLoadingMore && !_isLastData
-                              ? const Center(
-                                  child: CircularProgressIndicator(
-                                    color: MyColors.white,
-                                  ),
-                                )
-                              : const SizedBox();
+                          return const SizedBox();
                         }
                       }),
                 ],
@@ -1134,7 +1125,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 ),
               ),
             ),
-            if (_isFilterDropdownVisible && _utxoList.isNotEmpty) ...{
+            if (_isFilterDropdownVisible && _confirmedUtxoList.isNotEmpty) ...{
               Positioned(
                 top: _filterDropdownButtonPosition.dy -
                     _scrollController.offset -
@@ -1144,7 +1135,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 child: _filterDropDownWidget(),
               ),
             },
-            if (_isScrolledFilterDropdownVisible && _utxoList.isNotEmpty) ...{
+            if (_isScrolledFilterDropdownVisible &&
+                _confirmedUtxoList.isNotEmpty) ...{
               Positioned(
                 top: _scrolledFilterDropdownButtonPosition.dy -
                     MediaQuery.of(context).padding.top -
