@@ -23,7 +23,7 @@ class CustomAppBar {
     IconButton? rightIconButton,
     bool isBottom = false,
     VoidCallback? onBackPressed,
-    bool showTestnetLabel = true,
+    bool showTestnetLabel = false,
     bool showFaucetIcon = false,
   }) {
     Widget? widget = Column(
