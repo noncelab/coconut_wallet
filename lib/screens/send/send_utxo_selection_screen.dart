@@ -15,7 +15,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
@@ -127,8 +126,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           );
   }
 
-  final bool _isSelectingAll = false;
-  final int _takeLength = 15; // 스크롤시 가져올 데이터 수(페이징)
   UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byAmountDesc;
 
   late Transaction _transaction;
@@ -152,9 +149,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         ? (_walletBaseItem as MultisigWalletListItem).signers.length
         : null;
 
-    // TODO: 동기화 중일 때 이 화면까지 진입 안되는 거 확인 후 삭제 여부 결정
     if (_model.walletInitState == WalletInitState.finished) {
-      // TODO: getUtxoList()에서 unconfirmedList는 제외해야함
       _confirmedUtxoList = _getAllConfirmedUtxoList(_walletFeature);
       _selectedUtxoList = [];
       UTXO.sortUTXO(_confirmedUtxoList, _selectedFilter);
@@ -181,7 +176,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
     _transaction = createTransaction(_isMaxMode, 1, _walletBase);
     syncSelectedUtxosWithTransaction();
-    printTransactionUtxos();
 
     _totalUtxoAmountWidgetPaddingLeft = _totalUtxoAmountWidgetPaddingRight =
         _totalUtxoAmountWidgetPaddingTop = 24;
@@ -239,14 +233,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         _updateFeeRate(_satsPerVb!);
       }
     });
-  }
-
-  // TODO: must delete
-  void printTransactionUtxos() {
-    for (var utxo in _transaction.utxoList) {
-      Logger.log(
-          '--> _transaction.utxoList: ${utxo.transactionHash} / ${utxo.index}');
-    }
   }
 
   Transaction createTransaction(
@@ -431,43 +417,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         .where((utxo) => utxo.blockHeight != 0)
         .toList();
   }
-
-  // List<UTXO> _getUtxoList(
-
-  //     /// 사용 안함
-  //     {UtxoOrderEnum orderEnum = UtxoOrderEnum.byAmountDesc,
-  //     int cursor = 0}) {
-  //   return _walletFeature.getUtxoList(
-  //       order: orderEnum, cursor: cursor, count: _takeLength);
-  // }
-
-  // Future<void> _loadMoreData() async {
-  //   if (_isLoadingMore) return;
-
-  //   setState(() {
-  //     _isLoadingMore = true;
-  //   });
-
-  //   await Future.delayed(const Duration(milliseconds: 1000));
-
-  //   List<UTXO> newList = _getUtxoList(
-  //       orderEnum: _selectedFilter, cursor: _confirmedUtxoList.length);
-  //   if (mounted) {
-  //     setState(() {
-  //       _confirmedUtxoList.addAll(newList);
-  //       if (newList.length < _takeLength) {
-  //         _isLastData = true;
-  //       }
-  //     });
-  //   }
-
-  //   await Future.delayed(const Duration(milliseconds: 100));
-  //   if (mounted) {
-  //     setState(() {
-  //       _isLoadingMore = false;
-  //     });
-  //   }
-  // }
 
   Widget _divider() => Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -704,16 +653,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Visibility(
-                      visible: _isSelectingAll,
-                      child: const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          color: MyColors.white,
-                          strokeWidth: 1.5,
-                        ),
-                      )),
                   const SizedBox(
                     width: 16,
                   ),
@@ -728,7 +667,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   SvgPicture.asset('assets/svg/row-divider.svg'),
                   CustomUnderlinedButton(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    isEnable: !_isSelectingAll,
                     text: '모두 선택',
                     onTap: () async {
                       _removeFilterDropdown();
