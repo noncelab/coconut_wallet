@@ -390,12 +390,23 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     });
   }
 
-  // TODO: 필터 적용 안됨
   void selectAll() {
     _removeFilterDropdown();
     setState(() {
-      _selectedUtxoList = List.from(_confirmedUtxoList);
+      if (_selectedUtxoTagName != '전체') {
+        final filteredList = _confirmedUtxoList.where((utxo) {
+          final transactionHash = utxo.transactionHash;
+          final utxoIndex = utxo.index;
+          final txHashIndex = '$transactionHash$utxoIndex';
+
+          return _model.isContainedTagName(_selectedUtxoTagName, txHashIndex);
+        }).toList();
+        _selectedUtxoList = List.from(filteredList);
+      } else {
+        _selectedUtxoList = List.from(_confirmedUtxoList);
+      }
     });
+
     if (!_isMaxMode) {
       _transaction = Transaction.fromUtxoList(
           _selectedUtxoList,
