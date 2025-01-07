@@ -794,10 +794,10 @@ class AppStateModel extends ChangeNotifier {
 
       if (wallet.walletType == WalletType.multiSignature) {
         final multisigWallet = wallet.walletBase as MultisignatureWallet;
-        utxoList = multisigWallet.getUtxoList();
+        utxoList = multisigWallet.walletStatus!.utxoList;
       } else {
         final singlesigWallet = wallet.walletBase as SingleSignatureWallet;
-        utxoList = singlesigWallet.getUtxoList();
+        utxoList = singlesigWallet.walletStatus!.utxoList;
       }
 
       for (String txHashIndex in _selectedTxHashIndexList) {
