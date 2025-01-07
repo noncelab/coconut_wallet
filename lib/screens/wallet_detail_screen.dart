@@ -131,8 +131,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     _walletType = _walletBaseItem.walletType;
     if (_model.walletInitState == WalletInitState.finished) {
-      _utxoList =
-          getUtxoListWithHoldingAddress(_walletFeature.walletStatus!.utxoList);
+      getUtxoListWithHoldingAddress(_walletFeature.walletStatus!.utxoList,
+          _walletBaseItem, accountIndexField, changeField, _walletType);
     }
 
     if (_utxoList.isNotEmpty && mounted) {
@@ -265,8 +265,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _model.walletInitState == WalletInitState.finished) {
       _checkTxCount(
           _walletBaseItem.txCount, _walletBaseItem.isLatestTxBlockHeightZero);
-      _utxoList =
-          getUtxoListWithHoldingAddress(_walletFeature.walletStatus!.utxoList);
+      getUtxoListWithHoldingAddress(_walletFeature.walletStatus!.utxoList,
+          _walletBaseItem, accountIndexField, changeField, _walletType);
       if (mounted) {
         setState(() {
           _isUtxoListLoadComplete = true;

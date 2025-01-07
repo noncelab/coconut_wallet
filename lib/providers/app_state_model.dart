@@ -752,7 +752,7 @@ class AppStateModel extends ChangeNotifier {
     await _walletDataManager.decrypt();
     await _subStateModel.deletePin();
   }
-  
+
   /// TODO: Model 분리 ----------------------------------------------------------
   /// 전체 UtxoTagList
   List<UtxoTag> _utxoTagList = [];
