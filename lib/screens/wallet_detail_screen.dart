@@ -272,6 +272,19 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           _isUtxoListLoadComplete = true;
           model.UTXO.sortUTXO(_utxoList, _selectedFilter);
         });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_filterDropdownButtonKey.currentContext?.findRenderObject() !=
+              null) {
+            _filterDropdownButtonRenderBox =
+                _filterDropdownButtonKey.currentContext!.findRenderObject()
+                    as RenderBox;
+
+            _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
+            _filterDropdownButtonPosition =
+                _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+          }
+        });
       }
     }
     _prevWalletInitState = _model.walletInitState;
@@ -323,6 +336,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (type == SelectedListType.Transaction) {
       setState(() {
         _selectedListType = SelectedListType.Transaction;
+        _isFilterDropdownVisible = false;
+        _isScrolledFilterDropdownVisible = false;
       });
     } else {
       setState(() {
