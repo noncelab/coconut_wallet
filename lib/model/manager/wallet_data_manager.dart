@@ -124,7 +124,7 @@ class WalletDataManager {
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         _walletList!.add(mapRealmMultisigWalletToMultisigWalletListItem(
-            multisigWallets[multisigWalletIndex], decryptedDescriptor));
+            multisigWallets[multisigWalletIndex++], decryptedDescriptor));
       }
     }
 
