@@ -1,3 +1,5 @@
+import 'package:coconut_lib/coconut_lib.dart';
+
 enum TransactionStatus { received, receiving, sent, sending, self, selfsending }
 
 enum TransactionFeeLevel { fastest, halfhour, hour }
@@ -31,4 +33,19 @@ enum SyncResult {
   existingWalletUpdated,
   existingWalletNoUpdate,
   existingName, // fail sync
+}
+
+extension UtxoOrderEnumExtension on UtxoOrderEnum {
+  String get text {
+    switch (this) {
+      case UtxoOrderEnum.byAmountDesc:
+        return "큰 금액순";
+      case UtxoOrderEnum.byAmountAsc:
+        return "작은 금액순";
+      case UtxoOrderEnum.byTimestampDesc:
+        return "최신순";
+      case UtxoOrderEnum.byTimestampAsc:
+        return "오래된 순";
+    }
+  }
 }

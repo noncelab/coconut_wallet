@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -94,6 +95,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
   List<model.UTXO> _utxoList = [];
+  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byAmountDesc; // 초기 정렬 방식
+
   late WalletType _walletType;
   static String changeField = 'change';
   static String accountIndexField = 'accountIndex';
@@ -128,11 +131,18 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     _walletType = _walletBaseItem.walletType;
     if (_model.walletInitState == WalletInitState.finished) {
-      getUtxoListWithHoldingAddress(_walletFeature.getUtxoList(),
-          _walletBaseItem, accountIndexField, changeField, _walletType);
+      _utxoList =
+          getUtxoListWithHoldingAddress(_walletFeature.walletStatus!.utxoList);
     }
 
-    List<Transfer>? newTxList = _model.getTxList(widget.id);
+    if (_utxoList.isNotEmpty && mounted) {
+      setState(() {
+        model.UTXO.sortUTXO(_utxoList, _selectedFilter);
+        _isUtxoListLoadComplete = true;
+      });
+    }
+
+    List<TransferDTO>? newTxList = _model.getTxList(widget.id);
     if (newTxList != null) {
       _txList = newTxList;
     }
@@ -172,6 +182,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           _topHeaderWidgetSize.height -
           _positionedTopWidgetSize.height;
       _scrollController.addListener(() {
+        if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
+          _removeFilterDropdown();
+        }
+
         if (_scrollController.offset > topPadding) {
           if (!_isPullToRefeshing) {
             setState(() {
@@ -251,10 +265,31 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _model.walletInitState == WalletInitState.finished) {
       _checkTxCount(
           _walletBaseItem.txCount, _walletBaseItem.isLatestTxBlockHeightZero);
-      getUtxoListWithHoldingAddress(_walletFeature.getUtxoList(),
-          _walletBaseItem, accountIndexField, changeField, _walletType);
+      _utxoList =
+          getUtxoListWithHoldingAddress(_walletFeature.walletStatus!.utxoList);
+      if (mounted) {
+        setState(() {
+          _isUtxoListLoadComplete = true;
+          model.UTXO.sortUTXO(_utxoList, _selectedFilter);
+        });
+      }
     }
     _prevWalletInitState = _model.walletInitState;
+  }
+
+  void _applyFilter(UtxoOrderEnum orderEnum) async {
+    if (orderEnum == _selectedFilter) return;
+    _scrollController.jumpTo(0);
+    setState(() {
+      _selectedFilter = orderEnum;
+      //_selectedUtxoList.clear();
+    });
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) {
+      setState(() {
+        model.UTXO.sortUTXO(_utxoList, orderEnum);
+      });
+    }
   }
 
   _checkTxCount(int? txCount, bool isLatestTxBlockHeightZero) {
@@ -301,8 +336,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
         _filterDropdownButtonPosition =
             _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
-        debugPrint(
-            '_filterDropdownButtonPosition : $_filterDropdownButtonPosition');
       }
     }
   }
@@ -378,10 +411,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       borderRadius: BorderRadius.circular(16),
       child: CustomDropdown(
         buttons: const [
-          '최신순',
-          '오래된 순',
           '큰 금액순',
           '작은 금액순',
+          '최신순',
+          '오래된 순',
         ],
         dividerColor: Colors.black,
         onTapButton: (index) {
@@ -389,17 +422,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             _isFilterDropdownVisible = _isScrolledFilterDropdownVisible = false;
           });
           switch (index) {
-            case 0: // 최신순
-              debugPrint('최신순 필터링');
+            case 0: // 큰 금액순
+              _applyFilter(UtxoOrderEnum.byAmountDesc);
               break;
-            case 1: // 오래된 순
-              debugPrint('오래된 순 필터링');
+            case 1: // 작은 금액순
+              _applyFilter(UtxoOrderEnum.byAmountAsc);
               break;
-            case 2: // 큰 금액순
-              debugPrint('쿤 금액순 필터링');
+            case 2: // 최신순
+              _applyFilter(UtxoOrderEnum.byTimestampDesc);
               break;
-            case 3: // 작은 금액순
-              debugPrint('작은 금액순 필터링');
+            case 3: // 오래된 순
+              _applyFilter(UtxoOrderEnum.byTimestampAsc);
               break;
           }
         },
@@ -563,16 +596,21 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                 minSize: 0,
                                 onPressed: () {
                                   setState(() {
-                                    _isScrolledFilterDropdownVisible = true;
+                                    _scrollController
+                                        .jumpTo(_scrollController.offset);
+                                    if (_isFilterDropdownVisible ||
+                                        _isScrolledFilterDropdownVisible) {
+                                      _isScrolledFilterDropdownVisible = false;
+                                    } else {
+                                      _isScrolledFilterDropdownVisible = true;
+                                    }
                                   });
                                 },
                                 child: Row(
                                   children: [
                                     Text(
                                       key: _scrolledFilterDropdownButtonKey,
-                                      '큰 금액순',
-
-                                      /// TODO: 정렬 Text 대입
+                                      _selectedFilter.text,
                                       style: Styles.caption2.merge(
                                         const TextStyle(
                                           color: MyColors.white,
@@ -838,257 +876,247 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _removeFaucetTooltip();
         _removeFilterDropdown();
       },
-      child: GestureDetector(
-        onVerticalDragDown: (details) => _removeFilterDropdown(),
-        child: Stack(
-          children: [
-            Scaffold(
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: MyColors.black,
+            appBar: CustomAppBar.build(
+              entireWidgetKey: _appBarKey,
+              faucetIconKey: _faucetIconKey,
               backgroundColor: MyColors.black,
-              appBar: CustomAppBar.build(
-                entireWidgetKey: _appBarKey,
-                faucetIconKey: _faucetIconKey,
-                backgroundColor: MyColors.black,
-                title: TextUtils.ellipsisIfLonger(
-                  _walletBaseItem.name,
-                  maxLength: 15,
-                ),
-                context: context,
-                hasRightIcon: true,
-                onFaucetIconPressed: () async {
-                  _removeFaucetTooltip();
-                  if (!_checkStateAndShowToast()) return;
-                  if (!_checkBalanceIsNotNullAndShowToast()) return;
-                  await MyBottomSheet.showBottomSheet_50(
-                      context: context,
-                      child: FaucetRequestScreen(
-                        onRequestSuccess: () {
-                          Navigator.pop(context, true); // 성공 시 true 반환
-                          // 1초 후에 이 지갑만 sync 요청
-                          Future.delayed(const Duration(seconds: 1), () {
-                            _model.initWallet(
-                                targetId: widget.id, syncOthers: false);
-                          });
-                        },
-                        walletBaseItem: _walletBaseItem,
-                      ));
-                },
-                onTitlePressed: () async {
-                  if (_walletBaseItem.walletType == WalletType.multiSignature) {
-                    await Navigator.pushNamed(context, '/wallet-multisig',
-                        arguments: {'id': widget.id});
-                  } else {
-                    await Navigator.pushNamed(context, '/wallet-setting',
-                        arguments: {'id': widget.id});
-                  }
-
-                  if (_model.isUpdateSelectedTagList) {
-                    _model.setIsUpdateSelectedTagList(false);
-                    getUtxoListWithHoldingAddress(
-                        _walletFeature.getUtxoList(),
-                        _walletBaseItem,
-                        accountIndexField,
-                        changeField,
-                        _walletType);
-                  }
-                },
-                showFaucetIcon: true,
+              title: TextUtils.ellipsisIfLonger(
+                _walletBaseItem.name,
+                maxLength: 15,
               ),
-              body: CustomScrollView(
-                  controller: _scrollController,
-                  semanticChildCount: _txList.isEmpty ? 1 : _txList.length,
-                  slivers: [
-                    CupertinoSliverRefreshControl(
-                      onRefresh: () async {
-                        _isPullToRefeshing = true;
-                        try {
-                          if (!_checkStateAndShowToast()) {
-                            return;
-                          }
-                          _model.initWallet(targetId: widget.id);
-                        } finally {
-                          _isPullToRefeshing = false;
-                        }
+              context: context,
+              hasRightIcon: true,
+              onFaucetIconPressed: () async {
+                _removeFaucetTooltip();
+                if (!_checkStateAndShowToast()) return;
+                if (!_checkBalanceIsNotNullAndShowToast()) return;
+                await MyBottomSheet.showBottomSheet_50(
+                    context: context,
+                    child: FaucetRequestScreen(
+                      onRequestSuccess: () {
+                        Navigator.pop(context, true); // 성공 시 true 반환
+                        // 1초 후에 이 지갑만 sync 요청
+                        Future.delayed(const Duration(seconds: 1), () {
+                          _model.initWallet(
+                              targetId: widget.id, syncOthers: false);
+                        });
                       },
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        key: _topToggleButtonKey,
-                        padding: const EdgeInsets.only(top: 20.0),
-                        child: Center(
-                          child: SmallActionButton(
-                            onPressed: () {
-                              _toggleUnit();
-                            },
-                            height: 32,
-                            width: 64,
-                            child: Text(
-                              _current == Unit.btc ? 'BTC' : 'sats',
-                              style: Styles.label.merge(
-                                TextStyle(
-                                    fontFamily:
-                                        CustomFonts.number.getFontFamily,
-                                    color: MyColors.white),
-                              ),
+                      walletBaseItem: _walletBaseItem,
+                    ));
+              },
+              onTitlePressed: () {
+                if (_walletBaseItem.walletType == WalletType.multiSignature) {
+                  Navigator.pushNamed(context, '/wallet-multisig',
+                      arguments: {'id': widget.id});
+                } else {
+                  Navigator.pushNamed(context, '/wallet-setting',
+                      arguments: {'id': widget.id});
+                }
+              },
+              showFaucetIcon: true,
+            ),
+            body: CustomScrollView(
+                controller: _scrollController,
+                semanticChildCount: _txList.isEmpty ? 1 : _txList.length,
+                slivers: [
+                  CupertinoSliverRefreshControl(
+                    onRefresh: () async {
+                      _isPullToRefeshing = true;
+                      try {
+                        if (!_checkStateAndShowToast()) {
+                          return;
+                        }
+                        _model.initWallet(targetId: widget.id);
+                      } finally {
+                        _isPullToRefeshing = false;
+                      }
+                    },
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      key: _topToggleButtonKey,
+                      padding: const EdgeInsets.only(top: 20.0),
+                      child: Center(
+                        child: SmallActionButton(
+                          onPressed: () {
+                            _toggleUnit();
+                          },
+                          height: 32,
+                          width: 64,
+                          child: Text(
+                            _current == Unit.btc ? 'BTC' : 'sats',
+                            style: Styles.label.merge(
+                              TextStyle(
+                                  fontFamily: CustomFonts.number.getFontFamily,
+                                  color: MyColors.white),
                             ),
                           ),
                         ),
                       ),
                     ),
-                    Selector<UpbitConnectModel, int?>(
-                        selector: (context, model) => model.bitcoinPriceKrw,
-                        builder: (context, bitcoinPriceKrw, child) {
-                          return SliverToBoxAdapter(
-                              child: BalanceAndButtons(
-                            key: _topSelectorWidgetKey,
-                            balance: _walletBaseItem.balance,
-                            walletId: widget.id,
-                            accountIndex: _selectedAccountIndex,
-                            currentUnit: _current,
-                            btcPriceInKrw: bitcoinPriceKrw,
-                            checkPrerequisites: () {
-                              return _checkStateAndShowToast() &&
-                                  _checkBalanceIsNotNullAndShowToast();
-                            },
-                          ));
-                        }),
-                    SliverToBoxAdapter(
-                        child: Column(
-                      key: _topHeaderWidgetKey,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              left: 16.0, right: 16.0, bottom: 12.0, top: 30),
-                          child: Selector<AppStateModel, WalletInitState>(
-                              selector: (_, selectorModel) =>
-                                  selectorModel.walletInitState,
-                              builder: (context, state, child) {
-                                return Column(
-                                  children: [
-                                    if (!_isPullToRefeshing &&
-                                        state ==
-                                            WalletInitState.processing) ...{
-                                      Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            _listTypeSelectionRow(),
-                                            Row(
-                                              children: [
-                                                const Text(
-                                                  '업데이트 중',
-                                                  style: TextStyle(
-                                                    fontFamily: 'Pretendard',
-                                                    color: MyColors.primary,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontStyle: FontStyle.normal,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                LottieBuilder.asset(
-                                                  'assets/files/status_loading.json',
-                                                  width: 20,
-                                                  height: 20,
-                                                ),
-                                              ],
-                                            )
-                                          ]),
-                                    } else ...{
-                                      Column(
+                  ),
+                  Selector<UpbitConnectModel, int?>(
+                      selector: (context, model) => model.bitcoinPriceKrw,
+                      builder: (context, bitcoinPriceKrw, child) {
+                        return SliverToBoxAdapter(
+                            child: BalanceAndButtons(
+                          key: _topSelectorWidgetKey,
+                          balance: _walletBaseItem.balance,
+                          walletId: widget.id,
+                          accountIndex: _selectedAccountIndex,
+                          currentUnit: _current,
+                          btcPriceInKrw: bitcoinPriceKrw,
+                          checkPrerequisites: () {
+                            return _checkStateAndShowToast() &&
+                                _checkBalanceIsNotNullAndShowToast();
+                          },
+                        ));
+                      }),
+                  SliverToBoxAdapter(
+                      child: Column(
+                    key: _topHeaderWidgetKey,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 16.0, right: 16.0, bottom: 12.0, top: 30),
+                        child: Selector<AppStateModel, WalletInitState>(
+                            selector: (_, selectorModel) =>
+                                selectorModel.walletInitState,
+                            builder: (context, state, child) {
+                              return Column(
+                                children: [
+                                  if (!_isPullToRefeshing &&
+                                      state == WalletInitState.processing) ...{
+                                    Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           _listTypeSelectionRow(),
-                                        ],
-                                      ),
-                                    },
-                                    if (_selectedListType ==
-                                            SelectedListType.UTXO &&
-                                        _utxoList.isNotEmpty) ...{
-                                      const SizedBox(height: 8),
-                                      IgnorePointer(
-                                        ignoring: _positionedTopWidgetVisible,
-                                        child: Visibility(
-                                          maintainSize: true,
-                                          maintainAnimation: true,
-                                          maintainState: true,
-                                          maintainSemantics: false,
-                                          maintainInteractivity: false,
-                                          visible: !_positionedTopWidgetVisible,
-                                          child: CupertinoButton(
-                                            onPressed: () {
-                                              setState(
-                                                () {
-                                                  _removeFilterDropdown();
+                                          Row(
+                                            children: [
+                                              const Text(
+                                                '업데이트 중',
+                                                style: TextStyle(
+                                                  fontFamily: 'Pretendard',
+                                                  color: MyColors.primary,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontStyle: FontStyle.normal,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              LottieBuilder.asset(
+                                                'assets/files/status_loading.json',
+                                                width: 20,
+                                                height: 20,
+                                              ),
+                                            ],
+                                          )
+                                        ]),
+                                  } else ...{
+                                    Column(
+                                      children: [
+                                        _listTypeSelectionRow(),
+                                      ],
+                                    ),
+                                  },
+                                  if (_selectedListType ==
+                                          SelectedListType.UTXO &&
+                                      _utxoList.isNotEmpty) ...{
+                                    const SizedBox(height: 8),
+                                    IgnorePointer(
+                                      ignoring: _positionedTopWidgetVisible,
+                                      child: Visibility(
+                                        maintainSize: true,
+                                        maintainAnimation: true,
+                                        maintainState: true,
+                                        maintainSemantics: false,
+                                        maintainInteractivity: false,
+                                        visible: !_positionedTopWidgetVisible,
+                                        child: CupertinoButton(
+                                          onPressed: () {
+                                            setState(
+                                              () {
+                                                _scrollController.jumpTo(
+                                                    _scrollController.offset);
+                                                if (_isFilterDropdownVisible ||
+                                                    _isScrolledFilterDropdownVisible) {
+                                                  _isFilterDropdownVisible =
+                                                      false;
+                                                } else {
                                                   _isFilterDropdownVisible =
                                                       true;
-                                                },
-                                              );
-                                            },
-                                            minSize: 0,
-                                            padding:
-                                                const EdgeInsets.only(left: 8),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              children: [
-                                                Text(
-                                                  key: _filterDropdownButtonKey,
-                                                  '큰 금액순',
-
-                                                  /// TODO: 정렬 Text 대입
-                                                  style: Styles.caption2.merge(
-                                                    const TextStyle(
-                                                      color: MyColors.white,
-                                                      fontSize: 12,
-                                                    ),
+                                                }
+                                              },
+                                            );
+                                          },
+                                          minSize: 0,
+                                          padding:
+                                              const EdgeInsets.only(left: 8),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                key: _filterDropdownButtonKey,
+                                                _selectedFilter.text,
+                                                style: Styles.caption2.merge(
+                                                  const TextStyle(
+                                                    color: MyColors.white,
+                                                    fontSize: 12,
                                                   ),
                                                 ),
-                                                const SizedBox(
-                                                  width: 4,
-                                                ),
-                                                SvgPicture.asset(
-                                                  'assets/svg/arrow-down.svg',
-                                                ),
-                                              ],
-                                            ),
+                                              ),
+                                              const SizedBox(
+                                                width: 4,
+                                              ),
+                                              SvgPicture.asset(
+                                                'assets/svg/arrow-down.svg',
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),
-                                    },
-                                  ],
-                                );
-                              }),
-                        ),
-                      ],
-                    )),
-                    _selectedListType == SelectedListType.Transaction
-                        ? _transactionListWidget()
-                        : _utxoListWidget()
-                  ]),
+                                    ),
+                                  },
+                                ],
+                              );
+                            }),
+                      ),
+                    ],
+                  )),
+                  _selectedListType == SelectedListType.Transaction
+                      ? _transactionListWidget()
+                      : _utxoListWidget()
+                ]),
+          ),
+          _afterScrolledWidget(),
+          _faucetTooltipWidget(context),
+          if (_isFilterDropdownVisible && _utxoList.isNotEmpty) ...{
+            Positioned(
+              top: _filterDropdownButtonPosition.dy +
+                  _filterDropdownButtonSize.height +
+                  8 -
+                  _scrollController.offset,
+              right: 16,
+              child: _filterDropDownWidget(),
             ),
-            _afterScrolledWidget(),
-            _faucetTooltipWidget(context),
-            if (_isFilterDropdownVisible && _utxoList.isNotEmpty) ...{
-              Positioned(
-                top: _filterDropdownButtonPosition.dy +
-                    _filterDropdownButtonSize.height +
-                    8 -
-                    _scrollController.offset,
-                right: 16,
-                child: _filterDropDownWidget(),
-              ),
-            },
-            if (_isScrolledFilterDropdownVisible && _utxoList.isNotEmpty) ...{
-              Positioned(
-                top: _scrolledFilterDropdownButtonPosition.dy +
-                    _scrolledFilterDropdownButtonSize.height +
-                    8,
-                right: 16,
-                child: _filterDropDownWidget(),
-              ),
-            },
-          ],
-        ),
+          },
+          if (_isScrolledFilterDropdownVisible && _utxoList.isNotEmpty) ...{
+            Positioned(
+              top: _scrolledFilterDropdownButtonPosition.dy +
+                  _scrolledFilterDropdownButtonSize.height +
+                  8,
+              right: 16,
+              child: _filterDropDownWidget(),
+            ),
+          },
+        ],
       ),
     );
   }
