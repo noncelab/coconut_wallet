@@ -122,12 +122,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   void broadcast() async {
     setOverlayLoading(true);
-    final model = Provider.of<AppStateModel>(context, listen: false);
-    PSBT psbt = PSBT.parse(model.signedTransaction!);
+    //final model = Provider.of<AppStateModel>(context, listen: false);
+    PSBT psbt = PSBT.parse(_model.signedTransaction!);
     Transaction signedTx = psbt.getSignedTransaction(_walletBase.addressType);
 
     try {
-      Result<String, CoconutError> result = await model.broadcast(signedTx);
+      Result<String, CoconutError> result = await _model.broadcast(signedTx);
 
       setOverlayLoading(false);
 
@@ -141,11 +141,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
       if (result.isSuccess) {
         vibrateLight();
-        model.clearAllRelatedSending();
+        _model.clearAllRelatedSending();
 
         Navigator.pushNamedAndRemoveUntil(
           context,
-
           '/broadcasting-complete', // 이동할 경로
           ModalRoute.withName('/wallet-detail'), // '/home' 경로를 남기고 그 외의 경로 제거
           arguments: {
@@ -184,8 +183,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           context: context,
           isActive: _isValidSignedTransaction,
           onNextPressed: () {
-            var appState = Provider.of<AppStateModel>(context, listen: false);
-            if (appState.isNetworkOn == false) {
+            //var appState = Provider.of<AppStateModel>(context, listen: false);
+            // print(_model.selectedTxHashIndexList);
+
+            if (_model.isNetworkOn == false) {
               CustomToast.showWarningToast(
                   context: context, text: ErrorCodes.networkError.message);
               return;

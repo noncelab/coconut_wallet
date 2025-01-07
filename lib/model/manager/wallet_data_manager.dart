@@ -608,8 +608,7 @@ class WalletDataManager {
   /// - walletId 으로 tag 목록 조회
   /// - 목록을 순환하면서 입력된 txHashIndex를 모두 삭제
   /// - 몇 개의 태그가 삭제되었는지 반환
-  RealmResult<int> deleteTxHashIndex(
-      int walletId, String txHashIndex, int length) {
+  RealmResult<int> deleteTxHashIndex(int walletId, String txHashIndex) {
     try {
       final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
 

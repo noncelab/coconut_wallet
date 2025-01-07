@@ -70,6 +70,11 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   void initState() {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _model.updateSelectedTxHashIndexList([]);
+    });
+
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
 
     final walletBaseItem = _model.getWalletById(widget.id);

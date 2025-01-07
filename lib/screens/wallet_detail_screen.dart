@@ -908,13 +908,22 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       walletBaseItem: _walletBaseItem,
                     ));
               },
-              onTitlePressed: () {
+              onTitlePressed: () async {
                 if (_walletBaseItem.walletType == WalletType.multiSignature) {
-                  Navigator.pushNamed(context, '/wallet-multisig',
+                  await Navigator.pushNamed(context, '/wallet-multisig',
                       arguments: {'id': widget.id});
                 } else {
-                  Navigator.pushNamed(context, '/wallet-setting',
+                  await Navigator.pushNamed(context, '/wallet-setting',
                       arguments: {'id': widget.id});
+                }
+
+                if (_model.isUpdateSelectedTagList) {
+                  getUtxoListWithHoldingAddress(
+                      _walletFeature.walletStatus!.utxoList,
+                      _walletBaseItem,
+                      accountIndexField,
+                      changeField,
+                      _walletType);
                 }
               },
               showFaucetIcon: true,

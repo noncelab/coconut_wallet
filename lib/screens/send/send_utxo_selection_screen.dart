@@ -20,6 +20,7 @@ import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
@@ -57,8 +58,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   late List<UTXO> _confirmedUtxoList;
   late List<UTXO> _selectedUtxoList;
-  // 선택된 태그를 가지고 있는 utxo 목록 길이
-  int _confirmedUtxoListLength = 0;
   // 선택된 태그
   String _selectedUtxoTagName = '전체';
   // txHashIndex - 태그 목록
@@ -147,8 +146,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
       _utxoTagMap[txHashIndex] = tags;
     }
-
-    _confirmedUtxoListLength = _confirmedUtxoList.length + 1;
     setState(() {});
   }
 
@@ -796,6 +793,29 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return;
     }
 
+    CustomDialogs.showCustomAlertDialog(
+      context,
+      title: '태그 적용',
+      message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
+      onConfirm: () {
+        Navigator.of(context).pop();
+        _moveToSendConfirm(true);
+      },
+      onCancel: () {
+        Navigator.of(context).pop();
+        _moveToSendConfirm(false);
+      },
+      confirmButtonText: '적용하기',
+      confirmButtonColor: MyColors.primary,
+      cancelButtonText: '아니오',
+    );
+  }
+
+  _moveToSendConfirm(isUpdate) {
+    _model.updateSelectedTxHashIndexList(
+        _selectedUtxoList.map((e) => '${e.transactionHash}${e.index}').toList(),
+        isUpdate: isUpdate);
+    Navigator.of(context).pop();
     Navigator.pushNamed(context, '/send-confirm', arguments: {
       'id': widget.id,
       'fullSendInfo': FullSendInfo(
@@ -1077,20 +1097,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         tags: _model.utxoTagList.map((e) => e.name).toList(),
                         onSelectedTag: (tagName) {
                           _selectedUtxoTagName = tagName;
-
-                          if (tagName == '전체') {
-                            _confirmedUtxoListLength =
-                                _confirmedUtxoList.length + 1;
-                          } else {
-                            _confirmedUtxoListLength = _utxoTagMap.entries
-                                    .where((entry) => entry.value
-                                        .any((e) => e.name == tagName))
-                                    .map((entry) => entry.key)
-                                    .toList()
-                                    .length +
-                                1;
-                          }
-
                           deselectAll();
                         },
                       ),
@@ -1101,7 +1107,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                       shrinkWrap: true,
                       padding: const EdgeInsets.only(
                           top: 0, bottom: 30, left: 16, right: 16),
-                      itemCount: _confirmedUtxoListLength,
+                      itemCount: _confirmedUtxoList.length + 1,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 0),
                       itemBuilder: (context, index) {

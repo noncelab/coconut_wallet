@@ -120,6 +120,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
             onBackPressed: () {
               _stopCamera();
               controller = null;
+              Navigator.pop(context);
             },
             backgroundColor: MyColors.black.withOpacity(0.95),
           ),
