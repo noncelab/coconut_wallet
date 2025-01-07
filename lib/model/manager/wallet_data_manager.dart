@@ -571,7 +571,7 @@ class WalletDataManager {
   /// txHashIndex 추가
   /// - walletId, name 으로 tag 목록 검색
   /// - 목록을 순환하면서 입력된 txHashIndex 추가
-  RealmResult<UtxoTag> addTxHashIndex(
+  RealmResult<UtxoTag> addTagToUtxo(
       int walletId, String name, String txHashIndex) {
     try {
       final tags = _realm

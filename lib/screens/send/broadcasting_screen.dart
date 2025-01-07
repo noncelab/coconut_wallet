@@ -183,9 +183,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           context: context,
           isActive: _isValidSignedTransaction,
           onNextPressed: () {
-            //var appState = Provider.of<AppStateModel>(context, listen: false);
-            // print(_model.selectedTxHashIndexList);
-
             if (_model.isNetworkOn == false) {
               CustomToast.showWarningToast(
                   context: context, text: ErrorCodes.networkError.message);
