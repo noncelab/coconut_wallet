@@ -892,30 +892,51 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                     '보낼 수량',
                                     style: Styles.body2Bold,
                                   ),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
-                                          style: Styles.body2Number,
+                                  const Spacer(),
+                                  Visibility(
+                                    visible: _isMaxMode,
+                                    child: Container(
+                                      padding: const EdgeInsets.only(bottom: 2),
+                                      margin: const EdgeInsets.only(
+                                          right: 4, bottom: 16),
+                                      height: 24,
+                                      width: 34,
+                                      decoration: BoxDecoration(
+                                        color: MyColors.defaultBackground,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '최대',
+                                          style: Styles.caption2.copyWith(
+                                            color: MyColors.white,
+                                            letterSpacing: 0.1,
+                                          ),
                                         ),
-                                        Selector<UpbitConnectModel, int?>(
-                                          selector: (context, model) =>
-                                              model.bitcoinPriceKrw,
-                                          builder: (context, bitcoinPriceKrw,
-                                              child) {
-                                            return Text(
-                                              bitcoinPriceKrw != null
-                                                  ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())}'
-                                                  : '',
-                                              style: Styles.balance2,
-                                            );
-                                          },
-                                        )
-                                      ],
+                                      ),
                                     ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
+                                        style: Styles.body2Number,
+                                      ),
+                                      Selector<UpbitConnectModel, int?>(
+                                        selector: (context, model) =>
+                                            model.bitcoinPriceKrw,
+                                        builder:
+                                            (context, bitcoinPriceKrw, child) {
+                                          return Text(
+                                            bitcoinPriceKrw != null
+                                                ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())}'
+                                                : '',
+                                            style: Styles.balance2,
+                                          );
+                                        },
+                                      )
+                                    ],
                                   ),
                                 ],
                               ),
