@@ -820,7 +820,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
   }
 
-  _moveToSendConfirm(List<String> updateList, {required bool allowTagTransfer}) {
+  _moveToSendConfirm(List<String> updateList,
+      {required bool allowTagTransfer}) {
     _model.updateSelectedTxHashIndexList(
         _selectedUtxoList.map((e) => '${e.transactionHash}${e.index}').toList(),
         allowTagTransfer: allowTagTransfer);
