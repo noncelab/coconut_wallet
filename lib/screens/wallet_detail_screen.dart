@@ -538,13 +538,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       minSize: 0,
                       color: MyColors.white,
                       child: SizedBox(
-                        width: 30,
+                        width: 35,
                         child: Center(
                           child: Text(
                             '받기',
-                            style: Styles.caption2.merge(
+                            style: Styles.caption.merge(
                               const TextStyle(
                                   color: MyColors.black,
+                                  fontFamily: 'Pretendard',
                                   fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -574,13 +575,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       minSize: 0,
                       color: MyColors.primary,
                       child: SizedBox(
-                        width: 30,
+                        width: 35,
                         child: Center(
                           child: Text(
                             '보내기',
-                            style: Styles.caption2.merge(
+                            style: Styles.caption.merge(
                               const TextStyle(
                                   color: MyColors.black,
+                                  fontFamily: 'Pretendard',
                                   fontWeight: FontWeight.w600),
                             ),
                           ),
