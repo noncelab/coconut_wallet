@@ -12,6 +12,7 @@ import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/manager/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/model/manager/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
+import 'package:coconut_wallet/model/manager/migration/migrator_ver2_1_0.dart';
 import 'package:coconut_wallet/model/manager/realm/model/coconut_wallet_data.dart';
 import 'package:coconut_wallet/model/manager/realm/realm_id_service.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager_cryptography.dart';
@@ -44,6 +45,8 @@ class WalletDataManager {
   List<WalletListItemBase>? _walletList;
   get walletList => _walletList;
 
+  final MigratorVer2_1_0 _migratorVer2_1_0 = MigratorVer2_1_0();
+
   WalletDataManager._internal();
 
   void _initRealm() {
@@ -63,10 +66,16 @@ class WalletDataManager {
   Future init(bool isSetPin) async {
     _initRealm();
 
+    bool needToMigrate = await _migratorVer2_1_0.needToMigrate();
+    String? hashedPin;
     if (isSetPin) {
-      var nonce = await _storageService.read(key: nonceField);
-      var hashedPin = await _storageService.read(key: pinField);
-      await _initCryptography(nonce!, hashedPin!);
+      hashedPin = await _storageService.read(key: pinField);
+      String? nonce = await _storageService.read(key: nonceField);
+      await _initCryptography(nonce, hashedPin!);
+    }
+
+    if (needToMigrate) {
+      await _migratorVer2_1_0.migrateWallets(_realm, _cryptography);
     }
 
     _isInitialized = true;
@@ -206,7 +215,6 @@ class WalletDataManager {
       try {
         await coconutWallet.fetchOnChainData(nodeConnector);
       } catch (e) {
-        // TODO:
         throw ErrorCodes.syncFailedError;
       }
       // assert(coconutWallet.walletStatus != null);
@@ -296,8 +304,6 @@ class WalletDataManager {
           existingTx = updateTargets.query(r'transactionHash = $0',
               [newTxList[i].transactionHash]).firstOrNull;
         }
-        Logger.log(
-            '--> existingTx: $existingTx, nextId: $nextId, timestamp: ${newTxList[i].timestamp}');
 
         RealmTransaction saveTarget;
         TempBroadcastTimeRecord? record = tempBroadcastTimeRecord
@@ -318,10 +324,7 @@ class WalletDataManager {
 
         // 코코넛 월렛 안의 지갑끼리 주고받은 경우를 위해 삭제 시점을 아래로 변경
         // 컨펌된 트랜잭션의 TempBroadcastTimeRecord 삭제
-        print(
-            '--> record: $record, newTxList[i].blockHeight: ${newTxList[i].blockHeight}');
         if (record != null && newTxList[i].blockHeight != 0) {
-          print('--> delete record!!!!');
           _realm.delete<TempBroadcastTimeRecord>(record);
         }
       }
@@ -470,8 +473,7 @@ class WalletDataManager {
   }
 
   void reset() {
-    _checkInitialized();
-
+    _initRealm();
     _realm.write(() {
       _realm.deleteAll<RealmWalletBase>();
       _realm.deleteAll<RealmMultisigWallet>();
@@ -480,6 +482,8 @@ class WalletDataManager {
     });
 
     _walletList = [];
+    _isInitialized = false;
+    _cryptography = null;
   }
 
   Future<List<String>> _createEncryptedDescriptionList(
@@ -527,6 +531,10 @@ class WalletDataManager {
       }
     });
 
+    await _saveNonceForEncryption(_cryptography!.nonce);
+  }
+
+  Future _saveNonceForEncryption(String nonce) async {
     await _storageService.write(key: nonceField, value: _cryptography!.nonce);
   }
 
