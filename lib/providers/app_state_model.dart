@@ -785,14 +785,6 @@ class AppStateModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isContainedTagName(String tagName, String txHashIndex) {
-    return _utxoTagList
-            .firstWhere((e) => e.name == tagName)
-            .utxoIdList
-            ?.contains(txHashIndex) ??
-        false;
-  }
-
   /// 전체 UtxoTagList 가져오기
   List<UtxoTag> loadUtxoTagList(int walletId) {
     Logger.log('-------------------------------------------------------------');

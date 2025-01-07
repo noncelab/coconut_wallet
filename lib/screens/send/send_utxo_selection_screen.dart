@@ -375,7 +375,22 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           _transaction.removeInputWithUtxo(utxo, _satsPerVb!, _walletBase,
               requiredSignature: _requiredSignature, totalSinger: _totalSigner);
         }
-        _selectedUtxoList.remove(utxo);
+
+        // 모두 선택 시 List.from 으로 전체 리스트, 필터 리스트 구분 될 때
+        // 라이브러리 UTXO에 copyWith 구현 필요함
+        final keyToRemove = '${utxo.transactionHash}_${utxo.index}';
+        _selectedUtxoList = _selectedUtxoList
+            .fold<Map<String, UTXO>>({}, (map, utxo) {
+              final key = '${utxo.transactionHash}_${utxo.index}';
+              if (key != keyToRemove) {
+                // 제거할 키가 아니면 추가
+                map[key] = utxo;
+              }
+              return map;
+            })
+            .values
+            .toList();
+
         if (_isSelectedUtxoEnough()) {
           _estimatedFee = _estimateFee(_satsPerVb!);
         }
@@ -398,8 +413,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           final transactionHash = utxo.transactionHash;
           final utxoIndex = utxo.index;
           final txHashIndex = '$transactionHash$utxoIndex';
-
-          return _model.isContainedTagName(_selectedUtxoTagName, txHashIndex);
+          return _utxoTagMap[txHashIndex]
+                  ?.any((e) => e.name == _selectedUtxoTagName) ??
+              false;
         }).toList();
         _selectedUtxoList = List.from(filteredList);
       } else {
@@ -1157,10 +1173,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                           final transactionHash = utxo.transactionHash;
                           final utxoIndex = utxo.index;
                           final txHashIndex = '$transactionHash$utxoIndex';
+                          final isContainedTagName = _utxoTagMap[txHashIndex]
+                                  ?.any(
+                                      (e) => e.name == _selectedUtxoTagName) ??
+                              false;
 
                           if (_selectedUtxoTagName != '전체' &&
-                              !_model.isContainedTagName(
-                                  _selectedUtxoTagName, txHashIndex)) {
+                              !isContainedTagName) {
                             return const SizedBox();
                           }
 
