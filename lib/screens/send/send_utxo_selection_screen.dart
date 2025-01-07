@@ -784,7 +784,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _updateFeeRate(satsPerVb);
   }
 
-  // TODO: 태그 적용 팝업 추가
   goNext() {
     _removeFilterDropdown();
     if (_model.isNetworkOn != true) {
@@ -793,25 +792,35 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return;
     }
 
-    CustomDialogs.showCustomAlertDialog(
-      context,
-      title: '태그 적용',
-      message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
-      onConfirm: () {
-        Navigator.of(context).pop();
-        _moveToSendConfirm(true);
-      },
-      onCancel: () {
-        Navigator.of(context).pop();
-        _moveToSendConfirm(false);
-      },
-      confirmButtonText: '적용하기',
-      confirmButtonColor: MyColors.primary,
-      cancelButtonText: '아니오',
-    );
+    List<String> updateList =
+        _selectedUtxoList.map((e) => '${e.transactionHash}${e.index}').toList();
+
+    bool isIncludeTag = updateList
+        .any((txHashIndex) => _utxoTagMap[txHashIndex]?.isNotEmpty == true);
+
+    if (isIncludeTag) {
+      CustomDialogs.showCustomAlertDialog(
+        context,
+        title: '태그 적용',
+        message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
+        onConfirm: () {
+          Navigator.of(context).pop();
+          _moveToSendConfirm(updateList, true);
+        },
+        onCancel: () {
+          Navigator.of(context).pop();
+          _moveToSendConfirm(updateList, false);
+        },
+        confirmButtonText: '적용하기',
+        confirmButtonColor: MyColors.primary,
+        cancelButtonText: '아니오',
+      );
+    } else {
+      _moveToSendConfirm(updateList, false);
+    }
   }
 
-  _moveToSendConfirm(isUpdate) {
+  _moveToSendConfirm(List<String> updateList, bool isUpdate) {
     _model.updateSelectedTxHashIndexList(
         _selectedUtxoList.map((e) => '${e.transactionHash}${e.index}').toList(),
         isUpdate: isUpdate);
