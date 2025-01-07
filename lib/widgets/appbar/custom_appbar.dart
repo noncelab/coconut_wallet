@@ -94,8 +94,9 @@ class CustomAppBar {
               onPressed: () {
                 if (onBackPressed != null) {
                   onBackPressed();
+                } else {
+                  Navigator.pop(context);
                 }
-                Navigator.pop(context);
               },
             )
           : null,

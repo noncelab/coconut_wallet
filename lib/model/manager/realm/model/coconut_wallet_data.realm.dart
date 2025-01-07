@@ -286,6 +286,7 @@ class RealmTransaction extends _RealmTransaction
     Iterable<String> inputAddressList = const [],
     Iterable<String> outputAddressList = const [],
     String? note,
+    DateTime? createdAt,
   }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'transactionHash', transactionHash);
@@ -301,6 +302,7 @@ class RealmTransaction extends _RealmTransaction
     RealmObjectBase.set<RealmList<String>>(
         this, 'outputAddressList', RealmList<String>(outputAddressList));
     RealmObjectBase.set(this, 'note', note);
+    RealmObjectBase.set(this, 'createdAt', createdAt);
   }
 
   RealmTransaction._();
@@ -382,6 +384,13 @@ class RealmTransaction extends _RealmTransaction
   set note(String? value) => RealmObjectBase.set(this, 'note', value);
 
   @override
+  DateTime? get createdAt =>
+      RealmObjectBase.get<DateTime>(this, 'createdAt') as DateTime?;
+  @override
+  set createdAt(DateTime? value) =>
+      RealmObjectBase.set(this, 'createdAt', value);
+
+  @override
   Stream<RealmObjectChanges<RealmTransaction>> get changes =>
       RealmObjectBase.getChanges<RealmTransaction>(this);
 
@@ -408,6 +417,7 @@ class RealmTransaction extends _RealmTransaction
       'inputAddressList': inputAddressList.toEJson(),
       'outputAddressList': outputAddressList.toEJson(),
       'note': note.toEJson(),
+      'createdAt': createdAt.toEJson(),
     };
   }
 
@@ -432,6 +442,7 @@ class RealmTransaction extends _RealmTransaction
           inputAddressList: fromEJson(ejson['inputAddressList']),
           outputAddressList: fromEJson(ejson['outputAddressList']),
           note: fromEJson(ejson['note']),
+          createdAt: fromEJson(ejson['createdAt']),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -458,6 +469,7 @@ class RealmTransaction extends _RealmTransaction
       SchemaProperty('outputAddressList', RealmPropertyType.string,
           collectionType: RealmCollectionType.list),
       SchemaProperty('note', RealmPropertyType.string, optional: true),
+      SchemaProperty('createdAt', RealmPropertyType.timestamp, optional: true),
     ]);
   }();
 
@@ -529,6 +541,277 @@ class RealmIntegerId extends _RealmIntegerId
         ObjectType.realmObject, RealmIntegerId, 'RealmIntegerId', [
       SchemaProperty('key', RealmPropertyType.string, primaryKey: true),
       SchemaProperty('value', RealmPropertyType.int),
+    ]);
+  }();
+
+  @override
+  SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
+}
+
+class TempBroadcastTimeRecord extends _TempBroadcastTimeRecord
+    with RealmEntity, RealmObjectBase, RealmObject {
+  TempBroadcastTimeRecord(
+    String transactionHash,
+    DateTime createdAt,
+  ) {
+    RealmObjectBase.set(this, 'transactionHash', transactionHash);
+    RealmObjectBase.set(this, 'createdAt', createdAt);
+  }
+
+  TempBroadcastTimeRecord._();
+
+  @override
+  String get transactionHash =>
+      RealmObjectBase.get<String>(this, 'transactionHash') as String;
+  @override
+  set transactionHash(String value) =>
+      RealmObjectBase.set(this, 'transactionHash', value);
+
+  @override
+  DateTime get createdAt =>
+      RealmObjectBase.get<DateTime>(this, 'createdAt') as DateTime;
+  @override
+  set createdAt(DateTime value) =>
+      RealmObjectBase.set(this, 'createdAt', value);
+
+  @override
+  Stream<RealmObjectChanges<TempBroadcastTimeRecord>> get changes =>
+      RealmObjectBase.getChanges<TempBroadcastTimeRecord>(this);
+
+  @override
+  Stream<RealmObjectChanges<TempBroadcastTimeRecord>> changesFor(
+          [List<String>? keyPaths]) =>
+      RealmObjectBase.getChangesFor<TempBroadcastTimeRecord>(this, keyPaths);
+
+  @override
+  TempBroadcastTimeRecord freeze() =>
+      RealmObjectBase.freezeObject<TempBroadcastTimeRecord>(this);
+
+  EJsonValue toEJson() {
+    return <String, dynamic>{
+      'transactionHash': transactionHash.toEJson(),
+      'createdAt': createdAt.toEJson(),
+    };
+  }
+
+  static EJsonValue _toEJson(TempBroadcastTimeRecord value) => value.toEJson();
+  static TempBroadcastTimeRecord _fromEJson(EJsonValue ejson) {
+    if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
+    return switch (ejson) {
+      {
+        'transactionHash': EJsonValue transactionHash,
+        'createdAt': EJsonValue createdAt,
+      } =>
+        TempBroadcastTimeRecord(
+          fromEJson(transactionHash),
+          fromEJson(createdAt),
+        ),
+      _ => raiseInvalidEJson(ejson),
+    };
+  }
+
+  static final schema = () {
+    RealmObjectBase.registerFactory(TempBroadcastTimeRecord._);
+    register(_toEJson, _fromEJson);
+    return const SchemaObject(ObjectType.realmObject, TempBroadcastTimeRecord,
+        'TempBroadcastTimeRecord', [
+      SchemaProperty('transactionHash', RealmPropertyType.string,
+          primaryKey: true),
+      SchemaProperty('createdAt', RealmPropertyType.timestamp),
+    ]);
+  }();
+
+  @override
+  SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
+}
+
+class RealmUtxoTag extends _RealmUtxoTag
+    with RealmEntity, RealmObjectBase, RealmObject {
+  RealmUtxoTag(
+    String id,
+    int walletId,
+    String name,
+    int colorIndex,
+    DateTime createAt, {
+    RealmWalletBase? walletBase,
+    Iterable<RealmUtxoId> utxoIdList = const [],
+  }) {
+    RealmObjectBase.set(this, 'id', id);
+    RealmObjectBase.set(this, 'walletId', walletId);
+    RealmObjectBase.set(this, 'walletBase', walletBase);
+    RealmObjectBase.set(this, 'name', name);
+    RealmObjectBase.set(this, 'colorIndex', colorIndex);
+    RealmObjectBase.set<RealmList<RealmUtxoId>>(
+        this, 'utxoIdList', RealmList<RealmUtxoId>(utxoIdList));
+    RealmObjectBase.set(this, 'createAt', createAt);
+  }
+
+  RealmUtxoTag._();
+
+  @override
+  String get id => RealmObjectBase.get<String>(this, 'id') as String;
+  @override
+  set id(String value) => RealmObjectBase.set(this, 'id', value);
+
+  @override
+  int get walletId => RealmObjectBase.get<int>(this, 'walletId') as int;
+  @override
+  set walletId(int value) => RealmObjectBase.set(this, 'walletId', value);
+
+  @override
+  RealmWalletBase? get walletBase =>
+      RealmObjectBase.get<RealmWalletBase>(this, 'walletBase')
+          as RealmWalletBase?;
+  @override
+  set walletBase(covariant RealmWalletBase? value) =>
+      RealmObjectBase.set(this, 'walletBase', value);
+
+  @override
+  String get name => RealmObjectBase.get<String>(this, 'name') as String;
+  @override
+  set name(String value) => RealmObjectBase.set(this, 'name', value);
+
+  @override
+  int get colorIndex => RealmObjectBase.get<int>(this, 'colorIndex') as int;
+  @override
+  set colorIndex(int value) => RealmObjectBase.set(this, 'colorIndex', value);
+
+  @override
+  RealmList<RealmUtxoId> get utxoIdList =>
+      RealmObjectBase.get<RealmUtxoId>(this, 'utxoIdList')
+          as RealmList<RealmUtxoId>;
+  @override
+  set utxoIdList(covariant RealmList<RealmUtxoId> value) =>
+      throw RealmUnsupportedSetError();
+
+  @override
+  DateTime get createAt =>
+      RealmObjectBase.get<DateTime>(this, 'createAt') as DateTime;
+  @override
+  set createAt(DateTime value) => RealmObjectBase.set(this, 'createAt', value);
+
+  @override
+  Stream<RealmObjectChanges<RealmUtxoTag>> get changes =>
+      RealmObjectBase.getChanges<RealmUtxoTag>(this);
+
+  @override
+  Stream<RealmObjectChanges<RealmUtxoTag>> changesFor(
+          [List<String>? keyPaths]) =>
+      RealmObjectBase.getChangesFor<RealmUtxoTag>(this, keyPaths);
+
+  @override
+  RealmUtxoTag freeze() => RealmObjectBase.freezeObject<RealmUtxoTag>(this);
+
+  EJsonValue toEJson() {
+    return <String, dynamic>{
+      'id': id.toEJson(),
+      'walletId': walletId.toEJson(),
+      'walletBase': walletBase.toEJson(),
+      'name': name.toEJson(),
+      'colorIndex': colorIndex.toEJson(),
+      'utxoIdList': utxoIdList.toEJson(),
+      'createAt': createAt.toEJson(),
+    };
+  }
+
+  static EJsonValue _toEJson(RealmUtxoTag value) => value.toEJson();
+  static RealmUtxoTag _fromEJson(EJsonValue ejson) {
+    if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
+    return switch (ejson) {
+      {
+        'id': EJsonValue id,
+        'walletId': EJsonValue walletId,
+        'name': EJsonValue name,
+        'colorIndex': EJsonValue colorIndex,
+        'createAt': EJsonValue createAt,
+      } =>
+        RealmUtxoTag(
+          fromEJson(id),
+          fromEJson(walletId),
+          fromEJson(name),
+          fromEJson(colorIndex),
+          fromEJson(createAt),
+          walletBase: fromEJson(ejson['walletBase']),
+          utxoIdList: fromEJson(ejson['utxoIdList']),
+        ),
+      _ => raiseInvalidEJson(ejson),
+    };
+  }
+
+  static final schema = () {
+    RealmObjectBase.registerFactory(RealmUtxoTag._);
+    register(_toEJson, _fromEJson);
+    return const SchemaObject(
+        ObjectType.realmObject, RealmUtxoTag, 'RealmUtxoTag', [
+      SchemaProperty('id', RealmPropertyType.string, primaryKey: true),
+      SchemaProperty('walletId', RealmPropertyType.int),
+      SchemaProperty('walletBase', RealmPropertyType.object,
+          optional: true, linkTarget: 'RealmWalletBase'),
+      SchemaProperty('name', RealmPropertyType.string),
+      SchemaProperty('colorIndex', RealmPropertyType.int),
+      SchemaProperty('utxoIdList', RealmPropertyType.object,
+          linkTarget: 'RealmUtxoId', collectionType: RealmCollectionType.list),
+      SchemaProperty('createAt', RealmPropertyType.timestamp),
+    ]);
+  }();
+
+  @override
+  SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
+}
+
+class RealmUtxoId extends _RealmUtxoId
+    with RealmEntity, RealmObjectBase, RealmObject {
+  RealmUtxoId(
+    String id,
+  ) {
+    RealmObjectBase.set(this, 'id', id);
+  }
+
+  RealmUtxoId._();
+
+  @override
+  String get id => RealmObjectBase.get<String>(this, 'id') as String;
+  @override
+  set id(String value) => RealmObjectBase.set(this, 'id', value);
+
+  @override
+  Stream<RealmObjectChanges<RealmUtxoId>> get changes =>
+      RealmObjectBase.getChanges<RealmUtxoId>(this);
+
+  @override
+  Stream<RealmObjectChanges<RealmUtxoId>> changesFor(
+          [List<String>? keyPaths]) =>
+      RealmObjectBase.getChangesFor<RealmUtxoId>(this, keyPaths);
+
+  @override
+  RealmUtxoId freeze() => RealmObjectBase.freezeObject<RealmUtxoId>(this);
+
+  EJsonValue toEJson() {
+    return <String, dynamic>{
+      'id': id.toEJson(),
+    };
+  }
+
+  static EJsonValue _toEJson(RealmUtxoId value) => value.toEJson();
+  static RealmUtxoId _fromEJson(EJsonValue ejson) {
+    if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
+    return switch (ejson) {
+      {
+        'id': EJsonValue id,
+      } =>
+        RealmUtxoId(
+          fromEJson(id),
+        ),
+      _ => raiseInvalidEJson(ejson),
+    };
+  }
+
+  static final schema = () {
+    RealmObjectBase.registerFactory(RealmUtxoId._);
+    register(_toEJson, _fromEJson);
+    return const SchemaObject(
+        ObjectType.realmObject, RealmUtxoId, 'RealmUtxoId', [
+      SchemaProperty('id', RealmPropertyType.string, primaryKey: true),
     ]);
   }();
 

@@ -38,6 +38,9 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
   int _tooltipRemainingTime = 0;
   int? removedWalletId;
 
+  // TODO: AppStateModel 분리 후 제거
+  Object? _navigatorPopResult;
+
   @override
   void initState() {
     super.initState();
@@ -95,7 +98,6 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
     final model = Provider.of<AppStateModel>(context, listen: false);
     final singlesigListItem = model.getWalletById(widget.id);
 
-    // TODO: SingleSignatureWallet
     final singlesigWallet =
         singlesigListItem.walletBase as SingleSignatureWallet;
 
@@ -107,10 +109,12 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
       child: Scaffold(
         backgroundColor: MyColors.black,
         appBar: CustomAppBar.build(
-          title: '지갑 정보',
-          context: context,
-          hasRightIcon: false,
-        ),
+            title: '지갑 정보',
+            context: context,
+            hasRightIcon: false,
+            onBackPressed: () {
+              Navigator.pop(context, _navigatorPopResult);
+            }),
         body: SafeArea(
           child: SingleChildScrollView(
             child: Stack(
@@ -136,27 +140,6 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 24),
                             child: Column(
                               children: [
-                                /*InformationRowItem(
-                                      label: '잔액 상세 보기',
-                                      showIcon: true,
-                                      onPressed: () {
-                                        if (model.walletInitState ==
-                                            WalletInitState.processing) {
-                                          CustomToast.showToast(
-                                              context: context,
-                                              text:
-                                                  "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
-                                          return;
-                                        }
-                                        _removeTooltip();
-                                        Navigator.pushNamed(
-                                            context, '/utxo-list',
-                                            arguments: {'id': widget.id});
-                                      },
-                                    ),
-                                    const Divider(
-                                        color: MyColors.transparentWhite_12,
-                                        height: 1),*/
                                 InformationRowItem(
                                   label: '전체 주소 보기',
                                   showIcon: true,
@@ -217,8 +200,11 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                 InformationRowItem(
                                   label: '태그 관리',
                                   showIcon: true,
-                                  onPressed: () {
-                                    Navigator.pushNamed(context, '/utxo-tag');
+                                  onPressed: () async {
+                                    _navigatorPopResult =
+                                        await Navigator.pushNamed(
+                                            context, '/utxo-tag',
+                                            arguments: {'id': widget.id});
                                   },
                                 ),
                               ],

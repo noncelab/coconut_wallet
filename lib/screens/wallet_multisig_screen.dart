@@ -46,6 +46,9 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
   late MultisigWalletListItem _multiWallet;
   late List<KeyStore> _keystoreList;
 
+  // TODO: AppStateModel 분리 후 제거
+  Object? _navigatorPopResult;
+
   @override
   void initState() {
     super.initState();
@@ -150,22 +153,11 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
     Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
   }
 
-  _moveToUtxoTag() {
+  _moveToUtxoTag() async {
     _removeTooltip();
-    Navigator.pushNamed(context, '/utxo-tag');
+    _navigatorPopResult = await Navigator.pushNamed(context, '/utxo-tag',
+        arguments: {'id': widget.id});
   }
-
-  // _moveToBalance() {
-  //   if (_appStateModel.walletInitState == WalletInitState.processing) {
-  //     CustomToast.showToast(
-  //       context: context,
-  //       text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.",
-  //     );
-  //     return;
-  //   }
-  //   _removeTooltip();
-  //   Navigator.pushNamed(context, '/utxo-list', arguments: {'id': widget.id});
-  // }
 
   _showXPubBottomSheet(String qrData) async {
     _removeTooltip();
@@ -204,10 +196,12 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
       child: Scaffold(
         backgroundColor: MyColors.black,
         appBar: CustomAppBar.build(
-          title: '${_multiWallet.name} 정보',
-          context: context,
-          hasRightIcon: false,
-        ),
+            title: '${_multiWallet.name} 정보',
+            context: context,
+            hasRightIcon: false,
+            onBackPressed: () {
+              Navigator.pop(context, _navigatorPopResult);
+            }),
         body: SafeArea(
           child: SingleChildScrollView(
             child: Stack(
@@ -460,12 +454,6 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                // InformationRowItem(
-                //   label: '잔액 상세 보기',
-                //   showIcon: true,
-                //   onPressed: _moveToBalance,
-                // ),
-                // const Divider(color: MyColors.transparentWhite_12, height: 1),
                 InformationRowItem(
                   label: '전체 주소 보기',
                   showIcon: true,

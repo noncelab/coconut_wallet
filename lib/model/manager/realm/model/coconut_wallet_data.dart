@@ -44,6 +44,7 @@ class _RealmTransaction {
   late List<String> inputAddressList;
   late List<String> outputAddressList;
   String? note;
+  DateTime? createdAt;
 }
 
 @RealmModel()
@@ -51,4 +52,29 @@ class _RealmIntegerId {
   @PrimaryKey()
   late String key; // "RealmTransaction"처럼 테이블 이름
   late int value; // 마지막으로 사용한 id
+}
+
+@RealmModel()
+class _TempBroadcastTimeRecord {
+  @PrimaryKey()
+  late String transactionHash;
+  late DateTime createdAt;
+}
+
+@RealmModel()
+class _RealmUtxoTag {
+  @PrimaryKey()
+  late String id; // UUID 사용
+  late int walletId;
+  late _RealmWalletBase? walletBase;
+  late String name;
+  late int colorIndex;
+  late List<_RealmUtxoId> utxoIdList;
+  late DateTime createAt;
+}
+
+@RealmModel()
+class _RealmUtxoId {
+  @PrimaryKey()
+  late String id;
 }

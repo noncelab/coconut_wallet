@@ -92,7 +92,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   Unit _current = Unit.btc;
   List<Transfer> _txList = [];
 
-// 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
+  // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
   List<model.UTXO> _utxoList = [];
   late WalletType _walletType;
   static String changeField = 'change';
@@ -128,14 +128,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     _walletType = _walletBaseItem.walletType;
     if (_model.walletInitState == WalletInitState.finished) {
-      _utxoList = getUtxoListWithHoldingAddress(_walletFeature.getUtxoList(),
+      getUtxoListWithHoldingAddress(_walletFeature.getUtxoList(),
           _walletBaseItem, accountIndexField, changeField, _walletType);
-    }
-
-    if (_utxoList.isNotEmpty && mounted) {
-      setState(() {
-        _isUtxoListLoadComplete = true;
-      });
     }
 
     List<Transfer>? newTxList = _model.getTxList(widget.id);
@@ -257,13 +251,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _model.walletInitState == WalletInitState.finished) {
       _checkTxCount(
           _walletBaseItem.txCount, _walletBaseItem.isLatestTxBlockHeightZero);
-      _utxoList = getUtxoListWithHoldingAddress(_walletFeature.getUtxoList(),
+      getUtxoListWithHoldingAddress(_walletFeature.getUtxoList(),
           _walletBaseItem, accountIndexField, changeField, _walletType);
-      if (mounted) {
-        setState(() {
-          _isUtxoListLoadComplete = true;
-        });
-      }
     }
     _prevWalletInitState = _model.walletInitState;
   }
@@ -793,9 +782,28 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   return ShrinkAnimationButton(
                     defaultColor: Colors.transparent,
                     borderRadius: 20,
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/utxo-detail',
-                          arguments: {'utxo': _utxoList[itemIndex]});
+                    onPressed: () async {
+                      final txHash = _utxoList[itemIndex].txHash;
+                      await Navigator.pushNamed(
+                        context,
+                        '/utxo-detail',
+                        arguments: {
+                          'utxo': _utxoList[itemIndex],
+                          'id': widget.id,
+                        },
+                      );
+
+                      if (_model.isUpdateSelectedTagList) {
+                        _model.setIsUpdateSelectedTagList(false);
+                        for (var utxo in _utxoList) {
+                          if (utxo.txHash == txHash) {
+                            utxo.tags?.clear();
+                            utxo.tags?.addAll(_model.selectedTagList);
+                            setState(() {});
+                            break;
+                          }
+                        }
+                      }
                     },
                     child: UTXOItemCard(
                       utxo: _utxoList[itemIndex],
@@ -812,15 +820,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   padding: const EdgeInsets.only(top: 100),
                   child: Align(
                     alignment: Alignment.topCenter,
-                    child: !_isUtxoListLoadComplete
-                        ? const CircularProgressIndicator(
-                            color: MyColors.white,
-                          )
-                        : const Text(
-                            '사용 가능한 UTXO가 없어요\n새로운 거래를 통해 UTXO를 추가할 수 있어요',
-                            style: Styles.body1,
-                            textAlign: TextAlign.center,
-                          ),
+                    child: Text(
+                      _isUtxoListLoadComplete ? 'UTXO가 없어요' : 'UTXO를 확인하는 중이예요',
+                      style: Styles.body1,
+                      textAlign: TextAlign.center,
+                    ),
                   )),
             ),
     );
@@ -868,13 +872,23 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         walletBaseItem: _walletBaseItem,
                       ));
                 },
-                onTitlePressed: () {
+                onTitlePressed: () async {
                   if (_walletBaseItem.walletType == WalletType.multiSignature) {
-                    Navigator.pushNamed(context, '/wallet-multisig',
+                    await Navigator.pushNamed(context, '/wallet-multisig',
                         arguments: {'id': widget.id});
                   } else {
-                    Navigator.pushNamed(context, '/wallet-setting',
+                    await Navigator.pushNamed(context, '/wallet-setting',
                         arguments: {'id': widget.id});
+                  }
+
+                  if (_model.isUpdateSelectedTagList) {
+                    _model.setIsUpdateSelectedTagList(false);
+                    getUtxoListWithHoldingAddress(
+                        _walletFeature.getUtxoList(),
+                        _walletBaseItem,
+                        accountIndexField,
+                        changeField,
+                        _walletType);
                   }
                 },
                 showFaucetIcon: true,
@@ -1078,33 +1092,42 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       ),
     );
   }
-}
 
-List<model.UTXO> getUtxoListWithHoldingAddress(
-    List<UTXO> utxoEntities,
-    WalletListItemBase walletBaseItem,
-    String accountIndexField,
-    String changeField,
-    WalletType walletType) {
-  List<model.UTXO> utxos = [];
-  for (var element in utxoEntities) {
-    Map<String, int> changeAndAccountIndex = getChangeAndAccountElements(
-        element.derivationPath, walletType, accountIndexField, changeField);
+  getUtxoListWithHoldingAddress(
+      List<UTXO> utxoEntities,
+      WalletListItemBase walletBaseItem,
+      String accountIndexField,
+      String changeField,
+      WalletType walletType) {
+    List<model.UTXO> utxos = [];
+    for (var element in utxoEntities) {
+      Map<String, int> changeAndAccountIndex = getChangeAndAccountElements(
+          element.derivationPath, walletType, accountIndexField, changeField);
 
-    String ownedAddress = walletBaseItem.walletBase.getAddress(
-        changeAndAccountIndex[accountIndexField]!,
-        isChange: changeAndAccountIndex[changeField]! == 1);
+      String ownedAddress = walletBaseItem.walletBase.getAddress(
+          changeAndAccountIndex[accountIndexField]!,
+          isChange: changeAndAccountIndex[changeField]! == 1);
 
-    utxos.add(model.UTXO(
+      final txHashIndex = '${element.transactionHash}${element.index}';
+      final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, txHashIndex);
+
+      utxos.add(model.UTXO(
         element.timestamp.toString(),
         element.blockHeight.toString(),
         element.amount,
         ownedAddress,
         element.derivationPath,
         element.transactionHash,
-        element.index));
+        element.index,
+        tags: tags,
+      ));
+    }
+
+    setState(() {
+      _utxoList = utxos;
+      _isUtxoListLoadComplete = true;
+    });
   }
-  return utxos;
 }
 
 Map<String, int> getChangeAndAccountElements(
@@ -1255,70 +1278,100 @@ class TransactionRowItem extends StatefulWidget {
 
 class _TransactionRowItemState extends State<TransactionRowItem> {
   Widget _getStatusWidget() {
+    TextStyle fontStyle = Styles.body2.merge(
+      const TextStyle(
+        fontWeight: FontWeight.w500,
+        height: 21 / 14,
+      ),
+    );
     switch (widget.status) {
       case TransactionStatus.received:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-received.svg'),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-received.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '받기 완료',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.receiving:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-receiving.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-receiving.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '받는 중',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.sent:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-sent.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-sent.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '보내기 완료',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.sending:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-sending.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-sending.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '보내는 중',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.self:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-self.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-self.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '받기 완료',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
       case TransactionStatus.selfsending:
         return Row(
           children: [
-            SvgPicture.asset('assets/svg/tx-self-sending.svg', width: 24),
-            const SizedBox(width: 5),
-            const Text(
+            SvgPicture.asset(
+              'assets/svg/tx-self-sending.svg',
+              width: 28,
+              height: 28,
+            ),
+            const SizedBox(width: 8),
+            Text(
               '보내는 중',
-              style: Styles.body1,
+              style: fontStyle,
             )
           ],
         );
@@ -1335,8 +1388,9 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
           widget.currentUnit == Unit.btc
               ? '+${satoshiToBitcoinString(widget.tx.amount!)}'
               : '+${addCommasToIntegerPart(widget.tx.amount!.toDouble())}',
-          style: Styles.body1Number.merge(const TextStyle(
-              color: MyColors.white, fontWeight: FontWeight.w500)),
+          style: Styles.body1Number.merge(
+            const TextStyle(color: MyColors.white, height: 24 / 16),
+          ),
         );
       case TransactionStatus.self:
       case TransactionStatus.selfsending:
@@ -1362,11 +1416,14 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
     List<String>? transactionTimeStamp = widget.tx.timestamp != null
         ? DateTimeUtil.formatTimeStamp(widget.tx.timestamp!.toLocal())
         : null;
+
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,
         onPressed: () {
-          Navigator.pushNamed(context, '/transaction-detail',
-              arguments: {'id': widget.id, 'tx': widget.tx});
+          Navigator.pushNamed(context, '/transaction-detail', arguments: {
+            'id': widget.id,
+            'txHash': widget.tx.transactionHash
+          });
         },
         borderRadius: MyBorder.defaultRadiusValue,
         child: Container(
@@ -1379,14 +1436,34 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                transactionTimeStamp != null
-                    ? '${transactionTimeStamp[0]} | ${transactionTimeStamp[1]}'
-                    : '',
-                style: Styles.caption,
+              Row(
+                children: [
+                  Text(
+                    transactionTimeStamp != null ? transactionTimeStamp[0] : '',
+                    style: Styles.caption,
+                  ),
+                  const SizedBox(
+                    width: 8,
+                  ),
+                  Text(
+                    '|',
+                    style: Styles.caption.merge(
+                      const TextStyle(
+                        color: MyColors.transparentWhite_40,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 8,
+                  ),
+                  Text(
+                    transactionTimeStamp != null ? transactionTimeStamp[1] : '',
+                    style: Styles.caption,
+                  ),
+                ],
               ),
               const SizedBox(
-                height: 4.0,
+                height: 5.0,
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

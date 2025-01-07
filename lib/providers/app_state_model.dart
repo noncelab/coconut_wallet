@@ -4,7 +4,9 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
+import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/screens/wallet_list_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
@@ -16,6 +18,7 @@ import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/repositories/faucet_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:uuid/uuid.dart';
 
 // ignore: constant_identifier_names
 const String WALLET_LIST = "WALLET_LIST";
@@ -349,6 +352,7 @@ class AppStateModel extends ChangeNotifier {
 
   Future<void> deleteWallet(int id) async {
     _walletDataManager.deleteWallet(id);
+    _walletDataManager.deleteAllUtxoTag(id);
     _walletItemList = _walletDataManager.walletList;
     if (_walletItemList.isEmpty) {
       _subStateModel.saveNotEmptyWalletList(false);
@@ -561,6 +565,10 @@ class AppStateModel extends ChangeNotifier {
   //   return needToUpdateList;
   // }
 
+  List<TransferDTO>? getTxList(int walletId) {
+    return _walletDataManager.getTxList(walletId);
+  }
+
   bool _needsUpdate(dynamic walletItem, WalletStatus syncResult) {
     return walletItem.isLatestTxBlockHeightZero ||
         syncResult.transactionList.length != walletItem.txCount ||
@@ -579,10 +587,6 @@ class AppStateModel extends ChangeNotifier {
   //     }
   //   }
   // }
-
-  List<Transfer>? getTxList(int walletId) {
-    return _walletDataManager.getTxList(walletId);
-  }
 
   // Future<void> _updateMultisigWallet(
   //     MultisigWalletListItem wallet, WalletStatus syncResult) async {
@@ -725,12 +729,225 @@ class AppStateModel extends ChangeNotifier {
     }
   }
 
-  Future<Result<String, CoconutError>> broadcast(String signedTx) async {
+  Future<Result<String, CoconutError>> broadcast(Transaction signedTx) async {
     await _initNodeConnectionWhenIsNull();
 
     Result<String, CoconutError> result =
-        await _nodeConnector!.broadcast(signedTx);
+        await _nodeConnector!.broadcast(signedTx.serialize());
+    _walletDataManager
+        .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
+        .catchError((_) {
+      // ignore intentionally
+      Logger.error(_);
+    });
     return result;
+  }
+
+  /// TODO: Model 분리 ----------------------------------------------------------
+  /// 전체 UtxoTagList
+  List<UtxoTag> _utxoTagList = [];
+  List<UtxoTag> get utxoTagList => _utxoTagList;
+
+  /// 선택된 UtxoTagList
+  List<UtxoTag> _selectedTagList = [];
+  List<UtxoTag> get selectedTagList => _selectedTagList;
+
+  /// 메모, 태그 상태 관리
+  Transfer? _transaction;
+  Transfer? get transaction => _transaction;
+
+  /// 선택된 태그 리스트 변경 여부
+  bool _isUpdateSelectedTagList = false;
+  bool get isUpdateSelectedTagList => _isUpdateSelectedTagList;
+
+  /// 선택된 태그 리스트 변경 여부 on/off
+  void setIsUpdateSelectedTagList(value) {
+    _isUpdateSelectedTagList = value;
+  }
+
+  /// 지갑 상세 화면 진입시 태그 관련 데이터
+  void initUtxoTagScreenTagData(int walletId) {
+    _utxoTagList = loadUtxoTagList(walletId);
+    notifyListeners();
+  }
+
+  /// utxo 상세 화면 진입시 태그 관련 데이터
+  void initTransactionDetailScreenTagData(int walletId, String txHash) {
+    _transaction = loadTransaction(walletId, txHash);
+    notifyListeners();
+  }
+
+  /// utxo 상세 화면 진입시 태그 관련 데이터
+  void initUtxoDetailScreenTagData(int walletId, String txHash, int index) {
+    _utxoTagList = loadUtxoTagList(walletId);
+    _selectedTagList = loadUtxoTagListByTxHashIndex(walletId, '$txHash$index');
+    _transaction = loadTransaction(walletId, txHash);
+    notifyListeners();
+  }
+
+  /// 전체 UtxoTagList 가져오기
+  List<UtxoTag> loadUtxoTagList(int walletId) {
+    Logger.log('-------------------------------------------------------------');
+    Logger.log('loadUtxoTagList(walletId: $walletId)');
+    final result = _walletDataManager.loadUtxoTagList(walletId);
+    if (result.isSuccess) {
+      Logger.log(result);
+    } else {
+      Logger.error(result);
+    }
+    return result.data ?? [];
+  }
+
+  /// 선택된 UtxoTagList 가져오기
+  List<UtxoTag> loadUtxoTagListByTxHashIndex(int walletId, String txHashIndex) {
+    Logger.log('-------------------------------------------------------------');
+    Logger.log(
+        'loadUtxoTagListByTxHashIndex(walletId: $walletId, txHashIndex: $txHashIndex)');
+    final result =
+        _walletDataManager.loadUtxoTagListByTxHashIndex(walletId, txHashIndex);
+    if (result.isSuccess) {
+      Logger.log(result);
+    } else {
+      Logger.error(result);
+    }
+    return result.data ?? [];
+  }
+
+  /// transaction 가져오기
+  TransferDTO? loadTransaction(int id, String txHash) {
+    Logger.log('-------------------------------------------------------------');
+    Logger.log('loadTransaction(id: $id, txHash: $txHash)');
+    final result = _walletDataManager.loadTransaction(id, txHash);
+    if (result.isSuccess) {
+      Logger.log(result);
+    } else {
+      Logger.error(result);
+    }
+    return result.data;
+  }
+
+  /// - 새 태그 추가
+  /// - 태그 관리 화면
+  void addUtxoTag(UtxoTag utxoTag) {
+    Logger.log('-------------------------------------------------------------');
+    Logger.log('addUtxoTag(utxoTag: $utxoTag)');
+    final id = const Uuid().v4();
+    final result = _walletDataManager.addUtxoTag(
+        id, utxoTag.walletId, utxoTag.name, utxoTag.colorIndex);
+    if (result.isSuccess) {
+      Logger.log(result);
+      _isUpdateSelectedTagList = true;
+      _utxoTagList = loadUtxoTagList(utxoTag.walletId);
+      notifyListeners();
+    } else {
+      Logger.error(result);
+    }
+  }
+
+  /// - 선택된 태그 편집
+  /// - 태그 관리 화면
+  void updateUtxoTag(UtxoTag utxoTag) {
+    Logger.log('-------------------------------------------------------------');
+    Logger.log('updateUtxoTag(utxoTag: $utxoTag)');
+    final result = _walletDataManager.updateUtxoTag(
+        utxoTag.id, utxoTag.name, utxoTag.colorIndex, utxoTag.utxoIdList ?? []);
+    if (result.isSuccess) {
+      Logger.log(result);
+      _isUpdateSelectedTagList = true;
+      _utxoTagList = loadUtxoTagList(utxoTag.walletId);
+      notifyListeners();
+    } else {
+      Logger.error(result);
+    }
+  }
+
+  /// - 선택된 태그 삭제
+  /// - 태그 관리 화면
+  void deleteUtxoTag(UtxoTag utxoTag) {
+    Logger.log('-------------------------------------------------------------');
+    Logger.log('deleteUtxoTag(utxoTag: $utxoTag)');
+    final result = _walletDataManager.deleteUtxoTag(utxoTag.id);
+    if (result.isSuccess) {
+      Logger.log(result);
+      _isUpdateSelectedTagList = true;
+      _utxoTagList = loadUtxoTagList(utxoTag.walletId);
+      notifyListeners();
+    } else {
+      Logger.error(result);
+    }
+  }
+
+  /// - 선택된 태그 리스트 편집(선택 편집, 목록 추가)
+  /// - Utxo 상세 화면 태그 편집
+  void updateUtxoTagList({
+    required List<String> selectedNames,
+    required List<UtxoTag> addTags,
+    required int walletId,
+    required String txHashIndex,
+  }) {
+    _isUpdateSelectedTagList = true;
+    Logger.log('-------------------------------------------------------------');
+    Logger.log('updateUtxoTagList('
+        'selectedNames: $selectedNames,'
+        'addTags: $addTags,'
+        'walletId: $walletId,'
+        'txHashIndex: $txHashIndex,'
+        ')');
+
+    // txHashIndex 삭제
+    final deleteTxHashIndexResult = _walletDataManager.deleteTxHashIndex(
+        walletId, txHashIndex, selectedNames.length);
+
+    if (deleteTxHashIndexResult.isSuccess) {
+      Logger.log('deleteTxHashIndex success = ${deleteTxHashIndexResult.data}');
+      // 새로운 태그 추가
+      for (var utxoTag in addTags) {
+        final id = const Uuid().v4();
+        final addUtxoTagResult = _walletDataManager.addUtxoTag(
+            id, walletId, utxoTag.name, utxoTag.colorIndex);
+
+        if (addUtxoTagResult.isSuccess) {
+          Logger.log(addUtxoTagResult);
+        } else {
+          Logger.error(addUtxoTagResult);
+        }
+      }
+
+      // 선택된 name 에 해당하는 태그에 txHashIndex 추가
+      for (var name in selectedNames) {
+        final addTxHashIndexResult =
+            _walletDataManager.addTxHashIndex(walletId, name, txHashIndex);
+
+        if (addTxHashIndexResult.isSuccess) {
+          Logger.log(addTxHashIndexResult);
+        } else {
+          Logger.error(addTxHashIndexResult);
+        }
+      }
+
+      _utxoTagList = loadUtxoTagList(walletId);
+      _selectedTagList = loadUtxoTagListByTxHashIndex(walletId, txHashIndex);
+      notifyListeners();
+    } else {
+      Logger.error(deleteTxHashIndexResult);
+    }
+  }
+
+  /// - 메모 편집
+  /// - 거래 자세히 보기
+  void updateTransactionMemo(int walletId, String txHash, String memo) {
+    Logger.log('-------------------------------------------------------------');
+    Logger.log(
+        'updateTransactionMemo(walletId: $walletId, txHash: $txHash, memo: $memo)');
+    final result =
+        _walletDataManager.updateTransactionMemo(walletId, txHash, memo);
+    if (result.isSuccess) {
+      Logger.log(result);
+      _transaction = loadTransaction(walletId, txHash);
+      notifyListeners();
+    } else {
+      Logger.error(result);
+    }
   }
 }
 

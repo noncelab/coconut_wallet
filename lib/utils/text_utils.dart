@@ -5,11 +5,11 @@ class TextUtils {
         : text;
   }
 
-  static String truncateNameMax20(String name) {
-    if (name.length <= 20) {
+  static String truncateNameMax19(String name) {
+    if (name.length <= 19) {
       return name;
     }
 
-    return '${name.substring(0, 11)}...${name.substring(name.length - 8)}';
+    return '${name.substring(0, 11)}...${name.substring(name.length - 8, name.length)}';
   }
 }

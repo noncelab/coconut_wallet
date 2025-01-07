@@ -1,30 +1,37 @@
 import 'package:equatable/equatable.dart';
 
 class UtxoTag extends Equatable {
-  final String tag;
+  final String id;
+  final int walletId;
+  final String name;
   final int colorIndex;
-  final int usedCount;
+  final List<String>? utxoIdList;
 
   const UtxoTag({
-    required this.tag,
+    required this.id,
+    required this.walletId,
+    required this.name,
     required this.colorIndex,
-    this.usedCount = 0,
+    this.utxoIdList,
   });
 
   UtxoTag copyWith({
-    String? tag,
+    String? name,
     int? colorIndex,
-    int? usedCount,
+    int? walletId,
+    List<String>? utxoIdList,
   }) {
     return UtxoTag(
-      tag: tag ?? this.tag,
+      id: id,
+      walletId: walletId ?? this.walletId,
+      name: name ?? this.name,
       colorIndex: colorIndex ?? this.colorIndex,
-      usedCount: usedCount ?? this.usedCount,
+      utxoIdList: utxoIdList ?? this.utxoIdList,
     );
   }
 
   @override
-  List<Object?> get props => [tag, colorIndex, usedCount];
+  List<Object?> get props => [id, name, colorIndex, utxoIdList];
 
   @override
   bool? get stringify => true;

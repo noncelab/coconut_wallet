@@ -207,7 +207,7 @@ flutter:
     - assets/svg/circle-pick.svg
     - assets/svg/circle-check.svg
     - assets/svg/row-divider.svg
-    
+
 
   fonts:
     - family: SpaceGrotesk

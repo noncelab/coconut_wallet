@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/model/utxo_tag.dart';
+
 class UTXO {
   final String timestamp;
   final String blockHeight;
@@ -6,7 +8,7 @@ class UTXO {
   final String derivationPath;
   final String txHash;
   final int index;
-  List<String>? tags;
+  List<UtxoTag>? tags;
 
   UTXO(this.timestamp, this.blockHeight, this.amount, this.to,
       this.derivationPath, this.txHash, this.index,

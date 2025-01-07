@@ -9,4 +9,12 @@ class Logger {
       print(object);
     }
   }
+
+  static void error(Object? object) {
+    if (!_isReleaseMode) {
+      print('\n************error************\n');
+      print(object);
+      print('\n************error************\n');
+    }
+  }
 }

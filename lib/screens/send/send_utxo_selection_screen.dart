@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/fee_info.dart';
 import 'package:coconut_wallet/model/send_info.dart';
+import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection/fee_selection_screen.dart';
@@ -20,7 +21,9 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
+import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -54,6 +57,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   late List<UTXO> _confirmedUtxoList;
   late List<UTXO> _selectedUtxoList;
+  // 선택된 태그를 가지고 있는 utxo 목록 길이
+  int _confirmedUtxoListLength = 0;
+  // 선택된 태그
+  String _selectedUtxoTagName = '전체';
+  // txHashIndex - 태그 목록
+  late final Map<String, List<UtxoTag>> _utxoTagMap = {};
 
   final GlobalKey _filterDropdownButtonKey = GlobalKey();
   final GlobalKey _scrolledFilterDropdownButtonKey = GlobalKey();
@@ -130,10 +139,24 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   late Transaction _transaction;
 
+  _addDisplayUtxoList() {
+    _utxoTagMap.clear();
+    for (var element in _confirmedUtxoList) {
+      final txHashIndex = '${element.transactionHash}${element.index}';
+      final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, txHashIndex);
+
+      _utxoTagMap[txHashIndex] = tags;
+    }
+
+    _confirmedUtxoListLength = _confirmedUtxoList.length + 1;
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
+
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
 
     _scrollController = ScrollController();
@@ -153,6 +176,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _confirmedUtxoList = _getAllConfirmedUtxoList(_walletFeature);
       _selectedUtxoList = [];
       UTXO.sortUTXO(_confirmedUtxoList, _selectedFilter);
+      _addDisplayUtxoList();
     } else {
       _confirmedUtxoList = _selectedUtxoList = [];
     }
@@ -212,6 +236,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _model.initUtxoTagScreenTagData(widget.id);
+
       RenderBox filterDropdownButtonRenderBox =
           _filterDropdownButtonKey.currentContext?.findRenderObject()
               as RenderBox;
@@ -335,7 +361,22 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           _transaction.removeInputWithUtxo(utxo, _satsPerVb!, _walletBase,
               requiredSignature: _requiredSignature, totalSinger: _totalSigner);
         }
-        _selectedUtxoList.remove(utxo);
+
+        // 모두 선택 시 List.from 으로 전체 리스트, 필터 리스트 구분 될 때
+        // 라이브러리 UTXO에 copyWith 구현 필요함
+        final keyToRemove = '${utxo.transactionHash}_${utxo.index}';
+        _selectedUtxoList = _selectedUtxoList
+            .fold<Map<String, UTXO>>({}, (map, utxo) {
+              final key = '${utxo.transactionHash}_${utxo.index}';
+              if (key != keyToRemove) {
+                // 제거할 키가 아니면 추가
+                map[key] = utxo;
+              }
+              return map;
+            })
+            .values
+            .toList();
+
         if (_isSelectedUtxoEnough()) {
           _estimatedFee = _estimateFee(_satsPerVb!);
         }
@@ -353,8 +394,21 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   void selectAll() {
     _removeFilterDropdown();
     setState(() {
-      _selectedUtxoList = List.from(_confirmedUtxoList);
+      if (_selectedUtxoTagName != '전체') {
+        final filteredList = _confirmedUtxoList.where((utxo) {
+          final transactionHash = utxo.transactionHash;
+          final utxoIndex = utxo.index;
+          final txHashIndex = '$transactionHash$utxoIndex';
+          return _utxoTagMap[txHashIndex]
+                  ?.any((e) => e.name == _selectedUtxoTagName) ??
+              false;
+        }).toList();
+        _selectedUtxoList = List.from(filteredList);
+      } else {
+        _selectedUtxoList = List.from(_confirmedUtxoList);
+      }
     });
+
     if (!_isMaxMode) {
       _transaction = Transaction.fromUtxoList(
           _selectedUtxoList,
@@ -408,6 +462,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     if (mounted) {
       setState(() {
         UTXO.sortUTXO(_confirmedUtxoList, orderEnum);
+        _addDisplayUtxoList();
       });
     }
   }
@@ -732,6 +787,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _updateFeeRate(satsPerVb);
   }
 
+  // TODO: 태그 적용 팝업 추가
   goNext() {
     _removeFilterDropdown();
     if (_model.isNetworkOn != true) {
@@ -1013,23 +1069,68 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                       ],
                     ),
                   ),
+                  Visibility(
+                    visible: _model.utxoTagList.isNotEmpty,
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 16, bottom: 12),
+                      child: CustomTagHorizontalSelector(
+                        tags: _model.utxoTagList.map((e) => e.name).toList(),
+                        onSelectedTag: (tagName) {
+                          _selectedUtxoTagName = tagName;
+
+                          if (tagName == '전체') {
+                            _confirmedUtxoListLength =
+                                _confirmedUtxoList.length + 1;
+                          } else {
+                            _confirmedUtxoListLength = _utxoTagMap.entries
+                                    .where((entry) => entry.value
+                                        .any((e) => e.name == tagName))
+                                    .map((entry) => entry.key)
+                                    .toList()
+                                    .length +
+                                1;
+                          }
+
+                          deselectAll();
+                        },
+                      ),
+                    ),
+                  ),
                   ListView.separated(
                       physics: const NeverScrollableScrollPhysics(),
                       shrinkWrap: true,
                       padding: const EdgeInsets.only(
                           top: 0, bottom: 30, left: 16, right: 16),
-                      itemCount: _confirmedUtxoList.length + 1,
+                      itemCount: _confirmedUtxoListLength,
                       separatorBuilder: (context, index) =>
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 0),
                       itemBuilder: (context, index) {
                         if (index < _confirmedUtxoList.length) {
-                          return UtxoSelectableCard(
-                            key: ValueKey(
-                                _confirmedUtxoList[index].transactionHash),
-                            utxo: _confirmedUtxoList[index],
-                            isSelected: _selectedUtxoList
-                                .contains(_confirmedUtxoList[index]),
-                            onSelected: _toggleSelection,
+                          final utxo = _confirmedUtxoList[index];
+
+                          final transactionHash = utxo.transactionHash;
+                          final utxoIndex = utxo.index;
+                          final txHashIndex = '$transactionHash$utxoIndex';
+                          final isContainedTagName = _utxoTagMap[txHashIndex]
+                                  ?.any(
+                                      (e) => e.name == _selectedUtxoTagName) ??
+                              false;
+
+                          if (_selectedUtxoTagName != '전체' &&
+                              !isContainedTagName) {
+                            return const SizedBox();
+                          }
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: UtxoSelectableCard(
+                              key: ValueKey(transactionHash),
+                              utxo: utxo,
+                              isSelected: _selectedUtxoList
+                                  .contains(_confirmedUtxoList[index]),
+                              utxoTags: _utxoTagMap[txHashIndex],
+                              onSelected: _toggleSelection,
+                            ),
                           );
                         } else {
                           return const SizedBox();
@@ -1098,6 +1199,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 class UtxoSelectableCard extends StatefulWidget {
   final UTXO utxo;
   final bool isSelected;
+  final List<UtxoTag>? utxoTags;
   final Function(UTXO) onSelected;
 
   const UtxoSelectableCard({
@@ -1105,6 +1207,7 @@ class UtxoSelectableCard extends StatefulWidget {
     required this.utxo,
     required this.isSelected,
     required this.onSelected,
+    this.utxoTags,
   });
 
   @override
@@ -1190,7 +1293,27 @@ class _UtxoSelectableCardState extends State<UtxoSelectableCard> {
                       style: Styles.caption,
                     ),
                   ],
-                )
+                ),
+                Visibility(
+                  visible: widget.utxoTags?.isNotEmpty == true,
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: List.generate(
+                        widget.utxoTags?.length ?? 0,
+                        (index) => IntrinsicWidth(
+                          child: CustomTagChip(
+                            tag: widget.utxoTags?[index].name ?? '',
+                            colorIndex: widget.utxoTags?[index].colorIndex ?? 0,
+                            type: CustomTagChipType.fix,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
             SvgPicture.asset(
