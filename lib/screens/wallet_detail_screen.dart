@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
+import 'package:coconut_wallet/utils/sort_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/utxo_item_card.dart';
@@ -135,7 +136,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     if (_utxoList.isNotEmpty && mounted) {
       setState(() {
-        model.UTXO.sortUTXO(_utxoList, _selectedFilter);
+        sortUTXO(_utxoList, _selectedFilter);
         _isUtxoListLoadComplete = true;
       });
     }
@@ -268,7 +269,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       if (mounted) {
         setState(() {
           _isUtxoListLoadComplete = true;
-          model.UTXO.sortUTXO(_utxoList, _selectedFilter);
+          sortUTXO(_utxoList, _selectedFilter);
         });
       }
     }
@@ -285,7 +286,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     await Future.delayed(const Duration(milliseconds: 100));
     if (mounted) {
       setState(() {
-        model.UTXO.sortUTXO(_utxoList, orderEnum);
+        sortUTXO(_utxoList, orderEnum);
       });
     }
   }
