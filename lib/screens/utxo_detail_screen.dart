@@ -592,7 +592,8 @@ class InputOutputDetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     Color leftItemColor = MyColors.white;
     Color rightItemColor = MyColors.white;
-    String assetAddress = 'assets/svg/circle-arrow-right-white.svg';
+    String assetAddress = 'assets/svg/circle-arrow-right.svg';
+    Color assetColor = MyColors.white;
 
     if (transactionStatus != null) {
       /// transactionStatus가 null이 아니면 거래 자세히 보기 화면
@@ -603,12 +604,13 @@ class InputOutputDetailRow extends StatelessWidget {
           /// 인풋
           if (isCurrentAddress) {
             /// 현재 주소인 경우
-            leftItemColor = rightItemColor = MyColors.white;
-            assetAddress = 'assets/svg/circle-arrow-right-white.svg';
+            leftItemColor = rightItemColor = assetColor = MyColors.white;
+            assetAddress = 'assets/svg/circle-arrow-right.svg';
           } else {
             /// 현재 주소가 아닌 경우
-            leftItemColor = rightItemColor = MyColors.transparentWhite_40;
-            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+            leftItemColor =
+                rightItemColor = assetColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right.svg';
           }
         } else if (rowType == InputOutputRowType.output) {
           /// 아웃풋
@@ -616,16 +618,18 @@ class InputOutputDetailRow extends StatelessWidget {
             /// 현재 주소인 경우
             leftItemColor = MyColors.white;
             rightItemColor = MyColors.secondary;
-            assetAddress = 'assets/svg/circle-arrow-right-blue.svg';
+            assetColor = rightItemColor;
+            assetAddress = 'assets/svg/circle-arrow-right.svg';
           } else {
             /// 현재 주소가 아닌 경우
-            leftItemColor = rightItemColor = MyColors.transparentWhite_40;
-            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+            leftItemColor =
+                rightItemColor = assetColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right.svg';
           }
         } else {
           /// 수수료
-          leftItemColor = rightItemColor = MyColors.white;
-          assetAddress = 'assets/svg/circle-pick-white.svg';
+          leftItemColor = rightItemColor = assetColor = MyColors.white;
+          assetAddress = 'assets/svg/circle-pick.svg';
         }
       } else if (transactionStatus == TransactionStatus.sending ||
           transactionStatus == TransactionStatus.sent) {
@@ -633,67 +637,71 @@ class InputOutputDetailRow extends StatelessWidget {
         if (rowType == InputOutputRowType.input) {
           /// 안풋
           leftItemColor = MyColors.white;
-          rightItemColor = MyColors.primary;
-          assetAddress = 'assets/svg/circle-arrow-right-green.svg';
+          rightItemColor = assetColor = MyColors.primary;
+          assetAddress = 'assets/svg/circle-arrow-right.svg';
         } else if (rowType == InputOutputRowType.output) {
           /// 아웃풋
           if (isCurrentAddress) {
             /// 현재 주소인 경우
             leftItemColor = MyColors.white;
-            rightItemColor = MyColors.white;
-            assetAddress = 'assets/svg/circle-arrow-right-white.svg';
+            rightItemColor = assetColor = MyColors.white;
+            assetAddress = 'assets/svg/circle-arrow-right.svg';
           } else {
             /// 현재 주소가 아닌 경우
-            leftItemColor = rightItemColor = MyColors.transparentWhite_40;
-            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+            leftItemColor =
+                rightItemColor = assetColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right.svg';
           }
         } else {
           /// 수수료
-          leftItemColor = rightItemColor = MyColors.white;
-          assetAddress = 'assets/svg/circle-pick-white.svg';
+          leftItemColor = rightItemColor = assetColor = MyColors.white;
+          assetAddress = 'assets/svg/circle-pick.svg';
         }
       } else if (transactionStatus == TransactionStatus.self ||
           transactionStatus == TransactionStatus.selfsending) {
         if (rowType == InputOutputRowType.input) {
           if (isCurrentAddress) {
             leftItemColor = MyColors.white;
-            rightItemColor = MyColors.primary;
-            assetAddress = 'assets/svg/circle-arrow-right-green.svg';
+            rightItemColor = assetColor = MyColors.primary;
+            assetAddress = 'assets/svg/circle-arrow-right.svg';
           } else {
             leftItemColor = MyColors.transparentWhite_40;
-            rightItemColor = MyColors.transparentWhite_40;
-            assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+            rightItemColor = assetColor = MyColors.transparentWhite_40;
+            assetAddress = 'assets/svg/circle-arrow-right.svg';
           }
         } else if (rowType == InputOutputRowType.output) {
           leftItemColor = MyColors.transparentWhite_40;
-          rightItemColor = MyColors.transparentWhite_40;
+          rightItemColor = assetColor = MyColors.transparentWhite_40;
           assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
         } else {
           leftItemColor = MyColors.white;
-          rightItemColor = MyColors.white;
-          assetAddress = 'assets/svg/circle-pick-white.svg';
+          rightItemColor = assetColor = MyColors.white;
+          assetAddress = 'assets/svg/circle-pick.svg';
         }
       }
     } else {
       /// transactionStatus가 null이면 UTXO 상세 화면
       if (rowType == InputOutputRowType.input) {
         /// 인풋
-        leftItemColor = rightItemColor = MyColors.transparentWhite_40;
-        assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+        leftItemColor =
+            rightItemColor = assetColor = MyColors.transparentWhite_40;
+        assetAddress = 'assets/svg/circle-arrow-right.svg';
       } else if (rowType == InputOutputRowType.output) {
         /// 아웃풋
         if (isCurrentAddress) {
           /// 현재 주소인 경우
-          leftItemColor = rightItemColor = MyColors.white;
+          leftItemColor = rightItemColor = assetColor = MyColors.white;
         } else {
           /// 현재 주소가 아닌 경우
-          leftItemColor = rightItemColor = MyColors.transparentWhite_40;
-          assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          leftItemColor =
+              rightItemColor = assetColor = MyColors.transparentWhite_40;
+          assetAddress = 'assets/svg/circle-arrow-right.svg';
         }
       } else {
         /// 수수료
-        leftItemColor = rightItemColor = MyColors.transparentWhite_40;
-        assetAddress = 'assets/svg/circle-pick-transparent.svg';
+        leftItemColor =
+            rightItemColor = assetColor = MyColors.transparentWhite_40;
+        assetAddress = 'assets/svg/circle-pick.svg';
       }
     }
 
@@ -720,6 +728,7 @@ class InputOutputDetailRow extends StatelessWidget {
                   assetAddress,
                   width: 16,
                   height: 12,
+                  colorFilter: ColorFilter.mode(assetColor, BlendMode.srcIn),
                 ),
                 const SizedBox(
                   width: 10,
@@ -766,6 +775,7 @@ class InputOutputDetailRow extends StatelessWidget {
                   assetAddress,
                   width: 16,
                   height: 12,
+                  colorFilter: ColorFilter.mode(assetColor, BlendMode.srcIn),
                 ),
               ],
             ),
