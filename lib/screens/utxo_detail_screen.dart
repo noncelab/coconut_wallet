@@ -670,9 +670,14 @@ class InputOutputDetailRow extends StatelessWidget {
             assetAddress = 'assets/svg/circle-arrow-right.svg';
           }
         } else if (rowType == InputOutputRowType.output) {
-          leftItemColor = MyColors.transparentWhite_40;
-          rightItemColor = assetColor = MyColors.transparentWhite_40;
-          assetAddress = 'assets/svg/circle-arrow-right-transparent.svg';
+          if (isCurrentAddress) {
+            leftItemColor = MyColors.white;
+            rightItemColor = assetColor = MyColors.secondary;
+          } else {
+            leftItemColor = MyColors.transparentWhite_40;
+            rightItemColor = assetColor = MyColors.transparentWhite_40;
+          }
+          assetAddress = 'assets/svg/circle-arrow-right.svg';
         } else {
           leftItemColor = MyColors.white;
           rightItemColor = assetColor = MyColors.white;
