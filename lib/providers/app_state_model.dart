@@ -147,7 +147,6 @@ class AppStateModel extends ChangeNotifier {
         if (targetId != null) {
           Logger.log(">>>>> 3. _fetchWalletLatestInfo id: $targetId");
           await _fetchWalletLatestInfo(targetId);
-          _deleteUtxoTagId(targetId);
           // 나머지 지갑들도 업데이트
           if (syncOthers) {
             initWallet(exceptionalId: targetId);
@@ -387,7 +386,7 @@ class AppStateModel extends ChangeNotifier {
       if (!_walletDataManager.isInitialized) {
         await _walletDataManager.init(_subStateModel.isSetPin);
       }
-      wallets = await _walletDataManager.loadFromDB();
+      wallets = await _walletDataManager.loadWalletsFromDB();
     } catch (e) {
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
       // 앱 삭제 후 재설치 했는데 위 에러가 발생하는 경우가 있습니다.
@@ -757,8 +756,10 @@ class AppStateModel extends ChangeNotifier {
   List<UtxoTag> _selectedTagList = [];
   List<UtxoTag> get selectedTagList => _selectedTagList;
 
-  /// 완료한 "utxo 선택 전송" 결과
-  List<String> _selectedUtxoIdList = [];
+  List<String> _usedUtxoIdListWhenSend = [];
+  List<String> get usedUtxoIdListWhenSend => _usedUtxoIdListWhenSend;
+  bool _tagsMoveAllowed = false;
+  bool get tagsMoveAllowed => _tagsMoveAllowed;
 
   /// 메모, 태그 상태 관리
   Transfer? _transaction;
@@ -768,23 +769,41 @@ class AppStateModel extends ChangeNotifier {
   bool _isUpdateSelectedTagList = false;
   bool get isUpdateSelectedTagList => _isUpdateSelectedTagList;
 
+  // TODO: TEST
+  Future moveTagsFromUsedUtxosToNewUtxos(
+      int walletId, List<String> newUtxoIds) async {
+    await _walletDataManager.moveTagsFromUsedUtxosToNewUtxos(
+        walletId, _usedUtxoIdListWhenSend, newUtxoIds);
+    _usedUtxoIdListWhenSend = [];
+    _tagsMoveAllowed = false;
+  }
+
+  Future deleteTagsOfUsedUtxos(int walletId) async {
+    await _walletDataManager.deleteTags(walletId, _usedUtxoIdListWhenSend);
+    _usedUtxoIdListWhenSend = [];
+  }
+
   /// 선택된 태그 리스트 변경 여부 on/off
   void setIsUpdateSelectedTagList(value) {
     _isUpdateSelectedTagList = value;
   }
 
   /// 선택된 Utxo transaction + index 리스트 업데이트
-  void updateSelectedTxHashIndexList(List<String> utxoIdList) {
-    _selectedUtxoIdList = utxoIdList;
-    notifyListeners();
+  void recordUsedUtxoIdListWhenSend(List<String> utxoIdList) {
+    _usedUtxoIdListWhenSend = utxoIdList;
   }
 
-  /// 보내기 완료된 utxo 의 txHashIndex(id) 삭제
+  void allowTagToMove() {
+    _tagsMoveAllowed = true;
+  }
+
+  /// TODO: utxoTag의 utxoIdList에 더 이상 존재하지 않는 utxoId가 있는 경우 삭제한다.
+  /// TODO: 적절한 시점에 호출한다.
   void _deleteUtxoTagId(int walletId) {
-    for (String txHashIndex in _selectedUtxoIdList) {
+    for (String txHashIndex in _usedUtxoIdListWhenSend) {
       _walletDataManager.deleteTxHashIndex(walletId, txHashIndex);
     }
-    _selectedUtxoIdList = [];
+    _usedUtxoIdListWhenSend = [];
     initUtxoTagScreenTagData(walletId);
   }
 
@@ -822,12 +841,11 @@ class AppStateModel extends ChangeNotifier {
   }
 
   /// 선택된 UtxoTagList 가져오기
-  List<UtxoTag> loadUtxoTagListByTxHashIndex(int walletId, String txHashIndex) {
+  List<UtxoTag> loadUtxoTagListByTxHashIndex(int walletId, String utxoId) {
     Logger.log('-------------------------------------------------------------');
     Logger.log(
-        'loadUtxoTagListByTxHashIndex(walletId: $walletId, txHashIndex: $txHashIndex)');
-    final result =
-        _walletDataManager.loadUtxoTagListByTxHashIndex(walletId, txHashIndex);
+        'loadUtxoTagListByTxHashIndex(walletId: $walletId, txHashIndex: $utxoId)');
+    final result = _walletDataManager.loadUtxoTagListByUtxoId(walletId, utxoId);
     if (result.isSuccess) {
       Logger.log(result);
     } else {

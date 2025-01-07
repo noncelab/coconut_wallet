@@ -72,7 +72,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     _model = Provider.of<AppStateModel>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _model.updateSelectedTxHashIndexList([]);
+      _model.recordUsedUtxoIdListWhenSend([]);
     });
 
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);

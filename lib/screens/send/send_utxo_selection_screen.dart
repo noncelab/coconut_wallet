@@ -17,6 +17,7 @@ import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -393,10 +394,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     setState(() {
       if (_selectedUtxoTagName != '전체') {
         final filteredList = _confirmedUtxoList.where((utxo) {
-          final transactionHash = utxo.transactionHash;
-          final utxoIndex = utxo.index;
-          final txHashIndex = '$transactionHash$utxoIndex';
-          return _utxoTagMap[txHashIndex]
+          return _utxoTagMap[utxo.utxoId]
                   ?.any((e) => e.name == _selectedUtxoTagName) ??
               false;
         }).toList();
@@ -792,10 +790,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return;
     }
 
-    List<String> updateList =
+    List<String> usedUtxoIds =
         _selectedUtxoList.map((e) => '${e.transactionHash}${e.index}').toList();
 
-    bool isIncludeTag = updateList
+    bool isIncludeTag = usedUtxoIds
         .any((txHashIndex) => _utxoTagMap[txHashIndex]?.isNotEmpty == true);
 
     if (isIncludeTag) {
@@ -805,23 +803,25 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
         onConfirm: () {
           Navigator.of(context).pop();
-          _moveToSendConfirm(updateList);
+          _model.recordUsedUtxoIdListWhenSend(usedUtxoIds);
+          _model.allowTagToMove();
+          _moveToSendConfirm();
         },
         onCancel: () {
           Navigator.of(context).pop();
-          _moveToSendConfirm(updateList);
+          _model.recordUsedUtxoIdListWhenSend(usedUtxoIds);
+          _moveToSendConfirm();
         },
         confirmButtonText: '적용하기',
         confirmButtonColor: MyColors.primary,
         cancelButtonText: '아니오',
       );
     } else {
-      _moveToSendConfirm(updateList);
+      _moveToSendConfirm();
     }
   }
 
-  _moveToSendConfirm(List<String> updateList) {
-    _model.updateSelectedTxHashIndexList(updateList);
+  _moveToSendConfirm() {
     Navigator.pushNamed(context, '/send-confirm', arguments: {
       'id': widget.id,
       'fullSendInfo': FullSendInfo(
@@ -1140,11 +1140,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                       itemBuilder: (context, index) {
                         if (index < _confirmedUtxoList.length) {
                           final utxo = _confirmedUtxoList[index];
-
-                          final transactionHash = utxo.transactionHash;
-                          final utxoIndex = utxo.index;
-                          final txHashIndex = '$transactionHash$utxoIndex';
-                          final isContainedTagName = _utxoTagMap[txHashIndex]
+                          final isContainedTagName = _utxoTagMap[utxo.utxoId]
                                   ?.any(
                                       (e) => e.name == _selectedUtxoTagName) ??
                               false;
@@ -1157,11 +1153,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: UtxoSelectableCard(
-                              key: ValueKey(transactionHash),
+                              key: ValueKey(utxo.transactionHash),
                               utxo: utxo,
                               isSelected: _selectedUtxoList
                                   .contains(_confirmedUtxoList[index]),
-                              utxoTags: _utxoTagMap[txHashIndex],
+                              utxoTags: _utxoTagMap[utxo.utxoId],
                               onSelected: _toggleSelection,
                             ),
                           );
