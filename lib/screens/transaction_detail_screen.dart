@@ -380,7 +380,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                               context: context,
                               isScrollControlled: true,
                               builder: (context) => MemoBottomSheetContainer(
-                                updateMemo: tx.memo ?? '',
+                                originalMemo: tx.memo ?? '',
                                 onComplete: (updateMemo) {
                                   _model.updateTransactionMemo(
                                       widget.id, widget.txHash, updateMemo);
@@ -389,7 +389,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             );
                           },
                           value: Text(
-                            tx.memo?.isNotEmpty == true ? tx.memo! : '-',
+                            tx.memo != null ? tx.memo! : '-',
                             style: Styles.body1Number,
                           )),
                       const SizedBox(

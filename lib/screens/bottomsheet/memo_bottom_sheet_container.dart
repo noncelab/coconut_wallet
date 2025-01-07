@@ -4,14 +4,14 @@ import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 
 /// [MemoBottomSheetContainer] : 트랜잭션 메모 등록/수정 BottomSheet
-/// [updateMemo] : 변경할 트랜잭션 메모, default empty
+/// [originalMemo] : 변경할 트랜잭션 메모, default empty
 /// [onComplete] : 수정/등록할 메모 반환 콜백
 class MemoBottomSheetContainer extends StatefulWidget {
-  final String updateMemo;
+  final String originalMemo;
   final Function(String) onComplete;
   const MemoBottomSheetContainer({
     super.key,
-    required this.updateMemo,
+    required this.originalMemo,
     required this.onComplete,
   });
 
@@ -27,13 +27,15 @@ class _MemoBottomSheetContainerState extends State<MemoBottomSheetContainer> {
   /// [CustomLimitTextField]에서 입력된 메모
   String _updateMemo = '';
 
-  /// 완료 버튼 활성화 여부
-  bool _isCompleteButtonEnabled = false;
+  bool get _isCompleteButtonEnabled {
+    return _updateMemo != widget.originalMemo ||
+        (widget.originalMemo.isNotEmpty && _updateMemo.isEmpty);
+  }
 
   @override
   void initState() {
     super.initState();
-    _updateMemo = widget.updateMemo;
+    _updateMemo = widget.originalMemo;
 
     _controller.text = _updateMemo;
     _controller.selection = TextSelection.fromPosition(
@@ -110,15 +112,12 @@ class _MemoBottomSheetContainerState extends State<MemoBottomSheetContainer> {
                     onChanged: (text) {
                       setState(() {
                         _updateMemo = text;
-                        _isCompleteButtonEnabled = _updateMemo.isNotEmpty &&
-                            _updateMemo != widget.updateMemo;
                       });
                     },
                     onClear: () {
                       setState(() {
                         _controller.clear();
                         _updateMemo = '';
-                        _isCompleteButtonEnabled = false;
                       });
                     },
                   ),

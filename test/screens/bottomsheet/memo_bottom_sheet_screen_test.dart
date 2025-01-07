@@ -13,7 +13,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: MemoBottomSheetContainer(
-          updateMemo: mockMemo,
+          originalMemo: mockMemo,
           onComplete: (memo) {
             resultMemo = memo;
           },
