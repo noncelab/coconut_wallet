@@ -4,12 +4,10 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/screens/wallet_list_screen.dart';
-import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/app_error.dart';
@@ -149,11 +147,7 @@ class AppStateModel extends ChangeNotifier {
         if (targetId != null) {
           Logger.log(">>>>> 3. _fetchWalletLatestInfo id: $targetId");
           await _fetchWalletLatestInfo(targetId);
-          if (_selectedUtxoIdList.isNotEmpty) {
-            _updateUtxoTagList(targetId);
-          } else {
-            notifyListeners();
-          }
+          _deleteUtxoTagId(targetId);
           // 나머지 지갑들도 업데이트
           if (syncOthers) {
             initWallet(exceptionalId: targetId);
@@ -765,7 +759,6 @@ class AppStateModel extends ChangeNotifier {
 
   /// 완료한 "utxo 선택 전송" 결과
   List<String> _selectedUtxoIdList = [];
-  bool _isTagTransferAllowed = false;
 
   /// 메모, 태그 상태 관리
   Transfer? _transaction;
@@ -781,39 +774,16 @@ class AppStateModel extends ChangeNotifier {
   }
 
   /// 선택된 Utxo transaction + index 리스트 업데이트
-  void updateSelectedTxHashIndexList(List<String> utxoIdList,
-      {bool allowTagTransfer = false}) {
+  void updateSelectedTxHashIndexList(List<String> utxoIdList) {
     _selectedUtxoIdList = utxoIdList;
-    _isTagTransferAllowed = allowTagTransfer;
     notifyListeners();
   }
 
-  void _updateUtxoTagList(int walletId) {
-    if (_selectedUtxoIdList.isEmpty) return;
-    final utxoTagList = loadUtxoTagList(walletId);
-    final wallet = getWalletById(walletId);
-    List<UTXO> utxoList =
-        getWalletFeatureByWalletType(wallet).walletStatus!.utxoList;
-
+  /// 보내기 완료된 utxo 의 txHashIndex(id) 삭제
+  void _deleteUtxoTagId(int walletId) {
     for (String txHashIndex in _selectedUtxoIdList) {
-      // 선택된 utxoid 목록
-      // UTXO 고르기 진입 o and 새로운 UTXO 적용하기 o
-      if (_isTagTransferAllowed) {
-        for (UTXO utxo in utxoList) {
-          final utxoId = '${utxo.transactionHash}${utxo.index}';
-          for (UtxoTag utxoTag in utxoTagList) {
-            final isContains = utxoTag.utxoIdList?.contains(utxoId) == true;
-            if (!isContains) {
-              final name = utxoTag.name;
-              _walletDataManager.addTagToUtxo(walletId, name, utxoId);
-            }
-          }
-        }
-      }
       _walletDataManager.deleteTxHashIndex(walletId, txHashIndex);
     }
-
-    _isTagTransferAllowed = false;
     _selectedUtxoIdList = [];
     initUtxoTagScreenTagData(walletId);
   }

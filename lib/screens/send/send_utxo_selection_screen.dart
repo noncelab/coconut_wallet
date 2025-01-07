@@ -805,27 +805,23 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
         onConfirm: () {
           Navigator.of(context).pop();
-          _moveToSendConfirm(updateList, allowTagTransfer: true);
+          _moveToSendConfirm(updateList);
         },
         onCancel: () {
           Navigator.of(context).pop();
-          _moveToSendConfirm(updateList, allowTagTransfer: true);
+          _moveToSendConfirm(updateList);
         },
         confirmButtonText: '적용하기',
         confirmButtonColor: MyColors.primary,
         cancelButtonText: '아니오',
       );
     } else {
-      _moveToSendConfirm(updateList, allowTagTransfer: true);
+      _moveToSendConfirm(updateList);
     }
   }
 
-  _moveToSendConfirm(List<String> updateList,
-      {required bool allowTagTransfer}) {
-    _model.updateSelectedTxHashIndexList(
-        _selectedUtxoList.map((e) => '${e.transactionHash}${e.index}').toList(),
-        allowTagTransfer: allowTagTransfer);
-    Navigator.of(context).pop();
+  _moveToSendConfirm(List<String> updateList) {
+    _model.updateSelectedTxHashIndexList(updateList);
     Navigator.pushNamed(context, '/send-confirm', arguments: {
       'id': widget.id,
       'fullSendInfo': FullSendInfo(
