@@ -158,8 +158,8 @@ class _PowWalletAppState extends State<PowWalletApp> {
               ),
           '/transaction-detail': (context) => buildScreenWithArguments(
                 context,
-                (args) =>
-                    TransactionDetailScreen(tx: args['tx'], id: args['id']),
+                (args) => TransactionDetailScreen(
+                    id: args['id'], txHash: args['txHash']),
               ),
           '/receive-address': (context) => buildScreenWithArguments(
                 context,
@@ -221,12 +221,14 @@ class _PowWalletAppState extends State<PowWalletApp> {
           '/utxo-detail': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
-                    child: UtxoDetailScreen(utxo: args['utxo'])),
+                    child:
+                        UtxoDetailScreen(utxo: args['utxo'], id: args['id'])),
               ),
           '/positive-feedback': (context) => const PositiveFeedbackScreen(),
           '/negative-feedback': (context) => const NegativeFeedbackScreen(),
           '/mnemonic-word-list': (context) => const Bip39ListScreen(),
-          '/utxo-tag': (context) => const UtxoTagScreen(),
+          '/utxo-tag': (context) => buildScreenWithArguments(
+              context, (args) => UtxoTagScreen(id: args['id'])),
         },
       ),
     );

@@ -11,6 +11,7 @@ import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:provider/provider.dart';
 
+@Deprecated("UtxoListScreen 삭제")
 class UtxoListScreen extends StatefulWidget {
   final int id;
 
@@ -85,12 +86,14 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
           isChange: changeAndAccountIndex[changeField]! == 1);
 
       utxos.add(model.UTXO(
-          element.timestamp.toString(),
-          element.blockHeight.toString(),
-          element.amount,
-          ownedAddress,
-          element.derivationPath,
-          element.transactionHash));
+        element.timestamp.toString(),
+        element.blockHeight.toString(),
+        element.amount,
+        ownedAddress,
+        element.derivationPath,
+        element.transactionHash,
+        element.index,
+      ));
     }
     return utxos;
   }

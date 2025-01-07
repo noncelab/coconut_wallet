@@ -8,6 +8,7 @@ abstract class MyColors {
   static const transparentBlack = Color.fromRGBO(0, 0, 0, 0.7);
   static const transparentBlack_03 = Color.fromRGBO(0, 0, 0, 0.03);
   static const grey = Color.fromRGBO(48, 47, 52, 1);
+  static const gray200 = Color(0xFFEFEFEF);
   static const white = Color.fromRGBO(255, 255, 255, 1);
   static const transparentWhite = Color.fromRGBO(255, 255, 255, 0.2);
   static const transparentWhite_06 = Color.fromRGBO(255, 255, 255, 0.06);
@@ -29,6 +30,7 @@ abstract class MyColors {
   static const transparentGrey = Color.fromRGBO(20, 19, 24, 0.15);
   static const lightgrey = Color.fromRGBO(244, 244, 245, 1);
   static const red = Color.fromRGBO(255, 0, 0, 1);
+  static const transparentRed = Color.fromRGBO(242, 147, 146, 0.15);
   // tesnet tag
   static const cyanblue = Color.fromRGBO(69, 204, 238, 1);
   static const skybule = Color.fromRGBO(179, 240, 255, 1);
@@ -43,6 +45,7 @@ abstract class MyColors {
   static const defaultText = Color.fromRGBO(221, 219, 230, 1);
 
   static const warningRed = Color.fromRGBO(218, 65, 92, 1.0); // color6Red
+  static const transparentWarningRed = Color.fromRGBO(218, 65, 92, 0.7);
   static const backgroundActive =
       Color.fromRGBO(145, 179, 242, 0.67); // color4Blue
 
@@ -56,6 +59,7 @@ abstract class MyColors {
 
   static const Color bottomSheetBackground = Color(0xFF232222);
   static const Color selectBackground = Color(0xFF393939);
+  static const Color gray800 = Color(0xFF303030);
 }
 
 const List<Color> ColorPalette = [

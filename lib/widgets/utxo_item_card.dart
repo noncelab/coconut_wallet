@@ -1,5 +1,4 @@
 import 'package:coconut_wallet/model/utxo.dart' as model;
-import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -20,17 +19,6 @@ class UTXOItemCard extends StatelessWidget {
     List<String> dateString =
         DateTimeUtil.formatDatetime(utxo.timestamp).split('|');
     bool isChange = utxo.derivationPath.split('/')[4] == '1';
-    List<UtxoTag> utxoTags = [
-      const UtxoTag(tag: 'THESE', colorIndex: 0),
-      const UtxoTag(tag: 'ARE', colorIndex: 1),
-      const UtxoTag(tag: 'TEST', colorIndex: 2),
-      const UtxoTag(tag: 'DATA', colorIndex: 3),
-      const UtxoTag(tag: 'SO', colorIndex: 4),
-      const UtxoTag(tag: 'YOU', colorIndex: 5),
-      const UtxoTag(tag: 'HAVE', colorIndex: 6),
-      const UtxoTag(tag: 'TO', colorIndex: 7),
-      const UtxoTag(tag: 'FIX', colorIndex: 8),
-    ];
 
     return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -108,11 +96,11 @@ class UTXOItemCard extends StatelessWidget {
               spacing: 4,
               runSpacing: 4,
               children: List.generate(
-                utxoTags.length,
+                utxo.tags?.length ?? 0,
                 (index) => IntrinsicWidth(
                   child: CustomTagChip(
-                    tag: utxoTags[index].tag,
-                    colorIndex: utxoTags[index].colorIndex,
+                    tag: utxo.tags?[index].name ?? '',
+                    colorIndex: utxo.tags?[index].colorIndex ?? 0,
                     type: CustomTagChipType.fix,
                   ),
                 ),

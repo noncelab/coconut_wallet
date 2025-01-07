@@ -94,8 +94,9 @@ class CustomAppBar {
               onPressed: () {
                 if (onBackPressed != null) {
                   onBackPressed();
+                } else {
+                  Navigator.pop(context);
                 }
-                Navigator.pop(context);
               },
             )
           : null,
@@ -143,6 +144,7 @@ class CustomAppBar {
     return AppBar(
         title: Text(title),
         centerTitle: true,
+        scrolledUnderElevation: 0,
         backgroundColor: backgroundColor ?? Colors.transparent,
         titleTextStyle:
             Styles.navHeader.merge(const TextStyle(color: MyColors.white)),

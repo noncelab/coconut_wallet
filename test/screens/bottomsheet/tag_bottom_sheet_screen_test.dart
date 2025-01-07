@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/model/utxo.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
@@ -10,36 +9,30 @@ import 'package:flutter/material.dart';
 void main() {
   group('TagBottomSheetScreen Tests', () {
     late List<UtxoTag> mockTags;
-    late UTXO mockUtxo;
+    late List<String> mockSelectedTags;
 
     setUp(() {
       mockTags = [
-        const UtxoTag(tag: 'kyc', colorIndex: 0),
-        const UtxoTag(tag: 'coconut', colorIndex: 2),
-        const UtxoTag(tag: 'strike', colorIndex: 7),
+        const UtxoTag(id: 'uuid1', walletId: 1, name: 'kyc', colorIndex: 0),
+        const UtxoTag(id: 'uuid2', walletId: 2, name: 'coconut', colorIndex: 2),
+        const UtxoTag(id: 'uuid3', walletId: 3, name: 'strike', colorIndex: 7),
       ];
-      mockUtxo = UTXO(
-        'timestamp',
-        'blockHeight',
-        0,
-        'address',
-        'derivationPath',
-        'txHash',
-        tags: const ['kyc', 'coconut'],
-      );
+      mockSelectedTags = const ['kyc', 'coconut'];
     });
 
     testWidgets('calls onComplete with correct data when selecting tags',
         (WidgetTester tester) async {
-      UTXO? resultUtxo;
+      List<String> resultTagNames = [];
+      // List<UtxoTag> resultUtxoTags = [];
 
       await tester.pumpWidget(MaterialApp(
         home: TagBottomSheetContainer(
           type: TagBottomSheetType.select,
           utxoTags: mockTags,
-          selectUtxo: mockUtxo,
-          onComplete: (_, utxo) {
-            resultUtxo = utxo;
+          selectedUtxoTagNames: mockSelectedTags,
+          onSelected: (utxoTagNames, createdUtxoTags) {
+            resultTagNames = utxoTagNames;
+            // resultUtxoTags = createdUtxoTags;
           },
         ),
       ));
@@ -70,22 +63,25 @@ void main() {
       await tester.tap(find.text('완료'));
       await tester.pump();
 
-      expect(resultUtxo, isNotNull);
-      expect(resultUtxo!.tags, isNot(contains('kyc'))); // 제외
-      expect(resultUtxo!.tags, contains('coconut'));
-      expect(resultUtxo!.tags, contains('strike')); // 등록
+      expect(resultTagNames, isNotEmpty);
+      expect(resultTagNames, isNot(contains('kyc'))); // 제외
+      expect(resultTagNames, contains('coconut'));
+      expect(resultTagNames, contains('strike')); // 등록
+
+      // expect(resultUtxoTags, isNotEmpty);
+      // expect(resultUtxoTags.first.name, contains('strike')); // 등록
     });
 
     testWidgets('calls onComplete with correct data when creating tags',
         (WidgetTester tester) async {
-      List<UtxoTag>? resultTags;
+      UtxoTag? resultTag;
 
       await tester.pumpWidget(MaterialApp(
         home: TagBottomSheetContainer(
           type: TagBottomSheetType.create,
           utxoTags: mockTags,
-          onComplete: (utxoTags, _) {
-            resultTags = utxoTags;
+          onUpdated: (utxoTag) {
+            resultTag = utxoTag;
           },
         ),
       ));
@@ -115,27 +111,22 @@ void main() {
       await tester.pumpAndSettle();
 
       // onComplete 콜백 결과 검증
-      expect(resultTags, isNotNull);
-      final newTag = resultTags!.firstWhere(
-        (tag) => tag.tag == 'keystone',
-        orElse: () => throw Exception('Tag "keystone" not found'),
-      );
-
-      // 태그와 colorIndex 확인
-      expect(newTag.colorIndex, equals(2));
+      expect(resultTag, isNotNull);
+      expect(resultTag!.name, equals('keystone'));
+      expect(resultTag!.colorIndex, equals(2));
     });
 
     testWidgets('calls onComplete with correct data when updating tags',
         (WidgetTester tester) async {
-      List<UtxoTag>? resultTags;
+      UtxoTag? resultTag;
 
       await tester.pumpWidget(MaterialApp(
         home: TagBottomSheetContainer(
-          type: TagBottomSheetType.manage,
+          type: TagBottomSheetType.update,
           utxoTags: mockTags,
-          manageUtxoTag: mockTags[2],
-          onComplete: (utxoTags, _) {
-            resultTags = utxoTags;
+          updateUtxoTag: mockTags[2],
+          onUpdated: (utxoTag) {
+            resultTag = utxoTag;
           },
         ),
       ));
@@ -166,15 +157,10 @@ void main() {
       await tester.tap(completeButtonFinder);
       await tester.pumpAndSettle();
 
-      // onComplete 콜백 결과 검증
-      expect(resultTags, isNotNull);
-      final newTag = resultTags!.firstWhere(
-        (tag) => tag.tag == 'nunchuk',
-        orElse: () => throw Exception('Tag "nunchuk" not found'),
-      );
-
       // 태그와 colorIndex 확인
-      expect(newTag.colorIndex, equals(0));
+      expect(resultTag, isNotNull);
+      expect(resultTag!.name, equals('nunchuk'));
+      expect(resultTag!.colorIndex, equals(0));
     });
   });
 }

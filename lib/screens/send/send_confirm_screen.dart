@@ -39,8 +39,16 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   }
 
   Future<String> generateUnsignedPsbt() async {
-    var FullSendInfo(:satsPerVb, :address, :amount) = widget.sendInfo;
+    var FullSendInfo(:satsPerVb, :address, :amount, :transaction) =
+        widget.sendInfo;
     String generatedTx;
+
+    // utxo selection
+    if (transaction != null) {
+      var psbt = PSBT.fromTransaction(transaction, _walletBaseItem.walletBase);
+      return psbt.serialize();
+    }
+
     if (_walletBaseItem.walletType == WalletType.multiSignature) {
       final multisigWallet = _walletBaseItem.walletBase as MultisignatureWallet;
       if (widget.sendInfo.isMaxMode) {

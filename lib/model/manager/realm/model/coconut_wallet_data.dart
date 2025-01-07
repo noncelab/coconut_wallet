@@ -60,3 +60,21 @@ class _TempBroadcastTimeRecord {
   late String transactionHash;
   late DateTime createdAt;
 }
+
+@RealmModel()
+class _RealmUtxoTag {
+  @PrimaryKey()
+  late String id; // UUID 사용
+  late int walletId;
+  late _RealmWalletBase? walletBase;
+  late String name;
+  late int colorIndex;
+  late List<_RealmUtxoId> utxoIdList;
+  late DateTime createAt;
+}
+
+@RealmModel()
+class _RealmUtxoId {
+  @PrimaryKey()
+  late String id;
+}

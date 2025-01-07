@@ -2,21 +2,47 @@ import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
-class CustomTagSelector extends StatefulWidget {
+/// [CustomTagVerticalSelector] : 태그 목록을 보여주고 선택할 수 있는 위젯 (세로)
+/// [tags] : 표시할 태그 목록
+/// [onSelectedTag] : 태그 선택시 호출되는 콜백
+/// [externalUpdatedTagName] : 선택된 태그명이 외부에서 변경되었을 때 선택 상태를 업데이트
+class CustomTagVerticalSelector extends StatefulWidget {
   final List<UtxoTag> tags;
   final Function(UtxoTag) onSelectedTag;
-  const CustomTagSelector({
+  final String? externalUpdatedTagName;
+  const CustomTagVerticalSelector({
     super.key,
     required this.tags,
     required this.onSelectedTag,
+    this.externalUpdatedTagName,
   });
 
   @override
-  State<CustomTagSelector> createState() => _CustomTagSelectorState();
+  State<CustomTagVerticalSelector> createState() =>
+      _CustomTagVerticalSelectorState();
 }
 
-class _CustomTagSelectorState extends State<CustomTagSelector> {
-  String _selectedTag = '';
+class _CustomTagVerticalSelectorState extends State<CustomTagVerticalSelector> {
+  String _selectedTagName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // 초기 상태 설정: 외부에서 전달된 태그명을 반영
+    _selectedTagName = widget.externalUpdatedTagName ?? '';
+  }
+
+  @override
+  void didUpdateWidget(covariant CustomTagVerticalSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 외부 태그명이 변경되었을 경우 상태 업데이트
+    if (widget.externalUpdatedTagName != oldWidget.externalUpdatedTagName &&
+        widget.externalUpdatedTagName != _selectedTagName) {
+      setState(() {
+        _selectedTagName = widget.externalUpdatedTagName ?? '';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,15 +53,15 @@ class _CustomTagSelectorState extends State<CustomTagSelector> {
         return GestureDetector(
           onTap: () {
             setState(() {
-              _selectedTag = utxoTag.tag;
+              _selectedTagName = utxoTag.name;
             });
             widget.onSelectedTag.call(utxoTag);
           },
           child: CustomTagSelectorItem(
-            tag: utxoTag.tag,
+            tag: utxoTag.name,
             colorIndex: utxoTag.colorIndex,
-            usedCount: utxoTag.usedCount,
-            isSelected: _selectedTag == utxoTag.tag,
+            usedCount: utxoTag.utxoIdList?.length ?? 0,
+            isSelected: _selectedTagName == utxoTag.name,
           ),
         );
       },
@@ -43,6 +69,11 @@ class _CustomTagSelectorState extends State<CustomTagSelector> {
   }
 }
 
+/// [CustomTagSelectorItem] : 개별 태그 아이템을 표시하는 위젯
+/// [tag] : 태그명
+/// [colorIndex] : 색상 인덱스
+/// [usedCount] : 태그가 사용된 항목 수
+/// [isSelected] : 선택 여부
 class CustomTagSelectorItem extends StatelessWidget {
   final String tag;
   final int colorIndex;

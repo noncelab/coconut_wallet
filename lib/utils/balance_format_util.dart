@@ -66,12 +66,28 @@ extension NormalizeTo11Characters on String {
 
     // Step 4: 정수부와 소수부 결합
     String formatted = '$integerPart.$decimalGrouped';
-    print(
-        'for ${formatted.substring(0, 11)}    ${formatted.padRight(11, ' ')}');
+    // print(
+    //     'for ${formatted.substring(0, 11)}    ${formatted.padRight(11, ' ')}');
     // Step 5: 결과 문자열을 정확히 11자리로 조정
     return formatted.length > 11
         ? formatted.substring(0, 11)
         : formatted.padRight(11, ' ');
+  }
+}
+
+extension NormalizeToFullCharacters on String {
+  /// 정수형 BTC 단위도 소수점 자리에 0을 포함하여 반환합니다.
+  String normalizeToFullCharacters() {
+    // Step 1: 쉼표 제거
+    String noCommas = replaceAll(',', '');
+
+    // Step 2: 정수인지 확인
+    if (!noCommas.contains('.')) {
+      // 정수라면 ".0000 0000" 추가
+      return "$noCommas.0000 0000";
+    }
+
+    return this;
   }
 }
 

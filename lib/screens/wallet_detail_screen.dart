@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
-import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -91,9 +90,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   int _selectedAccountIndex = 0;
   Unit _current = Unit.btc;
-  List<TransferDTO> _txList = [];
+  List<Transfer> _txList = [];
 
-// 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
+  // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
   List<model.UTXO> _utxoList = [];
   late WalletType _walletType;
   static String changeField = 'change';
@@ -111,6 +110,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   late int? _prevTxCount;
   late bool _prevIsLatestTxBlockHeightZero;
 
+  final SharedPrefs _sharedPrefs = SharedPrefs();
+
   late final ScrollController _scrollController;
 
   @override
@@ -127,16 +128,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     _walletType = _walletBaseItem.walletType;
     if (_model.walletInitState == WalletInitState.finished) {
-      _utxoList = getUtxoListWithHoldingAddress(_walletFeature.getUtxoList());
+      getUtxoListWithHoldingAddress(_walletFeature.getUtxoList(),
+          _walletBaseItem, accountIndexField, changeField, _walletType);
     }
 
-    if (_utxoList.isNotEmpty && mounted) {
-      setState(() {
-        _isUtxoListLoadComplete = true;
-      });
-    }
-
-    List<TransferDTO>? newTxList = _model.getTxList(widget.id);
+    List<Transfer>? newTxList = _model.getTxList(widget.id);
     if (newTxList != null) {
       _txList = newTxList;
     }
@@ -255,12 +251,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _model.walletInitState == WalletInitState.finished) {
       _checkTxCount(
           _walletBaseItem.txCount, _walletBaseItem.isLatestTxBlockHeightZero);
-      _utxoList = getUtxoListWithHoldingAddress(_walletFeature.getUtxoList());
-      if (mounted) {
-        setState(() {
-          _isUtxoListLoadComplete = true;
-        });
-      }
+      getUtxoListWithHoldingAddress(_walletFeature.getUtxoList(),
+          _walletBaseItem, accountIndexField, changeField, _walletType);
     }
     _prevWalletInitState = _model.walletInitState;
   }
@@ -274,7 +266,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (_prevTxCount != txCount ||
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
       // TODO: pagination?
-      List<TransferDTO>? newTxList = _model.getTxList(widget.id);
+      List<Transfer>? newTxList = _model.getTxList(widget.id);
       if (newTxList != null) {
         print('--> [detail화면] newTxList.length: ${newTxList.length}');
         _txList = newTxList;
@@ -790,9 +782,28 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   return ShrinkAnimationButton(
                     defaultColor: Colors.transparent,
                     borderRadius: 20,
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/utxo-detail',
-                          arguments: {'utxo': _utxoList[itemIndex]});
+                    onPressed: () async {
+                      final txHash = _utxoList[itemIndex].txHash;
+                      await Navigator.pushNamed(
+                        context,
+                        '/utxo-detail',
+                        arguments: {
+                          'utxo': _utxoList[itemIndex],
+                          'id': widget.id,
+                        },
+                      );
+
+                      if (_model.isUpdateSelectedTagList) {
+                        _model.setIsUpdateSelectedTagList(false);
+                        for (var utxo in _utxoList) {
+                          if (utxo.txHash == txHash) {
+                            utxo.tags?.clear();
+                            utxo.tags?.addAll(_model.selectedTagList);
+                            setState(() {});
+                            break;
+                          }
+                        }
+                      }
                     },
                     child: UTXOItemCard(
                       utxo: _utxoList[itemIndex],
@@ -809,65 +820,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   padding: const EdgeInsets.only(top: 100),
                   child: Align(
                     alignment: Alignment.topCenter,
-                    child: !_isUtxoListLoadComplete
-                        ? const CircularProgressIndicator(
-                            color: MyColors.white,
-                          )
-                        : const Text(
-                            '사용 가능한 UTXO가 없어요\n새로운 거래를 통해 UTXO를 추가할 수 있어요',
-                            style: Styles.body1,
-                            textAlign: TextAlign.center,
-                          ),
+                    child: Text(
+                      _isUtxoListLoadComplete ? 'UTXO가 없어요' : 'UTXO를 확인하는 중이예요',
+                      style: Styles.body1,
+                      textAlign: TextAlign.center,
+                    ),
                   )),
             ),
     );
-  }
-
-  List<model.UTXO> getUtxoListWithHoldingAddress(List<UTXO> utxoEntities) {
-    List<model.UTXO> utxos = [];
-    for (var element in utxoEntities) {
-      Map<String, int> changeAndAccountIndex =
-          getChangeAndAccountElements(element.derivationPath);
-
-      String ownedAddress = _walletBaseItem.walletBase.getAddress(
-          changeAndAccountIndex[accountIndexField]!,
-          isChange: changeAndAccountIndex[changeField]! == 1);
-
-      utxos.add(model.UTXO(
-          element.timestamp.toString(),
-          element.blockHeight.toString(),
-          element.amount,
-          ownedAddress,
-          element.derivationPath,
-          element.transactionHash));
-    }
-    return utxos;
-  }
-
-  Map<String, int> getChangeAndAccountElements(String derivationPath) {
-    var pathElements = derivationPath.split('/');
-    Map<String, int> result;
-
-    switch (_walletType) {
-      // m / purpose' / coin_type' / account' / change / address_index
-      case WalletType.singleSignature:
-        result = {
-          changeField: int.parse(pathElements[4]),
-          accountIndexField: int.parse(pathElements[5])
-        };
-        break;
-      // m / purpose' / coin_type' / account' / script_type' / change / address_index
-      case WalletType.multiSignature:
-        result = {
-          changeField: int.parse(pathElements[5]),
-          accountIndexField: int.parse(pathElements[6])
-        };
-        break;
-      default:
-        throw ArgumentError("wrong walletType: $_walletType");
-    }
-
-    return result;
   }
 
   @override
@@ -912,13 +872,23 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         walletBaseItem: _walletBaseItem,
                       ));
                 },
-                onTitlePressed: () {
+                onTitlePressed: () async {
                   if (_walletBaseItem.walletType == WalletType.multiSignature) {
-                    Navigator.pushNamed(context, '/wallet-multisig',
+                    await Navigator.pushNamed(context, '/wallet-multisig',
                         arguments: {'id': widget.id});
                   } else {
-                    Navigator.pushNamed(context, '/wallet-setting',
+                    await Navigator.pushNamed(context, '/wallet-setting',
                         arguments: {'id': widget.id});
+                  }
+
+                  if (_model.isUpdateSelectedTagList) {
+                    _model.setIsUpdateSelectedTagList(false);
+                    getUtxoListWithHoldingAddress(
+                        _walletFeature.getUtxoList(),
+                        _walletBaseItem,
+                        accountIndexField,
+                        changeField,
+                        _walletType);
                   }
                 },
                 showFaucetIcon: true,
@@ -1053,8 +1023,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                                       true;
                                                 },
                                               );
-                                              debugPrint(
-                                                  'dx dy = ${_filterDropdownButtonPosition.dx} ${_filterDropdownButtonPosition.dy}');
                                             },
                                             minSize: 0,
                                             padding:
@@ -1124,6 +1092,73 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       ),
     );
   }
+
+  getUtxoListWithHoldingAddress(
+      List<UTXO> utxoEntities,
+      WalletListItemBase walletBaseItem,
+      String accountIndexField,
+      String changeField,
+      WalletType walletType) {
+    List<model.UTXO> utxos = [];
+    for (var element in utxoEntities) {
+      Map<String, int> changeAndAccountIndex = getChangeAndAccountElements(
+          element.derivationPath, walletType, accountIndexField, changeField);
+
+      String ownedAddress = walletBaseItem.walletBase.getAddress(
+          changeAndAccountIndex[accountIndexField]!,
+          isChange: changeAndAccountIndex[changeField]! == 1);
+
+      final txHashIndex = '${element.transactionHash}${element.index}';
+      final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, txHashIndex);
+
+      utxos.add(model.UTXO(
+        element.timestamp.toString(),
+        element.blockHeight.toString(),
+        element.amount,
+        ownedAddress,
+        element.derivationPath,
+        element.transactionHash,
+        element.index,
+        tags: tags,
+      ));
+    }
+
+    setState(() {
+      _utxoList = utxos;
+      _isUtxoListLoadComplete = true;
+    });
+  }
+}
+
+Map<String, int> getChangeAndAccountElements(
+  String derivationPath,
+  WalletType walletType,
+  String accountIndexField,
+  String changeField,
+) {
+  var pathElements = derivationPath.split('/');
+  Map<String, int> result;
+
+  switch (walletType) {
+    // m / purpose' / coin_type' / account' / change / address_index
+    case WalletType.singleSignature:
+      result = {
+        changeField: int.parse(pathElements[4]),
+        accountIndexField: int.parse(pathElements[5])
+      };
+      break;
+    // m / purpose' / coin_type' / account' / script_type' / change / address_index
+    case WalletType.multiSignature:
+      result = {
+        changeField: int.parse(pathElements[5]),
+        accountIndexField: int.parse(pathElements[6])
+      };
+      break;
+    default:
+      throw ArgumentError("wrong walletType: $walletType");
+  }
+
+  return result;
 }
 
 class BalanceAndButtons extends StatefulWidget {
@@ -1223,7 +1258,7 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
 }
 
 class TransactionRowItem extends StatefulWidget {
-  final TransferDTO tx;
+  final Transfer tx;
   final Unit currentUnit;
   final int id;
 
@@ -1385,8 +1420,10 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,
         onPressed: () {
-          Navigator.pushNamed(context, '/transaction-detail',
-              arguments: {'id': widget.id, 'tx': widget.tx});
+          Navigator.pushNamed(context, '/transaction-detail', arguments: {
+            'id': widget.id,
+            'txHash': widget.tx.transactionHash
+          });
         },
         borderRadius: MyBorder.defaultRadiusValue,
         child: Container(
