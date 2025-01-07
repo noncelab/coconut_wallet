@@ -859,7 +859,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   child: Align(
                     alignment: Alignment.topCenter,
                     child: Text(
-                      _isUtxoListLoadComplete ? 'UTXO가 없어요' : 'UTXO를 확인하는 중이예요',
+                      _isUtxoListLoadComplete ? 'UTXO가 없어요' : 'UTXO를 확인하는 중이에요',
                       style: Styles.body1,
                       textAlign: TextAlign.center,
                     ),
