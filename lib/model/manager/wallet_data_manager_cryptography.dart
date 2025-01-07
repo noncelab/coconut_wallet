@@ -36,7 +36,6 @@ class WalletDataManagerCryptography {
   Future<String> encrypt(String plainText) async {
     assert(_secretKey != null);
 
-    printLongString('--> plainText: $plainText');
     SecretBox secretBox =
         await _aesCbc.encrypt(utf8.encode(plainText), secretKey: _secretKey!);
 

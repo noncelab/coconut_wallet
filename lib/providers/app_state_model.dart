@@ -20,9 +20,6 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:uuid/uuid.dart';
 
-// ignore: constant_identifier_names
-const String WALLET_LIST = "WALLET_LIST";
-
 /// Represents the initialization state of a wallet. 처음 초기화 때만 사용하지 않고 refresh 할 때도 사용합니다.
 enum WalletInitState {
   /// The wallet has never been initialized.
@@ -385,6 +382,8 @@ class AppStateModel extends ChangeNotifier {
   Future<void> _loadWalletFromLocal() async {
     List<WalletListItemBase> wallets;
     try {
+      Logger.log(
+          '--> _walletDataManager.isInitialized: ${_walletDataManager.isInitialized}');
       if (!_walletDataManager.isInitialized) {
         await _walletDataManager.init(_subStateModel.isSetPin);
       }
@@ -392,11 +391,9 @@ class AppStateModel extends ChangeNotifier {
     } catch (e) {
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
       // 앱 삭제 후 재설치 했는데 위 에러가 발생하는 경우가 있습니다.
-
       setWalletInitState(WalletInitState.error,
           error: ErrorCodes.withMessage(
               ErrorCodes.storageReadError, e.toString()));
-
       _onFinallyLoadingWalletsFromDB();
       return;
     }
@@ -467,11 +464,9 @@ class AppStateModel extends ChangeNotifier {
     }
 
     //List<WalletListItemBase> newWalletList =
-    print('--> timestamp1: ${DateTime.now()}');
     var hasChanged = await _walletDataManager.syncWithLatest(
         targetWalletList, _nodeConnector!);
-    print('--> timestamp2: ${DateTime.now()}');
-    print('--> syncWithLatest result: $hasChanged');
+    Logger.log('--> syncWithLatest result: $hasChanged');
     if (hasChanged) {
       _walletItemList = _walletDataManager.walletList;
     }

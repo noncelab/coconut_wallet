@@ -211,9 +211,7 @@ class AppSubStateModel with ChangeNotifier {
     _isBalanceHidden = false;
     _lastUpdateTime = 0;
 
-    var wdm = WalletDataManager();
-    await wdm.init(false);
-    wdm.reset();
+    WalletDataManager().reset();
 
     await SecureStorageService().deleteAll();
     await SharedPrefs().clearSharedPref();
