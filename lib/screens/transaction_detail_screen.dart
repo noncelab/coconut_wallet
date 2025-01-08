@@ -365,7 +365,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                               "${PowWalletApp.kMempoolHost}/block/${tx.blockHeight}"));
                         },
                         value: Text(
-                          '${tx.blockHeight.toString()} (${_confirmedCountText(tx)} 승인)',
+                          tx.blockHeight != 0
+                              ? '${tx.blockHeight.toString()} (${_confirmedCountText(tx)} 승인)'
+                              : '-',
                           style: Styles.body1Number,
                         ),
                       ),
