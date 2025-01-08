@@ -577,7 +577,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         _selectedUtxoList.isEmpty
                             ? '0 BTC'
                             : '${satoshiToBitcoinString(_getSelectedUtxoTotalSatoshi()).normalizeToFullCharacters()} BTC',
-                        style: Styles.body2Number.merge(TextStyle(
+                        style: Styles.body1Number.merge(TextStyle(
                             color: _recommendedFeeFetchStatus ==
                                         RecommendedFeeFetchStatus.succeed &&
                                     _estimatedFee != null &&
@@ -926,7 +926,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                             bitcoinPriceKrw != null
                                                 ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
                                                 : '',
-                                            style: Styles.balance2,
+                                            style: Styles.caption,
                                           );
                                         },
                                       )
