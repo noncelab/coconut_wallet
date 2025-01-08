@@ -50,4 +50,6 @@ class UTXO {
       }
     });
   }
+
+  String get utxoId => '$txHash$index';
 }

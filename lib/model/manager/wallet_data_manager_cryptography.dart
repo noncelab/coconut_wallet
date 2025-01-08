@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:cryptography/cryptography.dart';
 
 class WalletDataManagerCryptography {

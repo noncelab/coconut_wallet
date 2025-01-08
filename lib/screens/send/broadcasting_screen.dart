@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/model/app_error.dart';
@@ -35,6 +36,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   bool _isValidSignedTransaction = false;
   int? _sendingAmountWhenAddressIsMyChange; // 내 지갑의 change address로 보내는 경우 잔액
   bool _isSendingToMyAddress = false;
+  List<int> outputIndexesToMyAddress = [];
 
   @override
   void initState() {
@@ -72,13 +74,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       List<PsbtOutput> outputToMyReceivingAddress = [];
       List<PsbtOutput> outputToMyChangeAddress = [];
       List<PsbtOutput> outputsToOther = [];
-      for (var output in outputs) {
-        if (output.derivationPath == null) {
-          outputsToOther.add(output);
-        } else if (output.isChange) {
-          outputToMyChangeAddress.add(output);
+      for (int i = 0; i < outputs.length; i++) {
+        if (outputs[i].derivationPath == null) {
+          outputsToOther.add(outputs[i]);
+        } else if (outputs[i].isChange) {
+          outputToMyChangeAddress.add(outputs[i]);
+          outputIndexesToMyAddress.add(i);
         } else {
-          outputToMyReceivingAddress.add(output);
+          outputToMyReceivingAddress.add(outputs[i]);
+          outputIndexesToMyAddress.add(i);
         }
       }
 
@@ -122,12 +126,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   void broadcast() async {
     setOverlayLoading(true);
-    final model = Provider.of<AppStateModel>(context, listen: false);
-    PSBT psbt = PSBT.parse(model.signedTransaction!);
+    //final model = Provider.of<AppStateModel>(context, listen: false);
+    PSBT psbt = PSBT.parse(_model.signedTransaction!);
     Transaction signedTx = psbt.getSignedTransaction(_walletBase.addressType);
 
     try {
-      Result<String, CoconutError> result = await model.broadcast(signedTx);
+      Result<String, CoconutError> result = await _model.broadcast(signedTx);
 
       setOverlayLoading(false);
 
@@ -141,11 +145,18 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
       if (result.isSuccess) {
         vibrateLight();
-        model.clearAllRelatedSending();
+        _model.clearAllRelatedSending();
+        if (_model.tagsMoveAllowed) {
+          List<String> newUtxoIds = outputIndexesToMyAddress
+              .map((index) => makeUtxoId(signedTx.transactionHash, index))
+              .toList();
+          await _model.moveTagsFromUsedUtxosToNewUtxos(widget.id, newUtxoIds);
+        } else {
+          await _model.deleteTagsOfUsedUtxos(widget.id);
+        }
 
         Navigator.pushNamedAndRemoveUntil(
           context,
-
           '/broadcasting-complete', // 이동할 경로
           ModalRoute.withName('/wallet-detail'), // '/home' 경로를 남기고 그 외의 경로 제거
           arguments: {
@@ -184,8 +195,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           context: context,
           isActive: _isValidSignedTransaction,
           onNextPressed: () {
-            var appState = Provider.of<AppStateModel>(context, listen: false);
-            if (appState.isNetworkOn == false) {
+            if (_model.isNetworkOn == false) {
               CustomToast.showWarningToast(
                   context: context, text: ErrorCodes.networkError.message);
               return;

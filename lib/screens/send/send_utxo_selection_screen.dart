@@ -17,9 +17,11 @@ import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
@@ -57,8 +59,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   late List<UTXO> _confirmedUtxoList;
   late List<UTXO> _selectedUtxoList;
-  // 선택된 태그를 가지고 있는 utxo 목록 길이
-  int _confirmedUtxoListLength = 0;
   // 선택된 태그
   String _selectedUtxoTagName = '전체';
   // txHashIndex - 태그 목록
@@ -142,13 +142,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   _addDisplayUtxoList() {
     _utxoTagMap.clear();
     for (var element in _confirmedUtxoList) {
-      final txHashIndex = '${element.transactionHash}${element.index}';
-      final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, txHashIndex);
-
-      _utxoTagMap[txHashIndex] = tags;
+      final tags =
+          _model.loadUtxoTagListByTxHashIndex(widget.id, element.utxoId);
+      _utxoTagMap[element.utxoId] = tags;
     }
-
-    _confirmedUtxoListLength = _confirmedUtxoList.length + 1;
     setState(() {});
   }
 
@@ -396,10 +393,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     setState(() {
       if (_selectedUtxoTagName != '전체') {
         final filteredList = _confirmedUtxoList.where((utxo) {
-          final transactionHash = utxo.transactionHash;
-          final utxoIndex = utxo.index;
-          final txHashIndex = '$transactionHash$utxoIndex';
-          return _utxoTagMap[txHashIndex]
+          return _utxoTagMap[utxo.utxoId]
                   ?.any((e) => e.name == _selectedUtxoTagName) ??
               false;
         }).toList();
@@ -787,7 +781,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _updateFeeRate(satsPerVb);
   }
 
-  // TODO: 태그 적용 팝업 추가
   goNext() {
     _removeFilterDropdown();
     if (_model.isNetworkOn != true) {
@@ -796,6 +789,37 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return;
     }
 
+    List<String> usedUtxoIds = _selectedUtxoList.map((e) => e.utxoId).toList();
+
+    bool isIncludeTag = usedUtxoIds
+        .any((txHashIndex) => _utxoTagMap[txHashIndex]?.isNotEmpty == true);
+
+    if (isIncludeTag) {
+      CustomDialogs.showCustomAlertDialog(
+        context,
+        title: '태그 적용',
+        message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
+        onConfirm: () {
+          Navigator.of(context).pop();
+          _model.recordUsedUtxoIdListWhenSend(usedUtxoIds);
+          _model.allowTagToMove();
+          _moveToSendConfirm();
+        },
+        onCancel: () {
+          Navigator.of(context).pop();
+          _model.recordUsedUtxoIdListWhenSend(usedUtxoIds);
+          _moveToSendConfirm();
+        },
+        confirmButtonText: '적용하기',
+        confirmButtonColor: MyColors.primary,
+        cancelButtonText: '아니오',
+      );
+    } else {
+      _moveToSendConfirm();
+    }
+  }
+
+  _moveToSendConfirm() {
     Navigator.pushNamed(context, '/send-confirm', arguments: {
       'id': widget.id,
       'fullSendInfo': FullSendInfo(
@@ -872,30 +896,51 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                     '보낼 수량',
                                     style: Styles.body2Bold,
                                   ),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
-                                          style: Styles.body2Number,
+                                  const Spacer(),
+                                  Visibility(
+                                    visible: _isMaxMode,
+                                    child: Container(
+                                      padding: const EdgeInsets.only(bottom: 2),
+                                      margin: const EdgeInsets.only(
+                                          right: 4, bottom: 16),
+                                      height: 24,
+                                      width: 34,
+                                      decoration: BoxDecoration(
+                                        color: MyColors.defaultBackground,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '최대',
+                                          style: Styles.caption2.copyWith(
+                                            color: MyColors.white,
+                                            letterSpacing: 0.1,
+                                          ),
                                         ),
-                                        Selector<UpbitConnectModel, int?>(
-                                          selector: (context, model) =>
-                                              model.bitcoinPriceKrw,
-                                          builder: (context, bitcoinPriceKrw,
-                                              child) {
-                                            return Text(
-                                              bitcoinPriceKrw != null
-                                                  ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())}'
-                                                  : '',
-                                              style: Styles.balance2,
-                                            );
-                                          },
-                                        )
-                                      ],
+                                      ),
                                     ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
+                                        style: Styles.body2Number,
+                                      ),
+                                      Selector<UpbitConnectModel, int?>(
+                                        selector: (context, model) =>
+                                            model.bitcoinPriceKrw,
+                                        builder:
+                                            (context, bitcoinPriceKrw, child) {
+                                          return Text(
+                                            bitcoinPriceKrw != null
+                                                ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())}'
+                                                : '',
+                                            style: Styles.balance2,
+                                          );
+                                        },
+                                      )
+                                    ],
                                   ),
                                 ],
                               ),
@@ -1077,20 +1122,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         tags: _model.utxoTagList.map((e) => e.name).toList(),
                         onSelectedTag: (tagName) {
                           _selectedUtxoTagName = tagName;
-
-                          if (tagName == '전체') {
-                            _confirmedUtxoListLength =
-                                _confirmedUtxoList.length + 1;
-                          } else {
-                            _confirmedUtxoListLength = _utxoTagMap.entries
-                                    .where((entry) => entry.value
-                                        .any((e) => e.name == tagName))
-                                    .map((entry) => entry.key)
-                                    .toList()
-                                    .length +
-                                1;
-                          }
-
                           deselectAll();
                         },
                       ),
@@ -1101,17 +1132,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                       shrinkWrap: true,
                       padding: const EdgeInsets.only(
                           top: 0, bottom: 30, left: 16, right: 16),
-                      itemCount: _confirmedUtxoListLength,
+                      itemCount: _confirmedUtxoList.length + 1,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 0),
                       itemBuilder: (context, index) {
                         if (index < _confirmedUtxoList.length) {
                           final utxo = _confirmedUtxoList[index];
-
-                          final transactionHash = utxo.transactionHash;
-                          final utxoIndex = utxo.index;
-                          final txHashIndex = '$transactionHash$utxoIndex';
-                          final isContainedTagName = _utxoTagMap[txHashIndex]
+                          final isContainedTagName = _utxoTagMap[utxo.utxoId]
                                   ?.any(
                                       (e) => e.name == _selectedUtxoTagName) ??
                               false;
@@ -1124,11 +1151,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             child: UtxoSelectableCard(
-                              key: ValueKey(transactionHash),
+                              key: ValueKey(utxo.transactionHash),
                               utxo: utxo,
                               isSelected: _selectedUtxoList
                                   .contains(_confirmedUtxoList[index]),
-                              utxoTags: _utxoTagMap[txHashIndex],
+                              utxoTags: _utxoTagMap[utxo.utxoId],
                               onSelected: _toggleSelection,
                             ),
                           );

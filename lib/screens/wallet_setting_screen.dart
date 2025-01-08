@@ -38,9 +38,6 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
   int _tooltipRemainingTime = 0;
   int? removedWalletId;
 
-  // TODO: AppStateModel 분리 후 제거
-  Object? _navigatorPopResult;
-
   @override
   void initState() {
     super.initState();
@@ -113,7 +110,7 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
             context: context,
             hasRightIcon: false,
             onBackPressed: () {
-              Navigator.pop(context, _navigatorPopResult);
+              Navigator.pop(context);
             }),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -200,11 +197,9 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                                 InformationRowItem(
                                   label: '태그 관리',
                                   showIcon: true,
-                                  onPressed: () async {
-                                    _navigatorPopResult =
-                                        await Navigator.pushNamed(
-                                            context, '/utxo-tag',
-                                            arguments: {'id': widget.id});
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/utxo-tag',
+                                        arguments: {'id': widget.id});
                                   },
                                 ),
                               ],

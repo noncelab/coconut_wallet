@@ -66,7 +66,7 @@ class _RealmUtxoTag {
   @PrimaryKey()
   late String id; // UUID 사용
   late int walletId;
-  late _RealmWalletBase? walletBase;
+  //late _RealmWalletBase? walletBase;
   late String name;
   late int colorIndex;
   late List<_RealmUtxoId> utxoIdList;
