@@ -875,7 +875,7 @@ class AppStateModel extends ChangeNotifier {
   /// - 태그 관리 화면
   void updateUtxoTag(UtxoTag utxoTag) {
     final result = _walletDataManager.updateUtxoTag(
-        utxoTag.id, utxoTag.name, utxoTag.colorIndex, utxoTag.utxoIdList ?? []);
+        utxoTag.id, utxoTag.name, utxoTag.colorIndex);
     if (result.isSuccess) {
       _isUpdateSelectedTagList = true;
       _utxoTagList = loadUtxoTagList(utxoTag.walletId);

@@ -532,8 +532,7 @@ class WalletDataManager {
   }
 
   /// id 로 조회된 태그의 속성 업데이트
-  RealmResult<UtxoTag> updateUtxoTag(
-      String id, String name, int colorIndex, List<String> utxoIdList) {
+  RealmResult<UtxoTag> updateUtxoTag(String id, String name, int colorIndex) {
     try {
       final tags = _realm.query<RealmUtxoTag>("id == '$id'");
 
