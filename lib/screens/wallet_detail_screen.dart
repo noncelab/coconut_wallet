@@ -821,7 +821,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     defaultColor: Colors.transparent,
                     borderRadius: 20,
                     onPressed: () async {
-                      final txHash = _utxoList[itemIndex].txHash;
+                      final txHashIndex =
+                          '${_utxoList[itemIndex].txHash}${_utxoList[itemIndex].index}';
                       await Navigator.pushNamed(
                         context,
                         '/utxo-detail',
@@ -834,7 +835,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       if (_model.isUpdateSelectedTagList) {
                         _model.setIsUpdateSelectedTagList(false);
                         for (var utxo in _utxoList) {
-                          if (utxo.txHash == txHash) {
+                          final newTxHashIndex = '${utxo.txHash}${utxo.index}';
+                          if (newTxHashIndex == txHashIndex) {
                             utxo.tags?.clear();
                             utxo.tags?.addAll(_model.selectedTagList);
                             setState(() {});
@@ -918,6 +920,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                 }
 
                 if (_model.isUpdateSelectedTagList) {
+                  _model.setIsUpdateSelectedTagList(false);
                   getUtxoListWithHoldingAddress(
                       _walletFeature.walletStatus!.utxoList,
                       _walletBaseItem,
