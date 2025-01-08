@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
@@ -195,7 +197,8 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                   } else if (_type == TagBottomSheetType.create) ...{
                     CustomAppbarButton(
                       isActive: _updateTagName.isNotEmpty &&
-                          !_utxoTags.any((tag) => tag.name == _updateTagName),
+                          !_utxoTags.any((tag) => tag.name == _updateTagName) &&
+                          !_controller.text.endsWith(' '),
                       isActivePrimaryColor: false,
                       text: '완료',
                       onPressed: () {
@@ -342,21 +345,36 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                               ),
                             ),
                             onChanged: (text) {
-                              if (text.startsWith(' ')) {
-                                text = text.trim();
-                              }
-
-                              if (text.contains('#')) {
-                                text = text.replaceAll('#', '');
-                              }
-
-                              if (text.endsWith(' ')) {
-                                _updateTagName = text.trimRight();
+                              if (Platform.isIOS) {
+                                if (text.startsWith(' ')) {
+                                  text = text.trim();
+                                }
+                                if (text.contains('#')) {
+                                  text = text.replaceAll('#', '');
+                                }
+                                if (text.endsWith(' ')) {
+                                  _updateTagName = text.trimRight();
+                                  _isSelectButtonEnabled = false;
+                                } else {
+                                  _updateTagName = text;
+                                }
+                                _controller.text = text;
                               } else {
-                                _updateTagName = text;
-                              }
+                                if (text.startsWith(' ')) {
+                                  _updateTagName = '';
+                                  _controller.text = _updateTagName;
+                                } else if (text.contains('#')) {
+                                  _updateTagName = text.replaceAll('#', '');
+                                  _controller.text = _updateTagName;
+                                } else {
+                                  _updateTagName = text;
+                                }
 
-                              _controller.text = text;
+                                if (_updateTagName.endsWith(' ')) {
+                                  _updateTagName = _updateTagName.trimRight();
+                                  _isSelectButtonEnabled = false;
+                                }
+                              }
 
                               if (_type == TagBottomSheetType.update) {
                                 _checkUpdateButtonEnabled();
