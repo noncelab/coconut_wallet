@@ -73,7 +73,7 @@ dependencies:
   coconut_lib:
     git:
       url: https://github.com/noncelab/coconut_lib
-      ref: develop
+      ref: 549bcacec1b533de6fee4f6773bb445b49667b37
   realm: ^20.0.0
   cryptography: ^2.7.0
 
