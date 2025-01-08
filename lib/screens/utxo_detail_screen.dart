@@ -459,10 +459,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     return _isUtxoTooltipVisible
         ? Positioned(
             top: _utxoTooltipIconPosition.dy + _utxoTooltipIconSize.height - 10,
-            right: MediaQuery.of(context).size.width -
-                _utxoTooltipIconPosition.dx -
-                _utxoTooltipIconSize.width +
-                5,
+            right: 5,
             child: GestureDetector(
               onTap: _removeUtxoTooltip,
               child: ClipPath(
