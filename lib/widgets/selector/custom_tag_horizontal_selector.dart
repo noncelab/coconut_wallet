@@ -25,7 +25,7 @@ class _CustomTagHorizontalSelectorState
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 24,
+      height: 32,
       child: Row(
         children: [
           GestureDetector(
@@ -62,16 +62,16 @@ class _CustomTagHorizontalSelectorState
 
   Widget _tagSelectorChip(String name, bool isSelected) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       margin: const EdgeInsets.only(right: 4),
-      height: 24,
+      height: 32,
       decoration: BoxDecoration(
         color: isSelected ? MyColors.white : MyColors.gray800,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         name,
-        style: Styles.caption2.copyWith(
+        style: Styles.caption.copyWith(
           color: isSelected ? MyColors.gray800 : MyColors.white,
           letterSpacing: 0.1,
         ),

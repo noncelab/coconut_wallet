@@ -120,7 +120,8 @@ abstract class Styles {
       color: MyColors.white,
       fontSize: 18,
       fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w700);
+      fontWeight: FontWeight.w700,
+      height: 1);
 
   static const TextStyle h1 = TextStyle(
       fontFamily: _fontText,
