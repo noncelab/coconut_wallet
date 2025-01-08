@@ -107,7 +107,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     dataMap['selectedUtxoTags'] as List<UtxoTag>;
 
                 if (tx == null) return Container();
-
+                initialInputMaxCount = tx.inputAddressList.length <= 3
+                    ? tx.inputAddressList.length
+                    : 3;
+                initialOutputMaxCount = tx.outputAddressList.length <= 2
+                    ? tx.outputAddressList.length
+                    : 2;
                 if (tx.inputAddressList.length <= initialInputMaxCount) {
                   initialInputMaxCount = tx.inputAddressList.length;
                 }
