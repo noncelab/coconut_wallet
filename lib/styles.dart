@@ -232,6 +232,15 @@ abstract class Styles {
       fontStyle: FontStyle.normal,
       fontWeight: FontWeight.w400);
 
+  static const TextStyle body3 = TextStyle(
+      fontFamily: _fontText,
+      color: MyColors.white,
+      fontSize: 12,
+      height: 18 / 12,
+      letterSpacing: -0.02,
+      fontStyle: FontStyle.normal,
+      fontWeight: FontWeight.w400);
+
   static const TextStyle unit1 = TextStyle(
       fontFamily: _fontNumber,
       color: MyColors.transparentBlack,

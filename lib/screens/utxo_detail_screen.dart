@@ -20,6 +20,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -108,7 +109,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     dataMap['selectedUtxoTags'] as List<UtxoTag>;
 
                 if (tx == null) return Container();
-
+                initialInputMaxCount = tx.inputAddressList.length <= 3
+                    ? tx.inputAddressList.length
+                    : 3;
+                initialOutputMaxCount = tx.outputAddressList.length <= 2
+                    ? tx.outputAddressList.length
+                    : 2;
                 if (tx.inputAddressList.length <= initialInputMaxCount) {
                   initialInputMaxCount = tx.inputAddressList.length;
                 }
@@ -195,7 +201,34 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                 );
                               },
                             )),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 10),
+                            Visibility(
+                              maintainAnimation: true,
+                              maintainState: true,
+                              maintainSize: true,
+                              visible: int.parse(widget.utxo.blockHeight) == 0,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '승인 대기중',
+                                    style: Styles.body3.merge(
+                                      const TextStyle(
+                                        color: MyColors.secondary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  SizedBox(
+                                    width: 35,
+                                    child: Lottie.asset(
+                                      'assets/lottie/loading-three-dots.json',
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 20, vertical: 16),
@@ -459,10 +492,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     return _isUtxoTooltipVisible
         ? Positioned(
             top: _utxoTooltipIconPosition.dy + _utxoTooltipIconSize.height - 10,
-            right: MediaQuery.of(context).size.width -
-                _utxoTooltipIconPosition.dx -
-                _utxoTooltipIconSize.width +
-                5,
+            right: 5,
             child: GestureDetector(
               onTap: _removeUtxoTooltip,
               child: ClipPath(
@@ -475,7 +505,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     right: 18,
                     bottom: 10,
                   ),
-                  color: MyColors.skybule,
+                  color: MyColors.white,
                   child: Text(
                     _utxoTip,
                     style: Styles.caption.merge(TextStyle(

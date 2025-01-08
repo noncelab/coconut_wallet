@@ -304,7 +304,10 @@ class _WalletSettingScreenState extends State<WalletSettingScreen> {
                     top: _walletTooltipIconPosition.dy - _tooltipTopPadding,
                     right: MediaQuery.of(context).size.width -
                         _walletTooltipIconPosition.dx -
-                        48,
+                        (_walletTooltipIconRenderBox == null
+                            ? 0
+                            : _walletTooltipIconRenderBox!.size.width) -
+                        10,
                     child: GestureDetector(
                       onTap: () => _removeTooltip(),
                       child: ClipPath(
