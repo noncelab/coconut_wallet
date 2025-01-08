@@ -113,8 +113,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   late int? _prevTxCount;
   late bool _prevIsLatestTxBlockHeightZero;
 
-  final SharedPrefs _sharedPrefs = SharedPrefs();
-
   late final ScrollController _scrollController;
 
   @override
