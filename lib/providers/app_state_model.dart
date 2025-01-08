@@ -806,7 +806,6 @@ class AppStateModel extends ChangeNotifier {
   /// utxo 상세 화면 진입시 태그 관련 데이터
   void initTransactionDetailScreenTagData(int walletId, String txHash) {
     _transaction = loadTransaction(walletId, txHash);
-    notifyListeners();
   }
 
   /// utxo 상세 화면 진입시 태그 관련 데이터

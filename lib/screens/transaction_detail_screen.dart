@@ -4,6 +4,8 @@ import 'package:coconut_wallet/screens/bottomsheet/memo_bottom_sheet_container.d
 import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/enums.dart';
@@ -54,9 +56,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     _model = Provider.of<AppStateModel>(context, listen: false);
     _addressBook = _model.getWalletById(widget.id).walletBase.addressBook;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _model.initTransactionDetailScreenTagData(widget.id, widget.txHash);
+    _model.initTransactionDetailScreenTagData(widget.id, widget.txHash);
+    _initSeeMoreButtons();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 100));
 
       _model.getCurrentBlockHeight().then((value) {
@@ -70,7 +73,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     });
   }
 
-  void _initSeeMoreButtons(Transfer tx, TransactionStatus? status) {
+  void _initSeeMoreButtons() {
+    Transfer? tx = _model.transaction;
+    if (tx == null) {
+      CustomDialogs.showCustomAlertDialog(context,
+          title: '트랜잭션 가져오기 실패',
+          message: '잠시 후 다시 시도해 주세요',
+          onConfirm: () => Navigator.pop(context));
+      return;
+    }
+
+    final status = TransactionUtil.getStatus(tx);
+
     int initialInputMaxCount = (status == TransactionStatus.sending ||
             status == TransactionStatus.sent ||
             status == TransactionStatus.self ||
@@ -162,8 +176,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         if (tx == null) return Container();
 
         final status = TransactionUtil.getStatus(tx);
-
-        _initSeeMoreButtons(tx, status);
 
         if (tx.outputAddressList.isNotEmpty == true) {
           tx.outputAddressList.sort((a, b) {

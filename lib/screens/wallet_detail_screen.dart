@@ -62,6 +62,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   final GlobalKey _positionedTopWidgetKey = GlobalKey();
   final GlobalKey _filterDropdownButtonKey = GlobalKey();
   final GlobalKey _scrolledFilterDropdownButtonKey = GlobalKey();
+  final GlobalKey _txSliverListKey = GlobalKey();
+  final GlobalKey _utxoSliverListKey = GlobalKey();
   late RenderBox _faucetRenderBox;
   late RenderBox _appBarRenderBox;
   late RenderBox _topToggleButtonRenderBox;
@@ -78,6 +80,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   Size _positionedTopWidgetSize = const Size(0, 0); // 거래내역 - UTXO 리스트 위젯 영역
   Size _filterDropdownButtonSize = const Size(0, 0); // 필터 버튼(확장형)
   Size _scrolledFilterDropdownButtonSize = const Size(0, 0); // 필터 버튼(축소형))
+  Size _txSliverListSize = const Size(0, 0); // 거래내역 리스트 사이즈
+  Size _utxoSliverListSize = const Size(0, 0); // utxo 리스트 사이즈
   late Offset _faucetIconPosition;
   late Offset _filterDropdownButtonPosition;
   late Offset _scrolledFilterDropdownButtonPosition;
@@ -176,10 +180,19 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       _filterDropdownButtonSize = const Size(0, 0);
       _scrolledFilterDropdownButtonSize = const Size(0, 0);
 
-      topPadding = _topToggleButtonSize.height +
-          _topSelectorWidgetSize.height +
-          _topHeaderWidgetSize.height -
-          _positionedTopWidgetSize.height;
+      setState(() {
+        topPadding = _topToggleButtonSize.height +
+            _topSelectorWidgetSize.height +
+            _topHeaderWidgetSize.height -
+            _positionedTopWidgetSize.height;
+      });
+
+      if (_txList.isNotEmpty) {
+        final RenderBox txSliverListRenderBox =
+            _txSliverListKey.currentContext?.findRenderObject() as RenderBox;
+        _txSliverListSize = txSliverListRenderBox.size;
+      }
+
       _scrollController.addListener(() {
         if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
           _removeFilterDropdown();
@@ -271,6 +284,19 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           _isUtxoListLoadComplete = true;
           model.UTXO.sortUTXO(_utxoList, _selectedFilter);
         });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_filterDropdownButtonKey.currentContext?.findRenderObject() !=
+              null) {
+            _filterDropdownButtonRenderBox =
+                _filterDropdownButtonKey.currentContext!.findRenderObject()
+                    as RenderBox;
+
+            _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
+            _filterDropdownButtonPosition =
+                _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+          }
+        });
       }
     }
     _prevWalletInitState = _model.walletInitState;
@@ -322,6 +348,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (type == SelectedListType.Transaction) {
       setState(() {
         _selectedListType = SelectedListType.Transaction;
+        _isFilterDropdownVisible = false;
+        _isScrolledFilterDropdownVisible = false;
       });
     } else {
       setState(() {
@@ -335,6 +363,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
         _filterDropdownButtonPosition =
             _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+        final RenderBox utxoSliverListRenderBox =
+            _utxoSliverListKey.currentContext?.findRenderObject() as RenderBox;
+        _utxoSliverListSize = utxoSliverListRenderBox.size;
       }
     }
   }
@@ -506,13 +537,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       minSize: 0,
                       color: MyColors.white,
                       child: SizedBox(
-                        width: 30,
+                        width: 35,
                         child: Center(
                           child: Text(
                             '받기',
-                            style: Styles.caption2.merge(
+                            style: Styles.caption.merge(
                               const TextStyle(
                                   color: MyColors.black,
+                                  fontFamily: 'Pretendard',
                                   fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -542,13 +574,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       minSize: 0,
                       color: MyColors.primary,
                       child: SizedBox(
-                        width: 30,
+                        width: 35,
                         child: Center(
                           child: Text(
                             '보내기',
-                            style: Styles.caption2.merge(
+                            style: Styles.caption.merge(
                               const TextStyle(
                                   color: MyColors.black,
+                                  fontFamily: 'Pretendard',
                                   fontWeight: FontWeight.w600),
                             ),
                           ),
@@ -774,26 +807,39 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       minimum: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
       sliver: _txList.isNotEmpty
           ? SliverList(
-              delegate: SliverChildBuilderDelegate((ctx, index) {
-              return Column(children: [
-                TransactionRowItem(
-                    tx: _txList[index], currentUnit: _current, id: widget.id),
-                gapOfTxRowItems,
-                if (index == _txList.length - 1)
-                  const SizedBox(
-                    height: 80,
-                  )
-              ]);
-            }, childCount: _txList.length))
+              delegate: SliverChildBuilderDelegate(
+                (ctx, index) {
+                  return Column(
+                    key: index == 0 ? _txSliverListKey : null,
+                    children: [
+                      TransactionRowItem(
+                        tx: _txList[index],
+                        currentUnit: _current,
+                        id: widget.id,
+                      ),
+                      gapOfTxRowItems,
+                      if (index == _txList.length - 1)
+                        const SizedBox(
+                          height: 80,
+                        ),
+                    ],
+                  );
+                },
+                childCount: _txList.length,
+              ),
+            )
           : const SliverFillRemaining(
-              fillOverscroll: false,
               hasScrollBody: false,
               child: Padding(
-                  padding: EdgeInsets.only(top: 100),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: Text('거래 내역이 없어요', style: Styles.body1),
-                  )),
+                padding: EdgeInsets.only(top: 100),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Text(
+                    '거래 내역이 없어요',
+                    style: Styles.body1,
+                  ),
+                ),
+              ),
             ),
     );
   }
@@ -817,6 +863,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   // 실제 아이템
                   final itemIndex = index ~/ 2; // 실제 아이템 인덱스
                   return ShrinkAnimationButton(
+                    key: index == 0 ? _utxoSliverListKey : null,
                     defaultColor: Colors.transparent,
                     borderRadius: 20,
                     onPressed: () async {
@@ -1100,7 +1147,49 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   )),
                   _selectedListType == SelectedListType.Transaction
                       ? _transactionListWidget()
-                      : _utxoListWidget()
+                      : _utxoListWidget(),
+                  if ((_selectedListType == SelectedListType.Transaction &&
+                      _txList.isNotEmpty)) ...{
+                    SliverToBoxAdapter(
+                      child: Container(
+                        height: _positionedTopWidgetVisible
+                            ? 0
+                            : _txSliverListSize.height * _txList.length + 80 >
+                                    MediaQuery.sizeOf(context).height -
+                                        topPadding
+                                ? 0
+                                : MediaQuery.sizeOf(context).height -
+                                    topPadding -
+                                    (_txSliverListSize.height * _txList.length +
+                                        80) -
+                                    _appBarSize.height -
+                                    kToolbarHeight +
+                                    10,
+                      ),
+                    ),
+                  },
+                  if ((_selectedListType == SelectedListType.UTXO &&
+                      _utxoList.isNotEmpty)) ...{
+                    SliverToBoxAdapter(
+                      child: Container(
+                        height: _positionedTopWidgetVisible
+                            ? 0
+                            : _utxoSliverListSize.height * _utxoList.length +
+                                        (12 * (_utxoList.length - 1)) >
+                                    MediaQuery.sizeOf(context).height -
+                                        topPadding
+                                ? 0
+                                : MediaQuery.sizeOf(context).height -
+                                    topPadding -
+                                    ((_utxoSliverListSize.height - 20) *
+                                            _utxoList.length +
+                                        (12 * (_utxoList.length - 1))) -
+                                    _appBarSize.height -
+                                    kToolbarHeight +
+                                    10,
+                      ),
+                    ),
+                  }
                 ]),
           ),
           _afterScrolledWidget(),
@@ -1436,7 +1525,7 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
               ? satoshiToBitcoinString(widget.tx.amount!)
               : addCommasToIntegerPart(widget.tx.amount!.toDouble()),
           style: Styles.body1Number.merge(const TextStyle(
-              color: MyColors.primary, fontWeight: FontWeight.w500)),
+              color: MyColors.white, fontWeight: FontWeight.w500)),
         );
       default:
         // 기본 값으로 처리될 수 있도록 한 경우
