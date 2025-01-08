@@ -357,7 +357,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                         .map((e) => e.name)
                                         .toList(),
                                     onSelected: (selectedNames, addTags) {
-                                      // print(addTags);
                                       _model.updateUtxoTagList(
                                         selectedNames: selectedNames,
                                         addTags: addTags,

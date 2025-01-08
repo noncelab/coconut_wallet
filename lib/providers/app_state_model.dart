@@ -569,18 +569,28 @@ class AppStateModel extends ChangeNotifier {
   bool _isUpdatedSelectedTagList = false;
   bool get isUpdatedSelectedTagList => _isUpdatedSelectedTagList;
 
-  Future moveTagsFromUsedUtxosToNewUtxos(
-      int walletId, List<String> newUtxoIds) async {
-    await _walletDataManager.moveTagsFromUsedUtxosToNewUtxos(
+  // TODO: 주석 확인 후 제거
+  // moveTagsFromUsedUtxosToNewUtxos + deleteTagsOfUsedUtxos
+  Future updateTagsOfUsedUtxos(int walletId, List<String> newUtxoIds) async {
+    final result = await _walletDataManager.updateTagsOfUsedUtxos(
         walletId, _usedUtxoIdListWhenSend, newUtxoIds);
+    if (result.isError) {
+      Logger.error(result.error);
+    }
     _usedUtxoIdListWhenSend = [];
     _tagsMoveAllowed = false;
   }
-
-  Future deleteTagsOfUsedUtxos(int walletId) async {
-    await _walletDataManager.deleteTags(walletId, _usedUtxoIdListWhenSend);
-    _usedUtxoIdListWhenSend = [];
-  }
+  // Future moveTagsFromUsedUtxosToNewUtxos(
+  //     int walletId, List<String> newUtxoIds) async {
+  //   await _walletDataManager.moveTagsFromUsedUtxosToNewUtxos(
+  //       walletId, _usedUtxoIdListWhenSend, newUtxoIds);
+  //   _usedUtxoIdListWhenSend = [];
+  //   _tagsMoveAllowed = false;
+  // }
+  // Future deleteTagsOfUsedUtxos(int walletId) async {
+  //   await _walletDataManager.deleteTags(walletId, _usedUtxoIdListWhenSend);
+  //   _usedUtxoIdListWhenSend = [];
+  // }
 
   /// 선택된 태그 리스트 변경 여부 on/off
   void setIsUpdateSelectedTagList(value) {
@@ -698,20 +708,8 @@ class AppStateModel extends ChangeNotifier {
   }) {
     _isUpdatedSelectedTagList = true;
 
-    // 새로운 태그 추가
-    for (var utxoTag in addTags) {
-      final id = const Uuid().v4();
-      final addUtxoTagResult = _walletDataManager.addUtxoTag(
-          id, walletId, utxoTag.name, utxoTag.colorIndex);
-
-      if (addUtxoTagResult.isError) {
-        Logger.error(
-            'updateUtxoTagList/addUtxoTagResult -> ${addUtxoTagResult.error}');
-      }
-    }
-
     final updateUtxoTagListResult = _walletDataManager.updateUtxoTagList(
-        walletId, txHashIndex, selectedNames);
+        walletId, txHashIndex, addTags, selectedNames);
 
     if (updateUtxoTagListResult.isError) {
       Logger.log(

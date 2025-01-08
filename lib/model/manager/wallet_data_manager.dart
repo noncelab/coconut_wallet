@@ -61,7 +61,6 @@ class WalletDataManager {
         RealmIntegerId.schema,
         TempBroadcastTimeRecord.schema,
         RealmUtxoTag.schema,
-        RealmUtxoId.schema,
       ],
       schemaVersion: 1,
       migrationCallback: (migration, oldVersion) {},
@@ -443,39 +442,30 @@ class WalletDataManager {
     }
   }
 
-  Future<RealmResult<void>> moveTagsFromUsedUtxosToNewUtxos(
+  // TODO: 주석 확인 후 제거
+  // deleteTags 동일한 기능이 필요하여 합쳐짐
+  Future<RealmResult<void>> updateTagsOfUsedUtxos(
       int walletId, List<String> usedUtxoIds, List<String> newUtxoIds) async {
     try {
-      final tags = _realm.all<RealmUtxoTag>().query("walletId == '$walletId'");
-      final List<RealmUtxoId> newRealmUtxoIds = newUtxoIds
-          .map((newUtxoId) => mapStringToRealmUtxoId(newUtxoId))
-          .toList();
+      final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
 
       await _realm.writeAsync(() {
         for (int i = 0; i < tags.length; i++) {
           if (tags[i].utxoIdList.isEmpty) continue;
 
           int previousCount = tags[i].utxoIdList.length;
+
           tags[i].utxoIdList.removeWhere((utxoId) =>
-              usedUtxoIds.any((usedUtxoId) => usedUtxoId == utxoId.id));
-          bool needToMove = previousCount > tags[i].utxoIdList.length;
-          // for (int j = 0; j < usedUtxoIds.length; j++) {
-          //   int removedTargetIndex = tags[i]
-          //       .utxoIdList
-          //       .indexWhere((realmUtxoId) => realmUtxoId.id == usedUtxoIds[j]);
-          //   if (removedTargetIndex == -1) return;
-          //   needToMove = true;
-          //   tags[i].utxoIdList.remove(tags[i].utxoIdList[removedTargetIndex]);
-          //   tags[i].utxoIdList.removeWhere((id) => usedUtxoIds.any(test))
-          // }
-          if (needToMove) {
-            tags[i].utxoIdList.addAll(newRealmUtxoIds);
+              usedUtxoIds.any((targetUtxoId) => targetUtxoId == utxoId));
+
+          if (newUtxoIds.isNotEmpty) {
+            bool needToMove = previousCount > tags[i].utxoIdList.length;
+            if (needToMove) {
+              tags[i].utxoIdList.addAll(newUtxoIds);
+            }
           }
         }
       });
-
-      // for문을 돌면서 usedUtxoIds에 포함된 utxoId를 지웁니다.
-      // newUtxoIds for문을 돌면
       return RealmResult();
     } catch (e) {
       return RealmResult(
@@ -485,6 +475,37 @@ class WalletDataManager {
       );
     }
   }
+  // Future<RealmResult<int>> deleteTags(int walletId, List<String> utxoIds) async {
+  //   try {
+  //     final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
+  //
+  //     if (tags.isEmpty) {
+  //       return RealmResult(data: 0);
+  //     }
+  //
+  //     int deleteCount = 0;
+  //
+  //     await _realm.writeAsync(() {
+  //       for (int i = 0; i < tags.length; i++) {
+  //         if (tags[i].utxoIdList.isEmpty) continue;
+  //
+  //         int previousCount = tags[i].utxoIdList.length;
+  //
+  //         tags[i].utxoIdList.removeWhere((utxoId) =>
+  //             utxoIds.any((targetUtxoId) => targetUtxoId == utxoId));
+  //         deleteCount += previousCount - tags[i].utxoIdList.length;
+  //       }
+  //     });
+  //
+  //     return RealmResult(data: deleteCount);
+  //   } catch (e) {
+  //     return RealmResult(
+  //       error: e is RealmException
+  //           ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
+  //           : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
+  //     );
+  //   }
+  // }
 
   /// walletId 로 조회된 태그 목록에서 txHashIndex 를 포함하고 있는 태그 목록 조회
   RealmResult<List<UtxoTag>> loadUtxoTagListByUtxoId(
@@ -498,7 +519,7 @@ class WalletDataManager {
 
       _utxoTagList.addAll(
         tags
-            .where((tag) => tag.utxoIdList.any((item) => item.id == utxoId))
+            .where((tag) => tag.utxoIdList.contains(utxoId))
             .map(mapRealmUtxoTagToUtxoTag),
       );
 
@@ -611,67 +632,39 @@ class WalletDataManager {
   /// utxoIdList 변경
   /// - [walletId] 목록 검색
   /// - [txHashIndex] UTXO Id
+  /// - [txHashIndex] 추가할 UtxoTag 목록
   /// - [selectedNames] 선택된 태그명 목록
-  RealmResult<bool> updateUtxoTagList(
-      int walletId, String txHashIndex, List<String> selectedNames) {
+  RealmResult<bool> updateUtxoTagList(int walletId, String txHashIndex,
+      List<UtxoTag> addTags, List<String> selectedNames) {
     try {
-      final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
-
-      if (tags.isEmpty) {
-        return RealmResult(
-            error: ErrorCodes.withMessage(ErrorCodes.realmNotFound, ''));
-      }
-
-      final existingId =
-          _realm.query<RealmUtxoId>("id == '$txHashIndex'").firstOrNull;
-
-      final id = existingId ?? mapStringToRealmUtxoId(txHashIndex);
-
       _realm.write(() {
+        // 새로운 태그 추가
+        final now = DateTime.now();
+        for (var utxoTag in addTags) {
+          final tag = RealmUtxoTag(
+            utxoTag.id,
+            walletId,
+            utxoTag.name,
+            utxoTag.colorIndex,
+            now,
+          );
+          _realm.add(tag);
+        }
+
+        // 태그 적용
+        final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
         for (var tag in tags) {
           if (selectedNames.contains(tag.name)) {
-            if (!tag.utxoIdList.contains(id)) {
-              tag.utxoIdList.add(id);
+            if (!tag.utxoIdList.contains(txHashIndex)) {
+              tag.utxoIdList.add(txHashIndex);
             }
           } else {
-            tag.utxoIdList.remove(id);
+            tag.utxoIdList.remove(txHashIndex);
           }
         }
       });
 
       return RealmResult(data: true);
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
-  }
-
-  Future<RealmResult<int>> deleteTags(
-      int walletId, List<String> utxoIds) async {
-    try {
-      final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
-
-      if (tags.isEmpty) {
-        return RealmResult(data: 0);
-      }
-
-      int deleteCount = 0;
-
-      await _realm.writeAsync(() {
-        for (int i = 0; i < tags.length; i++) {
-          if (tags[i].utxoIdList.isEmpty) continue;
-
-          int previousCount = tags[i].utxoIdList.length;
-          tags[i].utxoIdList.removeWhere((utxoId) =>
-              utxoIds.any((targetUtxoId) => targetUtxoId == utxoId.id));
-          deleteCount += previousCount - tags[i].utxoIdList.length;
-        }
-      });
-
-      return RealmResult(data: deleteCount);
     } catch (e) {
       return RealmResult(
         error: e is RealmException
@@ -786,7 +779,6 @@ class WalletDataManager {
       _realm.deleteAll<RealmMultisigWallet>();
       _realm.deleteAll<RealmTransaction>();
       _realm.deleteAll<RealmUtxoTag>();
-      _realm.deleteAll<RealmUtxoId>();
     });
 
     _walletList = [];

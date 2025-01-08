@@ -7,10 +7,6 @@ UtxoTag mapRealmUtxoTagToUtxoTag(RealmUtxoTag utxoTag) {
     walletId: utxoTag.walletId,
     name: utxoTag.name,
     colorIndex: utxoTag.colorIndex,
-    utxoIdList: utxoTag.utxoIdList.map((e) => e.id).toList(),
+    utxoIdList: utxoTag.utxoIdList,
   );
-}
-
-RealmUtxoId mapStringToRealmUtxoId(String id) {
-  return RealmUtxoId(id);
 }

@@ -7,6 +7,7 @@ import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 /// [TagBottomSheetType]
 /// - [select] : 태그 목록 선택 변경 및 새 태그 생성
@@ -197,8 +198,9 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                       isActivePrimaryColor: false,
                       text: '완료',
                       onPressed: () {
+                        final id = const Uuid().v4();
                         final createdUtxoTag = UtxoTag(
-                          id: '',
+                          id: id,
                           walletId: 0,
                           name: _updateTagName,
                           colorIndex: _updateTagColorIndex,

@@ -633,14 +633,14 @@ class RealmUtxoTag extends _RealmUtxoTag
     String name,
     int colorIndex,
     DateTime createAt, {
-    Iterable<RealmUtxoId> utxoIdList = const [],
+    Iterable<String> utxoIdList = const [],
   }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'walletId', walletId);
     RealmObjectBase.set(this, 'name', name);
     RealmObjectBase.set(this, 'colorIndex', colorIndex);
-    RealmObjectBase.set<RealmList<RealmUtxoId>>(
-        this, 'utxoIdList', RealmList<RealmUtxoId>(utxoIdList));
+    RealmObjectBase.set<RealmList<String>>(
+        this, 'utxoIdList', RealmList<String>(utxoIdList));
     RealmObjectBase.set(this, 'createAt', createAt);
   }
 
@@ -667,11 +667,10 @@ class RealmUtxoTag extends _RealmUtxoTag
   set colorIndex(int value) => RealmObjectBase.set(this, 'colorIndex', value);
 
   @override
-  RealmList<RealmUtxoId> get utxoIdList =>
-      RealmObjectBase.get<RealmUtxoId>(this, 'utxoIdList')
-          as RealmList<RealmUtxoId>;
+  RealmList<String> get utxoIdList =>
+      RealmObjectBase.get<String>(this, 'utxoIdList') as RealmList<String>;
   @override
-  set utxoIdList(covariant RealmList<RealmUtxoId> value) =>
+  set utxoIdList(covariant RealmList<String> value) =>
       throw RealmUnsupportedSetError();
 
   @override
@@ -735,69 +734,9 @@ class RealmUtxoTag extends _RealmUtxoTag
       SchemaProperty('walletId', RealmPropertyType.int),
       SchemaProperty('name', RealmPropertyType.string),
       SchemaProperty('colorIndex', RealmPropertyType.int),
-      SchemaProperty('utxoIdList', RealmPropertyType.object,
-          linkTarget: 'RealmUtxoId', collectionType: RealmCollectionType.list),
+      SchemaProperty('utxoIdList', RealmPropertyType.string,
+          collectionType: RealmCollectionType.list),
       SchemaProperty('createAt', RealmPropertyType.timestamp),
-    ]);
-  }();
-
-  @override
-  SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
-}
-
-class RealmUtxoId extends _RealmUtxoId
-    with RealmEntity, RealmObjectBase, RealmObject {
-  RealmUtxoId(
-    String id,
-  ) {
-    RealmObjectBase.set(this, 'id', id);
-  }
-
-  RealmUtxoId._();
-
-  @override
-  String get id => RealmObjectBase.get<String>(this, 'id') as String;
-  @override
-  set id(String value) => RealmObjectBase.set(this, 'id', value);
-
-  @override
-  Stream<RealmObjectChanges<RealmUtxoId>> get changes =>
-      RealmObjectBase.getChanges<RealmUtxoId>(this);
-
-  @override
-  Stream<RealmObjectChanges<RealmUtxoId>> changesFor(
-          [List<String>? keyPaths]) =>
-      RealmObjectBase.getChangesFor<RealmUtxoId>(this, keyPaths);
-
-  @override
-  RealmUtxoId freeze() => RealmObjectBase.freezeObject<RealmUtxoId>(this);
-
-  EJsonValue toEJson() {
-    return <String, dynamic>{
-      'id': id.toEJson(),
-    };
-  }
-
-  static EJsonValue _toEJson(RealmUtxoId value) => value.toEJson();
-  static RealmUtxoId _fromEJson(EJsonValue ejson) {
-    if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
-    return switch (ejson) {
-      {
-        'id': EJsonValue id,
-      } =>
-        RealmUtxoId(
-          fromEJson(id),
-        ),
-      _ => raiseInvalidEJson(ejson),
-    };
-  }
-
-  static final schema = () {
-    RealmObjectBase.registerFactory(RealmUtxoId._);
-    register(_toEJson, _fromEJson);
-    return const SchemaObject(
-        ObjectType.realmObject, RealmUtxoId, 'RealmUtxoId', [
-      SchemaProperty('id', RealmPropertyType.string, primaryKey: true),
     ]);
   }();
 

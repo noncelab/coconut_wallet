@@ -147,14 +147,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       if (result.isSuccess) {
         vibrateLight();
         _model.clearAllRelatedSending();
-        if (_model.tagsMoveAllowed) {
-          List<String> newUtxoIds = outputIndexesToMyAddress
-              .map((index) => makeUtxoId(signedTx.transactionHash, index))
-              .toList();
-          await _model.moveTagsFromUsedUtxosToNewUtxos(widget.id, newUtxoIds);
-        } else {
-          await _model.deleteTagsOfUsedUtxos(widget.id);
-        }
+        List<String> newUtxoIds = _model.tagsMoveAllowed
+            ? outputIndexesToMyAddress
+                .map((index) => makeUtxoId(signedTx.transactionHash, index))
+                .toList()
+            : [];
+        await _model.updateTagsOfUsedUtxos(widget.id, newUtxoIds);
 
         Navigator.pushNamedAndRemoveUntil(
           context,
