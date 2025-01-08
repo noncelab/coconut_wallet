@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -127,7 +128,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                     child: Center(
                         child: Text(
                             bitcoinPriceKrw != null
-                                ? '₩${addCommasToIntegerPart(amount * bitcoinPriceKrw)}'
+                                ? '${addCommasToIntegerPart(amount * bitcoinPriceKrw)} ${CurrencyCode.KRW.code}'
                                 : '',
                             style: Styles.balance2)));
               },

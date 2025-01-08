@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
@@ -413,7 +414,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                       builder: (context, bitcoinPriceKrw, child) {
                         return Text(
                             _fiatValue != null && bitcoinPriceKrw != null
-                                ? '₩${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(_estimatedFee!, bitcoinPriceKrw).toDouble())}'
+                                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(_estimatedFee!, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
                                 : '',
                             style: Styles.balance2);
                       },
@@ -634,7 +635,7 @@ class FeeSelectionItem extends StatelessWidget {
                         ),
                         Text(
                           ' BTC',
-                          style: Styles.body2.merge(
+                          style: Styles.body2Number.merge(
                             const TextStyle(
                               color: MyColors.transparentWhite_70,
                             ),
@@ -650,7 +651,7 @@ class FeeSelectionItem extends StatelessWidget {
                       builder: (context, bitcoinPriceKrw, child) {
                         return Text(
                           bitcoinPriceKrw != null
-                              ? "₩${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(feeInfo.estimatedFee!, bitcoinPriceKrw).toDouble())}"
+                              ? "${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(feeInfo.estimatedFee!, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}"
                               : '',
                           style: Styles.caption,
                         );

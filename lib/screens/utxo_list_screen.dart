@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -132,7 +133,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                             ])),
                         Text(
                           _balance != null && bitcointPriceKrw != null
-                              ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(_balance!, bitcointPriceKrw).toDouble())}'
+                              ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(_balance!, bitcointPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
                               : '',
                           style: Styles.balance2,
                         ),

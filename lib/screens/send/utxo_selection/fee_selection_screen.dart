@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/fee_info.dart';
@@ -196,7 +197,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                             this.bitcoinPriceKrw = bitcoinPriceKrw;
                             return Text(
                                 fiatValueInKrw != null
-                                    ? '₩${addCommasToIntegerPart(fiatValueInKrw!)}'
+                                    ? '${addCommasToIntegerPart(fiatValueInKrw!)} ${CurrencyCode.KRW.code}'
                                     : '',
                                 style: Styles.balance2);
                           },

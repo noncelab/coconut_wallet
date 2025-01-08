@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
@@ -249,7 +250,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                                       : _amount!,
                                   bitcoinPriceKrw)
                               .toDouble());
-                      return Text("₩$bitcoinPriceKrwString",
+                      return Text(
+                          "$bitcoinPriceKrwString ${CurrencyCode.KRW.code}",
                           style: Styles.label.merge(TextStyle(
                               fontFamily: CustomFonts.number.getFontFamily)));
                     } else {

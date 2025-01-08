@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/bottomsheet/memo_bottom_sheet_container.dart';
 import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
@@ -126,9 +127,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         break;
       case TransactionStatus.self:
       case TransactionStatus.selfsending:
-        prefix = '';
-        color = MyColors.white;
-        break;
       case TransactionStatus.sent:
       case TransactionStatus.sending:
         prefix = '';
@@ -213,6 +211,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
                           children: [
                             _amountText(tx),
                             const SizedBox(
@@ -231,7 +231,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         builder: (context, bitcoinPriceKrw, child) {
                           return Text(
                             bitcoinPriceKrw != null
-                                ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(tx.amount!, bitcoinPriceKrw).toDouble().abs())}'
+                                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(tx.amount!, bitcoinPriceKrw).toDouble().abs())} ${CurrencyCode.KRW.code}'
                                 : '',
                             style: Styles.balance2,
                           );

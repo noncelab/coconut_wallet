@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
@@ -1298,7 +1299,7 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
                   .merge(const TextStyle(color: MyColors.white))),
           if (widget.balance != null && widget.btcPriceInKrw != null)
             Text(
-                '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.balance!, widget.btcPriceInKrw!).toDouble())}',
+                '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.balance!, widget.btcPriceInKrw!).toDouble())} ${CurrencyCode.KRW.code}',
                 style: Styles.subLabel.merge(TextStyle(
                     fontFamily: CustomFonts.number.getFontFamily,
                     color: MyColors.transparentWhite_70))),
