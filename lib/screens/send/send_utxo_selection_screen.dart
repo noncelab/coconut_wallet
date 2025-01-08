@@ -439,7 +439,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     if (_estimatedFee == null) {
       throw StateError("EstimatedFee has not been calculated yet");
     }
-
     return _calculateTotalAmountOfUtxoList(_selectedUtxoList) >=
         UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount) +
             (_estimatedFee ?? 0);
@@ -467,8 +466,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         .toList();
   }
 
-  Widget _divider() => Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+  Widget _divider(
+          {EdgeInsets padding = const EdgeInsets.symmetric(vertical: 12)}) =>
+      Container(
+        padding: padding,
         child: const Divider(
           height: 1,
           color: MyColors.transparentWhite_10,
@@ -519,8 +520,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           decoration: BoxDecoration(
             color: _recommendedFeeFetchStatus ==
                         RecommendedFeeFetchStatus.succeed &&
-                    _estimatedFee != null &&
-                    _selectedUtxoList.isNotEmpty
+                    _estimatedFee != null
                 ? _isSelectedUtxoEnough()
                     ? MyColors.transparentWhite_10
                     : MyColors.transparentRed
@@ -545,7 +545,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   style: Styles.body2Bold.merge(
                     TextStyle(
                       color: _selectedUtxoList.isEmpty
-                          ? MyColors.white
+                          ? MyColors.warningRed
                           : _recommendedFeeFetchStatus ==
                                       RecommendedFeeFetchStatus.succeed &&
                                   _estimatedFee != null
@@ -588,8 +588,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         style: Styles.body2Number.merge(TextStyle(
                             color: _recommendedFeeFetchStatus ==
                                         RecommendedFeeFetchStatus.succeed &&
-                                    _estimatedFee != null &&
-                                    _selectedUtxoList.isNotEmpty
+                                    _estimatedFee != null
                                 ? _isSelectedUtxoEnough()
                                     ? MyColors.white
                                     : MyColors.warningRed
@@ -616,7 +615,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                       (_selectedUtxoList.isEmpty ||
                           _getSelectedUtxoTotalSatoshi() <
                               UnitUtil.bitcoinToSatoshi(
-                                  widget.sendInfo.amount)),
+                                      widget.sendInfo.amount) +
+                                  (_estimatedFee ?? 0)),
                   maintainSize: true,
                   maintainState: true,
                   maintainAnimation: true,
@@ -632,28 +632,29 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                           ),
                           textAlign: TextAlign.center,
                         )
-                      : _selectedUtxoList.isEmpty
-                          ? Text(
-                              '아래 목록에서 UTXO를 선택해 주세요',
-                              style: Styles.warning.merge(
-                                const TextStyle(
-                                  color: MyColors.white,
-                                  height: 16 / 12,
-                                ),
-                              ),
-                            )
-                          : Text(
-                              _estimatedFee != null && _isSelectedUtxoEnough()
-                                  ? ''
-                                  : 'UTXO 합계가 모자라요',
-                              style: Styles.warning.merge(
-                                const TextStyle(
-                                  height: 16 / 12,
-                                ),
-                              ),
+                      : Text(
+                          _estimatedFee != null && _isSelectedUtxoEnough()
+                              ? ''
+                              : 'UTXO 합계가 모자라요',
+                          style: Styles.warning.merge(
+                            const TextStyle(
+                              height: 16 / 12,
                             ),
+                          ),
+                        ),
                 )
-              : Container(),
+              : Text(
+                  '',
+                  style: Styles.warning.merge(
+                    const TextStyle(
+                      height: 16 / 12,
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ),
+        ),
+        const SizedBox(
+          height: 16,
         ),
         Visibility(
           maintainSize: true,
@@ -891,6 +892,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
                                     '보낼 수량',
@@ -934,9 +936,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                             (context, bitcoinPriceKrw, child) {
                                           return Text(
                                             bitcoinPriceKrw != null
-                                                ? '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())}'
+                                                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())} KRW'
                                                 : '',
-                                            style: Styles.balance2,
+                                            style: Styles.caption.merge(
+                                                const TextStyle(
+                                                    color: MyColors
+                                                        .transparentWhite_60)),
                                           );
                                         },
                                       )
@@ -944,10 +949,15 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                   ),
                                 ],
                               ),
-                              _divider(),
+                              _divider(
+                                  padding: const EdgeInsets.only(
+                                top: 12,
+                                bottom: 16,
+                              )),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     '수수료',
@@ -965,6 +975,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                   ),
                                   CustomUnderlinedButton(
                                       text: '변경',
+                                      padding: const EdgeInsets.only(
+                                        left: 8,
+                                        top: 4,
+                                        bottom: 8,
+                                        right: 8,
+                                      ),
                                       isEnable: _recommendedFeeFetchStatus !=
                                           RecommendedFeeFetchStatus.fetching,
                                       onTap: () async {
@@ -1057,7 +1073,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                                 )),
                                 ],
                               ),
-                              _divider(),
+                              _divider(
+                                padding: const EdgeInsets.only(
+                                  top: 10,
+                                  bottom: 16,
+                                ),
+                              ),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
