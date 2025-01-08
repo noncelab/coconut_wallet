@@ -567,7 +567,7 @@ class AppStateModel extends ChangeNotifier {
 
   /// 선택된 태그 리스트 변경 여부
   bool _isUpdatedSelectedTagList = false;
-  bool get isUpdateSelectedTagList => _isUpdatedSelectedTagList;
+  bool get isUpdatedSelectedTagList => _isUpdatedSelectedTagList;
 
   Future moveTagsFromUsedUtxosToNewUtxos(
       int walletId, List<String> newUtxoIds) async {
