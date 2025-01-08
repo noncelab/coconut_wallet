@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
+import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
@@ -873,6 +874,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         arguments: {
                           'utxo': _utxoList[itemIndex],
                           'id': widget.id,
+                          'isChange': DerivationPathUtil.getChangeElement(
+                                  _walletType,
+                                  _utxoList[itemIndex].derivationPath) ==
+                              1,
                         },
                       );
 
@@ -1226,12 +1231,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       WalletType walletType) {
     List<model.UTXO> utxos = [];
     for (var utxo in utxoEntities) {
-      Map<String, int> changeAndAccountIndex = getChangeAndAccountElements(
-          utxo.derivationPath, walletType, accountIndexField, changeField);
-
       String ownedAddress = walletBaseItem.walletBase.getAddress(
-          changeAndAccountIndex[accountIndexField]!,
-          isChange: changeAndAccountIndex[changeField]! == 1);
+          DerivationPathUtil.getAccountIndex(
+              walletType, utxo.derivationPath),
+          isChange: DerivationPathUtil.getChangeElement(
+                  walletType, utxo.derivationPath) ==
+              1);
 
       final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, utxo.utxoId);
 
@@ -1252,37 +1257,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       _isUtxoListLoadComplete = true;
     });
   }
-}
-
-Map<String, int> getChangeAndAccountElements(
-  String derivationPath,
-  WalletType walletType,
-  String accountIndexField,
-  String changeField,
-) {
-  var pathElements = derivationPath.split('/');
-  Map<String, int> result;
-
-  switch (walletType) {
-    // m / purpose' / coin_type' / account' / change / address_index
-    case WalletType.singleSignature:
-      result = {
-        changeField: int.parse(pathElements[4]),
-        accountIndexField: int.parse(pathElements[5])
-      };
-      break;
-    // m / purpose' / coin_type' / account' / script_type' / change / address_index
-    case WalletType.multiSignature:
-      result = {
-        changeField: int.parse(pathElements[5]),
-        accountIndexField: int.parse(pathElements[6])
-      };
-      break;
-    default:
-      throw ArgumentError("wrong walletType: $walletType");
-  }
-
-  return result;
 }
 
 class BalanceAndButtons extends StatefulWidget {

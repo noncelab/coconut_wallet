@@ -25,11 +25,13 @@ import 'package:url_launcher/url_launcher.dart';
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
   final model.UTXO utxo;
+  final bool isChange;
 
   const UtxoDetailScreen({
     super.key,
     required this.id,
     required this.utxo,
+    this.isChange = false,
   });
 
   @override
@@ -309,9 +311,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                 subLabel: '멤풀 보기',
                                 onSubLabelClicked: () => launchUrl(Uri.parse(
                                     "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
-                                isChangeTagVisible:
-                                    widget.utxo.derivationPath.split('/')[4] ==
-                                        '1',
+                                isChangeTagVisible: widget.isChange,
                                 value: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
