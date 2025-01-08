@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 /// [externalUpdatedTagName] : 선택된 태그명이 외부에서 변경되었을 때 선택 상태를 업데이트
 class CustomTagVerticalSelector extends StatefulWidget {
   final List<UtxoTag> tags;
-  final Function(UtxoTag) onSelectedTag;
+  final Function(UtxoTag?) onSelectedTag;
   final String? externalUpdatedTagName;
   const CustomTagVerticalSelector({
     super.key,
@@ -52,10 +52,14 @@ class _CustomTagVerticalSelectorState extends State<CustomTagVerticalSelector> {
         final utxoTag = widget.tags[index];
         return GestureDetector(
           onTap: () {
-            setState(() {
+            if (_selectedTagName != utxoTag.name) {
               _selectedTagName = utxoTag.name;
-            });
-            widget.onSelectedTag.call(utxoTag);
+              widget.onSelectedTag.call(utxoTag);
+            } else {
+              _selectedTagName = '';
+              widget.onSelectedTag.call(null);
+            }
+            setState(() {});
           },
           child: CustomTagSelectorItem(
             tag: utxoTag.name,

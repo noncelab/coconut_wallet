@@ -139,6 +139,8 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                               onConfirm: () async {
                                 if (_selectedUtxoTag != null) {
                                   _appModel.deleteUtxoTag(_selectedUtxoTag!);
+                                  _selectedUtxoTag = null;
+                                  setState(() {});
                                   Navigator.of(context).pop();
                                 }
                               },
@@ -154,6 +156,8 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
+                  } else ...{
+                    const SizedBox(height: 23.5),
                   },
                   Expanded(
                     child: CustomTagVerticalSelector(

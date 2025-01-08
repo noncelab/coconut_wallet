@@ -92,17 +92,18 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
       _updateTagColorIndex = widget.updateUtxoTag!.colorIndex;
       _updateUtxoTag = widget.updateUtxoTag;
     }
-    _controller.text = '#$_updateTagName';
+    _controller.text = _updateTagName;
     _controller.selection = TextSelection.fromPosition(
       TextPosition(offset: _controller.text.length),
     );
+    _focusNode.requestFocus();
   }
 
   _resetCreate() {
     setState(() {
       _isTwoDepth = false;
       _type = TagBottomSheetType.select;
-      _controller.text = '#';
+      _controller.text = '';
       _updateTagName = '';
       _updateTagColorIndex = 0;
     });
@@ -333,26 +334,39 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                           child: CustomLimitTextField(
                             controller: _controller,
                             focusNode: _focusNode,
+                            prefix: const Padding(
+                              padding: EdgeInsets.only(left: 16),
+                              child: Text(
+                                "#",
+                                style: Styles.body2,
+                              ),
+                            ),
                             onChanged: (text) {
-                              _updateTagName =
-                                  text.replaceAll('#', '').replaceAll(' ', '');
-                              if (text.isEmpty) {
-                                _controller.text = '#';
-                              } else if (text.substring(1).contains('#') ||
-                                  text.substring(1).contains(' ')) {
-                                _controller.text = '#$_updateTagName';
+                              if (text.startsWith(' ')) {
+                                text = text.trim();
                               }
+
+                              if (text.contains('#')) {
+                                text = text.replaceAll('#', '');
+                              }
+
+                              if (text.endsWith(' ')) {
+                                _updateTagName = text.trimRight();
+                              } else {
+                                _updateTagName = text;
+                              }
+
+                              _controller.text = text;
 
                               if (_type == TagBottomSheetType.update) {
                                 _checkUpdateButtonEnabled();
                               }
-
                               setState(() {});
                             },
                             onClear: () {
                               setState(() {
+                                _controller.text = '';
                                 _updateTagName = '';
-                                _controller.text = '#';
                               });
                             },
                           ),

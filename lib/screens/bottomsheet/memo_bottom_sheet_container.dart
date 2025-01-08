@@ -41,6 +41,7 @@ class _MemoBottomSheetContainerState extends State<MemoBottomSheetContainer> {
     _controller.selection = TextSelection.fromPosition(
       TextPosition(offset: _controller.text.length),
     );
+    _focusNode.requestFocus();
   }
 
   @override

@@ -11,6 +11,8 @@ class CustomLimitTextField extends StatelessWidget {
   final Function(String) onChanged;
   final VoidCallback onClear;
   final int maxLength;
+  final Color cursorColor;
+  final Widget? prefix;
 
   const CustomLimitTextField({
     super.key,
@@ -19,6 +21,8 @@ class CustomLimitTextField extends StatelessWidget {
     required this.onChanged,
     required this.onClear,
     this.maxLength = 30,
+    this.cursorColor = Colors.white,
+    this.prefix,
   });
 
   @override
@@ -37,12 +41,14 @@ class CustomLimitTextField extends StatelessWidget {
           child: CupertinoTextField(
             focusNode: focusNode,
             controller: controller,
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+            padding: EdgeInsets.fromLTRB(prefix != null ? 0 : 16, 20, 16, 20),
             style: Styles.body2,
+            cursorColor: cursorColor,
             decoration: const BoxDecoration(
               color: Colors.transparent,
             ),
             maxLength: maxLength,
+            prefix: prefix,
             suffix: GestureDetector(
               onTap: () {
                 onClear();
