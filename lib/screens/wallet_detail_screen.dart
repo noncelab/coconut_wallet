@@ -1518,7 +1518,7 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
               ? satoshiToBitcoinString(widget.tx.amount!)
               : addCommasToIntegerPart(widget.tx.amount!.toDouble()),
           style: Styles.body1Number.merge(const TextStyle(
-              color: MyColors.primary, fontWeight: FontWeight.w500)),
+              color: MyColors.white, fontWeight: FontWeight.w500)),
         );
       default:
         // 기본 값으로 처리될 수 있도록 한 경우
