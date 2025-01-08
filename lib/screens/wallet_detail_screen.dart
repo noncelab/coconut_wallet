@@ -1485,7 +1485,11 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
               ? '+${satoshiToBitcoinString(widget.tx.amount!)}'
               : '+${addCommasToIntegerPart(widget.tx.amount!.toDouble())}',
           style: Styles.body1Number.merge(
-            const TextStyle(color: MyColors.white, height: 24 / 16),
+            const TextStyle(
+              color: MyColors.white,
+              fontWeight: FontWeight.w400,
+              height: 24 / 16,
+            ),
           ),
         );
       case TransactionStatus.self:
@@ -1496,8 +1500,13 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
           widget.currentUnit == Unit.btc
               ? satoshiToBitcoinString(widget.tx.amount!)
               : addCommasToIntegerPart(widget.tx.amount!.toDouble()),
-          style: Styles.body1Number.merge(const TextStyle(
-              color: MyColors.white, fontWeight: FontWeight.w500)),
+          style: Styles.body1Number.merge(
+            const TextStyle(
+              color: MyColors.white,
+              fontWeight: FontWeight.w400,
+              height: 24 / 16,
+            ),
+          ),
         );
       default:
         // 기본 값으로 처리될 수 있도록 한 경우
