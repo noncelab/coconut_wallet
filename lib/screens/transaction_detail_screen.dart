@@ -400,7 +400,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             );
                           },
                           value: Text(
-                            tx.memo != null ? tx.memo! : '-',
+                            tx.memo?.isNotEmpty == true ? tx.memo! : '-',
                             style: Styles.body1Number,
                           )),
                       const SizedBox(
