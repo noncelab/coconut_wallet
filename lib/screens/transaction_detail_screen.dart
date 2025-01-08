@@ -46,7 +46,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   bool canSeeMoreOutputs = false;
   int itemsToShowInput = 5;
   int itemsToShowOutput = 5;
-  late bool _isAlreadyInitializedSeeMoreButton;
 
   final GlobalKey _balanceWidthKey = GlobalKey();
   Size _balanceWidthSize = const Size(0, 0);
@@ -56,7 +55,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
     _addressBook = _model.getWalletById(widget.id).walletBase.addressBook;
-    _isAlreadyInitializedSeeMoreButton = false;
 
     _model.initTransactionDetailScreenTagData(widget.id, widget.txHash);
     _initSeeMoreButtons();
@@ -114,7 +112,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       canSeeMoreOutputs = true;
       itemsToShowOutput = initialOutputMaxCount;
     }
-    _isAlreadyInitializedSeeMoreButton = true;
   }
 
   Widget _amountText(Transfer tx) {
