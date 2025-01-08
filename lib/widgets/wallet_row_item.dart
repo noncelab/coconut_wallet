@@ -37,12 +37,6 @@ class WalletRowItem extends StatefulWidget {
 
 class _WalletRowItemState extends State<WalletRowItem> {
   @override
-  void didUpdateWidget(covariant WalletRowItem oldWidget) {
-    // TODO: implement didUpdateWidget
-    super.didUpdateWidget(oldWidget);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final row = ShrinkAnimationButton(
         onPressed: () {

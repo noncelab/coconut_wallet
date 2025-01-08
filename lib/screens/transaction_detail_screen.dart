@@ -375,7 +375,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           label: '트랜잭션 ID',
                           subLabel: '멤풀 보기',
                           onSubLabelClicked: () {
-                            // TODO: 멤풀 주소
                             launchUrl(Uri.parse(
                                 "${PowWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
                           },

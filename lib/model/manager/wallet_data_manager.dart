@@ -337,7 +337,6 @@ class WalletDataManager {
 
       // INFO: RBF(Replace-By-Fee)에 의해서 처리되지 않은 트랜잭션이 삭제된 경우를 대비
       // INFO: 추후에는 삭제가 아니라 '무효화됨'으로 표기될 수 있음
-      // TODO: TEST
       if (finalUpdateTargets != null && finalUpdateTargets.isNotEmpty) {
         for (var ut in finalUpdateTargets) {
           var index = matchedUpdateTargetIds.indexWhere((x) => x == ut.id);

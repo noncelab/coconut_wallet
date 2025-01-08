@@ -62,16 +62,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
     _controller = ScrollController()..addListener(_nextLoad);
     final model = Provider.of<AppStateModel>(context, listen: false);
 
-    // TODO: Check Multisig
     _walletBaseItem = model.getWalletById(widget.id);
-    if (_walletBaseItem.walletType == WalletType.multiSignature) {
-      final multisigListItem = _walletBaseItem as MultisigWalletListItem;
-      _walletBase = multisigListItem.walletBase;
-    } else {
-      final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
-      _walletBase = singlesigListItem.walletBase;
-    }
-
+    _walletBase = _walletBaseItem.walletBase;
     _receivingAddressList = _walletBase.getAddressList(0, FIRST_COUNT, false);
     _changeAddressList = _walletBase.getAddressList(0, FIRST_COUNT, true);
     _isFirstLoadRunning = false;

@@ -326,7 +326,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     /// _walletListItem의 txCount, isLatestTxBlockHeightZero가 변경되었을 때만 트랜잭션 목록 업데이트
     if (_prevTxCount != txCount ||
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
-      // TODO: pagination?
       List<Transfer>? newTxList = _model.getTxList(widget.id);
       if (newTxList != null) {
         print('--> [detail화면] newTxList.length: ${newTxList.length}');
@@ -1232,8 +1231,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     List<model.UTXO> utxos = [];
     for (var utxo in utxoEntities) {
       String ownedAddress = walletBaseItem.walletBase.getAddress(
-          DerivationPathUtil.getAccountIndex(
-              walletType, utxo.derivationPath),
+          DerivationPathUtil.getAccountIndex(walletType, utxo.derivationPath),
           isChange: DerivationPathUtil.getChangeElement(
                   walletType, utxo.derivationPath) ==
               1);
