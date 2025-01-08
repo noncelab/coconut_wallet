@@ -631,10 +631,10 @@ class WalletDataManager {
 
   /// utxoIdList 변경
   /// - [walletId] 목록 검색
-  /// - [txHashIndex] UTXO Id
-  /// - [txHashIndex] 추가할 UtxoTag 목록
+  /// - [utxoId] UTXO Id
+  /// - [addTags] 추가할 UtxoTag 목록
   /// - [selectedNames] 선택된 태그명 목록
-  RealmResult<bool> updateUtxoTagList(int walletId, String txHashIndex,
+  RealmResult<bool> updateUtxoTagList(int walletId, String utxoId,
       List<UtxoTag> addTags, List<String> selectedNames) {
     try {
       _realm.write(() {
@@ -655,11 +655,11 @@ class WalletDataManager {
         final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
         for (var tag in tags) {
           if (selectedNames.contains(tag.name)) {
-            if (!tag.utxoIdList.contains(txHashIndex)) {
-              tag.utxoIdList.add(txHashIndex);
+            if (!tag.utxoIdList.contains(utxoId)) {
+              tag.utxoIdList.add(utxoId);
             }
           } else {
-            tag.utxoIdList.remove(txHashIndex);
+            tag.utxoIdList.remove(utxoId);
           }
         }
       });

@@ -441,11 +441,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return Material(
       borderRadius: BorderRadius.circular(16),
       child: CustomDropdown(
-        buttons: const [
-          '큰 금액순',
-          '작은 금액순',
-          '최신순',
-          '오래된 순',
+        buttons: [
+          UtxoOrderEnum.byAmountDesc.text,
+          UtxoOrderEnum.byAmountAsc.text,
+          UtxoOrderEnum.byTimestampDesc.text,
+          UtxoOrderEnum.byTimestampAsc.text,
         ],
         dividerColor: Colors.black,
         onTapButton: (index) {
@@ -467,6 +467,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               break;
           }
         },
+        selectedButton: _selectedFilter.text,
       ),
     );
   }
