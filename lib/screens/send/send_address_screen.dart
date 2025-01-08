@@ -52,19 +52,6 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     });
   }
 
-  @override
-  void didUpdateWidget(covariant SendAddressScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    // 현재의 라우트 경로를 가져옴
-    String? currentRoute = ModalRoute.of(context)?.settings.name;
-
-    if (currentRoute != null && currentRoute.startsWith('/send-address')) {
-      _isProcessing = false;
-      controller?.resumeCamera();
-    }
-  }
-
   Future<void> _stopCamera() async {
     if (controller != null) {
       try {
@@ -96,96 +83,89 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, _) {
-        _stopCamera();
-        controller = null;
-      },
-      child: Scaffold(
-          backgroundColor: MyColors.black,
-          appBar: CustomAppBar.build(
-            title: '보내기',
-            context: context,
-            hasRightIcon: true,
-            rightIconButton: IconButton(
-              onPressed: () {
-                if (controller != null) {
-                  controller!.flipCamera();
-                }
-              },
-              icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
-              color: MyColors.white,
-            ),
-            onBackPressed: () {
-              _stopCamera();
-              controller = null;
-              Navigator.of(context).pop();
+    return Scaffold(
+        backgroundColor: MyColors.black,
+        appBar: CustomAppBar.build(
+          title: '보내기',
+          context: context,
+          hasRightIcon: true,
+          rightIconButton: IconButton(
+            onPressed: () {
+              if (controller != null) {
+                controller!.flipCamera();
+              }
             },
-            backgroundColor: MyColors.black.withOpacity(0.95),
+            icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
+            color: MyColors.white,
           ),
-          body: Stack(children: [
-            Positioned(
-                left: 0,
-                right: 0,
-                top: -110, // Adjust this value to move the QRView up or down
-                height: MediaQuery.of(context).size.height +
-                    MediaQuery.of(context).padding.top +
-                    MediaQuery.of(context).padding.bottom,
-                child: _buildQrView(context)),
-            Positioned(
-                top: kToolbarHeight - 75,
-                left: 0,
-                right: 0,
-                child: Container(
-                    padding: const EdgeInsets.only(top: 32),
-                    child: Text(
-                      'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요',
-                      textAlign: TextAlign.center,
-                      style: Styles.label
-                          .merge(const TextStyle(color: MyColors.white)),
-                    ))),
-            Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
-                    child: TextButton(
-                        onPressed: _getClipboardText,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: _address != null
-                              ? MyColors.darkgrey
-                              : MyColors.white,
-                          backgroundColor: _address != null
-                              ? MyColors.white
-                              : MyColors.transparentBlack_50,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 12, horizontal: 20),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(8),
-                            ),
+          onBackPressed: () {
+            _stopCamera();
+            controller = null;
+            Navigator.of(context).pop();
+          },
+          backgroundColor: MyColors.black.withOpacity(0.95),
+        ),
+        body: Stack(children: [
+          Positioned(
+              left: 0,
+              right: 0,
+              top: -110, // Adjust this value to move the QRView up or down
+              height: MediaQuery.of(context).size.height +
+                  MediaQuery.of(context).padding.top +
+                  MediaQuery.of(context).padding.bottom,
+              child: _buildQrView(context)),
+          Positioned(
+              top: kToolbarHeight - 75,
+              left: 0,
+              right: 0,
+              child: Container(
+                  padding: const EdgeInsets.only(top: 32),
+                  child: Text(
+                    'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요',
+                    textAlign: TextAlign.center,
+                    style: Styles.label
+                        .merge(const TextStyle(color: MyColors.white)),
+                  ))),
+          Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
+                  child: TextButton(
+                      onPressed: _getClipboardText,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _address != null
+                            ? MyColors.darkgrey
+                            : MyColors.white,
+                        backgroundColor: _address != null
+                            ? MyColors.white
+                            : MyColors.transparentBlack_50,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 20),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(8),
                           ),
                         ),
-                        child: _address != null
-                            ? Text.rich(TextSpan(
-                                text: '주소 ',
-                                style: Styles.label.merge(
-                                    const TextStyle(color: MyColors.darkgrey)),
-                                children: [
-                                    TextSpan(
-                                        text:
-                                            '${_address?.substring(0, 10)}...${_address?.substring(35)}',
-                                        style: TextStyle(
-                                            fontFamily: CustomFonts
-                                                .number.getFontFamily,
-                                            fontWeight: FontWeight.bold)),
-                                    const TextSpan(text: ' 붙여넣기')
-                                  ]))
-                            : Text('붙여넣기',
-                                style: Styles.label.merge(const TextStyle(
-                                    color: MyColors.transparentWhite_20))))))
-          ])),
-    );
+                      ),
+                      child: _address != null
+                          ? Text.rich(TextSpan(
+                              text: '주소 ',
+                              style: Styles.label.merge(
+                                  const TextStyle(color: MyColors.darkgrey)),
+                              children: [
+                                  TextSpan(
+                                      text:
+                                          '${_address?.substring(0, 10)}...${_address?.substring(35)}',
+                                      style: TextStyle(
+                                          fontFamily:
+                                              CustomFonts.number.getFontFamily,
+                                          fontWeight: FontWeight.bold)),
+                                  const TextSpan(text: ' 붙여넣기')
+                                ]))
+                          : Text('붙여넣기',
+                              style: Styles.label.merge(const TextStyle(
+                                  color: MyColors.transparentWhite_20))))))
+        ]));
   }
 
   Widget _buildQrView(BuildContext context) {
@@ -290,10 +270,10 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
       _isProcessing = false;
       return;
     }
-    controller?.pauseCamera();
+
     await _stopCamera();
     if (mounted) {
-      /// Go-router 제거 이후로 ios에서는 정상 작동하지만 안드로이드에서는 pushNamed로 화면 이동 시 카메라 컨트롤러 남아있는 이슈
+      // Go-router 제거 이후로 ios에서는 정상 작동하지만 안드로이드에서는 pushNamed로 화면 이동 시 카메라 컨트롤러 남아있는 이슈
       if (Platform.isAndroid) {
         Navigator.pushReplacementNamed(context, "/send-amount",
             arguments: {'id': widget.id, 'recipient': recipient}).then((o) {
@@ -303,6 +283,8 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
         Navigator.pushNamed(context, "/send-amount",
             arguments: {'id': widget.id, 'recipient': recipient}).then((o) {
           _isProcessing = false;
+        }).then((_) {
+          controller?.resumeCamera();
         });
       }
     }
