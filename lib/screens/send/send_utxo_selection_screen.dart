@@ -209,22 +209,22 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         _removeFilterDropdown();
       }
       setState(() {
-        _afterScrolledHeaderContainerVisible = offset >= threshold;
+        //_afterScrolledHeaderContainerVisible = offset >= threshold;
 
         // 부드럽게 패딩 값 계산
-        double progress = (offset / threshold).clamp(0.0, 1.0);
+        //double progress = (offset / threshold).clamp(0.0, 1.0);
 
-        if (_afterScrolledHeaderContainerVisible) {
-          _totalUtxoAmountWidgetPaddingLeft =
-              _totalUtxoAmountWidgetPaddingRight =
-                  _totalUtxoAmountWidgetPaddingTop = 17;
-          _totalUtxoAmountWidgetPaddingBottom = 15;
-        } else {
-          _totalUtxoAmountWidgetPaddingLeft =
-              _totalUtxoAmountWidgetPaddingRight =
-                  _totalUtxoAmountWidgetPaddingTop = 24 - (7 * progress);
-          _totalUtxoAmountWidgetPaddingBottom = 20 - (5 * progress);
-        }
+        // if (_afterScrolledHeaderContainerVisible) {
+        //   _totalUtxoAmountWidgetPaddingLeft =
+        //       _totalUtxoAmountWidgetPaddingRight =
+        //           _totalUtxoAmountWidgetPaddingTop = 24;
+        //   _totalUtxoAmountWidgetPaddingBottom = 20;
+        // } else {
+        // _totalUtxoAmountWidgetPaddingLeft =
+        //     _totalUtxoAmountWidgetPaddingRight =
+        //         _totalUtxoAmountWidgetPaddingTop = 24 - (7 * progress);
+        // _totalUtxoAmountWidgetPaddingBottom = 20 - (5 * progress);
+        //}
       });
       // if (_scrollController.position.extentAfter < 100) {
       //   /// 페이징
@@ -438,7 +438,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   void _applyFilter(UtxoOrderEnum orderEnum) async {
     if (orderEnum == _selectedFilter) return;
-    _scrollController.jumpTo(0);
+    //_scrollController.jumpTo(0);
     setState(() {
       _selectedFilter = orderEnum;
       //_selectedUtxoList.clear();
