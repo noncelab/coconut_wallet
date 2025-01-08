@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/screens/wallet_list_screen.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/app_error.dart';
@@ -766,8 +767,8 @@ class AppStateModel extends ChangeNotifier {
   Transfer? get transaction => _transaction;
 
   /// 선택된 태그 리스트 변경 여부
-  bool _isUpdateSelectedTagList = false;
-  bool get isUpdateSelectedTagList => _isUpdateSelectedTagList;
+  bool _isUpdatedSelectedTagList = false;
+  bool get isUpdateSelectedTagList => _isUpdatedSelectedTagList;
 
   Future moveTagsFromUsedUtxosToNewUtxos(
       int walletId, List<String> newUtxoIds) async {
@@ -784,7 +785,7 @@ class AppStateModel extends ChangeNotifier {
 
   /// 선택된 태그 리스트 변경 여부 on/off
   void setIsUpdateSelectedTagList(value) {
-    _isUpdateSelectedTagList = value;
+    _isUpdatedSelectedTagList = value;
   }
 
   /// 선택된 Utxo transaction + index 리스트 업데이트
@@ -811,7 +812,8 @@ class AppStateModel extends ChangeNotifier {
   /// utxo 상세 화면 진입시 태그 관련 데이터
   void initUtxoDetailScreenTagData(int walletId, String txHash, int index) {
     _utxoTagList = loadUtxoTagList(walletId);
-    _selectedTagList = loadUtxoTagListByTxHashIndex(walletId, '$txHash$index');
+    _selectedTagList =
+        loadUtxoTagListByTxHashIndex(walletId, makeUtxoId(txHash, index));
     _transaction = loadTransaction(walletId, txHash);
     notifyListeners();
   }
@@ -860,7 +862,7 @@ class AppStateModel extends ChangeNotifier {
     final result = _walletDataManager.addUtxoTag(
         id, utxoTag.walletId, utxoTag.name, utxoTag.colorIndex);
     if (result.isSuccess) {
-      _isUpdateSelectedTagList = true;
+      _isUpdatedSelectedTagList = true;
       _utxoTagList = loadUtxoTagList(utxoTag.walletId);
       notifyListeners();
     } else {
@@ -877,7 +879,7 @@ class AppStateModel extends ChangeNotifier {
     final result = _walletDataManager.updateUtxoTag(
         utxoTag.id, utxoTag.name, utxoTag.colorIndex);
     if (result.isSuccess) {
-      _isUpdateSelectedTagList = true;
+      _isUpdatedSelectedTagList = true;
       _utxoTagList = loadUtxoTagList(utxoTag.walletId);
       notifyListeners();
     } else {
@@ -896,7 +898,7 @@ class AppStateModel extends ChangeNotifier {
     required List<UtxoTag> addTags,
     required List<String> selectedNames,
   }) {
-    _isUpdateSelectedTagList = true;
+    _isUpdatedSelectedTagList = true;
 
     // 새로운 태그 추가
     for (var utxoTag in addTags) {
@@ -935,7 +937,7 @@ class AppStateModel extends ChangeNotifier {
   void deleteUtxoTag(UtxoTag utxoTag) {
     final result = _walletDataManager.deleteUtxoTag(utxoTag.id);
     if (result.isSuccess) {
-      _isUpdateSelectedTagList = true;
+      _isUpdatedSelectedTagList = true;
       _utxoTagList = loadUtxoTagList(utxoTag.walletId);
       notifyListeners();
     } else {

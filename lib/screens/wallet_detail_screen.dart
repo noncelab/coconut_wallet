@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/utxo_item_card.dart';
 import 'package:flutter/cupertino.dart';
@@ -819,8 +820,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     defaultColor: Colors.transparent,
                     borderRadius: 20,
                     onPressed: () async {
-                      final txHashIndex =
-                          '${_utxoList[itemIndex].txHash}${_utxoList[itemIndex].index}';
                       await Navigator.pushNamed(
                         context,
                         '/utxo-detail',
@@ -830,11 +829,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         },
                       );
 
-                      if (_model.isUpdateSelectedTagList) {
+                      if (_model.isUpdatedSelectedTagList) {
                         _model.setIsUpdateSelectedTagList(false);
                         for (var utxo in _utxoList) {
-                          final newTxHashIndex = '${utxo.txHash}${utxo.index}';
-                          if (newTxHashIndex == txHashIndex) {
+                          if (utxo.utxoId == _utxoList[itemIndex].utxoId) {
                             utxo.tags?.clear();
                             utxo.tags?.addAll(_model.selectedTagList);
                             setState(() {});
@@ -917,7 +915,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       arguments: {'id': widget.id});
                 }
 
-                if (_model.isUpdateSelectedTagList) {
+                if (_model.isUpdatedSelectedTagList) {
                   _model.setIsUpdateSelectedTagList(false);
                   getUtxoListWithHoldingAddress(
                       _walletFeature.walletStatus!.utxoList,
@@ -1138,25 +1136,24 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       String changeField,
       WalletType walletType) {
     List<model.UTXO> utxos = [];
-    for (var element in utxoEntities) {
+    for (var utxo in utxoEntities) {
       Map<String, int> changeAndAccountIndex = getChangeAndAccountElements(
-          element.derivationPath, walletType, accountIndexField, changeField);
+          utxo.derivationPath, walletType, accountIndexField, changeField);
 
       String ownedAddress = walletBaseItem.walletBase.getAddress(
           changeAndAccountIndex[accountIndexField]!,
           isChange: changeAndAccountIndex[changeField]! == 1);
 
-      final txHashIndex = '${element.transactionHash}${element.index}';
-      final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, txHashIndex);
+      final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, utxo.utxoId);
 
       utxos.add(model.UTXO(
-        element.timestamp.toString(),
-        element.blockHeight.toString(),
-        element.amount,
+        utxo.timestamp.toString(),
+        utxo.blockHeight.toString(),
+        utxo.amount,
         ownedAddress,
-        element.derivationPath,
-        element.transactionHash,
-        element.index,
+        utxo.derivationPath,
+        utxo.transactionHash,
+        utxo.index,
         tags: tags,
       ));
     }

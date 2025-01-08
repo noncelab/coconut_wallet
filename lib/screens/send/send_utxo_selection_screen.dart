@@ -142,10 +142,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   _addDisplayUtxoList() {
     _utxoTagMap.clear();
     for (var element in _confirmedUtxoList) {
-      final txHashIndex = '${element.transactionHash}${element.index}';
-      final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, txHashIndex);
-
-      _utxoTagMap[txHashIndex] = tags;
+      final tags =
+          _model.loadUtxoTagListByTxHashIndex(widget.id, element.utxoId);
+      _utxoTagMap[element.utxoId] = tags;
     }
     setState(() {});
   }
@@ -790,8 +789,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return;
     }
 
-    List<String> usedUtxoIds =
-        _selectedUtxoList.map((e) => '${e.transactionHash}${e.index}').toList();
+    List<String> usedUtxoIds = _selectedUtxoList.map((e) => e.utxoId).toList();
 
     bool isIncludeTag = usedUtxoIds
         .any((txHashIndex) => _utxoTagMap[txHashIndex]?.isNotEmpty == true);

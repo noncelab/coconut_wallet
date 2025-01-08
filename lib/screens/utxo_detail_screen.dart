@@ -54,13 +54,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   int initialInputMaxCount = 3;
   int initialOutputMaxCount = 2;
 
-  String _txHashIndex = '';
-
   @override
   void initState() {
     super.initState();
     _model = Provider.of<AppStateModel>(context, listen: false);
-    _txHashIndex = '${widget.utxo.txHash}${widget.utxo.index}';
     _dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp).split('|');
     _isUtxoTooltipVisible = false;
 
@@ -364,7 +361,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                         selectedNames: selectedNames,
                                         addTags: addTags,
                                         walletId: widget.id,
-                                        txHashIndex: _txHashIndex,
+                                        txHashIndex: widget.utxo.utxoId,
                                       );
                                     },
                                   ),
