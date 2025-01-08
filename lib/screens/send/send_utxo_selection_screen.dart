@@ -50,18 +50,19 @@ class SendUtxoSelectionScreen extends StatefulWidget {
 }
 
 class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
+  final String allLabelName = '전체';
   late AppStateModel _model;
   late WalletListItemBase _walletBaseItem;
   late WalletBase _walletBase;
   late WalletFeature _walletFeature;
-  late WalletType _walletType;
   late UpbitConnectModel _upbitConnectModel;
   late final ScrollController _scrollController;
 
   late List<UTXO> _confirmedUtxoList;
   late List<UTXO> _selectedUtxoList;
+
   // 선택된 태그
-  String _selectedUtxoTagName = '전체';
+  late String _selectedUtxoTagName = allLabelName;
   // txHashIndex - 태그 목록
   late final Map<String, List<UtxoTag>> _utxoTagMap = {};
 
@@ -161,8 +162,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
     _walletBaseItem = _model.getWalletById(widget.id);
     _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
-    _walletType = _walletBaseItem.walletType;
-
     _requiredSignature = _walletBaseItem.walletType == WalletType.multiSignature
         ? (_walletBaseItem as MultisigWalletListItem).requiredSignatureCount
         : null;
@@ -179,7 +178,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _confirmedUtxoList = _selectedUtxoList = [];
     }
 
-    if (_walletType == WalletType.multiSignature) {
+    if (_walletBaseItem.walletType == WalletType.multiSignature) {
       final multisigListItem = _walletBaseItem as MultisigWalletListItem;
       _walletBase = multisigListItem.walletBase;
 
@@ -392,16 +391,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   void selectAll() {
     _removeFilterDropdown();
     setState(() {
-      if (_selectedUtxoTagName != '전체') {
-        final filteredList = _confirmedUtxoList.where((utxo) {
-          return _utxoTagMap[utxo.utxoId]
-                  ?.any((e) => e.name == _selectedUtxoTagName) ??
-              false;
-        }).toList();
-        _selectedUtxoList = List.from(filteredList);
-      } else {
-        _selectedUtxoList = List.from(_confirmedUtxoList);
-      }
+      _selectedUtxoList = List.from(_confirmedUtxoList);
     });
 
     if (!_isMaxMode) {
@@ -836,401 +826,388 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, _) {
-        _removeFilterDropdown();
-      },
-      child: Scaffold(
-        appBar: CustomAppBar.buildWithNext(
-            backgroundColor: MyColors.black,
-            title: 'UTXO 고르기',
-            context: context,
-            nextButtonTitle: '완료',
-            isActive: (_model.isNetworkOn ?? false) &&
-                        (_recommendedFeeFetchStatus ==
-                                RecommendedFeeFetchStatus.succeed &&
-                            _estimatedFee != null) ||
-                    (_recommendedFeeFetchStatus ==
-                            RecommendedFeeFetchStatus.failed &&
-                        _estimatedFee != null &&
-                        _customFeeSelected)
-                ? _change != null
-                : false,
-            onNextPressed: goNext),
-        body: ConstrainedBox(
-          constraints:
-              BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        top: 10,
-                        bottom: 10,
-                      ),
-                      alignment: Alignment.center,
-                      color: MyColors.black,
-                      child: Column(
-                        children: [
-                          Container(
-                            key: _headerTopContainerKey,
-                            width: MediaQuery.sizeOf(context).width,
-                            decoration: BoxDecoration(
-                              color: MyColors.transparentWhite_10,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            padding: const EdgeInsets.only(
-                              left: 24,
-                              right: 24,
-                              top: 24,
-                              bottom: 20,
-                            ),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      '보낼 수량',
-                                      style: Styles.body2Bold,
-                                    ),
-                                    const Spacer(),
-                                    Visibility(
-                                      visible: _isMaxMode,
-                                      child: Container(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 2),
-                                        margin: const EdgeInsets.only(
-                                            right: 4, bottom: 16),
-                                        height: 24,
-                                        width: 34,
-                                        decoration: BoxDecoration(
-                                          color: MyColors.defaultBackground,
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            '최대',
-                                            style: Styles.caption2.copyWith(
-                                              color: MyColors.white,
-                                              letterSpacing: 0.1,
-                                            ),
+    return Scaffold(
+      appBar: CustomAppBar.buildWithNext(
+          backgroundColor: MyColors.black,
+          title: 'UTXO 고르기',
+          context: context,
+          nextButtonTitle: '완료',
+          isActive: (_model.isNetworkOn ?? false) &&
+                      (_recommendedFeeFetchStatus ==
+                              RecommendedFeeFetchStatus.succeed &&
+                          _estimatedFee != null) ||
+                  (_recommendedFeeFetchStatus ==
+                          RecommendedFeeFetchStatus.failed &&
+                      _estimatedFee != null &&
+                      _customFeeSelected)
+              ? _change != null
+              : false,
+          onNextPressed: goNext),
+      body: ConstrainedBox(
+        constraints:
+            BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              controller: _scrollController,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      top: 10,
+                      bottom: 10,
+                    ),
+                    alignment: Alignment.center,
+                    color: MyColors.black,
+                    child: Column(
+                      children: [
+                        Container(
+                          key: _headerTopContainerKey,
+                          width: MediaQuery.sizeOf(context).width,
+                          decoration: BoxDecoration(
+                            color: MyColors.transparentWhite_10,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.only(
+                            left: 24,
+                            right: 24,
+                            top: 24,
+                            bottom: 20,
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    '보낼 수량',
+                                    style: Styles.body2Bold,
+                                  ),
+                                  const Spacer(),
+                                  Visibility(
+                                    visible: _isMaxMode,
+                                    child: Container(
+                                      padding: const EdgeInsets.only(bottom: 2),
+                                      margin: const EdgeInsets.only(
+                                          right: 4, bottom: 16),
+                                      height: 24,
+                                      width: 34,
+                                      decoration: BoxDecoration(
+                                        color: MyColors.defaultBackground,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '최대',
+                                          style: Styles.caption2.copyWith(
+                                            color: MyColors.white,
+                                            letterSpacing: 0.1,
                                           ),
                                         ),
                                       ),
                                     ),
-                                    Column(
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
+                                        style: Styles.body2Number,
+                                      ),
+                                      Selector<UpbitConnectModel, int?>(
+                                        selector: (context, model) =>
+                                            model.bitcoinPriceKrw,
+                                        builder:
+                                            (context, bitcoinPriceKrw, child) {
+                                          return Text(
+                                            bitcoinPriceKrw != null
+                                                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
+                                                : '',
+                                            style: Styles.balance2,
+                                          );
+                                        },
+                                      )
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              _divider(),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '수수료',
+                                    style: _recommendedFeeFetchStatus ==
+                                                RecommendedFeeFetchStatus
+                                                    .failed &&
+                                            !_customFeeSelected
+                                        ? Styles.body2Bold.merge(
+                                            const TextStyle(
+                                              color:
+                                                  MyColors.transparentWhite_40,
+                                            ),
+                                          )
+                                        : Styles.body2Bold,
+                                  ),
+                                  CustomUnderlinedButton(
+                                      text: '변경',
+                                      isEnable: _recommendedFeeFetchStatus !=
+                                          RecommendedFeeFetchStatus.fetching,
+                                      onTap: () async {
+                                        Result<int, CoconutError>?
+                                            minimumFeeRate = await _model
+                                                .getMinimumNetworkFeeRate();
+                                        Map<String, dynamic>?
+                                            feeSelectionResult =
+                                            await MyBottomSheet
+                                                .showBottomSheet_90(
+                                          context: context,
+                                          child: FeeSelectionScreen(
+                                              feeInfos: feeInfos,
+                                              selectedFeeLevel: _selectedLevel,
+                                              networkMinimumFeeRate:
+                                                  minimumFeeRate?.value,
+                                              customFeeInfo: _customFeeInfo,
+                                              isRecommendedFeeFetchSuccess:
+                                                  _recommendedFeeFetchStatus ==
+                                                      RecommendedFeeFetchStatus
+                                                          .succeed,
+                                              estimateFee: _estimateFee),
+                                        );
+                                        if (feeSelectionResult != null) {
+                                          _onFeeRateChanged(feeSelectionResult);
+                                        }
+                                      }),
+                                  Expanded(
+                                      child: _recommendedFeeFetchStatus ==
+                                                  RecommendedFeeFetchStatus
+                                                      .failed &&
+                                              !_customFeeSelected
+                                          ? Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  '- ',
+                                                  style: Styles.body2Bold.merge(
+                                                      const TextStyle(
+                                                          color: MyColors
+                                                              .transparentWhite_40)),
+                                                ),
+                                                Text(
+                                                  'BTC',
+                                                  style:
+                                                      Styles.body2Number.merge(
+                                                    const TextStyle(
+                                                      color: MyColors
+                                                          .transparentWhite_40,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          : _recommendedFeeFetchStatus ==
+                                                      RecommendedFeeFetchStatus
+                                                          .succeed ||
+                                                  _customFeeSelected
+                                              ? Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.end,
+                                                  children: [
+                                                    Text(
+                                                      '${satoshiToBitcoinString(_estimatedFee ?? 0).toString()} BTC',
+                                                      style: Styles.body2Number,
+                                                    ),
+                                                    if (_satsPerVb != null) ...{
+                                                      Text(
+                                                        '${_selectedLevel?.expectedTime ?? ''} ($_satsPerVb sats/vb)',
+                                                        style: Styles.caption,
+                                                      ),
+                                                    },
+                                                  ],
+                                                )
+                                              : const Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 15,
+                                                      height: 15,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        color: MyColors.white,
+                                                        strokeWidth: 2,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )),
+                                ],
+                              ),
+                              _divider(),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '잔돈',
+                                    style: _change != null
+                                        ? Styles.body2Bold
+                                        : Styles.body2Bold.merge(
+                                            const TextStyle(
+                                              color:
+                                                  MyColors.transparentWhite_40,
+                                            ),
+                                          ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.end,
                                       children: [
                                         Text(
-                                          '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
-                                          style: Styles.body2Number,
+                                          _change != null
+                                              ? '${satoshiToBitcoinString(_change!)} BTC'
+                                              : '- BTC',
+                                          style: _change != null
+                                              ? Styles.body2Number
+                                              : Styles.body2Number
+                                                  .merge(const TextStyle(
+                                                  color: MyColors
+                                                      .transparentWhite_40,
+                                                )),
                                         ),
-                                        Selector<UpbitConnectModel, int?>(
-                                          selector: (context, model) =>
-                                              model.bitcoinPriceKrw,
-                                          builder: (context, bitcoinPriceKrw,
-                                              child) {
-                                            return Text(
-                                              bitcoinPriceKrw != null
-                                                  ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
-                                                  : '',
-                                              style: Styles.balance2,
-                                            );
-                                          },
-                                        )
                                       ],
                                     ),
-                                  ],
-                                ),
-                                _divider(),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '수수료',
-                                      style: _recommendedFeeFetchStatus ==
-                                                  RecommendedFeeFetchStatus
-                                                      .failed &&
-                                              !_customFeeSelected
-                                          ? Styles.body2Bold.merge(
-                                              const TextStyle(
-                                                color: MyColors
-                                                    .transparentWhite_40,
-                                              ),
-                                            )
-                                          : Styles.body2Bold,
-                                    ),
-                                    CustomUnderlinedButton(
-                                        text: '변경',
-                                        isEnable: _recommendedFeeFetchStatus !=
-                                            RecommendedFeeFetchStatus.fetching,
-                                        onTap: () async {
-                                          Result<int, CoconutError>?
-                                              minimumFeeRate = await _model
-                                                  .getMinimumNetworkFeeRate();
-                                          Map<String, dynamic>?
-                                              feeSelectionResult =
-                                              await MyBottomSheet
-                                                  .showBottomSheet_90(
-                                            context: context,
-                                            child: FeeSelectionScreen(
-                                                feeInfos: feeInfos,
-                                                selectedFeeLevel:
-                                                    _selectedLevel,
-                                                networkMinimumFeeRate:
-                                                    minimumFeeRate?.value,
-                                                customFeeInfo: _customFeeInfo,
-                                                isRecommendedFeeFetchSuccess:
-                                                    _recommendedFeeFetchStatus ==
-                                                        RecommendedFeeFetchStatus
-                                                            .succeed,
-                                                estimateFee: _estimateFee),
-                                          );
-                                          if (feeSelectionResult != null) {
-                                            _onFeeRateChanged(
-                                                feeSelectionResult);
-                                          }
-                                        }),
-                                    Expanded(
-                                        child: _recommendedFeeFetchStatus ==
-                                                    RecommendedFeeFetchStatus
-                                                        .failed &&
-                                                !_customFeeSelected
-                                            ? Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                children: [
-                                                  Text(
-                                                    '- ',
-                                                    style: Styles.body2Bold
-                                                        .merge(const TextStyle(
-                                                            color: MyColors
-                                                                .transparentWhite_40)),
-                                                  ),
-                                                  Text(
-                                                    'BTC',
-                                                    style: Styles.body2Number
-                                                        .merge(
-                                                      const TextStyle(
-                                                        color: MyColors
-                                                            .transparentWhite_40,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              )
-                                            : _recommendedFeeFetchStatus ==
-                                                        RecommendedFeeFetchStatus
-                                                            .succeed ||
-                                                    _customFeeSelected
-                                                ? Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment.end,
-                                                    children: [
-                                                      Text(
-                                                        '${satoshiToBitcoinString(_estimatedFee ?? 0).toString()} BTC',
-                                                        style:
-                                                            Styles.body2Number,
-                                                      ),
-                                                      if (_satsPerVb !=
-                                                          null) ...{
-                                                        Text(
-                                                          '${_selectedLevel?.expectedTime ?? ''} ($_satsPerVb sats/vb)',
-                                                          style: Styles.caption,
-                                                        ),
-                                                      },
-                                                    ],
-                                                  )
-                                                : const Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.end,
-                                                    children: [
-                                                      SizedBox(
-                                                        width: 15,
-                                                        height: 15,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                          color: MyColors.white,
-                                                          strokeWidth: 2,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  )),
-                                  ],
-                                ),
-                                _divider(),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '잔돈',
-                                      style: _change != null
-                                          ? Styles.body2Bold
-                                          : Styles.body2Bold.merge(
-                                              const TextStyle(
-                                                color: MyColors
-                                                    .transparentWhite_40,
-                                              ),
-                                            ),
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            _change != null
-                                                ? '${satoshiToBitcoinString(_change!)} BTC'
-                                                : '- BTC',
-                                            style: _change != null
-                                                ? Styles.body2Number
-                                                : Styles.body2Number
-                                                    .merge(const TextStyle(
-                                                    color: MyColors
-                                                        .transparentWhite_40,
-                                                  )),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          _totalUtxoAmountWidget(
-                            Text(
-                              key: _filterDropdownButtonKey,
-                              _getCurrentFilter(),
-                              style: Styles.caption2.merge(
-                                const TextStyle(
-                                  color: MyColors.white,
-                                  fontSize: 12,
-                                ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            isAfterScrolled: false,
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    Visibility(
-                      visible: _model.utxoTagList.isNotEmpty,
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 16, bottom: 12),
-                        child: CustomTagHorizontalSelector(
-                          tags: _model.utxoTagList.map((e) => e.name).toList(),
-                          onSelectedTag: (tagName) {
-                            _selectedUtxoTagName = tagName;
-                            deselectAll();
-                          },
                         ),
+                        _totalUtxoAmountWidget(
+                          Text(
+                            key: _filterDropdownButtonKey,
+                            _getCurrentFilter(),
+                            style: Styles.caption2.merge(
+                              const TextStyle(
+                                color: MyColors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          isAfterScrolled: false,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Visibility(
+                    visible: _model.utxoTagList.isNotEmpty,
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 16, bottom: 12),
+                      child: CustomTagHorizontalSelector(
+                        tags: _model.utxoTagList.map((e) => e.name).toList(),
+                        onSelectedTag: (tagName) {
+                          setState(() {
+                            _selectedUtxoTagName = tagName;
+                          });
+                        },
                       ),
                     ),
-                    ListView.separated(
-                        physics: const NeverScrollableScrollPhysics(),
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.only(
-                            top: 0, bottom: 30, left: 16, right: 16),
-                        itemCount: _confirmedUtxoList.length + 1,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 0),
-                        itemBuilder: (context, index) {
-                          if (index < _confirmedUtxoList.length) {
-                            final utxo = _confirmedUtxoList[index];
-                            final isContainedTagName = _utxoTagMap[utxo.utxoId]
-                                    ?.any((e) =>
-                                        e.name == _selectedUtxoTagName) ??
-                                false;
+                  ),
+                  ListView.separated(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.only(
+                          top: 0, bottom: 30, left: 16, right: 16),
+                      itemCount: _confirmedUtxoList.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 0),
+                      itemBuilder: (context, index) {
+                        final utxo = _confirmedUtxoList[index];
+                        final utxoHasSelectedTag = _selectedUtxoTagName ==
+                                allLabelName ||
+                            _utxoTagMap[utxo.utxoId]?.any(
+                                    (e) => e.name == _selectedUtxoTagName) ==
+                                true;
 
-                            if (_selectedUtxoTagName != '전체' &&
-                                !isContainedTagName) {
-                              return const SizedBox();
-                            }
-
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: UtxoSelectableCard(
-                                key: ValueKey(utxo.transactionHash),
-                                utxo: utxo,
-                                isSelected: _selectedUtxoList
-                                    .contains(_confirmedUtxoList[index]),
-                                utxoTags: _utxoTagMap[utxo.utxoId],
-                                onSelected: _toggleSelection,
-                              ),
-                            );
-                          } else {
+                        if (utxoHasSelectedTag) {
+                          if (_selectedUtxoTagName != allLabelName &&
+                              !utxoHasSelectedTag) {
                             return const SizedBox();
                           }
-                        }),
-                  ],
-                ),
-              ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: IgnorePointer(
-                  ignoring: !_afterScrolledHeaderContainerVisible,
-                  child: Opacity(
-                    opacity: _afterScrolledHeaderContainerVisible ? 1 : 0,
-                    child: Container(
-                      color: MyColors.black,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                      child: _totalUtxoAmountWidget(
-                        Text(
-                          key: _scrolledFilterDropdownButtonKey,
-                          _getCurrentFilter(),
-                          style: Styles.caption2.merge(
-                            const TextStyle(
-                              color: MyColors.white,
-                              fontSize: 12,
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: UtxoSelectableCard(
+                              key: ValueKey(utxo.transactionHash),
+                              utxo: utxo,
+                              isSelected: _selectedUtxoList.contains(utxo),
+                              utxoTags: _utxoTagMap[utxo.utxoId],
+                              onSelected: _toggleSelection,
                             ),
+                          );
+                        } else {
+                          return const SizedBox();
+                        }
+                      }),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                ignoring: !_afterScrolledHeaderContainerVisible,
+                child: Opacity(
+                  opacity: _afterScrolledHeaderContainerVisible ? 1 : 0,
+                  child: Container(
+                    color: MyColors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                    ),
+                    child: _totalUtxoAmountWidget(
+                      Text(
+                        key: _scrolledFilterDropdownButtonKey,
+                        _getCurrentFilter(),
+                        style: Styles.caption2.merge(
+                          const TextStyle(
+                            color: MyColors.white,
+                            fontSize: 12,
                           ),
                         ),
-                        isAfterScrolled: true,
                       ),
+                      isAfterScrolled: true,
                     ),
                   ),
                 ),
               ),
-              if (_isFilterDropdownVisible &&
-                  _confirmedUtxoList.isNotEmpty) ...{
-                Positioned(
-                  top: _filterDropdownButtonPosition.dy -
-                      _scrollController.offset -
-                      MediaQuery.of(context).padding.top -
-                      20,
-                  left: 16,
-                  child: _filterDropDownWidget(),
-                ),
-              },
-              if (_isScrolledFilterDropdownVisible &&
-                  _confirmedUtxoList.isNotEmpty) ...{
-                Positioned(
-                  top: _scrolledFilterDropdownButtonPosition.dy -
-                      MediaQuery.of(context).padding.top -
-                      65,
-                  left: 16,
-                  child: _filterDropDownWidget(),
-                ),
-              }
-            ],
-          ),
+            ),
+            if (_isFilterDropdownVisible && _confirmedUtxoList.isNotEmpty) ...{
+              Positioned(
+                top: _filterDropdownButtonPosition.dy -
+                    _scrollController.offset -
+                    MediaQuery.of(context).padding.top -
+                    20,
+                left: 16,
+                child: _filterDropDownWidget(),
+              ),
+            },
+            if (_isScrolledFilterDropdownVisible &&
+                _confirmedUtxoList.isNotEmpty) ...{
+              Positioned(
+                top: _scrolledFilterDropdownButtonPosition.dy -
+                    MediaQuery.of(context).padding.top -
+                    65,
+                left: 16,
+                child: _filterDropDownWidget(),
+              ),
+            }
+          ],
         ),
       ),
     );
