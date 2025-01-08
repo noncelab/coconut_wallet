@@ -610,47 +610,12 @@ class WalletDataManager {
     }
   }
 
-  /// txHashIndex 추가
-  /// - walletId, name 으로 tag 목록 검색
-  /// - 목록을 순환하면서 입력된 txHashIndex 추가
-  RealmResult<UtxoTag> addTagToUtxo(
-      int walletId, String name, String txHashIndex) {
-    try {
-      final tags = _realm
-          .query<RealmUtxoTag>("walletId == '$walletId' AND name == '$name'");
-
-      if (tags.isEmpty) {
-        return RealmResult(
-            error: ErrorCodes.withMessage(ErrorCodes.realmNotFound, ''));
-      }
-
-      final tag = tags.first;
-
-      _realm.write(() {
-        // 기존 RealmUtxoId를 검색
-        final existingId =
-            _realm.query<RealmUtxoId>("id == '$txHashIndex'").firstOrNull;
-        final id = existingId ?? mapStringToRealmUtxoId(txHashIndex);
-        if (!tag.utxoIdList.contains(id)) {
-          tag.utxoIdList.add(id);
-        }
-      });
-
-      return RealmResult(data: mapRealmUtxoTagToUtxoTag(tag));
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
-  }
-
-  /// txHashIndex 삭제
-  /// - walletId 으로 tag 목록 조회
-  /// - 목록을 순환하면서 입력된 txHashIndex를 모두 삭제
-  /// - 몇 개의 태그가 삭제되었는지 반환
-  RealmResult<int> deleteTxHashIndex(int walletId, String txHashIndex) {
+  /// utxoIdList 변경
+  /// - [walletId] 목록 검색
+  /// - [txHashIndex] UTXO Id
+  /// - [selectedNames] 선택된 태그명 목록
+  RealmResult<bool> updateUtxoTagList(
+      int walletId, String txHashIndex, List<String> selectedNames) {
     try {
       final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
 
@@ -659,21 +624,24 @@ class WalletDataManager {
             error: ErrorCodes.withMessage(ErrorCodes.realmNotFound, ''));
       }
 
-      int deleteCount = 0;
+      final existingId =
+          _realm.query<RealmUtxoId>("id == '$txHashIndex'").firstOrNull;
+
+      final id = existingId ?? mapStringToRealmUtxoId(txHashIndex);
 
       _realm.write(() {
         for (var tag in tags) {
-          for (var item in tag.utxoIdList) {
-            if (txHashIndex == item.id) {
-              tag.utxoIdList.remove(item);
-              deleteCount++;
-              break;
+          if (selectedNames.contains(tag.name)) {
+            if (!tag.utxoIdList.contains(id)) {
+              tag.utxoIdList.add(id);
             }
+          } else {
+            tag.utxoIdList.remove(id);
           }
         }
       });
 
-      return RealmResult(data: deleteCount);
+      return RealmResult(data: true);
     } catch (e) {
       return RealmResult(
         error: e is RealmException
