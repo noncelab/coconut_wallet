@@ -327,8 +327,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
               : _changeTooltipIconPosition.dy - 70,
           left: _changeTooltipIconPosition.dx - 150,
           right: MediaQuery.of(context).size.width -
-              _changeTooltipIconPosition.dx -
-              48,
+              _changeTooltipIconPosition.dx +
+              (_changeTooltipIconRenderBox.size.width) -
+              46,
           child: GestureDetector(
             onTap: () => _removeTooltip(),
             child: ClipPath(

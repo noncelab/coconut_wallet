@@ -231,8 +231,11 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                   child: Positioned(
                     top: _walletTooltipIconPosition.dy - _tooltipTopPadding,
                     right: MediaQuery.of(context).size.width -
-                        _walletTooltipIconPosition.dx +
-                        5,
+                        _walletTooltipIconPosition.dx -
+                        (_walletTooltipIconRenderBox == null
+                            ? 0
+                            : _walletTooltipIconRenderBox!.size.width) -
+                        10,
                     child: GestureDetector(
                       onTap: () => _removeTooltip(),
                       child: ClipPath(
@@ -249,7 +252,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '${_multiWallet.signers.length}개의 키 중 ${_multiWallet.requiredSignatureCount}개로 서명해야 하는\n다중 서명 지갑이예요.',
+                                '${_multiWallet.signers.length}개의 키 중 ${_multiWallet.requiredSignatureCount}개로 서명해야 하는\n다중 서명 지갑이에요.',
                                 style: Styles.caption.merge(TextStyle(
                                   height: 1.3,
                                   fontFamily: CustomFonts.text.getFontFamily,

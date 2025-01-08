@@ -505,7 +505,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     right: 18,
                     bottom: 10,
                   ),
-                  color: MyColors.skybule,
+                  color: MyColors.white,
                   child: Text(
                     _utxoTip,
                     style: Styles.caption.merge(TextStyle(
