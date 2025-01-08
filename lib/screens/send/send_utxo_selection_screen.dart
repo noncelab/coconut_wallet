@@ -925,10 +925,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                         builder:
                                             (context, bitcoinPriceKrw, child) {
                                           return Text(
-                                            bitcoinPriceKrw != null
-                                                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
-                                                : '',
-                                            style: Styles.caption);
+                                              bitcoinPriceKrw != null
+                                                  ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
+                                                  : '',
+                                              style: Styles.caption);
                                         },
                                       )
                                     ],
