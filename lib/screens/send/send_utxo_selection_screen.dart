@@ -837,9 +837,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
-      onPopInvokedWithResult: (didPop, _) {
-        _removeFilterDropdown();
-      },
       child: Scaffold(
         appBar: CustomAppBar.buildWithNext(
             backgroundColor: MyColors.black,

@@ -19,7 +19,7 @@ class UTXOItemCard extends StatelessWidget {
     List<String> dateString =
         DateTimeUtil.formatDatetime(utxo.timestamp).split('|');
     bool isChange = utxo.derivationPath.split('/')[4] == '1';
-
+    bool isConfirmed = int.parse(utxo.blockHeight) != 0;
     return Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         decoration: BoxDecoration(
@@ -34,7 +34,10 @@ class UTXOItemCard extends StatelessWidget {
                   children: [
                     Text(
                       dateString[0],
-                      style: Styles.caption,
+                      style: isConfirmed
+                          ? Styles.caption
+                          : Styles.caption.merge(const TextStyle(
+                              color: MyColors.transparentWhite_20)),
                     ),
                     const SizedBox(
                       width: 8,
@@ -42,8 +45,10 @@ class UTXOItemCard extends StatelessWidget {
                     Text(
                       '|',
                       style: Styles.caption.merge(
-                        const TextStyle(
-                          color: MyColors.transparentWhite_40,
+                        TextStyle(
+                          color: isConfirmed
+                              ? MyColors.transparentWhite_40
+                              : MyColors.transparentWhite_20,
                         ),
                       ),
                     ),
@@ -52,7 +57,13 @@ class UTXOItemCard extends StatelessWidget {
                     ),
                     Text(
                       dateString[1],
-                      style: Styles.caption,
+                      style: isConfirmed
+                          ? Styles.caption
+                          : Styles.caption.merge(
+                              const TextStyle(
+                                color: MyColors.transparentWhite_20,
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -60,17 +71,32 @@ class UTXOItemCard extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      if (isChange) const CustomChip(text: '잔돈'),
+                      if (isChange)
+                        CustomChip(
+                          text: '잔돈',
+                          borderColor:
+                              isConfirmed ? null : MyColors.transparentWhite_20,
+                          textStyle: isConfirmed
+                              ? null
+                              : Styles.caption2.copyWith(
+                                  color: MyColors.transparentWhite_20,
+                                  height: 1.0,
+                                ),
+                        ),
                       const SizedBox(
                         width: 4,
                       ),
                       Text(
                         satoshiToBitcoinString(utxo.amount),
                         style: Styles.body1Number.merge(
-                          const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              height: 24 / 16,
-                              letterSpacing: 16 * 0.01),
+                          TextStyle(
+                            fontWeight: FontWeight.w700,
+                            height: 24 / 16,
+                            letterSpacing: 16 * 0.01,
+                            color: isConfirmed
+                                ? MyColors.white
+                                : MyColors.transparentWhite_20,
+                          ),
                         ),
                       ),
                     ],
@@ -84,8 +110,10 @@ class UTXOItemCard extends StatelessWidget {
             Text(
               utxo.to,
               style: Styles.body2Number.merge(
-                const TextStyle(
-                  color: MyColors.transparentWhite_50,
+                TextStyle(
+                  color: isConfirmed
+                      ? MyColors.transparentWhite_50
+                      : MyColors.transparentWhite_20,
                 ),
               ),
             ),
