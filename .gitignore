@@ -143,3 +143,6 @@ coconut_lib_internal
 
 *.env
 key.properties
+
+# FVM Version Cache
+.fvm/
