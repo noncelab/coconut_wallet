@@ -357,6 +357,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
     feeInfos[2].satsPerVb = recommendedFees.hourFee;
 
+    _updateFeeInfoEstimateFee();
+    setState(() {
+      _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
+    });
+  }
+
+  void _updateFeeInfoEstimateFee() {
     for (var feeInfo in feeInfos) {
       try {
         int estimatedFee = _estimateFee(feeInfo.satsPerVb!);
@@ -378,9 +385,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         return;
       }
     }
-    setState(() {
-      _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
-    });
   }
 
   /// UTXO 선택 상태를 토글하는 함수
@@ -942,6 +946,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                       isEnable: _recommendedFeeFetchStatus !=
                                           RecommendedFeeFetchStatus.fetching,
                                       onTap: () async {
+                                        if (errorState == null) {
+                                          _updateFeeInfoEstimateFee();
+                                        }
                                         Result<int, CoconutError>?
                                             minimumFeeRate = await _model
                                                 .getMinimumNetworkFeeRate();
