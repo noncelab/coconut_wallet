@@ -306,7 +306,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   void _applyFilter(UtxoOrderEnum orderEnum) async {
     if (orderEnum == _selectedFilter) return;
-    _scrollController.jumpTo(0);
+    if (_scrollController.offset > topPadding) {
+      _scrollController.animateTo(
+        topPadding +
+            10, // topPadding 으로 이동하면 상단 위젯이 사라지기 때문에 topPadding보다 큰 값으로 이동
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeIn,
+      );
+    }
     setState(() {
       _selectedFilter = orderEnum;
       //_selectedUtxoList.clear();
@@ -600,7 +607,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       Container(
                         width: MediaQuery.sizeOf(context).width,
                         padding: const EdgeInsets.only(
-                            left: 16, right: 16, bottom: 9),
+                            top: 10, left: 16, right: 16, bottom: 9),
                         decoration: const BoxDecoration(
                           color: MyColors.black,
                           boxShadow: [
@@ -648,6 +655,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                       style: Styles.caption2.merge(
                                         const TextStyle(
                                           color: MyColors.white,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ),
