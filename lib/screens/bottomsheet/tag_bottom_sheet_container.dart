@@ -129,6 +129,7 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
     final prevColorIndex = widget.updateUtxoTag?.colorIndex ?? 0;
     setState(() {
       _isUpdateButtonEnabled = _updateTagName.isNotEmpty &&
+              !_controller.text.endsWith(' ') &&
               _updateTagName != prevTag &&
               !_utxoTags.any((tag) => tag.name == _updateTagName) ||
           _updateTagName == prevTag && _updateTagColorIndex != prevColorIndex;

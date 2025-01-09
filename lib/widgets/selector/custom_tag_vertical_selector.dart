@@ -126,26 +126,30 @@ class CustomTagSelectorItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 9),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '#$tag',
-                style: Styles.body1.copyWith(
-                  fontSize: 12,
-                  color: MyColors.white,
-                  fontWeight: FontWeight.w700,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '#$tag',
+                  style: Styles.body1.copyWith(
+                    fontSize: 12,
+                    color: MyColors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Visibility(
-                visible: usedCount > 0,
-                child: Text(
-                  '$usedCount개에 적용',
-                  style: Styles.body1
-                      .copyWith(fontSize: 10, color: MyColors.white),
+                Visibility(
+                  visible: usedCount > 0,
+                  child: Text(
+                    '$usedCount개에 적용',
+                    style: Styles.body1
+                        .copyWith(fontSize: 10, color: MyColors.white),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
