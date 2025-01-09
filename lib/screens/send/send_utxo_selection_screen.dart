@@ -76,7 +76,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   final GlobalKey _headerTopContainerKey = GlobalKey();
   Size _headerTopContainerSize = const Size(0, 0);
-  final bool _afterScrolledHeaderContainerVisible = false;
+  bool _afterScrolledHeaderContainerVisible = false;
 
   late double _totalUtxoAmountWidgetPaddingLeft;
   late double _totalUtxoAmountWidgetPaddingRight;
