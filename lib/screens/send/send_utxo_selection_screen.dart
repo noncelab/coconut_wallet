@@ -630,6 +630,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               style: Styles.warning.merge(
                 const TextStyle(
                   height: 16 / 12,
+                  color: MyColors.warningRed,
                 ),
               ),
               textAlign: TextAlign.center,
