@@ -102,7 +102,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
   List<model.UTXO> _utxoList = [];
-  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byAmountDesc; // 초기 정렬 방식
+  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc; // 초기 정렬 방식
 
   late WalletType _walletType;
   static String changeField = 'change';
@@ -449,10 +449,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       borderRadius: BorderRadius.circular(16),
       child: CustomDropdown(
         buttons: [
-          UtxoOrderEnum.byAmountDesc.text,
-          UtxoOrderEnum.byAmountAsc.text,
           UtxoOrderEnum.byTimestampDesc.text,
           UtxoOrderEnum.byTimestampAsc.text,
+          UtxoOrderEnum.byAmountDesc.text,
+          UtxoOrderEnum.byAmountAsc.text,
         ],
         dividerColor: Colors.black,
         onTapButton: (index) {
@@ -461,16 +461,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           });
           switch (index) {
             case 0: // 큰 금액순
-              _applyFilter(UtxoOrderEnum.byAmountDesc);
-              break;
-            case 1: // 작은 금액순
-              _applyFilter(UtxoOrderEnum.byAmountAsc);
-              break;
-            case 2: // 최신순
               _applyFilter(UtxoOrderEnum.byTimestampDesc);
               break;
-            case 3: // 오래된 순
+            case 1: // 작은 금액순
               _applyFilter(UtxoOrderEnum.byTimestampAsc);
+              break;
+            case 2: // 최신순
+              _applyFilter(UtxoOrderEnum.byAmountDesc);
+              break;
+            case 3: // 오래된 순
+              _applyFilter(UtxoOrderEnum.byAmountAsc);
               break;
           }
         },
