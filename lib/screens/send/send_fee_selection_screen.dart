@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:coconut_wallet/model/fee_info.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -476,9 +477,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                       _customSelected = false;
                                     });
                                   })),
-                          CupertinoButton(
+                          CustomUnderlinedButton(
                             padding: Paddings.widgetContainer,
-                            onPressed: () {
+                            onTap: () {
                               showTextFieldDialog(
                                   context: context,
                                   content: '수수료를 자연수로 입력해 주세요.',
@@ -489,13 +490,12 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                         _customFeeController.text);
                                   });
                             },
-                            child: Text(
-                              "직접 입력",
-                              style: _customSelected
-                                  ? Styles.body2
-                                  : Styles.body2.merge(const TextStyle(
-                                      color: MyColors.transparentWhite_70)),
-                            ),
+                            text: '직접 입력하기',
+                            fontSize: 14,
+                            lineHeight: 21,
+                            defaultColor: _customSelected
+                                ? MyColors.white
+                                : MyColors.transparentWhite_70,
                           ),
                         ],
                       )),
