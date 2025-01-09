@@ -1,11 +1,17 @@
+import 'dart:math';
+
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
 class CustomTagChipColorButton extends StatefulWidget {
   final Function(int) onTap;
   final int colorIndex;
+  final bool isCreate;
   const CustomTagChipColorButton(
-      {super.key, required this.onTap, required this.colorIndex});
+      {super.key,
+      required this.onTap,
+      required this.colorIndex,
+      this.isCreate = false});
 
   @override
   State<CustomTagChipColorButton> createState() =>
@@ -18,7 +24,18 @@ class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {
   @override
   void initState() {
     super.initState();
-    _colorIndex = widget.colorIndex;
+    if (widget.isCreate) {
+      final random = Random();
+      _colorIndex = random.nextInt(10);
+    } else {
+      _colorIndex = widget.colorIndex;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.isCreate) {
+        widget.onTap.call(_colorIndex);
+      }
+    });
   }
 
   @override

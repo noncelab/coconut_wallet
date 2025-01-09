@@ -337,6 +337,7 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                           margin: const EdgeInsets.only(bottom: 16),
                           child: CustomTagChipColorButton(
                             colorIndex: widget.updateUtxoTag?.colorIndex ?? 0,
+                            isCreate: widget.updateUtxoTag == null,
                             onTap: (index) {
                               _updateTagColorIndex = index;
                               _checkUpdateButtonEnabled();
