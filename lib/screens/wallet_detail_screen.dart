@@ -1162,12 +1162,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                         topPadding
                                 ? 0
                                 : MediaQuery.sizeOf(context).height -
-                                    topPadding -
-                                    (_txSliverListSize.height * _txList.length +
-                                        80) -
-                                    _appBarSize.height -
-                                    kToolbarHeight +
-                                    10,
+                                            topPadding -
+                                            (_txSliverListSize.height *
+                                                    _txList.length +
+                                                80) -
+                                            _appBarSize.height -
+                                            kToolbarHeight +
+                                            10 <
+                                        0
+                                    ? 0
+                                    : 300,
                       ),
                     ),
                   },
@@ -1183,13 +1187,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                         topPadding
                                 ? 0
                                 : MediaQuery.sizeOf(context).height -
-                                    topPadding -
-                                    ((_utxoSliverListSize.height - 20) *
-                                            _utxoList.length +
-                                        (12 * (_utxoList.length - 1))) -
-                                    _appBarSize.height -
-                                    kToolbarHeight +
-                                    10,
+                                            topPadding -
+                                            ((_utxoSliverListSize.height - 20) *
+                                                    _utxoList.length +
+                                                (12 * (_utxoList.length - 1))) -
+                                            _appBarSize.height -
+                                            kToolbarHeight +
+                                            10 <
+                                        0
+                                    ? 0
+                                    : 300,
                       ),
                     ),
                   }
