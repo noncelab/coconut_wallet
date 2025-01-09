@@ -174,13 +174,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
         final status = TransactionUtil.getStatus(tx);
 
-        if (tx.outputAddressList.isNotEmpty == true) {
-          tx.outputAddressList.sort((a, b) {
-            if (_addressBook.contains(a.address)) return -1;
-            if (_addressBook.contains(b.address)) return 1;
-            return 0;
-          });
-        }
+        // if (tx.outputAddressList.isNotEmpty == true) {
+        //   tx.outputAddressList.sort((a, b) {
+        //     if (_addressBook.contains(a.address)) return -1;
+        //     if (_addressBook.contains(b.address)) return 1;
+        //     return 0;
+        //   });
+        // }
 
         return Scaffold(
             backgroundColor: MyColors.black,
