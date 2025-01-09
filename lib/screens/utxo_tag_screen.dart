@@ -83,13 +83,14 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                       '태그가 없어요',
                       style: Styles.body2.copyWith(
                         fontWeight: FontWeight.w700,
+                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '+ 버튼을 눌러 태그를 추가해 보세요',
                       style: Styles.body2
-                          .copyWith(fontSize: 12, color: MyColors.gray200),
+                          .copyWith(fontSize: 13, color: MyColors.gray200),
                     ),
                   },
                   if (utxoTagList.isNotEmpty && _selectedUtxoTag != null) ...{

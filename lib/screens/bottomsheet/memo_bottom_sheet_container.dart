@@ -84,9 +84,11 @@ class _MemoBottomSheetContainerState extends State<MemoBottomSheetContainer> {
                       size: 22,
                     ),
                   ),
-                  const Text(
+                  Text(
                     '거래 메모',
-                    style: Styles.body2Bold,
+                    style: Styles.body2Bold.copyWith(
+                      fontSize: 16,
+                    ),
                   ),
                   CustomAppbarButton(
                     isActive: _isCompleteButtonEnabled,

@@ -119,7 +119,7 @@ class CustomTagSelectorItem extends StatelessWidget {
               child: Text(
                 '#',
                 style: Styles.body1.copyWith(
-                  fontSize: 12,
+                  fontSize: 14,
                   color: ColorPalette[colorIndex],
                 ),
               ),
@@ -133,7 +133,7 @@ class CustomTagSelectorItem extends StatelessWidget {
                 Text(
                   '#$tag',
                   style: Styles.body1.copyWith(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: MyColors.white,
                     fontWeight: FontWeight.w700,
                   ),
@@ -145,7 +145,7 @@ class CustomTagSelectorItem extends StatelessWidget {
                   child: Text(
                     '$usedCount개에 적용',
                     style: Styles.body1
-                        .copyWith(fontSize: 10, color: MyColors.white),
+                        .copyWith(fontSize: 11, color: MyColors.white),
                   ),
                 ),
               ],

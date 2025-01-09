@@ -148,9 +148,13 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
       child: Container(
-        constraints: const BoxConstraints(
-          minHeight: 184,
-          maxHeight: 278,
+        constraints: BoxConstraints(
+          minHeight: widget.type != TagBottomSheetType.select || _isTwoDepth
+              ? 184
+              : 278,
+          maxHeight: widget.type == TagBottomSheetType.select || !_isTwoDepth
+              ? 512
+              : 184,
         ),
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         decoration: const BoxDecoration(
@@ -182,7 +186,9 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                   ),
                   Text(
                     TagBottomSheetType.create == _type ? '새 태그' : '태그 편집',
-                    style: Styles.body2Bold,
+                    style: Styles.body2Bold.copyWith(
+                      fontSize: 16,
+                    ),
                   ),
                   if (_type == TagBottomSheetType.select) ...{
                     CustomAppbarButton(
@@ -257,44 +263,48 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
               const SizedBox(height: 24),
               if (_type == TagBottomSheetType.select) ...{
                 // Tags
-                Container(
-                  constraints: const BoxConstraints(
-                    minHeight: 30,
-                    maxHeight: 124,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: List.generate(
-                        _utxoTags.length,
-                        (index) => IntrinsicWidth(
-                          child: GestureDetector(
-                            onTap: () {
-                              final tag = _utxoTags[index].name;
-                              setState(() {
-                                if (_selectedUtxoTagNames.contains(tag)) {
-                                  _selectedUtxoTagNames.remove(tag);
-                                } else {
-                                  if (_selectedUtxoTagNames.length == 5) {
-                                    CustomToast.showToast(
-                                        context: context,
-                                        text: "태그는 최대 5개 지정할 수 있어요",
-                                        seconds: 2);
-                                    return;
+                Visibility(
+                  visible: _utxoTags.isNotEmpty,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    constraints: const BoxConstraints(
+                      minHeight: 30,
+                      maxHeight: 296,
+                    ),
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: List.generate(
+                          _utxoTags.length,
+                          (index) => IntrinsicWidth(
+                            child: GestureDetector(
+                              onTap: () {
+                                final tag = _utxoTags[index].name;
+                                setState(() {
+                                  if (_selectedUtxoTagNames.contains(tag)) {
+                                    _selectedUtxoTagNames.remove(tag);
+                                  } else {
+                                    if (_selectedUtxoTagNames.length == 5) {
+                                      CustomToast.showToast(
+                                          context: context,
+                                          text: "태그는 최대 5개 지정할 수 있어요",
+                                          seconds: 2);
+                                      return;
+                                    }
+                                    _selectedUtxoTagNames.add(tag);
                                   }
-                                  _selectedUtxoTagNames.add(tag);
-                                }
-                                _checkSelectButtonEnabled();
-                              });
-                            },
-                            child: CustomTagChip(
-                              tag: _utxoTags[index].name,
-                              colorIndex: _utxoTags[index].colorIndex,
-                              type: _selectedUtxoTagNames
-                                      .contains(_utxoTags[index].name)
-                                  ? CustomTagChipType.select
-                                  : CustomTagChipType.disable,
+                                  _checkSelectButtonEnabled();
+                                });
+                              },
+                              child: CustomTagChip(
+                                tag: _utxoTags[index].name,
+                                colorIndex: _utxoTags[index].colorIndex,
+                                type: _selectedUtxoTagNames
+                                        .contains(_utxoTags[index].name)
+                                    ? CustomTagChipType.select
+                                    : CustomTagChipType.disable,
+                              ),
                             ),
                           ),
                         ),
@@ -302,10 +312,10 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
                 // Create new tag button
                 CustomUnderlinedButton(
                   text: '새 태그 만들기',
+                  fontSize: 14,
                   onTap: () {
                     setState(() {
                       _isTwoDepth = true;
