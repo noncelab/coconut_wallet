@@ -220,7 +220,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   ),
                                   const SizedBox(width: 4),
                                   SizedBox(
-                                    width: 35,
+                                    height: 24,
                                     child: Lottie.asset(
                                       'assets/lottie/loading-three-dots.json',
                                       fit: BoxFit.contain,

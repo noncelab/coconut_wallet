@@ -397,10 +397,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           ),
         ),
         const SizedBox(
-          width: 24,
+          width: 8,
         ),
         CupertinoButton(
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           pressedOpacity: 0.8,
           // focusColor: MyColors.white,
           minSize: 0,

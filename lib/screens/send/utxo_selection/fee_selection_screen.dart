@@ -10,6 +10,7 @@ import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:flutter/cupertino.dart';
@@ -244,9 +245,9 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                               'selectedFeeLevel : ${widget.selectedFeeLevel}');
                                         });
                                       })),
-                              CupertinoButton(
+                              CustomUnderlinedButton(
                                 padding: Paddings.widgetContainer,
-                                onPressed: () {
+                                onTap: () {
                                   showTextFieldDialog(
                                     context: context,
                                     content: '수수료를 자연수로 입력해 주세요.',
@@ -255,13 +256,12 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                     onPressed: onCustomFeeRateInput,
                                   );
                                 },
-                                child: Text(
-                                  "직접 입력",
-                                  style: _selectedFeeLevel == null
-                                      ? Styles.body2
-                                      : Styles.body2.merge(const TextStyle(
-                                          color: MyColors.transparentWhite_70)),
-                                ),
+                                text: '직접 입력하기',
+                                fontSize: 14,
+                                lineHeight: 21,
+                                defaultColor: _selectedFeeLevel == null
+                                    ? MyColors.white
+                                    : MyColors.transparentWhite_70,
                               ),
                             ],
                           )),
