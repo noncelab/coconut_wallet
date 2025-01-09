@@ -17,6 +17,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -33,6 +34,17 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 enum RecommendedFeeFetchStatus { fetching, succeed, failed }
+
+enum _ErrorState {
+  insufficientBalance('잔액이 부족하여 수수료를 낼 수 없어요'),
+  failedToFetchRecommendedFee(
+      '추천 수수료를 조회하지 못했어요.\n\'변경\'버튼을 눌러서 수수료를 직접 입력해 주세요.'),
+  insufficientUtxo('UTXO 합계가 모자라요');
+
+  final String displayMessage;
+
+  const _ErrorState(this.displayMessage);
+}
 
 class SendUtxoSelectionScreen extends StatefulWidget {
   final int id;
@@ -58,6 +70,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   late UpbitConnectModel _upbitConnectModel;
   late final ScrollController _scrollController;
 
+  late int _confirmedBalance;
   late List<UTXO> _confirmedUtxoList;
   late List<UTXO> _selectedUtxoList;
 
@@ -76,14 +89,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   final GlobalKey _headerTopContainerKey = GlobalKey();
   Size _headerTopContainerSize = const Size(0, 0);
-  final bool _afterScrolledHeaderContainerVisible = false;
+  bool _afterScrolledHeaderContainerVisible = false;
 
-  late double _totalUtxoAmountWidgetPaddingLeft;
-  late double _totalUtxoAmountWidgetPaddingRight;
-  late double _totalUtxoAmountWidgetPaddingTop;
-  late double _totalUtxoAmountWidgetPaddingBottom;
-
-  late int _confirmedBalance;
   late bool _isMaxMode;
   late int? _requiredSignature;
   late int? _totalSigner;
@@ -123,6 +130,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     if (change != 0) return change;
     if (_estimatedFee == null) return null;
     // utxo가 모자랄 때도 change = 0으로 반환되기 때문에 진짜 잔돈이 0인지 아닌지 확인이 필요
+    if (_confirmedBalance < needAmount) {
+      return _confirmedBalance - needAmount;
+    }
+
     return _isSelectedUtxoEnough() ? change : null;
   }
 
@@ -135,6 +146,31 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         : UnitUtil.bitcoinToSatoshi(
             widget.sendInfo.amount,
           );
+  }
+
+  int get selectedUtxoAmountSum =>
+      _calculateTotalAmountOfUtxoList(_selectedUtxoList);
+  int get needAmount => sendAmount + (_estimatedFee ?? 0);
+
+  _ErrorState? get errorState {
+    if (_estimatedFee == null) {
+      return null;
+    }
+
+    if (_confirmedBalance < needAmount) {
+      return _ErrorState.insufficientBalance;
+    }
+
+    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
+        _customFeeInfo == null) {
+      return _ErrorState.failedToFetchRecommendedFee;
+    }
+
+    if (selectedUtxoAmountSum < needAmount) {
+      return _ErrorState.insufficientUtxo;
+    }
+
+    return null;
   }
 
   UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byAmountDesc;
@@ -153,90 +189,101 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   @override
   void initState() {
-    super.initState();
-    _model = Provider.of<AppStateModel>(context, listen: false);
+    try {
+      super.initState();
+      _model = Provider.of<AppStateModel>(context, listen: false);
 
-    _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
+      _upbitConnectModel =
+          Provider.of<UpbitConnectModel>(context, listen: false);
 
-    _scrollController = ScrollController();
+      _scrollController = ScrollController();
 
-    _walletBaseItem = _model.getWalletById(widget.id);
-    _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
-    _requiredSignature = _walletBaseItem.walletType == WalletType.multiSignature
-        ? (_walletBaseItem as MultisigWalletListItem).requiredSignatureCount
-        : null;
-    _totalSigner = _walletBaseItem.walletType == WalletType.multiSignature
-        ? (_walletBaseItem as MultisigWalletListItem).signers.length
-        : null;
+      _walletBaseItem = _model.getWalletById(widget.id);
+      _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
+      _requiredSignature = _walletBaseItem.walletType ==
+              WalletType.multiSignature
+          ? (_walletBaseItem as MultisigWalletListItem).requiredSignatureCount
+          : null;
+      _totalSigner = _walletBaseItem.walletType == WalletType.multiSignature
+          ? (_walletBaseItem as MultisigWalletListItem).signers.length
+          : null;
 
-    if (_model.walletInitState == WalletInitState.finished) {
-      _confirmedUtxoList = _getAllConfirmedUtxoList(_walletFeature);
-      _selectedUtxoList = [];
-      UTXO.sortUTXO(_confirmedUtxoList, _selectedFilter);
-      _addDisplayUtxoList();
-    } else {
-      _confirmedUtxoList = _selectedUtxoList = [];
-    }
-
-    if (_walletBaseItem.walletType == WalletType.multiSignature) {
-      final multisigListItem = _walletBaseItem as MultisigWalletListItem;
-      _walletBase = multisigListItem.walletBase;
-
-      final multisigWallet = _walletBase as MultisignatureWallet;
-      _confirmedBalance = multisigWallet.getBalance();
-    } else {
-      final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
-      _walletBase = singlesigListItem.walletBase;
-
-      final singlesigWallet = _walletBase as SingleSignatureWallet;
-      _confirmedBalance = singlesigWallet.getBalance();
-    }
-
-    _isMaxMode =
-        _confirmedBalance == UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount);
-
-    _transaction = createTransaction(_isMaxMode, 1, _walletBase);
-    syncSelectedUtxosWithTransaction();
-
-    _totalUtxoAmountWidgetPaddingLeft = _totalUtxoAmountWidgetPaddingRight =
-        _totalUtxoAmountWidgetPaddingTop = 24;
-    _totalUtxoAmountWidgetPaddingBottom = 20;
-
-    _scrollController.addListener(() {
-      double threshold = _headerTopContainerSize.height + 24;
-      double offset = _scrollController.offset;
-      if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
-        _removeFilterDropdown();
+      if (_model.walletInitState == WalletInitState.finished) {
+        _confirmedUtxoList = _getAllConfirmedUtxoList(_walletFeature);
+        _selectedUtxoList = [];
+        UTXO.sortUTXO(_confirmedUtxoList, _selectedFilter);
+        _addDisplayUtxoList();
+      } else {
+        _confirmedUtxoList = _selectedUtxoList = [];
       }
-      setState(() {
-        _afterScrolledHeaderContainerVisible = offset >= threshold;
+
+      if (_walletBaseItem.walletType == WalletType.multiSignature) {
+        final multisigListItem = _walletBaseItem as MultisigWalletListItem;
+        _walletBase = multisigListItem.walletBase;
+
+        final multisigWallet = _walletBase as MultisignatureWallet;
+        _confirmedBalance = multisigWallet.getBalance();
+      } else {
+        final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
+        _walletBase = singlesigListItem.walletBase;
+
+        final singlesigWallet = _walletBase as SingleSignatureWallet;
+        _confirmedBalance = singlesigWallet.getBalance();
+      }
+
+      _isMaxMode = _confirmedBalance ==
+          UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount);
+      _transaction = createTransaction(_isMaxMode, 1, _walletBase);
+      syncSelectedUtxosWithTransaction();
+
+      _scrollController.addListener(() {
+        double threshold = _headerTopContainerSize.height + 24;
+        double offset = _scrollController.offset;
+        if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
+          _removeFilterDropdown();
+        }
+        setState(() {
+          _afterScrolledHeaderContainerVisible = offset >= threshold;
+        });
       });
-    });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _model.initUtxoTagScreenTagData(widget.id);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        _model.initUtxoTagScreenTagData(widget.id);
 
-      RenderBox filterDropdownButtonRenderBox =
-          _filterDropdownButtonKey.currentContext?.findRenderObject()
-              as RenderBox;
-      RenderBox scrolledFilterDropdownButtonRenderBox =
-          _scrolledFilterDropdownButtonKey.currentContext?.findRenderObject()
-              as RenderBox;
-      _filterDropdownButtonPosition =
-          filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
-      _scrolledFilterDropdownButtonPosition =
-          scrolledFilterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+        RenderBox filterDropdownButtonRenderBox =
+            _filterDropdownButtonKey.currentContext?.findRenderObject()
+                as RenderBox;
+        RenderBox scrolledFilterDropdownButtonRenderBox =
+            _scrolledFilterDropdownButtonKey.currentContext?.findRenderObject()
+                as RenderBox;
+        _filterDropdownButtonPosition =
+            filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+        _scrolledFilterDropdownButtonPosition =
+            scrolledFilterDropdownButtonRenderBox.localToGlobal(Offset.zero);
 
-      RenderBox headerTopContainerRenderBox =
-          _headerTopContainerKey.currentContext?.findRenderObject()
-              as RenderBox;
-      _headerTopContainerSize = headerTopContainerRenderBox.size;
+        RenderBox headerTopContainerRenderBox =
+            _headerTopContainerKey.currentContext?.findRenderObject()
+                as RenderBox;
+        _headerTopContainerSize = headerTopContainerRenderBox.size;
 
-      await _setRecommendedFees();
-      if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed) {
-        _updateFeeRate(_satsPerVb!);
-      }
-    });
+        await _setRecommendedFees();
+        if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed) {
+          _updateFeeRate(_satsPerVb!);
+        }
+      });
+    } catch (e) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        CustomDialogs.showCustomAlertDialog(
+          context,
+          title: '오류 발생',
+          message: '관리자에게 문의하세요. ${e.toString()}',
+          onConfirm: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+          },
+        );
+      });
+    }
   }
 
   Transaction createTransaction(
@@ -245,8 +292,20 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return Transaction.forSweep(widget.sendInfo.address, feeRate, walletBase);
     }
 
-    return Transaction.forPayment(widget.sendInfo.address,
-        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount), feeRate, walletBase);
+    try {
+      return Transaction.forPayment(
+          widget.sendInfo.address,
+          UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
+          feeRate,
+          walletBase);
+    } catch (e) {
+      if (e.toString().contains('Not enough amount for sending. (Fee')) {
+        return Transaction.forSweep(
+            widget.sendInfo.address, feeRate, walletBase);
+      }
+
+      rethrow;
+    }
   }
 
   int _estimateFee(int feeRate) {
@@ -270,12 +329,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     setState(() {
       _selectedUtxoList = result;
     });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
@@ -336,13 +389,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     setState(() {
       if (_selectedUtxoList.contains(utxo)) {
         if (!_isMaxMode) {
-          _transaction.removeInputWithUtxo(utxo, _satsPerVb!, _walletBase,
+          _transaction.removeInputWithUtxo(utxo, _satsPerVb ?? 1, _walletBase,
               requiredSignature: _requiredSignature, totalSinger: _totalSigner);
         }
 
         // 모두 선택 시 List.from 으로 전체 리스트, 필터 리스트 구분 될 때
         // 라이브러리 UTXO에 copyWith 구현 필요함
         final keyToRemove = '${utxo.transactionHash}_${utxo.index}';
+        // TODO: ??
         _selectedUtxoList = _selectedUtxoList
             .fold<Map<String, UTXO>>({}, (map, utxo) {
               final key = '${utxo.transactionHash}_${utxo.index}';
@@ -355,14 +409,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
             .values
             .toList();
 
-        if (_isSelectedUtxoEnough()) {
+        if (_estimatedFee != null && _isSelectedUtxoEnough()) {
           _estimatedFee = _estimateFee(_satsPerVb!);
         }
       } else {
         if (!_isMaxMode) {
-          _transaction.addInputWithUtxo(utxo, _satsPerVb!, _walletBase,
+          _transaction.addInputWithUtxo(utxo, _satsPerVb ?? 1, _walletBase,
               requiredSignature: _requiredSignature, totalSinger: _totalSigner);
-          _estimatedFee = _estimateFee(_satsPerVb!);
+          _estimatedFee = _estimateFee(_satsPerVb ?? 1);
         }
         _selectedUtxoList.add(utxo);
       }
@@ -380,9 +434,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           _selectedUtxoList,
           widget.sendInfo.address,
           UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
-          _satsPerVb!,
+          _satsPerVb ?? 1,
           _walletBase);
-      _estimatedFee = _estimateFee(_satsPerVb!);
+      _estimatedFee = _estimateFee(_satsPerVb ?? 1);
     }
   }
 
@@ -395,7 +449,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _transaction = Transaction.fromUtxoList([],
           widget.sendInfo.address,
           UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
-          _satsPerVb!,
+          _satsPerVb ?? 1,
           _walletBase);
     }
   }
@@ -404,16 +458,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     if (_selectedUtxoList.isEmpty) return false;
 
     if (_isMaxMode) {
-      return _calculateTotalAmountOfUtxoList(_selectedUtxoList) ==
-          _calculateTotalAmountOfUtxoList(_confirmedUtxoList);
+      return selectedUtxoAmountSum == _confirmedBalance;
     }
 
     if (_estimatedFee == null) {
       throw StateError("EstimatedFee has not been calculated yet");
     }
-    return _calculateTotalAmountOfUtxoList(_selectedUtxoList) >=
-        UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount) +
-            (_estimatedFee ?? 0);
+    return selectedUtxoAmountSum >= needAmount;
   }
 
   void _applyFilter(UtxoOrderEnum orderEnum) async {
@@ -490,12 +541,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         Container(
           width: MediaQuery.sizeOf(context).width,
           decoration: BoxDecoration(
-            color: _recommendedFeeFetchStatus ==
-                        RecommendedFeeFetchStatus.succeed &&
-                    _estimatedFee != null
-                ? _isSelectedUtxoEnough()
-                    ? MyColors.transparentWhite_10
-                    : MyColors.transparentRed
+            color: errorState == _ErrorState.insufficientBalance ||
+                    errorState == _ErrorState.insufficientUtxo
+                ? MyColors.transparentRed
                 : MyColors.transparentWhite_10,
             borderRadius: BorderRadius.circular(24),
           ),
@@ -503,11 +551,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
             top: 10,
           ),
           child: Container(
-            padding: EdgeInsets.only(
-              left: _totalUtxoAmountWidgetPaddingLeft,
-              right: _totalUtxoAmountWidgetPaddingRight,
-              top: _totalUtxoAmountWidgetPaddingTop,
-              bottom: _totalUtxoAmountWidgetPaddingBottom,
+            padding: const EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: 20,
             ),
             child: Row(
               children: [
@@ -515,16 +563,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   'UTXO 합계',
                   style: Styles.body2Bold.merge(
                     TextStyle(
-                      color: _selectedUtxoList.isEmpty
-                          ? MyColors.warningRed
-                          : _recommendedFeeFetchStatus ==
-                                      RecommendedFeeFetchStatus.succeed &&
-                                  _estimatedFee != null
-                              ? _isSelectedUtxoEnough()
-                                  ? MyColors.white
-                                  : MyColors.warningRed
-                              : MyColors.white,
-                    ),
+                        color: errorState == _ErrorState.insufficientBalance ||
+                                errorState == _ErrorState.insufficientUtxo
+                            ? MyColors.warningRed
+                            : MyColors.white),
                   ),
                 ),
                 const SizedBox(
@@ -537,13 +579,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     style: Styles.caption.merge(
                       TextStyle(
                           fontFamily: 'Pretendard',
-                          color: _recommendedFeeFetchStatus ==
-                                      RecommendedFeeFetchStatus.succeed &&
-                                  _estimatedFee != null
-                              ? _isSelectedUtxoEnough()
-                                  ? MyColors.transparentWhite_70
-                                  : MyColors.transparentWarningRed
-                              : MyColors.transparentWhite_70),
+                          color:
+                              errorState == _ErrorState.insufficientBalance ||
+                                      errorState == _ErrorState.insufficientUtxo
+                                  ? MyColors.transparentWarningRed
+                                  : MyColors.transparentWhite_70),
                     ),
                   ),
                 ),
@@ -555,14 +595,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         // Transaction.estimatedFee,
                         _selectedUtxoList.isEmpty
                             ? '0 BTC'
-                            : '${satoshiToBitcoinString(_getSelectedUtxoTotalSatoshi()).normalizeToFullCharacters()} BTC',
+                            : '${satoshiToBitcoinString(_calculateTotalAmountOfUtxoList(_selectedUtxoList)).normalizeToFullCharacters()} BTC',
                         style: Styles.body1Number.merge(TextStyle(
-                            color: _recommendedFeeFetchStatus ==
-                                        RecommendedFeeFetchStatus.succeed &&
-                                    _estimatedFee != null
-                                ? _isSelectedUtxoEnough()
-                                    ? MyColors.white
-                                    : MyColors.warningRed
+                            color: errorState ==
+                                        _ErrorState.insufficientBalance ||
+                                    errorState == _ErrorState.insufficientUtxo
+                                ? MyColors.warningRed
                                 : MyColors.white,
                             fontWeight: FontWeight.w700,
                             height: 16.8 / 14)),
@@ -577,44 +615,23 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         const SizedBox(
           height: 8,
         ),
-        Container(
-          child: !_afterScrolledHeaderContainerVisible
-              ? Visibility(
-                  visible: (_recommendedFeeFetchStatus ==
-                          RecommendedFeeFetchStatus.failed ||
-                      (_selectedUtxoList.isEmpty ||
-                          _getSelectedUtxoTotalSatoshi() <
-                              UnitUtil.bitcoinToSatoshi(
-                                      widget.sendInfo.amount) +
-                                  (_estimatedFee ?? 0))),
-                  maintainSize: true,
-                  maintainState: true,
-                  maintainAnimation: true,
-                  child: _recommendedFeeFetchStatus ==
-                              RecommendedFeeFetchStatus.failed &&
-                          !_customFeeSelected
-                      ? Text(
-                          '추천 수수료를 조회하지 못했어요.\n\'변경\'버튼을 눌러서 수수료를 직접 입력해 주세요.',
-                          style: Styles.warning.merge(
-                            const TextStyle(
-                              height: 16 / 12,
-                            ),
-                          ),
-                          textAlign: TextAlign.center,
-                        )
-                      : Text(
-                          _estimatedFee != null && _isSelectedUtxoEnough()
-                              ? ''
-                              : 'UTXO 합계가 모자라요',
-                          style: Styles.warning.merge(
-                            const TextStyle(
-                              height: 16 / 12,
-                            ),
-                          ),
-                        ),
-                )
-              : Container(),
-        ),
+        if (!_afterScrolledHeaderContainerVisible) ...{
+          Visibility(
+            visible: errorState != null,
+            maintainSize: true,
+            maintainState: true,
+            maintainAnimation: true,
+            child: Text(
+              errorState?.displayMessage ?? '',
+              style: Styles.warning.merge(
+                const TextStyle(
+                  height: 16 / 12,
+                ),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          )
+        },
         AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             curve: Curves.easeInOut,
@@ -700,13 +717,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _isFilterDropdownVisible = false;
       _isScrolledFilterDropdownVisible = false;
     });
-  }
-
-  int _getSelectedUtxoTotalSatoshi() {
-    if (_selectedUtxoList.isEmpty) return 0;
-    return _selectedUtxoList
-        .map((utxo) => utxo.amount)
-        .reduce((value, element) => value + element);
   }
 
   int _calculateTotalAmountOfUtxoList(List<UTXO> utxos) {
@@ -804,16 +814,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           title: 'UTXO 고르기',
           context: context,
           nextButtonTitle: '완료',
-          isActive: (_model.isNetworkOn ?? false) &&
-                      (_recommendedFeeFetchStatus ==
-                              RecommendedFeeFetchStatus.succeed &&
-                          _estimatedFee != null) ||
-                  (_recommendedFeeFetchStatus ==
-                          RecommendedFeeFetchStatus.failed &&
-                      _estimatedFee != null &&
-                      _customFeeSelected)
-              ? _change != null
-              : false,
+          isActive: _estimatedFee != null && errorState == null,
           onNextPressed: goNext),
       body: ConstrainedBox(
         constraints:
@@ -1043,7 +1044,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                   Text(
                                     '잔돈',
                                     style: _change != null
-                                        ? Styles.body2Bold
+                                        ? (_change! >= 0
+                                            ? Styles.body2Bold
+                                            : Styles.body2Bold.merge(
+                                                const TextStyle(
+                                                    color:
+                                                        MyColors.warningRed)))
                                         : Styles.body2Bold.merge(
                                             const TextStyle(
                                               color:
@@ -1061,7 +1067,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                               ? '${satoshiToBitcoinString(_change!)} BTC'
                                               : '- BTC',
                                           style: _change != null
-                                              ? Styles.body2Number
+                                              ? (_change! >= 0
+                                                  ? Styles.body2Number
+                                                  : Styles.body2Number.merge(
+                                                      const TextStyle(
+                                                          color: MyColors
+                                                              .warningRed)))
                                               : Styles.body2Number
                                                   .merge(const TextStyle(
                                                   color: MyColors
@@ -1197,6 +1208,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
 

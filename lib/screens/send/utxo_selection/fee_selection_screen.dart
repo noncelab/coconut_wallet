@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/enums.dart';
@@ -41,6 +42,7 @@ class FeeSelectionScreen extends StatefulWidget {
 }
 
 class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
+  final maxFeeLimit = 1000000;
   late int? _estimatedFee;
   bool? _isNetworkOn;
   int? customSatsPerVb;
@@ -153,7 +155,8 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                 context: context,
                 isActive: (isNetworkOn ?? false) &&
                     _estimatedFee != null &&
-                    _estimatedFee != 0,
+                    _estimatedFee != 0 &&
+                    _estimatedFee! < maxFeeLimit,
                 onBackPressed: () {
                   Navigator.pop(context);
                 },
@@ -221,6 +224,15 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                         '추천 수수료를 조회하지 못했어요. 수수료를 직접 입력해 주세요.')),
                             showIcon: true,
                             type: TooltipType.error),
+                      if (_estimatedFee != null &&
+                          _estimatedFee! >= maxFeeLimit)
+                        CustomTooltip(
+                            richText: RichText(
+                                text: TextSpan(
+                                    text:
+                                        '설정하신 수수료가 ${UnitUtil.satoshiToBitcoin(maxFeeLimit)}BTC 이상이에요.')),
+                            showIcon: true,
+                            type: TooltipType.warning),
 
                       Padding(
                           padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
