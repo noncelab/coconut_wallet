@@ -20,42 +20,36 @@ class CustomTagHorizontalSelector extends StatefulWidget {
 
 class _CustomTagHorizontalSelectorState
     extends State<CustomTagHorizontalSelector> {
-  final allTag = '전체';
   String _selectedTagName = '전체';
+
+  final List<String> _tags = ['전체'];
+
+  @override
+  void initState() {
+    super.initState();
+    _tags.addAll(widget.tags);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 32,
-      child: Row(
-        children: [
-          GestureDetector(
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _tags.length,
+        itemBuilder: (BuildContext context, int index) {
+          final name = _tags[index];
+          return GestureDetector(
             onTap: () {
               setState(() {
-                _selectedTagName = allTag;
+                _selectedTagName = name;
               });
-              widget.onSelectedTag.call(allTag);
+              widget.onSelectedTag.call(name);
             },
-            child: _tagSelectorChip(allTag, _selectedTagName == allTag),
-          ),
-          Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: widget.tags.length,
-              itemBuilder: (BuildContext context, int index) {
-                final name = widget.tags[index];
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedTagName = name;
-                    });
-                    widget.onSelectedTag.call(name);
-                  },
-                  child: _tagSelectorChip('#$name', _selectedTagName == name),
-                );
-              },
-            ),
-          ),
-        ],
+            child: _tagSelectorChip(
+                index == 0 ? '전체' : '#$name', _selectedTagName == name),
+          );
+        },
       ),
     );
   }

@@ -1270,55 +1270,58 @@ class _UtxoSelectableCardState extends State<UtxoSelectableCard> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  satoshiToBitcoinString(widget.utxo.amount),
-                  style: Styles.h2Number,
-                ),
-                const SizedBox(
-                  height: 8,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      dateString[0],
-                      style: Styles.caption,
-                    ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      color: MyColors.transparentWhite_40,
-                      width: 1,
-                      height: 10,
-                    ),
-                    Text(
-                      dateString[1],
-                      style: Styles.caption,
-                    ),
-                  ],
-                ),
-                Visibility(
-                  visible: widget.utxoTags?.isNotEmpty == true,
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 10),
-                    child: Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: List.generate(
-                        widget.utxoTags?.length ?? 0,
-                        (index) => IntrinsicWidth(
-                          child: CustomTagChip(
-                            tag: widget.utxoTags?[index].name ?? '',
-                            colorIndex: widget.utxoTags?[index].colorIndex ?? 0,
-                            type: CustomTagChipType.fix,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    satoshiToBitcoinString(widget.utxo.amount),
+                    style: Styles.h2Number,
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        dateString[0],
+                        style: Styles.caption,
+                      ),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        color: MyColors.transparentWhite_40,
+                        width: 1,
+                        height: 10,
+                      ),
+                      Text(
+                        dateString[1],
+                        style: Styles.caption,
+                      ),
+                    ],
+                  ),
+                  Visibility(
+                    visible: widget.utxoTags?.isNotEmpty == true,
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      child: Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: List.generate(
+                          widget.utxoTags?.length ?? 0,
+                          (index) => IntrinsicWidth(
+                            child: CustomTagChip(
+                              tag: widget.utxoTags?[index].name ?? '',
+                              colorIndex:
+                                  widget.utxoTags?[index].colorIndex ?? 0,
+                              type: CustomTagChipType.fix,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             SvgPicture.asset(
               'assets/svg/circle-check.svg',
