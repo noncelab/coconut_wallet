@@ -67,6 +67,10 @@ class CustomLimitTextField extends StatelessWidget {
               ),
             ),
             onChanged: (text) {
+              if (text.runes.length > maxLength) {
+                text = String.fromCharCodes(text.runes.take(maxLength));
+                controller.text = text;
+              }
               onChanged(text);
             },
           ),
@@ -78,9 +82,9 @@ class CustomLimitTextField extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(top: 4, right: 4),
             child: Text(
-              '${controller.text.length}/$maxLength',
+              '${controller.text.runes.length}/$maxLength',
               style: TextStyle(
-                color: controller.text.length == maxLength
+                color: controller.text.runes.length == maxLength
                     ? MyColors.white
                     : MyColors.transparentWhite_50,
                 fontSize: 12,

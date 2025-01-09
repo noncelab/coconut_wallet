@@ -128,7 +128,8 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
     final prevTag = widget.updateUtxoTag?.name ?? '';
     final prevColorIndex = widget.updateUtxoTag?.colorIndex ?? 0;
     setState(() {
-      _isUpdateButtonEnabled = _updateTagName.isNotEmpty &&
+      _isUpdateButtonEnabled = _controller.text.runes.length <= 30 &&
+              _updateTagName.isNotEmpty &&
               !_controller.text.endsWith(' ') &&
               _updateTagName != prevTag &&
               !_utxoTags.any((tag) => tag.name == _updateTagName) ||
@@ -203,7 +204,8 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                     ),
                   } else if (_type == TagBottomSheetType.create) ...{
                     CustomAppbarButton(
-                      isActive: _updateTagName.isNotEmpty &&
+                      isActive: _controller.text.runes.length <= 30 &&
+                          _updateTagName.isNotEmpty &&
                           !_utxoTags.any((tag) => tag.name == _updateTagName) &&
                           !_controller.text.endsWith(' '),
                       isActivePrimaryColor: false,
@@ -361,15 +363,18 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                                 if (text.startsWith(' ')) {
                                   text = text.trim();
                                 }
+
                                 if (text.contains('#')) {
                                   text = text.replaceAll('#', '');
                                 }
+
                                 if (text.endsWith(' ')) {
                                   _updateTagName = text.trimRight();
                                   _isSelectButtonEnabled = false;
                                 } else {
                                   _updateTagName = text;
                                 }
+
                                 _controller.text = text;
                               } else {
                                 if (text.startsWith(' ')) {
@@ -377,6 +382,10 @@ class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
                                   _controller.text = _updateTagName;
                                 } else if (text.contains('#')) {
                                   _updateTagName = text.replaceAll('#', '');
+                                  _controller.text = _updateTagName;
+                                } else if (text.runes.length > 30) {
+                                  _updateTagName =
+                                      String.fromCharCodes(text.runes.take(30));
                                   _controller.text = _updateTagName;
                                 } else {
                                   _updateTagName = text;
