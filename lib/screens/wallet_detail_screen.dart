@@ -53,7 +53,7 @@ enum Unit { btc, sats }
 enum SelectedListType { Transaction, UTXO }
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
-  static const SizedBox gapOfTxRowItems = SizedBox(
+  static const SizedBox gapOfRowItems = SizedBox(
     height: 8,
   );
   final GlobalKey _faucetIconKey = GlobalKey();
@@ -819,7 +819,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         currentUnit: _current,
                         id: widget.id,
                       ),
-                      gapOfTxRowItems,
+                      gapOfRowItems,
                       if (index == _txList.length - 1)
                         const SizedBox(
                           height: 80,
@@ -856,10 +856,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                 (context, index) {
                   if (index.isOdd) {
                     // 분리자
-                    return const Divider(
-                      height: 12,
-                      color: Colors.transparent,
-                    );
+                    return gapOfRowItems;
                   }
 
                   // 실제 아이템

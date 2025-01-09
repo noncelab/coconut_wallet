@@ -203,33 +203,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _totalUtxoAmountWidgetPaddingBottom = 20;
 
     _scrollController.addListener(() {
-      double threshold = _headerTopContainerSize.height + 20;
+      double threshold = _headerTopContainerSize.height + 24;
       double offset = _scrollController.offset;
       if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
         _removeFilterDropdown();
       }
       setState(() {
-        //_afterScrolledHeaderContainerVisible = offset >= threshold;
-
-        // 부드럽게 패딩 값 계산
-        //double progress = (offset / threshold).clamp(0.0, 1.0);
-
-        // if (_afterScrolledHeaderContainerVisible) {
-        //   _totalUtxoAmountWidgetPaddingLeft =
-        //       _totalUtxoAmountWidgetPaddingRight =
-        //           _totalUtxoAmountWidgetPaddingTop = 24;
-        //   _totalUtxoAmountWidgetPaddingBottom = 20;
-        // } else {
-        // _totalUtxoAmountWidgetPaddingLeft =
-        //     _totalUtxoAmountWidgetPaddingRight =
-        //         _totalUtxoAmountWidgetPaddingTop = 24 - (7 * progress);
-        // _totalUtxoAmountWidgetPaddingBottom = 20 - (5 * progress);
-        //}
+        _afterScrolledHeaderContainerVisible = offset >= threshold;
       });
-      // if (_scrollController.position.extentAfter < 100) {
-      //   /// 페이징
-      //   _loadMoreData();
-      // }
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -503,8 +484,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     );
   }
 
-  Widget _totalUtxoAmountWidget(Widget textKeyWidget,
-      {bool isAfterScrolled = false}) {
+  Widget _totalUtxoAmountWidget(Widget textKeyWidget) {
     return Column(
       children: [
         Container(
@@ -522,14 +502,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           margin: const EdgeInsets.only(
             top: 10,
           ),
-          child: AnimatedPadding(
+          child: Container(
             padding: EdgeInsets.only(
               left: _totalUtxoAmountWidgetPaddingLeft,
               right: _totalUtxoAmountWidgetPaddingRight,
               top: _totalUtxoAmountWidgetPaddingTop,
               bottom: _totalUtxoAmountWidgetPaddingBottom,
             ),
-            duration: const Duration(milliseconds: 10),
             child: Row(
               children: [
                 Text(
@@ -598,17 +577,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         const SizedBox(
           height: 8,
         ),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+        Container(
           child: !_afterScrolledHeaderContainerVisible
               ? Visibility(
-                  visible: _recommendedFeeFetchStatus ==
+                  visible: (_recommendedFeeFetchStatus ==
                           RecommendedFeeFetchStatus.failed ||
                       (_selectedUtxoList.isEmpty ||
                           _getSelectedUtxoTotalSatoshi() <
                               UnitUtil.bitcoinToSatoshi(
                                       widget.sendInfo.amount) +
-                                  (_estimatedFee ?? 0)),
+                                  (_estimatedFee ?? 0))),
                   maintainSize: true,
                   maintainState: true,
                   maintainAnimation: true,
@@ -635,19 +613,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                           ),
                         ),
                 )
-              : Text(
-                  '',
-                  style: Styles.warning.merge(
-                    const TextStyle(
-                      height: 16 / 12,
-                      color: Colors.transparent,
-                    ),
-                  ),
-                ),
+              : Container(),
         ),
-        const SizedBox(
-          height: 16,
-        ),
+        AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeInOut,
+            height: !_afterScrolledHeaderContainerVisible ? 16 : 0),
         Visibility(
           maintainSize: true,
           maintainAnimation: true,
@@ -660,14 +631,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               onPressed: () {
                 setState(
                   () {
-                    if (isAfterScrolled
+                    if (_afterScrolledHeaderContainerVisible
                         ? _isScrolledFilterDropdownVisible
                         : _isFilterDropdownVisible) {
                       _removeFilterDropdown();
                     } else {
                       _scrollController.jumpTo(_scrollController.offset);
 
-                      if (isAfterScrolled) {
+                      if (_afterScrolledHeaderContainerVisible) {
                         _isScrolledFilterDropdownVisible = true;
                       } else {
                         _isFilterDropdownVisible = true;
@@ -1116,7 +1087,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                               ),
                             ),
                           ),
-                          isAfterScrolled: false,
                         ),
                       ],
                     ),
@@ -1198,7 +1168,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                           ),
                         ),
                       ),
-                      isAfterScrolled: true,
                     ),
                   ),
                 ),
