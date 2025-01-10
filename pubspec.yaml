@@ -70,10 +70,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  coconut_lib:
-    git:
-      url: https://github.com/noncelab/coconut_lib
-      ref: 549bcacec1b533de6fee4f6773bb445b49667b37
+  coconut_lib: ^0.8.2
   realm: ^20.0.0
   cryptography: ^2.7.0
 
