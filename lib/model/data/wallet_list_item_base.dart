@@ -41,6 +41,19 @@ abstract class WalletListItemBase {
       this.txCount,
       this.isLatestTxBlockHeightZero = false});
 
+  WalletFeature get walletFeature {
+    switch (walletType) {
+      case WalletType.singleSignature:
+        return walletBase as SingleSignatureWallet;
+      case WalletType.multiSignature:
+        return walletBase as MultisignatureWallet;
+      default:
+        throw StateError('wrong walletType: ${walletType.name}');
+    }
+  }
+
+  Future syncWithNetwork(NodeConnector nodeConnector) async {}
+
   @override
   String toString() =>
       'Wallet($id) / type=$walletType / name=$name / balance=$balance';

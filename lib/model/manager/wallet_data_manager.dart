@@ -216,14 +216,13 @@ class WalletDataManager {
     List<WalletStatus> syncResults = [];
     List<int> needToUpdateIds = [];
     for (int i = 0; i < targets.length; i++) {
-      WalletFeature coconutWallet = getWalletFeatureByWalletType(targets[i]);
       try {
-        await coconutWallet.fetchOnChainData(nodeConnector);
+        await targets[i].walletFeature.fetchOnChainData(nodeConnector);
       } catch (e) {
-        throw ErrorCodes.syncFailedError;
+        throw ErrorCodes.walletSyncFailedError;
       }
       // assert(coconutWallet.walletStatus != null);
-      WalletStatus syncResult = coconutWallet.walletStatus!;
+      WalletStatus syncResult = targets[i].walletFeature.walletStatus!;
       // check need to update
       Logger.log(
           '--> targets[i].isLatestTxBlockHeightZero: ${targets[i].isLatestTxBlockHeightZero}');
@@ -245,7 +244,6 @@ class WalletDataManager {
     Logger.log('--> needToUpdateIds: ${needToUpdateIds.length}');
     if (noNeedToUpdate.length == targets.length) return false;
 
-    // TODO: 정렬 되는지 확인하기.
     final realmWallets = _realm
         .all<RealmWalletBase>()
         .query(r'id IN $0 SORT(id ASC)', [needToUpdateIds]);
@@ -348,8 +346,8 @@ class WalletDataManager {
       realmWallet.txCount = syncResult.transactionList.length;
       realmWallet.isLatestTxBlockHeightZero =
           newTxList.isNotEmpty && newTxList[0].blockHeight == 0;
-      realmWallet.balance =
-          walletFeature.getBalance() + walletFeature.getUnconfirmedBalance();
+      realmWallet.balance = walletItem.walletFeature.getBalance() +
+          walletItem.walletFeature.getUnconfirmedBalance();
     });
     saveNextId(_realm, (RealmTransaction).toString(), nextId);
 

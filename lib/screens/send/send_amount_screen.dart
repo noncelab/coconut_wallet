@@ -43,11 +43,9 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
-
-    final walletFeature =
-        getWalletFeatureByWalletType(model.getWalletById(widget.id));
-    _balance = walletFeature.getBalance();
-    _unconfirmedBalance = walletFeature.getUnconfirmedBalance();
+    final walletBaseItem = model.getWalletById(widget.id);
+    _balance = walletBaseItem.walletFeature.getBalance();
+    _unconfirmedBalance = walletBaseItem.walletFeature.getUnconfirmedBalance();
   }
 
   void _onKeyTap(String value) {

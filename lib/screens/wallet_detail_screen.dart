@@ -130,7 +130,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _scrollController = ScrollController();
 
     _walletBaseItem = _model.getWalletById(widget.id);
-    _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
+    _walletFeature = _walletBaseItem.walletFeature;
     _prevTxCount = _walletBaseItem.txCount;
     _prevIsLatestTxBlockHeightZero = _walletBaseItem.isLatestTxBlockHeightZero;
 

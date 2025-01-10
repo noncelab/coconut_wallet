@@ -66,7 +66,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   late AppStateModel _model;
   late WalletListItemBase _walletBaseItem;
   late WalletBase _walletBase;
-  late WalletFeature _walletFeature;
   late UpbitConnectModel _upbitConnectModel;
   late final ScrollController _scrollController;
 
@@ -199,7 +198,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _scrollController = ScrollController();
 
       _walletBaseItem = _model.getWalletById(widget.id);
-      _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
       _requiredSignature = _walletBaseItem.walletType ==
               WalletType.multiSignature
           ? (_walletBaseItem as MultisigWalletListItem).requiredSignatureCount
@@ -209,7 +207,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           : null;
 
       if (_model.walletInitState == WalletInitState.finished) {
-        _confirmedUtxoList = _getAllConfirmedUtxoList(_walletFeature);
+        _confirmedUtxoList =
+            _getAllConfirmedUtxoList(_walletBaseItem.walletFeature);
         _selectedUtxoList = [];
         UTXO.sortUTXO(_confirmedUtxoList, _selectedFilter);
         _addDisplayUtxoList();
