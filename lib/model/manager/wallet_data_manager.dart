@@ -21,7 +21,6 @@ import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
-import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
