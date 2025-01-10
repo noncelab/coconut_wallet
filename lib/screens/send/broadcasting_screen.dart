@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -127,7 +128,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   void broadcast() async {
     setOverlayLoading(true);
-    //final model = Provider.of<AppStateModel>(context, listen: false);
     PSBT psbt = PSBT.parse(_model.signedTransaction!);
     Transaction signedTx = psbt.getSignedTransaction(_walletBase.addressType);
 
@@ -139,8 +139,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       if (result.isFailure) {
         vibrateMedium();
         showAlertDialog(
-            context: context,
-            content: "전송 실패\n${result.error?.errorCode.name}");
+            context: context, content: "전송 실패\n${result.error?.message}");
         return;
       }
 

@@ -528,6 +528,11 @@ class AppStateModel extends ChangeNotifier {
 
     Result<String, CoconutError> result =
         await _nodeConnector!.broadcast(signedTx.serialize());
+
+    if (result.isFailure) {
+      return result;
+    }
+
     _walletDataManager
         .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
         .catchError((_) {

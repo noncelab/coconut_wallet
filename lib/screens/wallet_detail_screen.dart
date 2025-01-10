@@ -98,7 +98,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   int _selectedAccountIndex = 0;
   Unit _current = Unit.btc;
-  List<Transfer> _txList = [];
+  List<TransferDTO> _txList = [];
 
   // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
   List<model.UTXO> _utxoList = [];
@@ -334,7 +334,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     /// _walletListItem의 txCount, isLatestTxBlockHeightZero가 변경되었을 때만 트랜잭션 목록 업데이트
     if (_prevTxCount != txCount ||
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
-      List<Transfer>? newTxList = _model.getTxList(widget.id);
+      List<TransferDTO>? newTxList = _model.getTxList(widget.id);
       if (newTxList != null) {
         print('--> [detail화면] newTxList.length: ${newTxList.length}');
         _txList = newTxList;
@@ -1368,7 +1368,7 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
 }
 
 class TransactionRowItem extends StatefulWidget {
-  final Transfer tx;
+  final TransferDTO tx;
   final Unit currentUnit;
   final int id;
 
@@ -1532,9 +1532,11 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
 
   @override
   Widget build(BuildContext context) {
-    List<String>? transactionTimeStamp = widget.tx.timestamp != null
-        ? DateTimeUtil.formatTimeStamp(widget.tx.timestamp!.toLocal())
-        : null;
+    List<String>? transactionTimeStamp =
+        widget.tx.getDateTimeToDisplay() == null
+            ? null
+            : DateTimeUtil.formatTimeStamp(
+                widget.tx.getDateTimeToDisplay()!.toLocal());
 
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,
