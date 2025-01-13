@@ -7,7 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_sync.dart';
+import 'package:coconut_wallet/model/app/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -156,13 +156,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       context.loaderOverlay.show();
 
       final model = Provider.of<AppStateModel>(context, listen: false);
-      WalletSync syncObject;
+      WatchOnlyWallet watchOnlyWallet;
       try {
         // 2. 유효한 데이터인지 확인 (WalletSyncObject)
         Map<String, dynamic> jsonData = jsonDecode(scanData.code!);
-        syncObject = WalletSync.fromJson(jsonData);
+        watchOnlyWallet = WatchOnlyWallet.fromJson(jsonData);
 
-        model.syncFromVault(syncObject).then((value) {
+        model.syncFromVault(watchOnlyWallet).then((value) {
           switch (value.result) {
             case WalletSyncResult.newWalletAdded:
               {

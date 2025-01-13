@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
 
-class WalletSync {
+class WatchOnlyWallet {
   final String _name;
   final int _colorIndex;
   final int _iconIndex;
@@ -10,7 +10,7 @@ class WalletSync {
   int? _requiredSignatureCount;
   List<MultisigSigner>? _signers;
 
-  WalletSync(
+  WatchOnlyWallet(
     this._name,
     this._colorIndex,
     this._iconIndex,
@@ -41,8 +41,8 @@ class WalletSync {
     return jsonEncode(json);
   }
 
-  factory WalletSync.fromJson(Map<String, dynamic> json) {
-    return WalletSync(
+  factory WatchOnlyWallet.fromJson(Map<String, dynamic> json) {
+    return WatchOnlyWallet(
       json['name'],
       json['colorIndex'] ?? 0,
       json['iconIndex'] ?? 0,

@@ -5,10 +5,10 @@ abstract class WalletListItemBase {
   static const String walletTypeField = 'walletType';
 
   final int id;
+  String name;
   int colorIndex;
   int iconIndex;
   final String descriptor;
-  String name;
   WalletType walletType;
   int? balance;
 

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
+import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
@@ -18,7 +18,7 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_data.dart';
 import 'package:coconut_wallet/repository/realm/realm_id_service.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager_cryptography.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_sync.dart';
+import 'package:coconut_wallet/model/app/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
@@ -131,20 +131,20 @@ class WalletDataManager {
   }
 
   Future<SinglesigWalletListItem> addSinglesigWallet(
-      WalletSync walletSync) async {
+      WatchOnlyWallet watchOnlyWallet) async {
     _checkInitialized();
 
     var id = _getNextWalletId();
     String descriptor = _cryptography != null
-        ? await _cryptography!.encrypt(walletSync.descriptor)
-        : walletSync.descriptor;
+        ? await _cryptography!.encrypt(watchOnlyWallet.descriptor)
+        : watchOnlyWallet.descriptor;
 
     var wallet = RealmWalletBase(
         id,
-        walletSync.colorIndex,
-        walletSync.iconIndex,
+        watchOnlyWallet.colorIndex,
+        watchOnlyWallet.iconIndex,
         descriptor,
-        walletSync.name,
+        watchOnlyWallet.name,
         WalletType.singleSignature.name);
     _realm.write(() {
       _realm.add(wallet);
@@ -153,10 +153,10 @@ class WalletDataManager {
 
     var singlesigWallet = SinglesigWalletListItem(
         id: id,
-        name: walletSync.name,
-        colorIndex: walletSync.colorIndex,
-        iconIndex: walletSync.iconIndex,
-        descriptor: walletSync.descriptor);
+        name: watchOnlyWallet.name,
+        colorIndex: watchOnlyWallet.colorIndex,
+        iconIndex: watchOnlyWallet.iconIndex,
+        descriptor: watchOnlyWallet.descriptor);
 
     _walletList!.add(singlesigWallet);
 
@@ -164,7 +164,7 @@ class WalletDataManager {
   }
 
   Future<MultisigWalletListItem> addMultisigWallet(
-      WalletSync walletSync) async {
+      WatchOnlyWallet walletSync) async {
     _checkInitialized();
 
     var id = _getNextWalletId();
@@ -359,7 +359,7 @@ class WalletDataManager {
       ..balance = realmWallet.balance;
   }
 
-  void updateWalletUI(int id, WalletSync walletSync) {
+  void updateWalletUI(int id, WatchOnlyWallet watchOnlyWallet) {
     _checkInitialized();
 
     final RealmWalletBase wallet =
@@ -372,26 +372,26 @@ class WalletDataManager {
 
     // ui 정보 변경하기
     _realm.write(() {
-      wallet.name = walletSync.name;
-      wallet.colorIndex = walletSync.colorIndex;
-      wallet.iconIndex = walletSync.iconIndex;
+      wallet.name = watchOnlyWallet.name;
+      wallet.colorIndex = watchOnlyWallet.colorIndex;
+      wallet.iconIndex = watchOnlyWallet.iconIndex;
 
       if (multisigWallet != null) {
         multisigWallet.signersInJsonSerialization =
-            MultisigSigner.toJsonList(walletSync.signers!);
+            MultisigSigner.toJsonList(watchOnlyWallet.signers!);
       }
     });
 
     WalletListItemBase walletListItemBase =
         _walletList!.firstWhere((wallet) => wallet.id == id);
     walletListItemBase
-      ..name = walletSync.name
-      ..colorIndex = walletSync.colorIndex
-      ..iconIndex = walletSync.iconIndex;
+      ..name = watchOnlyWallet.name
+      ..colorIndex = watchOnlyWallet.colorIndex
+      ..iconIndex = watchOnlyWallet.iconIndex;
 
     if (wallet.walletType == WalletType.multiSignature.name) {
       (walletListItemBase as MultisigWalletListItem).signers =
-          walletSync.signers!;
+          watchOnlyWallet.signers!;
     }
   }
 

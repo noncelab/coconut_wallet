@@ -8,14 +8,13 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/model/api/request/faucet_request.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_sync.dart';
+import 'package:coconut_wallet/model/app/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -236,7 +235,8 @@ class AppStateModel extends ChangeNotifier {
   /// case2. 이미 존재하는 fingerprint이지만 이름/계정/칼라 중 하나라도 변경되었을 경우 ("동기화를 완료했습니다.")
   /// case3. 이미 존재하고 변화가 없는 경우 ("이미 추가된 지갑입니다.")
   /// case4. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
-  Future<ResultOfSyncFromVault> syncFromVault(WalletSync walletSync) async {
+  Future<ResultOfSyncFromVault> syncFromVault(
+      WatchOnlyWallet walletSync) async {
     // _walletList 동시 변경 방지를 위해 상태 확인 후 sync 진행하기
     while (_walletInitState == WalletInitState.never ||
         _walletInitState == WalletInitState.processing) {
@@ -314,7 +314,8 @@ class AppStateModel extends ChangeNotifier {
   }
 
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
-  bool _hasChanged(WalletListItemBase existingWallet, WalletSync walletSync) {
+  bool _hasChanged(
+      WalletListItemBase existingWallet, WatchOnlyWallet walletSync) {
     bool hasChanged = false;
 
     if (existingWallet.name != walletSync.name ||

@@ -1,6 +1,6 @@
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
