@@ -8,7 +8,7 @@ import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/manager/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/model/manager/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';

@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
@@ -13,7 +14,6 @@ import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/request/faucet_request.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
@@ -66,8 +66,8 @@ class AppStateModel extends ChangeNotifier {
   List<WalletListItemBase> get walletItemList => _walletItemList;
 
   // 애니메이션이 동작해야하면 해당하는 ReturnPageResult.<add/update>, 아니면 ReturnPageResult.none을 담습니다.
-  List<ReturnPageResult> _animatedWalletFlags = [];
-  List<ReturnPageResult> get animatedWalletFlags => _animatedWalletFlags;
+  List<WalletSyncResult?> _animatedWalletFlags = [];
+  List<WalletSyncResult?> get animatedWalletFlags => _animatedWalletFlags;
 
   String? txWaitingForSign;
   String? signedTransaction; // hex decode result
@@ -182,10 +182,8 @@ class AppStateModel extends ChangeNotifier {
     }
   }
 
-  void setAnimatedWalletFlags(
-      {int? index, ReturnPageResult type = ReturnPageResult.none}) {
-    _animatedWalletFlags =
-        List.filled(_walletItemList.length, ReturnPageResult.none);
+  void setAnimatedWalletFlags({int? index, WalletSyncResult? type}) {
+    _animatedWalletFlags = List.filled(_walletItemList.length, null);
     if (index != null) {
       _animatedWalletFlags[index] = type;
     }
@@ -245,7 +243,7 @@ class AppStateModel extends ChangeNotifier {
       await Future.delayed(const Duration(seconds: 2));
     }
 
-    SyncResult result = SyncResult.newWalletAdded;
+    WalletSyncResult result = WalletSyncResult.newWalletAdded;
     final index = _walletItemList
         .indexWhere((element) => element.descriptor == walletSync.descriptor);
 
@@ -253,7 +251,7 @@ class AppStateModel extends ChangeNotifier {
 
     if (index != -1) {
       // case 3: 변경사항 없음
-      result = SyncResult.existingWalletNoUpdate;
+      result = WalletSyncResult.existingWalletNoUpdate;
 
       // case 2: 변경 사항 체크하며 업데이트
       if (_hasChanged(_walletItemList[index], walletSync)) {
@@ -271,8 +269,9 @@ class AppStateModel extends ChangeNotifier {
         List<WalletListItemBase> updatedList = List.from(_walletItemList);
         _walletItemList = updatedList;
 
-        setAnimatedWalletFlags(index: index, type: ReturnPageResult.update);
-        result = SyncResult.existingWalletUpdated;
+        setAnimatedWalletFlags(
+            index: index, type: WalletSyncResult.existingWalletUpdated);
+        result = WalletSyncResult.existingWalletUpdated;
         notifyListeners();
       }
       return ResultOfSyncFromVault(
@@ -284,7 +283,7 @@ class AppStateModel extends ChangeNotifier {
         .indexWhere((element) => element.name == walletSync.name);
     if (sameNameIndex != -1) {
       // case 4: 동일 이름 존재
-      return ResultOfSyncFromVault(result: SyncResult.existingName);
+      return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
     }
 
     // case 1: 새 지갑 생성
@@ -299,9 +298,10 @@ class AppStateModel extends ChangeNotifier {
     updatedList.add(newItem);
     _walletItemList = updatedList;
 
-    if (result == SyncResult.newWalletAdded) {
+    if (result == WalletSyncResult.newWalletAdded) {
       setAnimatedWalletFlags(
-          index: _walletItemList.length - 1, type: ReturnPageResult.add);
+          index: _walletItemList.length - 1,
+          type: WalletSyncResult.newWalletAdded);
       if (!_subStateModel.isNotEmptyWalletList) {
         _subStateModel.saveNotEmptyWalletList(true);
       }
@@ -410,8 +410,7 @@ class AppStateModel extends ChangeNotifier {
     // final result = await receivePort.first as List<WalletListItemBase>;
 
     _walletItemList = wallets;
-    _animatedWalletFlags =
-        List.filled(_walletItemList.length, ReturnPageResult.none);
+    _animatedWalletFlags = List.filled(_walletItemList.length, null);
     _subStateModel.saveNotEmptyWalletList(_walletItemList.isNotEmpty);
     // for wallet_list_screen
     _onFinallyLoadingWalletsFromDB();
@@ -770,6 +769,6 @@ class AppStateModel extends ChangeNotifier {
 class ResultOfSyncFromVault {
   ResultOfSyncFromVault({required this.result, this.walletId});
 
-  final SyncResult result;
+  final WalletSyncResult result;
   final int? walletId; // 관련있는 지갑 id
 }

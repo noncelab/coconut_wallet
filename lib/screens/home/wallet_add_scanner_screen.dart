@@ -1,13 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
+import 'package:coconut_wallet/model/enums/wallet_enums.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -165,15 +164,15 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
 
         model.syncFromVault(syncObject).then((value) {
           switch (value.result) {
-            case SyncResult.newWalletAdded:
+            case WalletSyncResult.newWalletAdded:
               {
                 Map<String, dynamic> returnValue = {
-                  'result': ReturnPageResult.add,
+                  'result': WalletSyncResult.newWalletAdded,
                 };
                 Navigator.pop(context, returnValue);
                 break;
               }
-            case SyncResult.existingWalletNoUpdate:
+            case WalletSyncResult.existingWalletNoUpdate:
               {
                 vibrateLightDouble();
                 CustomDialogs.showCustomAlertDialog(context,
@@ -187,16 +186,16 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                 });
                 break;
               }
-            case SyncResult.existingWalletUpdated:
+            case WalletSyncResult.existingWalletUpdated:
               {
                 Map<String, dynamic> returnValue = {
-                  'result': ReturnPageResult.update,
+                  'result': WalletSyncResult.existingWalletUpdated,
                   'id': value.walletId!
                 };
                 Navigator.pop(context, returnValue);
                 break;
               }
-            case SyncResult.existingName:
+            case WalletSyncResult.existingName:
               vibrateLightDouble();
               CustomDialogs.showCustomAlertDialog(context,
                   title: '이름 중복',

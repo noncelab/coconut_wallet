@@ -1,6 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/currency_code.dart';
-import 'package:coconut_wallet/model/enums.dart';
+import 'package:coconut_wallet/model/enums/currency_enums.dart';
+import 'package:coconut_wallet/model/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -818,19 +818,3 @@ class InputOutputDetailRow extends StatelessWidget {
 }
 
 enum InputOutputRowType { input, output, fee }
-
-enum InputOutputDetailRowStatus {
-  /// input, output 컬럼의 색상구분을 편하게 하기 위해 enum으로 관리하였습니다.
-  txInputSend,
-  txInputReceive,
-  txOutputSend,
-  txOutputReceive,
-  txOutputFee,
-  txInputReceiveCurrentAddress,
-  txOutputSendCurrentAddress,
-  txOutputReceiveCurrentAddress,
-  utxoInput,
-  utxoOutput,
-  utxoOutputFee,
-  utxoOutputCurrentAddress,
-}

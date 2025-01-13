@@ -1,7 +1,7 @@
 // ignore: camel_case_types
 import 'dart:convert';
 
-import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/manager/realm/model/coconut_wallet_data.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager_cryptography.dart';

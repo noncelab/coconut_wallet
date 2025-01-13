@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/enums.dart';
+import 'package:coconut_wallet/model/enums/transaction_enums.dart';
 
 class FeeInfoWithLevel extends FeeInfo {
   final TransactionFeeLevel level;

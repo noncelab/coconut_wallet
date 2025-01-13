@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/enums/wallet_enums.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 

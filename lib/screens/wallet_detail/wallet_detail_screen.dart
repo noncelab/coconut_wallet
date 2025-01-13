@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/enums/currency_enums.dart';
+import 'package:coconut_wallet/model/enums/transaction_enums.dart';
+import 'package:coconut_wallet/model/enums/utxo_enums.dart';
+import 'package:coconut_wallet/model/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
@@ -36,13 +38,12 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
-import '../../model/enums.dart';
 
 class WalletDetailScreen extends StatefulWidget {
   const WalletDetailScreen({super.key, required this.id, this.syncResult});
 
   final int id;
-  final SyncResult? syncResult;
+  final WalletSyncResult? syncResult;
 
   @override
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
@@ -237,11 +238,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       if (widget.syncResult != null) {
         String message = "";
         switch (widget.syncResult) {
-          case SyncResult.newWalletAdded:
+          case WalletSyncResult.newWalletAdded:
             message = "새로운 지갑을 추가했어요";
-          case SyncResult.existingWalletUpdated:
+          case WalletSyncResult.existingWalletUpdated:
             message = "지갑 정보가 업데이트 됐어요";
-          case SyncResult.existingWalletNoUpdate:
+          case WalletSyncResult.existingWalletNoUpdate:
             message = "이미 추가한 지갑이에요";
           default:
         }

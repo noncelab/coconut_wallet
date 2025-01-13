@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/settings/security_self_check_screen.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/screens/settings/terms_screen.dart';
@@ -102,15 +102,16 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   void _onAddScannerPressed() async {
-    final Map<String, dynamic> result =
+    final Map<String, dynamic>? result =
         (await Navigator.pushNamed(context, '/wallet-add-scanner')
-                as Map<String, dynamic>?) ??
-            {
-              'result': ReturnPageResult.none,
-            };
-    if (result['result'] as ReturnPageResult == ReturnPageResult.add) {
+            as Map<String, dynamic>?);
+
+    if (result == null) return;
+
+    if (result['result'] as WalletSyncResult ==
+        WalletSyncResult.newWalletAdded) {
       if (_model.animatedWalletFlags.isNotEmpty &&
-          _model.animatedWalletFlags.last == ReturnPageResult.add) {
+          _model.animatedWalletFlags.last == WalletSyncResult.newWalletAdded) {
         initializeAnimationController();
 
         /// 리스트에 추가되는 애니메이션 보여줍니다.
@@ -122,8 +123,8 @@ class _WalletListScreenState extends State<WalletListScreen>
         _slideAnimationController.forward();
         _model.setAnimatedWalletFlags();
       }
-    } else if (result['result'] as ReturnPageResult ==
-        ReturnPageResult.update) {
+    } else if (result['result'] as WalletSyncResult ==
+        WalletSyncResult.existingWalletUpdated) {
       /// 변경사항이 업데이트된 경우 해당 카드에 깜빡임 효과를 부여합니다.
       final int walletId = result['id'] as int;
       final int index =
@@ -131,7 +132,8 @@ class _WalletListScreenState extends State<WalletListScreen>
 
       if (index == -1) return;
       if (_model.animatedWalletFlags.isNotEmpty &&
-          _model.animatedWalletFlags[index] == ReturnPageResult.update) {
+          _model.animatedWalletFlags[index] ==
+              WalletSyncResult.existingWalletUpdated) {
         initializeAnimationController();
         await Future.delayed(const Duration(milliseconds: 600));
         scrollToItem(index);
@@ -162,7 +164,7 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   void initializeAnimationController(
-      {ReturnPageResult type = ReturnPageResult.add}) {
+      {WalletSyncResult type = WalletSyncResult.newWalletAdded}) {
     _scrollController = ScrollController();
 
     // create 일 때: 슬라이드 애니메이션
@@ -633,9 +635,9 @@ class _WalletListScreenState extends State<WalletListScreen>
                                       (base as MultisigWalletListItem).signers;
                                 }
 
-                                ReturnPageResult flag =
+                                WalletSyncResult? flag =
                                     _model.animatedWalletFlags[index];
-                                return flag == ReturnPageResult.add
+                                return flag == WalletSyncResult.newWalletAdded
                                     ? SlideTransition(
                                         position: _slideAnimation,
                                         child: WalletRowItem(
@@ -652,7 +654,9 @@ class _WalletListScreenState extends State<WalletListScreen>
                                           signers: signers,
                                         ),
                                       )
-                                    : flag == ReturnPageResult.update
+                                    : flag ==
+                                            WalletSyncResult
+                                                .existingWalletUpdated
                                         ? Stack(
                                             children: [
                                               WalletRowItem(
@@ -792,5 +796,3 @@ class _WalletListScreenState extends State<WalletListScreen>
     super.dispose();
   }
 }
-
-enum ReturnPageResult { none, add, update }

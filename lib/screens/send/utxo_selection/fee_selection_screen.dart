@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/model/app_error.dart';
-import 'package:coconut_wallet/model/enums.dart';
+import 'package:coconut_wallet/model/enums/currency_enums.dart';
+import 'package:coconut_wallet/model/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/fee_info.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';

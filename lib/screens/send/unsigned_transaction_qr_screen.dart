@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/data/wallet_type.dart';
+import 'package:coconut_wallet/model/enums/wallet_enums.dart';
 import 'package:coconut_wallet/widgets/animatedQR/animated_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animatedQR/animated_qr_view.dart';
 import 'package:flutter/material.dart';
