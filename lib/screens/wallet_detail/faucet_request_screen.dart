@@ -199,11 +199,7 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
   Widget _buildWarningMessage(String message) {
     return Text(
       message,
-      style: Styles.caption2.merge(
-        const TextStyle(
-          color: MyColors.warningRed,
-        ),
-      ),
+      style: Styles.warning,
     );
   }
 }
