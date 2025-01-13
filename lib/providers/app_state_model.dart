@@ -236,7 +236,7 @@ class AppStateModel extends ChangeNotifier {
   /// case3. 이미 존재하고 변화가 없는 경우 ("이미 추가된 지갑입니다.")
   /// case4. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
   Future<ResultOfSyncFromVault> syncFromVault(
-      WatchOnlyWallet walletSync) async {
+      WatchOnlyWallet watchOnlyWallet) async {
     // _walletList 동시 변경 방지를 위해 상태 확인 후 sync 진행하기
     while (_walletInitState == WalletInitState.never ||
         _walletInitState == WalletInitState.processing) {
@@ -244,20 +244,20 @@ class AppStateModel extends ChangeNotifier {
     }
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
-    final index = _walletItemList
-        .indexWhere((element) => element.descriptor == walletSync.descriptor);
+    final index = _walletItemList.indexWhere(
+        (element) => element.descriptor == watchOnlyWallet.descriptor);
 
-    bool isMultisig = walletSync.signers != null;
+    bool isMultisig = watchOnlyWallet.signers != null;
 
     if (index != -1) {
       // case 3: 변경사항 없음
       result = WalletSyncResult.existingWalletNoUpdate;
 
       // case 2: 변경 사항 체크하며 업데이트
-      if (_hasChanged(_walletItemList[index], walletSync)) {
+      if (_hasChanged(_walletItemList[index], watchOnlyWallet)) {
         try {
           _walletDataManager.updateWalletUI(
-              _walletItemList[index].id, walletSync);
+              _walletItemList[index].id, watchOnlyWallet);
         } catch (e) {
           setWalletInitState(WalletInitState.error,
               error: ErrorCodes.withMessage(
@@ -280,7 +280,7 @@ class AppStateModel extends ChangeNotifier {
 
     // 새 지갑 추가
     final sameNameIndex = _walletItemList
-        .indexWhere((element) => element.name == walletSync.name);
+        .indexWhere((element) => element.name == watchOnlyWallet.name);
     if (sameNameIndex != -1) {
       // case 4: 동일 이름 존재
       return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
@@ -289,9 +289,9 @@ class AppStateModel extends ChangeNotifier {
     // case 1: 새 지갑 생성
     WalletListItemBase newItem;
     if (isMultisig) {
-      newItem = await _walletDataManager.addMultisigWallet(walletSync);
+      newItem = await _walletDataManager.addMultisigWallet(watchOnlyWallet);
     } else {
-      newItem = await _walletDataManager.addSinglesigWallet(walletSync);
+      newItem = await _walletDataManager.addSinglesigWallet(watchOnlyWallet);
     }
     //final newItem = await _createNewWallet(walletSync, isMultisig);
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
@@ -315,12 +315,12 @@ class AppStateModel extends ChangeNotifier {
 
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
   bool _hasChanged(
-      WalletListItemBase existingWallet, WatchOnlyWallet walletSync) {
+      WalletListItemBase existingWallet, WatchOnlyWallet watchOnlyWallet) {
     bool hasChanged = false;
 
-    if (existingWallet.name != walletSync.name ||
-        existingWallet.colorIndex != walletSync.colorIndex ||
-        existingWallet.iconIndex != walletSync.iconIndex) {
+    if (existingWallet.name != watchOnlyWallet.name ||
+        existingWallet.colorIndex != watchOnlyWallet.colorIndex ||
+        existingWallet.iconIndex != watchOnlyWallet.iconIndex) {
       hasChanged = true;
     }
 
@@ -330,12 +330,12 @@ class AppStateModel extends ChangeNotifier {
 
     var multisigWallet = existingWallet as MultisigWalletListItem;
     for (int i = 0; i < multisigWallet.signers.length; i++) {
-      if (multisigWallet.signers[i].name != walletSync.signers![i].name ||
+      if (multisigWallet.signers[i].name != watchOnlyWallet.signers![i].name ||
           multisigWallet.signers[i].colorIndex !=
-              walletSync.signers![i].colorIndex ||
+              watchOnlyWallet.signers![i].colorIndex ||
           multisigWallet.signers[i].iconIndex !=
-              walletSync.signers![i].iconIndex ||
-          multisigWallet.signers[i].memo != walletSync.signers![i].memo) {
+              watchOnlyWallet.signers![i].iconIndex ||
+          multisigWallet.signers[i].memo != watchOnlyWallet.signers![i].memo) {
         hasChanged = true;
         break;
       }
