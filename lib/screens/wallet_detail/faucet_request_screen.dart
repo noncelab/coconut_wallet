@@ -142,8 +142,6 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
                                       widget.onRequestSuccess!();
                                     }
                                   });
-                                  // await viewModel
-                                  //     .startFaucetRequest(widget.onRequestSuccess!);
                                 }
                                 FocusScope.of(context).unfocus();
                               }

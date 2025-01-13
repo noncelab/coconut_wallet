@@ -10,11 +10,9 @@ import 'package:coconut_wallet/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:flutter/cupertino.dart';
 
 class FaucetRequestViewModel extends ChangeNotifier {
-  // FIXME Model 개선
   static const int MAX_REQUEST_COUNT = 3;
   final Faucet _faucetService = Faucet();
   final SharedPrefs _sharedPrefs = SharedPrefs();
@@ -54,7 +52,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
       !isErrorInRemainingTime &&
       !isLoading &&
       !isRequesting &&
-      _requestCount < 3;
+      _requestCount < MAX_REQUEST_COUNT;
 
   bool _isErrorInServerStatus = false;
   bool get isErrorInServerStatus => _isErrorInServerStatus;
@@ -94,30 +92,23 @@ class FaucetRequestViewModel extends ChangeNotifier {
     try {
       final response = await _faucetService.getStatus();
       if (response is FaucetStatusResponse) {
-        // _faucetStatusResponse = response;
         isLoading = false;
-
         _requestCount = _faucetRecord.count;
-        switch (_requestCount) {
-          case 0:
-            _requestAmount = response.maxLimit;
-            notifyListeners();
-            return;
-          case 1:
-          case 2:
-            _requestAmount = response.minLimit;
-            notifyListeners();
-            return;
+        if (_requestCount == 0) {
+          _requestAmount = response.maxLimit;
+        } else if (_requestCount <= 2) {
+          _requestAmount = response.minLimit;
         }
       }
     } catch (_) {
       setErrorInStatus(true);
+    } finally {
+      notifyListeners();
     }
   }
 
   void setErrorInStatus(bool statusValue) {
     _isErrorInServerStatus = statusValue;
-    notifyListeners();
   }
 
   Future<void> requestTestBitcoin(Function(bool, String) onResult) async {
