@@ -4,7 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coconut_wallet/model/app_error.dart';
+import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';

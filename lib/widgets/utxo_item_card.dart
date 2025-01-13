@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/utxo.dart' as model;
+import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';

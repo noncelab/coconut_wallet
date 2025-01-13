@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/endpoints.dart';
-import 'package:coconut_wallet/model/request/faucet_request.dart';
-import 'package:coconut_wallet/model/response/default_error_response.dart';
-import 'package:coconut_wallet/model/response/faucet_response.dart';
-import 'package:coconut_wallet/model/response/faucet_status_response.dart';
+import 'package:coconut_wallet/model/api/request/faucet_request.dart';
+import 'package:coconut_wallet/model/api/error/default_error_response.dart';
+import 'package:coconut_wallet/model/api/response/faucet_response.dart';
+import 'package:coconut_wallet/model/api/response/faucet_status_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/model/response/app_version_response.dart';
+import 'package:coconut_wallet/model/api/response/app_version_response.dart';
 
 class DioClient {
   DioClient()

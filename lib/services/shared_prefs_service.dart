@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:coconut_wallet/model/faucet_history.dart';
+import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPrefs {

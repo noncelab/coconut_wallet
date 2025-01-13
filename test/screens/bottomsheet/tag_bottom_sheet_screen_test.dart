@@ -1,5 +1,5 @@
-import 'package:coconut_wallet/model/utxo_tag.dart';
-import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
+import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/screens/bottom_sheet/tag_bottom_sheet_container.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:flutter/cupertino.dart';
