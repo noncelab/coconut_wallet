@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:flutter/cupertino.dart';
 
 class FaucetRequestViewModel extends ChangeNotifier {
@@ -55,6 +56,8 @@ class FaucetRequestViewModel extends ChangeNotifier {
       !isRequesting &&
       _requestCount < 3;
 
+  BuildContext? _context;
+
   FaucetRequestViewModel(WalletListItemBase walletBaseItem) {
     initReceivingAddress(walletBaseItem);
 
@@ -64,6 +67,10 @@ class FaucetRequestViewModel extends ChangeNotifier {
 
     inputText = _walletAddress;
     textController.text = inputText;
+  }
+
+  void setContext(BuildContext context) {
+    _context = context;
   }
 
   void initReceivingAddress(WalletListItemBase walletBaseItem) {
@@ -105,11 +112,10 @@ class FaucetRequestViewModel extends ChangeNotifier {
         }
       }
     } catch (_) {
-      // TODO Error handling
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   CustomToast.showWarningToast(
-      //       context: context, text: '테스트 비트코인 요청에 문제가 생겼어요.');
-      // });
+      if (_context != null) {
+        CustomToast.showWarningToast(
+            context: _context!, text: '요청에 실패했습니다. 잠시후 다시 시도해 주세요.');
+      }
     } finally {
       notifyListeners();
     }
@@ -214,6 +220,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
         isErrorInAddress = false;
         _initFaucetRecord();
         _saveFaucetRecordToSharedPrefs();
+        _getFaucetStatus();
       }
       notifyListeners();
     });

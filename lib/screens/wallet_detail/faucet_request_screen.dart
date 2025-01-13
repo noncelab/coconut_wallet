@@ -30,6 +30,8 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
       create: (_) => FaucetRequestViewModel(widget.walletBaseItem),
       child: Consumer<FaucetRequestViewModel>(
         builder: (context, viewModel, child) {
+          viewModel.setContext(context);
+
           return GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),
             child: SingleChildScrollView(
@@ -79,12 +81,7 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
                         const SizedBox(height: 30),
                         const Text(
                           '받을 주소',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                            color: MyColors.white,
-                            height: 1,
-                          ),
+                          style: Styles.body1Bold,
                         ),
                         const SizedBox(height: 10),
                         CustomTextField(
