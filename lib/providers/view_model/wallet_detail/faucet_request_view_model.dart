@@ -13,13 +13,13 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
 class FaucetRequestViewModel extends ChangeNotifier {
-  // FIXME Model 개선
-  final Faucet _faucet = Faucet();
+  static const int MAX_REQUEST_COUNT = 3;
+  final Faucet _faucetService = Faucet();
   final SharedPrefs _sharedPrefs = SharedPrefs();
   final TextEditingController textController = TextEditingController();
 
   late AddressBook _walletAddressBook;
-  late FaucetHistory _faucetHistory; // history? record?
+  late FaucetRecord _faucetRecord;
 
   bool isLoading = true;
   bool isErrorInAddress = false;
@@ -52,13 +52,16 @@ class FaucetRequestViewModel extends ChangeNotifier {
       !isErrorInRemainingTime &&
       !isLoading &&
       !isRequesting &&
-      _requestCount < 3;
+      _requestCount < MAX_REQUEST_COUNT;
+
+  bool _isErrorInServerStatus = false;
+  bool get isErrorInServerStatus => _isErrorInServerStatus;
 
   FaucetRequestViewModel(WalletListItemBase walletBaseItem) {
     initReceivingAddress(walletBaseItem);
 
-    _faucetHistory = _sharedPrefs.getFaucetHistoryWithId(walletBaseItem.id);
-    _checkFaucetHistory();
+    _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(walletBaseItem.id);
+    _checkFaucetRecord();
     _getFaucetStatus();
 
     inputText = _walletAddress;
@@ -87,31 +90,25 @@ class FaucetRequestViewModel extends ChangeNotifier {
   /// Faucet 상태 조회 (API 호출)
   Future<void> _getFaucetStatus() async {
     try {
-      final response = await _faucet.getStatus();
+      final response = await _faucetService.getStatus();
       if (response is FaucetStatusResponse) {
-        // _faucetStatusResponse = response;
         isLoading = false;
-
-        _requestCount = _faucetHistory.count;
-        switch (_requestCount) {
-          case 0:
-            _requestAmount = response.maxLimit;
-            return;
-          case 1:
-          case 2:
-            _requestAmount = response.minLimit;
-            return;
+        _requestCount = _faucetRecord.count;
+        if (_requestCount == 0) {
+          _requestAmount = response.maxLimit;
+        } else if (_requestCount <= 2) {
+          _requestAmount = response.minLimit;
         }
       }
     } catch (_) {
-      // Error handling
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   CustomToast.showWarningToast(
-      //       context: context, text: '테스트 비트코인 요청에 문제가 생겼어요.');
-      // });
+      setErrorInStatus(true);
     } finally {
       notifyListeners();
     }
+  }
+
+  void setErrorInStatus(bool statusValue) {
+    _isErrorInServerStatus = statusValue;
   }
 
   Future<void> requestTestBitcoin(Function(bool, String) onResult) async {
@@ -119,7 +116,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _faucet.getTestCoin(
+      final response = await _faucetService.getTestCoin(
           FaucetRequest(address: inputText, amount: _requestAmount));
       if (response is FaucetResponse) {
         isErrorInRemainingTime = false;
@@ -168,61 +165,67 @@ class FaucetRequestViewModel extends ChangeNotifier {
   }
 
   void _updateFaucetHistory() {
-    int count = _faucetHistory.count;
-    int dateTime = _faucetHistory.dateTime;
+    _checkFaucetRecord();
 
-    if (count == 3) {
-      dateTime = DateTime.now().millisecondsSinceEpoch;
-    } else {
-      count += 1;
-    }
-
-    _faucetHistory = _faucetHistory.copyWith(dateTime: dateTime, count: count);
-    _checkFaucetHistory(); //
+    int count = _faucetRecord.count;
+    int dateTime = DateTime.now().millisecondsSinceEpoch;
+    _faucetRecord =
+        _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
+    _saveFaucetRecordToSharedPrefs();
   }
 
-  /// faucet 이용 이력 확인 - 일일 최대 3회
+  /// faucet 요청 이력 확인
   /// 자정을 기점으로 이력 초기화
   /// 최대 요청 횟수를 소진한 경우, 다음 요청까지 남은 시간을 알려줌
-  /// @param {bool isTimerCanceled}
-  void _checkFaucetHistory({bool isTimerCanceled = false}) {
-    if (isTimerCanceled) {
-      _faucetHistory = FaucetHistory(
-          id: _walletId,
-          dateTime: DateTime.now().millisecondsSinceEpoch,
-          count: 0);
+  void _checkFaucetRecord() {
+    if (!_faucetRecord.isToday) {
+      // 오늘 처음 요청
+      _initFaucetRecord();
+      _saveFaucetRecordToSharedPrefs();
+      return;
     }
 
-    if (_faucetHistory.isToday) {
-      if (_faucetHistory.count == 3) {
-        _startTimer();
-      }
-    } else {
-      _faucetHistory = FaucetHistory(
-        id: _walletId,
-        dateTime: DateTime.now().millisecondsSinceEpoch,
-        count: 0,
-      );
+    if (_faucetRecord.count == MAX_REQUEST_COUNT) {
+      // 최대 요청 횟수 모두 소진
+      _startTimer();
     }
-
-    Logger.log('_checkFaucetHistory(): $_faucetHistory');
-    _sharedPrefs.saveFaucetHistory(_faucetHistory);
   }
 
   void _startTimer() {
-    _remainingTime = const Duration(hours: 24);
+    DateTime now = DateTime.now();
+    DateTime midnight = DateTime(now.year, now.month, now.day + 1);
+
+    _remainingTime = midnight.difference(now);
+    _remainingTimeString = _formatDuration(_remainingTime);
+    isErrorInRemainingTime = true;
+
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _remainingTime = _remainingTime - const Duration(seconds: 1);
       _remainingTimeString = _formatDuration(_remainingTime);
+
       if (_remainingTime.inSeconds <= 0) {
         timer.cancel();
         isErrorInRemainingTime = false;
         isErrorInAddress = false;
-        // FIXME 로직 체크
-        // _checkFaucetHistory(isTimerCanceled: true);
+        _initFaucetRecord();
+        _saveFaucetRecordToSharedPrefs();
+        _getFaucetStatus();
       }
       notifyListeners();
     });
+  }
+
+  void _initFaucetRecord() {
+    _faucetRecord = FaucetRecord(
+        id: _walletId,
+        dateTime: DateTime.now().millisecondsSinceEpoch,
+        count: 0);
+  }
+
+  void _saveFaucetRecordToSharedPrefs() {
+    Logger.log('_checkFaucetHistory(): $_faucetRecord');
+    _sharedPrefs.saveFaucetHistory(_faucetRecord);
   }
 
   String _formatDuration(Duration duration) {

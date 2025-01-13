@@ -1,13 +1,13 @@
 import 'package:equatable/equatable.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 
-class FaucetHistory extends Equatable {
+class FaucetRecord extends Equatable {
   final int id;
   final int dateTime;
   final bool isToday;
   final int count;
 
-  FaucetHistory({
+  FaucetRecord({
     required this.id,
     required this.dateTime,
     required this.count,
@@ -25,18 +25,18 @@ class FaucetHistory extends Equatable {
         'count': count,
       };
 
-  static FaucetHistory fromJson(Map<String, dynamic> json) => FaucetHistory(
+  static FaucetRecord fromJson(Map<String, dynamic> json) => FaucetRecord(
         id: json['id'],
         dateTime: json['dateTime'],
         count: json['count'],
       );
 
-  FaucetHistory copyWith({
+  FaucetRecord copyWith({
     int? dateTime,
     int? count,
   }) {
     int newDateTime = dateTime ?? this.dateTime;
-    return FaucetHistory(
+    return FaucetRecord(
       id: id,
       dateTime: newDateTime,
       count: count ?? this.count,
