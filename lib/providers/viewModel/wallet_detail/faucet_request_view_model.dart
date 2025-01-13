@@ -56,8 +56,8 @@ class FaucetRequestViewModel extends ChangeNotifier {
       !isRequesting &&
       _requestCount < 3;
 
-  bool _isErrorInStatus = false;
-  bool get isErrorInStatus => _isErrorInStatus;
+  bool _isErrorInServerStatus = false;
+  bool get isErrorInServerStatus => _isErrorInServerStatus;
 
   FaucetRequestViewModel(WalletListItemBase walletBaseItem) {
     initReceivingAddress(walletBaseItem);
@@ -116,7 +116,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
   }
 
   void setErrorInStatus(bool statusValue) {
-    _isErrorInStatus = statusValue;
+    _isErrorInServerStatus = statusValue;
     notifyListeners();
   }
 

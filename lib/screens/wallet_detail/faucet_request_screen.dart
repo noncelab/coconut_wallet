@@ -30,10 +30,10 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
       create: (_) => FaucetRequestViewModel(widget.walletBaseItem),
       child: Consumer<FaucetRequestViewModel>(
         builder: (context, viewModel, child) {
-          if (viewModel.isErrorInStatus) {
+          if (viewModel.isErrorInServerStatus) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               CustomToast.showWarningToast(
-                  context: context, text: '요청에 실패했습니다. 잠시후 다시 시도해 주세요.');
+                  context: context, text: '서버에서 응답이 없습니다. 잠시 후 다시 시도해 주세요.');
               viewModel.setErrorInStatus(false);
             });
           }
