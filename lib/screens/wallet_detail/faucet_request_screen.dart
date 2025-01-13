@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/faucet_request_view_model.dart';
+import 'package:coconut_wallet/providers/viewModel/wallet_detail/faucet_request_view_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -86,7 +86,7 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
                     const SizedBox(height: 2),
                     const SizedBox(height: 2),
                     Visibility(
-                      visible: !viewModel.addressError,
+                      visible: !viewModel.isErrorInAddress,
                       maintainSize: true,
                       maintainAnimation: true,
                       maintainState: true,
@@ -102,9 +102,9 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
                     ),
                     const SizedBox(height: 24),
                     IgnorePointer(
-                      ignoring: (viewModel.addressError ||
+                      ignoring: (viewModel.isErrorInAddress ||
                           viewModel.isRequesting ||
-                          viewModel.remainTimeError),
+                          viewModel.isErrorInRemainingTime),
                       child: CupertinoButton(
                           onPressed: viewModel.canRequestFaucet
                               ? () async {
@@ -116,7 +116,7 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
 
                                   if (viewModel.canRequestFaucet) {
                                     await viewModel
-                                        .startFaucetRequest((success, message) {
+                                        .requestTestBitcoin((success, message) {
                                       _onFaucetRequestResult(
                                           context, success, message);
                                       if (success) {
@@ -142,7 +142,7 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
                                     ? '요청 중...'
                                     : '${formatNumber(viewModel.requestAmount)} BTC 요청하기',
                                 style: Styles.label.merge(TextStyle(
-                                    color: (viewModel.addressError ||
+                                    color: (viewModel.isErrorInAddress ||
                                             viewModel.isRequesting ||
                                             viewModel.isLoading)
                                         ? MyColors.transparentBlack_50
@@ -152,24 +152,11 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
                               ))),
                     ),
                     const SizedBox(height: 4),
-                    if (viewModel.addressError) ...{
-                      Text(
-                        '올바른 주소인지 확인해 주세요',
-                        style: Styles.caption2.merge(
-                          const TextStyle(
-                            color: MyColors.warningRed,
-                          ),
-                        ),
-                      ),
-                    } else if (viewModel.remainTimeError) ...{
-                      Text(
-                        '${viewModel.remainingTimeString} 후에 다시 시도해 주세요',
-                        style: Styles.caption2.merge(
-                          const TextStyle(
-                            color: MyColors.warningRed,
-                          ),
-                        ),
-                      ),
+                    if (viewModel.isErrorInAddress) ...{
+                      _buildWarningMessage('올바른 주소인지 확인해 주세요'),
+                    } else if (viewModel.isErrorInRemainingTime) ...{
+                      _buildWarningMessage(
+                          '${viewModel.remainingTimeString} 후에 다시 시도해 주세요'),
                     }
                   ],
                 ),
@@ -189,5 +176,16 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
       vibrateMedium();
     }
     CustomToast.showToast(context: context, text: message);
+  }
+
+  Widget _buildWarningMessage(String message) {
+    return Text(
+      message,
+      style: Styles.caption2.merge(
+        const TextStyle(
+          color: MyColors.warningRed,
+        ),
+      ),
+    );
   }
 }

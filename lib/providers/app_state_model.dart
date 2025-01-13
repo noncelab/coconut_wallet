@@ -7,7 +7,7 @@ import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/manager/converter/transaction.dart';
 import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
-import 'package:coconut_wallet/screens/wallet_list_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/app.dart';
@@ -16,7 +16,7 @@ import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/request/faucet_request.dart';
 import 'package:coconut_wallet/model/wallet_sync.dart';
-import 'package:coconut_wallet/repositories/faucet_repository.dart';
+import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:uuid/uuid.dart';
@@ -75,7 +75,7 @@ class AppStateModel extends ChangeNotifier {
   bool _isFaucetRequesting = false;
   bool get isFaucetRequesting => _isFaucetRequesting;
 
-  final FaucetRepository _faucetRepository = FaucetRepository();
+  final Faucet _faucetRepository = Faucet();
 
   late final WalletDataManager _walletDataManager;
 

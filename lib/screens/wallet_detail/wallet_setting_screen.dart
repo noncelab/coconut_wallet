@@ -6,18 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/screens/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/qrcode_bottom_sheet_screen.dart';
+import 'package:coconut_wallet/screens/onboarding/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/bottom_sheet/qrcode_bottom_sheet_screen.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
 
-import '../styles.dart';
-import '../widgets/appbar/custom_appbar.dart';
-import '../widgets/custom_dialogs.dart';
-import '../widgets/infomation_row_item.dart';
+import '../../styles.dart';
+import '../../widgets/appbar/custom_appbar.dart';
+import '../../widgets/custom_dialogs.dart';
+import '../../widgets/infomation_row_item.dart';
 
 class WalletSettingScreen extends StatefulWidget {
   const WalletSettingScreen({super.key, required this.id});

@@ -7,22 +7,23 @@ import 'package:coconut_wallet/model/request/faucet_request.dart';
 import 'package:coconut_wallet/model/response/default_error_response.dart';
 import 'package:coconut_wallet/model/response/faucet_response.dart';
 import 'package:coconut_wallet/model/response/faucet_status_response.dart';
-import 'package:coconut_wallet/repositories/faucet_repository.dart';
+import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
 class FaucetRequestViewModel extends ChangeNotifier {
-  final FaucetRepository _repository = FaucetRepository();
+  // FIXME Model 개선
+  final Faucet _faucet = Faucet();
   final SharedPrefs _sharedPrefs = SharedPrefs();
+  final TextEditingController textController = TextEditingController();
 
   late AddressBook _walletAddressBook;
-  late FaucetStatusResponse _faucetStatusResponse;
-  late FaucetHistory _faucetHistory;
+  late FaucetHistory _faucetHistory; // history? record?
 
   bool isLoading = true;
-  bool addressError = false;
-  bool remainTimeError = false;
+  bool isErrorInAddress = false;
+  bool isErrorInRemainingTime = false;
 
   String inputText = '';
   String _walletAddress = '';
@@ -34,7 +35,6 @@ class FaucetRequestViewModel extends ChangeNotifier {
 
   bool isRequesting = false;
   bool isValidAddress = false;
-  final TextEditingController textController = TextEditingController();
 
   Duration _remainingTime = const Duration();
   String _remainingTimeString = '';
@@ -43,34 +43,38 @@ class FaucetRequestViewModel extends ChangeNotifier {
   String get walletAddress => _walletAddress;
   String get walletName => _walletName;
   String get walletIndex => _walletIndex;
-  int get requestCount => _requestCount;
   double get requestAmount => _requestAmount;
 
   Duration get remainingTime => _remainingTime;
   String get remainingTimeString => _remainingTimeString;
   bool get canRequestFaucet =>
-      !addressError &&
-      !remainTimeError &&
+      !isErrorInAddress &&
+      !isErrorInRemainingTime &&
       !isLoading &&
       !isRequesting &&
-      requestCount < 3;
+      _requestCount < 3;
 
   FaucetRequestViewModel(WalletListItemBase walletBaseItem) {
-    Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
-    _walletAddress = receiveAddress.address;
-    _walletId = walletBaseItem.id;
-    _walletName = walletBaseItem.name.length > 20
-        ? '${walletBaseItem.name.substring(0, 17)}...'
-        : walletBaseItem.name;
-    _walletIndex = receiveAddress.derivationPath.split('/').last;
-    _walletAddressBook = walletBaseItem.walletBase.addressBook;
+    initReceivingAddress(walletBaseItem);
 
-    _faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
+    _faucetHistory = _sharedPrefs.getFaucetHistoryWithId(walletBaseItem.id);
     _checkFaucetHistory();
     _getFaucetStatus();
 
     inputText = _walletAddress;
     textController.text = inputText;
+  }
+
+  void initReceivingAddress(WalletListItemBase walletBaseItem) {
+    Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
+
+    _walletAddress = receiveAddress.address;
+    _walletId = walletBaseItem.id;
+    _walletName = walletBaseItem.name.length > 20
+        ? '${walletBaseItem.name.substring(0, 17)}...'
+        : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
+    _walletIndex = receiveAddress.derivationPath.split('/').last;
+    _walletAddressBook = walletBaseItem.walletBase.addressBook;
   }
 
   @override
@@ -83,13 +87,13 @@ class FaucetRequestViewModel extends ChangeNotifier {
   /// Faucet 상태 조회 (API 호출)
   Future<void> _getFaucetStatus() async {
     try {
-      final response = await _repository.getStatus();
+      final response = await _faucet.getStatus();
       if (response is FaucetStatusResponse) {
-        _faucetStatusResponse = response;
+        // _faucetStatusResponse = response;
         isLoading = false;
 
         _requestCount = _faucetHistory.count;
-        switch (requestCount) {
+        switch (_requestCount) {
           case 0:
             _requestAmount = response.maxLimit;
             return;
@@ -110,28 +114,28 @@ class FaucetRequestViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> startFaucetRequest(Function(bool, String) onResult) async {
+  Future<void> requestTestBitcoin(Function(bool, String) onResult) async {
     isRequesting = true;
     notifyListeners();
 
     try {
-      final response = await _repository.getTestCoin(
+      final response = await _faucet.getTestCoin(
           FaucetRequest(address: inputText, amount: _requestAmount));
       if (response is FaucetResponse) {
-        remainTimeError = false;
+        isErrorInRemainingTime = false;
         onResult(true, '테스트 비트코인을 요청했어요. 잠시만 기다려 주세요.');
         _updateFaucetHistory();
       } else if (response is DefaultErrorResponse &&
           response.error == 'TOO_MANY_REQUEST_FAUCET') {
-        remainTimeError = true;
+        isErrorInRemainingTime = true;
         onResult(false, '해당 주소로 이미 요청했습니다. 입금까지 최대 5분이 걸릴 수 있습니다.');
       } else {
-        remainTimeError = true;
+        isErrorInRemainingTime = true;
         onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       }
     } catch (e) {
       // Error handling
-      remainTimeError = true;
+      isErrorInRemainingTime = true;
       onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       isRequesting = false;
@@ -150,7 +154,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
               textController.selection.baseOffset.clamp(0, inputText.length)),
     );
 
-    addressError = !_isValidAddress(address);
+    isErrorInAddress = !_isValidAddress(address);
     notifyListeners();
   }
 
@@ -174,13 +178,14 @@ class FaucetRequestViewModel extends ChangeNotifier {
     }
 
     _faucetHistory = _faucetHistory.copyWith(dateTime: dateTime, count: count);
-    _checkFaucetHistory();
+    _checkFaucetHistory(); //
   }
 
-  // FIXME
+  /// faucet 이용 이력 확인 - 일일 최대 3회
+  /// 자정을 기점으로 이력 초기화
+  /// 최대 요청 횟수를 소진한 경우, 다음 요청까지 남은 시간을 알려줌
+  /// @param {bool isTimerCanceled}
   void _checkFaucetHistory({bool isTimerCanceled = false}) {
-    /// isTimerCanceled = true이면
-    /// 자정이 넘어가 타이머가 초기화 된 경우
     if (isTimerCanceled) {
       _faucetHistory = FaucetHistory(
           id: _walletId,
@@ -211,8 +216,8 @@ class FaucetRequestViewModel extends ChangeNotifier {
       _remainingTimeString = _formatDuration(_remainingTime);
       if (_remainingTime.inSeconds <= 0) {
         timer.cancel();
-        remainTimeError = false;
-        addressError = false;
+        isErrorInRemainingTime = false;
+        isErrorInAddress = false;
         // FIXME 로직 체크
         // _checkFaucetHistory(isTimerCanceled: true);
       }

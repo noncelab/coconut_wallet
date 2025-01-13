@@ -21,7 +21,7 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/wallet_row_item.dart';
-import 'package:coconut_wallet/screens/onboarding_screen.dart';
+import 'package:coconut_wallet/screens/onboarding/onboarding_screen.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';

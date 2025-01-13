@@ -5,8 +5,8 @@ import 'package:coconut_wallet/model/data/multisig_signer.dart';
 import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/screens/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/qrcode_bottom_sheet_screen.dart';
+import 'package:coconut_wallet/screens/onboarding/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/bottom_sheet/qrcode_bottom_sheet_screen.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -18,10 +18,10 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-import '../widgets/bottom_sheet.dart';
-import '../widgets/custom_dialogs.dart';
-import '../widgets/custom_loading_overlay.dart';
-import '../widgets/custom_toast.dart';
+import '../../widgets/bottom_sheet.dart';
+import '../../widgets/custom_dialogs.dart';
+import '../../widgets/custom_loading_overlay.dart';
+import '../../widgets/custom_toast.dart';
 
 class WalletMultisigScreen extends StatefulWidget {
   final int id;

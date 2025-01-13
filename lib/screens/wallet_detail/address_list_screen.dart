@@ -7,7 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/screens/qrcode_bottom_sheet_screen.dart';
+import 'package:coconut_wallet/screens/bottom_sheet/qrcode_bottom_sheet_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';

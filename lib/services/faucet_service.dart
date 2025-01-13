@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/dio_client.dart';
 
-class FaucetRepository {
+class Faucet {
   final DioClient _dio = DioClient();
 
   // Faucet 요청하기

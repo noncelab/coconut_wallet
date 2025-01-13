@@ -4,7 +4,7 @@ import 'package:coconut_wallet/model/enums.dart';
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
+import 'package:coconut_wallet/screens/bottom_sheet/tag_bottom_sheet_container.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';

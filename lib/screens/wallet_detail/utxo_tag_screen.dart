@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/model/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/screens/bottomsheet/tag_bottom_sheet_container.dart';
+import 'package:coconut_wallet/screens/bottom_sheet/tag_bottom_sheet_container.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';

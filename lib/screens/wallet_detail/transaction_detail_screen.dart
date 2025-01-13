@@ -1,8 +1,8 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/currency_code.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/screens/bottomsheet/memo_bottom_sheet_container.dart';
-import 'package:coconut_wallet/screens/utxo_detail_screen.dart';
+import 'package:coconut_wallet/screens/bottom_sheet/memo_bottom_sheet_container.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -19,7 +19,7 @@ import 'package:coconut_wallet/widgets/label_value.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../providers/app_state_model.dart';
+import '../../providers/app_state_model.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final int id;

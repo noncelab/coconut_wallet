@@ -20,8 +20,8 @@ import 'package:lottie/lottie.dart';
 import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/utxo.dart' as model;
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/screens/faucet_request_screen.dart';
-import 'package:coconut_wallet/screens/receive_address_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/faucet_request_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/receive_address_screen.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -36,7 +36,7 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
-import '../model/enums.dart';
+import '../../model/enums.dart';
 
 class WalletDetailScreen extends StatefulWidget {
   const WalletDetailScreen({super.key, required this.id, this.syncResult});

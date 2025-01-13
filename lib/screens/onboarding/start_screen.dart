@@ -8,7 +8,7 @@ import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:coconut_wallet/model/response/app_version_response.dart';
-import 'package:coconut_wallet/repositories/app_version_repository.dart';
+import 'package:coconut_wallet/services/app_version_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -26,7 +26,7 @@ class StartScreen extends StatefulWidget {
 
 class _StartScreenState extends State<StartScreen> {
   late AppSubStateModel _subModel;
-  final AppVersionRepository _repository = AppVersionRepository();
+  final AppVersion _repository = AppVersion();
   bool canUpdate = false;
   late PackageInfo _packageInfo;
   final SharedPrefs _sharedPrefs = SharedPrefs();
