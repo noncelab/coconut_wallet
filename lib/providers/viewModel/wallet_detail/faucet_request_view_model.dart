@@ -13,7 +13,6 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
 class FaucetRequestViewModel extends ChangeNotifier {
-  // FIXME Model 개선
   static const int MAX_REQUEST_COUNT = 3;
   final Faucet _faucetService = Faucet();
   final SharedPrefs _sharedPrefs = SharedPrefs();
@@ -53,7 +52,10 @@ class FaucetRequestViewModel extends ChangeNotifier {
       !isErrorInRemainingTime &&
       !isLoading &&
       !isRequesting &&
-      _requestCount < 3;
+      _requestCount < MAX_REQUEST_COUNT;
+
+  bool _isErrorInServerStatus = false;
+  bool get isErrorInServerStatus => _isErrorInServerStatus;
 
   FaucetRequestViewModel(WalletListItemBase walletBaseItem) {
     initReceivingAddress(walletBaseItem);
@@ -90,29 +92,23 @@ class FaucetRequestViewModel extends ChangeNotifier {
     try {
       final response = await _faucetService.getStatus();
       if (response is FaucetStatusResponse) {
-        // _faucetStatusResponse = response;
         isLoading = false;
-
         _requestCount = _faucetRecord.count;
-        switch (_requestCount) {
-          case 0:
-            _requestAmount = response.maxLimit;
-            return;
-          case 1:
-          case 2:
-            _requestAmount = response.minLimit;
-            return;
+        if (_requestCount == 0) {
+          _requestAmount = response.maxLimit;
+        } else if (_requestCount <= 2) {
+          _requestAmount = response.minLimit;
         }
       }
     } catch (_) {
-      // TODO Error handling
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   CustomToast.showWarningToast(
-      //       context: context, text: '테스트 비트코인 요청에 문제가 생겼어요.');
-      // });
+      setErrorInStatus(true);
     } finally {
       notifyListeners();
     }
+  }
+
+  void setErrorInStatus(bool statusValue) {
+    _isErrorInServerStatus = statusValue;
   }
 
   Future<void> requestTestBitcoin(Function(bool, String) onResult) async {
@@ -214,6 +210,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
         isErrorInAddress = false;
         _initFaucetRecord();
         _saveFaucetRecordToSharedPrefs();
+        _getFaucetStatus();
       }
       notifyListeners();
     });
