@@ -82,18 +82,18 @@ class SharedPrefs {
   }
 
   /// FaucetHistory-------------------------------------------------------------
-  Future<void> saveFaucetHistory(FaucetHistory faucetHistory) async {
-    final Map<int, FaucetHistory> faucetHistories = _getFaucetHistories();
+  Future<void> saveFaucetHistory(FaucetRecord faucetHistory) async {
+    final Map<int, FaucetRecord> faucetHistories = _getFaucetHistories();
     faucetHistories[faucetHistory.id] = faucetHistory;
     await _saveFaucetHistories(faucetHistories);
   }
 
-  FaucetHistory getFaucetHistoryWithId(int id) {
-    final Map<int, FaucetHistory> faucetHistories = _getFaucetHistories();
+  FaucetRecord getFaucetHistoryWithId(int id) {
+    final Map<int, FaucetRecord> faucetHistories = _getFaucetHistories();
     if (faucetHistories.containsKey(id)) {
       return faucetHistories[id]!;
     } else {
-      return FaucetHistory(
+      return FaucetRecord(
         id: id,
         dateTime: DateTime.now().millisecondsSinceEpoch,
         count: 0,
@@ -102,25 +102,25 @@ class SharedPrefs {
   }
 
   Future<void> removeFaucetHistory(int id) async {
-    Map<int, FaucetHistory> faucetHistories = _getFaucetHistories();
+    Map<int, FaucetRecord> faucetHistories = _getFaucetHistories();
     faucetHistories.remove(id);
     await _saveFaucetHistories(faucetHistories);
   }
 
-  Future<void> _saveFaucetHistories(Map<int, FaucetHistory> histories) async {
+  Future<void> _saveFaucetHistories(Map<int, FaucetRecord> histories) async {
     final String encodedData = json.encode(histories
         .map((key, value) => MapEntry(key.toString(), value.toJson())));
     await _sharedPrefs.setString(kFaucetHistories, encodedData);
   }
 
-  Map<int, FaucetHistory> _getFaucetHistories() {
+  Map<int, FaucetRecord> _getFaucetHistories() {
     final String? encodedData = _sharedPrefs.getString(kFaucetHistories);
     if (encodedData == null) {
       return {};
     }
     final Map<String, dynamic> decodedData = json.decode(encodedData);
-    return decodedData.map((key, value) =>
-        MapEntry(int.parse(key), FaucetHistory.fromJson(value)));
+    return decodedData.map(
+        (key, value) => MapEntry(int.parse(key), FaucetRecord.fromJson(value)));
   }
 
   /// TxList--------------------------------------------------------------

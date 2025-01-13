@@ -40,8 +40,8 @@ void main() {
 
     test('FAUCET_HISTORIES string(json) must be saved and imported', () async {
       final histories = {
-        1: FaucetHistory(id: 1, dateTime: 1627848390, count: 3),
-        2: FaucetHistory(id: 2, dateTime: 1627848390, count: 3),
+        1: FaucetRecord(id: 1, dateTime: 1627848390, count: 3),
+        2: FaucetRecord(id: 2, dateTime: 1627848390, count: 3),
       };
 
       final encodedData = json.encode(histories
