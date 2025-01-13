@@ -30,8 +30,13 @@ class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
       create: (_) => FaucetRequestViewModel(widget.walletBaseItem),
       child: Consumer<FaucetRequestViewModel>(
         builder: (context, viewModel, child) {
-          viewModel.setContext(context);
-
+          if (viewModel.isErrorInStatus) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              CustomToast.showWarningToast(
+                  context: context, text: '요청에 실패했습니다. 잠시후 다시 시도해 주세요.');
+              viewModel.setErrorInStatus(false);
+            });
+          }
           return GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),
             child: SingleChildScrollView(

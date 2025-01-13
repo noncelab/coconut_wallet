@@ -56,7 +56,8 @@ class FaucetRequestViewModel extends ChangeNotifier {
       !isRequesting &&
       _requestCount < 3;
 
-  BuildContext? _context;
+  bool _isErrorInStatus = false;
+  bool get isErrorInStatus => _isErrorInStatus;
 
   FaucetRequestViewModel(WalletListItemBase walletBaseItem) {
     initReceivingAddress(walletBaseItem);
@@ -67,10 +68,6 @@ class FaucetRequestViewModel extends ChangeNotifier {
 
     inputText = _walletAddress;
     textController.text = inputText;
-  }
-
-  void setContext(BuildContext context) {
-    _context = context;
   }
 
   void initReceivingAddress(WalletListItemBase walletBaseItem) {
@@ -104,21 +101,23 @@ class FaucetRequestViewModel extends ChangeNotifier {
         switch (_requestCount) {
           case 0:
             _requestAmount = response.maxLimit;
+            notifyListeners();
             return;
           case 1:
           case 2:
             _requestAmount = response.minLimit;
+            notifyListeners();
             return;
         }
       }
     } catch (_) {
-      if (_context != null) {
-        CustomToast.showWarningToast(
-            context: _context!, text: '요청에 실패했습니다. 잠시후 다시 시도해 주세요.');
-      }
-    } finally {
-      notifyListeners();
+      setErrorInStatus(true);
     }
+  }
+
+  void setErrorInStatus(bool statusValue) {
+    _isErrorInStatus = statusValue;
+    notifyListeners();
   }
 
   Future<void> requestTestBitcoin(Function(bool, String) onResult) async {
