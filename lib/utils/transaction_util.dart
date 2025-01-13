@@ -1,5 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/enums/transaction_enums.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
 
 class TransactionUtil {
   static TransactionStatus? getStatus(Transfer tx) {

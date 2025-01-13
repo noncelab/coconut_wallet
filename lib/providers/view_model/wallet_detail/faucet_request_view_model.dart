@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/faucet_history.dart';
-import 'package:coconut_wallet/model/request/faucet_request.dart';
-import 'package:coconut_wallet/model/response/default_error_response.dart';
-import 'package:coconut_wallet/model/response/faucet_response.dart';
-import 'package:coconut_wallet/model/response/faucet_status_response.dart';
+import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
+import 'package:coconut_wallet/model/api/request/faucet_request.dart';
+import 'package:coconut_wallet/model/api/error/default_error_response.dart';
+import 'package:coconut_wallet/model/api/response/faucet_response.dart';
+import 'package:coconut_wallet/model/api/response/faucet_status_response.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';

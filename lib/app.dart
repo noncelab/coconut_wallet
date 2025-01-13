@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/appGuard.dart';
-import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/receive_address_screen.dart';

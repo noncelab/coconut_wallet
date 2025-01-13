@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/data/multisig_signer.dart';
-import 'package:coconut_wallet/model/data/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';

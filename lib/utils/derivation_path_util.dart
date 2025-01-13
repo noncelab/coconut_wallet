@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/enums/wallet_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 
 class DerivationPathUtil {
   static String getPurpose(String derivationPath) {

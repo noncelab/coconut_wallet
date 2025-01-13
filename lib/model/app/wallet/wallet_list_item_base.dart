@@ -1,5 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/enums/wallet_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 @JsonSerializable(ignoreUnannotated: true)

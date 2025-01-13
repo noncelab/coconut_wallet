@@ -1,10 +1,10 @@
 // ignore: camel_case_types
 import 'dart:convert';
 
-import 'package:coconut_wallet/model/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/manager/realm/model/coconut_wallet_data.dart';
-import 'package:coconut_wallet/model/manager/wallet_data_manager.dart';
-import 'package:coconut_wallet/model/manager/wallet_data_manager_cryptography.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_data.dart';
+import 'package:coconut_wallet/repository/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/wallet_data_manager_cryptography.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';

@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/utxo_tag.dart';
+import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 
 class UTXO {

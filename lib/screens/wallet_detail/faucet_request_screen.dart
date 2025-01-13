@@ -1,5 +1,5 @@
-import 'package:coconut_wallet/model/data/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/viewModel/wallet_detail/faucet_request_view_model.dart';
+import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/faucet_request_view_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/data/multisig_signer.dart';
+import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
 
 class WalletSync {
   final String _name;

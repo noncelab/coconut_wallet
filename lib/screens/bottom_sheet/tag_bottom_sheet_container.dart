@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:coconut_wallet/model/utxo_tag.dart';
+import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';

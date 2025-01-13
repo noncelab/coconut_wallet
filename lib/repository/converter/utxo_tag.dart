@@ -1,5 +1,5 @@
-import 'package:coconut_wallet/model/manager/realm/model/coconut_wallet_data.dart';
-import 'package:coconut_wallet/model/utxo_tag.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_data.dart';
+import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 
 UtxoTag mapRealmUtxoTagToUtxoTag(RealmUtxoTag utxoTag) {
   return UtxoTag(

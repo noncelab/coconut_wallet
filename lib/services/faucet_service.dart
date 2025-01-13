@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/request/faucet_request.dart';
+import 'package:coconut_wallet/model/api/request/faucet_request.dart';
 import 'package:coconut_wallet/services/dio_client.dart';
 
 class Faucet {
