@@ -8,6 +8,7 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:provider/provider.dart';
 
+// TODO: ViewModel - Common
 class UnsignedTransactionQrScreen extends StatefulWidget {
   final int id;
 

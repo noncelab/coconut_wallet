@@ -4,7 +4,7 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/screens/bottom_sheet/tag_bottom_sheet_container.dart';
+import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -24,6 +24,7 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// TODO: ViewModel - Add
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
   final model.UTXO utxo;
@@ -383,7 +384,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   context: context,
                                   backgroundColor: MyColors.black,
                                   isScrollControlled: true,
-                                  builder: (context) => TagBottomSheetContainer(
+                                  builder: (context) => TagBottomSheet(
                                     type: TagBottomSheetType.select,
                                     utxoTags: utxoTagList,
                                     selectedUtxoTagNames: selectedUtxoTags

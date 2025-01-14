@@ -9,21 +9,23 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class FaucetRequestScreen extends StatefulWidget {
+// TODO: ViewModel - 위젯 내부 Provider 제거
+class FaucetRequestBottomSheet extends StatefulWidget {
   final WalletListItemBase walletBaseItem;
   final VoidCallback? onRequestSuccess;
 
-  const FaucetRequestScreen({
+  const FaucetRequestBottomSheet({
     super.key,
     required this.walletBaseItem,
     required this.onRequestSuccess,
   });
 
   @override
-  State<FaucetRequestScreen> createState() => _FaucetRequestScreenState();
+  State<FaucetRequestBottomSheet> createState() =>
+      _FaucetRequestBottomSheetState();
 }
 
-class _FaucetRequestScreenState extends State<FaucetRequestScreen> {
+class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(

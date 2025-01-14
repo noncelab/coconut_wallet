@@ -5,8 +5,8 @@ import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/screens/onboarding/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/bottom_sheet/qrcode_bottom_sheet_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/pin_check_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/icon/qrcode_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -23,6 +23,7 @@ import '../../widgets/custom_dialogs.dart';
 import '../../widgets/custom_loading_overlay.dart';
 import '../../widgets/custom_toast.dart';
 
+// TODO: ViewModel - Add
 class WalletMultisigScreen extends StatefulWidget {
   final int id;
   const WalletMultisigScreen({super.key, required this.id});
@@ -115,7 +116,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
           await MyBottomSheet.showBottomSheet_90(
             context: context,
             child: CustomLoadingOverlay(
-              child: PinCheckScreen(
+              child: PinCheckBottomSheet(
                 onComplete: () async {
                   await _appStateModel.deleteWallet(widget.id);
                   removedWalletId = widget.id;
@@ -162,7 +163,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
       await MyBottomSheet.showBottomSheet_90(
         context: context,
         child: CustomLoadingOverlay(
-          child: PinCheckScreen(
+          child: PinCheckBottomSheet(
             onComplete: () {
               _qrCodeBottomSheet(qrData);
             },
@@ -177,7 +178,7 @@ class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
   _qrCodeBottomSheet(String qrData) {
     MyBottomSheet.showBottomSheet_90(
       context: context,
-      child: QrcodeBottomSheetScreen(
+      child: QrcodeBottomSheet(
         qrData: qrData,
         title: '다중 서명용 확장 공개키',
       ),

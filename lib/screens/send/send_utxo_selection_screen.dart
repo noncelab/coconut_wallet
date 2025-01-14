@@ -12,7 +12,7 @@ import 'package:coconut_wallet/model/app/send/send_info.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/screens/send/utxo_selection/fee_selection_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/fee_selection_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
@@ -46,6 +46,7 @@ enum _ErrorState {
   const _ErrorState(this.displayMessage);
 }
 
+// TODO: ViewModel - Add
 class SendUtxoSelectionScreen extends StatefulWidget {
   final int id;
   final SendInfo sendInfo;
@@ -743,14 +744,15 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   void _onFeeRateChanged(Map<String, dynamic> feeSelectionResult) {
     setState(() {
       _estimatedFee =
-          (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
+          (feeSelectionResult[FeeSelectionBottomSheet.feeInfoField] as FeeInfo)
               .estimatedFee;
       _selectedLevel =
-          feeSelectionResult[FeeSelectionScreen.selectedOptionField];
+          feeSelectionResult[FeeSelectionBottomSheet.selectedOptionField];
     });
     _customFeeInfo =
-        feeSelectionResult[FeeSelectionScreen.selectedOptionField] == null
-            ? (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
+        feeSelectionResult[FeeSelectionBottomSheet.selectedOptionField] == null
+            ? (feeSelectionResult[FeeSelectionBottomSheet.feeInfoField]
+                as FeeInfo)
             : null;
 
     var satsPerVb = _customFeeInfo?.satsPerVb! ??
@@ -958,7 +960,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                             await MyBottomSheet
                                                 .showBottomSheet_90(
                                           context: context,
-                                          child: FeeSelectionScreen(
+                                          child: FeeSelectionBottomSheet(
                                               feeInfos: feeInfos,
                                               selectedFeeLevel: _selectedLevel,
                                               networkMinimumFeeRate:

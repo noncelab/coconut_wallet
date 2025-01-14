@@ -8,6 +8,7 @@ import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// TODO: ViewModel - Common
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
   final String txId;

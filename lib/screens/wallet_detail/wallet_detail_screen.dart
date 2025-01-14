@@ -22,8 +22,8 @@ import 'package:lottie/lottie.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/screens/wallet_detail/faucet_request_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/receive_address_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/faucet_request_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -39,6 +39,7 @@ import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
 
+// TODO: ViewModel - Add
 class WalletDetailScreen extends StatefulWidget {
   const WalletDetailScreen({super.key, required this.id, this.syncResult});
 
@@ -537,7 +538,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         if (!_checkBalanceIsNotNullAndShowToast()) return;
                         MyBottomSheet.showBottomSheet_90(
                             context: context,
-                            child: ReceiveAddressScreen(id: widget.id));
+                            child: ReceiveAddressBottomSheet(id: widget.id));
                       },
                       borderRadius: BorderRadius.circular(8.0),
                       padding: const EdgeInsets.symmetric(
@@ -953,7 +954,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                 if (!_checkBalanceIsNotNullAndShowToast()) return;
                 await MyBottomSheet.showBottomSheet_50(
                     context: context,
-                    child: FaucetRequestScreen(
+                    child: FaucetRequestBottomSheet(
                       onRequestSuccess: () {
                         Navigator.pop(context, true); // 성공 시 true 반환
                         // 1초 후에 이 지갑만 sync 요청
@@ -1329,7 +1330,8 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
                         // TODO: ReceiveAddressScreen에 widget.walletId 말고 다른 매개변수 고려해보기
                         MyBottomSheet.showBottomSheet_90(
                             context: context,
-                            child: ReceiveAddressScreen(id: widget.walletId));
+                            child:
+                                ReceiveAddressBottomSheet(id: widget.walletId));
                       },
                       borderRadius: BorderRadius.circular(12.0),
                       padding: EdgeInsets.zero,

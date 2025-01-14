@@ -4,10 +4,10 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
-class UserExperienceSurveyScreen extends StatelessWidget {
+class UserExperienceSurveyBottomSheet extends StatelessWidget {
   final bool isFirst;
 
-  const UserExperienceSurveyScreen({super.key, this.isFirst = false});
+  const UserExperienceSurveyBottomSheet({super.key, this.isFirst = false});
 
   @override
   Widget build(BuildContext context) {

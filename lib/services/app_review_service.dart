@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/constants/app_info.dart';
-import 'package:coconut_wallet/screens/review/user_experience_survey_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:flutter/cupertino.dart';
@@ -81,7 +81,7 @@ class AppReviewService {
       {bool isFirst = false, AnimationController? animationController}) {
     return MyBottomSheet.showBottomSheet_100(
         context: context,
-        child: UserExperienceSurveyScreen(
+        child: UserExperienceSurveyBottomSheet(
           isFirst: isFirst,
         ),
         enableDrag: false,

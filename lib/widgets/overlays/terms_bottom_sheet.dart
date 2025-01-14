@@ -7,16 +7,16 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class TermsScreen extends StatefulWidget {
+class TermsBottomSheet extends StatefulWidget {
   static double gutter = 16;
 
-  const TermsScreen({super.key});
+  const TermsBottomSheet({super.key});
 
   @override
-  State<TermsScreen> createState() => _TermsScreenState();
+  State<TermsBottomSheet> createState() => _TermsBottomSheetState();
 }
 
-class _TermsScreenState extends State<TermsScreen> {
+class _TermsBottomSheetState extends State<TermsBottomSheet> {
   List<String> termList = [];
   Map<String, dynamic> termDetails = {};
   Map<String, List<String>> groupedTermList = {};
@@ -112,7 +112,9 @@ class _TermsScreenState extends State<TermsScreen> {
             showTestnetLabel: false),
         body: Padding(
             padding: EdgeInsets.only(
-                left: TermsScreen.gutter, right: TermsScreen.gutter, top: 20),
+                left: TermsBottomSheet.gutter,
+                right: TermsBottomSheet.gutter,
+                top: 20),
             child: Column(children: [
               Row(
                 children: [
@@ -120,16 +122,16 @@ class _TermsScreenState extends State<TermsScreen> {
                     imagePath: 'assets/images/pow_logo.png',
                     title: '포우에 물어보기',
                     backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
-                    gutter: TermsScreen.gutter,
+                    gutter: TermsBottomSheet.gutter,
                     url: 'https://powbitcoiner.com/',
                     externalBrowser: true,
                   ),
-                  SizedBox(width: TermsScreen.gutter / 2),
+                  SizedBox(width: TermsBottomSheet.gutter / 2),
                   AskCard(
                       imagePath: 'assets/images/telegram_logo.png',
                       title: '텔레그램에 물어보기',
                       backgroundColor: const Color.fromRGBO(233, 242, 255, 1),
-                      gutter: TermsScreen.gutter,
+                      gutter: TermsBottomSheet.gutter,
                       url: 'https://t.me/+s4D6-03LjaY5ZmU1'),
                 ],
               ),

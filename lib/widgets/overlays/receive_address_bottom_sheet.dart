@@ -8,16 +8,18 @@ import 'package:coconut_wallet/widgets/bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
 import 'package:provider/provider.dart';
 
-class ReceiveAddressScreen extends StatefulWidget {
+// TODO: ViewModel - 위젯 내부 Provider 제거
+class ReceiveAddressBottomSheet extends StatefulWidget {
   final int id;
 
-  const ReceiveAddressScreen({super.key, required this.id});
+  const ReceiveAddressBottomSheet({super.key, required this.id});
 
   @override
-  State<ReceiveAddressScreen> createState() => _ReceiveAddressScreenState();
+  State<ReceiveAddressBottomSheet> createState() =>
+      _ReceiveAddressBottomSheetState();
 }
 
-class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
+class _ReceiveAddressBottomSheetState extends State<ReceiveAddressBottomSheet> {
   late String _address;
   late String _derivationPath;
 

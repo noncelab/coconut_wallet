@@ -13,6 +13,7 @@ import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
+// TODO: ViewModel - Common
 class SendAddressScreen extends StatefulWidget {
   final int id;
 

@@ -6,7 +6,8 @@ import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/pin/pin_box.dart';
 import 'package:provider/provider.dart';
 
-class PinInputScreen extends StatefulWidget {
+// TODO: ViewModel - 위젯 내부 Provider 제거
+class PinInput extends StatefulWidget {
   final String title;
   final String pin;
   final String errorMessage;
@@ -18,7 +19,7 @@ class PinInputScreen extends StatefulWidget {
   final bool appBarVisible;
   final bool initOptionVisible;
 
-  const PinInputScreen({
+  const PinInput({
     super.key,
     required this.title,
     required this.pin,
@@ -33,10 +34,10 @@ class PinInputScreen extends StatefulWidget {
   });
 
   @override
-  PinInputScreenState createState() => PinInputScreenState();
+  PinInputState createState() => PinInputState();
 }
 
-class PinInputScreenState extends State<PinInputScreen> {
+class PinInputState extends State<PinInput> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

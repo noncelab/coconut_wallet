@@ -17,6 +17,7 @@ import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/infomation_row_item.dart';
 import 'package:provider/provider.dart';
 
+// TODO: ViewModel - Add
 class BroadcastingScreen extends StatefulWidget {
   final int id;
 

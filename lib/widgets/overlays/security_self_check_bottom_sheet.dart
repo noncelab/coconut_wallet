@@ -3,20 +3,21 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/check_list.dart';
 
-class SecuritySelfCheckScreen extends StatefulWidget {
+class SecuritySelfCheckBottomSheet extends StatefulWidget {
   final VoidCallback? onNextPressed;
 
-  const SecuritySelfCheckScreen({
+  const SecuritySelfCheckBottomSheet({
     super.key,
     this.onNextPressed,
   });
 
   @override
-  State<SecuritySelfCheckScreen> createState() =>
-      _SecuritySelfCheckScreenState();
+  State<SecuritySelfCheckBottomSheet> createState() =>
+      _SecuritySelfCheckBottomSheetState();
 }
 
-class _SecuritySelfCheckScreenState extends State<SecuritySelfCheckScreen> {
+class _SecuritySelfCheckBottomSheetState
+    extends State<SecuritySelfCheckBottomSheet> {
   final List<ChecklistItem> _items = [
     ChecklistItem(title: '나의 개인키는 내가 스스로 책임집니다.'),
     ChecklistItem(title: '니모닉 문구 화면을 캡처하거나 촬영하지 않습니다.'),
@@ -29,9 +30,9 @@ class _SecuritySelfCheckScreenState extends State<SecuritySelfCheckScreen> {
     ChecklistItem(title: '위 사항을 주기적으로 점검하고, 안전하게 니모닉 문구를 보관하겠습니다.'),
   ];
 
-  bool get _allItemsChecked {
-    return _items.every((item) => item.isChecked);
-  }
+  // bool get _allItemsChecked {
+  //   return _items.every((item) => item.isChecked);
+  // }
 
   void _onChecklistItemChanged(bool? value, int index) {
     setState(() {

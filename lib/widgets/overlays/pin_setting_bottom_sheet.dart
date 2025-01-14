@@ -5,18 +5,19 @@ import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_dialog.dart';
-import 'package:coconut_wallet/widgets/pin/pin_input_screen.dart';
+import 'package:coconut_wallet/widgets/pin/pin_input.dart';
 import 'package:provider/provider.dart';
 
-class PinSettingScreen extends StatefulWidget {
+// TODO: ViewModel - 위젯 내부 Provider 제거
+class PinSettingBottomSheet extends StatefulWidget {
   final bool isCheckBiometrics;
-  const PinSettingScreen({super.key, this.isCheckBiometrics = false});
+  const PinSettingBottomSheet({super.key, this.isCheckBiometrics = false});
 
   @override
-  State<PinSettingScreen> createState() => _PinSettingScreenState();
+  State<PinSettingBottomSheet> createState() => _PinSettingBottomSheetState();
 }
 
-class _PinSettingScreenState extends State<PinSettingScreen> {
+class _PinSettingBottomSheetState extends State<PinSettingBottomSheet> {
   int step = 0;
   late String pin;
   late String pinConfirm;
@@ -158,7 +159,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PinInputScreen(
+    return PinInput(
       title: step == 0 ? '새로운 비밀번호를 눌러주세요' : '다시 한번 확인할게요',
       pin: step == 0 ? pin : pinConfirm,
       errorMessage: errorMessage,

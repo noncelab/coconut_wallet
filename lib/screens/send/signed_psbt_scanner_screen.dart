@@ -13,6 +13,7 @@ import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
+// TODO: ViewModel - Add
 class SignedPsbtScannerScreen extends StatefulWidget {
   final int id;
   //final AddressType addressType;

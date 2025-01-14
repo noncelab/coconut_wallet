@@ -7,14 +7,14 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 
 import '../../oss_licenses.dart';
 
-class LicenseScreen extends StatefulWidget {
-  const LicenseScreen({super.key});
+class LicenseBottomSheet extends StatefulWidget {
+  const LicenseBottomSheet({super.key});
 
   @override
-  State<LicenseScreen> createState() => _LicenseScreenState();
+  State<LicenseBottomSheet> createState() => _LicenseBottomSheetState();
 }
 
-class _LicenseScreenState extends State<LicenseScreen> {
+class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
   late List<bool> licenseExplanationVisible =
       List.filled(dependencies.length, false);
   String? identifyLicense(String licenseText) {

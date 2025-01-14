@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/screens/onboarding/pin_check_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/pin_check_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet.dart';
@@ -12,8 +12,9 @@ import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 
-import 'pin_setting_screen.dart';
+import '../../widgets/overlays/pin_setting_bottom_sheet.dart';
 
+// TODO: ViewModel - Common
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -60,8 +61,8 @@ class _SettingsScreen extends State<SettingsScreen> {
                             MyBottomSheet.showBottomSheet_90<bool>(
                               context: context,
                               child: const CustomLoadingOverlay(
-                                child:
-                                    PinSettingScreen(isCheckBiometrics: true),
+                                child: PinSettingBottomSheet(
+                                    isCheckBiometrics: true),
                               ),
                             );
                           } else {
@@ -92,13 +93,13 @@ class _SettingsScreen extends State<SettingsScreen> {
                             await MyBottomSheet.showBottomSheet_90(
                                 context: context,
                                 child: const CustomLoadingOverlay(
-                                    child: PinCheckScreen()));
+                                    child: PinCheckBottomSheet()));
                         if (result == true) {
                           _subModel.shuffleNumbers(isSettings: true);
                           await MyBottomSheet.showBottomSheet_90(
                               context: context,
                               child: const CustomLoadingOverlay(
-                                  child: PinSettingScreen()));
+                                  child: PinSettingBottomSheet()));
                         }
                       }),
               ]),

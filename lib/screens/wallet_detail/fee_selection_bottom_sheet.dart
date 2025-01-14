@@ -17,7 +17,8 @@ import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class FeeSelectionScreen extends StatefulWidget {
+// TODO: ViewModel - 위젯 내부 Provider 제거
+class FeeSelectionBottomSheet extends StatefulWidget {
   static const String selectedOptionField = 'selectedOption';
   static const String feeInfoField = 'feeInfo';
 
@@ -28,7 +29,7 @@ class FeeSelectionScreen extends StatefulWidget {
   final FeeInfo? customFeeInfo; // feeRate을 직접 입력한 경우
   final bool isRecommendedFeeFetchSuccess;
 
-  const FeeSelectionScreen(
+  const FeeSelectionBottomSheet(
       {super.key,
       required this.feeInfos,
       required this.estimateFee,
@@ -38,10 +39,11 @@ class FeeSelectionScreen extends StatefulWidget {
       this.isRecommendedFeeFetchSuccess = true});
 
   @override
-  State<FeeSelectionScreen> createState() => _FeeSelectionScreenState();
+  State<FeeSelectionBottomSheet> createState() =>
+      _FeeSelectionBottomSheetState();
 }
 
-class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
+class _FeeSelectionBottomSheetState extends State<FeeSelectionBottomSheet> {
   final maxFeeLimit = 1000000;
   late int? _estimatedFee;
   bool? _isNetworkOn;
@@ -127,8 +129,8 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
   void onDone() {
     Map<String, dynamic> returnData = {
-      FeeSelectionScreen.selectedOptionField: _selectedFeeLevel,
-      FeeSelectionScreen.feeInfoField:
+      FeeSelectionBottomSheet.selectedOptionField: _selectedFeeLevel,
+      FeeSelectionBottomSheet.feeInfoField:
           (_selectedFeeLevel == null && customSatsPerVb != null)
               ? FeeInfo(
                   estimatedFee: _estimatedFee,

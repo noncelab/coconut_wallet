@@ -15,6 +15,7 @@ import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// TODO: ViewModel - Common
 class StartScreen extends StatefulWidget {
   final void Function(AccessFlow nextScreen) onComplete;
 
