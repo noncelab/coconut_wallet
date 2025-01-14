@@ -335,7 +335,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
       List<TransferDTO>? newTxList = _model.getTxList(widget.id);
       if (newTxList != null) {
-        print('--> [detail화면] newTxList.length: ${newTxList.length}');
+        Logger.log('--> [detail화면] newTxList.length: ${newTxList.length}');
         _txList = newTxList;
         setState(() {});
       }

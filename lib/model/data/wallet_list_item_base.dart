@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/app_error.dart';
 import 'package:coconut_wallet/model/data/wallet_type.dart';
 import 'package:json_annotation/json_annotation.dart';
 
@@ -52,7 +53,29 @@ abstract class WalletListItemBase {
     }
   }
 
-  Future syncWithNetwork(NodeConnector nodeConnector) async {}
+  Future _updateWalletStatusWithNetwork(NodeConnector nodeConnector) async {
+    try {
+      await walletFeature.fetchOnChainData(nodeConnector);
+    } catch (e) {
+      throw AppError(ErrorCodes.walletSyncFailedError.code, e.toString());
+    }
+  }
+
+  bool _shouldUpdateToLatest() {
+    if (walletFeature.walletStatus == null) {
+      return false;
+    }
+
+    return txCount == null ||
+        txCount != walletFeature.walletStatus!.transactionList.length ||
+        isLatestTxBlockHeightZero ||
+        balance == null;
+  }
+
+  Future<bool> checkIfWalletShouldUpdate(NodeConnector nodeConnector) async {
+    await _updateWalletStatusWithNetwork(nodeConnector);
+    return _shouldUpdateToLatest();
+  }
 
   @override
   String toString() =>
