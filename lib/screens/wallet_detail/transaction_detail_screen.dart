@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/input_output_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/bottom_sheet/memo_bottom_sheet_container.dart';
@@ -7,6 +8,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/styles.dart';
