@@ -36,17 +36,14 @@ class FaucetRequestViewModel extends ChangeNotifier {
   bool isRequesting = false;
   bool isValidAddress = false;
 
-  Duration _remainingTime = const Duration();
-  String _remainingTimeString = '';
-  Timer? _timer;
+  bool _isStartTimer = false;
+  bool get isStartTimer => _isStartTimer;
 
   String get walletAddress => _walletAddress;
   String get walletName => _walletName;
   String get walletIndex => _walletIndex;
   double get requestAmount => _requestAmount;
 
-  Duration get remainingTime => _remainingTime;
-  String get remainingTimeString => _remainingTimeString;
   bool get canRequestFaucet =>
       !isErrorInAddress &&
       !isErrorInRemainingTime &&
@@ -83,7 +80,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
   @override
   void dispose() {
     textController.dispose();
-    _timer?.cancel();
+    // _timer?.cancel();
     super.dispose();
   }
 
@@ -185,36 +182,34 @@ class FaucetRequestViewModel extends ChangeNotifier {
       return;
     }
 
-    if (_faucetRecord.count == MAX_REQUEST_COUNT) {
-      // 최대 요청 횟수 모두 소진
-      _startTimer();
-    }
+    _isStartTimer = _faucetRecord.count == MAX_REQUEST_COUNT;
+    notifyListeners();
   }
 
-  void _startTimer() {
-    DateTime now = DateTime.now();
-    DateTime midnight = DateTime(now.year, now.month, now.day + 1);
-
-    _remainingTime = midnight.difference(now);
-    _remainingTimeString = _formatDuration(_remainingTime);
-    isErrorInRemainingTime = true;
-
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _remainingTime = _remainingTime - const Duration(seconds: 1);
-      _remainingTimeString = _formatDuration(_remainingTime);
-
-      if (_remainingTime.inSeconds <= 0) {
-        timer.cancel();
-        isErrorInRemainingTime = false;
-        isErrorInAddress = false;
-        _initFaucetRecord();
-        _saveFaucetRecordToSharedPrefs();
-        _getFaucetStatus();
-      }
-      notifyListeners();
-    });
-  }
+  // void _startTimer() {
+  //   DateTime now = DateTime.now();
+  //   DateTime midnight = DateTime(now.year, now.month, now.day + 1);
+  //
+  //   _remainingTime = midnight.difference(now);
+  //   _remainingTimeString = _formatDuration(_remainingTime);
+  //   isErrorInRemainingTime = true;
+  //
+  //   _timer?.cancel();
+  //   _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  //     _remainingTime = _remainingTime - const Duration(seconds: 1);
+  //     _remainingTimeString = _formatDuration(_remainingTime);
+  //
+  //     if (_remainingTime.inSeconds <= 0) {
+  //       timer.cancel();
+  //       isErrorInRemainingTime = false;
+  //       isErrorInAddress = false;
+  //       _initFaucetRecord();
+  //       _saveFaucetRecordToSharedPrefs();
+  //       _getFaucetStatus();
+  //     }
+  //     notifyListeners();
+  //   });
+  // }
 
   void _initFaucetRecord() {
     _faucetRecord = FaucetRecord(

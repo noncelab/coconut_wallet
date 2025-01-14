@@ -24,15 +24,17 @@ import '../../widgets/custom_loading_overlay.dart';
 import '../../widgets/custom_toast.dart';
 
 // TODO: ViewModel - Add
-class WalletMultisigScreen extends StatefulWidget {
+class WalletMultisigSettingScreen extends StatefulWidget {
   final int id;
-  const WalletMultisigScreen({super.key, required this.id});
+  const WalletMultisigSettingScreen({super.key, required this.id});
 
   @override
-  State<WalletMultisigScreen> createState() => _WalletMultisigScreenState();
+  State<WalletMultisigSettingScreen> createState() =>
+      _WalletMultisigSettingScreenState();
 }
 
-class _WalletMultisigScreenState extends State<WalletMultisigScreen> {
+class _WalletMultisigSettingScreenState
+    extends State<WalletMultisigSettingScreen> {
   final GlobalKey _walletTooltipKey = GlobalKey();
   RenderBox? _walletTooltipIconRenderBox;
   Offset _walletTooltipIconPosition = Offset.zero;

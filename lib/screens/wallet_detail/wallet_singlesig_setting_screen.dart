@@ -20,16 +20,18 @@ import '../../widgets/custom_dialogs.dart';
 import '../../widgets/infomation_row_item.dart';
 
 // TODO: ViewModel - Add
-class WalletSettingScreen extends StatefulWidget {
-  const WalletSettingScreen({super.key, required this.id});
+class WalletSinglesigSettingScreen extends StatefulWidget {
+  const WalletSinglesigSettingScreen({super.key, required this.id});
 
   final int id;
 
   @override
-  State<WalletSettingScreen> createState() => _WalletSettingScreenState();
+  State<WalletSinglesigSettingScreen> createState() =>
+      _WalletSinglesigSettingScreenState();
 }
 
-class _WalletSettingScreenState extends State<WalletSettingScreen> {
+class _WalletSinglesigSettingScreenState
+    extends State<WalletSinglesigSettingScreen> {
   late AppSubStateModel _subModel;
   final GlobalKey _walletTooltipKey = GlobalKey();
   RenderBox? _walletTooltipIconRenderBox;
