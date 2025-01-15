@@ -20,8 +20,8 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_multisig_setting_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_singlesig_setting_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_multisig_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_singlesig_info_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -143,11 +143,11 @@ class _PowWalletAppState extends State<PowWalletApp> {
               ),
           '/wallet-multisig-setting': (context) => buildScreenWithArguments(
                 context,
-                (args) => WalletMultisigSettingScreen(id: args['id']),
+                (args) => WalletMultisigInfoScreen(id: args['id']),
               ),
           '/wallet-singlesig-setting': (context) => buildScreenWithArguments(
                 context,
-                (args) => WalletSinglesigSettingScreen(id: args['id']),
+                (args) => WalletSinglesigInfoScreen(id: args['id']),
               ),
           '/address-list': (context) => buildScreenWithArguments(
                 context,

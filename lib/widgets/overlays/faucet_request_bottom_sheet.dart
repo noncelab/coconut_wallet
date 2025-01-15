@@ -163,11 +163,11 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                   },
                   borderRadius: BorderRadius.circular(8.0),
                   padding: EdgeInsets.zero,
-                  color: !(_isErrorInAddress ||
+                  color: (_isErrorInAddress ||
                           _isRequesting ||
                           _isErrorInRemainingTime)
-                      ? MyColors.white
-                      : MyColors.transparentWhite_30,
+                      ? MyColors.transparentWhite_30
+                      : MyColors.white,
                   child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 28, vertical: 12),
@@ -176,7 +176,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                             ? '요청 중...'
                             : '${formatNumber(_requestAmount)} BTC 요청하기',
                         style: Styles.label.merge(TextStyle(
-                            color: !(_isErrorInAddress ||
+                            color: (_isErrorInAddress ||
                                     _isRequesting ||
                                     _isErrorInRemainingTime)
                                 ? MyColors.transparentBlack_50

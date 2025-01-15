@@ -20,29 +20,27 @@ import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 class WalletDetailViewModel extends ChangeNotifier {
   static const int kMaxRequestCount = 3;
   final int _walletId;
-  final SharedPrefs _sharedPrefs = SharedPrefs();
   WalletDetailViewModel(this._walletId);
 
+  /// Common variables ---------------------------------------------------------
+  final SharedPrefs _sharedPrefs = SharedPrefs();
+
+  /// Wallet detail variables --------------------------------------------------
   late WalletListItemBase _walletListBaseItem;
   WalletListItemBase get walletListBaseItem => _walletListBaseItem;
 
   late WalletFeature _walletFeature;
-  WalletFeature get walletFeature => _walletFeature;
 
   WalletType _walletType = WalletType.singleSignature;
   WalletType get walletType => _walletType;
 
   WalletInitState _prevWalletInitState = WalletInitState.never;
-  WalletInitState get prevWalletInitState => _prevWalletInitState;
-
   bool _prevIsLatestTxBlockHeightZero = false;
-  bool get prevIsLatestTxBlockHeightZero => _prevIsLatestTxBlockHeightZero;
 
   bool _isUtxoListLoadComplete = false;
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
 
   int? _prevTxCount;
-  int? get prevTxCount => _prevTxCount;
 
   List<TransferDTO> _txList = [];
   List<TransferDTO> get txList => _txList;
@@ -59,29 +57,29 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool _faucetTooltipVisible = false;
   bool get faucetTooltipVisible => _faucetTooltipVisible;
 
-  bool _isLoading = true;
-  bool get isLoading => _isLoading;
-
-  /// Faucet
+  /// Faucet variables ---------------------------------------------------------
   final Faucet _faucetService = Faucet();
   late AddressBook _walletAddressBook;
   AddressBook get walletAddressBook => _walletAddressBook;
   late FaucetRecord _faucetRecord;
-  FaucetRecord get faucetRecord => _faucetRecord;
 
   String _walletAddress = '';
   String get walletAddress => _walletAddress;
+
   String _walletName = '';
   String get walletName => _walletName;
+
   String _walletIndex = '';
   String get walletIndex => _walletIndex;
-  int _requestCount = 0;
-  int get requestCount => _requestCount;
+
   double _requestAmount = 0.0;
   double get requestAmount => _requestAmount;
 
-  bool _isErrorInServerStatus = false;
-  bool get isErrorInServerStatus => _isErrorInServerStatus;
+  int _requestCount = 0;
+
+  // TODO: 검증 필요
+  // bool _isErrorInServerStatus = false;
+  // bool get isErrorInServerStatus => _isErrorInServerStatus;
 
   bool _isErrorInRemainingTime = false;
   bool get isErrorInRemainingTime => _isErrorInRemainingTime;
@@ -89,6 +87,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool _isRequesting = false;
   bool get isRequesting => _isRequesting;
 
+  /// Common Methods -----------------------------------------------------------
   AppStateModel? _appStateModel;
   void appStateModelListener(AppStateModel appStateModel) async {
     // initialize
@@ -133,28 +132,33 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
   }
 
+  /// Wallet detail methods ----------------------------------------------------
   void getUtxoListWithHoldingAddress() {
     List<model.UTXO> utxos = [];
-    for (var utxo in walletFeature.walletStatus!.utxoList) {
-      String ownedAddress = _walletListBaseItem.walletBase.getAddress(
-          DerivationPathUtil.getAccountIndex(walletType, utxo.derivationPath),
-          isChange: DerivationPathUtil.getChangeElement(
-                  walletType, utxo.derivationPath) ==
-              1);
 
-      final tags =
-          _appStateModel?.loadUtxoTagListByTxHashIndex(_walletId, utxo.utxoId);
+    if (_walletFeature.walletStatus?.utxoList.isNotEmpty == true) {
+      for (var utxo in _walletFeature.walletStatus!.utxoList) {
+        String ownedAddress = _walletListBaseItem.walletBase.getAddress(
+            DerivationPathUtil.getAccountIndex(
+                _walletType, utxo.derivationPath),
+            isChange: DerivationPathUtil.getChangeElement(
+                    _walletType, utxo.derivationPath) ==
+                1);
 
-      utxos.add(model.UTXO(
-        utxo.timestamp.toString(),
-        utxo.blockHeight.toString(),
-        utxo.amount,
-        ownedAddress,
-        utxo.derivationPath,
-        utxo.transactionHash,
-        utxo.index,
-        tags: tags,
-      ));
+        final tags = _appStateModel?.loadUtxoTagListByTxHashIndex(
+            _walletId, utxo.utxoId);
+
+        utxos.add(model.UTXO(
+          utxo.timestamp.toString(),
+          utxo.blockHeight.toString(),
+          utxo.amount,
+          ownedAddress,
+          utxo.derivationPath,
+          utxo.transactionHash,
+          utxo.index,
+          tags: tags,
+        ));
+      }
     }
 
     _isUtxoListLoadComplete = true;
@@ -162,33 +166,16 @@ class WalletDetailViewModel extends ChangeNotifier {
     model.UTXO.sortUTXO(_utxoList, _selectedFilter);
   }
 
-  /// Utxo 목록 필터 변경
   void updateUtxoFilter(UtxoOrderEnum orderEnum) async {
     _selectedFilter = orderEnum;
     model.UTXO.sortUTXO(_utxoList, orderEnum);
     notifyListeners();
   }
 
-  void showFaucetTooltip() async {
-    final faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-    if (_walletListBaseItem.balance == 0 && faucetHistory.count < 3) {
-      _faucetTooltipVisible = true;
-      await Future.delayed(const Duration(milliseconds: 500));
-      _faucetTipVisible = true;
-    }
-    notifyListeners();
-  }
-
-  void removeFaucetTooltip() {
-    _faucetTipVisible = false;
-    _faucetTooltipVisible = false;
-    notifyListeners();
-  }
-
   void _checkTxCount() {
-    final txCount = walletListBaseItem.txCount;
+    final txCount = _walletListBaseItem.txCount;
     final isLatestTxBlockHeightZero =
-        walletListBaseItem.isLatestTxBlockHeightZero;
+        _walletListBaseItem.isLatestTxBlockHeightZero;
     Logger.log('--> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
     Logger.log(
         '--> prevIsZero: $_prevIsLatestTxBlockHeightZero, wallet.isZero: $isLatestTxBlockHeightZero');
@@ -205,7 +192,23 @@ class WalletDetailViewModel extends ChangeNotifier {
     _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;
   }
 
-  /// Faucet
+  /// Faucet methods -----------------------------------------------------------
+  void showFaucetTooltip() async {
+    final faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
+    if (_walletListBaseItem.balance == 0 && faucetHistory.count < 3) {
+      _faucetTooltipVisible = true;
+      await Future.delayed(const Duration(milliseconds: 500));
+      _faucetTipVisible = true;
+    }
+    notifyListeners();
+  }
+
+  void removeFaucetTooltip() {
+    _faucetTipVisible = false;
+    _faucetTooltipVisible = false;
+    notifyListeners();
+  }
+
   void _checkFaucetRecord() {
     if (!_faucetRecord.isToday) {
       // 오늘 처음 요청
@@ -231,7 +234,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       if (response is FaucetResponse) {
         _isErrorInRemainingTime = false;
         onResult(true, '테스트 비트코인을 요청했어요. 잠시만 기다려 주세요.');
-        _updateFaucetHistory();
+        _updateFaucetRecord();
       } else if (response is DefaultErrorResponse &&
           response.error == 'TOO_MANY_REQUEST_FAUCET') {
         _isErrorInRemainingTime = true;
@@ -250,7 +253,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
   }
 
-  void _updateFaucetHistory() {
+  void _updateFaucetRecord() {
     _checkFaucetRecord();
 
     int count = _faucetRecord.count;
@@ -272,12 +275,11 @@ class WalletDetailViewModel extends ChangeNotifier {
     _sharedPrefs.saveFaucetHistory(_faucetRecord);
   }
 
-  /// Faucet 상태 조회 (API 호출)
   Future<void> _getFaucetStatus() async {
     try {
       final response = await _faucetService.getStatus();
       if (response is FaucetStatusResponse) {
-        _isLoading = false;
+        // _isLoading = false;
         _requestCount = _faucetRecord.count;
         if (_requestCount == 0) {
           _requestAmount = response.maxLimit;
@@ -286,18 +288,14 @@ class WalletDetailViewModel extends ChangeNotifier {
         }
       }
     } catch (_) {
-      setErrorInStatus(true);
+      // setErrorInStatus(true);
     } finally {
       notifyListeners();
     }
   }
 
-  void setErrorInStatus(bool statusValue) {
-    _isErrorInServerStatus = statusValue;
-  }
-
-  // @override
-  // void dispose() {
-  //   super.dispose();
+  // TODO: 검증 필요
+  // void setErrorInStatus(bool statusValue) {
+  //   _isErrorInServerStatus = statusValue;
   // }
 }
