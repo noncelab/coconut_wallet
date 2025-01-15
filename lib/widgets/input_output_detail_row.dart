@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/enums/input_output_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -11,29 +10,30 @@ class InputOutputDetailRow extends StatelessWidget {
   final int balance;
   final double balanceMaxWidth;
   final InputOutputRowType rowType;
-  final bool isCurrentAddress;
+  final bool? isCurrentAddress;
   final TransactionStatus? transactionStatus;
+  final RowProperty rowProperty;
 
-  const InputOutputDetailRow({
+  InputOutputDetailRow({
     super.key,
     required this.address,
     required this.balance,
     required this.balanceMaxWidth,
     required this.rowType,
-    this.isCurrentAddress = false,
+    this.isCurrentAddress,
     this.transactionStatus,
-  });
+  }) : rowProperty = getRowProperty(
+            rowType, transactionStatus, isCurrentAddress ?? false);
 
   @override
   Widget build(BuildContext context) {
-    InputOutputRowFeature rowFeature = getRowFeature();
     return Row(
       children: [
         Text(
-          TextUtils.truncateNameMax19(address),
+          TextUtils.truncate(address, 19, 11, 8),
           style: Styles.body2Number.merge(
             TextStyle(
-              color: rowFeature.leftItemColor,
+              color: rowProperty.leftItemColor,
               fontSize: 14,
               height: 16 / 14,
             ),
@@ -47,11 +47,11 @@ class InputOutputDetailRow extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 SvgPicture.asset(
-                  rowFeature.assetAddress,
+                  rowProperty.assetAddress,
                   width: 16,
                   height: 12,
                   colorFilter:
-                      ColorFilter.mode(rowFeature.assetColor, BlendMode.srcIn),
+                      ColorFilter.mode(rowProperty.assetColor, BlendMode.srcIn),
                 ),
                 const SizedBox(
                   width: 10,
@@ -63,7 +63,7 @@ class InputOutputDetailRow extends StatelessWidget {
                     satoshiToBitcoinString(balance).normalizeTo11Characters(),
                     style: Styles.body2Number.merge(
                       TextStyle(
-                        color: rowFeature.rightItemColor,
+                        color: rowProperty.rightItemColor,
                         fontSize: 14,
                         height: 16 / 14,
                       ),
@@ -84,7 +84,7 @@ class InputOutputDetailRow extends StatelessWidget {
                     satoshiToBitcoinString(balance).normalizeTo11Characters(),
                     style: Styles.body2Number.merge(
                       TextStyle(
-                        color: rowFeature.rightItemColor,
+                        color: rowProperty.rightItemColor,
                         fontSize: 14,
                         height: 16 / 14,
                       ),
@@ -95,11 +95,11 @@ class InputOutputDetailRow extends StatelessWidget {
                   width: 10,
                 ),
                 SvgPicture.asset(
-                  rowFeature.assetAddress,
+                  rowProperty.assetAddress,
                   width: 16,
                   height: 12,
                   colorFilter:
-                      ColorFilter.mode(rowFeature.assetColor, BlendMode.srcIn),
+                      ColorFilter.mode(rowProperty.assetColor, BlendMode.srcIn),
                 ),
               ],
             ),
@@ -108,15 +108,19 @@ class InputOutputDetailRow extends StatelessWidget {
     );
   }
 
-  InputOutputRowFeature getRowFeature() {
+  static RowProperty getRowProperty(
+    InputOutputRowType rowType,
+    TransactionStatus? transactionStatus,
+    bool isCurrentAddress,
+  ) {
     Color leftItemColor = MyColors.white;
     Color rightItemColor = MyColors.white;
     Color assetColor = MyColors.white;
 
-    String assetAddress = 'assets/svg/circle-arrow-right.svg';
+    String assetPath = 'assets/svg/circle-arrow-right.svg';
 
     if (rowType == InputOutputRowType.fee) {
-      assetAddress = 'assets/svg/circle-pick.svg';
+      assetPath = 'assets/svg/circle-pick.svg';
       if (transactionStatus == null) {
         // UTXO 화면인 경우 색상 변경
         leftItemColor =
@@ -124,17 +128,17 @@ class InputOutputDetailRow extends StatelessWidget {
       }
 
       /// 수수료인 경우 바로 리턴
-      return InputOutputRowFeature(
+      return RowProperty(
           leftItemColor: leftItemColor,
           rightItemColor: rightItemColor,
           assetColor: assetColor,
-          assetAddress: assetAddress,
+          assetAddress: assetPath,
           pickAddress: 'assets/svg/circle-pick.svg');
     }
 
     if (transactionStatus != null) {
       /// transactionStatus가 null이 아니면 거래 자세히 보기 화면
-      switch (transactionStatus!) {
+      switch (transactionStatus) {
         case TransactionStatus.received:
         case TransactionStatus.receiving:
           if (rowType == InputOutputRowType.input) {
@@ -195,23 +199,23 @@ class InputOutputDetailRow extends StatelessWidget {
             rightItemColor = assetColor = MyColors.transparentWhite_40;
       }
     }
-    return InputOutputRowFeature(
+    return RowProperty(
         leftItemColor: leftItemColor,
         rightItemColor: rightItemColor,
         assetColor: assetColor,
-        assetAddress: assetAddress,
+        assetAddress: assetPath,
         pickAddress: 'assets/svg/circle-pick.svg');
   }
 }
 
-class InputOutputRowFeature {
+class RowProperty {
   final Color leftItemColor;
   final Color rightItemColor;
   final Color assetColor;
   final String assetAddress;
   final String pickAddress;
 
-  const InputOutputRowFeature({
+  const RowProperty({
     required this.leftItemColor,
     required this.rightItemColor,
     required this.assetColor,
@@ -219,3 +223,5 @@ class InputOutputRowFeature {
     required this.pickAddress,
   });
 }
+
+enum InputOutputRowType { input, output, fee }
