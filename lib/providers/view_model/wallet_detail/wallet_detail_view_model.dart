@@ -23,6 +23,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   WalletDetailViewModel(this._walletId);
 
   /// Common variables ---------------------------------------------------------
+  AppStateModel? _appStateModel;
+  AppStateModel? get appStateModel => _appStateModel;
   final SharedPrefs _sharedPrefs = SharedPrefs();
 
   /// Wallet detail variables --------------------------------------------------
@@ -88,7 +90,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool get isRequesting => _isRequesting;
 
   /// Common Methods -----------------------------------------------------------
-  AppStateModel? _appStateModel;
   void appStateModelListener(AppStateModel appStateModel) async {
     // initialize
     if (_appStateModel == null) {

@@ -72,8 +72,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   late RenderBox _topHeaderWidgetRenderBox;
   late RenderBox _positionedTopWidgetRenderBox;
   late RenderBox _filterDropdownButtonRenderBox;
+
   RenderBox? _scrolledFilterDropdownButtonRenderBox;
-  late Size _faucetIconSize;
   Size _appBarSize = const Size(0, 0);
   Size _topToggleButtonSize = const Size(0, 0); // BTC sats 버튼
   Size _topSelectorWidgetSize = const Size(0, 0); // 원화 영역
@@ -81,11 +81,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   Size _positionedTopWidgetSize = const Size(0, 0); // 거래내역 - UTXO 리스트 위젯 영역
   Size _filterDropdownButtonSize = const Size(0, 0); // 필터 버튼(확장형)
   Size _scrolledFilterDropdownButtonSize = const Size(0, 0); // 필터 버튼(축소형))
-  final Size _txSliverListSize = const Size(0, 0); // 거래내역 리스트 사이즈
+  Size _txSliverListSize = const Size(0, 0); // 거래내역 리스트 사이즈
   Size _utxoSliverListSize = const Size(0, 0); // utxo 리스트 사이즈
-  late Offset _faucetIconPosition;
-  late Offset _filterDropdownButtonPosition;
-  late Offset _scrolledFilterDropdownButtonPosition;
+
+  Offset _filterDropdownButtonPosition = Offset.zero;
+  Offset _scrolledFilterDropdownButtonPosition = Offset.zero;
+
+  Offset _faucetIconPosition = Offset.zero;
+  Size _faucetIconSize = const Size(0, 0);
+
   double topPadding = 0;
 
   SelectedListType _selectedListType = SelectedListType.Transaction;
@@ -97,34 +101,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   bool _isPullToRefeshing = false;
   String faucetTip = '테스트용 비트코인으로 마음껏 테스트 해보세요';
 
-  int _selectedAccountIndex = 0;
   Unit _current = Unit.btc;
 
-  late AppStateModel _model;
-  late final ScrollController _scrollController;
-
-  // ViewModel
-  // bool _isUtxoListLoadComplete = false;
-  // List<TransferDTO> _txList = [];
-  // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
-  //List<model.UTXO> _utxoList = [];
-  // UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc; // 초기 정렬 방식
-  // late WalletType _walletType;
-  // static String changeField = 'change';
-  // static String accountIndexField = 'accountIndex';
-  // late WalletListItemBase _walletBaseItem;
-  // late WalletFeature _walletFeature;
-  // bool _faucetTipVisible = false;
-  // bool _faucetTooltipVisible = false;
-  // late WalletInitState _prevWalletInitState;
-  // late int? _prevTxCount;
-  // late bool _prevIsLatestTxBlockHeightZero;
+  WalletDetailViewModel? viewModel;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _model = Provider.of<AppStateModel>(context, listen: false);
-    _scrollController = ScrollController();
+    // TODO: 리뷰 완료 후 주석 삭제
+    // _model = Provider.of<AppStateModel>(context, listen: false);
+    // _scrollController = ScrollController();
 
     // ViewModel
     //_prevWalletInitState = _model.walletInitState;
@@ -169,16 +156,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           additionalConstraints:
               const BoxConstraints.tightFor(width: 0, height: 0));
 
-      _filterDropdownButtonPosition = Offset.zero;
-      _scrolledFilterDropdownButtonPosition = Offset.zero;
-
       _appBarSize = _appBarRenderBox.size;
       _topToggleButtonSize = _topToggleButtonRenderBox.size;
       _topSelectorWidgetSize = _topSelectorWidgetRenderBox.size;
       _topHeaderWidgetSize = _topHeaderWidgetRenderBox.size;
       _positionedTopWidgetSize = _positionedTopWidgetRenderBox.size;
-      _filterDropdownButtonSize = const Size(0, 0);
-      _scrolledFilterDropdownButtonSize = const Size(0, 0);
 
       setState(() {
         topPadding = _topToggleButtonSize.height +
@@ -187,12 +169,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             _positionedTopWidgetSize.height;
       });
 
-      // TODO: txList
-      // if (_txList.isNotEmpty) {
-      //   final RenderBox txSliverListRenderBox =
-      //       _txSliverListKey.currentContext?.findRenderObject() as RenderBox;
-      //   _txSliverListSize = txSliverListRenderBox.size;
-      // }
+      if (viewModel?.txList.isNotEmpty == true) {
+        final RenderBox txSliverListRenderBox =
+            _txSliverListKey.currentContext?.findRenderObject() as RenderBox;
+        _txSliverListSize = txSliverListRenderBox.size;
+      }
 
       _scrollController.addListener(() {
         if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
@@ -206,7 +187,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               _isFilterDropdownVisible = false;
             });
             if (_scrolledFilterDropdownButtonRenderBox == null &&
-                /*_utxoList.isNotEmpty &&*/ // TODO: utxoList
+                viewModel?.utxoList.isNotEmpty == true &&
                 _selectedListType == SelectedListType.UTXO) {
               _scrolledFilterDropdownButtonRenderBox =
                   _scrolledFilterDropdownButtonKey.currentContext
@@ -250,6 +231,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         }
       }
 
+      // TODO: 리뷰 완료 후 주석 삭제
       // ViewModel
       // final faucetHistory = SharedPrefs().getFaucetHistoryWithId(widget.id);
       // if (_walletBaseItem.balance == 0 && faucetHistory.count < 3) {
@@ -268,6 +250,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    // TODO: 리뷰 완료 후 주석 삭제
     // _model.removeListener(_stateListener);
     super.dispose();
   }
@@ -285,6 +268,92 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       }
     });
   }
+
+  void _toggleUnit() {
+    setState(() {
+      _current = _current == Unit.btc ? Unit.sats : Unit.btc;
+    });
+  }
+
+  void _toggleListType(SelectedListType type, List<model.UTXO> utxoList) async {
+    if (type == SelectedListType.Transaction) {
+      setState(() {
+        _selectedListType = SelectedListType.Transaction;
+        _isFilterDropdownVisible = false;
+        _isScrolledFilterDropdownVisible = false;
+      });
+    } else {
+      setState(() {
+        _selectedListType = SelectedListType.UTXO;
+      });
+      if (utxoList.isNotEmpty) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        _filterDropdownButtonRenderBox = _filterDropdownButtonKey.currentContext
+            ?.findRenderObject() as RenderBox;
+        _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
+
+        _filterDropdownButtonPosition =
+            _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+        final RenderBox utxoSliverListRenderBox =
+            _utxoSliverListKey.currentContext?.findRenderObject() as RenderBox;
+        _utxoSliverListSize = utxoSliverListRenderBox.size;
+      }
+    }
+  }
+
+  void _removeFilterDropdown() {
+    setState(() {
+      _isFilterDropdownVisible = false;
+      _isScrolledFilterDropdownVisible = false;
+    });
+  }
+
+  bool _checkStateAndShowToast() {
+    var appState = Provider.of<AppStateModel>(context, listen: false);
+
+    // 에러체크
+    if (appState.isNetworkOn == false) {
+      CustomToast.showWarningToast(
+          context: context, text: ErrorCodes.networkError.message);
+      return false;
+    }
+
+    if (appState.walletInitState == WalletInitState.processing) {
+      CustomToast.showToast(
+          context: context, text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
+      return false;
+    }
+
+    return true;
+  }
+
+  bool _checkBalanceIsNotNullAndShowToast(int? balance) {
+    if (balance == null) {
+      CustomToast.showToast(
+          context: context, text: "화면을 아래로 당겨 최신 데이터를 가져와 주세요.");
+      return false;
+    }
+    return true;
+  }
+
+  // TODO: 리뷰 완료 후 주석 삭제
+  // ViewModel
+  // late AppStateModel _model;
+  // bool _isUtxoListLoadComplete = false;
+  // List<TransferDTO> _txList = [];
+  // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
+  //List<model.UTXO> _utxoList = [];
+  // UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc; // 초기 정렬 방식
+  // late WalletType _walletType;
+  // static String changeField = 'change';
+  // static String accountIndexField = 'accountIndex';
+  // late WalletListItemBase _walletBaseItem;
+  // late WalletFeature _walletFeature;
+  // bool _faucetTipVisible = false;
+  // bool _faucetTooltipVisible = false;
+  // late WalletInitState _prevWalletInitState;
+  // late int? _prevTxCount;
+  // late bool _prevIsLatestTxBlockHeightZero;
 
   // ViewModel
   // void _stateListener() {
@@ -375,163 +444,40 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   //   });
   // }
 
-  void _toggleUnit() {
-    setState(() {
-      _current = _current == Unit.btc ? Unit.sats : Unit.btc;
-    });
-  }
-
-  void _toggleListType(SelectedListType type, List<model.UTXO> utxoList) async {
-    if (type == SelectedListType.Transaction) {
-      setState(() {
-        _selectedListType = SelectedListType.Transaction;
-        _isFilterDropdownVisible = false;
-        _isScrolledFilterDropdownVisible = false;
-      });
-    } else {
-      setState(() {
-        _selectedListType = SelectedListType.UTXO;
-      });
-      if (utxoList.isNotEmpty) {
-        await Future.delayed(const Duration(milliseconds: 200));
-        _filterDropdownButtonRenderBox = _filterDropdownButtonKey.currentContext
-            ?.findRenderObject() as RenderBox;
-        _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
-
-        _filterDropdownButtonPosition =
-            _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
-        final RenderBox utxoSliverListRenderBox =
-            _utxoSliverListKey.currentContext?.findRenderObject() as RenderBox;
-        _utxoSliverListSize = utxoSliverListRenderBox.size;
-      }
-    }
-  }
-
-  void changeSelectedAccount(int index) {
-    setState(() => _selectedAccountIndex = index);
-  }
-
-  void _removeFilterDropdown() {
-    setState(() {
-      _isFilterDropdownVisible = false;
-      _isScrolledFilterDropdownVisible = false;
-    });
-  }
-
-  /// 필터 드롭다운 위젯
-  Widget _filterDropDownWidget(WalletDetailViewModel viewModel) {
-    return Material(
-      borderRadius: BorderRadius.circular(16),
-      child: CustomDropdown(
-        buttons: [
-          UtxoOrderEnum.byTimestampDesc.text,
-          UtxoOrderEnum.byTimestampAsc.text,
-          UtxoOrderEnum.byAmountDesc.text,
-          UtxoOrderEnum.byAmountAsc.text,
-        ],
-        dividerColor: Colors.black,
-        onTapButton: (index) {
-          setState(() {
-            _isFilterDropdownVisible = _isScrolledFilterDropdownVisible = false;
-          });
-          switch (index) {
-            case 0: // 큰 금액순
-              if (viewModel.selectedFilter != UtxoOrderEnum.byTimestampDesc) {
-                viewModel.updateUtxoFilter(UtxoOrderEnum.byTimestampDesc);
-              }
-              break;
-            case 1: // 작은 금액순
-              if (viewModel.selectedFilter != UtxoOrderEnum.byTimestampAsc) {
-                viewModel.updateUtxoFilter(UtxoOrderEnum.byTimestampAsc);
-              }
-              break;
-            case 2: // 최신순
-              if (viewModel.selectedFilter != UtxoOrderEnum.byAmountDesc) {
-                viewModel.updateUtxoFilter(UtxoOrderEnum.byAmountDesc);
-              }
-              break;
-            case 3: // 오래된 순
-              if (viewModel.selectedFilter != UtxoOrderEnum.byAmountAsc) {
-                viewModel.updateUtxoFilter(UtxoOrderEnum.byAmountAsc);
-              }
-              break;
-          }
-        },
-        selectedButton: viewModel.selectedFilter.text,
-      ),
-    );
-  }
-
-  bool _checkStateAndShowToast() {
-    var appState = Provider.of<AppStateModel>(context, listen: false);
-
-    // 에러체크
-    if (appState.isNetworkOn == false) {
-      CustomToast.showWarningToast(
-          context: context, text: ErrorCodes.networkError.message);
-      return false;
-    }
-
-    if (appState.walletInitState == WalletInitState.processing) {
-      CustomToast.showToast(
-          context: context, text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
-      return false;
-    }
-
-    return true;
-  }
-
-  bool _checkBalanceIsNotNullAndShowToast(int? balance) {
-    if (balance == null) {
-      CustomToast.showToast(
-          context: context, text: "화면을 아래로 당겨 최신 데이터를 가져와 주세요.");
-      return false;
-    }
-    return true;
-  }
-
-  /// 거래 내역 리스트
-  Widget _transactionListWidget(List<TransferDTO> txList) {
-    return SliverSafeArea(
-      minimum: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-      sliver: txList.isNotEmpty
-          ? SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (ctx, index) {
-                  return Column(
-                    key: index == 0 ? _txSliverListKey : null,
-                    children: [
-                      TransactionRowItem(
-                        tx: txList[index],
-                        currentUnit: _current,
-                        id: widget.id,
-                      ),
-                      gapOfRowItems,
-                      if (index == txList.length - 1)
-                        const SizedBox(
-                          height: 80,
-                        ),
-                    ],
-                  );
-                },
-                childCount: txList.length,
-              ),
-            )
-          : const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: EdgeInsets.only(top: 100),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Text(
-                    '거래 내역이 없어요',
-                    style: Styles.body1,
-                  ),
-                ),
-              ),
-            ),
-    );
-  }
+  // ViewModel
+  // getUtxoListWithHoldingAddress(
+  //     List<UTXO> utxoEntities,
+  //     WalletListItemBase walletBaseItem,
+  //     String accountIndexField,
+  //     String changeField,
+  //     WalletType walletType) {
+  //   List<model.UTXO> utxos = [];
+  //   for (var utxo in utxoEntities) {
+  //     String ownedAddress = walletBaseItem.walletBase.getAddress(
+  //         DerivationPathUtil.getAccountIndex(walletType, utxo.derivationPath),
+  //         isChange: DerivationPathUtil.getChangeElement(
+  //                 walletType, utxo.derivationPath) ==
+  //             1);
+  //
+  //     final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, utxo.utxoId);
+  //
+  //     utxos.add(model.UTXO(
+  //       utxo.timestamp.toString(),
+  //       utxo.blockHeight.toString(),
+  //       utxo.amount,
+  //       ownedAddress,
+  //       utxo.derivationPath,
+  //       utxo.transactionHash,
+  //       utxo.index,
+  //       tags: tags,
+  //     ));
+  //   }
+  //
+  //   setState(() {
+  //     _utxoList = utxos;
+  //     _isUtxoListLoadComplete = true;
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -543,6 +489,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       },
       child: Consumer<WalletDetailViewModel>(
         builder: (context, viewModel, child) {
+          if (this.viewModel == null) {
+            this.viewModel = viewModel;
+          }
+
           return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, _) {
@@ -590,8 +540,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                   vibrateLight();
                                   Future.delayed(const Duration(seconds: 1),
                                       () {
-                                    // TODO: 개선 필요함
-                                    _model.initWallet(
+                                    viewModel.appStateModel?.initWallet(
                                         targetId: widget.id, syncOthers: false);
                                   });
                                   CustomToast.showToast(
@@ -616,10 +565,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                             arguments: {'id': widget.id});
                       }
 
-                      // TODO: 개선 필요
-                      if (_model.isUpdatedSelectedTagList) {
-                        print('!!!');
-                        _model.setIsUpdateSelectedTagList(false);
+                      if (viewModel.appStateModel?.isUpdatedSelectedTagList ==
+                          true) {
+                        viewModel.appStateModel
+                            ?.setIsUpdateSelectedTagList(false);
                         viewModel.getUtxoListWithHoldingAddress();
                       }
                     },
@@ -638,7 +587,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                               if (!_checkStateAndShowToast()) {
                                 return;
                               }
-                              _model.initWallet(targetId: widget.id);
+                              viewModel.appStateModel
+                                  ?.initWallet(targetId: widget.id);
                             } finally {
                               _isPullToRefeshing = false;
                             }
@@ -676,7 +626,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                 key: _topSelectorWidgetKey,
                                 balance: viewModel.walletListBaseItem.balance,
                                 walletId: widget.id,
-                                accountIndex: _selectedAccountIndex,
                                 currentUnit: _current,
                                 btcPriceInKrw: bitcoinPriceKrw,
                                 checkPrerequisites: () {
@@ -913,6 +862,93 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     );
   }
 
+  /// 필터 드롭다운 위젯
+  Widget _filterDropDownWidget(WalletDetailViewModel viewModel) {
+    return Material(
+      borderRadius: BorderRadius.circular(16),
+      child: CustomDropdown(
+        buttons: [
+          UtxoOrderEnum.byTimestampDesc.text,
+          UtxoOrderEnum.byTimestampAsc.text,
+          UtxoOrderEnum.byAmountDesc.text,
+          UtxoOrderEnum.byAmountAsc.text,
+        ],
+        dividerColor: Colors.black,
+        onTapButton: (index) {
+          setState(() {
+            _isFilterDropdownVisible = _isScrolledFilterDropdownVisible = false;
+          });
+          switch (index) {
+            case 0: // 큰 금액순
+              if (viewModel.selectedFilter != UtxoOrderEnum.byTimestampDesc) {
+                viewModel.updateUtxoFilter(UtxoOrderEnum.byTimestampDesc);
+              }
+              break;
+            case 1: // 작은 금액순
+              if (viewModel.selectedFilter != UtxoOrderEnum.byTimestampAsc) {
+                viewModel.updateUtxoFilter(UtxoOrderEnum.byTimestampAsc);
+              }
+              break;
+            case 2: // 최신순
+              if (viewModel.selectedFilter != UtxoOrderEnum.byAmountDesc) {
+                viewModel.updateUtxoFilter(UtxoOrderEnum.byAmountDesc);
+              }
+              break;
+            case 3: // 오래된 순
+              if (viewModel.selectedFilter != UtxoOrderEnum.byAmountAsc) {
+                viewModel.updateUtxoFilter(UtxoOrderEnum.byAmountAsc);
+              }
+              break;
+          }
+        },
+        selectedButton: viewModel.selectedFilter.text,
+      ),
+    );
+  }
+
+  /// 거래 내역 리스트
+  Widget _transactionListWidget(List<TransferDTO> txList) {
+    return SliverSafeArea(
+      minimum: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+      sliver: txList.isNotEmpty
+          ? SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, index) {
+                  return Column(
+                    key: index == 0 ? _txSliverListKey : null,
+                    children: [
+                      TransactionRowItem(
+                        tx: txList[index],
+                        currentUnit: _current,
+                        id: widget.id,
+                      ),
+                      gapOfRowItems,
+                      if (index == txList.length - 1)
+                        const SizedBox(
+                          height: 80,
+                        ),
+                    ],
+                  );
+                },
+                childCount: txList.length,
+              ),
+            )
+          : const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: EdgeInsets.only(top: 100),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: Text(
+                    '거래 내역이 없어요',
+                    style: Styles.body1,
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+
   /// UTXO 목록
   Widget _utxoListWidget(WalletDetailViewModel viewModel) {
     return SliverSafeArea(
@@ -947,13 +983,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         },
                       );
 
-                      if (_model.isUpdatedSelectedTagList) {
-                        _model.setIsUpdateSelectedTagList(false);
+                      if (viewModel.appStateModel?.isUpdatedSelectedTagList ==
+                          true) {
+                        viewModel.appStateModel
+                            ?.setIsUpdateSelectedTagList(false);
                         for (var utxo in viewModel.utxoList) {
                           if (utxo.utxoId ==
                               viewModel.utxoList[itemIndex].utxoId) {
                             utxo.tags?.clear();
-                            utxo.tags?.addAll(_model.selectedTagList);
+                            utxo.tags?.addAll(
+                                viewModel.appStateModel?.selectedTagList ?? []);
                             setState(() {});
                             break;
                           }
@@ -1336,47 +1375,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       ],
     );
   }
-
-  // ViewModel
-  // getUtxoListWithHoldingAddress(
-  //     List<UTXO> utxoEntities,
-  //     WalletListItemBase walletBaseItem,
-  //     String accountIndexField,
-  //     String changeField,
-  //     WalletType walletType) {
-  //   List<model.UTXO> utxos = [];
-  //   for (var utxo in utxoEntities) {
-  //     String ownedAddress = walletBaseItem.walletBase.getAddress(
-  //         DerivationPathUtil.getAccountIndex(walletType, utxo.derivationPath),
-  //         isChange: DerivationPathUtil.getChangeElement(
-  //                 walletType, utxo.derivationPath) ==
-  //             1);
-  //
-  //     final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, utxo.utxoId);
-  //
-  //     utxos.add(model.UTXO(
-  //       utxo.timestamp.toString(),
-  //       utxo.blockHeight.toString(),
-  //       utxo.amount,
-  //       ownedAddress,
-  //       utxo.derivationPath,
-  //       utxo.transactionHash,
-  //       utxo.index,
-  //       tags: tags,
-  //     ));
-  //   }
-  //
-  //   setState(() {
-  //     _utxoList = utxos;
-  //     _isUtxoListLoadComplete = true;
-  //   });
-  // }
 }
 
 class BalanceAndButtons extends StatefulWidget {
   final int? balance;
   final int walletId;
-  final int accountIndex;
   final Unit currentUnit;
   final int? btcPriceInKrw;
   final bool Function()? checkPrerequisites;
@@ -1385,7 +1388,6 @@ class BalanceAndButtons extends StatefulWidget {
     super.key,
     required this.balance,
     required this.walletId,
-    required this.accountIndex,
     required this.currentUnit,
     required this.btcPriceInKrw,
     this.checkPrerequisites,
