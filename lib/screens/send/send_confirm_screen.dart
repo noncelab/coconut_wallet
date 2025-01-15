@@ -14,7 +14,6 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/infomation_row_item.dart';
 import 'package:provider/provider.dart';
 
-// TODO: ViewModel - Common
 class SendConfirmScreen extends StatefulWidget {
   final FullSendInfo sendInfo;
   final int id;

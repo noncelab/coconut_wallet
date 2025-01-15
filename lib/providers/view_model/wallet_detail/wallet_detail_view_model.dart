@@ -68,6 +68,9 @@ class WalletDetailViewModel extends ChangeNotifier {
   String _walletAddress = '';
   String get walletAddress => _walletAddress;
 
+  String _derivationPath = '';
+  String get derivationPath => _derivationPath;
+
   String _walletName = '';
   String get walletName => _walletName;
 
@@ -110,6 +113,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       /// Faucet
       Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
       _walletAddress = receiveAddress.address;
+      _derivationPath = receiveAddress.derivationPath;
       _walletName = walletBaseItem.name.length > 20
           ? '${walletBaseItem.name.substring(0, 17)}...'
           : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음

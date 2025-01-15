@@ -23,11 +23,10 @@ import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/wallet_row_item.dart';
 import 'package:coconut_wallet/widgets/overlays/onboarding_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:provider/provider.dart';
 
-// TODO: ViewModel - Add
 class WalletListScreen extends StatefulWidget {
   const WalletListScreen({super.key});
 
@@ -85,7 +84,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       Logger.log('hasLaunchedBefore ? ${_subModel.hasLaunchedBefore}');
       if (!_subModel.hasLaunchedBefore) {
         Future.delayed(const Duration(milliseconds: 1000)).then((_) {
-          MyBottomSheet.showBottomSheet_100(
+          CommonBottomSheets.showBottomSheet_100(
             context: context,
             child: const OnboardingBottomSheet(),
             enableDrag: false,
@@ -444,7 +443,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                     fastLoadDone,
                                 child: GestureDetector(
                                   onTap: () {
-                                    MyBottomSheet.showBottomSheet_90(
+                                    CommonBottomSheets.showBottomSheet_90(
                                         context: context,
                                         child: const TermsBottomSheet());
                                   },
@@ -752,7 +751,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                             });
                             switch (index) {
                               case 0: // 용어집
-                                MyBottomSheet.showBottomSheet_90(
+                                CommonBottomSheets.showBottomSheet_90(
                                     context: context,
                                     child: const TermsBottomSheet());
                                 break;
@@ -761,13 +760,13 @@ class _WalletListScreenState extends State<WalletListScreen>
                                     context, '/mnemonic-word-list');
                                 break;
                               case 2: // 셀프 보안 점검
-                                MyBottomSheet.showBottomSheet_90(
+                                CommonBottomSheets.showBottomSheet_90(
                                     context: context,
                                     child:
                                         const SecuritySelfCheckBottomSheet());
                                 break;
                               case 3: // 설정
-                                MyBottomSheet.showBottomSheet_90(
+                                CommonBottomSheets.showBottomSheet_90(
                                     context: context,
                                     child: const SettingsScreen());
                                 break;

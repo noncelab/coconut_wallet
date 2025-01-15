@@ -29,7 +29,7 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/small_action_button.dart';
@@ -48,7 +48,7 @@ class WalletDetailScreen extends StatefulWidget {
 
 enum Unit { btc, sats }
 
-enum SelectedListType { Transaction, UTXO }
+enum SelectedListType { transaction, utxo }
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
   static const SizedBox gapOfRowItems = SizedBox(
@@ -91,7 +91,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   double topPadding = 0;
 
-  SelectedListType _selectedListType = SelectedListType.Transaction;
+  SelectedListType _selectedListType = SelectedListType.transaction;
 
   bool _positionedTopWidgetVisible = false; // 스크롤시 상단에 붙어있는 위젯
   bool _isFilterDropdownVisible = false; // 필터 드롭다운(확장형)
@@ -158,7 +158,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             });
             if (_scrolledFilterDropdownButtonRenderBox == null &&
                 viewModel?.utxoList.isNotEmpty == true &&
-                _selectedListType == SelectedListType.UTXO) {
+                _selectedListType == SelectedListType.utxo) {
               _scrolledFilterDropdownButtonRenderBox =
                   _scrolledFilterDropdownButtonKey.currentContext
                       ?.findRenderObject() as RenderBox;
@@ -230,15 +230,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _toggleListType(SelectedListType type, List<model.UTXO> utxoList) async {
-    if (type == SelectedListType.Transaction) {
+    if (type == SelectedListType.transaction) {
       setState(() {
-        _selectedListType = SelectedListType.Transaction;
+        _selectedListType = SelectedListType.transaction;
         _isFilterDropdownVisible = false;
         _isScrolledFilterDropdownVisible = false;
       });
     } else {
       setState(() {
-        _selectedListType = SelectedListType.UTXO;
+        _selectedListType = SelectedListType.utxo;
       });
       if (utxoList.isNotEmpty) {
         await Future.delayed(const Duration(milliseconds: 200));
@@ -329,7 +329,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       if (!_checkStateAndShowToast()) return;
                       if (!_checkBalanceIsNotNullAndShowToast(
                           viewModel.walletListBaseItem.balance)) return;
-                      await MyBottomSheet.showBottomSheet_50(
+                      await CommonBottomSheets.showBottomSheet_50(
                           context: context,
                           child: FaucetRequestBottomSheet(
                             walletAddressBook: viewModel.walletAddressBook,
@@ -369,11 +369,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     onTitlePressed: () async {
                       if (viewModel.walletType == WalletType.multiSignature) {
                         await Navigator.pushNamed(
-                            context, '/wallet-multisig-setting',
+                            context, '/wallet-multisig-info',
                             arguments: {'id': widget.id});
                       } else {
                         await Navigator.pushNamed(
-                            context, '/wallet-singlesig-setting',
+                            context, '/wallet-singlesig-info',
                             arguments: {'id': widget.id});
                       }
 
@@ -431,13 +431,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           ),
                         ),
                         Selector<UpbitConnectModel, int?>(
-                            selector: (context, model) => model.bitcoinPriceKrw,
-                            builder: (context, bitcoinPriceKrw, child) {
-                              return SliverToBoxAdapter(
-                                  child: BalanceAndButtons(
+                          selector: (context, model) => model.bitcoinPriceKrw,
+                          builder: (context, bitcoinPriceKrw, child) {
+                            return SliverToBoxAdapter(
+                              child: BalanceAndButtons(
                                 key: _topSelectorWidgetKey,
-                                balance: viewModel.walletListBaseItem.balance,
                                 walletId: widget.id,
+                                address: viewModel.walletAddress,
+                                derivationPath: viewModel.derivationPath,
+                                balance: viewModel.walletListBaseItem.balance,
                                 currentUnit: _current,
                                 btcPriceInKrw: bitcoinPriceKrw,
                                 checkPrerequisites: () {
@@ -445,8 +447,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                       _checkBalanceIsNotNullAndShowToast(
                                           viewModel.walletListBaseItem.balance);
                                 },
-                              ));
-                            }),
+                              ),
+                            );
+                          },
+                        ),
                         SliverToBoxAdapter(
                             child: Column(
                           key: _topHeaderWidgetKey,
@@ -507,7 +511,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                           ),
                                         },
                                         if (_selectedListType ==
-                                                SelectedListType.UTXO &&
+                                                SelectedListType.utxo &&
                                             viewModel.utxoList.isNotEmpty) ...{
                                           const SizedBox(height: 8),
                                           IgnorePointer(
@@ -577,11 +581,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                             ),
                           ],
                         )),
-                        _selectedListType == SelectedListType.Transaction
+                        _selectedListType == SelectedListType.transaction
                             ? _transactionListWidget(viewModel.txList)
                             : _utxoListWidget(viewModel),
                         if ((_selectedListType ==
-                                SelectedListType.Transaction &&
+                                SelectedListType.transaction &&
                             viewModel.txList.isNotEmpty)) ...{
                           SliverToBoxAdapter(
                             child: Container(
@@ -608,7 +612,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                             ),
                           ),
                         },
-                        if ((_selectedListType == SelectedListType.UTXO &&
+                        if ((_selectedListType == SelectedListType.utxo &&
                             viewModel.utxoList.isNotEmpty)) ...{
                           SliverToBoxAdapter(
                             child: Container(
@@ -940,9 +944,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         if (!_checkStateAndShowToast()) return;
                         if (!_checkBalanceIsNotNullAndShowToast(
                             viewModel.walletListBaseItem.balance)) return;
-                        MyBottomSheet.showBottomSheet_90(
-                            context: context,
-                            child: ReceiveAddressBottomSheet(id: widget.id));
+                        CommonBottomSheets.showBottomSheet_90(
+                          context: context,
+                          child: ReceiveAddressBottomSheet(
+                            id: widget.id,
+                            address: viewModel.walletAddress,
+                            derivationPath: viewModel.derivationPath,
+                          ),
+                        );
                       },
                       borderRadius: BorderRadius.circular(8.0),
                       padding: const EdgeInsets.symmetric(
@@ -1027,7 +1036,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           ],
                         ),
                         child: Visibility(
-                          visible: _selectedListType == SelectedListType.UTXO &&
+                          visible: _selectedListType == SelectedListType.utxo &&
                               viewModel.utxoList.isNotEmpty,
                           maintainAnimation: true,
                           maintainState: true,
@@ -1103,7 +1112,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                             ),
                           ),
                           child: Text(
-                            _selectedListType == SelectedListType.Transaction
+                            _selectedListType == SelectedListType.transaction
                                 ? '거래 내역'
                                 : 'UTXO 목록', // TODO: 선택된 리스트 대입
                             style: Styles.caption2.merge(
@@ -1135,13 +1144,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           minSize: 0,
           onPressed: () {
-            _toggleListType(SelectedListType.Transaction, utxoList);
+            _toggleListType(SelectedListType.transaction, utxoList);
           },
           child: Text(
             '거래 내역',
             style: Styles.h3.merge(
               TextStyle(
-                color: _selectedListType == SelectedListType.Transaction
+                color: _selectedListType == SelectedListType.transaction
                     ? MyColors.white
                     : MyColors.transparentWhite_50,
               ),
@@ -1157,13 +1166,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           // focusColor: MyColors.white,
           minSize: 0,
           onPressed: () {
-            _toggleListType(SelectedListType.UTXO, utxoList);
+            _toggleListType(SelectedListType.utxo, utxoList);
           },
           child: Text.rich(TextSpan(
               text: 'UTXO 목록',
               style: Styles.h3.merge(
                 TextStyle(
-                  color: _selectedListType == SelectedListType.UTXO
+                  color: _selectedListType == SelectedListType.utxo
                       ? MyColors.white
                       : MyColors.transparentWhite_50,
                 ),
@@ -1174,7 +1183,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     text: ' (${utxoList.length}개)',
                     style: Styles.caption.merge(
                       TextStyle(
-                        color: _selectedListType == SelectedListType.UTXO
+                        color: _selectedListType == SelectedListType.utxo
                             ? MyColors.transparentWhite_70
                             : MyColors.transparentWhite_50,
                         fontFamily: 'Pretendard',
@@ -1190,16 +1199,20 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 }
 
 class BalanceAndButtons extends StatefulWidget {
-  final int? balance;
   final int walletId;
+  final String address;
+  final String derivationPath;
+  final int? balance;
   final Unit currentUnit;
   final int? btcPriceInKrw;
   final bool Function()? checkPrerequisites;
 
   const BalanceAndButtons({
     super.key,
-    required this.balance,
     required this.walletId,
+    required this.address,
+    required this.derivationPath,
+    required this.balance,
     required this.currentUnit,
     required this.btcPriceInKrw,
     this.checkPrerequisites,
@@ -1242,10 +1255,14 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
                           if (!widget.checkPrerequisites!()) return;
                         }
                         // TODO: ReceiveAddressScreen에 widget.walletId 말고 다른 매개변수 고려해보기
-                        MyBottomSheet.showBottomSheet_90(
-                            context: context,
-                            child:
-                                ReceiveAddressBottomSheet(id: widget.walletId));
+                        CommonBottomSheets.showBottomSheet_90(
+                          context: context,
+                          child: ReceiveAddressBottomSheet(
+                            id: widget.walletId,
+                            address: widget.address,
+                            derivationPath: widget.derivationPath,
+                          ),
+                        );
                       },
                       borderRadius: BorderRadius.circular(12.0),
                       padding: EdgeInsets.zero,

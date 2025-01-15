@@ -9,7 +9,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:provider/provider.dart';
 
-// TODO: ViewModel - Common
 class UtxoTagScreen extends StatefulWidget {
   final int id;
   const UtxoTagScreen({super.key, required this.id});

@@ -24,7 +24,6 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-// TODO: ViewModel - Add
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
   final model.UTXO utxo;

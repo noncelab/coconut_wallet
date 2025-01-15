@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
-class MyBottomSheet {
+class CommonBottomSheets {
   static void showBottomSheet({
     required String title,
     required BuildContext context,

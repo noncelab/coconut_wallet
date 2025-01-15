@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/widgets/overlays/pin_check_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/icon/qrcode_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
@@ -19,7 +19,6 @@ import '../../widgets/appbar/custom_appbar.dart';
 import '../../widgets/custom_dialogs.dart';
 import '../../widgets/infomation_row_item.dart';
 
-// TODO: ViewModel - Add
 class WalletSinglesigInfoScreen extends StatefulWidget {
   const WalletSinglesigInfoScreen({super.key, required this.id});
 
@@ -167,23 +166,24 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                                     _removeTooltip();
                                     if (_subModel.isSetPin) {
                                       _subModel.shuffleNumbers();
-                                      await MyBottomSheet.showBottomSheet_90(
-                                          context: context,
-                                          child: CustomLoadingOverlay(
-                                              child: PinCheckBottomSheet(
-                                            onComplete: () {
-                                              MyBottomSheet.showBottomSheet_90(
-                                                  context: context,
-                                                  child: QrcodeBottomSheet(
-                                                      qrData: singlesigWallet
-                                                          .keyStore
-                                                          .extendedPublicKey
-                                                          .serialize(),
-                                                      title: '확장 공개키'));
-                                            },
-                                          )));
+                                      await CommonBottomSheets
+                                          .showBottomSheet_90(
+                                              context: context,
+                                              child: CustomLoadingOverlay(
+                                                  child: PinCheckScreen(
+                                                onComplete: () {
+                                                  CommonBottomSheets.showBottomSheet_90(
+                                                      context: context,
+                                                      child: QrcodeBottomSheet(
+                                                          qrData: singlesigWallet
+                                                              .keyStore
+                                                              .extendedPublicKey
+                                                              .serialize(),
+                                                          title: '확장 공개키'));
+                                                },
+                                              )));
                                     } else {
-                                      MyBottomSheet.showBottomSheet_90(
+                                      CommonBottomSheets.showBottomSheet_90(
                                           context: context,
                                           child: QrcodeBottomSheet(
                                               qrData: singlesigWallet
@@ -262,11 +262,11 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                                       message: '지갑을 정말 삭제하시겠어요?',
                                       onConfirm: () async {
                                         if (_subModel.isSetPin) {
-                                          await MyBottomSheet
+                                          await CommonBottomSheets
                                               .showBottomSheet_90(
                                             context: context,
                                             child: CustomLoadingOverlay(
-                                              child: PinCheckBottomSheet(
+                                              child: PinCheckScreen(
                                                 onComplete: () async {
                                                   await model
                                                       .deleteWallet(widget.id);

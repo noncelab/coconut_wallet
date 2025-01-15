@@ -24,7 +24,6 @@ import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:provider/provider.dart';
 
-// TODO: ViewModel - Add
 class SendFeeSelectionScreen extends StatefulWidget {
   final SendInfo sendInfo;
   final int id;

@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/pin/pin_box.dart';
-import 'package:provider/provider.dart';
 
-// TODO: ViewModel - 위젯 내부 Provider 제거
-class PinInput extends StatefulWidget {
+class PinInputPad extends StatefulWidget {
   final String title;
   final String pin;
   final String errorMessage;
   final void Function(String) onKeyTap;
+  final List<String> pinShuffleNumbers;
   final VoidCallback onClosePressed;
   final VoidCallback? onBackPressed;
   final Function? onReset;
@@ -19,12 +17,13 @@ class PinInput extends StatefulWidget {
   final bool appBarVisible;
   final bool initOptionVisible;
 
-  const PinInput({
+  const PinInputPad({
     super.key,
     required this.title,
     required this.pin,
     required this.errorMessage,
     required this.onKeyTap,
+    required this.pinShuffleNumbers,
     required this.onClosePressed,
     this.onBackPressed,
     this.onReset,
@@ -34,10 +33,28 @@ class PinInput extends StatefulWidget {
   });
 
   @override
-  PinInputState createState() => PinInputState();
+  PinInputPadState createState() => PinInputPadState();
 }
 
-class PinInputState extends State<PinInput> {
+class PinInputPadState extends State<PinInputPad> {
+  List<String> _pinShuffleNumbers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _pinShuffleNumbers = widget.pinShuffleNumbers;
+  }
+
+  @override
+  void didUpdateWidget(covariant PinInputPad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.pinShuffleNumbers != oldWidget.pinShuffleNumbers) {
+      _pinShuffleNumbers = widget.pinShuffleNumbers;
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,30 +111,25 @@ class PinInputState extends State<PinInput> {
             Text(widget.errorMessage,
                 style: Styles.warning, textAlign: TextAlign.center),
             const SizedBox(height: 40),
-            Selector<AppSubStateModel, List<String>>(
-              selector: (context, model) => model.pinShuffleNumbers,
-              builder: (context, numbers, child) {
-                return Expanded(
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: GridView.count(
-                      crossAxisCount: 3,
-                      childAspectRatio: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: numbers.map((key) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: KeyButton(
-                            keyValue: key,
-                            onKeyTap: widget.onKeyTap,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                );
-              },
+            Expanded(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: GridView.count(
+                  crossAxisCount: 3,
+                  childAspectRatio: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: _pinShuffleNumbers.map((key) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: KeyButton(
+                        keyValue: key,
+                        onKeyTap: widget.onKeyTap,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
             SizedBox(height: widget.initOptionVisible ? 60 : 100),
             if (widget.initOptionVisible)

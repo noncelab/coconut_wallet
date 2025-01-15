@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -172,7 +172,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
   void _showBottomSheet(String term) {
     var details = termDetails[term];
 
-    MyBottomSheet.showDraggableScrollableSheet(
+    CommonBottomSheets.showDraggableScrollableSheet(
       useSafeArea: true,
       isScrollControlled: true,
       enableDrag: true,

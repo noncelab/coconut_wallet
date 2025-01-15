@@ -5,19 +5,18 @@ import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_dialog.dart';
-import 'package:coconut_wallet/widgets/pin/pin_input.dart';
+import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
 import 'package:provider/provider.dart';
 
-// TODO: ViewModel - 위젯 내부 Provider 제거
-class PinSettingBottomSheet extends StatefulWidget {
+class PinSettingScreen extends StatefulWidget {
   final bool isCheckBiometrics;
-  const PinSettingBottomSheet({super.key, this.isCheckBiometrics = false});
+  const PinSettingScreen({super.key, this.isCheckBiometrics = false});
 
   @override
-  State<PinSettingBottomSheet> createState() => _PinSettingBottomSheetState();
+  State<PinSettingScreen> createState() => _PinSettingScreenState();
 }
 
-class _PinSettingBottomSheetState extends State<PinSettingBottomSheet> {
+class _PinSettingScreenState extends State<PinSettingScreen> {
   int step = 0;
   late String pin;
   late String pinConfirm;
@@ -150,7 +149,8 @@ class _PinSettingBottomSheetState extends State<PinSettingBottomSheet> {
 
           Navigator.pop(context);
           Navigator.pop(context);
-        }).catchError((_) {
+        }).catchError((e) {
+          print(e);
           returnToBackSequence('저장 중 문제가 발생했어요', isError: true);
         });
       }
@@ -159,11 +159,12 @@ class _PinSettingBottomSheetState extends State<PinSettingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return PinInput(
+    return PinInputPad(
       title: step == 0 ? '새로운 비밀번호를 눌러주세요' : '다시 한번 확인할게요',
       pin: step == 0 ? pin : pinConfirm,
       errorMessage: errorMessage,
       onKeyTap: _onKeyTap,
+      pinShuffleNumbers: _subModel.pinShuffleNumbers,
       onClosePressed: step == 0
           ? () {
               Navigator.pop(context); // Pin 설정 취소

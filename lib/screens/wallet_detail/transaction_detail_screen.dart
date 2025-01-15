@@ -21,7 +21,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/app_state_model.dart';
 
-// TODO: ViewModel - Add
 class TransactionDetailScreen extends StatefulWidget {
   final int id;
   final String txHash;

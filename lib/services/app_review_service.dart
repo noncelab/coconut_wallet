@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/widgets/overlays/user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
@@ -79,7 +79,7 @@ class AppReviewService {
 
   static Future<dynamic> _showReviewScreen(BuildContext context,
       {bool isFirst = false, AnimationController? animationController}) {
-    return MyBottomSheet.showBottomSheet_100(
+    return CommonBottomSheets.showBottomSheet_100(
         context: context,
         child: UserExperienceSurveyBottomSheet(
           isFirst: isFirst,

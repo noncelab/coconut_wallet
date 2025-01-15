@@ -5,8 +5,8 @@ import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/widgets/overlays/pin_check_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/icon/qrcode_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -18,12 +18,11 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-import '../../widgets/bottom_sheet.dart';
+import '../../widgets/overlays/common_bottom_sheets.dart';
 import '../../widgets/custom_dialogs.dart';
 import '../../widgets/custom_loading_overlay.dart';
 import '../../widgets/custom_toast.dart';
 
-// TODO: ViewModel - Add
 class WalletMultisigInfoScreen extends StatefulWidget {
   final int id;
   const WalletMultisigInfoScreen({super.key, required this.id});
@@ -114,10 +113,10 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
       message: '지갑을 정말 삭제하시겠어요?',
       onConfirm: () async {
         if (_subModel.isSetPin) {
-          await MyBottomSheet.showBottomSheet_90(
+          await CommonBottomSheets.showBottomSheet_90(
             context: context,
             child: CustomLoadingOverlay(
-              child: PinCheckBottomSheet(
+              child: PinCheckScreen(
                 onComplete: () async {
                   await _appStateModel.deleteWallet(widget.id);
                   removedWalletId = widget.id;
@@ -161,10 +160,10 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
     _removeTooltip();
     if (_subModel.isSetPin) {
       _subModel.shuffleNumbers();
-      await MyBottomSheet.showBottomSheet_90(
+      await CommonBottomSheets.showBottomSheet_90(
         context: context,
         child: CustomLoadingOverlay(
-          child: PinCheckBottomSheet(
+          child: PinCheckScreen(
             onComplete: () {
               _qrCodeBottomSheet(qrData);
             },
@@ -177,7 +176,7 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
   }
 
   _qrCodeBottomSheet(String qrData) {
-    MyBottomSheet.showBottomSheet_90(
+    CommonBottomSheets.showBottomSheet_90(
       context: context,
       child: QrcodeBottomSheet(
         qrData: qrData,
@@ -405,7 +404,7 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
       MultisigSigner signer, KeyStore keystore) async {
     final name = signer.name ?? '';
 
-    MyBottomSheet.showBottomSheet(
+    CommonBottomSheets.showBottomSheet(
       context: context,
       title: TextUtils.ellipsisIfLonger(name, maxLength: 15),
       titleTextStyle: Styles.body1.copyWith(

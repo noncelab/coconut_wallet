@@ -26,7 +26,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/widgets/overlays/pin_check_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
@@ -121,7 +121,7 @@ class _PowWalletAppState extends State<PowWalletApp> {
             : _screenStatus == AccessFlow.main
                 ? const AppGuard(child: WalletListScreen())
                 : CustomLoadingOverlay(
-                    child: PinCheckBottomSheet(
+                    child: PinCheckScreen(
                       appEntrance: true,
                       onComplete: () {
                         setState(() {
@@ -131,9 +131,6 @@ class _PowWalletAppState extends State<PowWalletApp> {
                     ),
                   ),
         routes: {
-          // TODO: 호출하는 곳이 없음
-          '/wallet-list': (context) =>
-              const AppGuard(child: WalletListScreen()),
           '/wallet-add-scanner': (context) =>
               const CustomLoadingOverlay(child: WalletAddScannerScreen()),
           '/app-info': (context) => const AppInfoScreen(),
@@ -141,11 +138,11 @@ class _PowWalletAppState extends State<PowWalletApp> {
                 context,
                 (args) => WalletDetailScreen(id: args['id']),
               ),
-          '/wallet-multisig-setting': (context) => buildScreenWithArguments(
+          '/wallet-multisig-info': (context) => buildScreenWithArguments(
                 context,
                 (args) => WalletMultisigInfoScreen(id: args['id']),
               ),
-          '/wallet-singlesig-setting': (context) => buildScreenWithArguments(
+          '/wallet-singlesig-info': (context) => buildScreenWithArguments(
                 context,
                 (args) => WalletSinglesigInfoScreen(id: args['id']),
               ),

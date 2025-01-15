@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/widgets/animatedQR/animated_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/animated_qr/animated_qr_scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -13,7 +13,6 @@ import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
-// TODO: ViewModel - Add
 class SignedPsbtScannerScreen extends StatefulWidget {
   final int id;
   //final AddressType addressType;

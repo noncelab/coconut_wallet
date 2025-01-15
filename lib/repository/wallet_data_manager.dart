@@ -442,8 +442,6 @@ class WalletDataManager {
     }
   }
 
-  // TODO: 주석 확인 후 제거
-  // deleteTags 동일한 기능이 필요하여 합쳐짐
   Future<RealmResult<void>> updateTagsOfUsedUtxos(
       int walletId, List<String> usedUtxoIds, List<String> newUtxoIds) async {
     try {
