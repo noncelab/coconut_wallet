@@ -36,7 +36,6 @@ import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
 
-// TODO: ViewModel - Add
 class WalletDetailScreen extends StatefulWidget {
   const WalletDetailScreen({super.key, required this.id, this.syncResult});
 
@@ -109,35 +108,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // TODO: 리뷰 완료 후 주석 삭제
-    // _model = Provider.of<AppStateModel>(context, listen: false);
-    // _scrollController = ScrollController();
-
-    // ViewModel
-    //_prevWalletInitState = _model.walletInitState;
-    // _walletBaseItem = _model.getWalletById(widget.id);
-    // _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
-    // _prevTxCount = _walletBaseItem.txCount;
-    // _prevIsLatestTxBlockHeightZero = _walletBaseItem.isLatestTxBlockHeightZero;
-
-    // _walletType = _walletBaseItem.walletType;
-    // if (_model.walletInitState == WalletInitState.finished) {
-    //   getUtxoListWithHoldingAddress(_walletFeature.walletStatus!.utxoList,
-    //       _walletBaseItem, accountIndexField, changeField, _walletType);
-    // }
-
-    // if (_utxoList.isNotEmpty && mounted) {
-    //   setState(() {
-    //     model.UTXO.sortUTXO(_utxoList, _selectedFilter);
-    //     _isUtxoListLoadComplete = true;
-    //   });
-    // }
-
-    // List<TransferDTO>? newTxList = _model.getTxList(widget.id);
-    // if (newTxList != null) {
-    //   _txList = newTxList;
-    // }
-    // _model.addListener(_stateListener);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _appBarRenderBox =
@@ -230,28 +200,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           CustomToast.showToast(context: context, text: message);
         }
       }
-
-      // TODO: 리뷰 완료 후 주석 삭제
-      // ViewModel
-      // final faucetHistory = SharedPrefs().getFaucetHistoryWithId(widget.id);
-      // if (_walletBaseItem.balance == 0 && faucetHistory.count < 3) {
-      //   setState(() {
-      //     _faucetTooltipVisible = true;
-      //   });
-      //   Future.delayed(const Duration(milliseconds: 500)).then((_) {
-      //     setState(() {
-      //       _faucetTipVisible = true;
-      //     });
-      //   });
-      // }
     });
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    // TODO: 리뷰 완료 후 주석 삭제
-    // _model.removeListener(_stateListener);
     super.dispose();
   }
 
@@ -336,149 +290,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return true;
   }
 
-  // TODO: 리뷰 완료 후 주석 삭제
-  // ViewModel
-  // late AppStateModel _model;
-  // bool _isUtxoListLoadComplete = false;
-  // List<TransferDTO> _txList = [];
-  // 실 데이터 반영시 _utxoList.isNotEmpty 체크 부분을 꼭 확인할 것.
-  //List<model.UTXO> _utxoList = [];
-  // UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc; // 초기 정렬 방식
-  // late WalletType _walletType;
-  // static String changeField = 'change';
-  // static String accountIndexField = 'accountIndex';
-  // late WalletListItemBase _walletBaseItem;
-  // late WalletFeature _walletFeature;
-  // bool _faucetTipVisible = false;
-  // bool _faucetTooltipVisible = false;
-  // late WalletInitState _prevWalletInitState;
-  // late int? _prevTxCount;
-  // late bool _prevIsLatestTxBlockHeightZero;
-
-  // ViewModel
-  // void _stateListener() {
-  //   // _prevWalletInitState != WalletInitState.finished 조건 걸어주지 않으면 삭제 시 getWalletById 과정에서 에러 발생
-  //   if (_prevWalletInitState != WalletInitState.finished &&
-  //       _model.walletInitState == WalletInitState.finished) {
-  //     _checkTxCount(
-  //         _walletBaseItem.txCount, _walletBaseItem.isLatestTxBlockHeightZero);
-  //     getUtxoListWithHoldingAddress(_walletFeature.walletStatus!.utxoList,
-  //         _walletBaseItem, accountIndexField, changeField, _walletType);
-  //     if (mounted) {
-  //       setState(() {
-  //         _isUtxoListLoadComplete = true;
-  //         model.UTXO.sortUTXO(_utxoList, _selectedFilter);
-  //       });
-  //
-  //       WidgetsBinding.instance.addPostFrameCallback((_) {
-  //         if (_filterDropdownButtonKey.currentContext?.findRenderObject() !=
-  //             null) {
-  //           _filterDropdownButtonRenderBox =
-  //               _filterDropdownButtonKey.currentContext!.findRenderObject()
-  //                   as RenderBox;
-  //
-  //           _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
-  //           _filterDropdownButtonPosition =
-  //               _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
-  //         }
-  //       });
-  //     }
-  //   }
-  //   _prevWalletInitState = _model.walletInitState;
-  // }
-
-  // ViewModel
-  // void _applyFilter(UtxoOrderEnum orderEnum) async {
-  //   if (orderEnum == _selectedFilter) return;
-  //   if (_scrollController.offset > topPadding) {
-  //     _scrollController.animateTo(
-  //       topPadding +
-  //           10, // topPadding 으로 이동하면 상단 위젯이 사라지기 때문에 topPadding보다 큰 값으로 이동
-  //       duration: const Duration(milliseconds: 300),
-  //       curve: Curves.easeIn,
-  //     );
-  //   }
-  //   setState(() {
-  //     _selectedFilter = orderEnum;
-  //     //_selectedUtxoList.clear();
-  //   });
-  //   await Future.delayed(const Duration(milliseconds: 100));
-  //   if (mounted) {
-  //     setState(() {
-  //       // model.UTXO.sortUTXO(_utxoList, orderEnum);
-  //     });
-  //   }
-  // }
-
-  // ViewModel
-  // _checkTxCount(int? txCount, bool isLatestTxBlockHeightZero) {
-  //   Logger.log('--> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
-  //   Logger.log(
-  //       '--> prevIsZero: $_prevIsLatestTxBlockHeightZero, wallet.isZero: $isLatestTxBlockHeightZero');
-  //
-  //   /// _walletListItem의 txCount, isLatestTxBlockHeightZero가 변경되었을 때만 트랜잭션 목록 업데이트
-  //   if (_prevTxCount != txCount ||
-  //       _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
-  //     List<TransferDTO>? newTxList = _model.getTxList(widget.id);
-  //     if (newTxList != null) {
-  //       print('--> [detail화면] newTxList.length: ${newTxList.length}');
-  //       _txList = newTxList;
-  //       setState(() {});
-  //     }
-  //   }
-  //   _prevTxCount = txCount;
-  //   _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;
-  // }
-  // // setListener end
-
-  // VieModel
-  // void _removeFaucetTooltip() {
-  //   // if (_overlayEntry != null) {
-  //   //   _faucetTipVisible = false;
-  //   //   _overlayEntry!.remove();
-  //   //   _overlayEntry = null;
-  //   // }
-  //   setState(() {
-  //     _faucetTipVisible = false;
-  //     _faucetTooltipVisible = false;
-  //   });
-  // }
-
-  // ViewModel
-  // getUtxoListWithHoldingAddress(
-  //     List<UTXO> utxoEntities,
-  //     WalletListItemBase walletBaseItem,
-  //     String accountIndexField,
-  //     String changeField,
-  //     WalletType walletType) {
-  //   List<model.UTXO> utxos = [];
-  //   for (var utxo in utxoEntities) {
-  //     String ownedAddress = walletBaseItem.walletBase.getAddress(
-  //         DerivationPathUtil.getAccountIndex(walletType, utxo.derivationPath),
-  //         isChange: DerivationPathUtil.getChangeElement(
-  //                 walletType, utxo.derivationPath) ==
-  //             1);
-  //
-  //     final tags = _model.loadUtxoTagListByTxHashIndex(widget.id, utxo.utxoId);
-  //
-  //     utxos.add(model.UTXO(
-  //       utxo.timestamp.toString(),
-  //       utxo.blockHeight.toString(),
-  //       utxo.amount,
-  //       ownedAddress,
-  //       utxo.derivationPath,
-  //       utxo.transactionHash,
-  //       utxo.index,
-  //       tags: tags,
-  //     ));
-  //   }
-  //
-  //   setState(() {
-  //     _utxoList = utxos;
-  //     _isUtxoListLoadComplete = true;
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider<AppStateModel, WalletDetailViewModel>(
@@ -525,16 +336,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                             walletData: {
                               'wallet_address': viewModel.walletAddress,
                               'wallet_name': viewModel.walletName,
-                              'wallet_index': viewModel.walletIndex,
+                              'wallet_index': viewModel.receiveAddressIndex,
                               'wallet_request_amount': viewModel.requestAmount,
                             },
-                            isErrorInRemainingTime:
-                                viewModel.isErrorInRemainingTime,
+                            isFaucetRequestLimitExceeded:
+                                viewModel.isFaucetRequestLimitExceeded,
                             isRequesting: viewModel.isRequesting,
                             onRequest: (address) {
+                              if (viewModel.isRequesting) return;
+
                               viewModel.requestTestBitcoin(address,
                                   (success, message) {
-                                // TODO: 네트워크 느릴때 isRequesting 로직 확인 필요함
                                 if (success) {
                                   Navigator.pop(context);
                                   vibrateLight();

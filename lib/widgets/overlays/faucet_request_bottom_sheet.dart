@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 class FaucetRequestBottomSheet extends StatefulWidget {
   final Map<String, dynamic> walletData;
   final AddressBook walletAddressBook;
-  final bool isErrorInRemainingTime;
+  final bool isFaucetRequestLimitExceeded;
   final bool isRequesting;
   final Function(String) onRequest;
 
@@ -18,7 +18,7 @@ class FaucetRequestBottomSheet extends StatefulWidget {
     super.key,
     required this.walletData,
     required this.walletAddressBook,
-    required this.isErrorInRemainingTime,
+    required this.isFaucetRequestLimitExceeded,
     required this.isRequesting,
     required this.onRequest,
   });
@@ -39,9 +39,12 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   Duration _remainingTime = const Duration();
   Timer? _timer;
   String _remainingTimeString = '';
-  bool _isErrorInRemainingTime = false;
+  bool _isFaucetRequestLimitExceeded = false;
   bool _isErrorInAddress = false;
   bool _isRequesting = false;
+
+  bool canRequestFaucet() =>
+      !_isErrorInAddress && !_isFaucetRequestLimitExceeded && !_isRequesting;
 
   @override
   void initState() {
@@ -52,15 +55,20 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
     _requestAmount = widget.walletData['wallet_request_amount'] ?? 0;
     textController.text = _walletAddress;
 
-    _isErrorInRemainingTime = widget.isErrorInRemainingTime;
+    _isFaucetRequestLimitExceeded = widget.isFaucetRequestLimitExceeded;
     _isRequesting = widget.isRequesting;
+
+    if (_isFaucetRequestLimitExceeded) {
+      _startTimer();
+    }
   }
 
   @override
   void didUpdateWidget(covariant FaucetRequestBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isErrorInRemainingTime != oldWidget.isErrorInRemainingTime &&
-        widget.isErrorInRemainingTime) {
+    if (widget.isFaucetRequestLimitExceeded !=
+            oldWidget.isFaucetRequestLimitExceeded &&
+        widget.isFaucetRequestLimitExceeded) {
       _startTimer();
     }
 
@@ -153,9 +161,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
             ),
             const SizedBox(height: 24),
             IgnorePointer(
-              ignoring: (_isErrorInAddress ||
-                  _isRequesting ||
-                  _isErrorInRemainingTime),
+              ignoring: !canRequestFaucet(),
               child: CupertinoButton(
                   onPressed: () {
                     widget.onRequest.call(_walletAddress);
@@ -163,11 +169,9 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                   },
                   borderRadius: BorderRadius.circular(8.0),
                   padding: EdgeInsets.zero,
-                  color: (_isErrorInAddress ||
-                          _isRequesting ||
-                          _isErrorInRemainingTime)
-                      ? MyColors.transparentWhite_30
-                      : MyColors.white,
+                  color: canRequestFaucet()
+                      ? MyColors.white
+                      : MyColors.transparentWhite_30,
                   child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 28, vertical: 12),
@@ -176,11 +180,9 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                             ? '요청 중...'
                             : '${formatNumber(_requestAmount)} BTC 요청하기',
                         style: Styles.label.merge(TextStyle(
-                            color: (_isErrorInAddress ||
-                                    _isRequesting ||
-                                    _isErrorInRemainingTime)
-                                ? MyColors.transparentBlack_50
-                                : MyColors.black,
+                            color: (canRequestFaucet())
+                                ? MyColors.black
+                                : MyColors.transparentBlack_50,
                             letterSpacing: -0.1,
                             fontWeight: FontWeight.w600)),
                       ))),
@@ -188,7 +190,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
             const SizedBox(height: 4),
             if (_isErrorInAddress) ...{
               _buildWarningMessage('올바른 주소인지 확인해 주세요'),
-            } else if (_isErrorInRemainingTime) ...{
+            } else if (_isFaucetRequestLimitExceeded) ...{
               _buildWarningMessage('$_remainingTimeString 후에 다시 시도해 주세요'),
             }
           ],
@@ -203,7 +205,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
     _remainingTime = midnight.difference(now);
     _remainingTimeString = _formatDuration(_remainingTime);
-    _isErrorInRemainingTime = true;
+    _isFaucetRequestLimitExceeded = true;
 
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -212,7 +214,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
       if (_remainingTime.inSeconds <= 0) {
         timer.cancel();
-        _isErrorInRemainingTime = false;
+        _isFaucetRequestLimitExceeded = false;
         _isErrorInAddress = false;
       }
       setState(() {});

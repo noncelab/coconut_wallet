@@ -227,6 +227,9 @@ class AppStateModel extends ChangeNotifier {
   }
 
   WalletListItemBase getWalletById(int id) {
+    if (_walletItemList.isEmpty) {
+      throw Exception('WalletItem is Empty');
+    }
     return _walletItemList.firstWhere((element) => element.id == id);
   }
 

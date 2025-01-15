@@ -18,7 +18,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 
 class WalletDetailViewModel extends ChangeNotifier {
-  static const int kMaxRequestCount = 3;
+  static const int kMaxFaucetRequestCount = 3;
   final int _walletId;
   WalletDetailViewModel(this._walletId);
 
@@ -71,20 +71,20 @@ class WalletDetailViewModel extends ChangeNotifier {
   String _walletName = '';
   String get walletName => _walletName;
 
-  String _walletIndex = '';
-  String get walletIndex => _walletIndex;
+  String _receiveAddressIndex = '';
+  String get receiveAddressIndex => _receiveAddressIndex;
 
   double _requestAmount = 0.0;
   double get requestAmount => _requestAmount;
 
   int _requestCount = 0;
 
-  // TODO: 검증 필요
-  // bool _isErrorInServerStatus = false;
-  // bool get isErrorInServerStatus => _isErrorInServerStatus;
+  /// faucet 상태 조회 후 수령할 수 있는 최댓값과 최솟값
+  double _faucetMaxAmount = 0;
+  double _faucetMinAmount = 0;
 
-  bool _isErrorInRemainingTime = false;
-  bool get isErrorInRemainingTime => _isErrorInRemainingTime;
+  bool _isFaucetRequestLimitExceeded = false; // Faucet 요청가능 횟수 초과 여부
+  bool get isFaucetRequestLimitExceeded => _isFaucetRequestLimitExceeded;
 
   bool _isRequesting = false;
   bool get isRequesting => _isRequesting;
@@ -113,7 +113,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       _walletName = walletBaseItem.name.length > 20
           ? '${walletBaseItem.name.substring(0, 17)}...'
           : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
-      _walletIndex = receiveAddress.derivationPath.split('/').last;
+      _receiveAddressIndex = receiveAddress.derivationPath.split('/').last;
       _walletAddressBook = walletBaseItem.walletBase.addressBook;
       _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
       _checkFaucetRecord();
@@ -129,7 +129,27 @@ class WalletDetailViewModel extends ChangeNotifier {
         getUtxoListWithHoldingAddress();
       }
       _prevWalletInitState = appStateModel.walletInitState;
-      notifyListeners();
+
+      if (_faucetRecord.count >= kMaxFaucetRequestCount) {
+        _isFaucetRequestLimitExceeded =
+            _faucetRecord.count >= kMaxFaucetRequestCount;
+      }
+
+      try {
+        final WalletListItemBase walletListItemBase =
+            appStateModel.getWalletById(_walletId);
+        _walletAddress =
+            walletListItemBase.walletBase.getReceiveAddress().address;
+
+        /// 다음 Faucet 요청 수량 계산 1 -> 0.00021 -> 0.00021
+        _requestCount = _faucetRecord.count;
+        if (_requestCount == 0) {
+          _requestAmount = _faucetMaxAmount;
+        } else if (_requestCount <= 2) {
+          _requestAmount = _faucetMinAmount;
+        }
+        notifyListeners();
+      } catch (e) {}
     }
   }
 
@@ -218,8 +238,9 @@ class WalletDetailViewModel extends ChangeNotifier {
       return;
     }
 
-    if (_faucetRecord.count == kMaxRequestCount) {
-      _isErrorInRemainingTime = _faucetRecord.count == kMaxRequestCount;
+    if (_faucetRecord.count >= kMaxFaucetRequestCount) {
+      _isFaucetRequestLimitExceeded =
+          _faucetRecord.count >= kMaxFaucetRequestCount;
       notifyListeners();
     }
   }
@@ -233,20 +254,16 @@ class WalletDetailViewModel extends ChangeNotifier {
       final response = await _faucetService
           .getTestCoin(FaucetRequest(address: address, amount: _requestAmount));
       if (response is FaucetResponse) {
-        _isErrorInRemainingTime = false;
         onResult(true, '테스트 비트코인을 요청했어요. 잠시만 기다려 주세요.');
         _updateFaucetRecord();
       } else if (response is DefaultErrorResponse &&
           response.error == 'TOO_MANY_REQUEST_FAUCET') {
-        _isErrorInRemainingTime = true;
         onResult(false, '해당 주소로 이미 요청했습니다. 입금까지 최대 5분이 걸릴 수 있습니다.');
       } else {
-        _isErrorInRemainingTime = true;
         onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       }
     } catch (e) {
       // Error handling
-      _isErrorInRemainingTime = true;
       onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       _isRequesting = false;
@@ -261,6 +278,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     int dateTime = DateTime.now().millisecondsSinceEpoch;
     _faucetRecord =
         _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
+    _requestCount++;
     _saveFaucetRecordToSharedPrefs();
   }
 
@@ -281,22 +299,17 @@ class WalletDetailViewModel extends ChangeNotifier {
       final response = await _faucetService.getStatus();
       if (response is FaucetStatusResponse) {
         // _isLoading = false;
+        _faucetMaxAmount = response.maxLimit;
+        _faucetMinAmount = response.minLimit;
         _requestCount = _faucetRecord.count;
         if (_requestCount == 0) {
-          _requestAmount = response.maxLimit;
+          _requestAmount = _faucetMaxAmount;
         } else if (_requestCount <= 2) {
-          _requestAmount = response.minLimit;
+          _requestAmount = _faucetMinAmount;
         }
       }
-    } catch (_) {
-      // setErrorInStatus(true);
     } finally {
       notifyListeners();
     }
   }
-
-  // TODO: 검증 필요
-  // void setErrorInStatus(bool statusValue) {
-  //   _isErrorInServerStatus = statusValue;
-  // }
 }
