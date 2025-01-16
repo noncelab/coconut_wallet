@@ -16,82 +16,20 @@ import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 
+enum SelectedListType { transaction, utxo }
+
+enum Unit { btc, sats }
+
 class WalletDetailViewModel extends ChangeNotifier {
   static const int kMaxFaucetRequestCount = 3;
   final int _walletId;
   WalletDetailViewModel(this._walletId);
 
-  /// Common variables ---------------------------------------------------------
+  /// AppStateModel ------------------------------------------------------------
   AppStateModel? _appStateModel;
   AppStateModel? get appStateModel => _appStateModel;
   final SharedPrefs _sharedPrefs = SharedPrefs();
 
-  /// Wallet detail variables --------------------------------------------------
-  late WalletListItemBase _walletListBaseItem;
-  WalletListItemBase get walletListBaseItem => _walletListBaseItem;
-
-  late WalletFeature _walletFeature;
-
-  WalletType _walletType = WalletType.singleSignature;
-  WalletType get walletType => _walletType;
-
-  WalletInitState _prevWalletInitState = WalletInitState.never;
-  bool _prevIsLatestTxBlockHeightZero = false;
-
-  bool _isUtxoListLoadComplete = false;
-  bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
-
-  int? _prevTxCount;
-
-  List<TransferDTO> _txList = [];
-  List<TransferDTO> get txList => _txList;
-
-  List<model.UTXO> _utxoList = [];
-  List<model.UTXO> get utxoList => _utxoList;
-
-  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc; // 초기 정렬 방식
-  UtxoOrderEnum get selectedFilter => _selectedFilter;
-
-  bool _faucetTipVisible = false;
-  bool get faucetTipVisible => _faucetTipVisible;
-
-  bool _faucetTooltipVisible = false;
-  bool get faucetTooltipVisible => _faucetTooltipVisible;
-
-  /// Faucet variables ---------------------------------------------------------
-  final Faucet _faucetService = Faucet();
-  late AddressBook _walletAddressBook;
-  AddressBook get walletAddressBook => _walletAddressBook;
-  late FaucetRecord _faucetRecord;
-
-  String _walletAddress = '';
-  String get walletAddress => _walletAddress;
-
-  String _derivationPath = '';
-  String get derivationPath => _derivationPath;
-
-  String _walletName = '';
-  String get walletName => _walletName;
-
-  String _receiveAddressIndex = '';
-  String get receiveAddressIndex => _receiveAddressIndex;
-
-  double _requestAmount = 0.0;
-  double get requestAmount => _requestAmount;
-
-  int _requestCount = 0;
-
-  /// faucet 상태 조회 후 수령할 수 있는 최댓값과 최솟값
-  double _faucetMaxAmount = 0;
-  double _faucetMinAmount = 0;
-
-  bool _isFaucetRequestLimitExceeded = false; // Faucet 요청가능 횟수 초과 여부
-  bool get isFaucetRequestLimitExceeded => _isFaucetRequestLimitExceeded;
-
-  bool _isRequesting = false;
-  bool get isRequesting => _isRequesting;
-
-  /// Common Methods -----------------------------------------------------------
   void appStateModelListener(AppStateModel appStateModel) async {
     // initialize
     if (_appStateModel == null) {
@@ -121,8 +59,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
       _checkFaucetRecord();
       _getFaucetStatus();
-
-      showFaucetTooltip();
+      _showFaucetTooltip();
     }
     // _stateListener
     else {
@@ -156,7 +93,33 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
   }
 
-  /// Wallet detail methods ----------------------------------------------------
+  /// Wallet -------------------------------------------------------------------
+  late WalletListItemBase _walletListBaseItem;
+  WalletListItemBase get walletListBaseItem => _walletListBaseItem;
+
+  WalletType _walletType = WalletType.singleSignature;
+  WalletType get walletType => _walletType;
+
+  bool _isUtxoListLoadComplete = false;
+  bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
+
+  List<TransferDTO> _txList = [];
+  List<TransferDTO> get txList => _txList;
+
+  List<model.UTXO> _utxoList = [];
+  List<model.UTXO> get utxoList => _utxoList;
+
+  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc; // 초기 정렬 방식
+  UtxoOrderEnum get selectedFilter => _selectedFilter;
+
+  late WalletFeature _walletFeature;
+
+  WalletInitState _prevWalletInitState = WalletInitState.never;
+
+  bool _prevIsLatestTxBlockHeightZero = false;
+
+  int? _prevTxCount;
+
   void getUtxoListWithHoldingAddress() {
     List<model.UTXO> utxos = [];
 
@@ -190,7 +153,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     model.UTXO.sortUTXO(_utxoList, _selectedFilter);
   }
 
-  void updateUtxoFilter(UtxoOrderEnum orderEnum) async {
+  void _updateUtxoFilter(UtxoOrderEnum orderEnum) async {
     _selectedFilter = orderEnum;
     model.UTXO.sortUTXO(_utxoList, orderEnum);
     notifyListeners();
@@ -216,8 +179,252 @@ class WalletDetailViewModel extends ChangeNotifier {
     _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;
   }
 
-  /// Faucet methods -----------------------------------------------------------
-  void showFaucetTooltip() async {
+  /// View ---------------------------------------------------------------------
+  Unit _currentUnit = Unit.btc;
+  Unit get currentUnit => _currentUnit;
+
+  SelectedListType _selectedListType = SelectedListType.transaction;
+  SelectedListType get selectedListType => _selectedListType;
+
+  Size _appBarSize = Size.zero;
+  Size get appBarSize => _appBarSize;
+
+  /// 필터 버튼(확장형)
+  Size _filterDropdownButtonSize = Size.zero;
+  Size get filterDropdownButtonSize => _filterDropdownButtonSize;
+
+  /// 필터 버튼(축소형))
+  Size _scrolledFilterDropdownButtonSize = Size.zero;
+  Size get scrolledFilterDropdownButtonSize =>
+      _scrolledFilterDropdownButtonSize;
+
+  /// 거래 내역 리스트 사이즈
+  Size _txSliverListSize = Size.zero;
+  Size get txSliverListSize => _txSliverListSize;
+
+  /// utxo 리스트 사이즈
+  Size _utxoSliverListSize = Size.zero;
+  Size get utxoSliverListSize => _utxoSliverListSize;
+
+  /// 스크롤시 상단에 붙어있는 위젯
+  bool _positionedTopWidgetVisible = false;
+  bool get positionedTopWidgetVisible => _positionedTopWidgetVisible;
+
+  /// 필터 드롭다운(확장형)
+  bool _isFilterDropdownVisible = false;
+  bool get isFilterDropdownVisible => _isFilterDropdownVisible;
+
+  /// 필터 드롭다운(축소형)
+  bool _isScrolledFilterDropdownVisible = false;
+  bool get isScrolledFilterDropdownVisible => _isScrolledFilterDropdownVisible;
+
+  Offset _filterDropdownButtonPosition = Offset.zero;
+  Offset get filterDropdownButtonPosition => _filterDropdownButtonPosition;
+
+  Offset _scrolledFilterDropdownButtonPosition = Offset.zero;
+  Offset get scrolledFilterDropdownButtonPosition =>
+      _scrolledFilterDropdownButtonPosition;
+
+  Offset _faucetIconPosition = Offset.zero;
+  Offset get faucetIconPosition => _faucetIconPosition;
+
+  Size _faucetIconSize = Size.zero;
+  Size get faucetIconSize => _faucetIconSize;
+
+  double _topPadding = 0;
+  double get topPadding => _topPadding;
+
+  bool _isPullToRefreshing = false;
+  bool get isPullToRefreshing => _isPullToRefreshing;
+
+  /// [topToggleSize] - BTC sats 버튼
+  /// [topSelectorSize] - 원화 영역
+  /// [topHeaderSize] - 거래 내역(UTXO 리스트 위젯 영역)
+  /// [positionedTopSize] - 거래 내역(UTXO 리스트 위젯 영역)
+  void initViewState(
+      {required Size appBarSize,
+      required Size topToggleSize,
+      required Size topSelectorSize,
+      required Size topHeaderSize,
+      required Size positionedTopSize,
+      required Size txSliverSize,
+      required Size faucetSize,
+      required Offset faucetOffset}) {
+    _appBarSize = appBarSize;
+    _topPadding = topToggleSize.height +
+        topSelectorSize.height +
+        topHeaderSize.height -
+        positionedTopSize.height;
+    _txSliverListSize = txSliverSize;
+    _faucetIconSize = faucetSize;
+    _faucetIconPosition = faucetOffset;
+
+    notifyListeners();
+  }
+
+  void tapTransactionButton() {
+    _selectedListType = SelectedListType.transaction;
+    _isFilterDropdownVisible = false;
+    _isScrolledFilterDropdownVisible = false;
+    notifyListeners();
+  }
+
+  void tapListTypeButton(SelectedListType type) {
+    _selectedListType = type;
+    if (type == SelectedListType.transaction) {
+      _isFilterDropdownVisible = false;
+      _isScrolledFilterDropdownVisible = false;
+    }
+    notifyListeners();
+  }
+
+  void setUtxoListRenderBoxSize({
+    required Size dropdownButtonSize,
+    required Offset dropdownButtonPosition,
+    required Size utxoListSize,
+  }) async {
+    _filterDropdownButtonSize = dropdownButtonSize;
+    _filterDropdownButtonPosition = dropdownButtonPosition;
+    _utxoSliverListSize = utxoListSize;
+    notifyListeners();
+  }
+
+  // TODO: 주석 처리해도 정상 동작함
+  // void setFilterDropdownButton(Size size, Offset position) {
+  //   _filterDropdownButtonSize = size;
+  //   _filterDropdownButtonPosition = position;
+  //   notifyListeners();
+  // }
+
+  void setPullToRefresh(bool isPullToRefreshing) {
+    _isPullToRefreshing = isPullToRefreshing;
+    notifyListeners();
+  }
+
+  void removeFilterDropdown() {
+    _isFilterDropdownVisible = false;
+    _isScrolledFilterDropdownVisible = false;
+    notifyListeners();
+  }
+
+  void tapDropdownButton(index) {
+    _isFilterDropdownVisible = _isScrolledFilterDropdownVisible = false;
+    switch (index) {
+      case 0: // 큰 금액순
+        if (_selectedFilter != UtxoOrderEnum.byTimestampDesc) {
+          _updateUtxoFilter(UtxoOrderEnum.byTimestampDesc);
+        }
+        break;
+      case 1: // 작은 금액순
+        if (_selectedFilter != UtxoOrderEnum.byTimestampAsc) {
+          _updateUtxoFilter(UtxoOrderEnum.byTimestampAsc);
+        }
+        break;
+      case 2: // 최신순
+        if (_selectedFilter != UtxoOrderEnum.byAmountDesc) {
+          _updateUtxoFilter(UtxoOrderEnum.byAmountDesc);
+        }
+        break;
+      case 3: // 오래된 순
+        if (_selectedFilter != UtxoOrderEnum.byAmountAsc) {
+          _updateUtxoFilter(UtxoOrderEnum.byAmountAsc);
+        }
+        break;
+    }
+    notifyListeners();
+  }
+
+  void tapFilterButton() {
+    if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
+      _isFilterDropdownVisible = false;
+    } else {
+      _isFilterDropdownVisible = true;
+    }
+    notifyListeners();
+  }
+
+  void tapPositionedFilterButton() {
+    if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
+      _isScrolledFilterDropdownVisible = false;
+    } else {
+      _isScrolledFilterDropdownVisible = true;
+    }
+    notifyListeners();
+  }
+
+  // TODO: 거래내역 하단 카드 크기 정도의 공백 발생
+  void scrollControllerListener({
+    required double scrollPosition,
+    required Offset filterButtonPosition,
+    required Size filterButtonSize,
+  }) {
+    if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
+      removeFilterDropdown();
+    }
+
+    if (_isPullToRefreshing) return;
+
+    if (scrollPosition > _topPadding) {
+      _positionedTopWidgetVisible = true;
+      _isFilterDropdownVisible = false;
+      if (_utxoList.isNotEmpty == true &&
+          _selectedListType == SelectedListType.utxo) {
+        _scrolledFilterDropdownButtonPosition = filterButtonPosition;
+        _scrolledFilterDropdownButtonSize = filterButtonSize;
+      }
+      notifyListeners();
+    } else {
+      _positionedTopWidgetVisible = false;
+      _isScrolledFilterDropdownVisible = false;
+      notifyListeners();
+    }
+  }
+
+  void toggleUnit() {
+    _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+    notifyListeners();
+  }
+
+  /// Faucet -------------------------------------------------------------------
+  final Faucet _faucetService = Faucet();
+  late AddressBook _walletAddressBook;
+  AddressBook get walletAddressBook => _walletAddressBook;
+  late FaucetRecord _faucetRecord;
+
+  String _walletAddress = '';
+  String get walletAddress => _walletAddress;
+
+  String _derivationPath = '';
+  String get derivationPath => _derivationPath;
+
+  String _walletName = '';
+  String get walletName => _walletName;
+
+  String _receiveAddressIndex = '';
+  String get receiveAddressIndex => _receiveAddressIndex;
+
+  double _requestAmount = 0.0;
+  double get requestAmount => _requestAmount;
+
+  int _requestCount = 0;
+
+  /// faucet 상태 조회 후 수령할 수 있는 최댓값과 최솟값
+  double _faucetMaxAmount = 0;
+  double _faucetMinAmount = 0;
+
+  bool _isFaucetRequestLimitExceeded = false; // Faucet 요청가능 횟수 초과 여부
+  bool get isFaucetRequestLimitExceeded => _isFaucetRequestLimitExceeded;
+
+  bool _isRequesting = false;
+  bool get isRequesting => _isRequesting;
+
+  bool _faucetTipVisible = false;
+  bool get faucetTipVisible => _faucetTipVisible;
+
+  bool _faucetTooltipVisible = false;
+  bool get faucetTooltipVisible => _faucetTooltipVisible;
+
+  void _showFaucetTooltip() async {
     final faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     if (_walletListBaseItem.balance == 0 && faucetHistory.count < 3) {
       _faucetTooltipVisible = true;

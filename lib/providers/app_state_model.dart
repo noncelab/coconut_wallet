@@ -44,6 +44,7 @@ enum WalletInitState {
 class AppStateModel extends ChangeNotifier {
   // final SecureStorageService _storageService = SecureStorageService();
   AppSubStateModel _subStateModel;
+  AppSubStateModel get subStateModel => _subStateModel;
 
   // 잔액 갱신 전 local db에서 지갑 목록 조회를 끝냈는지 여부
   bool _fastLoadDone = false;
