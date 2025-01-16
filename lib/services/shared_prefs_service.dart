@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPrefs {
+  // TODO: lib/contants/shared_pref_keys.dart로 옮긴 것을 사용하기
   static const String kSharedIsBalanceHidden = "SHARED_IS_BALANCE_HIDDEN";
   static const String lastUpdateTime = "LAST_UPDATE_TIME";
   static const String kLastUpdateTime = "LAST_UPDATE_TIME";
