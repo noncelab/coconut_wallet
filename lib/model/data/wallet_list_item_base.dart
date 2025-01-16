@@ -53,7 +53,7 @@ abstract class WalletListItemBase {
     }
   }
 
-  Future _updateWalletStatusWithNetwork(NodeConnector nodeConnector) async {
+  Future _fetchWalletStatusFromNetwork(NodeConnector nodeConnector) async {
     try {
       await walletFeature.fetchOnChainData(nodeConnector);
     } catch (e) {
@@ -73,7 +73,7 @@ abstract class WalletListItemBase {
   }
 
   Future<bool> checkIfWalletShouldUpdate(NodeConnector nodeConnector) async {
-    await _updateWalletStatusWithNetwork(nodeConnector);
+    await _fetchWalletStatusFromNetwork(nodeConnector);
     return _shouldUpdateToLatest();
   }
 
