@@ -21,11 +21,15 @@ class VisibilityProvider extends ChangeNotifier {
   bool _hideTermsShortcut = false;
   bool get visibleTermsShortcut => _hideTermsShortcut;
 
+  late int _walletCount;
+  int get walletCount => _walletCount;
+
   VisibilityProvider() {
     _hasLaunchedBefore =
         _sharedPrefs.getBool(SharedPrefKeys.kHasLaunchedBefore);
     _hideTermsShortcut =
         _sharedPrefs.getBool(SharedPrefKeys.kHideTermsShortcut);
+    _walletCount = _sharedPrefs.getInt(SharedPrefKeys.kWalletCount);
   }
 
   Future<void> setHasLaunchedBefore() async {
@@ -36,6 +40,12 @@ class VisibilityProvider extends ChangeNotifier {
   Future<void> hideTermsShortcut() async {
     _hideTermsShortcut = true;
     await _sharedPrefs.setBool(SharedPrefKeys.kHideTermsShortcut, true);
+    notifyListeners();
+  }
+
+  Future<void> setWalletCount(int count) async {
+    _walletCount = count;
+    await _sharedPrefs.setInt(SharedPrefKeys.kWalletCount, count);
     notifyListeners();
   }
 }

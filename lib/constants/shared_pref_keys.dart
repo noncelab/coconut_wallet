@@ -13,6 +13,7 @@ class SharedPrefKeys {
       "NEXT_VERSION_UPDATE_DIALOG_DATE";
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';
+  static const String kWalletCount = 'WALLET_COUNT';
 
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';
