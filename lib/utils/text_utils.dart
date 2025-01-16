@@ -8,7 +8,7 @@ class TextUtils {
   static String truncate(
       String name, int maxLength, int leftValidLength, int rightValidLength) {
     if (name.length <= maxLength ||
-        leftValidLength + rightValidLength >= maxLength) {
+        leftValidLength + rightValidLength > maxLength) {
       return name;
     }
 
