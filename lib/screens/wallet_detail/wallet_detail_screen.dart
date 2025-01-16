@@ -8,7 +8,6 @@ import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -131,7 +130,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _scrollController = ScrollController();
 
     _walletBaseItem = _model.getWalletById(widget.id);
-    _walletFeature = getWalletFeatureByWalletType(_walletBaseItem);
+    _walletFeature = _walletBaseItem.walletFeature;
     _prevTxCount = _walletBaseItem.txCount;
     _prevIsLatestTxBlockHeightZero = _walletBaseItem.isLatestTxBlockHeightZero;
 
@@ -337,7 +336,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
       List<TransferDTO>? newTxList = _model.getTxList(widget.id);
       if (newTxList != null) {
-        print('--> [detail화면] newTxList.length: ${newTxList.length}');
+        Logger.log('--> [detail화면] newTxList.length: ${newTxList.length}');
         _txList = newTxList;
         setState(() {});
       }

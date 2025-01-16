@@ -1,7 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_tooltip.dart';
 import 'package:flutter/material.dart';
@@ -43,11 +42,9 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   void initState() {
     super.initState();
     final model = Provider.of<AppStateModel>(context, listen: false);
-
-    final walletFeature =
-        getWalletFeatureByWalletType(model.getWalletById(widget.id));
-    _balance = walletFeature.getBalance();
-    _unconfirmedBalance = walletFeature.getUnconfirmedBalance();
+    final walletBaseItem = model.getWalletById(widget.id);
+    _balance = walletBaseItem.walletFeature.getBalance();
+    _unconfirmedBalance = walletBaseItem.walletFeature.getUnconfirmedBalance();
   }
 
   void _onKeyTap(String value) {

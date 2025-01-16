@@ -146,7 +146,9 @@ class AppStateModel extends ChangeNotifier {
         // 1개만 업데이트 (하지만 나머지 지갑들도 업데이트 함)
         if (targetId != null) {
           Logger.log(">>>>> 3. _fetchWalletLatestInfo id: $targetId");
-          await _fetchWalletLatestInfo(targetId);
+          int i =
+              _walletItemList.indexWhere((element) => element.id == targetId);
+          await _syncWalletsAsLatest([_walletItemList[i]]);
           // 나머지 지갑들도 업데이트
           if (syncOthers) {
             initWallet(exceptionalId: targetId);
@@ -156,14 +158,13 @@ class AppStateModel extends ChangeNotifier {
           return;
         }
 
-        if (exceptionalId != null) {
-          Logger.log(
-              ">>>>> 3. _fetchWalletLatestInfo exceptionalId: $exceptionalId");
-          await _fetchAllWalletLatestInfo(exceptionalId: exceptionalId);
-        } else {
-          Logger.log(">>>>> 3. _fetchAllWalletLatestInfo");
-          await _fetchAllWalletLatestInfo();
-        }
+        Logger.log(
+            ">>>>> 3. _fetchWalletLatestInfo (exceptionalId: $exceptionalId)");
+
+        var targets = exceptionalId == null
+            ? _walletItemList
+            : _walletItemList.where((e) => e.id != exceptionalId).toList();
+        await _syncWalletsAsLatest(targets);
       }
 
       setWalletInitState(WalletInitState.finished);
@@ -424,37 +425,30 @@ class AppStateModel extends ChangeNotifier {
     }
   }
 
-  Future<void> _fetchAllWalletLatestInfo({int? exceptionalId}) async {
-    List<WalletListItemBase> targetWalletList = _walletItemList;
-    int? exceptionIndex;
-    if (exceptionalId != null) {
-      exceptionIndex =
-          _walletItemList.indexWhere((element) => element.id == exceptionalId);
-      targetWalletList = List<WalletListItemBase>.from(_walletItemList)
-        ..removeAt(exceptionIndex);
+  Future<List<WalletListItemBase>> _filterWalletsToUpdate(
+      List<WalletListItemBase> wallets) async {
+    if (_nodeConnector == null) {
+      throw StateError(
+          '[filterWalletsToUpdate] _nodeConnector must not be null');
     }
 
-    //List<WalletListItemBase> newWalletList =
-    var hasChanged = await _walletDataManager.syncWithLatest(
-        targetWalletList, _nodeConnector!);
-    Logger.log('--> syncWithLatest result: $hasChanged');
-    if (hasChanged) {
-      _walletItemList = _walletDataManager.walletList;
+    List<WalletListItemBase> result = [];
+    for (var wallet in wallets) {
+      var shouldUpdate =
+          await wallet.checkIfWalletShouldUpdate(_nodeConnector!);
+      if (shouldUpdate) {
+        result.add(wallet);
+      }
     }
+
+    return result;
   }
 
-  // 지갑 1개만 업데이트
-  Future<void> _fetchWalletLatestInfo(int walletId) async {
-    int i = _walletItemList.indexWhere((element) => element.id == walletId);
-
-    final walletBaseItem = _walletItemList[i];
-    var hasChanged = await _walletDataManager
-        .syncWithLatest([walletBaseItem], _nodeConnector!);
-    print('--> syncWithLatest result: $hasChanged');
-
-    if (hasChanged) {
-      _walletItemList = _walletDataManager.walletList;
-    }
+  Future<void> _syncWalletsAsLatest(List<WalletListItemBase> targets) async {
+    List<WalletListItemBase> needToUpdateTargets =
+        await _filterWalletsToUpdate(targets);
+    await _walletDataManager.syncWithLatest(needToUpdateTargets);
+    _walletItemList = List.from(_walletDataManager.walletList);
   }
 
   List<TransferDTO>? getTxList(int walletId) {

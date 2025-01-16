@@ -23,7 +23,8 @@ class ErrorCodes {
       AppError('1004', '비트코인 노드와 연결하는데 실패했습니다.');
   static const AppError fetchWalletError =
       AppError('1005', '지갑을 가져오는데 실패했습니다.');
-  static const AppError syncFailedError = AppError('1006', '지갑 정보 불러오기 실패');
+  static const AppError walletSyncFailedError =
+      AppError('1006', '네트워크에서 지갑 정보 불러오기 실패');
   static const AppError fetchBalanceError = AppError('1007', '잔액 조회를 실패했습니다.');
   static const AppError fetchTransferListError =
       AppError('1008', '트랜잭션 목록 조회를 실패했습니다.');

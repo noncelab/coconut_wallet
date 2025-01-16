@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/app/error/app_error.dart';
 
 abstract class WalletListItemBase {
   static const String walletTypeField = 'walletType';
@@ -29,6 +30,41 @@ abstract class WalletListItemBase {
       this.balance,
       this.txCount,
       this.isLatestTxBlockHeightZero = false});
+
+  WalletFeature get walletFeature {
+    switch (walletType) {
+      case WalletType.singleSignature:
+        return walletBase as SingleSignatureWallet;
+      case WalletType.multiSignature:
+        return walletBase as MultisignatureWallet;
+      default:
+        throw StateError('wrong walletType: ${walletType.name}');
+    }
+  }
+
+  Future _fetchWalletStatusFromNetwork(NodeConnector nodeConnector) async {
+    try {
+      await walletFeature.fetchOnChainData(nodeConnector);
+    } catch (e) {
+      throw AppError(ErrorCodes.walletSyncFailedError.code, e.toString());
+    }
+  }
+
+  bool _shouldUpdateToLatest() {
+    if (walletFeature.walletStatus == null) {
+      return false;
+    }
+
+    return txCount == null ||
+        txCount != walletFeature.walletStatus!.transactionList.length ||
+        isLatestTxBlockHeightZero ||
+        balance == null;
+  }
+
+  Future<bool> checkIfWalletShouldUpdate(NodeConnector nodeConnector) async {
+    await _fetchWalletStatusFromNetwork(nodeConnector);
+    return _shouldUpdateToLatest();
+  }
 
   @override
   String toString() =>
