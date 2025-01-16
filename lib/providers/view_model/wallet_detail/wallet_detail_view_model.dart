@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
-import 'package:coconut_wallet/utils/cconut_wallet_util.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -100,7 +99,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       _prevWalletInitState = appStateModel.walletInitState;
       final walletBaseItem = appStateModel.getWalletById(_walletId);
       _walletListBaseItem = walletBaseItem;
-      _walletFeature = getWalletFeatureByWalletType(walletBaseItem);
+      _walletFeature = walletBaseItem.walletFeature;
       _prevTxCount = walletBaseItem.txCount;
       _prevIsLatestTxBlockHeightZero = walletBaseItem.isLatestTxBlockHeightZero;
       _walletType = walletBaseItem.walletType;
