@@ -34,19 +34,19 @@ import 'package:provider/provider.dart';
 
 enum AccessFlow { splash, main, pinCheck }
 
-class PowWalletApp extends StatefulWidget {
+class CoconutWalletApp extends StatefulWidget {
   static late String kElectrumHost;
   static late int kElectrumPort;
   static late bool kElectrumIsSSL;
   static late String kMempoolHost;
   static late String kFaucetHost;
-  const PowWalletApp({super.key});
+  const CoconutWalletApp({super.key});
 
   @override
-  State<PowWalletApp> createState() => _PowWalletAppState();
+  State<CoconutWalletApp> createState() => _CoconutWalletAppState();
 }
 
-class _PowWalletAppState extends State<PowWalletApp> {
+class _CoconutWalletAppState extends State<CoconutWalletApp> {
   /// 0 = splash, 1 = main, 2 = pin check
   AccessFlow _screenStatus = AccessFlow.splash;
 

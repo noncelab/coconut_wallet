@@ -71,7 +71,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                 SmallActionButton(
                     text: '트랜잭션 보기',
                     onPressed: () => launchUrl(Uri.parse(
-                        "${PowWalletApp.kMempoolHost}/tx/${widget.txId}"))),
+                        "${CoconutWalletApp.kMempoolHost}/tx/${widget.txId}"))),
                 const SizedBox(
                   height: 120,
                 ),

@@ -14,7 +14,7 @@ class DioClient {
   DioClient()
       : _dio = Dio(
           BaseOptions(
-            baseUrl: PowWalletApp.kFaucetHost,
+            baseUrl: CoconutWalletApp.kFaucetHost,
             connectTimeout:
                 const Duration(milliseconds: Endpoints.connectionTimeout),
             receiveTimeout:

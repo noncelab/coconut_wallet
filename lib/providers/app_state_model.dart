@@ -198,8 +198,8 @@ class AppStateModel extends ChangeNotifier {
     try {
       Logger.log(">>>>> 2. _initNodeConnection");
       NodeConnector nodeConnector = await NodeConnector.connectSync(
-          PowWalletApp.kElectrumHost, PowWalletApp.kElectrumPort,
-          ssl: PowWalletApp.kElectrumIsSSL);
+          CoconutWalletApp.kElectrumHost, CoconutWalletApp.kElectrumPort,
+          ssl: CoconutWalletApp.kElectrumIsSSL);
 
       if (nodeConnector.connectionStatus == SocketConnectionStatus.connected) {
         return nodeConnector;
