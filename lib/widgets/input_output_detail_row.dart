@@ -47,11 +47,11 @@ class InputOutputDetailRow extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 SvgPicture.asset(
-                  rowProperty.assetAddress,
+                  rowProperty.svgPath,
                   width: 16,
                   height: 12,
                   colorFilter:
-                      ColorFilter.mode(rowProperty.assetColor, BlendMode.srcIn),
+                      ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
                 ),
                 const SizedBox(
                   width: 10,
@@ -95,11 +95,11 @@ class InputOutputDetailRow extends StatelessWidget {
                   width: 10,
                 ),
                 SvgPicture.asset(
-                  rowProperty.assetAddress,
+                  rowProperty.svgPath,
                   width: 16,
                   height: 12,
                   colorFilter:
-                      ColorFilter.mode(rowProperty.assetColor, BlendMode.srcIn),
+                      ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
                 ),
               ],
             ),
@@ -115,25 +115,25 @@ class InputOutputDetailRow extends StatelessWidget {
   ) {
     Color leftItemColor = MyColors.white;
     Color rightItemColor = MyColors.white;
-    Color assetColor = MyColors.white;
+    Color svgColor = MyColors.white;
 
-    String assetPath = 'assets/svg/circle-arrow-right.svg';
+    String svgPath = 'assets/svg/circle-arrow-right.svg';
 
     if (rowType == InputOutputRowType.fee) {
-      assetPath = 'assets/svg/circle-pick.svg';
+      svgPath = 'assets/svg/circle-pick.svg';
       if (transactionStatus == null) {
         // UTXO 화면인 경우 색상 변경
         leftItemColor =
-            rightItemColor = assetColor = MyColors.transparentWhite_40;
+            rightItemColor = svgColor = MyColors.transparentWhite_40;
       }
 
       /// 수수료인 경우 바로 리턴
       return RowProperty(
-          leftItemColor: leftItemColor,
-          rightItemColor: rightItemColor,
-          assetColor: assetColor,
-          assetAddress: assetPath,
-          pickAddress: 'assets/svg/circle-pick.svg');
+        leftItemColor: leftItemColor,
+        rightItemColor: rightItemColor,
+        svgColor: svgColor,
+        svgPath: svgPath,
+      );
     }
 
     if (transactionStatus != null) {
@@ -146,17 +146,17 @@ class InputOutputDetailRow extends StatelessWidget {
             if (!isCurrentAddress) {
               /// 현재 주소가 아닌 경우
               leftItemColor =
-                  rightItemColor = assetColor = MyColors.transparentWhite_40;
+                  rightItemColor = svgColor = MyColors.transparentWhite_40;
             }
           } else {
             /// 아웃풋
             if (isCurrentAddress) {
               /// 현재 주소인 경우
-              rightItemColor = assetColor = MyColors.secondary;
+              rightItemColor = svgColor = MyColors.secondary;
             } else {
               /// 현재 주소가 아닌 경우
               leftItemColor =
-                  rightItemColor = assetColor = MyColors.transparentWhite_40;
+                  rightItemColor = svgColor = MyColors.transparentWhite_40;
             }
           }
           break;
@@ -164,29 +164,29 @@ class InputOutputDetailRow extends StatelessWidget {
         case TransactionStatus.sent:
           if (rowType == InputOutputRowType.input) {
             /// 안풋
-            rightItemColor = assetColor = MyColors.primary;
+            rightItemColor = svgColor = MyColors.primary;
           } else if (rowType == InputOutputRowType.output &&
               !isCurrentAddress) {
             /// 아웃풋, 현재 주소가 아닌 경우
             leftItemColor =
-                rightItemColor = assetColor = MyColors.transparentWhite_40;
+                rightItemColor = svgColor = MyColors.transparentWhite_40;
           }
           break;
         case TransactionStatus.self:
         case TransactionStatus.selfsending:
           if (rowType == InputOutputRowType.input) {
             if (isCurrentAddress) {
-              rightItemColor = assetColor = MyColors.primary;
+              rightItemColor = svgColor = MyColors.primary;
             } else {
               leftItemColor =
-                  rightItemColor = assetColor = MyColors.transparentWhite_40;
+                  rightItemColor = svgColor = MyColors.transparentWhite_40;
             }
           } else {
             if (isCurrentAddress) {
-              rightItemColor = assetColor = MyColors.secondary;
+              rightItemColor = svgColor = MyColors.secondary;
             } else {
               leftItemColor =
-                  rightItemColor = assetColor = MyColors.transparentWhite_40;
+                  rightItemColor = svgColor = MyColors.transparentWhite_40;
             }
           }
           break;
@@ -196,31 +196,29 @@ class InputOutputDetailRow extends StatelessWidget {
       if (rowType == InputOutputRowType.input ||
           (rowType == InputOutputRowType.output && !isCurrentAddress)) {
         leftItemColor =
-            rightItemColor = assetColor = MyColors.transparentWhite_40;
+            rightItemColor = svgColor = MyColors.transparentWhite_40;
       }
     }
     return RowProperty(
-        leftItemColor: leftItemColor,
-        rightItemColor: rightItemColor,
-        assetColor: assetColor,
-        assetAddress: assetPath,
-        pickAddress: 'assets/svg/circle-pick.svg');
+      leftItemColor: leftItemColor,
+      rightItemColor: rightItemColor,
+      svgColor: svgColor,
+      svgPath: svgPath,
+    );
   }
 }
 
 class RowProperty {
   final Color leftItemColor;
   final Color rightItemColor;
-  final Color assetColor;
-  final String assetAddress;
-  final String pickAddress;
+  final Color svgColor;
+  final String svgPath;
 
   const RowProperty({
     required this.leftItemColor,
     required this.rightItemColor,
-    required this.assetColor,
-    required this.assetAddress,
-    required this.pickAddress,
+    required this.svgColor,
+    required this.svgPath,
   });
 }
 
