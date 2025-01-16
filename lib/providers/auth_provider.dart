@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/services/secure_storage_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
@@ -133,5 +135,16 @@ class AuthProvider extends ChangeNotifier {
     await SecureStorageService().deleteAll();
     await SharedPrefs().clearSharedPref();
     await checkDeviceBiometrics();
+  }
+
+  List<String> getShuffledNumberPad({bool isSettings = false}) {
+    final random = Random();
+    var randomNumberPad =
+        List<String>.generate(10, (index) => index.toString());
+    randomNumberPad.shuffle(random);
+    randomNumberPad.insert(randomNumberPad.length - 1,
+        !isSettings && isSetBiometrics ? 'bio' : '');
+    randomNumberPad.add('<');
+    return randomNumberPad;
   }
 }

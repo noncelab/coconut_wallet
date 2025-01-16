@@ -5,8 +5,12 @@ class PreferenceProvider extends ChangeNotifier {
   final SharedPrefs _sharedPrefs = SharedPrefs();
 
   /// 홈 화면 잔액 숨기기 on/off 여부
-  bool _isBalanceHidden = false;
+  late bool _isBalanceHidden;
   bool get isBalanceHidden => _isBalanceHidden;
+
+  PreferenceProvider() {
+    _isBalanceHidden = _sharedPrefs.getBool(SharedPrefs.kIsBalanceHidden);
+  }
 
   /// 홈 화면 잔액 숨기기
   Future<void> changeIsBalanceHidden(bool isOn) async {

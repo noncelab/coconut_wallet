@@ -18,7 +18,7 @@ class VisibilityProvider extends ChangeNotifier {
   bool get hasLaunchedBefore => _hasLaunchedBefore;
 
   /// 용어집 바로가기 요소
-  bool _hideTermsShortcut = false;
+  late bool _hideTermsShortcut;
   bool get visibleTermsShortcut => _hideTermsShortcut;
 
   late int _walletCount;

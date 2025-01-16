@@ -61,8 +61,8 @@ class WalletProvider extends ChangeNotifier {
 
   late final WalletDataManager _walletDataManager;
 
-  late Future<void> Function(int) _setWalletCount;
-  late bool _isSetPin;
+  late final Future<void> Function(int) _setWalletCount;
+  late final bool _isSetPin;
 
   WalletProvider(this._walletDataManager, this._isNetworkOn,
       this._setWalletCount, this._isSetPin) {
