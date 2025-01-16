@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
 
-class QrcodeBottomSheetScreen extends StatelessWidget {
-  const QrcodeBottomSheetScreen(
+class QrcodeBottomSheet extends StatelessWidget {
+  const QrcodeBottomSheet(
       {super.key, required this.qrData, this.qrcodeTopWidget, this.title});
 
   final String qrData;

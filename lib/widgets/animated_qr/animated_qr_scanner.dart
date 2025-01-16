@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/animatedQR/animated_qr_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 

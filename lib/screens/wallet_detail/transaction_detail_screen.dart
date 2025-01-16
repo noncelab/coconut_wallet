@@ -2,7 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/screens/bottom_sheet/memo_bottom_sheet_container.dart';
+import 'package:coconut_wallet/widgets/overlays/memo_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -392,7 +392,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
-                              builder: (context) => MemoBottomSheetContainer(
+                              builder: (context) => MemoBottomSheet(
                                 originalMemo: tx.memo ?? '',
                                 onComplete: (updateMemo) {
                                   _model.updateTransactionMemo(

@@ -2,13 +2,11 @@ import 'package:coconut_wallet/appGuard.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/receive_address_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
 import 'package:coconut_wallet/screens/send/send_address_screen.dart';
-import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/send/send_confirm_screen.dart';
 import 'package:coconut_wallet/screens/send/send_fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
@@ -18,18 +16,17 @@ import 'package:coconut_wallet/screens/send/signed_psbt_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_multisig_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_setting_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_multisig_info_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_singlesig_info_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/screens/onboarding/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
@@ -134,23 +131,20 @@ class _PowWalletAppState extends State<PowWalletApp> {
                     ),
                   ),
         routes: {
-          '/wallet-list': (context) =>
-              const AppGuard(child: WalletListScreen()),
           '/wallet-add-scanner': (context) =>
               const CustomLoadingOverlay(child: WalletAddScannerScreen()),
           '/app-info': (context) => const AppInfoScreen(),
           '/wallet-detail': (context) => buildScreenWithArguments(
                 context,
-                (args) => WalletDetailScreen(
-                    id: args['id'], syncResult: args['syncResult']),
+                (args) => WalletDetailScreen(id: args['id']),
               ),
-          '/wallet-multisig': (context) => buildScreenWithArguments(
+          '/wallet-multisig-info': (context) => buildScreenWithArguments(
                 context,
-                (args) => WalletMultisigScreen(id: args['id']),
+                (args) => WalletMultisigInfoScreen(id: args['id']),
               ),
-          '/wallet-setting': (context) => buildScreenWithArguments(
+          '/wallet-singlesig-info': (context) => buildScreenWithArguments(
                 context,
-                (args) => WalletSettingScreen(id: args['id']),
+                (args) => WalletSinglesigInfoScreen(id: args['id']),
               ),
           '/address-list': (context) => buildScreenWithArguments(
                 context,
@@ -160,10 +154,6 @@ class _PowWalletAppState extends State<PowWalletApp> {
                 context,
                 (args) => TransactionDetailScreen(
                     id: args['id'], txHash: args['txHash']),
-              ),
-          '/receive-address': (context) => buildScreenWithArguments(
-                context,
-                (args) => ReceiveAddressScreen(id: args['id']),
               ),
           '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
                 context,
@@ -189,12 +179,6 @@ class _PowWalletAppState extends State<PowWalletApp> {
                 (args) => CustomLoadingOverlay(
                     child: SendAddressScreen(id: args['id'])),
               ),
-          '/send-amount': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: SendAmountScreen(
-                        id: args['id'], recipient: args['recipient'])),
-              ),
           '/fee-selection': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
@@ -212,11 +196,6 @@ class _PowWalletAppState extends State<PowWalletApp> {
                 (args) => CustomLoadingOverlay(
                     child: SendConfirmScreen(
                         id: args['id'], sendInfo: args['fullSendInfo'])),
-              ),
-          '/utxo-list': (context) => buildScreenWithArguments(
-                context,
-                (args) =>
-                    CustomLoadingOverlay(child: UtxoListScreen(id: args['id'])),
               ),
           '/utxo-detail': (context) => buildScreenWithArguments(
                 context,

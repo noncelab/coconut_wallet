@@ -3,24 +3,23 @@ import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 
-/// [MemoBottomSheetContainer] : 트랜잭션 메모 등록/수정 BottomSheet
+/// [MemoBottomSheet] : 트랜잭션 메모 등록/수정 BottomSheet
 /// [originalMemo] : 변경할 트랜잭션 메모, default empty
 /// [onComplete] : 수정/등록할 메모 반환 콜백
-class MemoBottomSheetContainer extends StatefulWidget {
+class MemoBottomSheet extends StatefulWidget {
   final String originalMemo;
   final Function(String) onComplete;
-  const MemoBottomSheetContainer({
+  const MemoBottomSheet({
     super.key,
     required this.originalMemo,
     required this.onComplete,
   });
 
   @override
-  State<MemoBottomSheetContainer> createState() =>
-      _MemoBottomSheetContainerState();
+  State<MemoBottomSheet> createState() => _MemoBottomSheetState();
 }
 
-class _MemoBottomSheetContainerState extends State<MemoBottomSheetContainer> {
+class _MemoBottomSheetState extends State<MemoBottomSheet> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 

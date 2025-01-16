@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/screens/bottom_sheet/memo_bottom_sheet_container.dart';
+import 'package:coconut_wallet/widgets/overlays/memo_bottom_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +12,7 @@ void main() {
       String? resultMemo;
 
       await tester.pumpWidget(MaterialApp(
-        home: MemoBottomSheetContainer(
+        home: MemoBottomSheet(
           originalMemo: mockMemo,
           onComplete: (memo) {
             resultMemo = memo;

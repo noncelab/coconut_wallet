@@ -7,11 +7,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/screens/bottom_sheet/qrcode_bottom_sheet_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:provider/provider.dart';
@@ -226,9 +226,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                   itemBuilder: (context, index) => AddressCard(
                                     onPressed: () {
                                       _removeTooltip();
-                                      MyBottomSheet.showBottomSheet_90(
+                                      CommonBottomSheets.showBottomSheet_90(
                                           context: context,
-                                          child: QrcodeBottomSheetScreen(
+                                          child: QrcodeBottomSheet(
                                               qrcodeTopWidget: Text(
                                                 addressList[index]
                                                     .derivationPath,

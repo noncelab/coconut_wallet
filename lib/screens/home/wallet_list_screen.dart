@@ -4,9 +4,9 @@ import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/screens/settings/security_self_check_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
-import 'package:coconut_wallet/screens/settings/terms_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/terms_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -21,9 +21,9 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/wallet_row_item.dart';
-import 'package:coconut_wallet/screens/onboarding/onboarding_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/onboarding_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:provider/provider.dart';
 
@@ -84,9 +84,9 @@ class _WalletListScreenState extends State<WalletListScreen>
       Logger.log('hasLaunchedBefore ? ${_subModel.hasLaunchedBefore}');
       if (!_subModel.hasLaunchedBefore) {
         Future.delayed(const Duration(milliseconds: 1000)).then((_) {
-          MyBottomSheet.showBottomSheet_100(
+          CommonBottomSheets.showBottomSheet_100(
             context: context,
-            child: const OnboardingScreen(),
+            child: const OnboardingBottomSheet(),
             enableDrag: false,
             backgroundColor: MyColors.nero,
             isDismissible: false,
@@ -443,9 +443,9 @@ class _WalletListScreenState extends State<WalletListScreen>
                                     fastLoadDone,
                                 child: GestureDetector(
                                   onTap: () {
-                                    MyBottomSheet.showBottomSheet_90(
+                                    CommonBottomSheets.showBottomSheet_90(
                                         context: context,
-                                        child: const TermsScreen());
+                                        child: const TermsBottomSheet());
                                   },
                                   onTapDown: (_) {
                                     setState(() {
@@ -751,21 +751,22 @@ class _WalletListScreenState extends State<WalletListScreen>
                             });
                             switch (index) {
                               case 0: // 용어집
-                                MyBottomSheet.showBottomSheet_90(
+                                CommonBottomSheets.showBottomSheet_90(
                                     context: context,
-                                    child: const TermsScreen());
+                                    child: const TermsBottomSheet());
                                 break;
                               case 1: // 니모닉 문구 단어집
                                 Navigator.pushNamed(
                                     context, '/mnemonic-word-list');
                                 break;
                               case 2: // 셀프 보안 점검
-                                MyBottomSheet.showBottomSheet_90(
+                                CommonBottomSheets.showBottomSheet_90(
                                     context: context,
-                                    child: const SecuritySelfCheckScreen());
+                                    child:
+                                        const SecuritySelfCheckBottomSheet());
                                 break;
                               case 3: // 설정
-                                MyBottomSheet.showBottomSheet_90(
+                                CommonBottomSheets.showBottomSheet_90(
                                     context: context,
                                     child: const SettingsScreen());
                                 break;

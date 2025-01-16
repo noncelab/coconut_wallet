@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/widgets/animatedQR/animated_qr_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

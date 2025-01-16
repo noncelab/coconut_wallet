@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/widgets/animatedQR/animated_qr_data_handler.dart';
-import 'package:coconut_wallet/widgets/animatedQR/animated_qr_view.dart';
+import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';

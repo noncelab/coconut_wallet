@@ -17,21 +17,21 @@ import 'package:uuid/uuid.dart';
 /// - [update] : 선택된 태그 수정
 enum TagBottomSheetType { select, create, update }
 
-/// [TagBottomSheetContainer] : 태그 선택 변경, 태그 수정, 태그 생성 BottomSheet
+/// [TagBottomSheet] : 태그 선택 변경, 태그 수정, 태그 생성 BottomSheet
 /// [type] : BottomSheet Type
 /// [utxoTags] : 지갑에 생성된 UtxoTag 전체 목록
 /// [selectedUtxoTagNames] : select type only, 선택된 UTXO name 목록
 /// [updateUtxoTag] : update type only, 선택된 태그를 수정하기 위한 UtxoTag 객체
 /// [onSelected] : select type only, 태그 목록 선택 변경 및 새태그 생성 완료 콜백
 /// [onUpdated] : create type, update type 선택된 태그 편집 및 새 태그 생성 완료 콜백
-class TagBottomSheetContainer extends StatefulWidget {
+class TagBottomSheet extends StatefulWidget {
   final TagBottomSheetType type;
   final List<UtxoTag> utxoTags;
   final List<String>? selectedUtxoTagNames;
   final UtxoTag? updateUtxoTag;
   final Function(List<String>, List<UtxoTag>)? onSelected;
   final Function(UtxoTag)? onUpdated;
-  const TagBottomSheetContainer({
+  const TagBottomSheet({
     super.key,
     required this.type,
     required this.utxoTags,
@@ -42,11 +42,10 @@ class TagBottomSheetContainer extends StatefulWidget {
   });
 
   @override
-  State<TagBottomSheetContainer> createState() =>
-      _TagBottomSheetContainerState();
+  State<TagBottomSheet> createState() => _TagBottomSheetState();
 }
 
-class _TagBottomSheetContainerState extends State<TagBottomSheetContainer> {
+class _TagBottomSheetState extends State<TagBottomSheet> {
   /// UtxoTag 전체 목록 - select type 에서 변경될 수 있음
   List<UtxoTag> _utxoTags = [];
 

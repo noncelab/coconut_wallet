@@ -7,10 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
-import 'package:coconut_wallet/screens/settings/license_screen.dart';
+import 'package:coconut_wallet/widgets/overlays/license_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 
@@ -396,8 +396,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
             SingleButton(
               title: '라이선스 안내',
               onPressed: () {
-                MyBottomSheet.showBottomSheet_95(
-                    context: context, child: const LicenseScreen());
+                CommonBottomSheets.showBottomSheet_95(
+                    context: context, child: const LicenseBottomSheet());
               },
             ),
             SingleButton(

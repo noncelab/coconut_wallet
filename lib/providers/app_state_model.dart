@@ -228,6 +228,9 @@ class AppStateModel extends ChangeNotifier {
   }
 
   WalletListItemBase getWalletById(int id) {
+    if (_walletItemList.isEmpty) {
+      throw Exception('WalletItem is Empty');
+    }
     return _walletItemList.firstWhere((element) => element.id == id);
   }
 
@@ -546,7 +549,6 @@ class AppStateModel extends ChangeNotifier {
     await _subStateModel.deletePin();
   }
 
-  /// TODO: Model 분리 ----------------------------------------------------------
   /// 전체 UtxoTagList
   List<UtxoTag> _utxoTagList = [];
   List<UtxoTag> get utxoTagList => _utxoTagList;
@@ -568,8 +570,6 @@ class AppStateModel extends ChangeNotifier {
   bool _isUpdatedSelectedTagList = false;
   bool get isUpdatedSelectedTagList => _isUpdatedSelectedTagList;
 
-  // TODO: 주석 확인 후 제거
-  // moveTagsFromUsedUtxosToNewUtxos + deleteTagsOfUsedUtxos
   Future updateTagsOfUsedUtxos(int walletId, List<String> newUtxoIds) async {
     final result = await _walletDataManager.updateTagsOfUsedUtxos(
         walletId, _usedUtxoIdListWhenSend, newUtxoIds);

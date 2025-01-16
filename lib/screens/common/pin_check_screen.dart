@@ -4,13 +4,17 @@ import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/pin/pin_input_screen.dart';
+import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
 import 'package:provider/provider.dart';
 
 class PinCheckScreen extends StatefulWidget {
   final bool appEntrance;
   final Function? onComplete;
-  const PinCheckScreen({super.key, this.appEntrance = false, this.onComplete});
+  const PinCheckScreen({
+    super.key,
+    this.appEntrance = false,
+    this.onComplete,
+  });
 
   @override
   State<PinCheckScreen> createState() => _PinCheckScreenState();
@@ -18,13 +22,13 @@ class PinCheckScreen extends StatefulWidget {
 
 class _PinCheckScreenState extends State<PinCheckScreen>
     with WidgetsBindingObserver {
+  static const kMaxNumberOfAttempts = 3;
   late String pin;
   late String errorMessage;
   // when widget.appEntrance is true
   int attempt = 0;
-  static const MAX_NUMBER_OF_ATTEMPTS = 3;
-  final GlobalKey<PinInputScreenState> _pinInputScreenKey =
-      GlobalKey<PinInputScreenState>();
+  final GlobalKey<PinInputPadState> _pinInputScreenKey =
+      GlobalKey<PinInputPadState>();
 
   late AppSubStateModel _subModel;
   bool _isPause = false;
@@ -90,7 +94,7 @@ class _PinCheckScreenState extends State<PinCheckScreen>
         if (widget.appEntrance) {
           attempt += 1;
           if (attempt < 3) {
-            errorMessage = '${MAX_NUMBER_OF_ATTEMPTS - attempt}번 다시 시도할 수 있어요';
+            errorMessage = '${kMaxNumberOfAttempts - attempt}번 다시 시도할 수 있어요';
             _subModel.shuffleNumbers();
             vibrateLightDouble();
           } else {
@@ -152,7 +156,7 @@ class _PinCheckScreenState extends State<PinCheckScreen>
 
   @override
   Widget build(BuildContext context) {
-    return PinInputScreen(
+    return PinInputPad(
       key: _pinInputScreenKey,
       appBarVisible: widget.appEntrance ? false : true,
       title: widget.appEntrance ? '' : '비밀번호를 눌러주세요',
@@ -160,6 +164,7 @@ class _PinCheckScreenState extends State<PinCheckScreen>
       pin: pin,
       errorMessage: errorMessage,
       onKeyTap: _onKeyTap,
+      pinShuffleNumbers: _subModel.pinShuffleNumbers,
       onClosePressed: () {
         Navigator.pop(context);
       },

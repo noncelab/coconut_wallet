@@ -12,7 +12,7 @@ import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:provider/provider.dart';
 
-@Deprecated("UtxoListScreen 삭제")
+@Deprecated("UtxoListScreen Deprecated")
 class UtxoListScreen extends StatefulWidget {
   final int id;
 

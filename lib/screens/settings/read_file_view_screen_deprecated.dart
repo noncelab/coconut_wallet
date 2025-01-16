@@ -8,6 +8,7 @@ enum FileType {
   contributing,
 }
 
+@Deprecated("ReadFileViewScreen Deprecated")
 class ReadFileViewScreen extends StatefulWidget {
   final FileType fileType;
   const ReadFileViewScreen({super.key, required this.fileType});

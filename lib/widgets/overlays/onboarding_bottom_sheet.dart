@@ -3,14 +3,14 @@ import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 
-class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+class OnboardingBottomSheet extends StatefulWidget {
+  const OnboardingBottomSheet({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  State<OnboardingBottomSheet> createState() => _OnboardingBottomSheetState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
   int _countdown = 5;
   bool _isCountdownFinished = false;
 

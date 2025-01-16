@@ -5,7 +5,7 @@ import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_dialog.dart';
-import 'package:coconut_wallet/widgets/pin/pin_input_screen.dart';
+import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
 import 'package:provider/provider.dart';
 
 class PinSettingScreen extends StatefulWidget {
@@ -149,7 +149,8 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
           Navigator.pop(context);
           Navigator.pop(context);
-        }).catchError((_) {
+        }).catchError((e) {
+          print(e);
           returnToBackSequence('저장 중 문제가 발생했어요', isError: true);
         });
       }
@@ -158,11 +159,12 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PinInputScreen(
+    return PinInputPad(
       title: step == 0 ? '새로운 비밀번호를 눌러주세요' : '다시 한번 확인할게요',
       pin: step == 0 ? pin : pinConfirm,
       errorMessage: errorMessage,
       onKeyTap: _onKeyTap,
+      pinShuffleNumbers: _subModel.pinShuffleNumbers,
       onClosePressed: step == 0
           ? () {
               Navigator.pop(context); // Pin 설정 취소

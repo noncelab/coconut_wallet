@@ -3,7 +3,7 @@ import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/screens/bottom_sheet/tag_bottom_sheet_container.dart';
+import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -382,7 +382,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   context: context,
                                   backgroundColor: MyColors.black,
                                   isScrollControlled: true,
-                                  builder: (context) => TagBottomSheetContainer(
+                                  builder: (context) => TagBottomSheet(
                                     type: TagBottomSheetType.select,
                                     utxoTags: utxoTagList,
                                     selectedUtxoTagNames: selectedUtxoTags

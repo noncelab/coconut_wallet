@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/screens/bottom_sheet/tag_bottom_sheet_container.dart';
+import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
@@ -9,7 +9,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:provider/provider.dart';
 
-/// [id] - wallet id 기반으로 태그 관리
 class UtxoTagScreen extends StatefulWidget {
   final int id;
   const UtxoTagScreen({super.key, required this.id});
@@ -58,7 +57,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
-                  builder: (context) => TagBottomSheetContainer(
+                  builder: (context) => TagBottomSheet(
                     type: TagBottomSheetType.create,
                     utxoTags: utxoTagList,
                     onUpdated: (utxoTag) {
@@ -103,7 +102,7 @@ class _UtxoTagScreenState extends State<UtxoTagScreen> {
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,
-                              builder: (context) => TagBottomSheetContainer(
+                              builder: (context) => TagBottomSheet(
                                 type: TagBottomSheetType.update,
                                 utxoTags: utxoTagList,
                                 updateUtxoTag: _selectedUtxoTag,

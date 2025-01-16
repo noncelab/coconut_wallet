@@ -12,7 +12,7 @@ import 'package:coconut_wallet/model/app/send/send_info.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/screens/send/utxo_selection/fee_selection_screen.dart';
+import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -20,7 +20,7 @@ import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
@@ -398,7 +398,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         // 모두 선택 시 List.from 으로 전체 리스트, 필터 리스트 구분 될 때
         // 라이브러리 UTXO에 copyWith 구현 필요함
         final keyToRemove = '${utxo.transactionHash}_${utxo.index}';
-        // TODO: ??
+
         _selectedUtxoList = _selectedUtxoList
             .fold<Map<String, UTXO>>({}, (map, utxo) {
               final key = '${utxo.transactionHash}_${utxo.index}';
@@ -953,7 +953,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                                 .getMinimumNetworkFeeRate();
                                         Map<String, dynamic>?
                                             feeSelectionResult =
-                                            await MyBottomSheet
+                                            await CommonBottomSheets
                                                 .showBottomSheet_90(
                                           context: context,
                                           child: FeeSelectionScreen(

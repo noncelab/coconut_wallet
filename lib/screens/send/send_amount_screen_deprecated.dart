@@ -13,6 +13,7 @@ import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
 
+@Deprecated("SendAmountScreen Deprecated")
 class SendAmountScreen extends StatefulWidget {
   final int id;
   final String recipient;
