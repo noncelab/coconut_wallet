@@ -7,7 +7,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/widgets/overlays/security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/widgets/overlays/terms_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/custom_dropdown.dart';
+import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

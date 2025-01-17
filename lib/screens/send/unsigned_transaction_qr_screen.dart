@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/custom_tooltip.dart';
+import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:provider/provider.dart';
 
 class UnsignedTransactionQrScreen extends StatefulWidget {

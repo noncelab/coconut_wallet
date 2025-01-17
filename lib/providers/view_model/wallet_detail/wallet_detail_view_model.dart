@@ -49,11 +49,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   List<model.UTXO> _utxoList = [];
   List<model.UTXO> get utxoList => _utxoList;
 
-  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byTimestampDesc; // 초기 정렬 방식
-  UtxoOrderEnum get selectedFilter => _selectedFilter;
-
-  bool _faucetTipVisible = false;
-  bool get faucetTipVisible => _faucetTipVisible;
+  UtxoOrderEnum _selectedUtxoFilter = UtxoOrderEnum.byTimestampDesc; // 초기 정렬 방식
+  UtxoOrderEnum get selectedUtxoFilter => _selectedUtxoFilter;
 
   bool _faucetTooltipVisible = false;
   bool get faucetTooltipVisible => _faucetTooltipVisible;
@@ -187,12 +184,12 @@ class WalletDetailViewModel extends ChangeNotifier {
 
     _isUtxoListLoadComplete = true;
     _utxoList = utxos;
-    model.UTXO.sortUTXO(_utxoList, _selectedFilter);
+    model.UTXO.sortUTXO(_utxoList, _selectedUtxoFilter);
   }
 
-  void updateUtxoFilter(UtxoOrderEnum orderEnum) async {
-    _selectedFilter = orderEnum;
-    model.UTXO.sortUTXO(_utxoList, orderEnum);
+  void updateUtxoFilter(UtxoOrderEnum selectedUtxoFilter) async {
+    _selectedUtxoFilter = selectedUtxoFilter;
+    model.UTXO.sortUTXO(_utxoList, selectedUtxoFilter);
     notifyListeners();
   }
 
@@ -221,14 +218,11 @@ class WalletDetailViewModel extends ChangeNotifier {
     final faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     if (_walletListBaseItem.balance == 0 && faucetHistory.count < 3) {
       _faucetTooltipVisible = true;
-      await Future.delayed(const Duration(milliseconds: 500));
-      _faucetTipVisible = true;
     }
     notifyListeners();
   }
 
   void removeFaucetTooltip() {
-    _faucetTipVisible = false;
     _faucetTooltipVisible = false;
     notifyListeners();
   }
