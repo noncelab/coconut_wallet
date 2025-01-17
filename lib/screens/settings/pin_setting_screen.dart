@@ -1,7 +1,7 @@
-import 'package:coconut_wallet/providers/app_state_model.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_dialog.dart';
@@ -9,8 +9,8 @@ import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
 import 'package:provider/provider.dart';
 
 class PinSettingScreen extends StatefulWidget {
-  final bool isCheckBiometrics;
-  const PinSettingScreen({super.key, this.isCheckBiometrics = false});
+  final bool useBiometrics;
+  const PinSettingScreen({super.key, this.useBiometrics = false});
 
   @override
   State<PinSettingScreen> createState() => _PinSettingScreenState();
@@ -21,7 +21,9 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   late String pin;
   late String pinConfirm;
   late String errorMessage;
-  late AppSubStateModel _subModel;
+  //late AppSubStateModel _subModel;
+  late List<String> _shuffledPinNumbers;
+  late AuthProvider _authProvider;
 
   @override
   void initState() {
@@ -29,10 +31,19 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     pin = '';
     pinConfirm = '';
     errorMessage = '';
-    _subModel = Provider.of<AppSubStateModel>(context, listen: false);
+    //_subModel = Provider.of<AppSubStateModel>(context, listen: false);
+    _authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _shuffledPinNumbers = _authProvider.getShuffledNumberPad(isSettings: true);
   }
 
-  void _showPinSetDialog() {
+  void _shufflePinNumbers() {
+    setState(() {
+      _shuffledPinNumbers =
+          _authProvider.getShuffledNumberPad(isSettings: true);
+    });
+  }
+
+  void _showPinSetSuccessLottie() {
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
@@ -67,7 +78,8 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     setState(() {
       errorMessage = message;
       pinConfirm = '';
-      _subModel.shuffleNumbers(isSettings: true);
+      _shufflePinNumbers();
+      //_subModel.shuffleNumbers(isSettings: true);
       if (firstSequence) {
         step = 0;
         pin = '';
@@ -82,7 +94,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   }
 
   Future<bool> _comparePin(String input) async {
-    bool isSamePin = await _subModel.verifyPin(input);
+    bool isSamePin = await _authProvider.verifyPin(input);
     return isSamePin;
   }
 
@@ -115,7 +127,8 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         setState(() {
           step = 1;
           errorMessage = '';
-          _subModel.shuffleNumbers(isSettings: true);
+          _shufflePinNumbers();
+          //_subModel.shuffleNumbers(isSettings: true);
         });
       }
     } else if (step == 1) {
@@ -137,22 +150,37 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
         vibrateLight();
 
-        if (widget.isCheckBiometrics && _subModel.canCheckBiometrics) {
-          await _subModel.authenticateWithBiometrics(isSave: true);
-          await _subModel.checkDeviceBiometrics();
+        if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
+          await _authProvider.authenticateWithBiometrics(isSave: true);
+          await _authProvider.checkDeviceBiometrics();
         }
 
-        Provider.of<AppStateModel>(context, listen: false)
-            .setPin(hashString(pin))
-            .then((_) async {
-          _showPinSetDialog();
+        var hashedPin = hashString(pin);
+        await Provider.of<WalletProvider>(context, listen: false)
+            .encryptWalletSecureData(hashedPin)
+            .catchError((e) {
+          returnToBackSequence('저장 중 문제가 발생했어요', isError: true);
+        });
+
+        _authProvider.savePinSet(hashedPin).then((_) async {
+          _showPinSetSuccessLottie();
 
           Navigator.pop(context);
           Navigator.pop(context);
         }).catchError((e) {
-          print(e);
           returnToBackSequence('저장 중 문제가 발생했어요', isError: true);
         });
+        // Provider.of<AppStateModel>(context, listen: false)
+        //     .setPin(hashString(pin))
+        //     .then((_) async {
+        //   _showPinSetSuccessLottie();
+
+        //   Navigator.pop(context);
+        //   Navigator.pop(context);
+        // }).catchError((e) {
+        //   print(e);
+        //   returnToBackSequence('저장 중 문제가 발생했어요', isError: true);
+        // });
       }
     }
   }
@@ -164,7 +192,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       pin: step == 0 ? pin : pinConfirm,
       errorMessage: errorMessage,
       onKeyTap: _onKeyTap,
-      pinShuffleNumbers: _subModel.pinShuffleNumbers,
+      pinShuffleNumbers: _shuffledPinNumbers,
       onClosePressed: step == 0
           ? () {
               Navigator.pop(context); // Pin 설정 취소

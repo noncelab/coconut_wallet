@@ -1,6 +1,6 @@
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -29,8 +29,9 @@ class _PinCheckScreenState extends State<PinCheckScreen>
   int attempt = 0;
   final GlobalKey<PinInputPadState> _pinInputScreenKey =
       GlobalKey<PinInputPadState>();
-
-  late AppSubStateModel _subModel;
+  late List<String> _shuffledPinNumbers;
+  late AuthProvider _authProvider;
+  //late AppSubStateModel _subModel;
   bool _isPause = false;
 
   @override
@@ -39,15 +40,26 @@ class _PinCheckScreenState extends State<PinCheckScreen>
     pin = '';
     errorMessage = '';
 
-    _subModel = Provider.of<AppSubStateModel>(context, listen: false);
-    if (_subModel.isSetBiometrics && _subModel.canCheckBiometrics) {
+    _authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _shuffledPinNumbers = _authProvider.getShuffledNumberPad();
+    if (_authProvider.isSetBiometrics && _authProvider.canCheckBiometrics) {
       _verifyBiometric();
     }
+    //_subModel = Provider.of<AppSubStateModel>(context, listen: false);
+    // if (_subModel.isSetBiometrics && _subModel.canCheckBiometrics) {
+    //   _verifyBiometric();
+    // }
 
     /// appEntrance인 경우 AppGuard가 위젯트리에 없으므로 추가
     if (widget.appEntrance) {
       WidgetsBinding.instance.addObserver(this);
     }
+  }
+
+  void _shufflePinNumbers() {
+    setState(() {
+      _shuffledPinNumbers = _authProvider.getShuffledNumberPad();
+    });
   }
 
   @override
@@ -56,7 +68,8 @@ class _PinCheckScreenState extends State<PinCheckScreen>
       _isPause = true;
     } else if (AppLifecycleState.resumed == state && _isPause) {
       _isPause = false;
-      _subModel.checkDeviceBiometrics();
+      _authProvider.checkDeviceBiometrics();
+      //_subModel.checkDeviceBiometrics();
     }
   }
 
@@ -70,7 +83,7 @@ class _PinCheckScreenState extends State<PinCheckScreen>
 
   void _verifyBiometric() async {
     context.loaderOverlay.show();
-    _subModel.authenticateWithBiometrics().then((value) {
+    _authProvider.authenticateWithBiometrics().then((value) {
       if (value) {
         if (!widget.appEntrance) {
           Navigator.pop(context, true);
@@ -84,7 +97,7 @@ class _PinCheckScreenState extends State<PinCheckScreen>
 
   void _verifyPin() async {
     context.loaderOverlay.show();
-    _subModel.verifyPin(pin).then((value) {
+    _authProvider.verifyPin(pin).then((value) {
       if (value) {
         if (!widget.appEntrance) {
           Navigator.pop(context, true);
@@ -95,14 +108,14 @@ class _PinCheckScreenState extends State<PinCheckScreen>
           attempt += 1;
           if (attempt < 3) {
             errorMessage = '${kMaxNumberOfAttempts - attempt}번 다시 시도할 수 있어요';
-            _subModel.shuffleNumbers();
+            _shufflePinNumbers();
             vibrateLightDouble();
           } else {
             errorMessage = '더 이상 시도할 수 없어요\n앱을 종료해 주세요';
           }
         } else {
           errorMessage = '비밀번호가 일치하지 않아요';
-          _subModel.shuffleNumbers();
+          _shufflePinNumbers();
           vibrateLightDouble();
         }
         pin = '';
@@ -146,7 +159,7 @@ class _PinCheckScreenState extends State<PinCheckScreen>
         confirmButtonText: '다시 설정',
         confirmButtonColor: MyColors.warningRed,
         cancelButtonText: '닫기', onConfirm: () async {
-      await _subModel.resetPassword();
+      await _authProvider.resetPassword();
       widget.onComplete?.call();
       Navigator.of(context).pop();
     }, onCancel: () {
@@ -164,7 +177,7 @@ class _PinCheckScreenState extends State<PinCheckScreen>
       pin: pin,
       errorMessage: errorMessage,
       onKeyTap: _onKeyTap,
-      pinShuffleNumbers: _subModel.pinShuffleNumbers,
+      pinShuffleNumbers: _shuffledPinNumbers,
       onClosePressed: () {
         Navigator.pop(context);
       },

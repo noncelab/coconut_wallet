@@ -77,15 +77,15 @@ void main() {
 
     String envFile = '$appFlavor.env';
     await dotenv.load(fileName: envFile);
-    PowWalletApp.kElectrumHost = dotenv.env[DotenvKeys.electrumHost] ?? '';
+    CoconutWalletApp.kElectrumHost = dotenv.env[DotenvKeys.electrumHost] ?? '';
     String? portString = dotenv.env[DotenvKeys.electrumPort];
-    PowWalletApp.kElectrumPort =
+    CoconutWalletApp.kElectrumPort =
         portString != null ? int.tryParse(portString) ?? 0 : 0;
-    PowWalletApp.kElectrumIsSSL =
+    CoconutWalletApp.kElectrumIsSSL =
         dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
-    PowWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
-    PowWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
-    runApp(const PowWalletApp());
+    CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
+    CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
+    runApp(const CoconutWalletApp());
   }, (error, stackTrace) {
     Logger.log(">>>>> runZoneGuarded error: $error");
     Logger.log('Stack trace: $stackTrace');

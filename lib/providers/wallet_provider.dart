@@ -1,24 +1,16 @@
-import 'dart:async';
-
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/app/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/app/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
-import 'package:flutter/foundation.dart';
-import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/model/app/error/app_error.dart';
-import 'package:coconut_wallet/providers/app_sub_state_model.dart';
-import 'package:coconut_wallet/model/api/request/faucet_request.dart';
-import 'package:coconut_wallet/model/app/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/services/faucet_service.dart';
+import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter/material.dart';
 
 /// Represents the initialization state of a wallet. 처음 초기화 때만 사용하지 않고 refresh 할 때도 사용합니다.
 enum WalletInitState {
@@ -41,9 +33,8 @@ enum WalletInitState {
   impossible,
 }
 
-class AppStateModel extends ChangeNotifier {
-  // final SecureStorageService _storageService = SecureStorageService();
-  AppSubStateModel _subStateModel;
+class WalletProvider extends ChangeNotifier {
+  final SharedPrefs _sharedPrefs = SharedPrefs();
 
   // 잔액 갱신 전 local db에서 지갑 목록 조회를 끝냈는지 여부
   bool _fastLoadDone = false;
@@ -64,27 +55,24 @@ class AppStateModel extends ChangeNotifier {
   List<WalletListItemBase> _walletItemList = [];
   List<WalletListItemBase> get walletItemList => _walletItemList;
 
-  // 애니메이션이 동작해야하면 해당하는 ReturnPageResult.<add/update>, 아니면 ReturnPageResult.none을 담습니다.
-  List<WalletSyncResult?> _animatedWalletFlags = [];
-  List<WalletSyncResult?> get animatedWalletFlags => _animatedWalletFlags;
-
-  String? txWaitingForSign;
-  String? signedTransaction; // hex decode result
-
-  bool _isFaucetRequesting = false;
-  bool get isFaucetRequesting => _isFaucetRequesting;
-
-  final Faucet _faucetRepository = Faucet();
+  /// 마지막 업데이트 시간
+  int _lastUpdateTime = 0;
+  int get lastUpdateTime => _lastUpdateTime;
 
   late final WalletDataManager _walletDataManager;
 
-  AppStateModel(this._subStateModel, this._walletDataManager) {
+  late final Future<void> Function(int) _setWalletCount;
+  late final bool _isSetPin;
+
+  WalletProvider(this._walletDataManager, this._isNetworkOn,
+      this._setWalletCount, this._isSetPin) {
     initWallet();
+    _lastUpdateTime = _sharedPrefs.getInt(SharedPrefs.kLastUpdateTime);
   }
 
-  /// [_subStateModel]의 변동사항 업데이트
-  void updateWithSubState(AppSubStateModel subStateModel) {
-    _subStateModel = subStateModel;
+  Future<void> _setLastUpdateTime() async {
+    _lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
+    await _sharedPrefs.setInt(SharedPrefs.kLastUpdateTime, _lastUpdateTime);
     notifyListeners();
   }
 
@@ -169,23 +157,18 @@ class AppStateModel extends ChangeNotifier {
 
       setWalletInitState(WalletInitState.finished);
       // notifyListeners(); ^ setWalletInitState 안에서 실행되어서 주석처리 했습니다.
-      _subStateModel.setLastUpdateTime();
+      _setLastUpdateTime();
 
-      vibrateLight();
+      // TODO: 화면에서 호출
+      //vibrateLight();
       Logger.log(">>>>> ===================== initWallet 정상 끝");
     } catch (e) {
-      vibrateLightDouble();
+      // TODO: 화면에서 호출
+      // vibrateLightDouble();
       Logger.log(
           ">>>>> ===================== initWallet catch!! notifyListeners() ${e.toString()}");
       notifyListeners();
       rethrow;
-    }
-  }
-
-  void setAnimatedWalletFlags({int? index, WalletSyncResult? type}) {
-    _animatedWalletFlags = List.filled(_walletItemList.length, null);
-    if (index != null) {
-      _animatedWalletFlags[index] = type;
     }
   }
 
@@ -216,15 +199,6 @@ class AppStateModel extends ChangeNotifier {
               ErrorCodes.nodeConnectionError, e.toString()));
       rethrow;
     }
-  }
-
-  // Returns a copy of the list of wallet list.
-  List<SinglesigWalletListItem> getWallets() {
-    if (_walletItemList.isEmpty) {
-      return [];
-    }
-
-    return List.from(_walletItemList);
   }
 
   WalletListItemBase getWalletById(int id) {
@@ -273,8 +247,9 @@ class AppStateModel extends ChangeNotifier {
         List<WalletListItemBase> updatedList = List.from(_walletItemList);
         _walletItemList = updatedList;
 
-        setAnimatedWalletFlags(
-            index: index, type: WalletSyncResult.existingWalletUpdated);
+        // TODO: 화면에서
+        // setAnimatedWalletFlags(
+        //     index: index, type: WalletSyncResult.existingWalletUpdated);
         result = WalletSyncResult.existingWalletUpdated;
         notifyListeners();
       }
@@ -303,12 +278,14 @@ class AppStateModel extends ChangeNotifier {
     _walletItemList = updatedList;
 
     if (result == WalletSyncResult.newWalletAdded) {
-      setAnimatedWalletFlags(
-          index: _walletItemList.length - 1,
-          type: WalletSyncResult.newWalletAdded);
-      if (!_subStateModel.isNotEmptyWalletList) {
-        _subStateModel.saveNotEmptyWalletList(true);
-      }
+      // TODO: 화면에서
+      // setAnimatedWalletFlags(
+      //     index: _walletItemList.length - 1,
+      //     type: WalletSyncResult.newWalletAdded);
+      //if (!_subStateModel.isNotEmptyWalletList) {
+      _setWalletCount(updatedList.length);
+      //_subStateModel.saveNotEmptyWalletList(true);
+      //}
     }
 
     await initWallet(targetId: newItem.id, syncOthers: false);
@@ -353,10 +330,11 @@ class AppStateModel extends ChangeNotifier {
     _walletItemList = List.from(_walletDataManager.walletList);
     //_walletItemList = _walletDataManager.walletList;
     _walletDataManager.deleteAllUtxoTag(id);
-    if (_walletItemList.isEmpty) {
-      _subStateModel.saveNotEmptyWalletList(false);
-    }
-    await _subStateModel.removeFaucetHistory(id);
+    _setWalletCount(_walletItemList.length);
+    //if (_walletItemList.isEmpty) {
+    //_subStateModel.saveNotEmptyWalletList(false);
+    //}
+    // await _subStateModel.removeFaucetHistory(id);
     notifyListeners();
   }
 
@@ -390,7 +368,7 @@ class AppStateModel extends ChangeNotifier {
       Logger.log(
           '--> _walletDataManager.isInitialized: ${_walletDataManager.isInitialized}');
       if (!_walletDataManager.isInitialized) {
-        await _walletDataManager.init(_subStateModel.isSetPin);
+        await _walletDataManager.init(_isSetPin);
       }
       wallets = await _walletDataManager.loadWalletsFromDB();
     } catch (e) {
@@ -415,8 +393,8 @@ class AppStateModel extends ChangeNotifier {
     // final result = await receivePort.first as List<WalletListItemBase>;
 
     _walletItemList = wallets;
-    _animatedWalletFlags = List.filled(_walletItemList.length, null);
-    _subStateModel.saveNotEmptyWalletList(_walletItemList.isNotEmpty);
+    //_animatedWalletFlags = List.filled(_walletItemList.length, null);
+    //_subStateModel.saveNotEmptyWalletList(_walletItemList.isNotEmpty);
     // for wallet_list_screen
     _onFinallyLoadingWalletsFromDB();
   }
@@ -458,11 +436,6 @@ class AppStateModel extends ChangeNotifier {
     return _walletDataManager.getTxList(walletId);
   }
 
-  void clearAllRelatedSending() {
-    txWaitingForSign = null;
-    signedTransaction = null;
-  }
-
   /// 네트워크가 꺼지면 네트워크를 해제함.
   void setIsNetworkOn(bool isNetworkOn) {
     if (_isNetworkOn == null && isNetworkOn) {
@@ -476,23 +449,6 @@ class AppStateModel extends ChangeNotifier {
     if (!isNetworkOn) {
       handleNetworkDisconnected();
       notifyListeners();
-    }
-  }
-
-  Future<dynamic> startFaucetRequest(String address, double amount) async {
-    _isFaucetRequesting = true;
-    notifyListeners();
-
-    try {
-      final response = await _faucetRepository
-          .getTestCoin(FaucetRequest(address: address, amount: amount));
-      _isFaucetRequesting = false;
-      notifyListeners();
-      return response;
-    } catch (e) {
-      _isFaucetRequesting = false;
-      notifyListeners();
-      throw Exception('Failed to send request: $e');
     }
   }
 
@@ -539,225 +495,16 @@ class AppStateModel extends ChangeNotifier {
     return result;
   }
 
-  Future setPin(String hashedPin) async {
+  Future encryptWalletSecureData(String hashedPin) async {
     await _walletDataManager.encrypt(hashedPin);
-    await _subStateModel.savePinSet(hashedPin);
+    // TODO: 화면에서 둘 다 호출
+    //await _subStateModel.savePinSet(hashedPin);
   }
 
-  Future deletePin() async {
+  Future decryptWalletSecureData() async {
     await _walletDataManager.decrypt();
-    await _subStateModel.deletePin();
-  }
-
-  /// 전체 UtxoTagList
-  List<UtxoTag> _utxoTagList = [];
-  List<UtxoTag> get utxoTagList => _utxoTagList;
-
-  /// 선택된 UtxoTagList (태그 편집)
-  List<UtxoTag> _selectedTagList = [];
-  List<UtxoTag> get selectedTagList => _selectedTagList;
-
-  List<String> _usedUtxoIdListWhenSend = [];
-  List<String> get usedUtxoIdListWhenSend => _usedUtxoIdListWhenSend;
-  bool _tagsMoveAllowed = false;
-  bool get tagsMoveAllowed => _tagsMoveAllowed;
-
-  /// 메모, 태그 상태 관리
-  Transfer? _transaction;
-  Transfer? get transaction => _transaction;
-
-  /// 선택된 태그 리스트 변경 여부
-  bool _isUpdatedSelectedTagList = false;
-  bool get isUpdatedSelectedTagList => _isUpdatedSelectedTagList;
-
-  Future updateTagsOfUsedUtxos(int walletId, List<String> newUtxoIds) async {
-    final result = await _walletDataManager.updateTagsOfUsedUtxos(
-        walletId, _usedUtxoIdListWhenSend, newUtxoIds);
-    if (result.isError) {
-      Logger.error(result.error);
-    }
-    _usedUtxoIdListWhenSend = [];
-    _tagsMoveAllowed = false;
-  }
-  // Future moveTagsFromUsedUtxosToNewUtxos(
-  //     int walletId, List<String> newUtxoIds) async {
-  //   await _walletDataManager.moveTagsFromUsedUtxosToNewUtxos(
-  //       walletId, _usedUtxoIdListWhenSend, newUtxoIds);
-  //   _usedUtxoIdListWhenSend = [];
-  //   _tagsMoveAllowed = false;
-  // }
-  // Future deleteTagsOfUsedUtxos(int walletId) async {
-  //   await _walletDataManager.deleteTags(walletId, _usedUtxoIdListWhenSend);
-  //   _usedUtxoIdListWhenSend = [];
-  // }
-
-  /// 선택된 태그 리스트 변경 여부 on/off
-  void setIsUpdateSelectedTagList(value) {
-    _isUpdatedSelectedTagList = value;
-  }
-
-  /// 선택된 Utxo transaction + index 리스트 업데이트
-  void recordUsedUtxoIdListWhenSend(List<String> utxoIdList) {
-    _usedUtxoIdListWhenSend = utxoIdList;
-  }
-
-  void allowTagToMove() {
-    _tagsMoveAllowed = true;
-  }
-
-  /// 지갑 상세 화면 진입시 태그 관련 데이터
-  void initUtxoTagScreenTagData(int walletId) {
-    _utxoTagList = loadUtxoTagList(walletId);
-    notifyListeners();
-  }
-
-  /// utxo 상세 화면 진입시 태그 관련 데이터
-  void initTransactionDetailScreenTagData(int walletId, String txHash) {
-    _transaction = loadTransaction(walletId, txHash);
-  }
-
-  /// utxo 상세 화면 진입시 태그 관련 데이터
-  void initUtxoDetailScreenTagData(int walletId, String txHash, int index) {
-    _utxoTagList = loadUtxoTagList(walletId);
-    _selectedTagList =
-        loadUtxoTagListByTxHashIndex(walletId, makeUtxoId(txHash, index));
-    _transaction = loadTransaction(walletId, txHash);
-    notifyListeners();
-  }
-
-  /// 전체 UtxoTagList 가져오기
-  List<UtxoTag> loadUtxoTagList(int walletId) {
-    final result = _walletDataManager.loadUtxoTagList(walletId);
-    if (result.isError) {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log('loadUtxoTagList(walletId: $walletId)');
-      Logger.log(result.error);
-    }
-    return result.data ?? [];
-  }
-
-  /// 선택된 UtxoTagList 가져오기
-  List<UtxoTag> loadUtxoTagListByTxHashIndex(int walletId, String utxoId) {
-    final result = _walletDataManager.loadUtxoTagListByUtxoId(walletId, utxoId);
-    if (result.isError) {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log(
-          'loadUtxoTagListByTxHashIndex(walletId: $walletId, txHashIndex: $utxoId)');
-      Logger.log(result.error);
-    }
-    return result.data ?? [];
-  }
-
-  /// transaction 가져오기
-  TransferDTO? loadTransaction(int id, String txHash) {
-    final result = _walletDataManager.loadTransaction(id, txHash);
-    if (result.isError) {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log('loadTransaction(id: $id, txHash: $txHash)');
-      Logger.log(result.error);
-    }
-    return result.data;
-  }
-
-  /// - 새 태그 추가
-  /// - 태그 관리 화면
-  void addUtxoTag(UtxoTag utxoTag) {
-    final id = const Uuid().v4();
-    final result = _walletDataManager.addUtxoTag(
-        id, utxoTag.walletId, utxoTag.name, utxoTag.colorIndex);
-    if (result.isSuccess) {
-      _isUpdatedSelectedTagList = true;
-      _utxoTagList = loadUtxoTagList(utxoTag.walletId);
-      notifyListeners();
-    } else {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log('addUtxoTag(utxoTag: $utxoTag)');
-      Logger.error(result.error);
-    }
-  }
-
-  /// - 선택된 태그 편집
-  /// - 태그 관리 화면
-  void updateUtxoTag(UtxoTag utxoTag) {
-    final result = _walletDataManager.updateUtxoTag(
-        utxoTag.id, utxoTag.name, utxoTag.colorIndex);
-    if (result.isSuccess) {
-      _isUpdatedSelectedTagList = true;
-      _utxoTagList = loadUtxoTagList(utxoTag.walletId);
-      notifyListeners();
-    } else {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log('updateUtxoTag(utxoTag: $utxoTag)');
-      Logger.log(result.error);
-    }
-  }
-
-  /// - 태그 리스트 편집(선택 편집, 목록 추가)
-  /// - Utxo 상세 화면 태그 편집
-  void updateUtxoTagList({
-    required int walletId,
-    required String txHashIndex,
-    required List<UtxoTag> addTags,
-    required List<String> selectedNames,
-  }) {
-    _isUpdatedSelectedTagList = true;
-
-    final updateUtxoTagListResult = _walletDataManager.updateUtxoTagList(
-        walletId, txHashIndex, addTags, selectedNames);
-
-    if (updateUtxoTagListResult.isError) {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log('updateUtxoTagList('
-          'walletId: $walletId,'
-          'txHashIndex: $txHashIndex,'
-          'addTags: $addTags,'
-          'selectedNames: $selectedNames,'
-          ')');
-      Logger.log(updateUtxoTagListResult.error);
-    }
-
-    _utxoTagList = loadUtxoTagList(walletId);
-    _selectedTagList = loadUtxoTagListByTxHashIndex(walletId, txHashIndex);
-    notifyListeners();
-  }
-
-  /// - 선택된 태그 삭제
-  /// - 태그 관리 화면
-  void deleteUtxoTag(UtxoTag utxoTag) {
-    final result = _walletDataManager.deleteUtxoTag(utxoTag.id);
-    if (result.isSuccess) {
-      _isUpdatedSelectedTagList = true;
-      _utxoTagList = loadUtxoTagList(utxoTag.walletId);
-      notifyListeners();
-    } else {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log('deleteUtxoTag(utxoTag: $utxoTag)');
-      Logger.log(result.error);
-    }
-  }
-
-  /// - 메모 편집
-  /// - 거래 자세히 보기
-  void updateTransactionMemo(int walletId, String txHash, String memo) {
-    final result =
-        _walletDataManager.updateTransactionMemo(walletId, txHash, memo);
-    if (result.isSuccess) {
-      _transaction = loadTransaction(walletId, txHash);
-      notifyListeners();
-    } else {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log(
-          'updateTransactionMemo(walletId: $walletId, txHash: $txHash, memo: $memo)');
-      Logger.log(result.error);
-    }
+    // TODO: 화면에서 둘 다 호출
+    //await _subStateModel.deletePin();
   }
 }
 

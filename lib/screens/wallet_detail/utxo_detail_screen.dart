@@ -343,7 +343,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                 label: '보유 주소',
                                 subLabel: '멤풀 보기',
                                 onSubLabelClicked: () => launchUrl(Uri.parse(
-                                    "${PowWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+                                    "${CoconutWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
                                 isChangeTagVisible: widget.isChange,
                                 value: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,7 +451,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                 label: '블록 번호',
                                 subLabel: '멤풀 보기',
                                 onSubLabelClicked: () => launchUrl(Uri.parse(
-                                    "${PowWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
+                                    "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
                                 value: Text(
                                   widget.utxo.blockHeight,
                                   style: Styles.body2Number

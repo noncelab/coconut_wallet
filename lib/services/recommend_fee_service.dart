@@ -6,7 +6,8 @@ import 'package:http/http.dart';
 
 class RecommendFeeService {
   static Future<RecommendedFee> getRecommendFee() async {
-    String urlString = '${PowWalletApp.kMempoolHost}/api/v1/fees/recommended';
+    String urlString =
+        '${CoconutWalletApp.kMempoolHost}/api/v1/fees/recommended';
     final url = Uri.parse(urlString);
     final response = await get(url);
 

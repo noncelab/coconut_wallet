@@ -363,7 +363,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         subLabel: '멤풀 보기',
                         onSubLabelClicked: () {
                           launchUrl(Uri.parse(
-                              "${PowWalletApp.kMempoolHost}/block/${tx.blockHeight}"));
+                              "${CoconutWalletApp.kMempoolHost}/block/${tx.blockHeight}"));
                         },
                         value: Text(
                           tx.blockHeight != 0
@@ -378,7 +378,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           subLabel: '멤풀 보기',
                           onSubLabelClicked: () {
                             launchUrl(Uri.parse(
-                                "${PowWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
+                                "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
                           },
                           value: Text(
                             tx.transactionHash,

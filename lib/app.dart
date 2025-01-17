@@ -1,4 +1,9 @@
 import 'package:coconut_wallet/appGuard.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/visibility_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
@@ -34,19 +39,19 @@ import 'package:provider/provider.dart';
 
 enum AccessFlow { splash, main, pinCheck }
 
-class PowWalletApp extends StatefulWidget {
+class CoconutWalletApp extends StatefulWidget {
   static late String kElectrumHost;
   static late int kElectrumPort;
   static late bool kElectrumIsSSL;
   static late String kMempoolHost;
   static late String kFaucetHost;
-  const PowWalletApp({super.key});
+  const CoconutWalletApp({super.key});
 
   @override
-  State<PowWalletApp> createState() => _PowWalletAppState();
+  State<CoconutWalletApp> createState() => _CoconutWalletAppState();
 }
 
-class _PowWalletAppState extends State<PowWalletApp> {
+class _CoconutWalletAppState extends State<CoconutWalletApp> {
   /// 0 = splash, 1 = main, 2 = pin check
   AccessFlow _screenStatus = AccessFlow.splash;
 
@@ -66,8 +71,35 @@ class _PowWalletAppState extends State<PowWalletApp> {
 
         ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
 
+        ChangeNotifierProvider(create: (_) => VisibilityProvider()),
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+
         /// main 에서만 사용하는 모델
         if (_screenStatus == AccessFlow.main) ...{
+          ChangeNotifierProvider(create: (_) => PreferenceProvider()),
+          ChangeNotifierProxyProvider3<ConnectivityProvider, VisibilityProvider,
+              AuthProvider, WalletProvider>(
+            create: (_) {
+              return WalletProvider(
+                  WalletDataManager(),
+                  Provider.of<ConnectivityProvider>(_, listen: false)
+                      .isNetworkOn,
+                  Provider.of<VisibilityProvider>(_, listen: false)
+                      .setWalletCount,
+                  Provider.of<AuthProvider>(_, listen: false).isSetPin);
+            },
+            update: (context, connectivityProvider, visiblityProvider,
+                authProvider, walletProvider) {
+              if (walletProvider!.isNetworkOn !=
+                  connectivityProvider.isNetworkOn) {
+                walletProvider
+                    .setIsNetworkOn(connectivityProvider.isNetworkOn ?? false);
+              }
+
+              return walletProvider;
+            },
+          ),
           ChangeNotifierProxyProvider<AppSubStateModel, AppStateModel>(
             create: (_) {
               return AppStateModel(
