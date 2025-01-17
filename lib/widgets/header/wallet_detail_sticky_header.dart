@@ -15,7 +15,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
   final double height;
   final bool isVisible;
   final Unit currentUnit;
-  final SelectedListType selectedListType;
+  final WalletDetailTabType selectedListType;
   final String selectedFilter;
   final Function(int?, String, String) onTapReceive;
   final Function(int?) onTapSend;
@@ -172,8 +172,9 @@ class WalletDetailStickyHeader extends StatelessWidget {
                           ],
                         ),
                         child: Visibility(
-                          visible: selectedListType == SelectedListType.utxo &&
-                              utxoListIsNotEmpty,
+                          visible:
+                              selectedListType == WalletDetailTabType.utxo &&
+                                  utxoListIsNotEmpty,
                           maintainAnimation: true,
                           maintainState: true,
                           maintainSize: true,
@@ -239,7 +240,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            selectedListType == SelectedListType.transaction
+                            selectedListType == WalletDetailTabType.transaction
                                 ? '거래 내역'
                                 : 'UTXO 목록', // TODO: 선택된 리스트 대입
                             style: Styles.caption2.merge(

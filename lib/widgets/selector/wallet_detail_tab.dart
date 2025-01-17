@@ -1,10 +1,10 @@
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/cupertino.dart';
 
-enum SelectedListType { transaction, utxo }
+enum WalletDetailTabType { transaction, utxo }
 
 class WalletDetailTab extends StatefulWidget {
-  final SelectedListType selectedListType;
+  final WalletDetailTabType selectedListType;
   final int utxoListLength;
   final Function onTapTransaction;
   final Function onTapUtxo;
@@ -36,9 +36,10 @@ class _WalletDetailTabState extends State<WalletDetailTab> {
             '거래 내역',
             style: Styles.h3.merge(
               TextStyle(
-                color: widget.selectedListType == SelectedListType.transaction
-                    ? MyColors.white
-                    : MyColors.transparentWhite_50,
+                color:
+                    widget.selectedListType == WalletDetailTabType.transaction
+                        ? MyColors.white
+                        : MyColors.transparentWhite_50,
               ),
             ),
           ),
@@ -59,7 +60,7 @@ class _WalletDetailTabState extends State<WalletDetailTab> {
               text: 'UTXO 목록',
               style: Styles.h3.merge(
                 TextStyle(
-                  color: widget.selectedListType == SelectedListType.utxo
+                  color: widget.selectedListType == WalletDetailTabType.utxo
                       ? MyColors.white
                       : MyColors.transparentWhite_50,
                 ),
@@ -70,9 +71,10 @@ class _WalletDetailTabState extends State<WalletDetailTab> {
                     text: ' (${widget.utxoListLength}개)',
                     style: Styles.caption.merge(
                       TextStyle(
-                        color: widget.selectedListType == SelectedListType.utxo
-                            ? MyColors.transparentWhite_70
-                            : MyColors.transparentWhite_50,
+                        color:
+                            widget.selectedListType == WalletDetailTabType.utxo
+                                ? MyColors.transparentWhite_70
+                                : MyColors.transparentWhite_50,
                         fontFamily: 'Pretendard',
                       ),
                     ),
