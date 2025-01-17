@@ -2,6 +2,7 @@ import 'package:coconut_wallet/appGuard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
@@ -151,7 +152,29 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         home: _screenStatus == AccessFlow.splash
             ? StartScreen(onComplete: _completeSplash)
             : _screenStatus == AccessFlow.main
-                ? const AppGuard(child: WalletListScreen())
+                ? AppGuard(
+                    child: ChangeNotifierProxyProvider3<
+                        WalletProvider,
+                        PreferenceProvider,
+                        VisibilityProvider,
+                        WalletListViewModel>(
+                      create: (_) => WalletListViewModel(
+                        Provider.of<WalletProvider>(_, listen: false),
+                        Provider.of<PreferenceProvider>(_, listen: false),
+                        Provider.of<VisibilityProvider>(_, listen: false)
+                            .hasLaunchedBefore,
+                      ),
+                      update: (BuildContext context,
+                          WalletProvider walletProvider,
+                          PreferenceProvider preferenceProvider,
+                          VisibilityProvider visibilityProvider,
+                          WalletListViewModel? previous) {
+                        // TODO:
+                        return previous!;
+                      },
+                      child: const WalletListScreen(),
+                    ),
+                  )
                 : CustomLoadingOverlay(
                     child: PinCheckScreen(
                       appEntrance: true,
