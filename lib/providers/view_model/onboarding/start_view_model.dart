@@ -4,6 +4,7 @@ import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/model/api/response/app_version_response.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
+import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/services/app_version_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -13,7 +14,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 class StartViewModel extends ChangeNotifier {
   /// Common variables ---------------------------------------------------------
-  final AppSubStateModel _subStateModel;
+  late final AppSubStateModel _subStateModel;
+  late final VisibilityProvider _visibilityProvider;
+
   final SharedPrefs _sharedPrefs = SharedPrefs();
   final AppVersion _appVersionRepository = AppVersion();
 
@@ -22,21 +25,21 @@ class StartViewModel extends ChangeNotifier {
   bool _canUpdate = false;
   bool _isLoading = true;
 
-  StartViewModel(this._subStateModel) {
+  StartViewModel(this._subStateModel, this._visibilityProvider) {
     _initialize();
   }
 
   bool get canUpdate => _canUpdate;
   bool get isLoading => _isLoading;
+  bool get hasLaunchedBefore => _visibilityProvider.hasLaunchedBefore;
 
   /// 시작 화면 결정
   Future<AccessFlow> determineStartScreen() async {
     // Splash 보여주기 위한 딜레이
     await Future.delayed(const Duration(seconds: 2));
     await _subStateModel.setInitData();
-
-    if (!_subStateModel.hasLaunchedBefore) {
-      await _subStateModel.setHasLaunchedBefore();
+    if (!hasLaunchedBefore) {
+      await _visibilityProvider.setHasLaunchedBefore();
     }
 
     if (!_subStateModel.isNotEmptyWalletList || !_subStateModel.isSetPin) {

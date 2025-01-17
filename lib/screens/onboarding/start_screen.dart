@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
+import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -23,8 +24,10 @@ class _StartScreenState extends State<StartScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel =
-        StartViewModel(Provider.of<AppSubStateModel>(context, listen: false));
+    _viewModel = StartViewModel(
+      Provider.of<AppSubStateModel>(context, listen: false),
+      Provider.of<VisibilityProvider>(context, listen: false),
+    );
 
     _initialize();
   }
