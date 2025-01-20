@@ -237,7 +237,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                         // 용어집
                         Visibility(
                           visible: !_subModel.isOpenTermsScreen &&
-                              _viewModel.fastLoadDone,
+                              viewModel.fastLoadDone,
                           child: GestureDetector(
                             onTap: () {
                               CommonBottomSheets.showBottomSheet_90(
@@ -332,7 +332,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                         ),
                         // 바로 추가하기
                         Visibility(
-                          visible: _viewModel.fastLoadDone &&
+                          visible: viewModel.fastLoadDone &&
                               viewModel.walletItemList.isEmpty,
                           child: Container(
                             width: double.maxFinite,
@@ -384,7 +384,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                         ),
                         // Indicator
                         Visibility(
-                          visible: !_viewModel.fastLoadDone,
+                          visible: !viewModel.fastLoadDone,
                           child: const Padding(
                             padding: EdgeInsets.only(top: 40.0),
                             child: CupertinoActivityIndicator(
