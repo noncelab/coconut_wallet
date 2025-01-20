@@ -23,7 +23,7 @@ class AddressListViewModel extends ChangeNotifier {
   }
 
   /// 초기화
-  Future<void> _initialize(int id, int firstCount) async {
+  void _initialize(int id, int firstCount) {
     _walletBaseItem = _appStateModel.getWalletById(id);
     _walletBase = _walletBaseItem!.walletBase;
     _receivingAddressList = _walletBase?.getAddressList(0, firstCount, false);
