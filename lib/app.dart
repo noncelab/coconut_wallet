@@ -28,6 +28,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_multisig_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_singlesig_info_screen.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -170,7 +171,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                           VisibilityProvider visibilityProvider,
                           WalletListViewModel? previous) {
                         // TODO:
-                        return previous!;
+                        return previous!
+                          ..onWalletProviderUpdated(walletProvider);
                       },
                       child: const WalletListScreen(),
                     ),
