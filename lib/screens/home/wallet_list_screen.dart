@@ -4,13 +4,11 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen/terms_shortcut_widget.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen/wallet_add_guide_widget.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
-import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
@@ -20,6 +18,7 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/onboarding_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/overlays/security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/overlays/terms_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/wallet_init_status_indicator.dart';
 import 'package:coconut_wallet/widgets/wallet_row_item.dart';
 import 'package:flutter/cupertino.dart';
@@ -45,7 +44,6 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   ResultOfSyncFromVault? _resultOfSyncFromVault;
 
-  late AnimationController _animationController;
   late ScrollController _scrollController;
   List<GlobalKey> _itemKeys = [];
 
@@ -252,7 +250,6 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   @override
   void dispose() {
-    _animationController.dispose();
     _scrollController.dispose();
     _slideAnimationController?.dispose();
     _blinkAnimationController?.dispose();
@@ -264,8 +261,6 @@ class _WalletListScreenState extends State<WalletListScreen>
     super.initState();
     _viewModel = Provider.of<WalletListViewModel>(context, listen: false);
 
-    _animationController = BottomSheet.createAnimationController(this);
-    _animationController.duration = const Duration(seconds: 2);
     _scrollController = ScrollController();
 
     _dropdownActions = [
@@ -294,9 +289,24 @@ class _WalletListScreenState extends State<WalletListScreen>
         });
       }
 
-      // TODO:
-      AppReviewService.showReviewScreenIfEligible(context,
-          animationController: _animationController);
+      if (_viewModel.showReviewScreen) {
+        var animationController = BottomSheet.createAnimationController(this)
+          ..duration = const Duration(seconds: 2);
+        await CommonBottomSheets.showBottomSheet_100(
+            context: context,
+            child: const UserExperienceSurveyBottomSheet(),
+            enableDrag: false,
+            backgroundColor: MyColors.nero,
+            isDismissible: false,
+            isScrollControlled: true,
+            useSafeArea: false,
+            animationController: animationController);
+
+        Future.delayed(const Duration(seconds: 5), () {
+          animationController.dispose();
+          _viewModel.updateAppReviewRequestCondition();
+        });
+      }
     });
   }
 

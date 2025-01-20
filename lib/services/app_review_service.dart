@@ -55,7 +55,7 @@ class AppReviewService {
   }
 
   /// 비트코인 전송을 완료한 적이 있고, 리뷰를 남긴 적이 없으면, 앱 실행 시 마다 count를 1씩 증가시켜 저장한다.
-  static Future<void> _increaseAppRunningCountIfRejected() async {
+  static Future<void> increaseAppRunningCountIfRejected() async {
     final sharedPrefs = SharedPrefs();
     if (_hasCompletedBitcoinTransfer() == true && _hasReviewed() != true) {
       final count = sharedPrefs.sharedPrefs
@@ -100,13 +100,8 @@ class AppReviewService {
         isFirst: true, animationController: animationController);
   }
 
-  static void showReviewScreenIfEligible(BuildContext context,
-      {AnimationController? animationController}) {
-    if (_hasCompletedBitcoinTransfer() != true) return;
-
-    if (_canRequestReview()) {
-      _showReviewScreen(context, animationController: animationController);
-    }
-    _increaseAppRunningCountIfRejected();
+  static bool shouldShowReviewScreen() {
+    if (_hasCompletedBitcoinTransfer() != true) return false;
+    return _canRequestReview();
   }
 }

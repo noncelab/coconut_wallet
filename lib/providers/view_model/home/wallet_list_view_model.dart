@@ -1,5 +1,4 @@
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -10,20 +9,20 @@ class WalletListViewModel extends ChangeNotifier {
   late WalletProvider _walletProvider;
   late final bool _hasLaunchedAppBefore;
   late bool _visibleTermsShortcut;
-  late final bool _isEligibleToRequestReview; // TODO:
   late bool _isBalanceHidden;
+  late final bool _showReviewScreen;
 
   WalletListViewModel(
       this._walletProvider, this._visibilityProvider, this._isBalanceHidden) {
     _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
     _visibleTermsShortcut = _visibilityProvider.visibleTermsShortcut;
-    _isEligibleToRequestReview = false; // TODO:
+    _showReviewScreen = AppReviewService.shouldShowReviewScreen();
   }
 
   bool get fastLoadDone => _walletProvider.fastLoadDone;
-  bool get isEligibleToRequestReview => _isEligibleToRequestReview;
   bool get visibleTermsShortcut => _visibleTermsShortcut;
   bool get isBalanceHidden => _isBalanceHidden;
+  bool get showReviewScreen => _showReviewScreen;
 
   int get lastUpdateTime => _walletProvider.lastUpdateTime;
   bool get showOnBoarding => !_hasLaunchedAppBefore;
@@ -44,6 +43,10 @@ class WalletListViewModel extends ChangeNotifier {
     _visibleTermsShortcut = false;
     _visibilityProvider.hideTermsShortcut();
     notifyListeners();
+  }
+
+  void updateAppReviewRequestCondition() async {
+    await AppReviewService.increaseAppRunningCountIfRejected();
   }
 
   void setIsBalanceHidden(bool value) {
