@@ -5,29 +5,29 @@ import 'package:flutter/material.dart';
 
 class AddressListViewModel extends ChangeNotifier {
   /// Common variables ---------------------------------------------------------
-  late final AppStateModel _appStateModel;
+  final AppStateModel _appStateModel;
 
   /// Wallet variables ---------------------------------------------------------
-  List<Address>? _receivingAddressList;
-  List<Address>? get receivingAddressList => _receivingAddressList;
-  List<Address>? _changeAddressList;
-  List<Address>? get changeAddressList => _changeAddressList;
-
+  List<Address> _receivingAddressList = [];
+  List<Address> _changeAddressList = [];
   WalletBase? _walletBase;
-  WalletBase? get walletBase => _walletBase;
   WalletListItemBase? _walletBaseItem;
-  WalletListItemBase? get walletBaseItem => _walletBaseItem;
 
   AddressListViewModel(this._appStateModel, int id, int firstCount) {
     _initialize(id, firstCount);
   }
+  List<Address>? get changeAddressList => _changeAddressList;
+  List<Address>? get receivingAddressList => _receivingAddressList;
+  WalletBase? get walletBase => _walletBase;
+
+  WalletListItemBase? get walletBaseItem => _walletBaseItem;
 
   /// 초기화
   void _initialize(int id, int firstCount) {
     _walletBaseItem = _appStateModel.getWalletById(id);
     _walletBase = _walletBaseItem!.walletBase;
-    _receivingAddressList = _walletBase?.getAddressList(0, firstCount, false);
-    _changeAddressList = _walletBase?.getAddressList(0, firstCount, true);
+    _receivingAddressList = _walletBase!.getAddressList(0, firstCount, false);
+    _changeAddressList = _walletBase!.getAddressList(0, firstCount, true);
     notifyListeners();
   }
 }

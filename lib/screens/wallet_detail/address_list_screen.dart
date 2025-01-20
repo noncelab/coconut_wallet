@@ -106,10 +106,10 @@ class AddressListScreen extends StatefulWidget {
 }
 
 class _AddressListScreenState extends State<AddressListScreen> {
-  AddressListViewModel? viewModel;
-
   /// 페이지네이션
   static const int kFirstCount = 20;
+
+  AddressListViewModel? viewModel;
   final int _limit = 5;
   int _receivingAddressPage = 0;
   int _changeAddressPage = 0;
@@ -133,37 +133,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
   double topPadding = 0;
   final bool _isScrollOverTitleHeight = false;
   late ScrollController _controller;
-
-  @override
-  void dispose() {
-    if (_tooltipTimer != null) {
-      _tooltipTimer!.cancel();
-      _tooltipTimer = null;
-    }
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    _isFirstLoadRunning = false;
-    _controller = ScrollController();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _controller.addListener(_nextLoad);
-      _depositTooltipIconRenderBox =
-          _depositTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _depositTooltipIconPosition =
-          _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
-
-      _changeTooltipIconRenderBox =
-          _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _changeTooltipIconPosition =
-          _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +263,37 @@ class _AddressListScreenState extends State<AddressListScreen> {
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    if (_tooltipTimer != null) {
+      _tooltipTimer!.cancel();
+      _tooltipTimer = null;
+    }
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _isFirstLoadRunning = false;
+    _controller = ScrollController();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.addListener(_nextLoad);
+      _depositTooltipIconRenderBox =
+          _depositTooltipKey.currentContext!.findRenderObject() as RenderBox;
+      _depositTooltipIconPosition =
+          _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
+
+      _changeTooltipIconRenderBox =
+          _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
+      _changeTooltipIconPosition =
+          _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
+    });
   }
 
   void scrollToTop() {
