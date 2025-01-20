@@ -66,7 +66,9 @@ class WalletProvider extends ChangeNotifier {
 
   WalletProvider(this._walletDataManager, this._isNetworkOn,
       this._setWalletCount, this._isSetPin) {
-    initWallet();
+    initWallet().catchError((_) {
+      Logger.error(_);
+    });
     _lastUpdateTime = _sharedPrefs.getInt(SharedPrefs.kLastUpdateTime);
   }
 
@@ -125,7 +127,7 @@ class WalletProvider extends ChangeNotifier {
       if (isNetworkOn == false) {
         setWalletInitState(WalletInitState.error,
             error: ErrorCodes.networkError);
-        throw "Network is off";
+        return;
       }
 
       if (isNetworkOn == true) {
@@ -168,7 +170,7 @@ class WalletProvider extends ChangeNotifier {
       Logger.log(
           ">>>>> ===================== initWallet catch!! notifyListeners() ${e.toString()}");
       notifyListeners();
-      rethrow;
+      rethrow; // TODO: check
     }
   }
 
@@ -440,7 +442,9 @@ class WalletProvider extends ChangeNotifier {
   void setIsNetworkOn(bool isNetworkOn) {
     if (_isNetworkOn == null && isNetworkOn) {
       _isNetworkOn = isNetworkOn;
-      initWallet();
+      initWallet().catchError((_) {
+        Logger.error(_);
+      });
       return;
     }
 

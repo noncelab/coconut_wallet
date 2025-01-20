@@ -15,17 +15,19 @@ class WalletListViewModel extends ChangeNotifier {
     _isEligibleToRequestReview = false; // TODO:
   }
 
+  bool get fastLoadDone => _walletProvider.fastLoadDone;
   bool get isEligibleToRequestReview => _isEligibleToRequestReview;
+
+  int get lastUpdateTime => _walletProvider.lastUpdateTime;
   bool get showOnBoarding => !_hasLaunchedAppBefore;
   String? get walletInitErrorMessage =>
       _walletProvider.walletInitError?.message;
   WalletInitState get walletInitState => _walletProvider.walletInitState;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
-  bool get fastLoadDone => _walletProvider.fastLoadDone;
 
   Future initWallet(
       {int? targetId, int? exceptionalId, bool syncOthers = true}) async {
-    await _walletProvider.initWallet(
+    return await _walletProvider.initWallet(
         targetId: targetId,
         exceptionalId: exceptionalId,
         syncOthers: syncOthers);
@@ -33,5 +35,6 @@ class WalletListViewModel extends ChangeNotifier {
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
     _walletProvider = walletProvider;
+    notifyListeners();
   }
 }

@@ -93,13 +93,21 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             },
             update: (context, connectivityProvider, visiblityProvider,
                 authProvider, walletProvider) {
-              if (walletProvider!.isNetworkOn !=
-                  connectivityProvider.isNetworkOn) {
-                walletProvider
-                    .setIsNetworkOn(connectivityProvider.isNetworkOn ?? false);
-              }
+              try {
+                if (walletProvider!.isNetworkOn !=
+                    connectivityProvider.isNetworkOn) {
+                  walletProvider.setIsNetworkOn(
+                      connectivityProvider.isNetworkOn ?? false);
+                }
 
-              return walletProvider;
+                return walletProvider;
+              } catch (e) {
+                if (walletProvider == null) {
+                  rethrow;
+                }
+
+                return walletProvider;
+              }
             },
           ),
           ChangeNotifierProxyProvider<AppSubStateModel, AppStateModel>(

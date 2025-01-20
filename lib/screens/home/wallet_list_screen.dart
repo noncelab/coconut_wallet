@@ -19,6 +19,7 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/onboarding_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/overlays/security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/overlays/terms_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/wallet_init_status_indicator.dart';
 import 'package:coconut_wallet/widgets/wallet_row_item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +40,6 @@ class _WalletListScreenState extends State<WalletListScreen>
     with TickerProviderStateMixin {
   // WalletInitState가 finished가 되고 몇 초 후에 일시를 보여줄지 여부
   bool isShowLastUpdateTime = false;
-  bool isShownErrorToast = false;
   bool _isSeeMoreDropdown = false;
   bool _isTapped = false; // 용어집 유도 카드
 
@@ -114,7 +114,27 @@ class _WalletListScreenState extends State<WalletListScreen>
                           isShowLastUpdateTime = false;
                         });
                         if (viewModel.walletItemList.isNotEmpty) {
-                          viewModel.initWallet();
+                          viewModel.initWallet().catchError((_) {
+                            Logger.log('--> error catch');
+                          }).whenComplete(() {
+                            Logger.log(
+                                '---> wallet stateu: ${viewModel.walletInitState}');
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (viewModel.walletInitState ==
+                                  WalletInitState.error) {
+                                CustomToast.showWarningToast(
+                                    context: context,
+                                    text: viewModel.walletInitErrorMessage!,
+                                    seconds: 7);
+                              }
+                              if (viewModel.walletInitState ==
+                                  WalletInitState.finished) {
+                                _showLastUpdateTimeAfterFewSeconds();
+                              } else {
+                                setState(() => isShowLastUpdateTime = false);
+                              }
+                            });
+                          });
                         }
                       },
                     ),
@@ -124,108 +144,13 @@ class _WalletListScreenState extends State<WalletListScreen>
                         selector: (_, selectorModel) =>
                             selectorModel.walletInitState,
                         builder: (context, state, child) {
-                          // 지갑 정보 초기화 또는 갱신 중 에러가 발생했을 때 모두 toast로 알림
-                          if (state == WalletInitState.error) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (isShownErrorToast) return;
-                              isShownErrorToast = true;
-                              CustomToast.showWarningToast(
-                                  context: context,
-                                  text: viewModel.walletInitErrorMessage!,
-                                  seconds: 7);
-                            });
-                          } else {
-                            isShownErrorToast = false;
-                          }
-
-                          String iconName = '';
-                          String text = '';
-                          Color color = MyColors.primary;
-
-                          switch (state) {
-                            case WalletInitState.impossible:
-                              iconName = 'impossible';
-                              text = '업데이트 불가';
-                              color = MyColors.warningRed;
-                            case WalletInitState.error:
-                              iconName = 'failure';
-                              text = '업데이트 실패';
-                              color = MyColors.failedYellow;
-                            case WalletInitState.finished:
-                              iconName = 'complete';
-                              text = '업데이트 완료';
-                              color = MyColors.primary;
-                            case WalletInitState.processing:
-                              iconName = 'loading';
-                              text = '업데이트 중';
-                              color = MyColors.primary;
-                            default:
-                              iconName = 'complete';
-                              text = '';
-                              color = Colors.transparent;
-                          }
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            state == WalletInitState.finished
-                                ? _showLastUpdateTimeAfterFewSeconds()
-                                : setState(() => isShowLastUpdateTime = false);
-                          });
-
-                          if (isShowLastUpdateTime &&
-                              _subModel.lastUpdateTime != 0) {
-                            iconName = 'idle';
-                            text =
-                                '마지막 업데이트 ${DateTimeUtil.formatLastUpdateTime(_subModel.lastUpdateTime)}';
-                            color = MyColors.transparentWhite_50;
-                          }
-
                           return Visibility(
                             visible: viewModel.walletItemList.isNotEmpty,
-                            child: GestureDetector(
-                              onTap: isShowLastUpdateTime &&
-                                      _subModel.lastUpdateTime != 0
-                                  ? () {
-                                      viewModel.initWallet();
-                                    }
-                                  : null,
-                              child: Container(
-                                padding: const EdgeInsets.only(
-                                    right: 28, top: 4, bottom: 16),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      text,
-                                      style: TextStyle(
-                                        fontFamily:
-                                            CustomFonts.text.getFontFamily,
-                                        color: color,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        fontStyle: FontStyle.normal,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-
-                                    /// Isolate - repository fetch를 메인 스레드에서 실행시 멈춤
-                                    if (state ==
-                                        WalletInitState.processing) ...{
-                                      LottieBuilder.asset(
-                                        'assets/files/status_loading.json',
-                                        width: 20,
-                                      ),
-                                    } else ...{
-                                      SvgPicture.asset(
-                                          'assets/svg/status-$iconName.svg',
-                                          width: 18,
-                                          colorFilter: ColorFilter.mode(
-                                              color, BlendMode.srcIn)),
-                                    }
-                                  ],
-                                ),
-                              ),
-                            ),
+                            child: WalletInitStatusIndicator(
+                                state: state,
+                                onTap: viewModel.initWallet,
+                                isShowLastUpdateTime: isShowLastUpdateTime,
+                                lastUpdateTime: viewModel.lastUpdateTime),
                           );
                         },
                       ),
@@ -526,6 +451,42 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
   }
 
+  Future _animateWalletBlink() async {
+    /// 변경사항이 업데이트된 경우 해당 카드에 깜빡임 효과를 부여합니다.
+    final int walletId = _resultOfSyncFromVault!.walletId!;
+    final int index = _viewModel.walletItemList
+        .indexWhere((element) => element.id == walletId);
+
+    if (index == -1) return;
+
+    await Future.delayed(const Duration(milliseconds: 600));
+    _scrollToItem(index);
+    await Future.delayed(const Duration(milliseconds: 1000));
+
+    itemCardWidth =
+        (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
+                .size
+                .width +
+            20;
+    itemCardHeight =
+        (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
+                .size
+                .height -
+            (index != _viewModel.walletItemList.length - 1 ? 10 : 0);
+
+    await _blinkAnimationController!.forward();
+    await _blinkAnimationController!.reverse();
+
+    _blinkAnimationController!.reset();
+  }
+
+  Future _animateWalletSlideLeft() async {
+    await Future.delayed(const Duration(milliseconds: 1000));
+    _scrollToBottom();
+    await Future.delayed(const Duration(milliseconds: 500));
+    _slideAnimationController!.forward();
+  }
+
   Widget? _getWalletRowItem(int index, WalletListViewModel viewModel) {
     if (index < viewModel.walletItemList.length) {
       final WalletListItemBase(
@@ -686,42 +647,6 @@ class _WalletListScreenState extends State<WalletListScreen>
 
       _resultOfSyncFromVault = null;
     });
-  }
-
-  Future _animateWalletBlink() async {
-    /// 변경사항이 업데이트된 경우 해당 카드에 깜빡임 효과를 부여합니다.
-    final int walletId = _resultOfSyncFromVault!.walletId!;
-    final int index = _viewModel.walletItemList
-        .indexWhere((element) => element.id == walletId);
-
-    if (index == -1) return;
-
-    await Future.delayed(const Duration(milliseconds: 600));
-    _scrollToItem(index);
-    await Future.delayed(const Duration(milliseconds: 1000));
-
-    itemCardWidth =
-        (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
-                .size
-                .width +
-            20;
-    itemCardHeight =
-        (_itemKeys[index].currentContext!.findRenderObject() as RenderBox)
-                .size
-                .height -
-            (index != _viewModel.walletItemList.length - 1 ? 10 : 0);
-
-    await _blinkAnimationController!.forward();
-    await _blinkAnimationController!.reverse();
-
-    _blinkAnimationController!.reset();
-  }
-
-  Future _animateWalletSlideLeft() async {
-    await Future.delayed(const Duration(milliseconds: 1000));
-    _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 500));
-    _slideAnimationController!.forward();
   }
 
   void _scrollToBottom() async {
