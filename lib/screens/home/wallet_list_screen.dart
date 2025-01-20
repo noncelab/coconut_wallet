@@ -45,8 +45,6 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   ResultOfSyncFromVault? _resultOfSyncFromVault;
 
-  late AppSubStateModel _subModel;
-
   late AnimationController _animationController;
   late ScrollController _scrollController;
   List<GlobalKey> _itemKeys = [];
@@ -266,11 +264,8 @@ class _WalletListScreenState extends State<WalletListScreen>
     super.initState();
     _viewModel = Provider.of<WalletListViewModel>(context, listen: false);
 
-    _subModel = Provider.of<AppSubStateModel>(context, listen: false);
-
     _animationController = BottomSheet.createAnimationController(this);
     _animationController.duration = const Duration(seconds: 2);
-
     _scrollController = ScrollController();
 
     _dropdownActions = [
@@ -360,7 +355,6 @@ class _WalletListScreenState extends State<WalletListScreen>
           index == viewModel.walletItemList.length - 1) {
         Logger.log('** $index: newWalletAdded');
 
-        // TODO: _slideAnimation initialization
         _initializeLeftSlideAnimationController();
         return SlideTransition(
           position: _slideAnimation!,
@@ -372,7 +366,7 @@ class _WalletListScreenState extends State<WalletListScreen>
             iconIndex: iconIndex,
             colorIndex: colorIndex,
             isLastItem: index == viewModel.walletItemList.length - 1,
-            isBalanceHidden: _subModel.isBalanceHidden,
+            isBalanceHidden: viewModel.isBalanceHidden,
             signers: signers,
           ),
         );
@@ -381,7 +375,6 @@ class _WalletListScreenState extends State<WalletListScreen>
               WalletSyncResult.existingWalletUpdated &&
           viewModel.walletItemList[index].id ==
               _resultOfSyncFromVault?.walletId!) {
-        // TODO: blinkAnimation initialization
         _initializeBlinkAnimationController();
 
         Logger.log('** $index: existingWalletUpdated');
@@ -395,7 +388,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               iconIndex: iconIndex,
               colorIndex: colorIndex,
               isLastItem: index == viewModel.walletItemList.length - 1,
-              isBalanceHidden: _subModel.isBalanceHidden,
+              isBalanceHidden: viewModel.isBalanceHidden,
               signers: signers,
             ),
             IgnorePointer(
@@ -423,7 +416,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         iconIndex: iconIndex,
         colorIndex: colorIndex,
         isLastItem: index == viewModel.walletItemList.length - 1,
-        isBalanceHidden: _subModel.isBalanceHidden,
+        isBalanceHidden: viewModel.isBalanceHidden,
         signers: signers,
       );
     }

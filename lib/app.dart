@@ -169,16 +169,22 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         WalletListViewModel>(
                       create: (_) => WalletListViewModel(
                         Provider.of<WalletProvider>(_, listen: false),
-                        Provider.of<PreferenceProvider>(_, listen: false),
                         Provider.of<VisibilityProvider>(_, listen: false),
+                        Provider.of<PreferenceProvider>(_, listen: false)
+                            .isBalanceHidden,
                       ),
                       update: (BuildContext context,
                           WalletProvider walletProvider,
                           PreferenceProvider preferenceProvider,
                           VisibilityProvider visibilityProvider,
                           WalletListViewModel? previous) {
-                        // TODO:
-                        return previous!
+                        if (previous!.isBalanceHidden !=
+                            preferenceProvider.isBalanceHidden) {
+                          previous.setIsBalanceHidden(
+                              preferenceProvider.isBalanceHidden);
+                        }
+
+                        return previous
                           ..onWalletProviderUpdated(walletProvider);
                       },
                       child: const WalletListScreen(),
