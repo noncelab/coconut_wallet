@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_screen/terms_shortcut_widget.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -159,102 +160,16 @@ class _WalletListScreenState extends State<WalletListScreen>
                     SliverToBoxAdapter(
                         child: Column(
                       children: [
-                        // 용어집
-                        Visibility(
-                          visible: !_subModel.isOpenTermsScreen &&
-                              viewModel.fastLoadDone,
-                          child: GestureDetector(
+                        if (viewModel.visibleTermsShortcut &&
+                            viewModel.fastLoadDone)
+                          TermsShortcutWidget(
                             onTap: () {
                               CommonBottomSheets.showBottomSheet_90(
                                   context: context,
                                   child: const TermsBottomSheet());
                             },
-                            onTapDown: (_) {
-                              setState(() {
-                                _isTapped = true;
-                              });
-                            },
-                            onTapUp: (_) {
-                              setState(() {
-                                _isTapped = false;
-                              });
-                            },
-                            onTapCancel: () {
-                              setState(() {
-                                _isTapped = false;
-                              });
-                            },
-                            child: Container(
-                              width: double.maxFinite,
-                              decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: _isTapped
-                                      ? MyColors.transparentWhite_20
-                                      : MyColors.transparentWhite_12),
-                              margin: const EdgeInsets.only(
-                                  left: 8, right: 8, bottom: 16),
-                              padding: const EdgeInsets.only(
-                                  left: 26, top: 16, bottom: 16),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('모르는 용어가 있으신가요?',
-                                          style: Styles.body1.merge(
-                                              const TextStyle(
-                                                  fontWeight:
-                                                      FontWeight.w600))),
-                                      SizedBox(
-                                        width:
-                                            MediaQuery.sizeOf(context).width -
-                                                100,
-                                        child: Text.rich(
-                                          TextSpan(
-                                            children: [
-                                              const TextSpan(
-                                                text: '오른쪽 위 ',
-                                                style: Styles.label,
-                                              ),
-                                              TextSpan(
-                                                text: '•••',
-                                                style: Styles.label.merge(
-                                                    const TextStyle(
-                                                        letterSpacing: -2.0)),
-                                              ),
-                                              const TextSpan(
-                                                text: ' - 용어집 또는 여기를 눌러 바로가기',
-                                                style: Styles.label,
-                                              ),
-                                            ],
-                                          ),
-                                          maxLines: 2,
-                                        ),
-                                      )
-                                    ],
-                                  ),
-                                  GestureDetector(
-                                    onTap: _subModel.setIsOpenTermsScreen,
-                                    child: Container(
-                                      color: Colors.transparent,
-                                      padding: const EdgeInsets.all(16),
-                                      child: SvgPicture.asset(
-                                          'assets/svg/close.svg',
-                                          width: 10,
-                                          height: 10,
-                                          colorFilter: const ColorFilter.mode(
-                                              MyColors.white, BlendMode.srcIn)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            onCloseTap: viewModel.hideTermsShortcut,
                           ),
-                        ),
                         // 바로 추가하기
                         Visibility(
                           visible: viewModel.fastLoadDone &&

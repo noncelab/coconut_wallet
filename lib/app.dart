@@ -170,8 +170,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       create: (_) => WalletListViewModel(
                         Provider.of<WalletProvider>(_, listen: false),
                         Provider.of<PreferenceProvider>(_, listen: false),
-                        Provider.of<VisibilityProvider>(_, listen: false)
-                            .hasLaunchedBefore,
+                        Provider.of<VisibilityProvider>(_, listen: false),
                       ),
                       update: (BuildContext context,
                           WalletProvider walletProvider,
