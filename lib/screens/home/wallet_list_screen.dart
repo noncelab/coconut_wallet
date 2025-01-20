@@ -12,7 +12,6 @@ import 'package:coconut_wallet/screens/home/wallet_list_screen/wallet_add_guide_
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
@@ -26,9 +25,7 @@ import 'package:coconut_wallet/widgets/wallet_row_item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 class WalletListScreen extends StatefulWidget {
@@ -43,7 +40,6 @@ class _WalletListScreenState extends State<WalletListScreen>
   // WalletInitState가 finished가 되고 몇 초 후에 일시를 보여줄지 여부
   bool isShowLastUpdateTime = false;
   bool _isSeeMoreDropdown = false;
-  bool _isTapped = false; // 용어집 유도 카드
 
   DateTime? _lastPressedAt;
 
@@ -62,6 +58,15 @@ class _WalletListScreenState extends State<WalletListScreen>
   double? itemCardWidth;
   double? itemCardHeight;
   late WalletListViewModel _viewModel;
+
+  final List<String> _dropdownButtons = [
+    '용어집',
+    '니모닉 문구 단어집',
+    '셀프 보안 점검',
+    '설정',
+    '앱 정보 보기'
+  ];
+  late final List<Future<Object?> Function()> _dropdownActions;
 
   @override
   Widget build(BuildContext context) {
@@ -178,16 +183,14 @@ class _WalletListScreenState extends State<WalletListScreen>
                             child: WalletAddGuideWidget(
                                 onPressed: _onAddScannerPressed)),
                         // Indicator
-                        Visibility(
-                          visible: !viewModel.fastLoadDone,
-                          child: const Padding(
+                        if (!viewModel.fastLoadDone)
+                          const Padding(
                             padding: EdgeInsets.only(top: 40.0),
                             child: CupertinoActivityIndicator(
                               color: MyColors.white,
                               radius: 20,
                             ),
                           ),
-                        ),
                       ],
                     )),
                     // 지갑 목록
@@ -228,43 +231,13 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   (MediaQuery.of(context).padding.top / 2),
                               right: 20),
                           backgroundColor: MyColors.grey,
-                          buttons: const [
-                            '용어집',
-                            '니모닉 문구 단어집',
-                            '셀프 보안 점검',
-                            '설정',
-                            '앱 정보 보기'
-                          ],
+                          buttons: _dropdownButtons,
                           dividerIndex: 3,
                           onTapButton: (index) {
                             setState(() {
                               _isSeeMoreDropdown = false;
                             });
-                            switch (index) {
-                              case 0: // 용어집
-                                CommonBottomSheets.showBottomSheet_90(
-                                    context: context,
-                                    child: const TermsBottomSheet());
-                                break;
-                              case 1: // 니모닉 문구 단어집
-                                Navigator.pushNamed(
-                                    context, '/mnemonic-word-list');
-                                break;
-                              case 2: // 셀프 보안 점검
-                                CommonBottomSheets.showBottomSheet_90(
-                                    context: context,
-                                    child:
-                                        const SecuritySelfCheckBottomSheet());
-                                break;
-                              case 3: // 설정
-                                CommonBottomSheets.showBottomSheet_90(
-                                    context: context,
-                                    child: const SettingsScreen());
-                                break;
-                              case 4: // 앱 정보 보기
-                                Navigator.pushNamed(context, '/app-info');
-                                break;
-                            }
+                            _dropdownActions[index].call();
                           },
                         ),
                       ),
@@ -299,6 +272,17 @@ class _WalletListScreenState extends State<WalletListScreen>
     _animationController.duration = const Duration(seconds: 2);
 
     _scrollController = ScrollController();
+
+    _dropdownActions = [
+      () => CommonBottomSheets.showBottomSheet_90(
+          context: context, child: const TermsBottomSheet()),
+      () => Navigator.pushNamed(context, '/mnemonic-word-list'),
+      () => CommonBottomSheets.showBottomSheet_90(
+          context: context, child: const SecuritySelfCheckBottomSheet()),
+      () => CommonBottomSheets.showBottomSheet_90(
+          context: context, child: const SettingsScreen()),
+      () => Navigator.pushNamed(context, '/app-info'),
+    ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_viewModel.showOnBoarding) {

@@ -39,14 +39,14 @@ class WalletListViewModel extends ChangeNotifier {
         syncOthers: syncOthers);
   }
 
-  void onWalletProviderUpdated(WalletProvider walletProvider) {
-    _walletProvider = walletProvider;
-    notifyListeners();
-  }
-
   void hideTermsShortcut() {
     _visibleTermsShortcut = false;
     _visibilityProvider.hideTermsShortcut();
+    notifyListeners();
+  }
+
+  void onWalletProviderUpdated(WalletProvider walletProvider) {
+    _walletProvider = walletProvider;
     notifyListeners();
   }
 }
