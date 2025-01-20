@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/model/api/response/app_version_response.dart';
-import 'package:coconut_wallet/providers/app_sub_state_model.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/services/app_version_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
@@ -14,8 +14,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 class StartViewModel extends ChangeNotifier {
   /// Common variables ---------------------------------------------------------
-  late final AppSubStateModel _subStateModel;
   late final VisibilityProvider _visibilityProvider;
+  late final AuthProvider _authProvider;
 
   final SharedPrefs _sharedPrefs = SharedPrefs();
   final AppVersion _appVersionRepository = AppVersion();
@@ -25,24 +25,26 @@ class StartViewModel extends ChangeNotifier {
   bool _canUpdate = false;
   bool _isLoading = true;
 
-  StartViewModel(this._subStateModel, this._visibilityProvider) {
+  StartViewModel(this._visibilityProvider, this._authProvider) {
     _initialize();
   }
 
   bool get canUpdate => _canUpdate;
   bool get isLoading => _isLoading;
   bool get hasLaunchedBefore => _visibilityProvider.hasLaunchedBefore;
+  bool get isSetPin => _authProvider.isSetPin;
+  int get walletCount => _visibilityProvider.walletCount;
 
   /// 시작 화면 결정
   Future<AccessFlow> determineStartScreen() async {
     // Splash 보여주기 위한 딜레이
     await Future.delayed(const Duration(seconds: 2));
-    await _subStateModel.setInitData();
     if (!hasLaunchedBefore) {
       await _visibilityProvider.setHasLaunchedBefore();
     }
-
-    if (!_subStateModel.isNotEmptyWalletList || !_subStateModel.isSetPin) {
+    debugPrint(
+        'walletCount --> ${_visibilityProvider.walletCount}\nisSetPin --> ${_authProvider.isSetPin}');
+    if (_visibilityProvider.walletCount == 0 || !_authProvider.isSetPin) {
       return AccessFlow.main;
     } else {
       return AccessFlow.pinCheck;
