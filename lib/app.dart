@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
@@ -210,6 +211,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 context,
                 (args) => CustomLoadingOverlay(
                     child: SendAddressScreen(id: args['id'])),
+              ),
+          '/send-amount': (context) => buildScreenWithArguments(
+                context,
+                (args) => CustomLoadingOverlay(
+                    child: SendAmountScreen(
+                        id: args['id'], recipient: args['recipient'])),
               ),
           '/fee-selection': (context) => buildScreenWithArguments(
                 context,
