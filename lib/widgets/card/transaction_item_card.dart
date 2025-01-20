@@ -9,26 +9,27 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-class TransactionRowItem extends StatefulWidget {
+class TransactionItemCard extends StatelessWidget {
   final TransferDTO tx;
   final Unit currentUnit;
   final int id;
+  final Function onPressed;
 
   late final TransactionStatus? status;
 
-  TransactionRowItem(
-      {super.key,
-      required this.tx,
-      required this.currentUnit,
-      required this.id}) {
+  TransactionItemCard({
+    super.key,
+    required this.tx,
+    required this.currentUnit,
+    required this.id,
+    required this.onPressed,
+  }) {
     status = TransactionUtil.getStatus(tx);
   }
 
-  @override
-  State<TransactionRowItem> createState() => _TransactionRowItemState();
-}
+  // @override
+  // State<TransactionItemCard> createState() => _TransactionItemCardState();
 
-class _TransactionRowItemState extends State<TransactionRowItem> {
   Widget _getStatusWidget() {
     TextStyle fontStyle = Styles.body2.merge(
       const TextStyle(
@@ -36,7 +37,7 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
         height: 21 / 14,
       ),
     );
-    switch (widget.status) {
+    switch (status) {
       case TransactionStatus.received:
         return Row(
           children: [
@@ -128,18 +129,18 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
           ],
         );
       default:
-        throw "[_TransactionRowItem] status: ${widget.status}";
+        throw "[_TransactionRowItem] status: $status";
     }
   }
 
   Widget _getAmountWidget() {
-    switch (widget.status) {
+    switch (status) {
       case TransactionStatus.receiving:
       case TransactionStatus.received:
         return Text(
-          widget.currentUnit == Unit.btc
-              ? '+${satoshiToBitcoinString(widget.tx.amount!)}'
-              : '+${addCommasToIntegerPart(widget.tx.amount!.toDouble())}',
+          currentUnit == Unit.btc
+              ? '+${satoshiToBitcoinString(tx.amount!)}'
+              : '+${addCommasToIntegerPart(tx.amount!.toDouble())}',
           style: Styles.body1Number.merge(
             const TextStyle(
               color: MyColors.white,
@@ -153,9 +154,9 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
       case TransactionStatus.sent:
       case TransactionStatus.sending:
         return Text(
-          widget.currentUnit == Unit.btc
-              ? satoshiToBitcoinString(widget.tx.amount!)
-              : addCommasToIntegerPart(widget.tx.amount!.toDouble()),
+          currentUnit == Unit.btc
+              ? satoshiToBitcoinString(tx.amount!)
+              : addCommasToIntegerPart(tx.amount!.toDouble()),
           style: Styles.body1Number.merge(
             const TextStyle(
               color: MyColors.white,
@@ -174,19 +175,14 @@ class _TransactionRowItemState extends State<TransactionRowItem> {
 
   @override
   Widget build(BuildContext context) {
-    List<String>? transactionTimeStamp =
-        widget.tx.getDateTimeToDisplay() == null
-            ? null
-            : DateTimeUtil.formatTimeStamp(
-                widget.tx.getDateTimeToDisplay()!.toLocal());
+    List<String>? transactionTimeStamp = tx.getDateTimeToDisplay() == null
+        ? null
+        : DateTimeUtil.formatTimeStamp(tx.getDateTimeToDisplay()!.toLocal());
 
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,
         onPressed: () {
-          Navigator.pushNamed(context, '/transaction-detail', arguments: {
-            'id': widget.id,
-            'txHash': widget.tx.transactionHash
-          });
+          onPressed();
         },
         borderRadius: MyBorder.defaultRadiusValue,
         child: Container(

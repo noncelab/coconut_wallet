@@ -20,7 +20,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
-import 'package:coconut_wallet/widgets/wallet_row_item.dart';
+import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/onboarding_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -640,7 +640,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                 return flag == WalletSyncResult.newWalletAdded
                                     ? SlideTransition(
                                         position: _slideAnimation,
-                                        child: WalletRowItem(
+                                        child: WalletItemCard(
                                           key: _itemKeys[index],
                                           id: id,
                                           name: name,
@@ -659,7 +659,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                                 .existingWalletUpdated
                                         ? Stack(
                                             children: [
-                                              WalletRowItem(
+                                              WalletItemCard(
                                                 key: _itemKeys[index],
                                                 id: id,
                                                 name: name,
@@ -692,7 +692,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                               )
                                             ],
                                           )
-                                        : WalletRowItem(
+                                        : WalletItemCard(
                                             id: id,
                                             name: name,
                                             balance: balance,

@@ -4,21 +4,16 @@ import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/button/balance_and_buttons.dart';
+import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
-import 'package:coconut_wallet/widgets/item/transaction_row_item.dart';
 import 'package:coconut_wallet/widgets/selector/wallet_detail_tab.dart';
 import 'package:coconut_wallet/widgets/tooltip/faucet_tooltip.dart';
-import 'package:coconut_wallet/widgets/utxo_item_card.dart';
+import 'package:coconut_wallet/widgets/body/wallet_detail_body.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lottie/lottie.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -27,10 +22,10 @@ import 'package:coconut_wallet/widgets/overlays/receive_address_bottom_sheet.dar
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
+
+enum Unit { btc, sats }
 
 class WalletDetailScreen extends StatefulWidget {
   const WalletDetailScreen({super.key, required this.id, this.syncResult});
@@ -42,51 +37,41 @@ class WalletDetailScreen extends StatefulWidget {
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
 }
 
-enum Unit { btc, sats }
-
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
-  static const SizedBox gapOfRowItems = SizedBox(
-    height: 8,
-  );
-  final GlobalKey _faucetIconKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
+
   final GlobalKey _appBarKey = GlobalKey();
-  final GlobalKey _topToggleButtonKey = GlobalKey();
-  final GlobalKey _topSelectorWidgetKey = GlobalKey();
-  final GlobalKey _topHeaderWidgetKey = GlobalKey();
-  final GlobalKey _positionedTopWidgetKey = GlobalKey();
-  final GlobalKey _filterDropdownButtonKey = GlobalKey();
-  final GlobalKey _scrolledFilterDropdownButtonKey = GlobalKey();
-  final GlobalKey _txSliverListKey = GlobalKey();
-  final GlobalKey _utxoSliverListKey = GlobalKey();
-  late RenderBox _filterDropdownButtonRenderBox;
-  RenderBox? _scrolledFilterDropdownButtonRenderBox;
-
   Size _appBarSize = const Size(0, 0);
-  Size _filterDropdownButtonSize = const Size(0, 0); // 필터 버튼(확장형)
-  Size _scrolledFilterDropdownButtonSize = const Size(0, 0); // 필터 버튼(축소형))
-  Size _txSliverListSize = const Size(0, 0); // 거래내역 리스트 사이즈
-  Size _utxoSliverListSize = const Size(0, 0); // utxo 리스트 사이즈
-
-  Offset _filterDropdownButtonPosition = Offset.zero;
-  Offset _scrolledFilterDropdownButtonPosition = Offset.zero;
-
-  Offset _faucetIconPosition = Offset.zero;
-  Size _faucetIconSize = const Size(0, 0);
-
   double _topPadding = 0;
 
+  final GlobalKey _faucetIconKey = GlobalKey();
+  Size _faucetIconSize = const Size(0, 0);
+  Offset _faucetIconPosition = Offset.zero;
+
+  final GlobalKey _headerWidgetKey = GlobalKey();
+  Offset _headerDropdownPosition = Offset.zero;
+  bool _isHeaderDropdownVisible = false;
+
+  final GlobalKey _stickyHeaderWidgetKey = GlobalKey();
+  RenderBox? _stickyHeaderRenderBox;
+  Offset _stickyHeaderDropdownPosition = Offset.zero;
+  bool _stickyHeaderVisible = false;
+  bool _isStickyHeaderDropdownVisible = false;
+
+  final GlobalKey _tabWidgetKey = GlobalKey();
+  late RenderBox _tabWidgetRenderBox;
+
+  final GlobalKey _txSliverListKey = GlobalKey();
+  Size _txSliverListSize = const Size(0, 0);
+
+  final GlobalKey _utxoSliverListKey = GlobalKey();
+  Size _utxoSliverListSize = const Size(0, 0);
+
   WalletDetailTabType _selectedListType = WalletDetailTabType.transaction;
-
-  bool _positionedTopWidgetVisible = false; // 스크롤시 상단에 붙어있는 위젯
-  bool _isFilterDropdownVisible = false; // 필터 드롭다운(확장형)
-  bool _isScrolledFilterDropdownVisible = false; // 필터 드롭다운(축소형)
-
   bool _isPullToRefreshing = false;
-
-  Unit _current = Unit.btc;
+  Unit _currentUnit = Unit.btc;
 
   WalletDetailViewModel? viewModel;
-  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -94,32 +79,21 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appBarRenderBox =
           _appBarKey.currentContext?.findRenderObject() as RenderBox;
-      final topToggleButtonRenderBox =
-          _topToggleButtonKey.currentContext?.findRenderObject() as RenderBox;
-      final topSelectorWidgetRenderBox =
-          _topSelectorWidgetKey.currentContext?.findRenderObject() as RenderBox;
-      final topHeaderWidgetRenderBox =
-          _topHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
-      final positionedTopWidgetRenderBox =
-          _positionedTopWidgetKey.currentContext?.findRenderObject()
-              as RenderBox;
-
-      // _filterDropdownButtonKey가 할당된 오브젝트가 생성되기 전이기 때문에 기본값으로 초기화 합니다.
-      _filterDropdownButtonRenderBox = RenderConstrainedBox(
-          additionalConstraints:
-              const BoxConstraints.tightFor(width: 0, height: 0));
+      final headerWidgetRenderBox =
+          _headerWidgetKey.currentContext?.findRenderObject() as RenderBox;
+      _tabWidgetRenderBox =
+          _tabWidgetKey.currentContext?.findRenderObject() as RenderBox;
+      final positionedTopWidgetRenderBox = _stickyHeaderWidgetKey.currentContext
+          ?.findRenderObject() as RenderBox;
 
       _appBarSize = appBarRenderBox.size;
-      final topToggleButtonSize = topToggleButtonRenderBox.size; // BTC sats 버튼
-      final topSelectorWidgetSize = topSelectorWidgetRenderBox.size; // 원화 영역
-      final topHeaderWidgetSize =
-          topHeaderWidgetRenderBox.size; // 거래내역 - UTXO 리스트 위젯 영역
+      final topSelectorWidgetSize = headerWidgetRenderBox.size;
+      final topHeaderWidgetSize = _tabWidgetRenderBox.size;
       final positionedTopWidgetSize =
           positionedTopWidgetRenderBox.size; // 거래내역 - UTXO 리스트 위젯 영역
 
       setState(() {
-        _topPadding = topToggleButtonSize.height +
-            topSelectorWidgetSize.height +
+        _topPadding = topSelectorWidgetSize.height +
             topHeaderWidgetSize.height -
             positionedTopWidgetSize.height;
       });
@@ -131,34 +105,30 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       }
 
       _scrollController.addListener(() {
-        if (_isFilterDropdownVisible || _isScrolledFilterDropdownVisible) {
+        if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
           _removeFilterDropdown();
         }
 
         if (_scrollController.offset > _topPadding) {
           if (!_isPullToRefreshing) {
             setState(() {
-              _positionedTopWidgetVisible = true;
-              _isFilterDropdownVisible = false;
+              _stickyHeaderVisible = true;
+              _isHeaderDropdownVisible = false;
             });
-            if (_scrolledFilterDropdownButtonRenderBox == null &&
+            if (_stickyHeaderRenderBox == null &&
                 viewModel?.utxoList.isNotEmpty == true &&
                 _selectedListType == WalletDetailTabType.utxo) {
-              _scrolledFilterDropdownButtonRenderBox =
-                  _scrolledFilterDropdownButtonKey.currentContext
-                      ?.findRenderObject() as RenderBox;
-              _scrolledFilterDropdownButtonPosition =
-                  _scrolledFilterDropdownButtonRenderBox!
-                      .localToGlobal(Offset.zero);
-              _scrolledFilterDropdownButtonSize =
-                  _scrolledFilterDropdownButtonRenderBox!.size;
+              _stickyHeaderRenderBox = _stickyHeaderWidgetKey.currentContext
+                  ?.findRenderObject() as RenderBox;
+              _stickyHeaderDropdownPosition =
+                  _stickyHeaderRenderBox!.localToGlobal(Offset.zero);
             }
           }
         } else {
           if (!_isPullToRefreshing) {
             setState(() {
-              _positionedTopWidgetVisible = false;
-              _isScrolledFilterDropdownVisible = false;
+              _stickyHeaderVisible = false;
+              _isStickyHeaderDropdownVisible = false;
             });
           }
         }
@@ -196,21 +166,18 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   void _updateFilterDropdownButtonRenderBox() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_filterDropdownButtonKey.currentContext?.findRenderObject() != null) {
-        _filterDropdownButtonRenderBox =
-            _filterDropdownButtonKey.currentContext!.findRenderObject()
-                as RenderBox;
-
-        _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
-        _filterDropdownButtonPosition =
-            _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+      if (_tabWidgetKey.currentContext?.findRenderObject() != null) {
+        _tabWidgetRenderBox =
+            _tabWidgetKey.currentContext!.findRenderObject() as RenderBox;
+        _headerDropdownPosition =
+            _tabWidgetRenderBox.localToGlobal(Offset.zero);
       }
     });
   }
 
   void _toggleUnit() {
     setState(() {
-      _current = _current == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
     });
   }
 
@@ -219,8 +186,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (type == WalletDetailTabType.transaction) {
       setState(() {
         _selectedListType = WalletDetailTabType.transaction;
-        _isFilterDropdownVisible = false;
-        _isScrolledFilterDropdownVisible = false;
+        _isHeaderDropdownVisible = false;
+        _isStickyHeaderDropdownVisible = false;
       });
     } else {
       setState(() {
@@ -228,12 +195,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       });
       if (utxoList.isNotEmpty) {
         await Future.delayed(const Duration(milliseconds: 200));
-        _filterDropdownButtonRenderBox = _filterDropdownButtonKey.currentContext
-            ?.findRenderObject() as RenderBox;
-        _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
+        _tabWidgetRenderBox =
+            _tabWidgetKey.currentContext?.findRenderObject() as RenderBox;
 
-        _filterDropdownButtonPosition =
-            _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+        _headerDropdownPosition =
+            _tabWidgetRenderBox.localToGlobal(Offset.zero);
         final RenderBox utxoSliverListRenderBox =
             _utxoSliverListKey.currentContext?.findRenderObject() as RenderBox;
         _utxoSliverListSize = utxoSliverListRenderBox.size;
@@ -243,8 +209,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   void _removeFilterDropdown() {
     setState(() {
-      _isFilterDropdownVisible = false;
-      _isScrolledFilterDropdownVisible = false;
+      _isHeaderDropdownVisible = false;
+      _isStickyHeaderDropdownVisible = false;
     });
   }
 
@@ -268,8 +234,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   bool _checkStateAndShowToast() {
     var appState = Provider.of<AppStateModel>(context, listen: false);
-
-    // 에러체크
     if (appState.isNetworkOn == false) {
       CustomToast.showWarningToast(
           context: context, text: ErrorCodes.networkError.message);
@@ -294,29 +258,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return true;
   }
 
-  double _utxoFilterDropdownTopHeight() {
-    if (_isFilterDropdownVisible) {
-      return _filterDropdownButtonPosition.dy +
-          _filterDropdownButtonSize.height +
-          8 -
-          _scrollController.offset * 0.01;
-    }
-
-    if (_isScrolledFilterDropdownVisible) {
-      return _scrolledFilterDropdownButtonPosition.dy +
-          _scrolledFilterDropdownButtonSize.height +
-          8;
-    }
-
-    return 0;
-  }
-
   double _listBottomMarginHeight(WalletDetailViewModel viewModel) {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final availableHeight = screenHeight - _topPadding;
     if (_selectedListType == WalletDetailTabType.transaction &&
         viewModel.txList.isNotEmpty) {
-      if (_positionedTopWidgetVisible) return 0;
+      if (_stickyHeaderVisible) return 0;
       final totalHeight =
           _txSliverListSize.height * viewModel.txList.length + 80;
       if (totalHeight > availableHeight) return 0;
@@ -331,7 +278,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     if (_selectedListType == WalletDetailTabType.utxo &&
         viewModel.utxoList.isNotEmpty) {
-      if (_positionedTopWidgetVisible) return 0;
+      if (_stickyHeaderVisible) return 0;
       final totalHeight =
           _utxoSliverListSize.height * viewModel.utxoList.length +
               (12 * (viewModel.utxoList.length - 1));
@@ -347,115 +294,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return 0;
   }
 
-  Widget _transactionListWidget(WalletDetailViewModel viewModel) {
-    return viewModel.txList.isNotEmpty
-        ? SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (ctx, index) {
-                return Column(
-                  key: index == 0 ? _txSliverListKey : null,
-                  children: [
-                    TransactionRowItem(
-                      tx: viewModel.txList[index],
-                      currentUnit: _current,
-                      id: widget.id,
-                    ),
-                    gapOfRowItems,
-                    if (index == viewModel.txList.length - 1)
-                      const SizedBox(
-                        height: 80,
-                      ),
-                  ],
-                );
-              },
-              childCount: viewModel.txList.length,
-            ),
-          )
-        : const SliverFillRemaining(
-            hasScrollBody: false,
-            child: Padding(
-              padding: EdgeInsets.only(top: 100),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Text(
-                  '거래 내역이 없어요',
-                  style: Styles.body1,
-                ),
-              ),
-            ),
-          );
-  }
-
-  Widget _utxoListWidget(WalletDetailViewModel viewModel) {
-    return viewModel.utxoList.isNotEmpty
-        ? SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                if (index.isOdd) {
-                  // 분리자
-                  return gapOfRowItems;
-                }
-
-                // 실제 아이템
-                final itemIndex = index ~/ 2; // 실제 아이템 인덱스
-                return ShrinkAnimationButton(
-                  key: index == 0 ? _utxoSliverListKey : null,
-                  defaultColor: Colors.transparent,
-                  borderRadius: 20,
-                  onPressed: () async {
-                    await Navigator.pushNamed(
-                      context,
-                      '/utxo-detail',
-                      arguments: {
-                        'utxo': viewModel.utxoList[itemIndex],
-                        'id': widget.id,
-                        'isChange': DerivationPathUtil.getChangeElement(
-                                viewModel.walletType,
-                                viewModel.utxoList[itemIndex].derivationPath) ==
-                            1,
-                      },
-                    );
-
-                    if (viewModel.appStateModel?.isUpdatedSelectedTagList ==
-                        true) {
-                      viewModel.appStateModel
-                          ?.setIsUpdateSelectedTagList(false);
-                      for (var utxo in viewModel.utxoList) {
-                        if (utxo.utxoId ==
-                            viewModel.utxoList[itemIndex].utxoId) {
-                          utxo.tags?.clear();
-                          utxo.tags?.addAll(
-                              viewModel.appStateModel?.selectedTagList ?? []);
-                          setState(() {});
-                          break;
-                        }
-                      }
-                    }
-                  },
-                  child: UTXOItemCard(
-                    utxo: viewModel.utxoList[itemIndex],
-                  ),
-                );
-              },
-              childCount: viewModel.utxoList.length * 2 - 1, // 항목 개수 지정
-            ),
-          )
-        : SliverFillRemaining(
-            fillOverscroll: false,
-            hasScrollBody: false,
-            child: Padding(
-                padding: const EdgeInsets.only(top: 100),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Text(
-                    viewModel.isUtxoListLoadComplete
-                        ? 'UTXO가 없어요'
-                        : 'UTXO를 확인하는 중이에요',
-                    style: Styles.body1,
-                    textAlign: TextAlign.center,
-                  ),
-                )),
-          );
+  bool _isSelectedTx() {
+    return _selectedListType == WalletDetailTabType.transaction;
   }
 
   @override
@@ -574,197 +414,100 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         },
                       ),
                       SliverToBoxAdapter(
-                        child: Padding(
-                          key: _topToggleButtonKey,
-                          padding: const EdgeInsets.only(top: 20.0),
-                          child: Center(
-                            child: SmallActionButton(
-                              onPressed: () {
-                                _toggleUnit();
-                              },
-                              height: 32,
-                              width: 64,
-                              child: Text(
-                                _current == Unit.btc ? 'BTC' : 'sats',
-                                style: Styles.label.merge(
-                                  TextStyle(
-                                      fontFamily:
-                                          CustomFonts.number.getFontFamily,
-                                      color: MyColors.white),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Selector<UpbitConnectModel, int?>(
-                        selector: (context, model) => model.bitcoinPriceKrw,
-                        builder: (context, bitcoinPriceKrw, child) {
-                          return SliverToBoxAdapter(
-                            child: BalanceAndButtons(
-                              key: _topSelectorWidgetKey,
+                        child: Selector<UpbitConnectModel, int?>(
+                          selector: (context, model) => model.bitcoinPriceKrw,
+                          builder: (context, bitcoinPriceKrw, child) {
+                            return WalletDetailHeader(
+                              key: _headerWidgetKey,
                               walletId: widget.id,
                               address: viewModel.walletAddress,
                               derivationPath: viewModel.derivationPath,
                               balance: viewModel.walletListBaseItem.balance,
-                              currentUnit: _current,
+                              currentUnit: _currentUnit,
                               btcPriceInKrw: bitcoinPriceKrw,
+                              onPressedUnitToggle: () {
+                                _toggleUnit();
+                              },
                               checkPrerequisites: () {
                                 return _checkStateAndShowToast() &&
                                     _checkBalanceIsNotNullAndShowToast(
                                         viewModel.walletListBaseItem.balance);
                               },
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                       SliverToBoxAdapter(
-                        child: Column(
-                          key: _topHeaderWidgetKey,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  left: 16.0,
-                                  right: 16.0,
-                                  bottom: 12.0,
-                                  top: 30),
-                              child: Selector<AppStateModel, WalletInitState>(
-                                  selector: (_, selectorModel) =>
-                                      selectorModel.walletInitState,
-                                  builder: (context, state, child) {
-                                    return Column(
-                                      children: [
-                                        Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              WalletDetailTab(
-                                                selectedListType:
-                                                    _selectedListType,
-                                                utxoListLength:
-                                                    viewModel.utxoList.length,
-                                                onTapTransaction: () {
-                                                  _toggleListType(
-                                                      WalletDetailTabType
-                                                          .transaction,
-                                                      viewModel.utxoList);
-                                                },
-                                                onTapUtxo: () {
-                                                  _toggleListType(
-                                                      WalletDetailTabType.utxo,
-                                                      viewModel.utxoList);
-                                                },
-                                              ),
-                                              Visibility(
-                                                visible: !_isPullToRefreshing &&
-                                                    state ==
-                                                        WalletInitState
-                                                            .processing,
-                                                child: Row(
-                                                  children: [
-                                                    const Text(
-                                                      '업데이트 중',
-                                                      style: TextStyle(
-                                                        fontFamily:
-                                                            'Pretendard',
-                                                        color: MyColors.primary,
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontStyle:
-                                                            FontStyle.normal,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    LottieBuilder.asset(
-                                                      'assets/files/status_loading.json',
-                                                      width: 20,
-                                                      height: 20,
-                                                    ),
-                                                  ],
-                                                ),
-                                              )
-                                            ]),
-                                        if (_selectedListType ==
-                                                WalletDetailTabType.utxo &&
-                                            viewModel.utxoList.isNotEmpty) ...{
-                                          const SizedBox(height: 8),
-                                          IgnorePointer(
-                                            ignoring:
-                                                _positionedTopWidgetVisible,
-                                            child: Visibility(
-                                              maintainSize: true,
-                                              maintainAnimation: true,
-                                              maintainState: true,
-                                              maintainSemantics: false,
-                                              maintainInteractivity: false,
-                                              visible:
-                                                  !_positionedTopWidgetVisible,
-                                              child: CupertinoButton(
-                                                onPressed: () {
-                                                  setState(
-                                                    () {
-                                                      _scrollController.jumpTo(
-                                                          _scrollController
-                                                              .offset);
-                                                      if (_isFilterDropdownVisible ||
-                                                          _isScrolledFilterDropdownVisible) {
-                                                        _isFilterDropdownVisible =
-                                                            false;
-                                                      } else {
-                                                        _isFilterDropdownVisible =
-                                                            true;
-                                                      }
-                                                    },
-                                                  );
-                                                },
-                                                minSize: 0,
-                                                padding: const EdgeInsets.only(
-                                                    left: 8),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.end,
-                                                  children: [
-                                                    Text(
-                                                      key:
-                                                          _filterDropdownButtonKey,
-                                                      viewModel
-                                                          .selectedUtxoFilter
-                                                          .text,
-                                                      style:
-                                                          Styles.caption2.merge(
-                                                        const TextStyle(
-                                                          color: MyColors.white,
-                                                          fontSize: 12,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(
-                                                      width: 4,
-                                                    ),
-                                                    SvgPicture.asset(
-                                                      'assets/svg/arrow-down.svg',
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        },
-                                      ],
-                                    );
-                                  }),
-                            ),
-                          ],
+                        child: Selector<AppStateModel, WalletInitState>(
+                          selector: (_, selectorModel) =>
+                              selectorModel.walletInitState,
+                          builder: (context, state, child) {
+                            return WalletDetailTab(
+                              key: _tabWidgetKey,
+                              selectedListType: _selectedListType,
+                              utxoListLength: viewModel.utxoList.length,
+                              isUpdateProgress: !_isPullToRefreshing &&
+                                  state == WalletInitState.processing,
+                              isUtxoDropdownVisible: _selectedListType ==
+                                      WalletDetailTabType.utxo &&
+                                  viewModel.utxoList.isNotEmpty &&
+                                  !_stickyHeaderVisible,
+                              utxoOrderText: viewModel.selectedUtxoOrder.text,
+                              onTapTransaction: () {
+                                _toggleListType(WalletDetailTabType.transaction,
+                                    viewModel.utxoList);
+                              },
+                              onTapUtxo: () {
+                                _toggleListType(WalletDetailTabType.utxo,
+                                    viewModel.utxoList);
+                              },
+                              onTapUtxoDropdown: () {
+                                _scrollController
+                                    .jumpTo(_scrollController.offset);
+                                if (_isHeaderDropdownVisible ||
+                                    _isStickyHeaderDropdownVisible) {
+                                  _isHeaderDropdownVisible = false;
+                                } else {
+                                  _isHeaderDropdownVisible = true;
+                                }
+                                setState(() {});
+                              },
+                            );
+                          },
                         ),
                       ),
                       SliverSafeArea(
                         minimum: const EdgeInsets.symmetric(horizontal: 16),
-                        sliver:
-                            _selectedListType == WalletDetailTabType.transaction
-                                ? _transactionListWidget(viewModel)
-                                : _utxoListWidget(viewModel),
+                        sliver: WalletDetailBody(
+                          txSliverListKey: _txSliverListKey,
+                          utxoSliverListKey: _utxoSliverListKey,
+                          walletId: widget.id,
+                          walletType: viewModel.walletType,
+                          currentUnit: _currentUnit,
+                          isTransaction: _isSelectedTx(),
+                          isUtxoListLoadComplete:
+                              viewModel.isUtxoListLoadComplete,
+                          txList: viewModel.txList,
+                          utxoList: viewModel.utxoList,
+                          popFromUtxoDetail: (resultUtxo) {
+                            if (viewModel
+                                    .appStateModel?.isUpdatedSelectedTagList ==
+                                true) {
+                              viewModel.appStateModel
+                                  ?.setIsUpdateSelectedTagList(false);
+                              for (var utxo in viewModel.utxoList) {
+                                if (utxo.utxoId == resultUtxo.utxoId) {
+                                  utxo.tags?.clear();
+                                  utxo.tags?.addAll(viewModel
+                                          .appStateModel?.selectedTagList ??
+                                      []);
+                                  setState(() {});
+                                  break;
+                                }
+                              }
+                            }
+                          },
+                        ),
                       ),
                       SliverToBoxAdapter(
                         child: SizedBox(
@@ -774,15 +517,22 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     ],
                   ),
                 ),
+                FaucetTooltip(
+                  text: '테스트용 비트코인으로 마음껏 테스트 해보세요',
+                  isVisible: viewModel.faucetTooltipVisible,
+                  width: MediaQuery.of(context).size.width,
+                  iconPosition: _faucetIconPosition,
+                  iconSize: _faucetIconSize,
+                  onTapRemove: viewModel.removeFaucetTooltip,
+                ),
                 WalletDetailStickyHeader(
                   wallet: viewModel.walletListBaseItem,
-                  widgetKey: _positionedTopWidgetKey,
-                  dropdownKey: _scrolledFilterDropdownButtonKey,
+                  widgetKey: _stickyHeaderWidgetKey,
                   height: _appBarSize.height,
-                  isVisible: _positionedTopWidgetVisible,
-                  currentUnit: _current,
+                  isVisible: _stickyHeaderVisible,
+                  currentUnit: _currentUnit,
                   selectedListType: _selectedListType,
-                  selectedFilter: viewModel.selectedUtxoFilter.text,
+                  selectedFilter: viewModel.selectedUtxoOrder.text,
                   onTapReceive: (balance, address, path) {
                     _onTapReceiveOrSend(balance, address: address, path: path);
                   },
@@ -792,40 +542,35 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   onTapDropdown: () {
                     setState(() {
                       _scrollController.jumpTo(_scrollController.offset);
-                      if (_isFilterDropdownVisible ||
-                          _isScrolledFilterDropdownVisible) {
-                        _isScrolledFilterDropdownVisible = false;
+                      if (_isHeaderDropdownVisible ||
+                          _isStickyHeaderDropdownVisible) {
+                        _isStickyHeaderDropdownVisible = false;
                       } else {
-                        _isScrolledFilterDropdownVisible = true;
+                        _isStickyHeaderDropdownVisible = true;
                       }
                     });
                   },
                 ),
-                FaucetTooltip(
-                  text: '테스트용 비트코인으로 마음껏 테스트 해보세요',
-                  isVisible: viewModel.faucetTooltipVisible,
-                  width: MediaQuery.of(context).size.width,
-                  iconPosition: _faucetIconPosition,
-                  iconSize: _faucetIconSize,
-                  onTapRemove: viewModel.removeFaucetTooltip,
+                UtxoFilterDropdown(
+                  isVisible: viewModel.utxoList.isNotEmpty &&
+                          _isHeaderDropdownVisible ||
+                      _isStickyHeaderDropdownVisible,
+                  positionTop: _isHeaderDropdownVisible
+                      ? _headerDropdownPosition.dy +
+                          80 -
+                          _scrollController.offset * 0.01
+                      : _isStickyHeaderDropdownVisible
+                          ? _stickyHeaderDropdownPosition.dy + 92
+                          : 0,
+                  selectedFilter: viewModel.selectedUtxoOrder,
+                  onSelected: (filter) {
+                    setState(() {
+                      _isHeaderDropdownVisible =
+                          _isStickyHeaderDropdownVisible = false;
+                    });
+                    viewModel.updateUtxoFilter(filter);
+                  },
                 ),
-                if (viewModel.utxoList.isNotEmpty && _isFilterDropdownVisible ||
-                    _isScrolledFilterDropdownVisible) ...{
-                  Positioned(
-                    top: _utxoFilterDropdownTopHeight(),
-                    right: 16,
-                    child: UtxoFilterDropdown(
-                      selectedFilter: viewModel.selectedUtxoFilter,
-                      onSelected: (filter) {
-                        setState(() {
-                          _isFilterDropdownVisible =
-                              _isScrolledFilterDropdownVisible = false;
-                        });
-                        viewModel.updateUtxoFilter(filter);
-                      },
-                    ),
-                  ),
-                },
               ],
             ),
           );

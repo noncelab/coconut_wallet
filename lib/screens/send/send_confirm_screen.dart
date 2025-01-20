@@ -11,7 +11,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/infomation_row_item.dart';
+import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:provider/provider.dart';
 
 class SendConfirmScreen extends StatefulWidget {
@@ -145,11 +145,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
                         children: [
-                          InformationRowItem(
+                          InformationItemCard(
                               label: '보낼 주소', value: address, isNumber: true),
                           const Divider(
                               color: MyColors.transparentWhite_12, height: 1),
-                          InformationRowItem(
+                          InformationItemCard(
                               label: '예상 수수료',
                               value: estimatedFee != null && estimatedFee != 0
                                   ? '${satoshiToBitcoinString(estimatedFee)} BTC'
@@ -157,7 +157,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                               isNumber: true),
                           const Divider(
                               color: MyColors.transparentWhite_12, height: 1),
-                          InformationRowItem(
+                          InformationItemCard(
                               label: '총 소요 수량',
                               value: estimatedFee != null && estimatedFee != 0
                                   ? '${satoshiToBitcoinString(UnitUtil.bitcoinToSatoshi(amount) + estimatedFee)} BTC'

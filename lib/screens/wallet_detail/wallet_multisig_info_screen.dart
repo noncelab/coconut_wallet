@@ -10,8 +10,8 @@ import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/infomation_row_item.dart';
-import 'package:coconut_wallet/widgets/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/card/information_item_card.dart';
+import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -277,7 +277,7 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
 
   Widget _multisigWallet() => Padding(
         padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
-        child: WalletItemCard(
+        child: WalletInfoItemCard(
             walletItem: _multiWallet,
             onTooltipClicked: () => _showTooltip(context),
             tooltipKey: _walletTooltipKey),
@@ -454,13 +454,13 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                InformationRowItem(
+                InformationItemCard(
                   label: '전체 주소 보기',
                   showIcon: true,
                   onPressed: _moveToAddress,
                 ),
                 const Divider(color: MyColors.transparentWhite_12, height: 1),
-                InformationRowItem(
+                InformationItemCard(
                   label: '태그 관리',
                   showIcon: true,
                   onPressed: _moveToUtxoTag,
@@ -479,7 +479,7 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                InformationRowItem(
+                InformationItemCard(
                   showIcon: true,
                   label: '삭제하기',
                   rightIcon: Container(

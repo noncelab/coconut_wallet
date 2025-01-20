@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/widgets/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -17,7 +17,7 @@ import 'package:provider/provider.dart';
 import '../../styles.dart';
 import '../../widgets/appbar/custom_appbar.dart';
 import '../../widgets/custom_dialogs.dart';
-import '../../widgets/infomation_row_item.dart';
+import '../../widgets/card/information_item_card.dart';
 
 class WalletSinglesigInfoScreen extends StatefulWidget {
   const WalletSinglesigInfoScreen({super.key, required this.id});
@@ -124,7 +124,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                     children: <Widget>[
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: WalletItemCard(
+                        child: WalletInfoItemCard(
                             walletItem: singlesigListItem,
                             onTooltipClicked: () => _showTooltip(context),
                             tooltipKey: _walletTooltipKey),
@@ -138,7 +138,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 24),
                             child: Column(
                               children: [
-                                InformationRowItem(
+                                InformationItemCard(
                                   label: '전체 주소 보기',
                                   showIcon: true,
                                   onPressed: () {
@@ -159,7 +159,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                                 const Divider(
                                     color: MyColors.transparentWhite_12,
                                     height: 1),
-                                InformationRowItem(
+                                InformationItemCard(
                                   label: '확장 공개키 보기',
                                   showIcon: true,
                                   onPressed: () async {
@@ -196,7 +196,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                                 const Divider(
                                     color: MyColors.transparentWhite_12,
                                     height: 1),
-                                InformationRowItem(
+                                InformationItemCard(
                                   label: '태그 관리',
                                   showIcon: true,
                                   onPressed: () {
@@ -228,7 +228,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 24),
                             child: Column(
                               children: [
-                                InformationRowItem(
+                                InformationItemCard(
                                   showIcon: true,
                                   label: '삭제하기',
                                   rightIcon: Container(

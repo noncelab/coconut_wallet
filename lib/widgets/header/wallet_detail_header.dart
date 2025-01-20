@@ -3,21 +3,23 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/receive_address_bottom_sheet.dart';
 import 'package:flutter/cupertino.dart';
 
-class BalanceAndButtons extends StatefulWidget {
+class WalletDetailHeader extends StatelessWidget {
   final int walletId;
   final String address;
   final String derivationPath;
   final int? balance;
   final Unit currentUnit;
   final int? btcPriceInKrw;
+  final Function onPressedUnitToggle;
   final bool Function()? checkPrerequisites;
 
-  const BalanceAndButtons({
+  const WalletDetailHeader({
     super.key,
     required this.walletId,
     required this.address,
@@ -25,14 +27,10 @@ class BalanceAndButtons extends StatefulWidget {
     required this.balance,
     required this.currentUnit,
     required this.btcPriceInKrw,
+    required this.onPressedUnitToggle,
     this.checkPrerequisites,
   });
 
-  @override
-  State<BalanceAndButtons> createState() => _BalanceAndButtonsState();
-}
-
-class _BalanceAndButtonsState extends State<BalanceAndButtons> {
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -40,18 +38,35 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(top: 20, bottom: 12),
+            child: SmallActionButton(
+              onPressed: () {
+                onPressedUnitToggle();
+              },
+              height: 32,
+              width: 64,
+              child: Text(
+                currentUnit == Unit.btc ? 'BTC' : 'sats',
+                style: Styles.label.merge(
+                  TextStyle(
+                      fontFamily: CustomFonts.number.getFontFamily,
+                      color: MyColors.white),
+                ),
+              ),
+            ),
+          ),
           Text(
-              widget.balance != null
-                  ? (widget.currentUnit == Unit.btc
-                      ? satoshiToBitcoinString(widget.balance!)
-                      : addCommasToIntegerPart(widget.balance!.toDouble()))
+              balance != null
+                  ? (currentUnit == Unit.btc
+                      ? satoshiToBitcoinString(balance!)
+                      : addCommasToIntegerPart(balance!.toDouble()))
                   : "잔액 조회 불가",
               style: Styles.h1Number
                   .merge(const TextStyle(color: MyColors.white))),
-          if (widget.balance != null && widget.btcPriceInKrw != null)
+          if (balance != null && btcPriceInKrw != null)
             Text(
-                '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.balance!, widget.btcPriceInKrw!).toDouble())} ${CurrencyCode.KRW.code}',
+                '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(balance!, btcPriceInKrw!).toDouble())} ${CurrencyCode.KRW.code}',
                 style: Styles.subLabel.merge(TextStyle(
                     fontFamily: CustomFonts.number.getFontFamily,
                     color: MyColors.transparentWhite_70))),
@@ -61,16 +76,16 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
               Expanded(
                   child: CupertinoButton(
                       onPressed: () {
-                        if (widget.checkPrerequisites != null) {
-                          if (!widget.checkPrerequisites!()) return;
+                        if (checkPrerequisites != null) {
+                          if (!checkPrerequisites!()) return;
                         }
-                        // TODO: ReceiveAddressScreen에 widget.walletId 말고 다른 매개변수 고려해보기
+                        // TODO: ReceiveAddressScreen에 walletId 말고 다른 매개변수 고려해보기
                         CommonBottomSheets.showBottomSheet_90(
                           context: context,
                           child: ReceiveAddressBottomSheet(
-                            id: widget.walletId,
-                            address: widget.address,
-                            derivationPath: widget.derivationPath,
+                            id: walletId,
+                            address: address,
+                            derivationPath: derivationPath,
                           ),
                         );
                       },
@@ -85,16 +100,16 @@ class _BalanceAndButtonsState extends State<BalanceAndButtons> {
               Expanded(
                   child: CupertinoButton(
                       onPressed: () {
-                        if (widget.balance == null) {
+                        if (balance == null) {
                           CustomToast.showToast(
                               context: context, text: "잔액이 없습니다.");
                           return;
                         }
-                        if (widget.checkPrerequisites != null) {
-                          if (!widget.checkPrerequisites!()) return;
+                        if (checkPrerequisites != null) {
+                          if (!checkPrerequisites!()) return;
                         }
                         Navigator.pushNamed(context, '/send-address',
-                            arguments: {'id': widget.walletId});
+                            arguments: {'id': walletId});
                       },
                       borderRadius: BorderRadius.circular(12.0),
                       padding: EdgeInsets.zero,

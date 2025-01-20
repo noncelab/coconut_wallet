@@ -11,7 +11,6 @@ import 'package:flutter_svg/svg.dart';
 class WalletDetailStickyHeader extends StatelessWidget {
   final WalletListItemBase wallet;
   final Key widgetKey;
-  final Key dropdownKey;
   final double height;
   final bool isVisible;
   final Unit currentUnit;
@@ -23,7 +22,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
   const WalletDetailStickyHeader({
     required this.wallet,
     required this.widgetKey,
-    required this.dropdownKey,
     required this.height,
     required this.isVisible,
     required this.currentUnit,
@@ -194,7 +192,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
                                 child: Row(
                                   children: [
                                     Text(
-                                      key: dropdownKey,
                                       selectedFilter,
                                       style: Styles.caption2.merge(
                                         const TextStyle(

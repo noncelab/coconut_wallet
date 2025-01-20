@@ -9,7 +9,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 
-class WalletRowItem extends StatefulWidget {
+class WalletItemCard extends StatelessWidget {
   final int id;
   final int? balance;
   final String name;
@@ -19,7 +19,7 @@ class WalletRowItem extends StatefulWidget {
   final bool isBalanceHidden;
   final List<MultisigSigner>? signers;
 
-  const WalletRowItem({
+  const WalletItemCard({
     super.key,
     required this.id,
     required this.balance,
@@ -32,19 +32,13 @@ class WalletRowItem extends StatefulWidget {
   });
 
   @override
-  State<WalletRowItem> createState() => _WalletRowItemState();
-}
-
-class _WalletRowItemState extends State<WalletRowItem> {
-  @override
   Widget build(BuildContext context) {
     final row = ShrinkAnimationButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/wallet-detail',
-              arguments: {'id': widget.id});
+          Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id});
         },
-        borderGradientColors: widget.signers?.isNotEmpty == true
-            ? CustomColorHelper.getGradientColors(widget.signers!)
+        borderGradientColors: signers?.isNotEmpty == true
+            ? CustomColorHelper.getGradientColors(signers!)
             : null,
         child: Container(
             padding:
@@ -56,13 +50,12 @@ class _WalletRowItemState extends State<WalletRowItem> {
               Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: BackgroundColorPalette[widget.colorIndex],
+                    color: BackgroundColorPalette[colorIndex],
                     borderRadius: BorderRadius.circular(16.0),
                   ),
-                  child: SvgPicture.asset(
-                      CustomIcons.getPathByIndex(widget.iconIndex),
+                  child: SvgPicture.asset(CustomIcons.getPathByIndex(iconIndex),
                       colorFilter: ColorFilter.mode(
-                          ColorPalette[widget.colorIndex], BlendMode.srcIn),
+                          ColorPalette[colorIndex], BlendMode.srcIn),
                       width: 20.0)),
               const SizedBox(width: 8.0),
               Expanded(
@@ -70,7 +63,7 @@ class _WalletRowItemState extends State<WalletRowItem> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.name,
+                      name,
                       style: const TextStyle(
                           fontFamily: 'Pretendard',
                           fontSize: 12.0,
@@ -83,15 +76,15 @@ class _WalletRowItemState extends State<WalletRowItem> {
                     Padding(
                         padding: const EdgeInsets.only(top: 0),
                         child: ImageFiltered(
-                          imageFilter: widget.isBalanceHidden
+                          imageFilter: isBalanceHidden
                               ? ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0)
                               : ImageFilter.blur(sigmaX: 0),
                           child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Text(
-                                  widget.balance != null
-                                      ? satoshiToBitcoinString(widget.balance!)
+                                  balance != null
+                                      ? satoshiToBitcoinString(balance!)
                                       : '',
                                   style: Styles.h3Number,
                                 ),
@@ -110,7 +103,7 @@ class _WalletRowItemState extends State<WalletRowItem> {
                       const ColorFilter.mode(MyColors.white, BlendMode.srcIn))
             ])));
 
-    if (widget.isLastItem) {
+    if (isLastItem) {
       return row;
     }
 
