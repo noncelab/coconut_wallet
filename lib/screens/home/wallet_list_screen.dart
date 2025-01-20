@@ -430,7 +430,6 @@ class _WalletListScreenState extends State<WalletListScreen>
         signers: signers,
       );
     }
-    Logger.log('** $index: return null');
     return null;
   }
 
