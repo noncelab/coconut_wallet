@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
-class InformationRowItem extends StatelessWidget {
+class InformationItemCard extends StatelessWidget {
   final String label;
   final String? value;
   final VoidCallback? onPressed;
@@ -9,7 +9,7 @@ class InformationRowItem extends StatelessWidget {
   final bool isNumber;
   final Widget? rightIcon;
 
-  const InformationRowItem(
+  const InformationItemCard(
       {super.key,
       required this.label,
       this.value,

@@ -9,12 +9,12 @@ import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class WalletItemCard extends StatelessWidget {
+class WalletInfoItemCard extends StatelessWidget {
   final WalletListItemBase walletItem;
   final VoidCallback onTooltipClicked;
   final GlobalKey tooltipKey;
 
-  const WalletItemCard({
+  const WalletInfoItemCard({
     super.key,
     required this.walletItem,
     required this.onTooltipClicked,
@@ -32,13 +32,13 @@ class WalletItemCard extends StatelessWidget {
 
     if (walletItem is MultisigWalletListItem) {
       /// 멀티 시그
-      MultisigWalletListItem mutliWallet = walletItem as MultisigWalletListItem;
-      signers = mutliWallet.signers;
-      colorIndex = mutliWallet.colorIndex;
-      iconIndex = mutliWallet.iconIndex;
+      MultisigWalletListItem multiWallet = walletItem as MultisigWalletListItem;
+      signers = multiWallet.signers;
+      colorIndex = multiWallet.colorIndex;
+      iconIndex = multiWallet.iconIndex;
       rightText = '';
       tooltipText =
-          '${mutliWallet.requiredSignatureCount}/${mutliWallet.signers.length}';
+          '${multiWallet.requiredSignatureCount}/${multiWallet.signers.length}';
       isMultisig = true;
     } else {
       /// 싱글 시그

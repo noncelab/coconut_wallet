@@ -21,7 +21,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
-import 'package:coconut_wallet/widgets/custom_tooltip.dart';
+import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:provider/provider.dart';
 
 class SendFeeSelectionScreen extends StatefulWidget {

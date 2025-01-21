@@ -1,31 +1,32 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/widgets/overlays/user_experience_survey_bottom_sheet.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
+import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/card/wallet_list_terms_shortcut_card.dart';
-import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
-import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
-import 'package:coconut_wallet/widgets/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
+import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
+import 'package:coconut_wallet/widgets/card/wallet_list_terms_shortcut_card.dart';
 import 'package:coconut_wallet/widgets/overlays/onboarding_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/overlays/terms_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/overlays/user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/wallet_init_status_indicator.dart';
-import 'package:coconut_wallet/widgets/wallet_row_item.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:provider/provider.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 class WalletListScreen extends StatefulWidget {
   const WalletListScreen({super.key});
@@ -367,7 +368,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         _initializeLeftSlideAnimationController();
         return SlideTransition(
           position: _slideAnimation!,
-          child: WalletRowItem(
+          child: WalletItemCard(
             key: _itemKeys[index],
             id: id,
             name: name,
@@ -389,7 +390,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         Logger.log('** $index: existingWalletUpdated');
         return Stack(
           children: [
-            WalletRowItem(
+            WalletItemCard(
               key: _itemKeys[index],
               id: id,
               name: name,
@@ -418,7 +419,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         );
       }
 
-      return WalletRowItem(
+      return WalletItemCard(
         id: id,
         name: name,
         balance: balance,

@@ -14,7 +14,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
-import 'package:coconut_wallet/widgets/infomation_row_item.dart';
+import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:provider/provider.dart';
 
 class BroadcastingScreen extends StatefulWidget {
@@ -269,14 +269,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Column(
                             children: [
-                              InformationRowItem(
+                              InformationItemCard(
                                   label: '보낼 주소',
                                   value: _address ?? "",
                                   isNumber: true),
                               const Divider(
                                   color: MyColors.transparentWhite_12,
                                   height: 1),
-                              InformationRowItem(
+                              InformationItemCard(
                                   label: '예상 수수료',
                                   value: _fee != null
                                       ? "${satoshiToBitcoinString(_fee!)} BTC"
@@ -285,7 +285,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                               const Divider(
                                   color: MyColors.transparentWhite_12,
                                   height: 1),
-                              InformationRowItem(
+                              InformationItemCard(
                                   label: '총 소요 수량',
                                   value: _totalAmount != null
                                       ? "${satoshiToBitcoinString(_totalAmount!)} BTC"
