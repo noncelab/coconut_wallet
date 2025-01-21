@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:coconut_lib/coconut_lib.dart' as coconut;
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -138,7 +139,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => AddressListViewModel(
-          Provider.of<AppStateModel>(context, listen: false),
+          Provider.of<WalletProvider>(context, listen: false),
           widget.id,
           kFirstCount),
       child: Consumer<AddressListViewModel>(
