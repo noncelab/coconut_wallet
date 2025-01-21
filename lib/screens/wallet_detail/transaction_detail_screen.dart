@@ -76,15 +76,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       update: (_, walletProvider, viewModel) =>
           viewModel!..updateWalletProvider(walletProvider),
       child: Consumer<TransactionDetailViewModel>(
-        builder: (context, viewModel, child) {
+        builder: (_, viewModel, child) {
           if (_viewModel == null) {
             _viewModel = viewModel;
-            viewModel.showDialogNotifier.addListener(_dialogListener);
+            _viewModel?.showDialogNotifier.addListener(_dialogListener);
           }
 
+          // TODO: RenderBox update 2
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_viewModel?.currentBlockHeight == null) {
-              _viewModel?.setCurrentBlockHeight().then((value) {
+            if (viewModel.currentBlockHeight == null) {
+              viewModel.setCurrentBlockHeight().then((value) {
                 final box = _balanceWidthKey.currentContext?.findRenderObject()
                     as RenderBox;
                 _balanceWidthSize = box.size;

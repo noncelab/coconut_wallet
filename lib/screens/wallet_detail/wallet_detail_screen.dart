@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -367,20 +368,18 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           ));
                     },
                     onTitlePressed: () async {
+                      bool updatedTagList = false;
                       if (viewModel.walletType == WalletType.multiSignature) {
-                        await Navigator.pushNamed(
+                        updatedTagList = await Navigator.pushNamed(
                             context, '/wallet-multisig-info',
-                            arguments: {'id': widget.id});
+                            arguments: {'id': widget.id}) as bool;
                       } else {
-                        await Navigator.pushNamed(
+                        updatedTagList = await Navigator.pushNamed(
                             context, '/wallet-singlesig-info',
-                            arguments: {'id': widget.id});
+                            arguments: {'id': widget.id}) as bool;
                       }
 
-                      if (viewModel.appStateModel?.isUpdatedSelectedTagList ==
-                          true) {
-                        viewModel.appStateModel
-                            ?.setIsUpdateSelectedTagList(false);
+                      if (updatedTagList) {
                         viewModel.getUtxoListWithHoldingAddress();
                       }
                     },
@@ -785,34 +784,23 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     defaultColor: Colors.transparent,
                     borderRadius: 20,
                     onPressed: () async {
-                      await Navigator.pushNamed(
+                      final utxo = viewModel.utxoList[itemIndex];
+
+                      final updateUtxoList = await Navigator.pushNamed(
                         context,
                         '/utxo-detail',
                         arguments: {
-                          'utxo': viewModel.utxoList[itemIndex],
+                          'utxo': utxo,
                           'id': widget.id,
                           'isChange': DerivationPathUtil.getChangeElement(
-                                  viewModel.walletType,
-                                  viewModel
-                                      .utxoList[itemIndex].derivationPath) ==
+                                  viewModel.walletType, utxo.derivationPath) ==
                               1,
                         },
                       );
 
-                      if (viewModel.appStateModel?.isUpdatedSelectedTagList ==
-                          true) {
-                        viewModel.appStateModel
-                            ?.setIsUpdateSelectedTagList(false);
-                        for (var utxo in viewModel.utxoList) {
-                          if (utxo.utxoId ==
-                              viewModel.utxoList[itemIndex].utxoId) {
-                            utxo.tags?.clear();
-                            utxo.tags?.addAll(
-                                viewModel.appStateModel?.selectedTagList ?? []);
-                            setState(() {});
-                            break;
-                          }
-                        }
+                      if (updateUtxoList is List<UtxoTag>) {
+                        viewModel.updateUtxoTagList(
+                            utxo.utxoId, updateUtxoList);
                       }
                     },
                     child: UTXOItemCard(

@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/api/request/faucet_request.dart';
 import 'package:coconut_wallet/model/api/response/faucet_response.dart';
 import 'package:coconut_wallet/model/api/response/faucet_status_response.dart';
 import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
+import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
@@ -215,6 +216,13 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
     _prevTxCount = txCount;
     _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;
+  }
+
+  void updateUtxoTagList(String utxoId, List<UtxoTag> utxoTagList) {
+    final findUtxo = utxoList.firstWhere((item) => item.utxoId == utxoId);
+    findUtxo.tags?.clear();
+    findUtxo.tags?.addAll(utxoTagList);
+    notifyListeners();
   }
 
   /// Faucet methods -----------------------------------------------------------

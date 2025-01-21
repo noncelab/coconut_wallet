@@ -46,7 +46,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (_addressBook == null && walletProvider.walletItemList.isNotEmpty) {
       _addressBook =
           walletProvider.getWalletById(_walletId).walletBase.addressBook;
-      _transaction ??= loadTransaction();
+      _transaction ??= _loadTransaction();
       _initSeeMoreButtons();
     }
   }
@@ -96,7 +96,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  TransferDTO? loadTransaction() {
+  TransferDTO? _loadTransaction() {
     final result = _walletDataManager.loadTransaction(_walletId, _txHash);
     if (result.isError) {
       Logger.log('-----------------------------------------------------------');
@@ -110,7 +110,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     final result =
         _walletDataManager.updateTransactionMemo(_walletId, _txHash, memo);
     if (result.isSuccess) {
-      _transaction = loadTransaction();
+      _transaction = _loadTransaction();
       notifyListeners();
       return true;
     } else {
@@ -122,7 +122,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
     return false;
   }
 
-  // TODO: 로직 확인
   void viewMoreOutput() {
     if (transaction == null) return;
 

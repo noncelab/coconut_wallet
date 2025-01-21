@@ -28,7 +28,7 @@ class UtxoTagScreen extends StatelessWidget {
               hasRightIcon: true,
               showTestnetLabel: false,
               onBackPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(context, viewModel.isUpdatedTagList);
               },
               rightIconButton: IconButton(
                 onPressed: () {

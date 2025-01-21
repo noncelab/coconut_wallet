@@ -17,8 +17,11 @@ class UtxoTagViewModel extends ChangeNotifier {
   String? _updatedTagName;
   String? get updatedTagName => _updatedTagName;
 
+  bool _isUpdatedTagList = false;
+  bool get isUpdatedTagList => _isUpdatedTagList;
+
   UtxoTagViewModel(this._walletId, this._walletDataManager) {
-    _utxoTagList = loadUtxoTagList();
+    _utxoTagList = _loadUtxoTagList();
     notifyListeners();
   }
 
@@ -36,7 +39,7 @@ class UtxoTagViewModel extends ChangeNotifier {
     return utxoTagList.isNotEmpty && selectedUtxoTag != null;
   }
 
-  List<UtxoTag> loadUtxoTagList() {
+  List<UtxoTag> _loadUtxoTagList() {
     final result = _walletDataManager.loadUtxoTagList(_walletId);
     if (result.isError) {
       Logger.log('-----------------------------------------------------------');
@@ -52,8 +55,9 @@ class UtxoTagViewModel extends ChangeNotifier {
     final result = _walletDataManager.addUtxoTag(
         id, newUtxoTag.walletId, newUtxoTag.name, newUtxoTag.colorIndex);
     if (result.isSuccess) {
-      _utxoTagList = loadUtxoTagList();
+      _utxoTagList = _loadUtxoTagList();
       notifyListeners();
+      _isUpdatedTagList = true;
       return true;
     } else {
       Logger.log('-----------------------------------------------------------');
@@ -68,13 +72,14 @@ class UtxoTagViewModel extends ChangeNotifier {
       final result = _walletDataManager.updateUtxoTag(
           utxoTag.id, utxoTag.name, utxoTag.colorIndex);
       if (result.isSuccess) {
-        _utxoTagList = loadUtxoTagList();
+        _utxoTagList = _loadUtxoTagList();
         _updatedTagName = utxoTag.name;
         _selectedUtxoTag = _selectedUtxoTag?.copyWith(
           name: utxoTag.name,
           colorIndex: utxoTag.colorIndex,
           utxoIdList: utxoTag.utxoIdList ?? [],
         );
+        _isUpdatedTagList = true;
         notifyListeners();
         return true;
       } else {
@@ -90,8 +95,9 @@ class UtxoTagViewModel extends ChangeNotifier {
     if (_selectedUtxoTag != null) {
       final result = _walletDataManager.deleteUtxoTag(_selectedUtxoTag!.id);
       if (result.isSuccess) {
-        _utxoTagList = loadUtxoTagList();
+        _utxoTagList = _loadUtxoTagList();
         _selectedUtxoTag = null;
+        _isUpdatedTagList = true;
         notifyListeners();
         return true;
       } else {
