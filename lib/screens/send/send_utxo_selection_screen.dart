@@ -142,7 +142,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         widget.sendInfo,
       ),
       update: (_, upbitConnectModel, viewModel) {
-        debugPrint('upbit: ${upbitConnectModel.bitcoinPriceKrw}');
         return viewModel!..updateUpbitConnectModel(upbitConnectModel);
       },
       child: Consumer<SendUtxoSelectionViewModel>(
