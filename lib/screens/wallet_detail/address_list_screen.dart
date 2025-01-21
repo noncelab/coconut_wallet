@@ -2,98 +2,18 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:coconut_lib/coconut_lib.dart' as coconut;
-import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
+import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
-
-class AddressCard extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  final String address;
-  final String derivationPath;
-  final bool isUsed;
-  final int? balanceInSats;
-  const AddressCard(
-      {super.key,
-      required this.onPressed,
-      required this.address,
-      required this.derivationPath,
-      required this.isUsed,
-      this.balanceInSats});
-
-  @override
-  Widget build(BuildContext context) {
-    var path = derivationPath.split('/');
-    var index = path[path.length - 1];
-
-    return CupertinoButton(
-      onPressed: onPressed,
-      padding: EdgeInsets.zero,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: MyBorder.defaultRadius,
-          color: MyColors.transparentWhite_15,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        margin: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                margin: const EdgeInsets.only(right: 6),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: MyColors.transparentBlack_50),
-                child: Text(index, style: Styles.caption)),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${address.substring(0, 10)}...${address.substring(address.length - 10, address.length)}',
-                  style: Styles.body1Number,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                    balanceInSats == null
-                        ? ''
-                        : '${satoshiToBitcoinString(balanceInSats!)} BTC',
-                    style: Styles.label.merge(TextStyle(
-                        fontFamily: CustomFonts.number.getFontFamily,
-                        fontWeight: FontWeight.normal,
-                        color: MyColors.transparentWhite_50)))
-              ],
-            ),
-            const Spacer(),
-            Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: MyColors.transparentWhite_15),
-                child: Text(isUsed ? '사용됨' : '사용 전',
-                    style: TextStyle(
-                        color: isUsed
-                            ? MyColors.primary
-                            : MyColors.transparentWhite_70,
-                        fontSize: 10,
-                        fontFamily: CustomFonts.text.getFontFamily)))
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class AddressListScreen extends StatefulWidget {
   final int id;
@@ -210,7 +130,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                         controller: _controller,
                                         itemCount: addressList!.length,
                                         itemBuilder: (context, index) =>
-                                            AddressCard(
+                                            AddressItemCard(
                                           onPressed: () {
                                             _removeTooltip();
                                             CommonBottomSheets
