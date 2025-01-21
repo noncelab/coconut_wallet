@@ -1,19 +1,19 @@
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/cupertino.dart';
 
-class WalletAddGuideWidget extends StatefulWidget {
+class WalletListAddGuideCard extends StatefulWidget {
   final VoidCallback onPressed;
 
-  const WalletAddGuideWidget({
+  const WalletListAddGuideCard({
     super.key,
     required this.onPressed,
   });
 
   @override
-  State<WalletAddGuideWidget> createState() => _WalletAddGuideWidgetState();
+  State<WalletListAddGuideCard> createState() => _WalletListAddGuideCardState();
 }
 
-class _WalletAddGuideWidgetState extends State<WalletAddGuideWidget> {
+class _WalletListAddGuideCardState extends State<WalletListAddGuideCard> {
   @override
   Widget build(BuildContext context) {
     return Container(

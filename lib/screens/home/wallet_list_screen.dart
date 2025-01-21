@@ -6,8 +6,8 @@ import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen/terms_shortcut_widget.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen/wallet_add_guide_widget.dart';
+import 'package:coconut_wallet/widgets/card/wallet_list_terms_shortcut_card.dart';
+import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -37,8 +37,8 @@ class WalletListScreen extends StatefulWidget {
 class _WalletListScreenState extends State<WalletListScreen>
     with TickerProviderStateMixin {
   // WalletInitState가 finished가 되고 몇 초 후에 일시를 보여줄지 여부
-  bool isShowLastUpdateTime = false;
-  bool _isSeeMoreDropdown = false;
+  bool _isLastUpdateTimeDisplayed = false;
+  bool _isDropdownMenuDisplayed = false;
 
   DateTime? _lastPressedAt;
 
@@ -101,7 +101,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                     FrostedAppBar(
                       onTapSeeMore: () {
                         setState(() {
-                          _isSeeMoreDropdown = true;
+                          _isDropdownMenuDisplayed = true;
                         });
                       },
                       onTapAddScanner: () async {
@@ -114,7 +114,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                         Logger.log(
                             '--> currentContext: ${_itemKeys[0].currentContext}');
                         setState(() {
-                          isShowLastUpdateTime = false;
+                          _isLastUpdateTimeDisplayed = false;
                         });
                         if (viewModel.walletItemList.isNotEmpty) {
                           viewModel.initWallet().catchError((_) {
@@ -132,9 +132,10 @@ class _WalletListScreenState extends State<WalletListScreen>
                               }
                               if (viewModel.walletInitState ==
                                   WalletInitState.finished) {
-                                _showLastUpdateTimeAfterFewSeconds();
+                                _displayLastUpdateTimeAfterFourSeconds();
                               } else {
-                                setState(() => isShowLastUpdateTime = false);
+                                setState(
+                                    () => _isLastUpdateTimeDisplayed = false);
                               }
                             });
                           });
@@ -152,7 +153,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                             child: WalletInitStatusIndicator(
                                 state: state,
                                 onTap: viewModel.initWallet,
-                                isShowLastUpdateTime: isShowLastUpdateTime,
+                                isLastUpdateTimeDisplayed:
+                                    _isLastUpdateTimeDisplayed,
                                 lastUpdateTime: viewModel.lastUpdateTime),
                           );
                         },
@@ -162,24 +164,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                     SliverToBoxAdapter(
                         child: Column(
                       children: [
-                        if (viewModel.visibleTermsShortcut &&
-                            viewModel.fastLoadDone)
-                          TermsShortcutWidget(
-                            onTap: () {
-                              CommonBottomSheets.showBottomSheet_90(
-                                  context: context,
-                                  child: const TermsBottomSheet());
-                            },
-                            onCloseTap: viewModel.hideTermsShortcut,
-                          ),
-                        // 바로 추가하기
-                        Visibility(
-                            visible: viewModel.fastLoadDone &&
-                                viewModel.walletItemList.isEmpty,
-                            child: WalletAddGuideWidget(
-                                onPressed: _onAddScannerPressed)),
-                        // Indicator
-                        if (!viewModel.fastLoadDone)
+                        if (!viewModel.isWalletsLoadedFromDb) ...{
                           const Padding(
                             padding: EdgeInsets.only(top: 40.0),
                             child: CupertinoActivityIndicator(
@@ -187,6 +172,20 @@ class _WalletListScreenState extends State<WalletListScreen>
                               radius: 20,
                             ),
                           ),
+                        } else ...{
+                          if (viewModel.isTermsShortcutVisible)
+                            WalletListTermsShortcutCard(
+                              onTap: () {
+                                CommonBottomSheets.showBottomSheet_90(
+                                    context: context,
+                                    child: const TermsBottomSheet());
+                              },
+                              onCloseTap: viewModel.hideTermsShortcut,
+                            ),
+                          if (viewModel.walletItemList.isEmpty)
+                            WalletListAddGuideCard(
+                                onPressed: _onAddScannerPressed)
+                        },
                       ],
                     )),
                     // 지갑 목록
@@ -204,13 +203,13 @@ class _WalletListScreenState extends State<WalletListScreen>
                   ],
                 ),
                 Visibility(
-                  visible: _isSeeMoreDropdown,
+                  visible: _isDropdownMenuDisplayed,
                   child: Stack(
                     children: [
                       GestureDetector(
                         onTapDown: (details) {
                           setState(() {
-                            _isSeeMoreDropdown = false;
+                            _isDropdownMenuDisplayed = false;
                           });
                         },
                         child: Container(
@@ -231,7 +230,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                           dividerIndex: 3,
                           onTapButton: (index) {
                             setState(() {
-                              _isSeeMoreDropdown = false;
+                              _isDropdownMenuDisplayed = false;
                             });
                             _dropdownActions[index].call();
                           },
@@ -275,7 +274,7 @@ class _WalletListScreenState extends State<WalletListScreen>
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_viewModel.showOnBoarding) {
+      if (_viewModel.isOnBoardingVisible) {
         Future.delayed(const Duration(milliseconds: 1000)).then((_) {
           CommonBottomSheets.showBottomSheet_100(
             context: context,
@@ -289,7 +288,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         });
       }
 
-      if (_viewModel.showReviewScreen) {
+      if (_viewModel.isReviewScreenVisible) {
         var animationController = BottomSheet.createAnimationController(this)
           ..duration = const Duration(seconds: 2);
         await CommonBottomSheets.showBottomSheet_100(
@@ -558,13 +557,13 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
   }
 
-  /// WalletInitState.finished 이후 3초뒤 변경 메소드
-  Future _showLastUpdateTimeAfterFewSeconds({int duration = 4}) async {
-    if (isShowLastUpdateTime) return;
-    await Future.delayed(Duration(seconds: duration));
+  /// WalletInitState.finished 이후 4초 뒤 마지막 업데이트 시간을 보여줌
+  Future _displayLastUpdateTimeAfterFourSeconds() async {
+    if (_isLastUpdateTimeDisplayed) return;
+    await Future.delayed(const Duration(seconds: 4));
     if (mounted) {
       setState(() {
-        isShowLastUpdateTime = true;
+        _isLastUpdateTimeDisplayed = true;
       });
     }
   }

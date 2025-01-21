@@ -8,24 +8,24 @@ class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
   late WalletProvider _walletProvider;
   late final bool _hasLaunchedAppBefore;
-  late bool _visibleTermsShortcut;
+  late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
-  late final bool _showReviewScreen;
+  late final bool _isReviewScreenVisible;
 
   WalletListViewModel(
       this._walletProvider, this._visibilityProvider, this._isBalanceHidden) {
     _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
-    _visibleTermsShortcut = _visibilityProvider.visibleTermsShortcut;
-    _showReviewScreen = AppReviewService.shouldShowReviewScreen();
+    _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
+    _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
   }
 
-  bool get fastLoadDone => _walletProvider.fastLoadDone;
-  bool get visibleTermsShortcut => _visibleTermsShortcut;
+  bool get isWalletsLoadedFromDb => _walletProvider.isWalletsLoadedFromDb;
+  bool get isTermsShortcutVisible => _isTermsShortcutVisible;
   bool get isBalanceHidden => _isBalanceHidden;
-  bool get showReviewScreen => _showReviewScreen;
+  bool get isReviewScreenVisible => _isReviewScreenVisible;
 
   int get lastUpdateTime => _walletProvider.lastUpdateTime;
-  bool get showOnBoarding => !_hasLaunchedAppBefore;
+  bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   String? get walletInitErrorMessage =>
       _walletProvider.walletInitError?.message;
   WalletInitState get walletInitState => _walletProvider.walletInitState;
@@ -40,7 +40,7 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void hideTermsShortcut() {
-    _visibleTermsShortcut = false;
+    _isTermsShortcutVisible = false;
     _visibilityProvider.hideTermsShortcut();
     notifyListeners();
   }

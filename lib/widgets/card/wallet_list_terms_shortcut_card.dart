@@ -2,21 +2,23 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-class TermsShortcutWidget extends StatefulWidget {
+class WalletListTermsShortcutCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onCloseTap;
 
-  const TermsShortcutWidget({
+  const WalletListTermsShortcutCard({
     super.key,
     required this.onTap,
     required this.onCloseTap,
   });
 
   @override
-  State<TermsShortcutWidget> createState() => _TermsShortcutWidgetState();
+  State<WalletListTermsShortcutCard> createState() =>
+      _WalletListTermsShortcutCardState();
 }
 
-class _TermsShortcutWidgetState extends State<TermsShortcutWidget> {
+class _WalletListTermsShortcutCardState
+    extends State<WalletListTermsShortcutCard> {
   bool _isTapped = false;
 
   @override
