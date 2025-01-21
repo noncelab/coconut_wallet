@@ -37,8 +37,8 @@ class WalletListScreen extends StatefulWidget {
 class _WalletListScreenState extends State<WalletListScreen>
     with TickerProviderStateMixin {
   // WalletInitState가 finished가 되고 몇 초 후에 일시를 보여줄지 여부
-  bool _isLastUpdateTimeDisplayed = false;
-  bool _isDropdownMenuDisplayed = false;
+  bool _isLastUpdateTimeVisible = false;
+  bool _isDropdownMenuVisible = false;
 
   DateTime? _lastPressedAt;
 
@@ -101,7 +101,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                     FrostedAppBar(
                       onTapSeeMore: () {
                         setState(() {
-                          _isDropdownMenuDisplayed = true;
+                          _isDropdownMenuVisible = true;
                         });
                       },
                       onTapAddScanner: () async {
@@ -114,7 +114,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                         Logger.log(
                             '--> currentContext: ${_itemKeys[0].currentContext}');
                         setState(() {
-                          _isLastUpdateTimeDisplayed = false;
+                          _isLastUpdateTimeVisible = false;
                         });
                         if (viewModel.walletItemList.isNotEmpty) {
                           viewModel.initWallet().catchError((_) {
@@ -135,7 +135,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                 _displayLastUpdateTimeAfterFourSeconds();
                               } else {
                                 setState(
-                                    () => _isLastUpdateTimeDisplayed = false);
+                                    () => _isLastUpdateTimeVisible = false);
                               }
                             });
                           });
@@ -153,8 +153,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                             child: WalletInitStatusIndicator(
                                 state: state,
                                 onTap: viewModel.initWallet,
-                                isLastUpdateTimeDisplayed:
-                                    _isLastUpdateTimeDisplayed,
+                                isLastUpdateTimeVisible:
+                                    _isLastUpdateTimeVisible,
                                 lastUpdateTime: viewModel.lastUpdateTime),
                           );
                         },
@@ -203,13 +203,13 @@ class _WalletListScreenState extends State<WalletListScreen>
                   ],
                 ),
                 Visibility(
-                  visible: _isDropdownMenuDisplayed,
+                  visible: _isDropdownMenuVisible,
                   child: Stack(
                     children: [
                       GestureDetector(
                         onTapDown: (details) {
                           setState(() {
-                            _isDropdownMenuDisplayed = false;
+                            _isDropdownMenuVisible = false;
                           });
                         },
                         child: Container(
@@ -230,7 +230,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                           dividerIndex: 3,
                           onTapButton: (index) {
                             setState(() {
-                              _isDropdownMenuDisplayed = false;
+                              _isDropdownMenuVisible = false;
                             });
                             _dropdownActions[index].call();
                           },
@@ -559,11 +559,11 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   /// WalletInitState.finished 이후 4초 뒤 마지막 업데이트 시간을 보여줌
   Future _displayLastUpdateTimeAfterFourSeconds() async {
-    if (_isLastUpdateTimeDisplayed) return;
+    if (_isLastUpdateTimeVisible) return;
     await Future.delayed(const Duration(seconds: 4));
     if (mounted) {
       setState(() {
-        _isLastUpdateTimeDisplayed = true;
+        _isLastUpdateTimeVisible = true;
       });
     }
   }

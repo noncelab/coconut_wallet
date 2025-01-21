@@ -8,14 +8,14 @@ import 'package:lottie/lottie.dart';
 class WalletInitStatusIndicator extends StatelessWidget {
   final WalletInitState state;
   final VoidCallback? onTap;
-  final bool isLastUpdateTimeDisplayed;
+  final bool isLastUpdateTimeVisible;
   final int? lastUpdateTime;
 
   const WalletInitStatusIndicator(
       {super.key,
       required this.state,
       this.onTap,
-      this.isLastUpdateTimeDisplayed = false,
+      this.isLastUpdateTimeVisible = false,
       this.lastUpdateTime});
 
   @override
@@ -47,7 +47,7 @@ class WalletInitStatusIndicator extends StatelessWidget {
         color = Colors.transparent;
     }
 
-    if (isLastUpdateTimeDisplayed &&
+    if (isLastUpdateTimeVisible &&
         lastUpdateTime != null &&
         lastUpdateTime != 0) {
       iconName = 'idle';
@@ -56,7 +56,7 @@ class WalletInitStatusIndicator extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: isLastUpdateTimeDisplayed && lastUpdateTime != 0 ? onTap : null,
+      onTap: isLastUpdateTimeVisible && lastUpdateTime != 0 ? onTap : null,
       child: Container(
         padding: const EdgeInsets.only(right: 28, top: 4, bottom: 16),
         child: Row(
