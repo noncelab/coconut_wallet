@@ -28,10 +28,9 @@ import 'package:provider/provider.dart';
 enum Unit { btc, sats }
 
 class WalletDetailScreen extends StatefulWidget {
-  const WalletDetailScreen({super.key, required this.id, this.syncResult});
+  const WalletDetailScreen({super.key, required this.id});
 
   final int id;
-  final WalletSyncResult? syncResult;
 
   @override
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
@@ -138,23 +137,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           _faucetIconKey.currentContext?.findRenderObject() as RenderBox;
       _faucetIconPosition = faucetRenderBox.localToGlobal(Offset.zero);
       _faucetIconSize = faucetRenderBox.size;
-
-      if (widget.syncResult != null) {
-        String message = "";
-        switch (widget.syncResult) {
-          case WalletSyncResult.newWalletAdded:
-            message = "새로운 지갑을 추가했어요";
-          case WalletSyncResult.existingWalletUpdated:
-            message = "지갑 정보가 업데이트 됐어요";
-          case WalletSyncResult.existingWalletNoUpdate:
-            message = "이미 추가한 지갑이에요";
-          default:
-        }
-
-        if (message.isNotEmpty) {
-          CustomToast.showToast(context: context, text: message);
-        }
-      }
     });
   }
 
