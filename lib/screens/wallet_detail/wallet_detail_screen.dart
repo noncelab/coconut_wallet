@@ -568,6 +568,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       _isHeaderDropdownVisible =
                           _isStickyHeaderDropdownVisible = false;
                     });
+                    if (_stickyHeaderVisible) {
+                      _scrollController.animateTo(_topPadding + 1,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut);
+                    }
                     viewModel.updateUtxoFilter(filter);
                   },
                 ),
