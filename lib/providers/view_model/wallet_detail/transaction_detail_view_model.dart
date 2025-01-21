@@ -12,8 +12,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final String _txHash;
   final WalletDataManager _walletDataManager;
 
-  WalletProvider? _walletProvider;
-
   AddressBook? _addressBook;
   AddressBook? get addressBook => _addressBook;
 
@@ -42,11 +40,11 @@ class TransactionDetailViewModel extends ChangeNotifier {
       this._walletId, this._txHash, this._walletDataManager);
 
   void updateWalletProvider(WalletProvider walletProvider) {
-    _walletProvider ??= walletProvider;
     if (_addressBook == null && walletProvider.walletItemList.isNotEmpty) {
       _addressBook =
           walletProvider.getWalletById(_walletId).walletBase.addressBook;
       _transaction ??= _loadTransaction();
+      _setCurrentBlockHeight(walletProvider);
       _initSeeMoreButtons();
     }
   }
@@ -91,8 +89,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setCurrentBlockHeight() async {
-    _currentBlockHeight = await _walletProvider?.getCurrentBlockHeight();
+  Future<void> _setCurrentBlockHeight(WalletProvider walletProvider) async {
+    _currentBlockHeight = await walletProvider.getCurrentBlockHeight();
     notifyListeners();
   }
 

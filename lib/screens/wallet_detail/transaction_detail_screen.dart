@@ -68,6 +68,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 100));
+      _balanceWidthSize =
+          (_balanceWidthKey.currentContext?.findRenderObject() as RenderBox)
+              .size;
+      setState(() {});
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider<WalletProvider,
         TransactionDetailViewModel>(
@@ -81,18 +93,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             _viewModel = viewModel;
             _viewModel?.showDialogNotifier.addListener(_dialogListener);
           }
-
-          // TODO: RenderBox update 2
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (viewModel.currentBlockHeight == null) {
-              viewModel.setCurrentBlockHeight().then((value) {
-                final box = _balanceWidthKey.currentContext?.findRenderObject()
-                    as RenderBox;
-                _balanceWidthSize = box.size;
-                setState(() {});
-              });
-            }
-          });
 
           if (viewModel.transaction == null) return Container();
           final status = TransactionUtil.getStatus(viewModel.transaction!);

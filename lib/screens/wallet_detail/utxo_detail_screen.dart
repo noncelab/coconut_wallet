@@ -48,7 +48,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // TODO: RenderBox update 1
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 100));
 
@@ -60,6 +59,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
       RenderBox balanceWidthRenderBox =
           _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
+
       setState(() {
         _balanceWidthSize = balanceWidthRenderBox.size;
       });
