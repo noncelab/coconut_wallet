@@ -4,9 +4,9 @@ import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
-import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class StartScreen extends StatefulWidget {
@@ -20,6 +20,17 @@ class StartScreen extends StatefulWidget {
 
 class _StartScreenState extends State<StartScreen> {
   late StartViewModel _viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        backgroundColor: MyColors.black,
+        body: Center(
+          child: Image.asset(
+            'assets/images/splash_logo.png',
+          ),
+        ));
+  }
 
   @override
   void initState() {
@@ -63,16 +74,5 @@ class _StartScreenState extends State<StartScreen> {
           cancelButtonText: '다음에 하기',
         )) ??
         false;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: MyColors.black,
-        body: Center(
-          child: Image.asset(
-            'assets/images/splash_logo.png',
-          ),
-        ));
   }
 }

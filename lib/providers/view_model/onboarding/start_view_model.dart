@@ -30,8 +30,8 @@ class StartViewModel extends ChangeNotifier {
   }
 
   bool get canUpdate => _canUpdate;
-  bool get isLoading => _isLoading;
   bool get hasLaunchedBefore => _visibilityProvider.hasLaunchedBefore;
+  bool get isLoading => _isLoading;
   bool get isSetPin => _authProvider.isSetPin;
   int get walletCount => _visibilityProvider.walletCount;
 
@@ -63,7 +63,6 @@ class StartViewModel extends ChangeNotifier {
     }
   }
 
-  /// 업데이트 다이얼로그를 마지막으로 띄운 시간 저장
   Future<void> setNextUpdateDialogDate() async {
     final nextShowDate = DateTime.now().add(const Duration(days: 7));
     _sharedPrefs.setString(SharedPrefs.kNextVersionUpdateDialogDate,
