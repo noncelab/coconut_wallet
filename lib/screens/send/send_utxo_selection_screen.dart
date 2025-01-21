@@ -1,31 +1,20 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
-import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
-import 'package:coconut_wallet/model/app/send/fee_info.dart';
 import 'package:coconut_wallet/model/app/send/send_info.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/app/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/card/utxo_selectable_item_card.dart';
-import 'package:coconut_wallet/widgets/card/utxo_selection_header_item_card.dart';
+import 'package:coconut_wallet/widgets/card/send_utxo_selection_selectable_item_card.dart';
+import 'package:coconut_wallet/widgets/card/send_utxo_selection_header_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_dropdown.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
@@ -63,169 +52,27 @@ class SendUtxoSelectionScreen extends StatefulWidget {
 }
 
 class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
-  final String allLabelName = '전체';
-  late AppStateModel _model;
-  late WalletListItemBase _walletBaseItem;
-  late WalletBase _walletBase;
-  late UpbitConnectModel _upbitConnectModel;
+  static const allLabelName = '전체';
+  SendUtxoSelectionViewModel? _viewModel;
   late final ScrollController _scrollController;
-
-  late int _confirmedBalance;
-  late List<UTXO> _confirmedUtxoList;
-  late List<UTXO> _selectedUtxoList;
-
-  // 선택된 태그
-  late String _selectedUtxoTagName = allLabelName;
-  // txHashIndex - 태그 목록
-  late final Map<String, List<UtxoTag>> _utxoTagMap = {};
 
   final GlobalKey _filterDropdownButtonKey = GlobalKey();
   final GlobalKey _scrolledFilterDropdownButtonKey = GlobalKey();
-  final bool _positionedTopWidgetVisible = false; // 스크롤시 상단에 붙어있는 위젯
+  final GlobalKey _headerTopContainerKey = GlobalKey();
+  // final bool _positionedTopWidgetVisible = false; // 스크롤시 상단에 붙어있는 위젯
+  bool _afterScrolledHeaderContainerVisible = false;
   bool _isFilterDropdownVisible = false; // 필터 드롭다운(확장형)
   bool _isScrolledFilterDropdownVisible = false; // 필터 드롭다운(축소형)
   late Offset _filterDropdownButtonPosition;
   late Offset _scrolledFilterDropdownButtonPosition;
 
-  final GlobalKey _headerTopContainerKey = GlobalKey();
   Size _headerTopContainerSize = const Size(0, 0);
-  bool _afterScrolledHeaderContainerVisible = false;
-
-  late bool _isMaxMode;
-  late int? _requiredSignature;
-  late int? _totalSigner;
-
-  RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
-      RecommendedFeeFetchStatus.fetching;
-  TransactionFeeLevel? _selectedLevel = TransactionFeeLevel.halfhour;
-  RecommendedFee? recommendedFees;
-  FeeInfo? _customFeeInfo;
-
-  int? _estimatedFee = 0;
-  List<FeeInfoWithLevel> feeInfos = [
-    FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
-    FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
-    FeeInfoWithLevel(level: TransactionFeeLevel.hour),
-  ];
-  UtxoOrderEnum _selectedFilter = UtxoOrderEnum.byAmountDesc;
-
-  late Transaction _transaction;
-
-  ErrorState? get errorState {
-    if (_estimatedFee == null) {
-      return null;
-    }
-
-    if (_confirmedBalance < needAmount) {
-      return ErrorState.insufficientBalance;
-    }
-
-    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
-        _customFeeInfo == null) {
-      return ErrorState.failedToFetchRecommendedFee;
-    }
-
-    if (selectedUtxoAmountSum < needAmount) {
-      return ErrorState.insufficientUtxo;
-    }
-
-    return null;
-  }
-
-  int get needAmount => sendAmount + (_estimatedFee ?? 0);
-
-  int get selectedUtxoAmountSum =>
-      _calculateTotalAmountOfUtxoList(_selectedUtxoList);
-
-  int get sendAmount {
-    return _isMaxMode
-        ? UnitUtil.bitcoinToSatoshi(
-              widget.sendInfo.amount,
-            ) -
-            (_estimatedFee ?? 0)
-        : UnitUtil.bitcoinToSatoshi(
-            widget.sendInfo.amount,
-          );
-  }
-
-  int? get _change {
-    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) {
-      return null;
-    }
-
-    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
-        _customFeeInfo == null) {
-      return null;
-    }
-
-    var change = _transaction.getChangeAmount(_walletBase.addressBook);
-    if (change != 0) return change;
-    if (_estimatedFee == null) return null;
-    // utxo가 모자랄 때도 change = 0으로 반환되기 때문에 진짜 잔돈이 0인지 아닌지 확인이 필요
-    if (_confirmedBalance < needAmount) {
-      return _confirmedBalance - needAmount;
-    }
-
-    return _isSelectedUtxoEnough() ? change : null;
-  }
-
-  bool get _customFeeSelected => _selectedLevel == null;
-
-  int? get _satsPerVb =>
-      _selectedFeeInfoWithLevel?.satsPerVb ?? _customFeeInfo?.satsPerVb;
-
-  FeeInfoWithLevel? get _selectedFeeInfoWithLevel => _selectedLevel == null
-      ? null
-      : feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel);
 
   @override
   void initState() {
     try {
       super.initState();
-      _model = Provider.of<AppStateModel>(context, listen: false);
-
-      _upbitConnectModel =
-          Provider.of<UpbitConnectModel>(context, listen: false);
-
       _scrollController = ScrollController();
-
-      _walletBaseItem = _model.getWalletById(widget.id);
-      _requiredSignature = _walletBaseItem.walletType ==
-              WalletType.multiSignature
-          ? (_walletBaseItem as MultisigWalletListItem).requiredSignatureCount
-          : null;
-      _totalSigner = _walletBaseItem.walletType == WalletType.multiSignature
-          ? (_walletBaseItem as MultisigWalletListItem).signers.length
-          : null;
-
-      if (_model.walletInitState == WalletInitState.finished) {
-        _confirmedUtxoList =
-            _getAllConfirmedUtxoList(_walletBaseItem.walletFeature);
-        _selectedUtxoList = [];
-        UTXO.sortUTXO(_confirmedUtxoList, _selectedFilter);
-        _addDisplayUtxoList();
-      } else {
-        _confirmedUtxoList = _selectedUtxoList = [];
-      }
-
-      if (_walletBaseItem.walletType == WalletType.multiSignature) {
-        final multisigListItem = _walletBaseItem as MultisigWalletListItem;
-        _walletBase = multisigListItem.walletBase;
-
-        final multisigWallet = _walletBase as MultisignatureWallet;
-        _confirmedBalance = multisigWallet.getBalance();
-      } else {
-        final singlesigListItem = _walletBaseItem as SinglesigWalletListItem;
-        _walletBase = singlesigListItem.walletBase;
-
-        final singlesigWallet = _walletBase as SingleSignatureWallet;
-        _confirmedBalance = singlesigWallet.getBalance();
-      }
-
-      _isMaxMode = _confirmedBalance ==
-          UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount);
-      _transaction = _createTransaction(_isMaxMode, 1, _walletBase);
-      _syncSelectedUtxosWithTransaction();
 
       _scrollController.addListener(() {
         double threshold = _headerTopContainerSize.height + 24;
@@ -239,7 +86,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        _model.initUtxoTagScreenTagData(widget.id);
+        _viewModel?.initUtxoTagScreenTagData();
 
         RenderBox filterDropdownButtonRenderBox =
             _filterDropdownButtonKey.currentContext?.findRenderObject()
@@ -247,19 +94,20 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         RenderBox scrolledFilterDropdownButtonRenderBox =
             _scrolledFilterDropdownButtonKey.currentContext?.findRenderObject()
                 as RenderBox;
+        RenderBox headerTopContainerRenderBox =
+            _headerTopContainerKey.currentContext?.findRenderObject()
+                as RenderBox;
+
         _filterDropdownButtonPosition =
             filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
         _scrolledFilterDropdownButtonPosition =
             scrolledFilterDropdownButtonRenderBox.localToGlobal(Offset.zero);
-
-        RenderBox headerTopContainerRenderBox =
-            _headerTopContainerKey.currentContext?.findRenderObject()
-                as RenderBox;
         _headerTopContainerSize = headerTopContainerRenderBox.size;
 
-        await _setRecommendedFees();
-        if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed) {
-          _updateFeeRate(_satsPerVb!);
+        await _viewModel?.setRecommendedFees();
+        if (_viewModel?.recommendedFeeFetchStatus ==
+            RecommendedFeeFetchStatus.succeed) {
+          _viewModel?.updateFeeRate(_viewModel?.satsPerVb ?? 0);
         }
       });
     } catch (e) {
@@ -285,199 +133,254 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar.buildWithNext(
-          backgroundColor: MyColors.black,
-          title: 'UTXO 고르기',
-          context: context,
-          nextButtonTitle: '완료',
-          isActive: _estimatedFee != null && errorState == null,
-          onNextPressed: _goNext),
-      body: ConstrainedBox(
-        constraints:
-            BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              controller: _scrollController,
-              child: Column(
+    return ChangeNotifierProxyProvider<UpbitConnectModel,
+        SendUtxoSelectionViewModel>(
+      create: (_) => SendUtxoSelectionViewModel(
+        Provider.of<AppStateModel>(_, listen: false),
+        Provider.of<UpbitConnectModel>(_, listen: false),
+        widget.id,
+        widget.sendInfo,
+      ),
+      update: (_, upbitConnectModel, viewModel) {
+        debugPrint('upbit: ${upbitConnectModel.bitcoinPriceKrw}');
+        return viewModel!..updateUpbitConnectModel(upbitConnectModel);
+      },
+      child: Consumer<SendUtxoSelectionViewModel>(
+        builder: (context, viewModel, child) {
+          _viewModel ??= viewModel;
+          if (viewModel.isErrorInUpdateFeeInfoEstimateFee) {
+            WidgetsBinding.instance.addPostFrameCallback((duration) {
+              CustomToast.showWarningToast(
+                  context: context,
+                  text: ErrorCodes.withMessage(
+                          ErrorCodes.feeEstimationError, viewModel.errorString)
+                      .message);
+            });
+          }
+          return Scaffold(
+            appBar: CustomAppBar.buildWithNext(
+                backgroundColor: MyColors.black,
+                title: 'UTXO 고르기',
+                context: context,
+                nextButtonTitle: '완료',
+                isActive: viewModel.estimatedFee != null &&
+                    viewModel.errorState == null,
+                onNextPressed: () => _goNext(viewModel)),
+            body: ConstrainedBox(
+              constraints:
+                  BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
+              child: Stack(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      top: 10,
-                      bottom: 10,
-                    ),
-                    alignment: Alignment.center,
-                    color: MyColors.black,
+                  SingleChildScrollView(
+                    controller: _scrollController,
                     child: Column(
                       children: [
                         Container(
-                          key: _headerTopContainerKey,
-                          width: MediaQuery.sizeOf(context).width,
-                          decoration: BoxDecoration(
-                            color: MyColors.transparentWhite_10,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
                           padding: const EdgeInsets.only(
-                            left: 24,
-                            right: 24,
-                            top: 24,
-                            bottom: 20,
+                            left: 16,
+                            right: 16,
+                            top: 10,
+                            bottom: 10,
                           ),
-                          child: UtxoSelectionHeaderItemCard(
-                            model: _model,
-                            errorState: errorState,
-                            recommendedFeeFetchStatus:
-                                _recommendedFeeFetchStatus,
-                            selectedLevel: _selectedLevel,
-                            updateFeeInfoEstimatedFee: () =>
-                                _updateFeeInfoEstimateFee(),
-                            onTapFeeButton: () => _onTapFeeButton(),
-                            isMaxMode: _isMaxMode,
-                            customFeeSelected: _customFeeSelected,
-                            sendAmount: sendAmount,
-                            estimatedFee: _estimatedFee,
-                            satsPerVb: _satsPerVb,
-                            change: _change,
+                          alignment: Alignment.center,
+                          color: MyColors.black,
+                          child: Column(
+                            children: [
+                              Container(
+                                key: _headerTopContainerKey,
+                                width: MediaQuery.sizeOf(context).width,
+                                decoration: BoxDecoration(
+                                  color: MyColors.transparentWhite_10,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                padding: const EdgeInsets.only(
+                                  left: 24,
+                                  right: 24,
+                                  top: 24,
+                                  bottom: 20,
+                                ),
+                                child: SendUtxoSelectionHeaderItemCard(
+                                  errorState: viewModel.errorState,
+                                  recommendedFeeFetchStatus:
+                                      viewModel.recommendedFeeFetchStatus,
+                                  selectedLevel: viewModel.selectedLevel,
+                                  updateFeeInfoEstimatedFee: () {
+                                    var result =
+                                        viewModel.updateFeeInfoEstimateFee();
+                                    if (result != true) {
+                                      CustomToast.showWarningToast(
+                                          context: context,
+                                          text: ErrorCodes.withMessage(
+                                                  ErrorCodes.feeEstimationError,
+                                                  viewModel.errorString)
+                                              .message);
+                                    }
+                                  },
+                                  onTapFeeButton: () =>
+                                      _onTapFeeButton(viewModel),
+                                  isMaxMode: viewModel.isMaxMode,
+                                  customFeeSelected:
+                                      viewModel.customFeeSelected,
+                                  sendAmount: viewModel.sendAmount,
+                                  bitcoinPriceKrw: viewModel
+                                      .upbitConnectModel.bitcoinPriceKrw,
+                                  estimatedFee: viewModel.estimatedFee,
+                                  satsPerVb: viewModel.satsPerVb,
+                                  change: viewModel.change,
+                                ),
+                              ),
+                              _totalUtxoAmountWidget(
+                                Text(
+                                  key: _filterDropdownButtonKey,
+                                  _getCurrentFilter(
+                                      viewModel.selectedUtxoOrder),
+                                  style: Styles.caption2.merge(
+                                    const TextStyle(
+                                      color: MyColors.white,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                viewModel,
+                              ),
+                            ],
                           ),
                         ),
-                        _totalUtxoAmountWidget(
-                          Text(
-                            key: _filterDropdownButtonKey,
-                            _getCurrentFilter(),
-                            style: Styles.caption2.merge(
-                              const TextStyle(
-                                color: MyColors.white,
-                                fontSize: 12,
-                              ),
+                        Visibility(
+                          visible: !viewModel.isUtxoTagListEmpty,
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 16, bottom: 12),
+                            child: CustomTagHorizontalSelector(
+                              tags: viewModel.utxoTagList
+                                  .map((e) => e.name)
+                                  .toList(),
+                              onSelectedTag: (tagName) {
+                                viewModel.setSelectedUtxoTagName(tagName);
+                                setState(() {
+                                  _afterScrolledHeaderContainerVisible = false;
+                                });
+                              },
                             ),
                           ),
                         ),
+                        ListView.separated(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.only(
+                                top: 0, bottom: 30, left: 16, right: 16),
+                            itemCount: viewModel.confirmedUtxoList.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 0),
+                            itemBuilder: (context, index) {
+                              final utxo = viewModel.confirmedUtxoList[index];
+                              final utxoHasSelectedTag = viewModel
+                                          .selectedUtxoTagName ==
+                                      allLabelName ||
+                                  viewModel.utxoTagMap[utxo.utxoId]?.any((e) =>
+                                          e.name ==
+                                          viewModel.selectedUtxoTagName) ==
+                                      true;
+
+                              if (utxoHasSelectedTag) {
+                                if (viewModel.selectedUtxoTagName !=
+                                        allLabelName &&
+                                    !utxoHasSelectedTag) {
+                                  return const SizedBox();
+                                }
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: SendUtxoSelectionSelectableItemCard(
+                                    key: ValueKey(utxo.transactionHash),
+                                    utxo: utxo,
+                                    isSelected: viewModel.selectedUtxoList
+                                        .contains(utxo),
+                                    utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+                                    onSelected: _toggleSelection,
+                                  ),
+                                );
+                              } else {
+                                return const SizedBox();
+                              }
+                            }),
                       ],
                     ),
                   ),
-                  Visibility(
-                    visible: _model.utxoTagList.isNotEmpty,
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 16, bottom: 12),
-                      child: CustomTagHorizontalSelector(
-                        tags: _model.utxoTagList.map((e) => e.name).toList(),
-                        onSelectedTag: (tagName) {
-                          setState(() {
-                            _selectedUtxoTagName = tagName;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                  ListView.separated(
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.only(
-                          top: 0, bottom: 30, left: 16, right: 16),
-                      itemCount: _confirmedUtxoList.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 0),
-                      itemBuilder: (context, index) {
-                        final utxo = _confirmedUtxoList[index];
-                        final utxoHasSelectedTag = _selectedUtxoTagName ==
-                                allLabelName ||
-                            _utxoTagMap[utxo.utxoId]?.any(
-                                    (e) => e.name == _selectedUtxoTagName) ==
-                                true;
-
-                        if (utxoHasSelectedTag) {
-                          if (_selectedUtxoTagName != allLabelName &&
-                              !utxoHasSelectedTag) {
-                            return const SizedBox();
-                          }
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: UtxoSelectableItemCard(
-                              key: ValueKey(utxo.transactionHash),
-                              utxo: utxo,
-                              isSelected: _selectedUtxoList.contains(utxo),
-                              utxoTags: _utxoTagMap[utxo.utxoId],
-                              onSelected: _toggleSelection,
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: IgnorePointer(
+                      ignoring: !_afterScrolledHeaderContainerVisible,
+                      child: Opacity(
+                        opacity: _afterScrolledHeaderContainerVisible ? 1 : 0,
+                        child: Container(
+                          color: MyColors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                          ),
+                          child: _totalUtxoAmountWidget(
+                            Text(
+                              key: _scrolledFilterDropdownButtonKey,
+                              _getCurrentFilter(viewModel.selectedUtxoOrder),
+                              style: Styles.caption2.merge(
+                                const TextStyle(
+                                  color: MyColors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
-                          );
-                        } else {
-                          return const SizedBox();
-                        }
-                      }),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: IgnorePointer(
-                ignoring: !_afterScrolledHeaderContainerVisible,
-                child: Opacity(
-                  opacity: _afterScrolledHeaderContainerVisible ? 1 : 0,
-                  child: Container(
-                    color: MyColors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                    ),
-                    child: _totalUtxoAmountWidget(
-                      Text(
-                        key: _scrolledFilterDropdownButtonKey,
-                        _getCurrentFilter(),
-                        style: Styles.caption2.merge(
-                          const TextStyle(
-                            color: MyColors.white,
-                            fontSize: 12,
+                            viewModel,
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                  if (_isFilterDropdownVisible &&
+                      viewModel.confirmedUtxoList.isNotEmpty) ...{
+                    Positioned(
+                      top: _filterDropdownButtonPosition.dy -
+                          _scrollController.offset -
+                          MediaQuery.of(context).padding.top -
+                          20,
+                      left: 16,
+                      child: _filterDropDownWidget(
+                          viewModel.selectedUtxoOrder.text),
+                    ),
+                  },
+                  if (_isScrolledFilterDropdownVisible &&
+                      viewModel.confirmedUtxoList.isNotEmpty) ...{
+                    Positioned(
+                      top: _scrolledFilterDropdownButtonPosition.dy -
+                          MediaQuery.of(context).padding.top -
+                          65,
+                      left: 16,
+                      child: _filterDropDownWidget(
+                          viewModel.selectedUtxoOrder.text),
+                    ),
+                  }
+                ],
               ),
             ),
-            if (_isFilterDropdownVisible && _confirmedUtxoList.isNotEmpty) ...{
-              Positioned(
-                top: _filterDropdownButtonPosition.dy -
-                    _scrollController.offset -
-                    MediaQuery.of(context).padding.top -
-                    20,
-                left: 16,
-                child: _filterDropDownWidget(),
-              ),
-            },
-            if (_isScrolledFilterDropdownVisible &&
-                _confirmedUtxoList.isNotEmpty) ...{
-              Positioned(
-                top: _scrolledFilterDropdownButtonPosition.dy -
-                    MediaQuery.of(context).padding.top -
-                    65,
-                left: 16,
-                child: _filterDropDownWidget(),
-              ),
-            }
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  void _goNext() {
+  void _goNext(SendUtxoSelectionViewModel viewModel) {
     _removeFilterDropdown();
-    if (_model.isNetworkOn != true) {
+    if (viewModel.appStateModel.isNetworkOn != true) {
       CustomToast.showWarningToast(
           context: context, text: ErrorCodes.networkError.message);
       return;
     }
 
-    List<String> usedUtxoIds = _selectedUtxoList.map((e) => e.utxoId).toList();
+    List<String> usedUtxoIds =
+        viewModel.selectedUtxoList.map((e) => e.utxoId).toList();
 
-    bool isIncludeTag = usedUtxoIds
-        .any((txHashIndex) => _utxoTagMap[txHashIndex]?.isNotEmpty == true);
+    bool isIncludeTag = usedUtxoIds.any(
+        (txHashIndex) => viewModel.utxoTagMap[txHashIndex]?.isNotEmpty == true);
 
     if (isIncludeTag) {
       CustomDialogs.showCustomAlertDialog(
@@ -486,97 +389,51 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
         onConfirm: () {
           Navigator.of(context).pop();
-          _model.recordUsedUtxoIdListWhenSend(usedUtxoIds);
-          _model.allowTagToMove();
-          _moveToSendConfirm();
+          viewModel.appStateModel.recordUsedUtxoIdListWhenSend(usedUtxoIds);
+          viewModel.appStateModel.allowTagToMove();
+          _moveToSendConfirm(viewModel);
         },
         onCancel: () {
           Navigator.of(context).pop();
-          _model.recordUsedUtxoIdListWhenSend(usedUtxoIds);
-          _moveToSendConfirm();
+          viewModel.appStateModel.recordUsedUtxoIdListWhenSend(usedUtxoIds);
+          _moveToSendConfirm(viewModel);
         },
         confirmButtonText: '적용하기',
         confirmButtonColor: MyColors.primary,
         cancelButtonText: '아니오',
       );
     } else {
-      _moveToSendConfirm();
+      _moveToSendConfirm(viewModel);
     }
   }
 
-  void _addDisplayUtxoList() {
-    _utxoTagMap.clear();
-    for (var element in _confirmedUtxoList) {
-      final tags =
-          _model.loadUtxoTagListByTxHashIndex(widget.id, element.utxoId);
-      _utxoTagMap[element.utxoId] = tags;
-    }
-    setState(() {});
-  }
-
-  void _applyFilter(UtxoOrderEnum orderEnum) async {
-    if (orderEnum == _selectedFilter) return;
+  void _applyOrder(UtxoOrderEnum orderEnum) async {
+    if (orderEnum == _viewModel?.selectedUtxoOrder) return;
     //_scrollController.jumpTo(0);
-    setState(() {
-      _selectedFilter = orderEnum;
-      //_selectedUtxoList.clear();
-    });
+    _viewModel?.setSelectedUtxoOrder(orderEnum);
     await Future.delayed(const Duration(milliseconds: 100));
     if (mounted) {
       setState(() {
-        UTXO.sortUTXO(_confirmedUtxoList, orderEnum);
-        _addDisplayUtxoList();
+        UTXO.sortUTXO(_viewModel?.confirmedUtxoList ?? [], orderEnum);
+        _viewModel?.addDisplayUtxoList();
       });
     }
   }
 
-  int _calculateTotalAmountOfUtxoList(List<UTXO> utxos) {
-    return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
-  }
-
-  Transaction _createTransaction(
-      bool isMaxMode, int feeRate, WalletBase walletBase) {
-    if (isMaxMode) {
-      return Transaction.forSweep(widget.sendInfo.address, feeRate, walletBase);
-    }
-
-    try {
-      return Transaction.forPayment(
-          widget.sendInfo.address,
-          UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
-          feeRate,
-          walletBase);
-    } catch (e) {
-      if (e.toString().contains('Not enough amount for sending. (Fee')) {
-        return Transaction.forSweep(
-            widget.sendInfo.address, feeRate, walletBase);
-      }
-
-      rethrow;
-    }
-  }
-
-  void _deselectAll() {
+  void _deselectAll(SendUtxoSelectionViewModel viewModel) {
     _removeFilterDropdown();
-    setState(() {
-      _selectedUtxoList = [];
-    });
-    if (!_isMaxMode) {
-      _transaction = Transaction.fromUtxoList([],
+    viewModel.clearUtxoList();
+    if (!viewModel.isMaxMode) {
+      viewModel.transaction = Transaction.fromUtxoList([],
           widget.sendInfo.address,
           UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
-          _satsPerVb ?? 1,
-          _walletBase);
+          viewModel.satsPerVb ?? 1,
+          viewModel.walletBase!);
     }
-  }
-
-  int _estimateFee(int feeRate) {
-    return _transaction.estimateFee(feeRate, _walletBase.addressType,
-        requiredSignature: _requiredSignature, totalSinger: _totalSigner);
   }
 
   /// 필터 드롭다운 위젯
-  Widget _filterDropDownWidget() {
+  Widget _filterDropDownWidget(String selectedUtxoOrder) {
     return Material(
       borderRadius: BorderRadius.circular(16),
       child: CustomDropdown(
@@ -590,110 +447,58 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         onTapButton: (index) {
           switch (index) {
             case 0: // 큰 금액순
-              _applyFilter(UtxoOrderEnum.byAmountDesc);
+              _applyOrder(UtxoOrderEnum.byAmountDesc);
               break;
             case 1: // 작은 금액순
-              _applyFilter(UtxoOrderEnum.byAmountAsc);
+              _applyOrder(UtxoOrderEnum.byAmountAsc);
               break;
             case 2: // 최신순
-              _applyFilter(UtxoOrderEnum.byTimestampDesc);
+              _applyOrder(UtxoOrderEnum.byTimestampDesc);
               break;
             case 3: // 오래된 순
-              _applyFilter(UtxoOrderEnum.byTimestampAsc);
+              _applyOrder(UtxoOrderEnum.byTimestampAsc);
               break;
           }
           setState(() {
             _isFilterDropdownVisible = _isScrolledFilterDropdownVisible = false;
           });
         },
-        selectedButton: _selectedFilter.text,
+        selectedButton: selectedUtxoOrder,
       ),
     );
   }
 
-  List<UTXO> _getAllConfirmedUtxoList(WalletFeature wallet) {
-    return wallet.walletStatus!.utxoList
-        .where((utxo) => utxo.blockHeight != 0)
-        .toList();
-  }
-
-  String _getCurrentFilter() {
-    if (_selectedFilter == UtxoOrderEnum.byTimestampDesc) {
+  String _getCurrentFilter(UtxoOrderEnum selectedUtxoOrder) {
+    if (selectedUtxoOrder == UtxoOrderEnum.byTimestampDesc) {
       return '최신순';
-    } else if (_selectedFilter == UtxoOrderEnum.byTimestampAsc) {
+    } else if (selectedUtxoOrder == UtxoOrderEnum.byTimestampAsc) {
       return '오래된 순';
-    } else if (_selectedFilter == UtxoOrderEnum.byAmountDesc) {
+    } else if (selectedUtxoOrder == UtxoOrderEnum.byAmountDesc) {
       return '큰 금액순';
     } else {
       return '작은 금액순';
     }
   }
 
-  void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
-    feeInfo.estimatedFee = estimatedFee;
-    feeInfo.fiatValue = _upbitConnectModel.bitcoinPriceKrw != null
-        ? FiatUtil.calculateFiatAmount(
-            estimatedFee, _upbitConnectModel.bitcoinPriceKrw!)
-        : null;
-
-    if (feeInfo is FeeInfoWithLevel && feeInfo.level == _selectedLevel) {
-      _estimatedFee = estimatedFee;
-      return;
-    }
-  }
-
-  bool _isSelectedUtxoEnough() {
-    if (_selectedUtxoList.isEmpty) return false;
-
-    if (_isMaxMode) {
-      return selectedUtxoAmountSum == _confirmedBalance;
-    }
-
-    if (_estimatedFee == null) {
-      throw StateError("EstimatedFee has not been calculated yet");
-    }
-    return selectedUtxoAmountSum >= needAmount;
-  }
-
-  void _moveToSendConfirm() {
+  void _moveToSendConfirm(SendUtxoSelectionViewModel viewModel) {
     Navigator.pushNamed(context, '/send-confirm', arguments: {
       'id': widget.id,
       'fullSendInfo': FullSendInfo(
           address: widget.sendInfo.address,
-          amount: UnitUtil.satoshiToBitcoin(sendAmount),
-          satsPerVb: _satsPerVb!,
-          estimatedFee: _estimatedFee!,
-          isMaxMode: _isMaxMode,
-          transaction: _transaction)
+          amount: UnitUtil.satoshiToBitcoin(viewModel.sendAmount),
+          satsPerVb: viewModel.satsPerVb!,
+          estimatedFee: viewModel.estimatedFee!,
+          isMaxMode: viewModel.isMaxMode,
+          transaction: viewModel.transaction)
     });
   }
 
-  void _onFeeRateChanged(Map<String, dynamic> feeSelectionResult) {
-    setState(() {
-      _estimatedFee =
-          (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
-              .estimatedFee;
-      _selectedLevel =
-          feeSelectionResult[FeeSelectionScreen.selectedOptionField];
-    });
-    _customFeeInfo =
-        feeSelectionResult[FeeSelectionScreen.selectedOptionField] == null
-            ? (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
-            : null;
-
-    var satsPerVb = _customFeeInfo?.satsPerVb! ??
-        feeInfos
-            .firstWhere((feeInfo) => feeInfo.level == _selectedLevel)
-            .satsPerVb!;
-    _updateFeeRate(satsPerVb);
-  }
-
-  void _onTapFeeButton() async {
-    if (errorState == null) {
-      _updateFeeInfoEstimateFee();
+  void _onTapFeeButton(SendUtxoSelectionViewModel viewModel) async {
+    if (viewModel.errorState == null) {
+      viewModel.updateFeeInfoEstimateFee();
     }
     Result<int, CoconutError>? minimumFeeRate =
-        await _model.getMinimumNetworkFeeRate();
+        await viewModel.appStateModel.getMinimumNetworkFeeRate();
 
     if (!mounted) {
       return;
@@ -703,16 +508,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         await CommonBottomSheets.showBottomSheet_90(
       context: context,
       child: FeeSelectionScreen(
-          feeInfos: feeInfos,
-          selectedFeeLevel: _selectedLevel,
+          feeInfos: viewModel.feeInfos,
+          selectedFeeLevel: viewModel.selectedLevel,
           networkMinimumFeeRate: minimumFeeRate?.value,
-          customFeeInfo: _customFeeInfo,
-          isRecommendedFeeFetchSuccess:
-              _recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed,
-          estimateFee: _estimateFee),
+          customFeeInfo: viewModel.customFeeInfo,
+          isRecommendedFeeFetchSuccess: viewModel.recommendedFeeFetchStatus ==
+              RecommendedFeeFetchStatus.succeed,
+          estimateFee: viewModel.estimateFee),
     );
     if (feeSelectionResult != null) {
-      _onFeeRateChanged(feeSelectionResult);
+      viewModel.onFeeRateChanged(feeSelectionResult);
     }
   }
 
@@ -723,103 +528,75 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     });
   }
 
-  void _selectAll() {
+  void _selectAll(SendUtxoSelectionViewModel viewModel) {
     _removeFilterDropdown();
-    setState(() {
-      _selectedUtxoList = List.from(_confirmedUtxoList);
-    });
+    viewModel.setSelectedUtxoList(List.from(viewModel.confirmedUtxoList));
 
-    if (!_isMaxMode) {
-      _transaction = Transaction.fromUtxoList(
-          _selectedUtxoList,
+    if (!viewModel.isMaxMode) {
+      viewModel.transaction = Transaction.fromUtxoList(
+          viewModel.selectedUtxoList,
           widget.sendInfo.address,
           UnitUtil.bitcoinToSatoshi(widget.sendInfo.amount),
-          _satsPerVb ?? 1,
-          _walletBase);
-      _estimatedFee = _estimateFee(_satsPerVb ?? 1);
+          viewModel.satsPerVb ?? 1,
+          viewModel.walletBase!);
+      viewModel.setEstimatedFee(viewModel.satsPerVb ?? 1);
     }
-  }
-
-  Future<void> _setRecommendedFees() async {
-    var recommendedFees = await fetchRecommendedFees(_model);
-    if (recommendedFees == null) {
-      setState(() {
-        _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
-      });
-      return;
-    }
-
-    feeInfos[0].satsPerVb = recommendedFees.fastestFee;
-    feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
-    feeInfos[2].satsPerVb = recommendedFees.hourFee;
-
-    _updateFeeInfoEstimateFee();
-    setState(() {
-      _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
-    });
-  }
-
-  void _syncSelectedUtxosWithTransaction() {
-    var inputs = _transaction.inputs;
-    List<UTXO> result = [];
-    for (int i = 0; i < inputs.length; i++) {
-      result.add(_confirmedUtxoList.firstWhere((utxo) =>
-          utxo.transactionHash == inputs[i].transactionHash &&
-          utxo.index == inputs[i].index));
-    }
-    setState(() {
-      _selectedUtxoList = result;
-    });
   }
 
   /// UTXO 선택 상태를 토글하는 함수
   void _toggleSelection(UTXO utxo) {
     _removeFilterDropdown();
-    setState(() {
-      if (_selectedUtxoList.contains(utxo)) {
-        if (!_isMaxMode) {
-          _transaction.removeInputWithUtxo(utxo, _satsPerVb ?? 1, _walletBase,
-              requiredSignature: _requiredSignature, totalSinger: _totalSigner);
-        }
-
-        // 모두 선택 시 List.from 으로 전체 리스트, 필터 리스트 구분 될 때
-        // 라이브러리 UTXO에 copyWith 구현 필요함
-        final keyToRemove = '${utxo.transactionHash}_${utxo.index}';
-
-        _selectedUtxoList = _selectedUtxoList
-            .fold<Map<String, UTXO>>({}, (map, utxo) {
-              final key = '${utxo.transactionHash}_${utxo.index}';
-              if (key != keyToRemove) {
-                // 제거할 키가 아니면 추가
-                map[key] = utxo;
-              }
-              return map;
-            })
-            .values
-            .toList();
-
-        if (_estimatedFee != null && _isSelectedUtxoEnough()) {
-          _estimatedFee = _estimateFee(_satsPerVb!);
-        }
-      } else {
-        if (!_isMaxMode) {
-          _transaction.addInputWithUtxo(utxo, _satsPerVb ?? 1, _walletBase,
-              requiredSignature: _requiredSignature, totalSinger: _totalSigner);
-          _estimatedFee = _estimateFee(_satsPerVb ?? 1);
-        }
-        _selectedUtxoList.add(utxo);
+    if (_viewModel!.selectedUtxoList.contains(utxo)) {
+      if (!_viewModel!.isMaxMode) {
+        _viewModel!.transaction!.removeInputWithUtxo(
+            utxo, _viewModel!.satsPerVb ?? 1, _viewModel!.walletBase!,
+            requiredSignature: _viewModel!.requiredSignature,
+            totalSinger: _viewModel!.totalSigner);
       }
-    });
+
+      // 모두 선택 시 List.from 으로 전체 리스트, 필터 리스트 구분 될 때
+      // 라이브러리 UTXO에 copyWith 구현 필요함
+      final keyToRemove = '${utxo.transactionHash}_${utxo.index}';
+
+      _viewModel!.setSelectedUtxoList(_viewModel!.selectedUtxoList
+          .fold<Map<String, UTXO>>({}, (map, utxo) {
+            final key = '${utxo.transactionHash}_${utxo.index}';
+            if (key != keyToRemove) {
+              // 제거할 키가 아니면 추가
+              map[key] = utxo;
+            }
+            return map;
+          })
+          .values
+          .toList());
+
+      if (_viewModel!.estimatedFee != null &&
+          _viewModel!.isSelectedUtxoEnough()) {
+        _viewModel!
+            .setEstimatedFee(_viewModel!.estimateFee(_viewModel!.satsPerVb!));
+      }
+    } else {
+      if (!_viewModel!.isMaxMode) {
+        _viewModel!.transaction!.addInputWithUtxo(
+            utxo, _viewModel!.satsPerVb ?? 1, _viewModel!.walletBase!,
+            requiredSignature: _viewModel!.requiredSignature,
+            totalSinger: _viewModel!.totalSigner);
+        _viewModel!.setEstimatedFee(
+            _viewModel!.estimateFee(_viewModel!.satsPerVb ?? 1));
+      }
+      _viewModel!.addSelectedUtxoList(utxo);
+    }
   }
 
-  Widget _totalUtxoAmountWidget(Widget textKeyWidget) {
+  Widget _totalUtxoAmountWidget(
+      Widget textKeyWidget, SendUtxoSelectionViewModel viewModel) {
     return Column(
       children: [
         Container(
           width: MediaQuery.sizeOf(context).width,
           decoration: BoxDecoration(
-            color: errorState == ErrorState.insufficientBalance ||
-                    errorState == ErrorState.insufficientUtxo
+            color: viewModel.errorState == ErrorState.insufficientBalance ||
+                    viewModel.errorState == ErrorState.insufficientUtxo
                 ? MyColors.transparentRed
                 : MyColors.transparentWhite_10,
             borderRadius: BorderRadius.circular(24),
@@ -840,8 +617,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   'UTXO 합계',
                   style: Styles.body2Bold.merge(
                     TextStyle(
-                        color: errorState == ErrorState.insufficientBalance ||
-                                errorState == ErrorState.insufficientUtxo
+                        color: viewModel.errorState ==
+                                    ErrorState.insufficientBalance ||
+                                viewModel.errorState ==
+                                    ErrorState.insufficientUtxo
                             ? MyColors.warningRed
                             : MyColors.white),
                   ),
@@ -850,14 +629,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   width: 4,
                 ),
                 Visibility(
-                  visible: _selectedUtxoList.isNotEmpty,
+                  visible: viewModel.selectedUtxoList.isNotEmpty,
                   child: Text(
-                    '(${_selectedUtxoList.length}개)',
+                    '(${viewModel.selectedUtxoList.length}개)',
                     style: Styles.caption.merge(
                       TextStyle(
                           fontFamily: 'Pretendard',
-                          color: errorState == ErrorState.insufficientBalance ||
-                                  errorState == ErrorState.insufficientUtxo
+                          color: viewModel.errorState ==
+                                      ErrorState.insufficientBalance ||
+                                  viewModel.errorState ==
+                                      ErrorState.insufficientUtxo
                               ? MyColors.transparentWarningRed
                               : MyColors.transparentWhite_70),
                     ),
@@ -869,13 +650,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     children: [
                       Text(
                         // Transaction.estimatedFee,
-                        _selectedUtxoList.isEmpty
+                        viewModel.selectedUtxoList.isEmpty
                             ? '0 BTC'
-                            : '${satoshiToBitcoinString(_calculateTotalAmountOfUtxoList(_selectedUtxoList)).normalizeToFullCharacters()} BTC',
+                            : '${satoshiToBitcoinString(viewModel.calculateTotalAmountOfUtxoList(viewModel.selectedUtxoList)).normalizeToFullCharacters()} BTC',
                         style: Styles.body1Number.merge(TextStyle(
-                            color: errorState ==
+                            color: viewModel.errorState ==
                                         ErrorState.insufficientBalance ||
-                                    errorState == ErrorState.insufficientUtxo
+                                    viewModel.errorState ==
+                                        ErrorState.insufficientUtxo
                                 ? MyColors.warningRed
                                 : MyColors.white,
                             fontWeight: FontWeight.w700,
@@ -893,12 +675,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         ),
         if (!_afterScrolledHeaderContainerVisible) ...{
           Visibility(
-            visible: errorState != null,
+            visible: viewModel.errorState != null,
             maintainSize: true,
             maintainState: true,
             maintainAnimation: true,
             child: Text(
-              errorState?.displayMessage ?? '',
+              viewModel.errorState?.displayMessage ?? '',
               style: Styles.warning.merge(
                 const TextStyle(
                   height: 16 / 12,
@@ -919,7 +701,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           maintainState: true,
           maintainSemantics: false,
           maintainInteractivity: false,
-          visible: !_positionedTopWidgetVisible,
+          // visible: !_positionedTopWidgetVisible,
           child: Row(children: [
             CupertinoButton(
               onPressed: () {
@@ -968,7 +750,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     text: '모두 해제',
                     onTap: () {
                       _removeFilterDropdown();
-                      _deselectAll();
+                      _deselectAll(viewModel);
                     },
                   ),
                   SvgPicture.asset('assets/svg/row-divider.svg'),
@@ -977,7 +759,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     text: '모두 선택',
                     onTap: () async {
                       _removeFilterDropdown();
-                      _selectAll();
+                      _selectAll(viewModel);
                     },
                   )
                 ],
@@ -987,34 +769,5 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         ),
       ],
     );
-  }
-
-  void _updateFeeInfoEstimateFee() {
-    for (var feeInfo in feeInfos) {
-      try {
-        int estimatedFee = _estimateFee(feeInfo.satsPerVb!);
-        setState(() {
-          _initFeeInfo(feeInfo, estimatedFee);
-        });
-      } catch (error) {
-        setState(() {
-          _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
-        });
-        // 수수료 조회 실패 알림
-        WidgetsBinding.instance.addPostFrameCallback((duration) {
-          CustomToast.showWarningToast(
-              context: context,
-              text: ErrorCodes.withMessage(
-                      ErrorCodes.feeEstimationError, error.toString())
-                  .message);
-        });
-        return;
-      }
-    }
-  }
-
-  void _updateFeeRate(int satsPerVb) {
-    _transaction.updateFeeRate(satsPerVb, _walletBase,
-        requiredSignature: _requiredSignature, totalSinger: _totalSigner);
   }
 }

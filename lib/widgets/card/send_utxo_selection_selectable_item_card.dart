@@ -7,13 +7,13 @@ import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-class UtxoSelectableItemCard extends StatefulWidget {
+class SendUtxoSelectionSelectableItemCard extends StatefulWidget {
   final UTXO utxo;
   final bool isSelected;
   final List<UtxoTag>? utxoTags;
   final Function(UTXO) onSelected;
 
-  const UtxoSelectableItemCard({
+  const SendUtxoSelectionSelectableItemCard({
     super.key,
     required this.utxo,
     required this.isSelected,
@@ -22,10 +22,12 @@ class UtxoSelectableItemCard extends StatefulWidget {
   });
 
   @override
-  State<UtxoSelectableItemCard> createState() => _UtxoSelectableCardState();
+  State<SendUtxoSelectionSelectableItemCard> createState() =>
+      _UtxoSelectableCardState();
 }
 
-class _UtxoSelectableCardState extends State<UtxoSelectableItemCard> {
+class _UtxoSelectableCardState
+    extends State<SendUtxoSelectionSelectableItemCard> {
   late bool _isPressing;
   late List<String> dateString;
 

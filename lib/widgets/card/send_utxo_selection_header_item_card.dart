@@ -1,17 +1,13 @@
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-class UtxoSelectionHeaderItemCard extends StatelessWidget {
-  final AppStateModel model;
+class SendUtxoSelectionHeaderItemCard extends StatelessWidget {
   final ErrorState? errorState;
   final RecommendedFeeFetchStatus recommendedFeeFetchStatus;
   final TransactionFeeLevel? selectedLevel;
@@ -20,13 +16,13 @@ class UtxoSelectionHeaderItemCard extends StatelessWidget {
   final bool isMaxMode;
   final bool customFeeSelected;
   final int sendAmount;
+  final int? bitcoinPriceKrw;
   final int? estimatedFee;
   final int? satsPerVb;
   final int? change;
 
-  const UtxoSelectionHeaderItemCard({
+  const SendUtxoSelectionHeaderItemCard({
     super.key,
-    required this.model,
     required this.errorState,
     required this.recommendedFeeFetchStatus,
     this.selectedLevel = TransactionFeeLevel.halfhour,
@@ -35,6 +31,7 @@ class UtxoSelectionHeaderItemCard extends StatelessWidget {
     required this.isMaxMode,
     required this.customFeeSelected,
     required this.sendAmount,
+    required this.bitcoinPriceKrw,
     required this.estimatedFee,
     required this.satsPerVb,
     required this.change,
@@ -94,16 +91,11 @@ class UtxoSelectionHeaderItemCard extends StatelessWidget {
                         '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
                         style: Styles.body2Number,
                       ),
-                      Selector<UpbitConnectModel, int?>(
-                        selector: (context, model) => model.bitcoinPriceKrw,
-                        builder: (context, bitcoinPriceKrw, child) {
-                          return Text(
-                              bitcoinPriceKrw != null
-                                  ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(sendAmount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
-                                  : '',
-                              style: Styles.caption);
-                        },
-                      )
+                      Text(
+                          bitcoinPriceKrw != null
+                              ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(sendAmount, bitcoinPriceKrw!).toDouble())} ${CurrencyCode.KRW.code}'
+                              : '',
+                          style: Styles.caption),
                     ],
                   ),
                 ],
