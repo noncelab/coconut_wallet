@@ -43,11 +43,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   void updateWalletProvider(WalletProvider walletProvider) {
     _walletProvider ??= walletProvider;
-    _addressBook ??=
-        walletProvider.getWalletById(_walletId).walletBase.addressBook;
-    _transaction ??= loadTransaction();
-    _initSeeMoreButtons();
-    notifyListeners();
+    if (_addressBook == null && walletProvider.walletItemList.isNotEmpty) {
+      _addressBook =
+          walletProvider.getWalletById(_walletId).walletBase.addressBook;
+      _transaction ??= loadTransaction();
+      _initSeeMoreButtons();
+    }
   }
 
   void _initSeeMoreButtons() {

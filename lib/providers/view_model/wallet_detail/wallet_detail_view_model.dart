@@ -62,7 +62,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final Faucet _faucetService = Faucet();
   late AddressBook _walletAddressBook;
   AddressBook get walletAddressBook => _walletAddressBook;
-  late FaucetRecord _faucetRecord;
+  FaucetRecord? _faucetRecord;
 
   String _walletAddress = '';
   String get walletAddress => _walletAddress;
@@ -133,9 +133,10 @@ class WalletDetailViewModel extends ChangeNotifier {
       }
       _prevWalletInitState = appStateModel.walletInitState;
 
-      if (_faucetRecord.count >= kMaxFaucetRequestCount) {
+      if (_faucetRecord != null &&
+          _faucetRecord!.count >= kMaxFaucetRequestCount) {
         _isFaucetRequestLimitExceeded =
-            _faucetRecord.count >= kMaxFaucetRequestCount;
+            _faucetRecord!.count >= kMaxFaucetRequestCount;
       }
 
       try {
@@ -145,7 +146,7 @@ class WalletDetailViewModel extends ChangeNotifier {
             walletListItemBase.walletBase.getReceiveAddress().address;
 
         /// 다음 Faucet 요청 수량 계산 1 -> 0.00021 -> 0.00021
-        _requestCount = _faucetRecord.count;
+        _requestCount = _faucetRecord?.count ?? 0;
         if (_requestCount == 0) {
           _requestAmount = _faucetMaxAmount;
         } else if (_requestCount <= 2) {
@@ -234,16 +235,17 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _checkFaucetRecord() {
-    if (!_faucetRecord.isToday) {
+    if (_faucetRecord == null) return;
+    if (!_faucetRecord!.isToday) {
       // 오늘 처음 요청
       _initFaucetRecord();
       _saveFaucetRecordToSharedPrefs();
       return;
     }
 
-    if (_faucetRecord.count >= kMaxFaucetRequestCount) {
+    if (_faucetRecord!.count >= kMaxFaucetRequestCount) {
       _isFaucetRequestLimitExceeded =
-          _faucetRecord.count >= kMaxFaucetRequestCount;
+          _faucetRecord!.count >= kMaxFaucetRequestCount;
       notifyListeners();
     }
   }
@@ -275,12 +277,14 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _updateFaucetRecord() {
+    if (_faucetRecord == null) return;
+
     _checkFaucetRecord();
 
-    int count = _faucetRecord.count;
+    int count = _faucetRecord!.count;
     int dateTime = DateTime.now().millisecondsSinceEpoch;
     _faucetRecord =
-        _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
+        _faucetRecord!.copyWith(dateTime: dateTime, count: count + 1);
     _requestCount++;
     _saveFaucetRecordToSharedPrefs();
   }
@@ -294,7 +298,9 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   void _saveFaucetRecordToSharedPrefs() {
     Logger.log('_checkFaucetHistory(): $_faucetRecord');
-    _sharedPrefs.saveFaucetHistory(_faucetRecord);
+    if (_faucetRecord != null) {
+      _sharedPrefs.saveFaucetHistory(_faucetRecord!);
+    }
   }
 
   Future<void> _getFaucetStatus() async {
@@ -304,11 +310,13 @@ class WalletDetailViewModel extends ChangeNotifier {
         // _isLoading = false;
         _faucetMaxAmount = response.maxLimit;
         _faucetMinAmount = response.minLimit;
-        _requestCount = _faucetRecord.count;
-        if (_requestCount == 0) {
-          _requestAmount = _faucetMaxAmount;
-        } else if (_requestCount <= 2) {
-          _requestAmount = _faucetMinAmount;
+        if (_faucetRecord != null) {
+          _requestCount = _faucetRecord!.count;
+          if (_requestCount == 0) {
+            _requestAmount = _faucetMaxAmount;
+          } else if (_requestCount <= 2) {
+            _requestAmount = _faucetMinAmount;
+          }
         }
       }
     } finally {

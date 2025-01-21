@@ -83,11 +83,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           }
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _viewModel?.setCurrentBlockHeight().then((value) {
-              final box = _balanceWidthKey.currentContext?.findRenderObject()
-                  as RenderBox;
-              _balanceWidthSize = box.size;
-            });
+            if (_viewModel?.currentBlockHeight == null) {
+              _viewModel?.setCurrentBlockHeight().then((value) {
+                final box = _balanceWidthKey.currentContext?.findRenderObject()
+                    as RenderBox;
+                _balanceWidthSize = box.size;
+                setState(() {});
+              });
+            }
           });
 
           if (viewModel.transaction == null) return Container();
@@ -199,7 +202,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                 height: viewModel.canSeeMoreInputs ? 8 : 16),
                             InputOutputDetailRow(
                               address: '수수료',
-                              balance: viewModel.transaction!.fee!,
+                              balance: viewModel.transaction?.fee ?? 0,
                               balanceMaxWidth: _balanceWidthSize.width > 0
                                   ? _balanceWidthSize.width
                                   : 100,
