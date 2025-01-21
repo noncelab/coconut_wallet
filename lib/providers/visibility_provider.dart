@@ -14,12 +14,13 @@ class VisibilityProvider extends ChangeNotifier {
   final SecureStorageService _secureStorageService = SecureStorageService();
 
   /// iOS에서 앱 지워도 secureStorage가 남아있어서 지우기 위해 사용
+  /// onBoading 노출 여부
   late bool _hasLaunchedBefore;
   bool get hasLaunchedBefore => _hasLaunchedBefore;
 
   /// 용어집 바로가기 요소
   late bool _hideTermsShortcut;
-  bool get visibleTermsShortcut => _hideTermsShortcut;
+  bool get visibleTermsShortcut => !_hideTermsShortcut;
 
   late int _walletCount;
   int get walletCount => _walletCount;

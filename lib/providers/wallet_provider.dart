@@ -37,8 +37,8 @@ class WalletProvider extends ChangeNotifier {
   final SharedPrefs _sharedPrefs = SharedPrefs();
 
   // 잔액 갱신 전 local db에서 지갑 목록 조회를 끝냈는지 여부
-  bool _fastLoadDone = false;
-  bool get fastLoadDone => _fastLoadDone;
+  bool _isWalletsLoadedFromDb = false;
+  bool get isWalletsLoadedFromDb => _isWalletsLoadedFromDb;
 
   // init 결과를 알리는 Toast는 "wallet_list_screen"에서 호출합니다.
   WalletInitState _walletInitState = WalletInitState.never;
@@ -66,7 +66,9 @@ class WalletProvider extends ChangeNotifier {
 
   WalletProvider(this._walletDataManager, this._isNetworkOn,
       this._setWalletCount, this._isSetPin) {
-    initWallet();
+    initWallet().catchError((_) {
+      Logger.error(_);
+    });
     _lastUpdateTime = _sharedPrefs.getInt(SharedPrefs.kLastUpdateTime);
   }
 
@@ -125,7 +127,7 @@ class WalletProvider extends ChangeNotifier {
       if (isNetworkOn == false) {
         setWalletInitState(WalletInitState.error,
             error: ErrorCodes.networkError);
-        throw "Network is off";
+        return;
       }
 
       if (isNetworkOn == true) {
@@ -168,7 +170,7 @@ class WalletProvider extends ChangeNotifier {
       Logger.log(
           ">>>>> ===================== initWallet catch!! notifyListeners() ${e.toString()}");
       notifyListeners();
-      rethrow;
+      rethrow; // TODO: check
     }
   }
 
@@ -377,12 +379,12 @@ class WalletProvider extends ChangeNotifier {
       setWalletInitState(WalletInitState.error,
           error: ErrorCodes.withMessage(
               ErrorCodes.storageReadError, e.toString()));
-      _onFinallyLoadingWalletsFromDB();
+      _onFinallyLoadingWalletsFromDb();
       return;
     }
 
     if (wallets.isEmpty) {
-      _onFinallyLoadingWalletsFromDB();
+      _onFinallyLoadingWalletsFromDb();
       return;
     }
 
@@ -396,12 +398,12 @@ class WalletProvider extends ChangeNotifier {
     //_animatedWalletFlags = List.filled(_walletItemList.length, null);
     //_subStateModel.saveNotEmptyWalletList(_walletItemList.isNotEmpty);
     // for wallet_list_screen
-    _onFinallyLoadingWalletsFromDB();
+    _onFinallyLoadingWalletsFromDb();
   }
 
-  void _onFinallyLoadingWalletsFromDB() {
-    if (!_fastLoadDone) {
-      _fastLoadDone = true;
+  void _onFinallyLoadingWalletsFromDb() {
+    if (!_isWalletsLoadedFromDb) {
+      _isWalletsLoadedFromDb = true;
       notifyListeners();
     }
   }
@@ -440,7 +442,9 @@ class WalletProvider extends ChangeNotifier {
   void setIsNetworkOn(bool isNetworkOn) {
     if (_isNetworkOn == null && isNetworkOn) {
       _isNetworkOn = isNetworkOn;
-      initWallet();
+      initWallet().catchError((_) {
+        Logger.error(_);
+      });
       return;
     }
 

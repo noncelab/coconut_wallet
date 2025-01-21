@@ -2,6 +2,7 @@ import 'package:coconut_wallet/appGuard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
@@ -27,6 +28,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_multisig_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_singlesig_info_screen.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -91,13 +93,21 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             },
             update: (context, connectivityProvider, visiblityProvider,
                 authProvider, walletProvider) {
-              if (walletProvider!.isNetworkOn !=
-                  connectivityProvider.isNetworkOn) {
-                walletProvider
-                    .setIsNetworkOn(connectivityProvider.isNetworkOn ?? false);
-              }
+              try {
+                if (walletProvider!.isNetworkOn !=
+                    connectivityProvider.isNetworkOn) {
+                  walletProvider.setIsNetworkOn(
+                      connectivityProvider.isNetworkOn ?? false);
+                }
 
-              return walletProvider;
+                return walletProvider;
+              } catch (e) {
+                if (walletProvider == null) {
+                  rethrow;
+                }
+
+                return walletProvider;
+              }
             },
           ),
           ChangeNotifierProxyProvider<AppSubStateModel, AppStateModel>(
@@ -151,7 +161,35 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         home: _screenStatus == AccessFlow.splash
             ? StartScreen(onComplete: _completeSplash)
             : _screenStatus == AccessFlow.main
-                ? const AppGuard(child: WalletListScreen())
+                ? AppGuard(
+                    child: ChangeNotifierProxyProvider3<
+                        WalletProvider,
+                        PreferenceProvider,
+                        VisibilityProvider,
+                        WalletListViewModel>(
+                      create: (_) => WalletListViewModel(
+                        Provider.of<WalletProvider>(_, listen: false),
+                        Provider.of<VisibilityProvider>(_, listen: false),
+                        Provider.of<PreferenceProvider>(_, listen: false)
+                            .isBalanceHidden,
+                      ),
+                      update: (BuildContext context,
+                          WalletProvider walletProvider,
+                          PreferenceProvider preferenceProvider,
+                          VisibilityProvider visibilityProvider,
+                          WalletListViewModel? previous) {
+                        if (previous!.isBalanceHidden !=
+                            preferenceProvider.isBalanceHidden) {
+                          previous.setIsBalanceHidden(
+                              preferenceProvider.isBalanceHidden);
+                        }
+
+                        return previous
+                          ..onWalletProviderUpdated(walletProvider);
+                      },
+                      child: const WalletListScreen(),
+                    ),
+                  )
                 : CustomLoadingOverlay(
                     child: PinCheckScreen(
                       appEntrance: true,

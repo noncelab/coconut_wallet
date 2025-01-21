@@ -79,7 +79,7 @@ class AppStateModel extends ChangeNotifier {
   late final WalletDataManager _walletDataManager;
 
   AppStateModel(this._subStateModel, this._walletDataManager) {
-    initWallet();
+    //initWallet();
   }
 
   /// [_subStateModel]의 변동사항 업데이트

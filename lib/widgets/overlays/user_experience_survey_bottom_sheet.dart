@@ -80,7 +80,6 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                 GestureDetector(
                   onTap: () {
                     Navigator.pushNamed(context, '/negative-feedback');
-                    Logger.log('???');
                   },
                   child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,

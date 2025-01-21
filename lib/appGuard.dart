@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +24,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   late AppSubStateModel _appSubModel;
   late UpbitConnectModel _upbitConnectModel;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
-
+  late ConnectivityProvider _connectivityProvider;
   bool _isPause = false;
 
   @override
@@ -33,6 +34,8 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
     _appStateModel = Provider.of<AppStateModel>(context, listen: false);
     _appSubModel = Provider.of<AppSubStateModel>(context, listen: false);
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
+    _connectivityProvider =
+        Provider.of<ConnectivityProvider>(context, listen: false);
     _connectivity.onConnectivityChanged.listen(_checkConnectivity);
     _screenListener.addScreenShotListener((_) {
       CustomToast.showToast(
@@ -46,6 +49,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
 
     if (_isNetworkOn != isNetworkOn) {
       _appStateModel.setIsNetworkOn(isNetworkOn);
+      _connectivityProvider.setIsNetworkOn(isNetworkOn);
       _isNetworkOn = isNetworkOn;
       _showToastAboutNetwork(isNetworkOn);
 

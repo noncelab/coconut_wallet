@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/model/app/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -155,21 +155,21 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       _isProcessing = true;
       context.loaderOverlay.show();
 
-      final model = Provider.of<AppStateModel>(context, listen: false);
+      final model = Provider.of<WalletProvider>(context, listen: false);
       WatchOnlyWallet watchOnlyWallet;
       try {
         // 2. 유효한 데이터인지 확인 (WalletSyncObject)
         Map<String, dynamic> jsonData = jsonDecode(scanData.code!);
         watchOnlyWallet = WatchOnlyWallet.fromJson(jsonData);
 
-        model.syncFromVault(watchOnlyWallet).then((value) {
+        model
+            .syncFromVault(watchOnlyWallet)
+            .then((ResultOfSyncFromVault value) {
           switch (value.result) {
             case WalletSyncResult.newWalletAdded:
+            case WalletSyncResult.existingWalletUpdated:
               {
-                Map<String, dynamic> returnValue = {
-                  'result': WalletSyncResult.newWalletAdded,
-                };
-                Navigator.pop(context, returnValue);
+                Navigator.pop(context, value);
                 break;
               }
             case WalletSyncResult.existingWalletNoUpdate:
@@ -184,15 +184,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                   _isProcessing = false;
                   Navigator.pop(context);
                 });
-                break;
-              }
-            case WalletSyncResult.existingWalletUpdated:
-              {
-                Map<String, dynamic> returnValue = {
-                  'result': WalletSyncResult.existingWalletUpdated,
-                  'id': value.walletId!
-                };
-                Navigator.pop(context, returnValue);
                 break;
               }
             case WalletSyncResult.existingName:
