@@ -47,6 +47,8 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
   late MultisigWalletListItem _multiWallet;
   late List<KeyStore> _keystoreList;
 
+  bool _isUpdateTagList = false;
+
   @override
   void initState() {
     super.initState();
@@ -151,9 +153,10 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
     Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
   }
 
-  _moveToUtxoTag() {
+  _moveToUtxoTag() async {
     _removeTooltip();
-    Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
+    _isUpdateTagList = await Navigator.pushNamed(context, '/utxo-tag',
+        arguments: {'id': widget.id}) as bool;
   }
 
   _showXPubBottomSheet(String qrData) async {
@@ -197,7 +200,7 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
             context: context,
             hasRightIcon: false,
             onBackPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(context, _isUpdateTagList);
             }),
         body: SafeArea(
           child: SingleChildScrollView(

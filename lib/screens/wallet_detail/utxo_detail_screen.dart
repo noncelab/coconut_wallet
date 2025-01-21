@@ -1,10 +1,8 @@
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
+import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_chip.dart';
@@ -40,34 +38,17 @@ class UtxoDetailScreen extends StatefulWidget {
 }
 
 class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
-  late AppStateModel _model;
-  late List<String> _dateString;
-  late bool _isUtxoTooltipVisible;
-
   final GlobalKey _utxoTooltipIconKey = GlobalKey();
   late Size _utxoTooltipIconSize;
   late Offset _utxoTooltipIconPosition;
 
-  final String _utxoTip =
-      'UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
-
   final GlobalKey _balanceWidthKey = GlobalKey();
   Size _balanceWidthSize = const Size(0, 0);
-
-  int initialInputMaxCount = 3;
-  int initialOutputMaxCount = 2;
 
   @override
   void initState() {
     super.initState();
-    _model = Provider.of<AppStateModel>(context, listen: false);
-    _dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp).split('|');
-    _isUtxoTooltipVisible = false;
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _model.initUtxoDetailScreenTagData(
-          widget.id, widget.utxo.txHash, widget.utxo.index);
-
       await Future.delayed(const Duration(milliseconds: 100));
 
       RenderBox utxoTooltipIconRenderBox =
@@ -78,6 +59,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
       RenderBox balanceWidthRenderBox =
           _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
+
       setState(() {
         _balanceWidthSize = balanceWidthRenderBox.size;
       });
@@ -86,50 +68,22 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: true,
-      onPopInvokedWithResult: (didPop, _) {
-        _removeUtxoTooltip();
-      },
-      child: GestureDetector(
-        onTap: () => _removeUtxoTooltip(),
-        child: Stack(
-          children: [
-            Selector<AppStateModel, Map<String, dynamic>>(
-              selector: (_, model) => {
-                'transaction': model.transaction,
-                'utxoTagList': model.utxoTagList,
-                'selectedUtxoTags': model.selectedTagList,
-              },
-              builder: (context, dataMap, child) {
-                final tx = dataMap['transaction'] as Transfer?;
-                final utxoTagList = dataMap['utxoTagList'] as List<UtxoTag>;
-                final selectedUtxoTags =
-                    dataMap['selectedUtxoTags'] as List<UtxoTag>;
+    return ChangeNotifierProvider<UtxoDetailViewModel>(
+      create: (_) =>
+          UtxoDetailViewModel(widget.id, widget.utxo, WalletDataManager()),
+      child: Consumer<UtxoDetailViewModel>(
+        builder: (_, viewModel, child) {
+          final tx = viewModel.transaction;
+          final tags = viewModel.utxoTagList;
+          final selectedTags = viewModel.selectedUtxoTagList;
 
-                if (tx == null) return Container();
-                initialInputMaxCount = tx.inputAddressList.length <= 3
-                    ? tx.inputAddressList.length
-                    : 3;
-                initialOutputMaxCount = tx.outputAddressList.length <= 2
-                    ? tx.outputAddressList.length
-                    : 2;
-                if (tx.inputAddressList.length <= initialInputMaxCount) {
-                  initialInputMaxCount = tx.inputAddressList.length;
-                }
-                if (tx.outputAddressList.length <= initialOutputMaxCount) {
-                  initialOutputMaxCount = tx.outputAddressList.length;
-                }
+          if (tx == null) return Container();
 
-                if (tx.outputAddressList.isNotEmpty) {
-                  tx.outputAddressList.sort((a, b) {
-                    if (a.address == widget.utxo.to) return -1;
-                    if (b.address == widget.utxo.to) return 1;
-                    return 0;
-                  });
-                }
-
-                return Scaffold(
+          return GestureDetector(
+            onTap: viewModel.removeUtxoTooltip,
+            child: Stack(
+              children: [
+                Scaffold(
                   backgroundColor: MyColors.black,
                   appBar: CustomAppBar.build(
                     title: 'UTXO',
@@ -137,18 +91,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     showTestnetLabel: false,
                     hasRightIcon: true,
                     onBackPressed: () {
-                      Navigator.pop(context);
+                      Navigator.pop(context, viewModel.selectedUtxoTagList);
                     },
                     rightIconButton: IconButton(
                       key: _utxoTooltipIconKey,
                       icon: SvgPicture.asset('assets/svg/question-mark.svg'),
-                      onPressed: () {
-                        if (mounted) {
-                          setState(() {
-                            _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
-                          });
-                        }
-                      },
+                      onPressed: viewModel.toggleUtxoTooltip,
                     ),
                   ),
                   body: SafeArea(
@@ -162,7 +110,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         child: Column(
                           children: [
                             HighlightedInfoArea(
-                              textList: _dateString,
+                              textList: viewModel.dateString,
                               textStyle: Styles.body2Number.merge(
                                 const TextStyle(
                                   color: MyColors.white,
@@ -242,7 +190,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       shrinkWrap: true,
                                       physics:
                                           const NeverScrollableScrollPhysics(),
-                                      itemCount: initialInputMaxCount,
+                                      itemCount: viewModel.initialInputMaxCount,
                                       padding: EdgeInsets.zero,
                                       itemBuilder: (context, index) {
                                         return Column(
@@ -271,7 +219,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                     ),
                                     Visibility(
                                       visible: tx.inputAddressList.length >
-                                          initialInputMaxCount,
+                                          viewModel.initialInputMaxCount,
                                       child: Text(
                                         '...',
                                         style: Styles.caption.merge(
@@ -296,7 +244,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       shrinkWrap: true,
                                       physics:
                                           const NeverScrollableScrollPhysics(),
-                                      itemCount: initialOutputMaxCount,
+                                      itemCount:
+                                          viewModel.initialOutputMaxCount,
                                       padding: EdgeInsets.zero,
                                       itemBuilder: (context, index) {
                                         return Column(
@@ -326,7 +275,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                     ),
                                     Visibility(
                                       visible: tx.outputAddressList.length >
-                                          initialOutputMaxCount,
+                                          viewModel.initialOutputMaxCount,
                                       child: Text(
                                         '...',
                                         style: Styles.caption.merge(
@@ -384,16 +333,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   isScrollControlled: true,
                                   builder: (context) => TagBottomSheet(
                                     type: TagBottomSheetType.select,
-                                    utxoTags: utxoTagList,
-                                    selectedUtxoTagNames: selectedUtxoTags
+                                    utxoTags: tags,
+                                    selectedUtxoTagNames: selectedTags
                                         .map((e) => e.name)
                                         .toList(),
                                     onSelected: (selectedNames, addTags) {
-                                      _model.updateUtxoTagList(
+                                      viewModel.updateUtxoTagList(
                                         selectedNames: selectedNames,
                                         addTags: addTags,
-                                        walletId: widget.id,
-                                        txHashIndex: widget.utxo.utxoId,
                                       );
                                     },
                                   ),
@@ -402,7 +349,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                               value: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (selectedUtxoTags.isEmpty) ...{
+                                  if (selectedTags.isEmpty) ...{
                                     Text(
                                       '-',
                                       style: Styles.body2Number.merge(
@@ -414,12 +361,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       spacing: 4,
                                       runSpacing: 4,
                                       children: List.generate(
-                                        selectedUtxoTags.length,
+                                        selectedTags.length,
                                         (index) => IntrinsicWidth(
                                           child: CustomTagChip(
-                                            tag: selectedUtxoTags[index].name,
-                                            colorIndex: selectedUtxoTags[index]
-                                                .colorIndex,
+                                            tag: selectedTags[index].name,
+                                            colorIndex:
+                                                selectedTags[index].colorIndex,
                                             type: CustomTagChipType.fix,
                                           ),
                                         ),
@@ -477,58 +424,45 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                       ),
                     ),
                   ),
-                );
-              },
+                ),
+                viewModel.isUtxoTooltipVisible
+                    ? Positioned(
+                        top: _utxoTooltipIconPosition.dy +
+                            _utxoTooltipIconSize.height -
+                            10,
+                        right: 5,
+                        child: GestureDetector(
+                          onTap: viewModel.removeUtxoTooltip,
+                          child: ClipPath(
+                            clipper: RightTriangleBubbleClipper(),
+                            child: Container(
+                              width: MediaQuery.sizeOf(context).width * 0.68,
+                              padding: const EdgeInsets.only(
+                                top: 25,
+                                left: 18,
+                                right: 18,
+                                bottom: 10,
+                              ),
+                              color: MyColors.white,
+                              child: Text(
+                                'UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.',
+                                style: Styles.caption.merge(TextStyle(
+                                  height: 1.3,
+                                  fontFamily: CustomFonts.text.getFontFamily,
+                                  color: MyColors.darkgrey,
+                                )),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Container(),
+              ],
             ),
-            _utxoTooltipWidget(context),
-          ],
-        ),
+          );
+        },
       ),
     );
-  }
-
-  Widget _utxoTooltipWidget(BuildContext context) {
-    return _isUtxoTooltipVisible
-        ? Positioned(
-            top: _utxoTooltipIconPosition.dy + _utxoTooltipIconSize.height - 10,
-            right: 5,
-            child: GestureDetector(
-              onTap: _removeUtxoTooltip,
-              child: ClipPath(
-                clipper: RightTriangleBubbleClipper(),
-                child: Container(
-                  width: MediaQuery.sizeOf(context).width * 0.68,
-                  padding: const EdgeInsets.only(
-                    top: 25,
-                    left: 18,
-                    right: 18,
-                    bottom: 10,
-                  ),
-                  color: MyColors.white,
-                  child: Text(
-                    _utxoTip,
-                    style: Styles.caption.merge(TextStyle(
-                      height: 1.3,
-                      fontFamily: CustomFonts.text.getFontFamily,
-                      color: MyColors.darkgrey,
-                    )),
-                  ),
-                ),
-              ),
-            ),
-          )
-        : Container();
-  }
-
-  void _removeUtxoTooltip() {
-    // if (_overlayEntry != null) {
-    //   _faucetTipVisible = false;
-    //   _overlayEntry!.remove();
-    //   _overlayEntry = null;
-    // }
-    setState(() {
-      _isUtxoTooltipVisible = false;
-    });
   }
 }
 
