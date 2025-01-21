@@ -20,7 +20,6 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
-import 'package:coconut_wallet/widgets/label_value.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -374,23 +373,5 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   void dispose() {
     _viewModel?.showDialogNotifier.removeListener(_dialogListener);
     super.dispose();
-  }
-}
-
-class TransactionInfo extends StatelessWidget {
-  final String label;
-  final Widget value;
-
-  const TransactionInfo({super.key, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [Label(text: label), value],
-      ),
-    );
   }
 }
