@@ -45,11 +45,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Size _balanceWidthSize = Size.zero;
   TransactionDetailViewModel? _viewModel;
 
-  void _dialogListener() {
+  void _showDialogNotifierListener() {
     CustomDialogs.showCustomAlertDialog(context,
         title: '트랜잭션 가져오기 실패',
         message: '잠시 후 다시 시도해 주세요',
         onConfirm: () => Navigator.pop(context));
+  }
+
+  void _addShowDialogNotifierListener() {
+    if (context.mounted) {
+      _viewModel = context.read<TransactionDetailViewModel>();
+      _viewModel?.showDialogNotifier.addListener(_showDialogNotifierListener);
+    }
   }
 
   String _confirmedCountText(Transfer? tx, int? blockHeight) {
@@ -70,6 +77,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _addShowDialogNotifierListener();
       await Future.delayed(const Duration(milliseconds: 100));
       _balanceWidthSize =
           (_balanceWidthKey.currentContext?.findRenderObject() as RenderBox)
@@ -88,11 +96,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           viewModel!..updateWalletProvider(walletProvider),
       child: Consumer<TransactionDetailViewModel>(
         builder: (_, viewModel, child) {
-          if (_viewModel == null) {
-            _viewModel = viewModel;
-            _viewModel?.showDialogNotifier.addListener(_dialogListener);
-          }
-
           if (viewModel.transaction == null) return Container();
           final status = TransactionUtil.getStatus(viewModel.transaction!);
           return Scaffold(
@@ -371,7 +374,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   @override
   void dispose() {
-    _viewModel?.showDialogNotifier.removeListener(_dialogListener);
+    _viewModel?.showDialogNotifier.removeListener(_showDialogNotifierListener);
     super.dispose();
   }
 }

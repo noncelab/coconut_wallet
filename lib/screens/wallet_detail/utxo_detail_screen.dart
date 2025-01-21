@@ -74,8 +74,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Consumer<UtxoDetailViewModel>(
         builder: (_, viewModel, child) {
           final tx = viewModel.transaction;
-          final utxoTagList = viewModel.utxoTagList;
-          final selectedUtxoTags = viewModel.selectedUtxoTagList;
+          final tags = viewModel.utxoTagList;
+          final selectedTags = viewModel.selectedUtxoTagList;
 
           if (tx == null) return Container();
 
@@ -333,8 +333,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   isScrollControlled: true,
                                   builder: (context) => TagBottomSheet(
                                     type: TagBottomSheetType.select,
-                                    utxoTags: utxoTagList,
-                                    selectedUtxoTagNames: selectedUtxoTags
+                                    utxoTags: tags,
+                                    selectedUtxoTagNames: selectedTags
                                         .map((e) => e.name)
                                         .toList(),
                                     onSelected: (selectedNames, addTags) {
@@ -349,7 +349,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                               value: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (selectedUtxoTags.isEmpty) ...{
+                                  if (selectedTags.isEmpty) ...{
                                     Text(
                                       '-',
                                       style: Styles.body2Number.merge(
@@ -361,12 +361,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       spacing: 4,
                                       runSpacing: 4,
                                       children: List.generate(
-                                        selectedUtxoTags.length,
+                                        selectedTags.length,
                                         (index) => IntrinsicWidth(
                                           child: CustomTagChip(
-                                            tag: selectedUtxoTags[index].name,
-                                            colorIndex: selectedUtxoTags[index]
-                                                .colorIndex,
+                                            tag: selectedTags[index].name,
+                                            colorIndex:
+                                                selectedTags[index].colorIndex,
                                             type: CustomTagChipType.fix,
                                           ),
                                         ),
