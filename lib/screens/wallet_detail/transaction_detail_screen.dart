@@ -2,10 +2,10 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -47,12 +47,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider<WalletProvider,
+    return ChangeNotifierProxyProvider2<WalletProvider, TransactionProvider,
         TransactionDetailViewModel>(
-      create: (_) => TransactionDetailViewModel(
-          widget.id, widget.txHash, WalletDataManager()),
-      update: (_, walletProvider, viewModel) =>
-          viewModel!..updateWalletProvider(walletProvider),
+      create: (_) => TransactionDetailViewModel(widget.id, widget.txHash),
+      update: (_, wallet, transaction, viewModel) {
+        if (_viewModel == null) {
+          _viewModel = viewModel;
+          _viewModel?.showDialogNotifier.addListener(_showDialogListener);
+          _viewModel?.loadCompletedNotifier.addListener(_loadCompletedListener);
+        }
+
+        return viewModel!..updateProvider(wallet, transaction);
+      },
       child: Consumer<TransactionDetailViewModel>(
         builder: (_, viewModel, child) {
           if (viewModel.transaction == null) return Container();
@@ -297,28 +303,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   @override
   void dispose() {
-    _viewModel?.showDialogNotifier.removeListener(_showDialogNotifierListener);
+    _viewModel?.showDialogNotifier.removeListener(_showDialogListener);
+    _viewModel?.showDialogNotifier.removeListener(_loadCompletedListener);
     super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _addShowDialogNotifierListener();
-      await Future.delayed(const Duration(milliseconds: 100));
-      _balanceWidthSize =
-          (_balanceWidthKey.currentContext?.findRenderObject() as RenderBox)
-              .size;
-      setState(() {});
-    });
-  }
-
-  void _addShowDialogNotifierListener() {
-    if (context.mounted) {
-      _viewModel = context.read<TransactionDetailViewModel>();
-      _viewModel?.showDialogNotifier.addListener(_showDialogNotifierListener);
-    }
   }
 
   Widget _amountText(Transfer tx) {
@@ -370,10 +357,19 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     return '';
   }
 
-  void _showDialogNotifierListener() {
+  void _showDialogListener() {
     CustomDialogs.showCustomAlertDialog(context,
         title: '트랜잭션 가져오기 실패',
         message: '잠시 후 다시 시도해 주세요',
         onConfirm: () => Navigator.pop(context));
+  }
+
+  void _loadCompletedListener() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final box =
+          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
+      _balanceWidthSize = box.size;
+      setState(() {});
+    });
   }
 }

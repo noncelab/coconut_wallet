@@ -1,9 +1,10 @@
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
@@ -46,11 +47,31 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   final GlobalKey _balanceWidthKey = GlobalKey();
   Size _balanceWidthSize = const Size(0, 0);
 
+  bool _isUtxoTooltipVisible = false;
+
+  void _removeUtxoTooltip() {
+    _isUtxoTooltipVisible = false;
+    setState(() {});
+  }
+
+  void _toggleUtxoTooltip() {
+    _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<UtxoDetailViewModel>(
-      create: (_) =>
-          UtxoDetailViewModel(widget.id, widget.utxo, WalletDataManager()),
+    return ChangeNotifierProxyProvider2<TransactionProvider, UtxoTagProvider,
+        UtxoDetailViewModel>(
+      create: (_) => UtxoDetailViewModel(widget.id, widget.utxo),
+      update: (_, transaction, tag, viewModel) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (viewModel?.transaction == null) {
+            viewModel?.updateProvider(transaction, tag);
+          }
+        });
+        return viewModel!;
+      },
       child: Consumer<UtxoDetailViewModel>(
         builder: (_, viewModel, child) {
           final tx = viewModel.transaction;
@@ -60,7 +81,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           if (tx == null) return Container();
 
           return GestureDetector(
-            onTap: viewModel.removeUtxoTooltip,
+            onTap: _removeUtxoTooltip,
             child: Stack(
               children: [
                 Scaffold(
@@ -71,12 +92,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     showTestnetLabel: false,
                     hasRightIcon: true,
                     onBackPressed: () {
-                      Navigator.pop(context, viewModel.selectedTagList);
+                      Navigator.pop(context);
                     },
                     rightIconButton: IconButton(
                       key: _utxoTooltipIconKey,
                       icon: SvgPicture.asset('assets/svg/question-mark.svg'),
-                      onPressed: viewModel.toggleUtxoTooltip,
+                      onPressed: _toggleUtxoTooltip,
                     ),
                   ),
                   body: SafeArea(
@@ -318,7 +339,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                         .map((e) => e.name)
                                         .toList(),
                                     onSelected: (selectedNames, addTags) {
-                                      viewModel.updateUtxoTagList(
+                                      viewModel.tagModel?.updateUtxoTagList(
+                                        walletId: widget.id,
+                                        utxoId: widget.utxo.utxoId,
                                         selectedNames: selectedNames,
                                         addTags: addTags,
                                       );
@@ -406,14 +429,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                   ),
                 ),
                 // TODO: Tooltip widget 분리
-                viewModel.isUtxoTooltipVisible
+                _isUtxoTooltipVisible
                     ? Positioned(
                         top: _utxoTooltipIconPosition.dy +
                             _utxoTooltipIconSize.height -
                             10,
                         right: 5,
                         child: GestureDetector(
-                          onTap: viewModel.removeUtxoTooltip,
+                          onTap: _removeUtxoTooltip,
                           child: ClipPath(
                             clipper: RightTriangleBubbleClipper(),
                             child: Container(

@@ -1,19 +1,17 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/converter/transaction.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
 class TransactionDetailViewModel extends ChangeNotifier {
   final int _walletId;
   final String _txHash;
-  final WalletDataManager _walletDataManager;
+
+  TransactionProvider? _txModel;
 
   AddressBook? _addressBook;
-  Transfer? _transaction;
 
   int? _currentBlockHeight;
   bool _canSeeMoreInputs = false;
@@ -23,9 +21,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   int _outputCountToShow = 5;
   final ValueNotifier<bool> _showDialogNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _loadCompletedNotifier = ValueNotifier(false);
 
-  TransactionDetailViewModel(
-      this._walletId, this._txHash, this._walletDataManager);
+  TransactionDetailViewModel(this._walletId, this._txHash);
+
+  TransactionProvider? get txModel => _txModel;
+
   AddressBook? get addressBook => _addressBook;
 
   bool get canSeeMoreInputs => _canSeeMoreInputs;
@@ -36,41 +37,33 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   int get itemsToShowOutput => _outputCountToShow;
   ValueNotifier<bool> get showDialogNotifier => _showDialogNotifier;
+  ValueNotifier<bool> get loadCompletedNotifier => _loadCompletedNotifier;
 
-  Transfer? get transaction => _transaction;
+  Transfer? get transaction => _txModel?.transaction;
 
   bool updateTransactionMemo(String memo) {
-    final result =
-        _walletDataManager.updateTransactionMemo(_walletId, _txHash, memo);
-    if (result.isSuccess) {
-      _transaction = _loadTransaction();
-      notifyListeners();
-      return true;
-    } else {
-      Logger.log('-----------------------------------------------------------');
-      Logger.log(
-          'updateTransactionMemo(walletId: $_walletId, txHash: $_txHash, memo: $memo)');
-      Logger.log(result.error);
-    }
-    return false;
+    return _txModel?.updateTransactionMemo(_walletId, _txHash, memo) ?? false;
   }
 
-  void updateWalletProvider(WalletProvider walletProvider) {
-    if (_addressBook == null && walletProvider.walletItemList.isNotEmpty) {
+  void updateProvider(
+      WalletProvider walletModel, TransactionProvider txModel) async {
+    if (walletModel.walletItemList.isNotEmpty && _addressBook == null) {
       _addressBook =
-          walletProvider.getWalletById(_walletId).walletBase.addressBook;
-      _transaction ??= _loadTransaction();
-      _setCurrentBlockHeight(walletProvider);
+          walletModel.getWalletById(_walletId).walletBase.addressBook;
+      await _setCurrentBlockHeight(walletModel);
+      _txModel = txModel;
+      txModel.initTransaction(_walletId, _txHash);
       _initSeeMoreButtons();
+      _loadCompletedNotifier.value = true;
     }
   }
 
   void viewMoreInput() {
-    if (transaction == null) return;
+    if (txModel?.transaction == null) return;
 
-    _inputCountToShow =
-        (_inputCountToShow + 5).clamp(0, _transaction!.inputAddressList.length);
-    if (_inputCountToShow == _transaction!.inputAddressList.length) {
+    _inputCountToShow = (_inputCountToShow + 5)
+        .clamp(0, txModel!.transaction!.inputAddressList.length);
+    if (_inputCountToShow == txModel!.transaction!.inputAddressList.length) {
       _canSeeMoreInputs = false;
     }
     notifyListeners();
@@ -88,14 +81,14 @@ class TransactionDetailViewModel extends ChangeNotifier {
   }
 
   void _initSeeMoreButtons() {
-    if (_transaction == null) {
+    if (txModel?.transaction == null) {
       _showDialogNotifier.value = true;
       notifyListeners();
       _showDialogNotifier.value = false;
       return;
     }
 
-    final status = TransactionUtil.getStatus(_transaction!);
+    final status = TransactionUtil.getStatus(txModel!.transaction!);
 
     int initialInputMaxCount = (status == TransactionStatus.sending ||
             status == TransactionStatus.sent ||
@@ -110,31 +103,22 @@ class TransactionDetailViewModel extends ChangeNotifier {
         ? 2
         : 4;
 
-    if (_transaction!.inputAddressList.length <= initialInputMaxCount) {
+    if (txModel!.transaction!.inputAddressList.length <= initialInputMaxCount) {
       _canSeeMoreInputs = false;
-      _inputCountToShow = _transaction!.inputAddressList.length;
+      _inputCountToShow = txModel!.transaction!.inputAddressList.length;
     } else {
       _canSeeMoreInputs = true;
       _inputCountToShow = initialInputMaxCount;
     }
-    if (_transaction!.outputAddressList.length <= initialOutputMaxCount) {
+    if (txModel!.transaction!.outputAddressList.length <=
+        initialOutputMaxCount) {
       _canSeeMoreOutputs = false;
-      _outputCountToShow = _transaction!.outputAddressList.length;
+      _outputCountToShow = txModel!.transaction!.outputAddressList.length;
     } else {
       _canSeeMoreOutputs = true;
       _outputCountToShow = initialOutputMaxCount;
     }
     notifyListeners();
-  }
-
-  TransferDTO? _loadTransaction() {
-    final result = _walletDataManager.loadTransaction(_walletId, _txHash);
-    if (result.isError) {
-      Logger.log('-----------------------------------------------------------');
-      Logger.log('loadTransaction(id: $_walletId, txHash: $_txHash)');
-      Logger.log(result.error);
-    }
-    return result.data;
   }
 
   Future<void> _setCurrentBlockHeight(WalletProvider walletProvider) async {

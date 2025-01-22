@@ -5,7 +5,8 @@ import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -103,7 +104,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   Unit _current = Unit.btc;
 
-  WalletDetailViewModel? viewModel;
+  WalletDetailViewModel? _viewModel;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -140,7 +141,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             _positionedTopWidgetSize.height;
       });
 
-      if (viewModel?.txList.isNotEmpty == true) {
+      _viewModel?.loadTxList();
+
+      if (_viewModel?.txList.isNotEmpty == true) {
         final RenderBox txSliverListRenderBox =
             _txSliverListKey.currentContext?.findRenderObject() as RenderBox;
         _txSliverListSize = txSliverListRenderBox.size;
@@ -158,7 +161,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               _isFilterDropdownVisible = false;
             });
             if (_scrolledFilterDropdownButtonRenderBox == null &&
-                viewModel?.utxoList.isNotEmpty == true &&
+                _viewModel?.utxoList.isNotEmpty == true &&
                 _selectedListType == SelectedListType.utxo) {
               _scrolledFilterDropdownButtonRenderBox =
                   _scrolledFilterDropdownButtonKey.currentContext
@@ -208,20 +211,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  _updateFilterDropdownButtonRenderBox() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_filterDropdownButtonKey.currentContext?.findRenderObject() != null) {
-        _filterDropdownButtonRenderBox =
-            _filterDropdownButtonKey.currentContext!.findRenderObject()
-                as RenderBox;
-
-        _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
-        _filterDropdownButtonPosition =
-            _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
-      }
-    });
   }
 
   void _toggleUnit() {
@@ -293,18 +282,32 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider<AppStateModel, WalletDetailViewModel>(
+    return ChangeNotifierProxyProvider3<AppStateModel, TransactionProvider,
+        UtxoTagProvider, WalletDetailViewModel>(
       create: (_) => WalletDetailViewModel(widget.id),
-      update: (_, appStateModel, viewModel) {
-        _updateFilterDropdownButtonRenderBox();
-        return viewModel!..appStateModelListener(appStateModel);
+      update: (_, appStateModel, transaction, utxoTag, viewModel) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (viewModel == null) {
+            _viewModel = viewModel;
+
+            if (_filterDropdownButtonKey.currentContext?.findRenderObject() !=
+                null) {
+              _filterDropdownButtonRenderBox =
+                  _filterDropdownButtonKey.currentContext!.findRenderObject()
+                      as RenderBox;
+
+              _filterDropdownButtonSize = _filterDropdownButtonRenderBox.size;
+              _filterDropdownButtonPosition =
+                  _filterDropdownButtonRenderBox.localToGlobal(Offset.zero);
+            }
+          }
+        });
+
+        return viewModel!
+          ..providerListener(appStateModel, transaction, utxoTag);
       },
       child: Consumer<WalletDetailViewModel>(
         builder: (context, viewModel, child) {
-          if (this.viewModel == null) {
-            this.viewModel = viewModel;
-          }
-
           return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, _) {
@@ -368,18 +371,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           ));
                     },
                     onTitlePressed: () async {
-                      bool isUpdatedTagList = false;
                       if (viewModel.walletType == WalletType.multiSignature) {
-                        isUpdatedTagList = await Navigator.pushNamed(
+                        await Navigator.pushNamed(
                             context, '/wallet-multisig-info',
-                            arguments: {'id': widget.id}) as bool;
+                            arguments: {'id': widget.id});
                       } else {
-                        isUpdatedTagList = await Navigator.pushNamed(
+                        await Navigator.pushNamed(
                             context, '/wallet-singlesig-info',
-                            arguments: {'id': widget.id}) as bool;
+                            arguments: {'id': widget.id});
                       }
 
-                      if (isUpdatedTagList) {
+                      if (viewModel.isUpdatedTagList == true) {
                         viewModel.getUtxoListWithHoldingAddress();
                       }
                     },
@@ -786,7 +788,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     onPressed: () async {
                       final utxo = viewModel.utxoList[itemIndex];
 
-                      final selectedTagList = await Navigator.pushNamed(
+                      await Navigator.pushNamed(
                         context,
                         '/utxo-detail',
                         arguments: {
@@ -798,10 +800,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         },
                       );
 
-                      if (selectedTagList is List<UtxoTag>) {
-                        viewModel.updateUtxoTagList(
-                            utxo.utxoId, selectedTagList);
-                      }
+                      viewModel.updateUtxoTagList(utxo.utxoId,
+                          viewModel.tagModel?.selectedTagList ?? []);
                     },
                     child: UTXOItemCard(
                       utxo: viewModel.utxoList[itemIndex],

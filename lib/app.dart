@@ -2,6 +2,7 @@ import 'package:coconut_wallet/appGuard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
@@ -36,6 +37,8 @@ import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
+
+import 'providers/transaction_provider.dart';
 
 enum AccessFlow { splash, main, pinCheck }
 
@@ -74,6 +77,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+
+        ChangeNotifierProvider(create: (_) => UtxoTagProvider()),
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
 
         /// main 에서만 사용하는 모델
         if (_screenStatus == AccessFlow.main) ...{

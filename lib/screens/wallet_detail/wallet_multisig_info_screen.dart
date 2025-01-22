@@ -47,7 +47,7 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
   late MultisigWalletListItem _multiWallet;
   late List<KeyStore> _keystoreList;
 
-  bool _isUpdatedTagList = false;
+  final bool _isUpdatedTagList = false;
 
   @override
   Widget build(BuildContext context) {
@@ -257,8 +257,7 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
 
   _moveToUtxoTag() async {
     _removeTooltip();
-    _isUpdatedTagList = await Navigator.pushNamed(context, '/utxo-tag',
-        arguments: {'id': widget.id}) as bool;
+    Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
   }
 
   Widget _multisigWallet() => Padding(

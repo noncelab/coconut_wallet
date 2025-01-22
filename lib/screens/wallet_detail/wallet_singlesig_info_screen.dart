@@ -39,8 +39,6 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
   int _tooltipRemainingTime = 0;
   int? removedWalletId;
 
-  bool _isUpdatedTagList = false;
-
   @override
   Widget build(BuildContext context) {
     if (removedWalletId != null) {
@@ -66,7 +64,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
             context: context,
             hasRightIcon: false,
             onBackPressed: () {
-              Navigator.pop(context, _isUpdatedTagList);
+              Navigator.pop(context);
             }),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -155,11 +153,8 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                                   label: '태그 관리',
                                   showIcon: true,
                                   onPressed: () async {
-                                    _isUpdatedTagList =
-                                        await Navigator.pushNamed(
-                                                context, '/utxo-tag',
-                                                arguments: {'id': widget.id})
-                                            as bool;
+                                    Navigator.pushNamed(context, '/utxo-tag',
+                                        arguments: {'id': widget.id});
                                   },
                                 ),
                               ],

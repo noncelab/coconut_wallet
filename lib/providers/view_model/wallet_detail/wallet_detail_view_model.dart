@@ -8,6 +8,8 @@ import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/shared_prefs_service.dart';
@@ -20,6 +22,10 @@ import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 class WalletDetailViewModel extends ChangeNotifier {
   static const int kMaxFaucetRequestCount = 3;
   final int _walletId;
+
+  UtxoTagProvider? _tagModel;
+  TransactionProvider? _txModel;
+
   WalletDetailViewModel(this._walletId);
 
   /// Common variables ---------------------------------------------------------
@@ -45,7 +51,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   int? _prevTxCount;
 
   List<TransferDTO> _txList = [];
-  List<TransferDTO> get txList => _txList;
+  List<TransferDTO> get txList => _txModel?.txList ?? [];
 
   List<model.UTXO> _utxoList = [];
   List<model.UTXO> get utxoList => _utxoList;
@@ -92,8 +98,20 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool _isRequesting = false;
   bool get isRequesting => _isRequesting;
 
+  UtxoTagProvider? get tagModel => _tagModel;
+
+  bool get isUpdatedTagList => _tagModel?.isUpdatedTagList ?? false;
+
   /// Common Methods -----------------------------------------------------------
-  void appStateModelListener(AppStateModel appStateModel) async {
+  void loadTxList() {
+    _txModel?.initTxList(_walletId);
+  }
+
+  void providerListener(AppStateModel appStateModel,
+      TransactionProvider transaction, UtxoTagProvider utxoTag) async {
+    _tagModel ??= utxoTag;
+    _txModel ??= transaction;
+
     // initialize
     if (_appStateModel == null) {
       _appStateModel = appStateModel;
@@ -108,7 +126,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       if (appStateModel.walletInitState == WalletInitState.finished) {
         getUtxoListWithHoldingAddress();
       }
-      _txList = appStateModel.getTxList(_walletId) ?? [];
+      // _txList = appStateModel.getTxList(_walletId) ?? [];
 
       /// Faucet
       Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
@@ -156,6 +174,8 @@ class WalletDetailViewModel extends ChangeNotifier {
         notifyListeners();
       } catch (e) {}
     }
+
+    notifyListeners();
   }
 
   /// Wallet detail methods ----------------------------------------------------
