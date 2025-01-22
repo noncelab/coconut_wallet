@@ -29,32 +29,14 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   Barcode? result;
   QRViewController? controller;
   bool _isProcessing = false;
-  String? _address;
   late SendAddressViewModel _viewModel;
   @override
   void initState() {
     super.initState();
-    _loadData();
     _viewModel = SendAddressViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
-  }
-
-  void _loadData() {
-    Future.delayed(Duration.zero, () async {
-      ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-      final clipboardText = data?.text ?? '';
-      setState(() {
-        if (clipboardText.isNotEmpty &&
-            BitcoinNetwork.currentNetwork == BitcoinNetwork.regtest &&
-            clipboardText.startsWith('bcrt1') &&
-            WalletUtility.validateAddress(clipboardText)) {
-          _address = clipboardText;
-        } else {
-          _address = null;
-        }
-      });
-    });
+    _viewModel.loadData();
   }
 
   Future<void> _stopCamera() async {
@@ -149,12 +131,12 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                   child: Container(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
                       child: TextButton(
-                          onPressed: _getClipboardText,
+                          onPressed: () => _getClipboardText(viewModel),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: _address != null
+                            foregroundColor: viewModel.address != null
                                 ? MyColors.darkgrey
                                 : MyColors.white,
-                            backgroundColor: _address != null
+                            backgroundColor: viewModel.address != null
                                 ? MyColors.white
                                 : MyColors.transparentBlack_50,
                             padding: const EdgeInsets.symmetric(
@@ -165,7 +147,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                               ),
                             ),
                           ),
-                          child: _address != null
+                          child: viewModel.address != null
                               ? Text.rich(TextSpan(
                                   text: '주소 ',
                                   style: Styles.label.merge(const TextStyle(
@@ -173,7 +155,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                                   children: [
                                       TextSpan(
                                           text:
-                                              '${_address?.substring(0, 10)}...${_address?.substring(35)}',
+                                              '${viewModel.address?.substring(0, 10)}...${viewModel.address?.substring(35)}',
                                           style: TextStyle(
                                               fontFamily: CustomFonts
                                                   .number.getFontFamily,
@@ -208,8 +190,8 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     );
   }
 
-  Future<void> _getClipboardText() async {
-    if (_address == null) return;
+  Future<void> _getClipboardText(SendAddressViewModel viewModel) async {
+    if (viewModel.address == null) return;
 
     ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     _validateAddress(data?.text);
