@@ -1,25 +1,26 @@
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
-import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/custom_chip.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
-import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
-import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
-import 'package:flutter/material.dart';
-import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
+import 'package:coconut_wallet/widgets/bubble_clipper.dart';
+import 'package:coconut_wallet/widgets/card/underline_button_tiem_card.dart';
+import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
+import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
+import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
+import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+const _divider = Divider(color: MyColors.transparentWhite_15);
 
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
@@ -46,27 +47,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Size _balanceWidthSize = const Size(0, 0);
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      RenderBox utxoTooltipIconRenderBox =
-          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox;
-      _utxoTooltipIconPosition =
-          utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
-      _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
-
-      RenderBox balanceWidthRenderBox =
-          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
-
-      setState(() {
-        _balanceWidthSize = balanceWidthRenderBox.size;
-      });
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoDetailViewModel>(
       create: (_) =>
@@ -74,8 +54,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Consumer<UtxoDetailViewModel>(
         builder: (_, viewModel, child) {
           final tx = viewModel.transaction;
-          final tags = viewModel.utxoTagList;
-          final selectedTags = viewModel.selectedUtxoTagList;
+          final tags = viewModel.tagList;
+          final selectedTags = viewModel.selectedTagList;
 
           if (tx == null) return Container();
 
@@ -91,7 +71,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     showTestnetLabel: false,
                     hasRightIcon: true,
                     onBackPressed: () {
-                      Navigator.pop(context, viewModel.selectedUtxoTagList);
+                      Navigator.pop(context, viewModel.selectedTagList);
                     },
                     rightIconButton: IconButton(
                       key: _utxoTooltipIconKey,
@@ -288,13 +268,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   ]),
                             ),
                             const SizedBox(height: 25),
-                            InfoRow(
+                            UnderlineButtonItemCard(
                                 label: '보유 주소',
-                                subLabel: '멤풀 보기',
-                                onSubLabelClicked: () => launchUrl(Uri.parse(
+                                underlineButtonLabel: '멤풀 보기',
+                                onTapUnderlineButton: () => launchUrl(Uri.parse(
                                     "${CoconutWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
                                 isChangeTagVisible: widget.isChange,
-                                value: Column(
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
@@ -314,19 +294,19 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   ],
                                 )),
                             _divider,
-                            InfoRow(
+                            UnderlineButtonItemCard(
                               label: '거래 메모',
-                              value: Text(
+                              child: Text(
                                 tx.memo?.isNotEmpty == true ? tx.memo! : '-',
                                 style: Styles.body2Number
                                     .merge(const TextStyle(height: 22 / 14)),
                               ),
                             ),
                             _divider,
-                            InfoRow(
+                            UnderlineButtonItemCard(
                               label: '태그',
-                              subLabel: '편집',
-                              onSubLabelClicked: () {
+                              underlineButtonLabel: '편집',
+                              onTapUnderlineButton: () {
                                 showModalBottomSheet(
                                   context: context,
                                   backgroundColor: MyColors.black,
@@ -346,7 +326,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                   ),
                                 );
                               },
-                              value: Column(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (selectedTags.isEmpty) ...{
@@ -377,29 +357,29 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                               ),
                             ),
                             _divider,
-                            InfoRow(
+                            UnderlineButtonItemCard(
                               label: '트랜잭션 ID',
-                              subLabel: '거래 자세히 보기',
-                              onSubLabelClicked: () {
+                              underlineButtonLabel: '거래 자세히 보기',
+                              onTapUnderlineButton: () {
                                 Navigator.pushNamed(
                                     context, '/transaction-detail', arguments: {
                                   'id': widget.id,
                                   'txHash': widget.utxo.txHash
                                 });
                               },
-                              value: Text(
+                              child: Text(
                                 widget.utxo.txHash,
                                 style: Styles.body2Number
                                     .merge(const TextStyle(height: 22 / 14)),
                               ),
                             ),
                             _divider,
-                            InfoRow(
+                            UnderlineButtonItemCard(
                                 label: '블록 번호',
-                                subLabel: '멤풀 보기',
-                                onSubLabelClicked: () => launchUrl(Uri.parse(
+                                underlineButtonLabel: '멤풀 보기',
+                                onTapUnderlineButton: () => launchUrl(Uri.parse(
                                     "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
-                                value: Text(
+                                child: Text(
                                   widget.utxo.blockHeight,
                                   style: Styles.body2Number
                                       .merge(const TextStyle(height: 22 / 14)),
@@ -425,6 +405,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     ),
                   ),
                 ),
+                // TODO: Tooltip widget 분리
                 viewModel.isUtxoTooltipVisible
                     ? Positioned(
                         top: _utxoTooltipIconPosition.dy +
@@ -464,68 +445,25 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       ),
     );
   }
-}
-
-const _divider = Divider(color: MyColors.transparentWhite_15);
-
-class InfoRow extends StatelessWidget {
-  final String label;
-  final bool isChangeTagVisible;
-  final Widget value;
-  final String? subLabel;
-  final VoidCallback? onSubLabelClicked;
-
-  const InfoRow(
-      {super.key,
-      required this.label,
-      this.isChangeTagVisible = false,
-      required this.value,
-      this.subLabel,
-      this.onSubLabelClicked});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 16,
-        horizontal: 2,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(children: [
-            Text(
-              label,
-              style: Styles.body2.merge(
-                const TextStyle(
-                  color: MyColors.transparentWhite_70,
-                  height: 21 / 14,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            if (isChangeTagVisible) const CustomChip(text: '잔돈'),
-            if (subLabel != null)
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: CustomUnderlinedButton(
-                    text: subLabel!,
-                    onTap: () {
-                      if (onSubLabelClicked != null) {
-                        onSubLabelClicked!();
-                      }
-                    },
-                    fontSize: 12,
-                    lineHeight: 18,
-                  ),
-                ),
-              ),
-          ]),
-          const SizedBox(height: 4),
-          value
-        ],
-      ),
-    );
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      RenderBox utxoTooltipIconRenderBox =
+          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox;
+      _utxoTooltipIconPosition =
+          utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
+
+      RenderBox balanceWidthRenderBox =
+          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
+
+      setState(() {
+        _balanceWidthSize = balanceWidthRenderBox.size;
+      });
+    });
   }
 }

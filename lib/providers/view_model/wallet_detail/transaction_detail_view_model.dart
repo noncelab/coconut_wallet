@@ -13,31 +13,47 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final WalletDataManager _walletDataManager;
 
   AddressBook? _addressBook;
-  AddressBook? get addressBook => _addressBook;
-
   Transfer? _transaction;
-  Transfer? get transaction => _transaction;
 
   int? _currentBlockHeight;
-  int? get currentBlockHeight => _currentBlockHeight;
-
   bool _canSeeMoreInputs = false;
-  bool get canSeeMoreInputs => _canSeeMoreInputs;
 
   bool _canSeeMoreOutputs = false;
-  bool get canSeeMoreOutputs => _canSeeMoreOutputs;
+  int _inputCountToShow = 5;
 
-  int _itemsToShowInput = 5;
-  int get itemsToShowInput => _itemsToShowInput;
-
-  int _itemsToShowOutput = 5;
-  int get itemsToShowOutput => _itemsToShowOutput;
-
+  int _outputCountToShow = 5;
   final ValueNotifier<bool> _showDialogNotifier = ValueNotifier(false);
-  ValueNotifier<bool> get showDialogNotifier => _showDialogNotifier;
 
   TransactionDetailViewModel(
       this._walletId, this._txHash, this._walletDataManager);
+  AddressBook? get addressBook => _addressBook;
+
+  bool get canSeeMoreInputs => _canSeeMoreInputs;
+  bool get canSeeMoreOutputs => _canSeeMoreOutputs;
+
+  int? get currentBlockHeight => _currentBlockHeight;
+  int get inputCountToShow => _inputCountToShow;
+
+  int get itemsToShowOutput => _outputCountToShow;
+  ValueNotifier<bool> get showDialogNotifier => _showDialogNotifier;
+
+  Transfer? get transaction => _transaction;
+
+  bool updateTransactionMemo(String memo) {
+    final result =
+        _walletDataManager.updateTransactionMemo(_walletId, _txHash, memo);
+    if (result.isSuccess) {
+      _transaction = _loadTransaction();
+      notifyListeners();
+      return true;
+    } else {
+      Logger.log('-----------------------------------------------------------');
+      Logger.log(
+          'updateTransactionMemo(walletId: $_walletId, txHash: $_txHash, memo: $memo)');
+      Logger.log(result.error);
+    }
+    return false;
+  }
 
   void updateWalletProvider(WalletProvider walletProvider) {
     if (_addressBook == null && walletProvider.walletItemList.isNotEmpty) {
@@ -47,6 +63,28 @@ class TransactionDetailViewModel extends ChangeNotifier {
       _setCurrentBlockHeight(walletProvider);
       _initSeeMoreButtons();
     }
+  }
+
+  void viewMoreInput() {
+    if (transaction == null) return;
+
+    _inputCountToShow =
+        (_inputCountToShow + 5).clamp(0, _transaction!.inputAddressList.length);
+    if (_inputCountToShow == _transaction!.inputAddressList.length) {
+      _canSeeMoreInputs = false;
+    }
+    notifyListeners();
+  }
+
+  void viewMoreOutput() {
+    if (transaction == null) return;
+
+    _outputCountToShow = (_outputCountToShow + 5)
+        .clamp(0, transaction!.outputAddressList.length);
+    if (itemsToShowOutput == transaction!.outputAddressList.length) {
+      _canSeeMoreOutputs = false;
+    }
+    notifyListeners();
   }
 
   void _initSeeMoreButtons() {
@@ -74,23 +112,18 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
     if (_transaction!.inputAddressList.length <= initialInputMaxCount) {
       _canSeeMoreInputs = false;
-      _itemsToShowInput = _transaction!.inputAddressList.length;
+      _inputCountToShow = _transaction!.inputAddressList.length;
     } else {
       _canSeeMoreInputs = true;
-      _itemsToShowInput = initialInputMaxCount;
+      _inputCountToShow = initialInputMaxCount;
     }
     if (_transaction!.outputAddressList.length <= initialOutputMaxCount) {
       _canSeeMoreOutputs = false;
-      _itemsToShowOutput = _transaction!.outputAddressList.length;
+      _outputCountToShow = _transaction!.outputAddressList.length;
     } else {
       _canSeeMoreOutputs = true;
-      _itemsToShowOutput = initialOutputMaxCount;
+      _outputCountToShow = initialOutputMaxCount;
     }
-    notifyListeners();
-  }
-
-  Future<void> _setCurrentBlockHeight(WalletProvider walletProvider) async {
-    _currentBlockHeight = await walletProvider.getCurrentBlockHeight();
     notifyListeners();
   }
 
@@ -104,41 +137,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
     return result.data;
   }
 
-  bool updateTransactionMemo(String memo) {
-    final result =
-        _walletDataManager.updateTransactionMemo(_walletId, _txHash, memo);
-    if (result.isSuccess) {
-      _transaction = _loadTransaction();
-      notifyListeners();
-      return true;
-    } else {
-      Logger.log('-----------------------------------------------------------');
-      Logger.log(
-          'updateTransactionMemo(walletId: $_walletId, txHash: $_txHash, memo: $memo)');
-      Logger.log(result.error);
-    }
-    return false;
-  }
-
-  void viewMoreOutput() {
-    if (transaction == null) return;
-
-    _itemsToShowOutput = (_itemsToShowOutput + 5)
-        .clamp(0, transaction!.outputAddressList.length);
-    if (itemsToShowOutput == transaction!.outputAddressList.length) {
-      _canSeeMoreOutputs = false;
-    }
-    notifyListeners();
-  }
-
-  void viewMoreInput() {
-    if (transaction == null) return;
-
-    _itemsToShowInput =
-        (_itemsToShowInput + 5).clamp(0, _transaction!.inputAddressList.length);
-    if (_itemsToShowInput == _transaction!.inputAddressList.length) {
-      _canSeeMoreInputs = false;
-    }
+  Future<void> _setCurrentBlockHeight(WalletProvider walletProvider) async {
+    _currentBlockHeight = await walletProvider.getCurrentBlockHeight();
     notifyListeners();
   }
 }

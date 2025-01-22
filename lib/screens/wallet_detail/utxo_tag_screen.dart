@@ -1,13 +1,13 @@
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_view_model.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
-import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
-import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class UtxoTagScreen extends StatelessWidget {
@@ -74,7 +74,7 @@ class UtxoTagScreen extends StatelessWidget {
                             .copyWith(fontSize: 13, color: MyColors.gray200),
                       ),
                     },
-                    if (viewModel.getEditButtonVisible()) ...{
+                    if (viewModel.selectedUtxoTag != null) ...{
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [

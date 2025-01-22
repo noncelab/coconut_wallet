@@ -368,18 +368,18 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           ));
                     },
                     onTitlePressed: () async {
-                      bool updatedTagList = false;
+                      bool isUpdatedTagList = false;
                       if (viewModel.walletType == WalletType.multiSignature) {
-                        updatedTagList = await Navigator.pushNamed(
+                        isUpdatedTagList = await Navigator.pushNamed(
                             context, '/wallet-multisig-info',
                             arguments: {'id': widget.id}) as bool;
                       } else {
-                        updatedTagList = await Navigator.pushNamed(
+                        isUpdatedTagList = await Navigator.pushNamed(
                             context, '/wallet-singlesig-info',
                             arguments: {'id': widget.id}) as bool;
                       }
 
-                      if (updatedTagList) {
+                      if (isUpdatedTagList) {
                         viewModel.getUtxoListWithHoldingAddress();
                       }
                     },
@@ -786,7 +786,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     onPressed: () async {
                       final utxo = viewModel.utxoList[itemIndex];
 
-                      final updateUtxoList = await Navigator.pushNamed(
+                      final selectedTagList = await Navigator.pushNamed(
                         context,
                         '/utxo-detail',
                         arguments: {
@@ -798,9 +798,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         },
                       );
 
-                      if (updateUtxoList is List<UtxoTag>) {
+                      if (selectedTagList is List<UtxoTag>) {
                         viewModel.updateUtxoTagList(
-                            utxo.utxoId, updateUtxoList);
+                            utxo.utxoId, selectedTagList);
                       }
                     },
                     child: UTXOItemCard(

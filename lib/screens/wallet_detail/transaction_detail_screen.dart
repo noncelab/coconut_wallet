@@ -1,30 +1,32 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
-import 'package:coconut_wallet/widgets/overlays/memo_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
-import 'package:flutter/material.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/card/underline_button_tiem_card.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
+import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
+import 'package:coconut_wallet/widgets/overlays/memo_bottom_sheet.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
+  static const _divider = Divider(color: MyColors.transparentWhite_15);
   final int id;
+
   final String txHash;
 
   const TransactionDetailScreen({
@@ -32,8 +34,6 @@ class TransactionDetailScreen extends StatefulWidget {
     required this.id,
     required this.txHash,
   });
-
-  static const _divider = Divider(color: MyColors.transparentWhite_15);
 
   @override
   State<TransactionDetailScreen> createState() =>
@@ -44,47 +44,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   final GlobalKey _balanceWidthKey = GlobalKey();
   Size _balanceWidthSize = Size.zero;
   TransactionDetailViewModel? _viewModel;
-
-  void _showDialogNotifierListener() {
-    CustomDialogs.showCustomAlertDialog(context,
-        title: '트랜잭션 가져오기 실패',
-        message: '잠시 후 다시 시도해 주세요',
-        onConfirm: () => Navigator.pop(context));
-  }
-
-  void _addShowDialogNotifierListener() {
-    if (context.mounted) {
-      _viewModel = context.read<TransactionDetailViewModel>();
-      _viewModel?.showDialogNotifier.addListener(_showDialogNotifierListener);
-    }
-  }
-
-  String _confirmedCountText(Transfer? tx, int? blockHeight) {
-    if (blockHeight == null || tx == null) {
-      return '';
-    }
-
-    if (tx.blockHeight != null && tx.blockHeight != 0 && blockHeight != 0) {
-      final confirmationCount = blockHeight - tx.blockHeight! + 1;
-      if (confirmationCount > 0) {
-        return confirmationCount.toString();
-      }
-    }
-    return '';
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _addShowDialogNotifierListener();
-      await Future.delayed(const Duration(milliseconds: 100));
-      _balanceWidthSize =
-          (_balanceWidthKey.currentContext?.findRenderObject() as RenderBox)
-              .size;
-      setState(() {});
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +63,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 title: '거래 자세히 보기',
                 context: context,
                 hasRightIcon: false,
-                showTestnetLabel: false,
               ),
               body: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -165,7 +123,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             ListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: viewModel.itemsToShowInput,
+                              itemCount: viewModel.inputCountToShow,
                               padding: EdgeInsets.zero,
                               itemBuilder: (context, index) {
                                 return Column(
@@ -259,14 +217,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           ]),
                         ),
                         const SizedBox(height: 12),
-                        InfoRow(
+                        UnderlineButtonItemCard(
                           label: '블록 번호',
-                          subLabel: '멤풀 보기',
-                          onSubLabelClicked: () {
+                          underlineButtonLabel: '멤풀 보기',
+                          onTapUnderlineButton: () {
                             launchUrl(Uri.parse(
                                 '${CoconutWalletApp.kMempoolHost}/block/${viewModel.transaction!.blockHeight}'));
                           },
-                          value: Text(
+                          child: Text(
                             viewModel.transaction!.blockHeight != 0
                                 ? '${viewModel.transaction!.blockHeight.toString()} (${_confirmedCountText(viewModel.transaction, viewModel.currentBlockHeight)} 승인)'
                                 : '-',
@@ -274,22 +232,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           ),
                         ),
                         TransactionDetailScreen._divider,
-                        InfoRow(
+                        UnderlineButtonItemCard(
                             label: '트랜잭션 ID',
-                            subLabel: '멤풀 보기',
-                            onSubLabelClicked: () {
+                            underlineButtonLabel: '멤풀 보기',
+                            onTapUnderlineButton: () {
                               launchUrl(Uri.parse(
                                   "${CoconutWalletApp.kMempoolHost}/tx/${viewModel.transaction!.transactionHash}"));
                             },
-                            value: Text(
+                            child: Text(
                               viewModel.transaction!.transactionHash,
                               style: Styles.body1Number,
                             )),
                         TransactionDetailScreen._divider,
-                        InfoRow(
+                        UnderlineButtonItemCard(
                             label: '거래 메모',
-                            subLabel: '편집',
-                            onSubLabelClicked: () {
+                            underlineButtonLabel: '편집',
+                            onTapUnderlineButton: () {
                               showModalBottomSheet(
                                 context: context,
                                 isScrollControlled: true,
@@ -308,7 +266,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                 ),
                               );
                             },
-                            value: Text(
+                            child: Text(
                               viewModel.transaction!.memo?.isNotEmpty == true
                                   ? viewModel.transaction!.memo!
                                   : '-',
@@ -335,6 +293,32 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _viewModel?.showDialogNotifier.removeListener(_showDialogNotifierListener);
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _addShowDialogNotifierListener();
+      await Future.delayed(const Duration(milliseconds: 100));
+      _balanceWidthSize =
+          (_balanceWidthKey.currentContext?.findRenderObject() as RenderBox)
+              .size;
+      setState(() {});
+    });
+  }
+
+  void _addShowDialogNotifierListener() {
+    if (context.mounted) {
+      _viewModel = context.read<TransactionDetailViewModel>();
+      _viewModel?.showDialogNotifier.addListener(_showDialogNotifierListener);
+    }
   }
 
   Widget _amountText(Transfer tx) {
@@ -372,9 +356,24 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _viewModel?.showDialogNotifier.removeListener(_showDialogNotifierListener);
-    super.dispose();
+  String _confirmedCountText(Transfer? tx, int? blockHeight) {
+    if (blockHeight == null || tx == null) {
+      return '';
+    }
+
+    if (tx.blockHeight != null && tx.blockHeight != 0 && blockHeight != 0) {
+      final confirmationCount = blockHeight - tx.blockHeight! + 1;
+      if (confirmationCount > 0) {
+        return confirmationCount.toString();
+      }
+    }
+    return '';
+  }
+
+  void _showDialogNotifierListener() {
+    CustomDialogs.showCustomAlertDialog(context,
+        title: '트랜잭션 가져오기 실패',
+        message: '잠시 후 다시 시도해 주세요',
+        onConfirm: () => Navigator.pop(context));
   }
 }

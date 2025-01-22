@@ -9,45 +9,21 @@ class UtxoTagViewModel extends ChangeNotifier {
   final WalletDataManager _walletDataManager;
 
   List<UtxoTag> _utxoTagList = [];
-  List<UtxoTag> get utxoTagList => _utxoTagList;
-
   UtxoTag? _selectedUtxoTag;
-  UtxoTag? get selectedUtxoTag => _selectedUtxoTag;
 
   String? _updatedTagName;
-  String? get updatedTagName => _updatedTagName;
-
   bool _isUpdatedTagList = false;
-  bool get isUpdatedTagList => _isUpdatedTagList;
 
   UtxoTagViewModel(this._walletId, this._walletDataManager) {
     _utxoTagList = _loadUtxoTagList();
     notifyListeners();
   }
+  bool get isUpdatedTagList => _isUpdatedTagList;
 
-  void setSelectedUtxoTag(UtxoTag? utxo) {
-    _selectedUtxoTag = utxo;
-    notifyListeners();
-  }
+  UtxoTag? get selectedUtxoTag => _selectedUtxoTag;
+  String? get updatedTagName => _updatedTagName;
 
-  String getDeleteMessage() {
-    return '#${_selectedUtxoTag?.name}를 정말로 삭제하시겠어요?'
-        '\n${_selectedUtxoTag?.utxoIdList?.isNotEmpty == true ? '${_selectedUtxoTag?.utxoIdList?.length}개 UTXO에 적용되어 있어요.' : ''}';
-  }
-
-  bool getEditButtonVisible() {
-    return utxoTagList.isNotEmpty && selectedUtxoTag != null;
-  }
-
-  List<UtxoTag> _loadUtxoTagList() {
-    final result = _walletDataManager.loadUtxoTagList(_walletId);
-    if (result.isError) {
-      Logger.log('-----------------------------------------------------------');
-      Logger.log('loadUtxoTagList(walletId: $_walletId)');
-      Logger.log(result.error);
-    }
-    return result.data ?? [];
-  }
+  List<UtxoTag> get utxoTagList => _utxoTagList;
 
   bool addUtxoTag(UtxoTag utxoTag) {
     final newUtxoTag = utxoTag.copyWith(walletId: _walletId);
@@ -65,6 +41,34 @@ class UtxoTagViewModel extends ChangeNotifier {
       Logger.error(result.error);
     }
     return false;
+  }
+
+  bool deleteUtxoTag() {
+    if (_selectedUtxoTag != null) {
+      final result = _walletDataManager.deleteUtxoTag(_selectedUtxoTag!.id);
+      if (result.isSuccess) {
+        _utxoTagList = _loadUtxoTagList();
+        _selectedUtxoTag = null;
+        _isUpdatedTagList = true;
+        notifyListeners();
+        return true;
+      } else {
+        Logger.log('---------------------------------------------------------');
+        Logger.log('deleteUtxoTag(utxoTag: $_selectedUtxoTag)');
+        Logger.log(result.error);
+      }
+    }
+    return false;
+  }
+
+  String getDeleteMessage() {
+    return '#${_selectedUtxoTag?.name}를 정말로 삭제하시겠어요?'
+        '\n${_selectedUtxoTag?.utxoIdList?.isNotEmpty == true ? '${_selectedUtxoTag?.utxoIdList?.length}개 UTXO에 적용되어 있어요.' : ''}';
+  }
+
+  void setSelectedUtxoTag(UtxoTag? utxo) {
+    _selectedUtxoTag = utxo;
+    notifyListeners();
   }
 
   bool updateUtxoTag(UtxoTag utxoTag) {
@@ -91,21 +95,13 @@ class UtxoTagViewModel extends ChangeNotifier {
     return false;
   }
 
-  bool deleteUtxoTag() {
-    if (_selectedUtxoTag != null) {
-      final result = _walletDataManager.deleteUtxoTag(_selectedUtxoTag!.id);
-      if (result.isSuccess) {
-        _utxoTagList = _loadUtxoTagList();
-        _selectedUtxoTag = null;
-        _isUpdatedTagList = true;
-        notifyListeners();
-        return true;
-      } else {
-        Logger.log('---------------------------------------------------------');
-        Logger.log('deleteUtxoTag(utxoTag: $_selectedUtxoTag)');
-        Logger.log(result.error);
-      }
+  List<UtxoTag> _loadUtxoTagList() {
+    final result = _walletDataManager.loadUtxoTagList(_walletId);
+    if (result.isError) {
+      Logger.log('-----------------------------------------------------------');
+      Logger.log('loadUtxoTagList(walletId: $_walletId)');
+      Logger.log(result.error);
     }
-    return false;
+    return result.data ?? [];
   }
 }

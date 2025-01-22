@@ -1,17 +1,17 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/widgets/wallet_item_card.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/wallet_item_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../../styles.dart';
@@ -20,9 +20,9 @@ import '../../widgets/custom_dialogs.dart';
 import '../../widgets/infomation_row_item.dart';
 
 class WalletSinglesigInfoScreen extends StatefulWidget {
-  const WalletSinglesigInfoScreen({super.key, required this.id});
-
   final int id;
+
+  const WalletSinglesigInfoScreen({super.key, required this.id});
 
   @override
   State<WalletSinglesigInfoScreen> createState() =>
@@ -39,54 +39,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
   int _tooltipRemainingTime = 0;
   int? removedWalletId;
 
-  bool _isUpdateTagList = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _subModel = Provider.of<AppSubStateModel>(context, listen: false);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _walletTooltipIconRenderBox =
-          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
-      _walletTooltipIconPosition =
-          _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
-      _tooltipTopPadding =
-          MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
-    });
-  }
-
-  @override
-  void dispose() {
-    _tooltipTimer?.cancel();
-    super.dispose();
-  }
-
-  _showTooltip(BuildContext context) {
-    _removeTooltip();
-
-    setState(() {
-      _tooltipRemainingTime = 5;
-    });
-
-    _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_tooltipRemainingTime > 0) {
-          _tooltipRemainingTime--;
-        } else {
-          _removeTooltip();
-          timer.cancel();
-        }
-      });
-    });
-  }
-
-  _removeTooltip() {
-    setState(() {
-      _tooltipRemainingTime = 0;
-    });
-    _tooltipTimer?.cancel();
-  }
+  bool _isUpdatedTagList = false;
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +66,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
             context: context,
             hasRightIcon: false,
             onBackPressed: () {
-              Navigator.pop(context, _isUpdateTagList);
+              Navigator.pop(context, _isUpdatedTagList);
             }),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -202,7 +155,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                                   label: '태그 관리',
                                   showIcon: true,
                                   onPressed: () async {
-                                    _isUpdateTagList =
+                                    _isUpdatedTagList =
                                         await Navigator.pushNamed(
                                                 context, '/utxo-tag',
                                                 arguments: {'id': widget.id})
@@ -351,5 +304,52 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _tooltipTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _subModel = Provider.of<AppSubStateModel>(context, listen: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _walletTooltipIconRenderBox =
+          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
+      _walletTooltipIconPosition =
+          _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
+      _tooltipTopPadding =
+          MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
+    });
+  }
+
+  _removeTooltip() {
+    setState(() {
+      _tooltipRemainingTime = 0;
+    });
+    _tooltipTimer?.cancel();
+  }
+
+  _showTooltip(BuildContext context) {
+    _removeTooltip();
+
+    setState(() {
+      _tooltipRemainingTime = 5;
+    });
+
+    _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_tooltipRemainingTime > 0) {
+          _tooltipRemainingTime--;
+        } else {
+          _removeTooltip();
+          timer.cancel();
+        }
+      });
+    });
   }
 }

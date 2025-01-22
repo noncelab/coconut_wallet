@@ -1,11 +1,11 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
 
 class UtxoDetailViewModel extends ChangeNotifier {
   final int _walletId;
@@ -13,31 +13,65 @@ class UtxoDetailViewModel extends ChangeNotifier {
   final WalletDataManager _walletDataManager;
 
   Transfer? _transaction;
-  Transfer? get transaction => _transaction;
+  List<UtxoTag> _tagList = [];
 
-  List<UtxoTag> _utxoTagList = [];
-  List<UtxoTag> get utxoTagList => _utxoTagList;
-
-  List<UtxoTag> _selectedUtxoTagList = [];
-  List<UtxoTag> get selectedUtxoTagList => _selectedUtxoTagList;
-
+  List<UtxoTag> _selectedTagList = [];
   List<String> _dateString = [];
-  List<String> get dateString => _dateString;
 
   bool _isUtxoTooltipVisible = false;
-  bool get isUtxoTooltipVisible => _isUtxoTooltipVisible;
-
   int _initialInputMaxCount = 3;
-  int get initialInputMaxCount => _initialInputMaxCount;
 
   int _initialOutputMaxCount = 2;
-  int get initialOutputMaxCount => _initialOutputMaxCount;
-
   UtxoDetailViewModel(this._walletId, this._utxo, this._walletDataManager) {
-    _utxoTagList = _loadUtxoTagList();
-    _selectedUtxoTagList = _loadSelectedUtxoTagList();
+    _tagList = _loadUtxoTagList();
+    _selectedTagList = _loadSelectedUtxoTagList();
     _dateString = DateTimeUtil.formatDatetime(_utxo.timestamp).split('|');
     _initTransaction();
+    notifyListeners();
+  }
+
+  List<String> get dateString => _dateString;
+  int get initialInputMaxCount => _initialInputMaxCount;
+
+  int get initialOutputMaxCount => _initialOutputMaxCount;
+  bool get isUtxoTooltipVisible => _isUtxoTooltipVisible;
+
+  List<UtxoTag> get selectedTagList => _selectedTagList;
+  List<UtxoTag> get tagList => _tagList;
+
+  Transfer? get transaction => _transaction;
+
+  void removeUtxoTooltip() {
+    _isUtxoTooltipVisible = false;
+    notifyListeners();
+  }
+
+  void toggleUtxoTooltip() {
+    _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
+    notifyListeners();
+  }
+
+  void updateUtxoTagList({
+    required List<UtxoTag> addTags,
+    required List<String> selectedNames,
+  }) {
+    final updateUtxoTagListResult = _walletDataManager.updateUtxoTagList(
+        _walletId, _utxo.utxoId, addTags, selectedNames);
+
+    if (updateUtxoTagListResult.isError) {
+      Logger.log(
+          '-------------------------------------------------------------');
+      Logger.log('updateUtxoTagList('
+          'walletId: $_walletId,'
+          'txHashIndex: ${_utxo.utxoId},'
+          'addTags: $addTags,'
+          'selectedNames: $selectedNames,'
+          ')');
+      Logger.log(updateUtxoTagListResult.error);
+    }
+
+    _tagList = _loadUtxoTagList();
+    _selectedTagList = _loadSelectedUtxoTagList();
     notifyListeners();
   }
 
@@ -68,14 +102,17 @@ class UtxoDetailViewModel extends ChangeNotifier {
     }
   }
 
-  void removeUtxoTooltip() {
-    _isUtxoTooltipVisible = false;
-    notifyListeners();
-  }
-
-  void toggleUtxoTooltip() {
-    _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
-    notifyListeners();
+  List<UtxoTag> _loadSelectedUtxoTagList() {
+    final result =
+        _walletDataManager.loadUtxoTagListByUtxoId(_walletId, _utxo.utxoId);
+    if (result.isError) {
+      Logger.log(
+          '-------------------------------------------------------------');
+      Logger.log(
+          'loadSelectedUtxoTagList(walletId: $_walletId, txHashIndex: ${_utxo.utxoId})');
+      Logger.log(result.error);
+    }
+    return result.data ?? [];
   }
 
   TransferDTO? _loadTransaction() {
@@ -96,42 +133,5 @@ class UtxoDetailViewModel extends ChangeNotifier {
       Logger.log(result.error);
     }
     return result.data ?? [];
-  }
-
-  List<UtxoTag> _loadSelectedUtxoTagList() {
-    final result =
-        _walletDataManager.loadUtxoTagListByUtxoId(_walletId, _utxo.utxoId);
-    if (result.isError) {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log(
-          'loadSelectedUtxoTagList(walletId: $_walletId, txHashIndex: ${_utxo.utxoId})');
-      Logger.log(result.error);
-    }
-    return result.data ?? [];
-  }
-
-  void updateUtxoTagList({
-    required List<UtxoTag> addTags,
-    required List<String> selectedNames,
-  }) {
-    final updateUtxoTagListResult = _walletDataManager.updateUtxoTagList(
-        _walletId, _utxo.utxoId, addTags, selectedNames);
-
-    if (updateUtxoTagListResult.isError) {
-      Logger.log(
-          '-------------------------------------------------------------');
-      Logger.log('updateUtxoTagList('
-          'walletId: $_walletId,'
-          'txHashIndex: ${_utxo.utxoId},'
-          'addTags: $addTags,'
-          'selectedNames: $selectedNames,'
-          ')');
-      Logger.log(updateUtxoTagListResult.error);
-    }
-
-    _utxoTagList = _loadUtxoTagList();
-    _selectedUtxoTagList = _loadSelectedUtxoTagList();
-    notifyListeners();
   }
 }

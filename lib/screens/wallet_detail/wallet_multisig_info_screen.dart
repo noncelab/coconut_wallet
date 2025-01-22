@@ -6,22 +6,22 @@ import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
+import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/infomation_row_item.dart';
+import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/wallet_item_card.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-import '../../widgets/overlays/common_bottom_sheets.dart';
 import '../../widgets/custom_dialogs.dart';
 import '../../widgets/custom_loading_overlay.dart';
 import '../../widgets/custom_toast.dart';
+import '../../widgets/overlays/common_bottom_sheets.dart';
 
 class WalletMultisigInfoScreen extends StatefulWidget {
   final int id;
@@ -47,146 +47,7 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
   late MultisigWalletListItem _multiWallet;
   late List<KeyStore> _keystoreList;
 
-  bool _isUpdateTagList = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _appStateModel = Provider.of<AppStateModel>(context, listen: false);
-    _subModel = Provider.of<AppSubStateModel>(context, listen: false);
-    _updateMultiWalletListItem();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _walletTooltipIconRenderBox =
-          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
-      _walletTooltipIconPosition =
-          _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
-      _tooltipTopPadding =
-          MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
-    });
-  }
-
-  _updateMultiWalletListItem() {
-    final walletBaseItem = _appStateModel.getWalletById(widget.id);
-    _multiWallet = walletBaseItem as MultisigWalletListItem;
-
-    final multisigWallet = _multiWallet.walletBase as MultisignatureWallet;
-    _keystoreList = multisigWallet.keyStoreList;
-  }
-
-  _showTooltip(BuildContext context) {
-    _removeTooltip();
-
-    setState(() {
-      _tooltipRemainingTime = 5;
-    });
-
-    _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_tooltipRemainingTime > 0) {
-          _tooltipRemainingTime--;
-        } else {
-          _removeTooltip();
-          timer.cancel();
-        }
-      });
-    });
-  }
-
-  _removeTooltip() {
-    setState(() {
-      _tooltipRemainingTime = 0;
-    });
-    _tooltipTimer?.cancel();
-  }
-
-  _removeWallet() {
-    if (_appStateModel.walletInitState == WalletInitState.processing) {
-      CustomToast.showToast(
-        context: context,
-        text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.",
-      );
-      return;
-    }
-    _removeTooltip();
-    CustomDialogs.showCustomAlertDialog(
-      context,
-      title: '지갑 삭제',
-      message: '지갑을 정말 삭제하시겠어요?',
-      onConfirm: () async {
-        if (_subModel.isSetPin) {
-          await CommonBottomSheets.showBottomSheet_90(
-            context: context,
-            child: CustomLoadingOverlay(
-              child: PinCheckScreen(
-                onComplete: () async {
-                  await _appStateModel.deleteWallet(widget.id);
-                  removedWalletId = widget.id;
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-              ),
-            ),
-          );
-        } else {
-          await _appStateModel.deleteWallet(widget.id);
-          removedWalletId = widget.id;
-          Navigator.popUntil(context, (route) => route.isFirst);
-        }
-      },
-      onCancel: () {
-        Navigator.of(context).pop();
-      },
-      confirmButtonText: '삭제',
-      confirmButtonColor: MyColors.warningRed,
-    );
-  }
-
-  _moveToAddress() {
-    if (_appStateModel.walletInitState == WalletInitState.processing) {
-      CustomToast.showToast(
-        context: context,
-        text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.",
-      );
-      return;
-    }
-    _removeTooltip();
-    Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
-  }
-
-  _moveToUtxoTag() async {
-    _removeTooltip();
-    _isUpdateTagList = await Navigator.pushNamed(context, '/utxo-tag',
-        arguments: {'id': widget.id}) as bool;
-  }
-
-  _showXPubBottomSheet(String qrData) async {
-    _removeTooltip();
-    if (_subModel.isSetPin) {
-      _subModel.shuffleNumbers();
-      await CommonBottomSheets.showBottomSheet_90(
-        context: context,
-        child: CustomLoadingOverlay(
-          child: PinCheckScreen(
-            onComplete: () {
-              _qrCodeBottomSheet(qrData);
-            },
-          ),
-        ),
-      );
-    } else {
-      _qrCodeBottomSheet(qrData);
-    }
-  }
-
-  _qrCodeBottomSheet(String qrData) {
-    CommonBottomSheets.showBottomSheet_90(
-      context: context,
-      child: QrcodeBottomSheet(
-        qrData: qrData,
-        title: '다중 서명용 확장 공개키',
-      ),
-    );
-  }
+  bool _isUpdatedTagList = false;
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +61,7 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
             context: context,
             hasRightIcon: false,
             onBackPressed: () {
-              Navigator.pop(context, _isUpdateTagList);
+              Navigator.pop(context, _isUpdatedTagList);
             }),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -278,6 +139,128 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
     );
   }
 
+  @override
+  void dispose() {
+    _tooltipTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _appStateModel = Provider.of<AppStateModel>(context, listen: false);
+    _subModel = Provider.of<AppSubStateModel>(context, listen: false);
+    _updateMultiWalletListItem();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _walletTooltipIconRenderBox =
+          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
+      _walletTooltipIconPosition =
+          _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
+      _tooltipTopPadding =
+          MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
+    });
+  }
+
+  Widget _bottomSheetButton(String title, {required VoidCallback onPressed}) {
+    return GestureDetector(
+      onTap: () {
+        onPressed.call();
+      },
+      child: Container(
+        color: Colors.transparent,
+        padding: const EdgeInsets.only(
+          top: 30,
+          bottom: 30,
+          left: 8,
+        ),
+        width: double.infinity,
+        child: Text(
+          title,
+          style: Styles.body1Bold,
+          textAlign: TextAlign.left, // 텍스트 왼쪽 정렬
+        ),
+      ),
+    );
+  }
+
+  Widget _buttons() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          decoration: BoxDecorations.boxDecoration,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                InformationRowItem(
+                  label: '전체 주소 보기',
+                  showIcon: true,
+                  onPressed: _moveToAddress,
+                ),
+                const Divider(color: MyColors.transparentWhite_12, height: 1),
+                InformationRowItem(
+                  label: '태그 관리',
+                  showIcon: true,
+                  onPressed: _moveToUtxoTag,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Widget _deleteButton() => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          decoration: BoxDecorations.boxDecoration,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                InformationRowItem(
+                  showIcon: true,
+                  label: '삭제하기',
+                  rightIcon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: MyColors.defaultBackground,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/svg/trash.svg',
+                      width: 16,
+                      colorFilter: const ColorFilter.mode(
+                        MyColors.warningRed,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  onPressed: _removeWallet,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  _moveToAddress() {
+    if (_appStateModel.walletInitState == WalletInitState.processing) {
+      CustomToast.showToast(
+        context: context,
+        text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.",
+      );
+      return;
+    }
+    _removeTooltip();
+    Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
+  }
+
+  _moveToUtxoTag() async {
+    _removeTooltip();
+    _isUpdatedTagList = await Navigator.pushNamed(context, '/utxo-tag',
+        arguments: {'id': widget.id}) as bool;
+  }
+
   Widget _multisigWallet() => Padding(
         padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
         child: WalletItemCard(
@@ -285,6 +268,126 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
             onTooltipClicked: () => _showTooltip(context),
             tooltipKey: _walletTooltipKey),
       );
+
+  _qrCodeBottomSheet(String qrData) {
+    CommonBottomSheets.showBottomSheet_90(
+      context: context,
+      child: QrcodeBottomSheet(
+        qrData: qrData,
+        title: '다중 서명용 확장 공개키',
+      ),
+    );
+  }
+
+  _removeTooltip() {
+    setState(() {
+      _tooltipRemainingTime = 0;
+    });
+    _tooltipTimer?.cancel();
+  }
+
+  _removeWallet() {
+    if (_appStateModel.walletInitState == WalletInitState.processing) {
+      CustomToast.showToast(
+        context: context,
+        text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.",
+      );
+      return;
+    }
+    _removeTooltip();
+    CustomDialogs.showCustomAlertDialog(
+      context,
+      title: '지갑 삭제',
+      message: '지갑을 정말 삭제하시겠어요?',
+      onConfirm: () async {
+        if (_subModel.isSetPin) {
+          await CommonBottomSheets.showBottomSheet_90(
+            context: context,
+            child: CustomLoadingOverlay(
+              child: PinCheckScreen(
+                onComplete: () async {
+                  await _appStateModel.deleteWallet(widget.id);
+                  removedWalletId = widget.id;
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
+              ),
+            ),
+          );
+        } else {
+          await _appStateModel.deleteWallet(widget.id);
+          removedWalletId = widget.id;
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
+      },
+      onCancel: () {
+        Navigator.of(context).pop();
+      },
+      confirmButtonText: '삭제',
+      confirmButtonColor: MyColors.warningRed,
+    );
+  }
+
+  Future _selectedKeyBottomSheet(
+      MultisigSigner signer, KeyStore keystore) async {
+    final name = signer.name ?? '';
+
+    CommonBottomSheets.showBottomSheet(
+      context: context,
+      title: TextUtils.ellipsisIfLonger(name, maxLength: 15),
+      titleTextStyle: Styles.body1.copyWith(
+        fontSize: 18,
+      ),
+      isCloseButton: true,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.only(bottom: 84),
+        child: _bottomSheetButton(
+          '다중 서명용 확장 공개키 보기',
+          onPressed: () {
+            _showXPubBottomSheet(keystore.extendedPublicKey.serialize());
+          },
+        ),
+      ),
+    );
+  }
+
+  _showTooltip(BuildContext context) {
+    _removeTooltip();
+
+    setState(() {
+      _tooltipRemainingTime = 5;
+    });
+
+    _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_tooltipRemainingTime > 0) {
+          _tooltipRemainingTime--;
+        } else {
+          _removeTooltip();
+          timer.cancel();
+        }
+      });
+    });
+  }
+
+  _showXPubBottomSheet(String qrData) async {
+    _removeTooltip();
+    if (_subModel.isSetPin) {
+      _subModel.shuffleNumbers();
+      await CommonBottomSheets.showBottomSheet_90(
+        context: context,
+        child: CustomLoadingOverlay(
+          child: PinCheckScreen(
+            onComplete: () {
+              _qrCodeBottomSheet(qrData);
+            },
+          ),
+        ),
+      );
+    } else {
+      _qrCodeBottomSheet(qrData);
+    }
+  }
 
   Widget _signerList() => Container(
         margin: const EdgeInsets.only(top: 8, bottom: 32),
@@ -403,114 +506,11 @@ class _WalletMultisigInfoScreenState extends State<WalletMultisigInfoScreen> {
         ),
       );
 
-  Future _selectedKeyBottomSheet(
-      MultisigSigner signer, KeyStore keystore) async {
-    final name = signer.name ?? '';
+  _updateMultiWalletListItem() {
+    final walletBaseItem = _appStateModel.getWalletById(widget.id);
+    _multiWallet = walletBaseItem as MultisigWalletListItem;
 
-    CommonBottomSheets.showBottomSheet(
-      context: context,
-      title: TextUtils.ellipsisIfLonger(name, maxLength: 15),
-      titleTextStyle: Styles.body1.copyWith(
-        fontSize: 18,
-      ),
-      isCloseButton: true,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        padding: const EdgeInsets.only(bottom: 84),
-        child: _bottomSheetButton(
-          '다중 서명용 확장 공개키 보기',
-          onPressed: () {
-            _showXPubBottomSheet(keystore.extendedPublicKey.serialize());
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _bottomSheetButton(String title, {required VoidCallback onPressed}) {
-    return GestureDetector(
-      onTap: () {
-        onPressed.call();
-      },
-      child: Container(
-        color: Colors.transparent,
-        padding: const EdgeInsets.only(
-          top: 30,
-          bottom: 30,
-          left: 8,
-        ),
-        width: double.infinity,
-        child: Text(
-          title,
-          style: Styles.body1Bold,
-          textAlign: TextAlign.left, // 텍스트 왼쪽 정렬
-        ),
-      ),
-    );
-  }
-
-  Widget _buttons() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Container(
-          decoration: BoxDecorations.boxDecoration,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                InformationRowItem(
-                  label: '전체 주소 보기',
-                  showIcon: true,
-                  onPressed: _moveToAddress,
-                ),
-                const Divider(color: MyColors.transparentWhite_12, height: 1),
-                InformationRowItem(
-                  label: '태그 관리',
-                  showIcon: true,
-                  onPressed: _moveToUtxoTag,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-  Widget _deleteButton() => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Container(
-          decoration: BoxDecorations.boxDecoration,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                InformationRowItem(
-                  showIcon: true,
-                  label: '삭제하기',
-                  rightIcon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: MyColors.defaultBackground,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/svg/trash.svg',
-                      width: 16,
-                      colorFilter: const ColorFilter.mode(
-                        MyColors.warningRed,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                  onPressed: _removeWallet,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-  @override
-  void dispose() {
-    _tooltipTimer?.cancel();
-    super.dispose();
+    final multisigWallet = _multiWallet.walletBase as MultisignatureWallet;
+    _keystoreList = multisigWallet.keyStoreList;
   }
 }
