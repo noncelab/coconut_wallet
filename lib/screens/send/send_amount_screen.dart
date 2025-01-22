@@ -30,9 +30,6 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     '잔액이 부족해요',
     '${UnitUtil.satoshiToBitcoin(dustLimit + 1)}BTC 부터 전송할 수 있어요'
   ];
-  String _input = '';
-  int? _errorIndex;
-  bool _enableNextButton = false;
   late SendAmountViewModel _viewModel;
 
   @override
@@ -43,61 +40,6 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
-  }
-
-  void _onKeyTap(String value) {
-    setState(() {
-      if (value == '<') {
-        if (_input.isNotEmpty) {
-          _input = _input.substring(0, _input.length - 1);
-        }
-      } else if (value == '.') {
-        if (_input.isEmpty) {
-          _input = "0.";
-        } else {
-          if (!_input.contains('.')) {
-            _input += value;
-          }
-        }
-      } else {
-        if (_input.isEmpty) {
-          // 첫 입력이 0인 경우는 바로 추가
-          if (value == '0') {
-            _input += value;
-          } else if (value != '0' || _input.contains('.')) {
-            _input += value;
-          }
-        } else if (_input == '0' && value != '.') {
-          // 첫 입력이 0이고, 그 후 0이 아닌 숫자가 올 경우에는 기존 0을 대체
-          _input = value;
-        } else if (_input.contains('.')) {
-          // 소수점 이후 숫자가 8자리 이하인 경우 추가
-          int decimalIndex = _input.indexOf('.');
-          if (_input.length - decimalIndex <= 8) {
-            _input += value;
-          }
-        } else {
-          // 일반적인 경우 추가
-          _input += value;
-        }
-      }
-
-      if (_input.isNotEmpty && double.parse(_input) > 0) {
-        if (double.parse(_input) > _viewModel.confirmedBalance / 1e8) {
-          _errorIndex = 0;
-          _enableNextButton = false;
-        } else if (double.parse(_input) <= dustLimit / 1e8) {
-          _errorIndex = 1;
-          _enableNextButton = false;
-        } else {
-          _errorIndex = null;
-          _enableNextButton = true;
-        }
-      } else {
-        _errorIndex = null;
-        _enableNextButton = false;
-      }
-    });
   }
 
   @override
@@ -124,14 +66,14 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                   return;
                 }
 
-                viewModel.setAmount(_input);
+                viewModel.setAmountWithInput();
                 // TODO: sendInfo 불필요
                 Navigator.pushNamed(context, '/fee-selection', arguments: {
-                  'sendInfo':
-                      SendInfo(address: '', amount: double.parse(_input))
+                  'sendInfo': SendInfo(
+                      address: '', amount: double.parse(viewModel.input))
                 });
               },
-              isActive: _enableNextButton,
+              isActive: viewModel.isNextButtonEnabled,
               backgroundColor: MyColors.black,
               isBottom: false,
             ),
@@ -175,23 +117,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                         // 최대
                                         GestureDetector(
                                             onTap: () {
-                                              setState(() {
-                                                _input =
-                                                    UnitUtil.satoshiToBitcoin(
-                                                            viewModel
-                                                                .confirmedBalance)
-                                                        .toStringAsFixed(8);
-
-                                                if (double.parse(_input) <=
-                                                    dustLimit / 1e8) {
-                                                  _errorIndex = 1;
-                                                  _enableNextButton = false;
-                                                  return;
-                                                }
-
-                                                _errorIndex = null;
-                                                _enableNextButton = true;
-                                              });
+                                              viewModel.setMaxAmount();
                                             },
                                             child: Container(
                                                 padding:
@@ -205,37 +131,41 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                         BorderRadius.circular(
                                                             12.0),
                                                     border: Border.all(
-                                                        color: _errorIndex == 0
+                                                        color: viewModel
+                                                                    .errorIndex ==
+                                                                0
                                                             ? MyColors
                                                                 .warningRed
                                                             : Colors
                                                                 .transparent,
                                                         width: 1),
-                                                    color: _errorIndex == 0
-                                                        ? Colors.transparent
-                                                        : MyColors.grey),
+                                                    color:
+                                                        viewModel.errorIndex ==
+                                                                0
+                                                            ? Colors.transparent
+                                                            : MyColors.grey),
                                                 child: RichText(
                                                     text: TextSpan(children: [
                                                   TextSpan(
                                                       text: '최대 ',
-                                                      style: Styles.caption
-                                                          .merge(TextStyle(
-                                                              color: _errorIndex ==
-                                                                      0
-                                                                  ? MyColors
-                                                                      .warningRed
-                                                                  : MyColors
-                                                                      .white,
-                                                              fontFamily:
-                                                                  CustomFonts
-                                                                      .text
-                                                                      .getFontFamily))),
+                                                      style: Styles.caption.merge(TextStyle(
+                                                          color: viewModel
+                                                                      .errorIndex ==
+                                                                  0
+                                                              ? MyColors
+                                                                  .warningRed
+                                                              : MyColors.white,
+                                                          fontFamily: CustomFonts
+                                                              .text
+                                                              .getFontFamily))),
                                                   TextSpan(
                                                       text:
                                                           '${UnitUtil.satoshiToBitcoin(viewModel.confirmedBalance)} BTC',
-                                                      style: Styles.caption
+                                                      style: Styles
+                                                          .caption
                                                           .merge(TextStyle(
-                                                              color: _errorIndex ==
+                                                              color: viewModel
+                                                                          .errorIndex ==
                                                                       0
                                                                   ? MyColors
                                                                       .warningRed
@@ -244,15 +174,15 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                 ])))),
                                         // BTC
                                         Text(
-                                          _input.isEmpty
+                                          viewModel.input.isEmpty
                                               ? '0 BTC'
-                                              : "$_input BTC",
+                                              : "${viewModel.input} BTC",
                                           style: TextStyle(
                                             fontFamily: CustomFonts
                                                 .number.getFontFamily,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 38,
-                                            color: _input.isEmpty
+                                            color: viewModel.input.isEmpty
                                                 ? MyColors.transparentWhite_20
                                                 : MyColors.white,
                                           ),
@@ -261,8 +191,9 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                         ),
                                         // Error
                                         Text(
-                                          _errorIndex != null
-                                              ? errorMessages[_errorIndex!]
+                                          viewModel.errorIndex != null
+                                              ? errorMessages[
+                                                  viewModel.errorIndex!]
                                               : '',
                                           style: Styles.caption.merge(
                                               const TextStyle(
@@ -276,10 +207,11 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                             text: 'UTXO 고르기',
                                             fontSize: 14,
                                             lineHeight: 21,
-                                            isEnable: _errorIndex == null &&
-                                                _enableNextButton,
+                                            isEnable: viewModel.errorIndex ==
+                                                    null &&
+                                                viewModel.isNextButtonEnabled,
                                             onTap: () {
-                                              viewModel.setAmount(_input);
+                                              viewModel.setAmountWithInput();
                                               // TODO: remove sendInfo
                                               Navigator.pushNamed(
                                                   context, '/utxo-selection',
@@ -287,7 +219,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                     'sendInfo': SendInfo(
                                                         address: '',
                                                         amount: double.parse(
-                                                            _input))
+                                                            viewModel.input))
                                                   });
                                             },
                                           ),
@@ -322,7 +254,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                   const EdgeInsets.symmetric(horizontal: 16),
                               child: KeyButton(
                                 keyValue: key,
-                                onKeyTap: _onKeyTap,
+                                onKeyTap: viewModel.onKeyTap,
                               ),
                             );
                           }).toList(),
