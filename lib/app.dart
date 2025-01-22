@@ -252,12 +252,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (args) => CustomLoadingOverlay(
                     child: SendAddressScreen(id: args['id'])),
               ),
-          '/send-amount': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: SendAmountScreen(
-                        id: args['id'], recipient: args['recipient'])),
-              ),
+          '/send-amount': (context) => const SendAmountScreen(),
           '/fee-selection': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
