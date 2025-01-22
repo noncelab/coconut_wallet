@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/view_model/send/send_address_view_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -28,11 +30,14 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   QRViewController? controller;
   bool _isProcessing = false;
   String? _address;
-
+  late SendAddressViewModel _viewModel;
   @override
   void initState() {
     super.initState();
     _loadData();
+    _viewModel = SendAddressViewModel(
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
   }
 
   void _loadData() {
@@ -83,89 +88,104 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: MyColors.black,
-        appBar: CustomAppBar.build(
-          title: '보내기',
-          context: context,
-          hasRightIcon: true,
-          rightIconButton: IconButton(
-            onPressed: () {
-              if (controller != null) {
-                controller!.flipCamera();
-              }
-            },
-            icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
-            color: MyColors.white,
-          ),
-          onBackPressed: () {
-            _stopCamera();
-            controller = null;
-            Navigator.of(context).pop();
-          },
-          backgroundColor: MyColors.black.withOpacity(0.95),
-        ),
-        body: Stack(children: [
-          Positioned(
-              left: 0,
-              right: 0,
-              top: -110, // Adjust this value to move the QRView up or down
-              height: MediaQuery.of(context).size.height +
-                  MediaQuery.of(context).padding.top +
-                  MediaQuery.of(context).padding.bottom,
-              child: _buildQrView(context)),
-          Positioned(
-              top: kToolbarHeight - 75,
-              left: 0,
-              right: 0,
-              child: Container(
-                  padding: const EdgeInsets.only(top: 32),
-                  child: Text(
-                    'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요',
-                    textAlign: TextAlign.center,
-                    style: Styles.label
-                        .merge(const TextStyle(color: MyColors.white)),
-                  ))),
-          Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
-                  child: TextButton(
-                      onPressed: _getClipboardText,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _address != null
-                            ? MyColors.darkgrey
-                            : MyColors.white,
-                        backgroundColor: _address != null
-                            ? MyColors.white
-                            : MyColors.transparentBlack_50,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 20),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(8),
+    return ChangeNotifierProxyProvider<ConnectivityProvider,
+        SendAddressViewModel>(
+      create: (_) => _viewModel,
+      update: (_, connectivityProvider, viewModel) {
+        Logger.log(
+            '--> connectivityProvider: ${connectivityProvider.isNetworkOn}');
+        if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
+          viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+        }
+        return viewModel;
+      },
+      child:
+          Consumer<SendAddressViewModel>(builder: (context, viewModel, child) {
+        return Scaffold(
+            backgroundColor: MyColors.black,
+            appBar: CustomAppBar.build(
+              title: '보내기',
+              context: context,
+              hasRightIcon: true,
+              rightIconButton: IconButton(
+                onPressed: () {
+                  if (controller != null) {
+                    controller!.flipCamera();
+                  }
+                },
+                icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
+                color: MyColors.white,
+              ),
+              onBackPressed: () {
+                _stopCamera();
+                controller = null;
+                Navigator.of(context).pop();
+              },
+              backgroundColor: MyColors.black.withOpacity(0.95),
+            ),
+            body: Stack(children: [
+              Positioned(
+                  left: 0,
+                  right: 0,
+                  top: -110, // Adjust this value to move the QRView up or down
+                  height: MediaQuery.of(context).size.height +
+                      MediaQuery.of(context).padding.top +
+                      MediaQuery.of(context).padding.bottom,
+                  child: _buildQrView(context)),
+              Positioned(
+                  top: kToolbarHeight - 75,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                      padding: const EdgeInsets.only(top: 32),
+                      child: Text(
+                        'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요',
+                        textAlign: TextAlign.center,
+                        style: Styles.label
+                            .merge(const TextStyle(color: MyColors.white)),
+                      ))),
+              Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
+                      child: TextButton(
+                          onPressed: _getClipboardText,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: _address != null
+                                ? MyColors.darkgrey
+                                : MyColors.white,
+                            backgroundColor: _address != null
+                                ? MyColors.white
+                                : MyColors.transparentBlack_50,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 20),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(8),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      child: _address != null
-                          ? Text.rich(TextSpan(
-                              text: '주소 ',
-                              style: Styles.label.merge(
-                                  const TextStyle(color: MyColors.darkgrey)),
-                              children: [
-                                  TextSpan(
-                                      text:
-                                          '${_address?.substring(0, 10)}...${_address?.substring(35)}',
-                                      style: TextStyle(
-                                          fontFamily:
-                                              CustomFonts.number.getFontFamily,
-                                          fontWeight: FontWeight.bold)),
-                                  const TextSpan(text: ' 붙여넣기')
-                                ]))
-                          : Text('붙여넣기',
-                              style: Styles.label.merge(const TextStyle(
-                                  color: MyColors.transparentWhite_20))))))
-        ]));
+                          child: _address != null
+                              ? Text.rich(TextSpan(
+                                  text: '주소 ',
+                                  style: Styles.label.merge(const TextStyle(
+                                      color: MyColors.darkgrey)),
+                                  children: [
+                                      TextSpan(
+                                          text:
+                                              '${_address?.substring(0, 10)}...${_address?.substring(35)}',
+                                          style: TextStyle(
+                                              fontFamily: CustomFonts
+                                                  .number.getFontFamily,
+                                              fontWeight: FontWeight.bold)),
+                                      const TextSpan(text: ' 붙여넣기')
+                                    ]))
+                              : Text('붙여넣기',
+                                  style: Styles.label.merge(const TextStyle(
+                                      color: MyColors.transparentWhite_20))))))
+            ]));
+      }),
+    );
   }
 
   Widget _buildQrView(BuildContext context) {
@@ -263,8 +283,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     }
 
     // 올바른 주소여서 다음 화면으로 넘어가기 전에 네트워크 상태 확인하기
-    var appState = Provider.of<AppStateModel>(context, listen: false);
-    if (appState.isNetworkOn == false) {
+    if (_viewModel.isNetworkOn == false) {
       CustomToast.showWarningToast(
           context: context, text: ErrorCodes.networkError.message);
       _isProcessing = false;
@@ -273,7 +292,9 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
     await _stopCamera();
     if (mounted) {
+      _viewModel.saveWalletIdAndReceipientAddress(widget.id, recipient);
       // Go-router 제거 이후로 ios에서는 정상 작동하지만 안드로이드에서는 pushNamed로 화면 이동 시 카메라 컨트롤러 남아있는 이슈
+      // TODO: /send-amount화면의 arguments 삭제
       if (Platform.isAndroid) {
         Navigator.pushReplacementNamed(context, "/send-amount",
             arguments: {'id': widget.id, 'recipient': recipient}).then((o) {

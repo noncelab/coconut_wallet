@@ -2,6 +2,7 @@ import 'package:coconut_wallet/appGuard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -81,6 +82,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         /// main 에서만 사용하는 모델
         if (_screenStatus == AccessFlow.main) ...{
           ChangeNotifierProvider(create: (_) => PreferenceProvider()),
+          Provider(create: (_) => SendInfoProvider()),
           ChangeNotifierProxyProvider3<ConnectivityProvider, VisibilityProvider,
               AuthProvider, WalletProvider>(
             create: (_) {
