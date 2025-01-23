@@ -39,9 +39,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         SendConfirmViewModel>(
       create: (_) => _viewModel,
       update: (_, walletProvider, upbitConnectModel, viewModel) {
-        if (upbitConnectModel.bitcoinPriceKrw != null &&
-            viewModel!.bitcoinPriceKrw != upbitConnectModel.bitcoinPriceKrw) {
-          viewModel.updateBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
+        if (upbitConnectModel.bitcoinPriceKrw != null) {
+          viewModel!.updateBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
         }
 
         return viewModel!;

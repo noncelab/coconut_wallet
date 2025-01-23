@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -9,7 +8,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -87,12 +85,18 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider,
-        BroadcastingViewModel>(
+    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider,
+        UpbitConnectModel, BroadcastingViewModel>(
       create: (_) => _viewModel,
-      update: (_, connectivityProvider, walletProvider, viewModel) {
+      update: (_, connectivityProvider, walletProvider, upbitConnectModel,
+          viewModel) {
         if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
           viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+        }
+        if (mounted && upbitConnectModel.bitcoinPriceKrw != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
+          });
         }
 
         return viewModel;
@@ -105,7 +109,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           appBar: CustomAppBar.buildWithNext(
               title: '최종 확인',
               context: context,
-              isActive: _viewModel.isValidSignedTransaction,
+              isActive: viewModel.isInitDone,
               onNextPressed: () {
                 if (viewModel.isNetworkOn == false) {
                   CustomToast.showWarningToast(
@@ -113,7 +117,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                   return;
                 }
 
-                if (_viewModel.isInitDone) {
+                if (viewModel.isInitDone) {
                   broadcast();
                 }
               }),
@@ -138,12 +142,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                         child: Center(
                           child: Text.rich(
                             TextSpan(
-                                text: _viewModel.amount != null
-                                    ? satoshiToBitcoinString(_viewModel
+                                text: viewModel.amount != null
+                                    ? satoshiToBitcoinString(viewModel
                                                 .sendingAmountWhenAddressIsMyChange !=
                                             null
-                                        ? _viewModel.sendingAmountWhenAddressIsMyChange!
-                                        : _viewModel.amount!)
+                                        ? viewModel.sendingAmountWhenAddressIsMyChange!
+                                        : viewModel.amount!)
                                     : "",
                                 children: const <TextSpan>[
                                   TextSpan(text: ' BTC', style: Styles.unit)
@@ -151,27 +155,18 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                             style: Styles.balance1,
                           ),
                         )),
-                    Selector<UpbitConnectModel, int?>(
-                      selector: (context, model) => model.bitcoinPriceKrw,
-                      builder: (context, bitcoinPriceKrw, child) {
-                        if (bitcoinPriceKrw != null &&
-                            _viewModel.amount != null) {
-                          String bitcoinPriceKrwString = addCommasToIntegerPart(
-                              FiatUtil.calculateFiatAmount(
-                                      _viewModel.sendingAmountWhenAddressIsMyChange !=
-                                              null
-                                          ? _viewModel
-                                              .sendingAmountWhenAddressIsMyChange!
-                                          : _viewModel.amount!,
-                                      bitcoinPriceKrw)
-                                  .toDouble());
+                    Selector<BroadcastingViewModel, int?>(
+                      selector: (context, model) => model.amountValueInKrw,
+                      builder: (context, amountValueInKrw, child) {
+                        if (amountValueInKrw != null) {
                           return Text(
-                              "$bitcoinPriceKrwString ${CurrencyCode.KRW.code}",
+                              addCommasToIntegerPart(
+                                  amountValueInKrw.toDouble()),
                               style: Styles.label.merge(TextStyle(
                                   fontFamily:
                                       CustomFonts.number.getFontFamily)));
                         } else {
-                          return Container();
+                          return const SizedBox();
                         }
                       },
                     ),
@@ -192,15 +187,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                                 children: [
                                   InformationItemCard(
                                       label: '보낼 주소',
-                                      value: _viewModel.address ?? "",
+                                      value: viewModel.address ?? "",
                                       isNumber: true),
                                   const Divider(
                                       color: MyColors.transparentWhite_12,
                                       height: 1),
                                   InformationItemCard(
                                       label: '예상 수수료',
-                                      value: _viewModel.fee != null
-                                          ? "${satoshiToBitcoinString(_viewModel.fee!)} BTC"
+                                      value: viewModel.fee != null
+                                          ? "${satoshiToBitcoinString(viewModel.fee!)} BTC"
                                           : '',
                                       isNumber: true),
                                   const Divider(
@@ -208,14 +203,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                                       height: 1),
                                   InformationItemCard(
                                       label: '총 소요 수량',
-                                      value: _viewModel.totalAmount != null
-                                          ? "${satoshiToBitcoinString(_viewModel.totalAmount!)} BTC"
+                                      value: viewModel.totalAmount != null
+                                          ? "${satoshiToBitcoinString(viewModel.totalAmount!)} BTC"
                                           : '',
                                       isNumber: true),
                                 ],
                               ))),
                     ),
-                    if (_viewModel.isSendingToMyAddress) ...[
+                    if (viewModel.isSendingToMyAddress) ...[
                       const SizedBox(
                         height: 20,
                       ),
@@ -241,7 +236,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     _viewModel = BroadcastingViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
+        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw);
 
     WidgetsBinding.instance.addPostFrameCallback((duration) {
       setOverlayLoading(true);

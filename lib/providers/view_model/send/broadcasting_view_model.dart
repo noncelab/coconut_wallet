@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:flutter/material.dart';
 
 class BroadcastingViewModel extends ChangeNotifier {
@@ -11,16 +12,16 @@ class BroadcastingViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   bool _isInitDone = false;
   bool _isSendingToMyAddress = false;
-  bool _isValidSignedTransaction = false;
   String? _address;
   int? _amount;
   int? _fee;
   int? _totalAmount;
   int? _sendingAmountWhenAddressIsMyChange; // 내 지갑의 change address로 보내는 경우 잔액
   final List<int> _outputIndexesToMyAddress = [];
+  late int? _bitcoinPriceKrw;
 
-  BroadcastingViewModel(
-      this._sendInfoProvider, this._walletProvider, this._isNetworkOn) {
+  BroadcastingViewModel(this._sendInfoProvider, this._walletProvider,
+      this._isNetworkOn, this._bitcoinPriceKrw) {
     _walletBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
@@ -30,18 +31,23 @@ class BroadcastingViewModel extends ChangeNotifier {
   int? get amount => _amount;
   int? get fee => _fee;
   bool get isInitDone => _isInitDone;
-  bool get isMultisig => _sendInfoProvider.isMultisig!;
   bool get isNetworkOn => _isNetworkOn == true;
   bool get isSendingToMyAddress => _isSendingToMyAddress;
-  bool get isValidSignedTransaction => _isValidSignedTransaction;
-  List<int> get outputIndexesToMyAddress => _outputIndexesToMyAddress;
   int? get sendingAmountWhenAddressIsMyChange =>
       _sendingAmountWhenAddressIsMyChange;
   String get signedTransaction => _sendInfoProvider.signedPsbt!;
   int? get totalAmount => _totalAmount;
-  String get txWaitingForSign => _sendInfoProvider.txWaitingForSign!;
   AddressType get walletAddressType => _walletBase.addressType;
   int get walletId => _walletId;
+  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
+  int? get amountValueInKrw {
+    if (_bitcoinPriceKrw == null || _amount == null) return null;
+    return FiatUtil.calculateFiatAmount(
+        sendingAmountWhenAddressIsMyChange != null
+            ? sendingAmountWhenAddressIsMyChange!
+            : amount!,
+        _bitcoinPriceKrw!);
+  }
 
   Future<Result<String, CoconutError>> broadcast(Transaction signedTx) async {
     return await _walletProvider.broadcast(signedTx);
@@ -51,18 +57,8 @@ class BroadcastingViewModel extends ChangeNotifier {
     _sendInfoProvider.clear();
   }
 
-  WalletBase getWalletBase() {
-    return _walletProvider
-        .getWalletById(_sendInfoProvider.walletId!)
-        .walletBase;
-  }
-
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
-  }
-
-  void setSignedPsbtBase64(String signedPsbtBase64) {
-    _sendInfoProvider.setSignedPsbtBase64Encoded(signedPsbtBase64);
   }
 
   void setTxInfo() async {
@@ -115,13 +111,16 @@ class BroadcastingViewModel extends ChangeNotifier {
       _amount = signedPsbt.sendingAmount;
 
       _fee = signedPsbt.fee;
-      _isInitDone = true;
       _totalAmount = signedPsbt.sendingAmount + signedPsbt.fee;
-
-      _isValidSignedTransaction = true;
+      _isInitDone = true;
       notifyListeners();
     } catch (e) {
       rethrow;
     }
+  }
+
+  void setBitcoinPriceKrw(int bitcoinPriceKrw) {
+    _bitcoinPriceKrw = bitcoinPriceKrw;
+    notifyListeners();
   }
 }
