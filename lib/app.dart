@@ -30,7 +30,6 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_multisig_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_singlesig_info_screen.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -230,17 +229,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               ),
           '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
                 context,
-                (args) => UnsignedTransactionQrScreen(id: args['id']),
+                (args) =>
+                    UnsignedTransactionQrScreen(walletName: args['walletName']),
               ),
-          '/signed-psbt-scanner': (context) => buildScreenWithArguments(
-                context,
-                (args) => SignedPsbtScannerScreen(id: args['id']),
-              ),
-          '/broadcasting': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: BroadcastingScreen(id: args['id'])),
-              ),
+          '/signed-psbt-scanner': (context) => const SignedPsbtScannerScreen(),
+          '/broadcasting': (context) =>
+              const CustomLoadingOverlay(child: BroadcastingScreen()),
           '/broadcasting-complete': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
@@ -262,12 +256,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     child: SendUtxoSelectionScreen(
                         id: args['id'], sendInfo: args['sendInfo'])),
               ),
-          '/send-confirm': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: SendConfirmScreen(
-                        id: args['id'], sendInfo: args['fullSendInfo'])),
-              ),
+          '/send-confirm': (context) =>
+              const CustomLoadingOverlay(child: SendConfirmScreen()),
           '/utxo-detail': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(

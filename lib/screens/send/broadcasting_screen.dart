@@ -1,11 +1,13 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
+import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -18,9 +20,7 @@ import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:provider/provider.dart';
 
 class BroadcastingScreen extends StatefulWidget {
-  final int id;
-
-  const BroadcastingScreen({super.key, required this.id});
+  const BroadcastingScreen({super.key});
 
   @override
   State<BroadcastingScreen> createState() => _BroadcastingScreenState();
@@ -31,28 +31,20 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   int? _amount;
   int? _fee;
   int? _totalAmount;
-  late final AppStateModel _model;
-  late WalletBase _walletBase;
   bool _initDone = false;
   bool _isValidSignedTransaction = false;
   int? _sendingAmountWhenAddressIsMyChange; // 내 지갑의 change address로 보내는 경우 잔액
   bool _isSendingToMyAddress = false;
   List<int> outputIndexesToMyAddress = [];
+  late BroadcastingViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _model = Provider.of<AppStateModel>(context, listen: false);
-
-    if (_model.signedTransaction == null) {
-      throw "[broadcasting_screen] _model.signedTransaction is null";
-    }
-    if (_model.txWaitingForSign == null) {
-      throw "[broadcasting_screen] _model.txWaitingForSign is null";
-    }
-
-    final walletBaseItem = _model.getWalletById(widget.id);
-    _walletBase = walletBaseItem.walletBase;
+    _viewModel = BroadcastingViewModel(
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<WalletProvider>(context, listen: false),
+        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
 
     WidgetsBinding.instance.addPostFrameCallback((duration) {
       setOverlayLoading(true);
@@ -63,7 +55,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   void setTxInfo() async {
     try {
-      PSBT signedPsbt = PSBT.parse(_model.signedTransaction!);
+      PSBT signedPsbt = PSBT.parse(_viewModel.signedTransaction);
       // print("!!! -> ${_model.signedTransaction!}");
       List<PsbtOutput> outputs = signedPsbt.outputs;
 
@@ -127,11 +119,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   void broadcast() async {
     setOverlayLoading(true);
-    PSBT psbt = PSBT.parse(_model.signedTransaction!);
-    Transaction signedTx = psbt.getSignedTransaction(_walletBase.addressType);
+    PSBT psbt = PSBT.parse(_viewModel.signedTransaction);
+    Transaction signedTx =
+        psbt.getSignedTransaction(_viewModel.walletAddressType);
 
     try {
-      Result<String, CoconutError> result = await _model.broadcast(signedTx);
+      Result<String, CoconutError> result =
+          await _viewModel.broadcast(signedTx);
 
       setOverlayLoading(false);
 
@@ -144,20 +138,23 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
       if (result.isSuccess) {
         vibrateLight();
-        _model.clearAllRelatedSending();
-        List<String> newUtxoIds = _model.tagsMoveAllowed
-            ? outputIndexesToMyAddress
-                .map((index) => makeUtxoId(signedTx.transactionHash, index))
-                .toList()
-            : [];
-        await _model.updateTagsOfUsedUtxos(widget.id, newUtxoIds);
+        _viewModel.clearSendInfo();
+
+        // TODO:
+        // List<String> newUtxoIds = _model.tagsMoveAllowed
+        //     ? outputIndexesToMyAddress
+        //         .map((index) => makeUtxoId(signedTx.transactionHash, index))
+        //         .toList()
+        //     : [];
+        // await _model.updateTagsOfUsedUtxos(widget.id, newUtxoIds);
 
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/broadcasting-complete', // 이동할 경로
-          ModalRoute.withName('/wallet-detail'), // '/home' 경로를 남기고 그 외의 경로 제거
+          ModalRoute.withName(
+              '/wallet-detail'), // '/wallet-detail' 경로를 남기고 그 외의 경로 제거
           arguments: {
-            'id': widget.id,
+            'id': _viewModel.walletId,
             'txId': result.value,
           },
         );
@@ -184,127 +181,145 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      backgroundColor: MyColors.black,
-      appBar: CustomAppBar.buildWithNext(
-          title: '최종 확인',
-          context: context,
-          isActive: _isValidSignedTransaction,
-          onNextPressed: () {
-            if (_model.isNetworkOn == false) {
-              CustomToast.showWarningToast(
-                  context: context, text: ErrorCodes.networkError.message);
-              return;
-            }
+    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider,
+        BroadcastingViewModel>(
+      create: (_) => _viewModel,
+      update: (_, connectivityProvider, walletProvider, viewModel) {
+        if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
+          viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+        }
 
-            if (_initDone) {
-              broadcast();
-            }
-          }),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            padding: Paddings.container,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(
-                  height: 40,
-                ),
-                const Text(
-                  "아래 정보로 송금할게요",
-                  style: Styles.h3,
-                ),
-                Container(
-                    margin: const EdgeInsets.only(top: 40),
-                    child: Center(
-                      child: Text.rich(
-                        TextSpan(
-                            text: _amount != null
-                                ? satoshiToBitcoinString(
-                                    _sendingAmountWhenAddressIsMyChange != null
-                                        ? _sendingAmountWhenAddressIsMyChange!
-                                        : _amount!)
-                                : "",
-                            children: const <TextSpan>[
-                              TextSpan(text: ' BTC', style: Styles.unit)
-                            ]),
-                        style: Styles.balance1,
-                      ),
-                    )),
-                Selector<UpbitConnectModel, int?>(
-                  selector: (context, model) => model.bitcoinPriceKrw,
-                  builder: (context, bitcoinPriceKrw, child) {
-                    if (bitcoinPriceKrw != null && _amount != null) {
-                      String bitcoinPriceKrwString = addCommasToIntegerPart(
-                          FiatUtil.calculateFiatAmount(
-                                  _sendingAmountWhenAddressIsMyChange != null
-                                      ? _sendingAmountWhenAddressIsMyChange!
-                                      : _amount!,
-                                  bitcoinPriceKrw)
-                              .toDouble());
-                      return Text(
-                          "$bitcoinPriceKrwString ${CurrencyCode.KRW.code}",
-                          style: Styles.label.merge(TextStyle(
-                              fontFamily: CustomFonts.number.getFontFamily)));
-                    } else {
-                      return Container();
-                    }
-                  },
-                ),
-                const SizedBox(
-                  height: 40,
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(28.0),
-                        color: MyColors.transparentWhite_06,
-                      ),
+        return viewModel;
+      },
+      child: Consumer<BroadcastingViewModel>(
+        builder: (context, viewModel, child) => Scaffold(
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
+          backgroundColor: MyColors.black,
+          appBar: CustomAppBar.buildWithNext(
+              title: '최종 확인',
+              context: context,
+              isActive: _isValidSignedTransaction,
+              onNextPressed: () {
+                if (viewModel.isNetworkOn == false) {
+                  CustomToast.showWarningToast(
+                      context: context, text: ErrorCodes.networkError.message);
+                  return;
+                }
+
+                if (_initDone) {
+                  broadcast();
+                }
+              }),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                padding: Paddings.container,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      height: 40,
+                    ),
+                    const Text(
+                      "아래 정보로 송금할게요",
+                      style: Styles.h3,
+                    ),
+                    Container(
+                        margin: const EdgeInsets.only(top: 40),
+                        child: Center(
+                          child: Text.rich(
+                            TextSpan(
+                                text: _amount != null
+                                    ? satoshiToBitcoinString(
+                                        _sendingAmountWhenAddressIsMyChange !=
+                                                null
+                                            ? _sendingAmountWhenAddressIsMyChange!
+                                            : _amount!)
+                                    : "",
+                                children: const <TextSpan>[
+                                  TextSpan(text: ' BTC', style: Styles.unit)
+                                ]),
+                            style: Styles.balance1,
+                          ),
+                        )),
+                    Selector<UpbitConnectModel, int?>(
+                      selector: (context, model) => model.bitcoinPriceKrw,
+                      builder: (context, bitcoinPriceKrw, child) {
+                        if (bitcoinPriceKrw != null && _amount != null) {
+                          String bitcoinPriceKrwString = addCommasToIntegerPart(
+                              FiatUtil.calculateFiatAmount(
+                                      _sendingAmountWhenAddressIsMyChange !=
+                                              null
+                                          ? _sendingAmountWhenAddressIsMyChange!
+                                          : _amount!,
+                                      bitcoinPriceKrw)
+                                  .toDouble());
+                          return Text(
+                              "$bitcoinPriceKrwString ${CurrencyCode.KRW.code}",
+                              style: Styles.label.merge(TextStyle(
+                                  fontFamily:
+                                      CustomFonts.number.getFontFamily)));
+                        } else {
+                          return Container();
+                        }
+                      },
+                    ),
+                    const SizedBox(
+                      height: 40,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Column(
-                            children: [
-                              InformationItemCard(
-                                  label: '보낼 주소',
-                                  value: _address ?? "",
-                                  isNumber: true),
-                              const Divider(
-                                  color: MyColors.transparentWhite_12,
-                                  height: 1),
-                              InformationItemCard(
-                                  label: '예상 수수료',
-                                  value: _fee != null
-                                      ? "${satoshiToBitcoinString(_fee!)} BTC"
-                                      : '',
-                                  isNumber: true),
-                              const Divider(
-                                  color: MyColors.transparentWhite_12,
-                                  height: 1),
-                              InformationItemCard(
-                                  label: '총 소요 수량',
-                                  value: _totalAmount != null
-                                      ? "${satoshiToBitcoinString(_totalAmount!)} BTC"
-                                      : '',
-                                  isNumber: true),
-                            ],
-                          ))),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28.0),
+                            color: MyColors.transparentWhite_06,
+                          ),
+                          child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24),
+                              child: Column(
+                                children: [
+                                  InformationItemCard(
+                                      label: '보낼 주소',
+                                      value: _address ?? "",
+                                      isNumber: true),
+                                  const Divider(
+                                      color: MyColors.transparentWhite_12,
+                                      height: 1),
+                                  InformationItemCard(
+                                      label: '예상 수수료',
+                                      value: _fee != null
+                                          ? "${satoshiToBitcoinString(_fee!)} BTC"
+                                          : '',
+                                      isNumber: true),
+                                  const Divider(
+                                      color: MyColors.transparentWhite_12,
+                                      height: 1),
+                                  InformationItemCard(
+                                      label: '총 소요 수량',
+                                      value: _totalAmount != null
+                                          ? "${satoshiToBitcoinString(_totalAmount!)} BTC"
+                                          : '',
+                                      isNumber: true),
+                                ],
+                              ))),
+                    ),
+                    if (_isSendingToMyAddress) ...[
+                      const SizedBox(
+                        height: 20,
+                      ),
+                      const Text(
+                        "내 지갑으로 보내는 트랜잭션입니다.",
+                        textAlign: TextAlign.center,
+                        style: Styles.caption,
+                      ),
+                    ],
+                  ],
                 ),
-                if (_isSendingToMyAddress) ...[
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  const Text(
-                    "내 지갑으로 보내는 트랜잭션입니다.",
-                    textAlign: TextAlign.center,
-                    style: Styles.caption,
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
         ),

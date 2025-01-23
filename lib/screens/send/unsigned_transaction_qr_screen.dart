@@ -1,17 +1,16 @@
-import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:provider/provider.dart';
 
 class UnsignedTransactionQrScreen extends StatefulWidget {
-  final int id;
+  final String walletName;
 
-  const UnsignedTransactionQrScreen({super.key, required this.id});
+  const UnsignedTransactionQrScreen({super.key, required this.walletName});
 
   @override
   State<UnsignedTransactionQrScreen> createState() =>
@@ -21,20 +20,15 @@ class UnsignedTransactionQrScreen extends StatefulWidget {
 class _UnsignedTransactionQrScreenState
     extends State<UnsignedTransactionQrScreen> {
   late final String _psbtBase64;
-  late String _name;
-  bool _isMultisig = false;
+  late final bool _isMultisig;
 
   @override
   void initState() {
     super.initState();
-    final model = Provider.of<AppStateModel>(context, listen: false);
-    if (model.txWaitingForSign == null) {
-      throw "[unsigned_transaction_qr_screen] model.txWaitingForSign is null";
-    }
-    _psbtBase64 = model.txWaitingForSign!;
-    final walletBaseItem = model.getWalletById(widget.id);
-    _name = walletBaseItem.name;
-    _isMultisig = walletBaseItem.walletType == WalletType.multiSignature;
+    final sendInfoProvider =
+        Provider.of<SendInfoProvider>(context, listen: false);
+    _psbtBase64 = sendInfoProvider.txWaitingForSign!;
+    _isMultisig = sendInfoProvider.isMultisig!;
   }
 
   @override
@@ -46,8 +40,7 @@ class _UnsignedTransactionQrScreenState
           title: '보내기',
           context: context,
           onNextPressed: () {
-            Navigator.pushNamed(context, '/signed-psbt-scanner',
-                arguments: {'id': widget.id});
+            Navigator.pushNamed(context, '/signed-psbt-scanner');
           }),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -80,7 +73,7 @@ class _UnsignedTransactionQrScreenState
                           ),
                           TextSpan(
                             text:
-                                ' $_name 선택, \'${_isMultisig ? '다중 서명하기' : '서명하기'}\'',
+                                ' ${widget.walletName} 선택, \'${_isMultisig ? '다중 서명하기' : '서명하기'}\'',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                             ),

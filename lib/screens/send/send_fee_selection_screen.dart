@@ -131,6 +131,10 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                               _confirmedBalance - _estimatedFee!)
                           : _viewModel.amount;
 
+                      viewModel.setAmount(amount);
+                      viewModel.setEstimatedFee(_estimatedFee!);
+                      viewModel.setFeeRate(satsPerVb);
+
                       // TODO: remove arguments
                       Navigator.pushNamed(context, '/send-confirm', arguments: {
                         'id': _viewModel.walletId,
@@ -373,8 +377,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
 
     _confirmedBalance = _viewModel.confirmedBalance;
-    _isMaxMode =
-        _confirmedBalance == UnitUtil.bitcoinToSatoshi(_viewModel.amount);
+    _isMaxMode = _viewModel.isMaxMode;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_viewModel.isNetworkOn) {

@@ -14,6 +14,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   late int _unconfirmedBalance;
   late int? _bitcoinPriceKrw;
   late bool _isMultisigWallet;
+  late bool _isMaxMode;
   late int _walletId;
   late double _amount;
   late String _recipientAddress;
@@ -28,24 +29,31 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
         _walletListItemBase.walletFeature.getUnconfirmedBalance();
     _isMultisigWallet =
         _walletListItemBase.walletType == WalletType.multiSignature;
-
     _bitcoinPriceKrw = _bitcoinPriceKrw;
-
     _walletId = _sendInfoProvider.walletId!;
     _amount = _sendInfoProvider.amount!;
+    _isMaxMode = _confirmedBalance ==
+        UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _recipientAddress = _sendInfoProvider.receipientAddress!;
-
     _isNetworkOn = isNetworkOn;
+
+    _updateSendInfoProvider(_isMultisigWallet, _isMaxMode);
   }
 
   double get amount => _amount;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int get confirmedBalance => _confirmedBalance;
   bool get isMultisigWallet => _isMultisigWallet;
+  bool get isMaxMode => _isMaxMode;
   bool get isNetworkOn => _isNetworkOn == true;
   String get recipientAddress => _recipientAddress;
   int get unconfirmedBalance => _unconfirmedBalance;
   int get walletId => _walletId;
+
+  void _updateSendInfoProvider(bool isMultisig, bool isMaxMode) {
+    _sendInfoProvider.setIsMultisig(_isMultisigWallet);
+    _sendInfoProvider.setIsMaxMode(_isMaxMode);
+  }
 
   Future<int?> estimateFee(int satsPerVb) async {
     return await _walletListItemBase.walletFeature.estimateFee(
@@ -84,8 +92,16 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     }
   }
 
-  setAmount(String amountInput) {
-    _sendInfoProvider.setAmount(double.parse(amountInput));
+  setAmount(double amount) {
+    _sendInfoProvider.setAmount(amount);
+  }
+
+  setEstimatedFee(int estimatedFee) {
+    _sendInfoProvider.setEstimatedFee(estimatedFee);
+  }
+
+  setFeeRate(int feeRate) {
+    _sendInfoProvider.setFeeRate(feeRate);
   }
 
   setIsNetworkOn(bool? isNetworkOn) {

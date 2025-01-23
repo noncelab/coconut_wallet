@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_scanner.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -14,10 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class SignedPsbtScannerScreen extends StatefulWidget {
-  final int id;
-  //final AddressType addressType;
-
-  const SignedPsbtScannerScreen({super.key, required this.id});
+  const SignedPsbtScannerScreen({super.key});
 
   @override
   State<SignedPsbtScannerScreen> createState() =>
@@ -26,20 +24,21 @@ class SignedPsbtScannerScreen extends StatefulWidget {
 
 class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  late AppStateModel _model;
   MultisignatureWallet? _multisigWallet;
   bool _isProcessing = false;
-  bool _isMultisig = false;
   QRViewController? controller;
+
+  late SignedPsbtScannerViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _model = Provider.of<AppStateModel>(context, listen: false);
-    final walletBaseItem = _model.getWalletById(widget.id);
-    _isMultisig = walletBaseItem.walletType == WalletType.multiSignature;
-    if (_isMultisig) {
-      _multisigWallet = walletBaseItem.walletBase as MultisignatureWallet;
+    _viewModel = SignedPsbtScannerViewModel(
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<WalletProvider>(context, listen: false));
+
+    if (_viewModel.isMultisig) {
+      _multisigWallet = _viewModel.getWalletBase() as MultisignatureWallet;
     }
   }
 
@@ -78,14 +77,14 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       if (!validateSignedPsbt(signedPsbt)) {
         throw ('invalidSignedPsbt');
       }
-      final model = Provider.of<AppStateModel>(context, listen: false);
-      model.signedTransaction = signedPsbt;
+
+      _viewModel.setSignedPsbt(signedPsbt);
 
       controller?.pauseCamera();
       await _stopCamera();
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting',
-            arguments: {'id': widget.id});
+        // TODO: remove arguments
+        Navigator.pushReplacementNamed(context, '/broadcasting');
       }
     } catch (e) {
       Logger.log('Exception while QR Processing : $e');
@@ -149,7 +148,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
   bool validateSignedPsbt(String signedPsbtBase64) {
     try {
-      var unsignedPsbt = PSBT.parse(_model.txWaitingForSign!);
+      var unsignedPsbt = PSBT.parse(_viewModel.txWaitingForSign);
       var signedPsbt = PSBT.parse(signedPsbtBase64);
 
       return unsignedPsbt.sendingAmount == signedPsbt.sendingAmount &&

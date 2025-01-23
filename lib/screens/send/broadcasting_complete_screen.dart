@@ -1,8 +1,8 @@
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:provider/provider.dart';
@@ -33,7 +33,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
 
   void onTap(BuildContext context) {
     // 보내는 중 tx list 조회를 위한 조치
-    Provider.of<AppStateModel>(context, listen: false)
+    Provider.of<WalletProvider>(context, listen: false)
         .initWallet(targetId: widget.id);
     Future<dynamic>? showReviewScreenFuture =
         AppReviewService.showReviewScreenIfFirstSending(context,
