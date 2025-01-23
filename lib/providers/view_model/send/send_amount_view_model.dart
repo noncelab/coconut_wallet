@@ -11,12 +11,8 @@ class SendAmountViewModel extends ChangeNotifier {
   late int _confirmedBalance;
   late int _unconfirmedBalance;
   late String _input;
-  String get input => _input;
   late bool _isNextButtonEnabled;
-  bool get isNextButtonEnabled => _isNextButtonEnabled;
   int? _errorIndex;
-  int? get errorIndex => _errorIndex;
-
   SendAmountViewModel(
       this._sendInfoProvider, this._walletProvider, this._isNetworkOn) {
     var wallet = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
@@ -25,18 +21,12 @@ class SendAmountViewModel extends ChangeNotifier {
     _input = '';
     _isNextButtonEnabled = false;
   }
-
-  bool get isNetworkOn => _isNetworkOn == true;
   int get confirmedBalance => _confirmedBalance;
+  int? get errorIndex => _errorIndex;
+  String get input => _input;
+  bool get isNetworkOn => _isNetworkOn == true;
+  bool get isNextButtonEnabled => _isNextButtonEnabled;
   int get unconfirmedBalance => _unconfirmedBalance;
-
-  void setIsNetworkOn(bool? isNetworkOn) {
-    _isNetworkOn = isNetworkOn;
-  }
-
-  void setAmountWithInput() {
-    _sendInfoProvider.setAmount(double.parse(_input));
-  }
 
   void onKeyTap(String newInput) {
     if (newInput == '<') {
@@ -91,6 +81,14 @@ class SendAmountViewModel extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  void setAmountWithInput() {
+    _sendInfoProvider.setAmount(double.parse(_input));
+  }
+
+  void setIsNetworkOn(bool? isNetworkOn) {
+    _isNetworkOn = isNetworkOn;
   }
 
   void setMaxAmount() {

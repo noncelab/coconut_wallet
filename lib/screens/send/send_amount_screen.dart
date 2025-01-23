@@ -1,19 +1,19 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/model/app/error/app_error.dart';
+import 'package:coconut_wallet/model/app/send/send_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
-import 'package:flutter/material.dart';
-import 'package:coconut_wallet/model/app/error/app_error.dart';
-import 'package:coconut_wallet/model/app/send/send_info.dart';
 import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
+import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SendAmountScreen extends StatefulWidget {
@@ -31,16 +31,6 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     '${UnitUtil.satoshiToBitcoin(dustLimit + 1)}BTC 부터 전송할 수 있어요'
   ];
   late SendAmountViewModel _viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _viewModel = SendAmountViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -265,5 +255,15 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
             ])),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _viewModel = SendAmountViewModel(
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<WalletProvider>(context, listen: false),
+        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
   }
 }
