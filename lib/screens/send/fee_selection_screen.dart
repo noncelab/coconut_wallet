@@ -17,6 +17,7 @@ import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+/// [INFO] send_utxo_selection_screen에서 필요한 정보를 전달 받고, 선택된 결과만 반환하는 화면이어서 ConnectivityProvider와 UpbitConnectModel을 사용하지만, 별도 view_model을 추가하지 않았습니다.
 class FeeSelectionScreen extends StatefulWidget {
   static const String selectedOptionField = 'selectedOption';
   static const String feeInfoField = 'feeInfo';
