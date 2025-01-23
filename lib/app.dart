@@ -253,7 +253,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     child: SendAddressScreen(id: args['id'])),
               ),
           '/send-amount': (context) => const SendAmountScreen(),
-          '/fee-selection': (context) => const SendFeeSelectionScreen(),
+          '/fee-selection': (context) => const CustomLoadingOverlay(
+                child: SendFeeSelectionScreen(),
+              ),
           '/utxo-selection': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
