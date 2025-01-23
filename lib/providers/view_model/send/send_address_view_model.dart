@@ -17,4 +17,8 @@ class SendAddressViewModel extends ChangeNotifier {
   setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
   }
+
+  clearSendInfoProvider() {
+    _sendInfoProvider.clear();
+  }
 }

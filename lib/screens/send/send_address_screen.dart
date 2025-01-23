@@ -39,6 +39,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     _viewModel = SendAddressViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
+    _viewModel.clearSendInfoProvider();
   }
 
   void _loadData() {
