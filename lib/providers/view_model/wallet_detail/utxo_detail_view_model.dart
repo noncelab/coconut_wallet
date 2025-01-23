@@ -10,49 +10,26 @@ class UtxoDetailViewModel extends ChangeNotifier {
   final int _walletId;
   final model.UTXO _utxo;
 
-  UtxoTagProvider? _tagModel;
-  TransactionProvider? _txModel;
+  final UtxoTagProvider _tagModel;
+  final TransactionProvider _txModel;
 
   List<String> _dateString = [];
 
-  int _initialInputMaxCount = 3;
-  int _initialOutputMaxCount = 2;
-
-  UtxoDetailViewModel(this._walletId, this._utxo) {
+  UtxoDetailViewModel(
+      this._walletId, this._utxo, this._tagModel, this._txModel) {
     _dateString = DateTimeUtil.formatDatetime(_utxo.timestamp).split('|');
+    _tagModel.initTagList(_walletId, utxoId: _utxo.utxoId);
+    _txModel.initTransaction(_walletId, _utxo.txHash, utxoTo: _utxo.to);
+    _txModel.initUtxoInOutputList();
   }
 
   UtxoTagProvider? get tagModel => _tagModel;
+  List<UtxoTag> get selectedTagList => _tagModel.selectedTagList;
+  List<UtxoTag> get tagList => _tagModel.tagList;
+
+  Transfer? get transaction => _txModel.transaction;
+  int get utxoInputMaxCount => _txModel.utxoInputMaxCount;
+  int get utxoOutputMaxCount => _txModel.utxoOutputMaxCount;
 
   List<String> get dateString => _dateString;
-  int get initialInputMaxCount => _initialInputMaxCount;
-
-  int get initialOutputMaxCount => _initialOutputMaxCount;
-
-  Transfer? get transaction => _txModel?.transaction;
-
-  List<UtxoTag> get selectedTagList => _tagModel?.selectedTagList ?? [];
-  List<UtxoTag> get tagList => _tagModel?.tagList ?? [];
-
-  void updateProvider(TransactionProvider txModel, UtxoTagProvider tagModel) {
-    _txModel ??= txModel;
-    txModel.initTransaction(_walletId, _utxo.txHash, utxoTo: _utxo.to);
-    final tx = txModel.transaction;
-    if (tx != null) {
-      _initialInputMaxCount =
-          tx.inputAddressList.length <= 3 ? tx.inputAddressList.length : 3;
-      _initialOutputMaxCount =
-          tx.outputAddressList.length <= 2 ? tx.outputAddressList.length : 2;
-      if (tx.inputAddressList.length <= initialInputMaxCount) {
-        _initialInputMaxCount = tx.inputAddressList.length;
-      }
-      if (tx.outputAddressList.length <= initialOutputMaxCount) {
-        _initialOutputMaxCount = tx.outputAddressList.length;
-      }
-      notifyListeners();
-    }
-
-    _tagModel ??= tagModel;
-    tagModel.initTagList(_walletId, utxoId: _utxo.utxoId);
-  }
 }

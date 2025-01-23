@@ -13,7 +13,7 @@ import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/card/underline_button_tiem_card.dart';
+import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
@@ -159,7 +159,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                               child: Center(
                                 child: CustomUnderlinedButton(
                                   text: '더보기',
-                                  onTap: viewModel.viewMoreInput,
+                                  onTap: () {
+                                    viewModel.txModel?.viewMoreInput();
+                                  },
                                   fontSize: 12,
                                   lineHeight: 14,
                                 ),
@@ -182,7 +184,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             ListView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount: viewModel.itemsToShowOutput,
+                              itemCount: viewModel.outputCountToShow,
                               padding: EdgeInsets.zero,
                               itemBuilder: (context, index) {
                                 return Column(
@@ -214,7 +216,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                               child: Center(
                                 child: CustomUnderlinedButton(
                                   text: '더보기',
-                                  onTap: viewModel.viewMoreOutput,
+                                  onTap: () {
+                                    viewModel.txModel?.viewMoreOutput();
+                                  },
                                   fontSize: 12,
                                   lineHeight: 14,
                                 ),
@@ -358,10 +362,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   void _showDialogListener() {
-    CustomDialogs.showCustomAlertDialog(context,
-        title: '트랜잭션 가져오기 실패',
-        message: '잠시 후 다시 시도해 주세요',
-        onConfirm: () => Navigator.pop(context));
+    CustomDialogs.showCustomAlertDialog(
+      context,
+      title: '트랜잭션 가져오기 실패',
+      message: '잠시 후 다시 시도해 주세요',
+      onConfirm: () {
+        Navigator.pop(context); // 팝업 닫기
+        Navigator.pop(context); // 지갑 상세 이동
+      },
+    );
   }
 
   void _loadCompletedListener() {

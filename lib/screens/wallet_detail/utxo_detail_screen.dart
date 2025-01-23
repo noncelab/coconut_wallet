@@ -10,7 +10,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/card/underline_button_tiem_card.dart';
+import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
@@ -61,25 +61,19 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<TransactionProvider, UtxoTagProvider,
-        UtxoDetailViewModel>(
-      create: (_) => UtxoDetailViewModel(widget.id, widget.utxo),
-      update: (_, transaction, tag, viewModel) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (viewModel?.transaction == null) {
-            viewModel?.updateProvider(transaction, tag);
-          }
-        });
-        return viewModel!;
-      },
+    return ChangeNotifierProvider<UtxoDetailViewModel>(
+      create: (_) => UtxoDetailViewModel(
+        widget.id,
+        widget.utxo,
+        Provider.of<UtxoTagProvider>(_, listen: false),
+        Provider.of<TransactionProvider>(_, listen: false),
+      ),
       child: Consumer<UtxoDetailViewModel>(
         builder: (_, viewModel, child) {
+          if (viewModel.transaction == null) return Container();
           final tx = viewModel.transaction;
           final tags = viewModel.tagList;
           final selectedTags = viewModel.selectedTagList;
-
-          if (tx == null) return Container();
-
           return GestureDetector(
             onTap: _removeUtxoTooltip,
             child: Stack(
@@ -191,13 +185,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       shrinkWrap: true,
                                       physics:
                                           const NeverScrollableScrollPhysics(),
-                                      itemCount: viewModel.initialInputMaxCount,
+                                      itemCount: viewModel.utxoInputMaxCount,
                                       padding: EdgeInsets.zero,
                                       itemBuilder: (context, index) {
                                         return Column(
                                           children: [
                                             InputOutputDetailRow(
-                                              address: tx
+                                              address: tx!
                                                   .inputAddressList[index]
                                                   .address,
                                               balance: tx
@@ -219,8 +213,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       },
                                     ),
                                     Visibility(
-                                      visible: tx.inputAddressList.length >
-                                          viewModel.initialInputMaxCount,
+                                      visible: tx!.inputAddressList.length >
+                                          viewModel.utxoInputMaxCount,
                                       child: Text(
                                         '...',
                                         style: Styles.caption.merge(
@@ -245,8 +239,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       shrinkWrap: true,
                                       physics:
                                           const NeverScrollableScrollPhysics(),
-                                      itemCount:
-                                          viewModel.initialOutputMaxCount,
+                                      itemCount: viewModel.utxoOutputMaxCount,
                                       padding: EdgeInsets.zero,
                                       itemBuilder: (context, index) {
                                         return Column(
@@ -276,7 +269,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                     ),
                                     Visibility(
                                       visible: tx.outputAddressList.length >
-                                          viewModel.initialOutputMaxCount,
+                                          viewModel.utxoOutputMaxCount,
                                       child: Text(
                                         '...',
                                         style: Styles.caption.merge(
@@ -473,7 +466,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 500));
 
       RenderBox utxoTooltipIconRenderBox =
           _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox;

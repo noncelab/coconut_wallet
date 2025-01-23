@@ -27,7 +27,6 @@ class UtxoTagProvider extends ChangeNotifier {
     _tagList = _loadUtxoTagList(walletId);
     if (utxoId != null) {
       _selectedTagList = loadSelectedUtxoTagList(walletId, utxoId);
-      notifyListeners();
     }
   }
 
