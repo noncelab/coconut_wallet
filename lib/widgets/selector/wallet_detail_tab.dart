@@ -125,32 +125,36 @@ class WalletDetailTab extends StatelessWidget {
             ],
           ),
           if (isUtxoDropdownVisible) ...{
-            CupertinoButton(
-              onPressed: () {
-                onTapUtxoDropdown();
-              },
-              minSize: 0,
-              padding: const EdgeInsets.only(left: 8, top: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    utxoOrderText,
-                    style: Styles.caption2.merge(
-                      const TextStyle(
-                        color: MyColors.white,
-                        fontSize: 12,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                CupertinoButton(
+                  onPressed: () {
+                    onTapUtxoDropdown();
+                  },
+                  minSize: 0,
+                  padding: const EdgeInsets.only(left: 8, top: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        utxoOrderText,
+                        style: Styles.caption2.merge(
+                          const TextStyle(
+                            color: MyColors.white,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(
+                        width: 4,
+                      ),
+                      SvgPicture.asset(
+                        'assets/svg/arrow-down.svg',
+                      ),
+                    ],
                   ),
-                  const SizedBox(
-                    width: 4,
-                  ),
-                  SvgPicture.asset(
-                    'assets/svg/arrow-down.svg',
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           }
         ],

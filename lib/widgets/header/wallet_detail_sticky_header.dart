@@ -1,30 +1,32 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/selector/wallet_detail_tab.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
 
 class WalletDetailStickyHeader extends StatelessWidget {
-  final WalletListItemBase wallet;
   final Key widgetKey;
   final double height;
   final bool isVisible;
   final Unit currentUnit;
+  final int? balance;
+  final Address receiveAddress;
+  final WalletStatus? walletStatus;
   final WalletDetailTabType selectedListType;
   final String selectedFilter;
   final Function(int?, String, String) onTapReceive;
   final Function(int?) onTapSend;
   final Function onTapDropdown;
   const WalletDetailStickyHeader({
-    required this.wallet,
     required this.widgetKey,
     required this.height,
     required this.isVisible,
     required this.currentUnit,
+    required this.balance,
+    required this.receiveAddress,
+    required this.walletStatus,
     required this.selectedListType,
     required this.selectedFilter,
     required this.onTapReceive,
@@ -34,12 +36,9 @@ class WalletDetailStickyHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Address receiveAddress = wallet.walletBase.getReceiveAddress();
     final walletAddress = receiveAddress.address;
     final derivationPath = receiveAddress.derivationPath;
-    final utxoListIsNotEmpty =
-        wallet.walletFeature.walletStatus?.utxoList.isNotEmpty == true;
-    final balance = wallet.balance;
+    final utxoListIsNotEmpty = walletStatus?.utxoList.isNotEmpty == true;
     return Positioned(
       top: height,
       left: 0,
@@ -65,8 +64,8 @@ class WalletDetailStickyHeader extends StatelessWidget {
                         TextSpan(
                           text: balance != null
                               ? (currentUnit == Unit.btc
-                                  ? satoshiToBitcoinString(balance)
-                                  : addCommasToIntegerPart(balance.toDouble()))
+                                  ? satoshiToBitcoinString(balance!)
+                                  : addCommasToIntegerPart(balance!.toDouble()))
                               : '잔액 조회 불가',
                           style: Styles.h2Number,
                           children: [
@@ -118,11 +117,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
                     ),
                     CupertinoButton(
                       onPressed: () {
-                        if (balance == null) {
-                          CustomToast.showToast(
-                              context: context, text: "잔액이 없습니다.");
-                          return;
-                        }
                         onTapSend(balance);
                       },
                       borderRadius: BorderRadius.circular(8.0),
