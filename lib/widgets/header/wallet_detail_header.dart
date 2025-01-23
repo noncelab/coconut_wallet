@@ -17,6 +17,7 @@ class WalletDetailHeader extends StatelessWidget {
   final Unit currentUnit;
   final int? btcPriceInKrw;
   final Function onPressedUnitToggle;
+  final Function removePopup;
   final bool Function()? checkPrerequisites;
 
   const WalletDetailHeader({
@@ -28,6 +29,7 @@ class WalletDetailHeader extends StatelessWidget {
     required this.currentUnit,
     required this.btcPriceInKrw,
     required this.onPressedUnitToggle,
+    required this.removePopup,
     this.checkPrerequisites,
   });
 
@@ -43,6 +45,7 @@ class WalletDetailHeader extends StatelessWidget {
             child: SmallActionButton(
               onPressed: () {
                 onPressedUnitToggle();
+                removePopup();
               },
               height: 32,
               width: 64,
@@ -76,6 +79,7 @@ class WalletDetailHeader extends StatelessWidget {
               Expanded(
                   child: CupertinoButton(
                       onPressed: () {
+                        removePopup();
                         if (checkPrerequisites != null) {
                           if (!checkPrerequisites!()) return;
                         }
@@ -100,6 +104,7 @@ class WalletDetailHeader extends StatelessWidget {
               Expanded(
                   child: CupertinoButton(
                       onPressed: () {
+                        removePopup();
                         if (balance == null) {
                           CustomToast.showToast(
                               context: context, text: "잔액이 없습니다.");

@@ -19,6 +19,7 @@ class WalletDetailBody extends StatelessWidget {
   final List<TransferDTO> txList;
   final List<model.UTXO> utxoList;
   final Function(model.UTXO)? popFromUtxoDetail;
+  final Function removePopup;
   const WalletDetailBody({
     super.key,
     required this.txSliverListKey,
@@ -30,6 +31,7 @@ class WalletDetailBody extends StatelessWidget {
     required this.isUtxoListLoadComplete,
     required this.txList,
     required this.utxoList,
+    required this.removePopup,
     this.popFromUtxoDetail,
   });
 
@@ -62,6 +64,7 @@ class WalletDetailBody extends StatelessWidget {
                     key: index == 0 ? utxoSliverListKey : null,
                     currentUnit: currentUnit,
                     onPressed: () async {
+                      removePopup();
                       final utxo = utxoList[itemIndex];
                       await Navigator.pushNamed(
                         context,

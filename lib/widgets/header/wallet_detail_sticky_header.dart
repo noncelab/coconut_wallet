@@ -19,6 +19,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
   final Function(int?, String, String) onTapReceive;
   final Function(int?) onTapSend;
   final Function onTapDropdown;
+  final Function removePopup;
   const WalletDetailStickyHeader({
     required this.widgetKey,
     required this.height,
@@ -32,6 +33,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
     required this.onTapReceive,
     required this.onTapSend,
     required this.onTapDropdown,
+    required this.removePopup,
   }) : super(key: widgetKey);
 
   @override
@@ -88,6 +90,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
                     ),
                     CupertinoButton(
                       onPressed: () {
+                        removePopup();
                         onTapReceive(balance, walletAddress, derivationPath);
                       },
                       borderRadius: BorderRadius.circular(8.0),
@@ -117,6 +120,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
                     ),
                     CupertinoButton(
                       onPressed: () {
+                        removePopup();
                         onTapSend(balance);
                       },
                       borderRadius: BorderRadius.circular(8.0),
