@@ -5,13 +5,13 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/app/send/fee_info.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/screens/send/send_fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
@@ -240,7 +240,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                             children: [
                               ...List.generate(
                                   3,
-                                  (index) => FeeSelectionItem(
+                                  (index) => FeeSelectionItemCard(
                                       feeInfo: widget.feeInfos[index],
                                       isSelected: _selectedFeeLevel ==
                                           widget.feeInfos[index].level,

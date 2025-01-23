@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -18,6 +19,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   late double _amount;
   late String _recipientAddress;
   late bool? _isNetworkOn;
+  late bool _isMaxMode;
 
   SendFeeSelectionViewModel(this._sendInfoProvider, this._walletProvider,
       this._bitcoinPriceKrw, this._isNetworkOn) {
@@ -36,11 +38,13 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     _recipientAddress = _sendInfoProvider.receipientAddress!;
 
     _isNetworkOn = isNetworkOn;
+    _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_amount);
   }
 
   double get amount => _amount;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int get confirmedBalance => _confirmedBalance;
+  bool get isMaxMode => _isMaxMode;
   bool get isMultisigWallet => _isMultisigWallet;
   bool get isNetworkOn => _isNetworkOn == true;
   String get recipientAddress => _recipientAddress;
@@ -84,11 +88,25 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     }
   }
 
-  setAmount(String amountInput) {
+  double getAmount(int estimatedFee) {
+    return _isMaxMode
+        ? UnitUtil.satoshiToBitcoin(_confirmedBalance - estimatedFee)
+        : amount;
+  }
+
+  bool isBalanceEnough(int? estimatedFee) {
+    if (estimatedFee == null || estimatedFee == 0) return false;
+    if (_isMaxMode) return (confirmedBalance - estimatedFee) > dustLimit;
+
+    return (UnitUtil.bitcoinToSatoshi(amount) + estimatedFee) <=
+        confirmedBalance;
+  }
+
+  void setAmount(String amountInput) {
     _sendInfoProvider.setAmount(double.parse(amountInput));
   }
 
-  setIsNetworkOn(bool? isNetworkOn) {
+  void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
   }
