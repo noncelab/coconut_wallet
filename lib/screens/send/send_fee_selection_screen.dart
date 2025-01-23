@@ -1,10 +1,8 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/model/app/send/fee_info.dart';
-import 'package:coconut_wallet/model/app/send/send_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -16,9 +14,9 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -75,8 +73,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   final TextEditingController _customFeeController = TextEditingController();
   FeeInfo? _customFeeInfo;
 
-  late bool _isMaxMode;
-  late int _confirmedBalance;
   bool? _isRecommendedFeeFetchSuccess;
 
   late SendFeeSelectionViewModel _viewModel;
@@ -126,10 +122,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                   (element) => element.level == _selectedLevel)
                               .satsPerVb!;
 
-                      double amount = _isMaxMode
-                          ? UnitUtil.satoshiToBitcoin(
-                              _confirmedBalance - _estimatedFee!)
-                          : _viewModel.amount;
+                      double amount = _viewModel.getAmount(_estimatedFee!);
 
                       viewModel.setAmount(amount);
                       viewModel.setEstimatedFee(_estimatedFee!);
@@ -204,7 +197,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                             type: TooltipType.warning),
                       if (_estimatedFee != null &&
                           _estimatedFee! != 0 &&
-                          !enoughBalance() &&
+                          !_viewModel.isBalanceEnough(_estimatedFee) &&
                           _estimatedFee! < maxFeeLimit)
                         CustomTooltip(
                             richText: RichText(
@@ -217,7 +210,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                             children: [
                               ...List.generate(
                                   3,
-                                  (index) => FeeSelectionItem(
+                                  (index) => FeeSelectionItemCard(
                                       feeInfo: feeInfos[index],
                                       isSelected: _customSelected
                                           ? false
@@ -274,25 +267,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
     return _viewModel.isNetworkOn &&
         (satsPerVb != null && satsPerVb > 0) &&
-        enoughBalance() &&
+        _viewModel.isBalanceEnough(_estimatedFee) &&
         _estimatedFee != null &&
         _estimatedFee! < maxFeeLimit;
-  }
-
-  bool enoughBalance() {
-    if (_estimatedFee == null) {
-      return false;
-    }
-    if (_estimatedFee == 0) {
-      return false;
-    }
-
-    if (_isMaxMode) {
-      return (_confirmedBalance - _estimatedFee!) > dustLimit;
-    }
-
-    return (UnitUtil.bitcoinToSatoshi(_viewModel.amount) + _estimatedFee!) <=
-        _confirmedBalance;
   }
 
   void handleCustomFeeInput(String input) async {
@@ -327,7 +304,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
     try {
       int? estimatedFee;
-      if (_isMaxMode) {
+      if (_viewModel.isMaxMode) {
         estimatedFee = await _viewModel.estimateFeeWithMaximum(customSatsPerVb);
       } else {
         estimatedFee = await _viewModel.estimateFee(customSatsPerVb);
@@ -346,15 +323,19 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         });
       } else {
         // custom 수수료 조회 실패 알림
-        CustomToast.showWarningToast(
-            context: context,
-            text: ErrorCodes.withMessage(
-                    ErrorCodes.feeEstimationError, error.toString())
-                .message);
+        if (mounted) {
+          CustomToast.showWarningToast(
+              context: context,
+              text: ErrorCodes.withMessage(
+                      ErrorCodes.feeEstimationError, error.toString())
+                  .message);
+        }
       }
     }
     _customFeeController.clear();
-    context.loaderOverlay.hide();
+    if (mounted) {
+      context.loaderOverlay.hide();
+    }
   }
 
   @override
@@ -365,9 +346,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         Provider.of<WalletProvider>(context, listen: false),
         Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
-
-    _confirmedBalance = _viewModel.confirmedBalance;
-    _isMaxMode = _viewModel.isMaxMode;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_viewModel.isNetworkOn) {
@@ -421,7 +399,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     for (var feeInfo in feeInfos) {
       try {
         int? estimatedFee;
-        if (_isMaxMode) {
+        if (_viewModel.isMaxMode) {
           estimatedFee =
               await _viewModel.estimateFeeWithMaximum(feeInfo.satsPerVb!);
         } else {
@@ -465,11 +443,13 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
           // 약간의 지연 후 popUntil 호출
           Future.delayed(const Duration(milliseconds: 300), () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/',
-              (Route<dynamic> route) => false,
-            );
+            if (mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/',
+                (Route<dynamic> route) => false,
+              );
+            }
           });
         });
   }
@@ -477,134 +457,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   Future<void> startToSetRecommendedFee() async {
     context.loaderOverlay.show();
     await setRecommendedFees();
-    context.loaderOverlay.hide();
-  }
-}
-
-// TODO: widget 폴더 하위로 이동
-class FeeSelectionItem extends StatelessWidget {
-  final VoidCallback? onPressed;
-  final bool isSelected;
-  final bool isLoading;
-  final FeeInfoWithLevel feeInfo;
-
-  const FeeSelectionItem({
-    super.key,
-    this.onPressed,
-    this.isLoading = false,
-    this.isSelected = false,
-    required this.feeInfo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 79,
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? MyColors.white : MyColors.grey,
-          ),
-          borderRadius: MyBorder.defaultRadius,
-          color: MyColors.transparentWhite_06),
-      child: CupertinoButton(
-        padding: Paddings.widgetContainer,
-        onPressed: feeInfo.satsPerVb == null || feeInfo.estimatedFee == null
-            ? null
-            : onPressed,
-        child: Row(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  feeInfo.level.text,
-                  style: feeInfo.estimatedFee == null
-                      ? Styles.body1Bold.merge(
-                          const TextStyle(color: MyColors.borderLightgrey),
-                        )
-                      : Styles.body1,
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    RichText(
-                      text: TextSpan(
-                        style: Styles.caption, // 동일한 스타일 적용
-                        children: [
-                          TextSpan(
-                            text: feeInfo.level.expectedTime,
-                          ),
-                          if (feeInfo.satsPerVb != null)
-                            TextSpan(
-                              text: " (${feeInfo.satsPerVb} sats/vb)",
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                )
-              ],
-            ),
-            if (feeInfo.estimatedFee != null)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          satoshiToBitcoinString(feeInfo.estimatedFee!),
-                          style: Styles.body1Number,
-                        ),
-                        Text(
-                          ' BTC',
-                          style: Styles.body2Number.merge(
-                            const TextStyle(
-                              color: MyColors.transparentWhite_70,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(
-                      height: 5,
-                    ),
-                    Selector<UpbitConnectModel, int?>(
-                      selector: (context, model) => model.bitcoinPriceKrw,
-                      builder: (context, bitcoinPriceKrw, child) {
-                        return Text(
-                          bitcoinPriceKrw != null
-                              ? "${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(feeInfo.estimatedFee!, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}"
-                              : '',
-                          style: Styles.caption,
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            if (feeInfo.failedEstimation)
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "수수료 조회 실패",
-                      style: Styles.warning,
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
+    if (mounted) {
+      context.loaderOverlay.hide();
+    }
   }
 }
