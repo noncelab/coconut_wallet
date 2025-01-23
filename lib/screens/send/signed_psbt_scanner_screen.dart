@@ -4,13 +4,13 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/widgets/animated_qr/animated_qr_scanner.dart';
-import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/animated_qr/animated_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
@@ -24,151 +24,11 @@ class SignedPsbtScannerScreen extends StatefulWidget {
 
 class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  MultisignatureWallet? _multisigWallet;
   bool _isProcessing = false;
   QRViewController? controller;
+  Timer? _failedScanningTimer;
 
   late SignedPsbtScannerViewModel _viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewModel = SignedPsbtScannerViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<WalletProvider>(context, listen: false));
-
-    if (_viewModel.isMultisig) {
-      _multisigWallet = _viewModel.getWalletBase() as MultisignatureWallet;
-    }
-  }
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
-  }
-
-  Future<void> _stopCamera() async {
-    if (controller != null) {
-      await controller?.pauseCamera();
-    }
-  }
-
-  void onCompletedScanning(String signedPsbt) async {
-    if (_isProcessing) return;
-    _isProcessing = true;
-
-    try {
-      final psbt = PSBT.parse(signedPsbt);
-
-      if (_multisigWallet != null) {
-        int signedCount = _multisigWallet!.keyStoreList
-            .where((keyStore) => psbt.isSigned(keyStore))
-            .length;
-        int difference = _multisigWallet!.requiredSignature - signedCount;
-        if (difference > 0) {
-          _showAlert('$difference개의 서명이 더 필요해요', isBack: true);
-          controller?.pauseCamera();
-          await _stopCamera();
-          return;
-        }
-      }
-
-      if (!validateSignedPsbt(signedPsbt)) {
-        throw ('invalidSignedPsbt');
-      }
-
-      _viewModel.setSignedPsbt(signedPsbt);
-
-      controller?.pauseCamera();
-      await _stopCamera();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting');
-      }
-    } catch (e) {
-      Logger.log('Exception while QR Processing : $e');
-      if (context.mounted) {
-        String errorMessage;
-        if (e.toString().contains('FormatException: Invalid character') ||
-            e.toString().contains('Invalid PSBT')) {
-          errorMessage = '잘못된 QR코드예요.\n다시 확인해 주세요.';
-        } else if (e.toString().contains('invalidSignedPsbt')) {
-          // 처음에 보내기로 한 트랜잭션이 아닌 경우
-          errorMessage = '전송 정보가 달라요.\n처음부터 다시 시도해 주세요.';
-        } else {
-          errorMessage = 'QR코드 스캔에 실패했어요. 다시 시도해 주세요.';
-        }
-        _showAlert(errorMessage);
-      }
-    }
-  }
-
-  void _showAlert(String errorMessage, {bool isBack = false}) {
-    showAlertDialog(
-      context: context,
-      content: errorMessage,
-      dismissible: false,
-      onClosed: () {
-        _isProcessing = false;
-        if (isBack) {
-          Navigator.pop(context);
-        }
-      },
-    );
-  }
-
-  Timer? _failedScanningTimer;
-  void onFailedScanning(String message) {
-    if (_isProcessing) return;
-    _isProcessing = true;
-
-    // _isProcessing 상관 없이 2번 연속 호출되는 현상으로 추가됨
-    if (_failedScanningTimer?.isActive ?? false) {
-      return;
-    }
-    _failedScanningTimer = Timer(const Duration(milliseconds: 500), () {});
-
-    Logger.log("[SignedPsbtScannerScreen] onFailed: $message");
-
-    String errorMessage;
-    if (message.contains('Invalid Scheme')) {
-      errorMessage = '잘못된 서명 정보에요. 다시 시도해 주세요.';
-    } else {
-      errorMessage = '[스캔 실패] $message';
-    }
-
-    showAlertDialog(
-        context: context,
-        content: errorMessage,
-        onClosed: () {
-          _isProcessing = false;
-        });
-  }
-
-  bool validateSignedPsbt(String signedPsbtBase64) {
-    try {
-      var unsignedPsbt = PSBT.parse(_viewModel.txWaitingForSign);
-      var signedPsbt = PSBT.parse(signedPsbtBase64);
-
-      return unsignedPsbt.sendingAmount == signedPsbt.sendingAmount &&
-          unsignedPsbt.unsignedTransaction?.transactionHash ==
-              signedPsbt.unsignedTransaction?.transactionHash;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant SignedPsbtScannerScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    String? currentRoute = ModalRoute.of(context)?.settings.name;
-
-    if (currentRoute != null &&
-        currentRoute.startsWith('/signed-psbt-scanner')) {
-      _isProcessing = false;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -191,8 +51,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             setQRViewController: (QRViewController qrViewcontroller) {
               controller = qrViewcontroller;
             },
-            onComplete: onCompletedScanning,
-            onFailed: onFailedScanning,
+            onComplete: _onCompletedScanning,
+            onFailed: _onFailedScanning,
           ),
           Padding(
               padding: const EdgeInsets.only(top: 20),
@@ -225,5 +85,118 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         ]),
       ),
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant SignedPsbtScannerScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    String? currentRoute = ModalRoute.of(context)?.settings.name;
+
+    if (currentRoute != null &&
+        currentRoute.startsWith('/signed-psbt-scanner')) {
+      _isProcessing = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = SignedPsbtScannerViewModel(
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<WalletProvider>(context, listen: false));
+  }
+
+  void _onCompletedScanning(String signedPsbt) async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    PSBT psbt;
+    try {
+      psbt = _viewModel.parseBase64EncodedToPsbt(signedPsbt);
+    } catch (e) {
+      _showAlert('잘못된 QR코드예요.\n다시 확인해 주세요.');
+      return;
+    }
+
+    try {
+      if (!_viewModel.compareAmountAndTxHashWithUnsignedPsbt(psbt)) {
+        _showAlert('전송 정보가 달라요.\n처음부터 다시 시도해 주세요.');
+        return;
+      }
+
+      if (_viewModel.isMultisig) {
+        int missingCount = _viewModel.getMissingSignaturesCount(psbt);
+        if (missingCount > 0) {
+          _showAlert('$missingCount 서명이 더 필요해요', isBack: true);
+          controller?.pauseCamera();
+          await _stopCamera();
+          return;
+        }
+      }
+
+      _viewModel.setSignedPsbt(signedPsbt);
+
+      controller?.pauseCamera();
+      await _stopCamera();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/broadcasting');
+      }
+    } catch (e) {
+      _showAlert('QR코드 스캔에 실패했어요. 다시 시도해 주세요.\n$e');
+    }
+  }
+
+  void _onFailedScanning(String message) {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    // _isProcessing 상관 없이 2번 연속 호출되는 현상으로 추가됨
+    if (_failedScanningTimer?.isActive ?? false) {
+      return;
+    }
+    _failedScanningTimer = Timer(const Duration(milliseconds: 500), () {});
+
+    Logger.log("[SignedPsbtScannerScreen] onFailed: $message");
+
+    String errorMessage;
+    if (message.contains('Invalid Scheme')) {
+      errorMessage = '잘못된 서명 정보에요. 다시 시도해 주세요.';
+    } else {
+      errorMessage = '[스캔 실패] $message';
+    }
+
+    showAlertDialog(
+        context: context,
+        content: errorMessage,
+        onClosed: () {
+          _isProcessing = false;
+        });
+  }
+
+  void _showAlert(String errorMessage, {bool isBack = false}) {
+    showAlertDialog(
+      context: context,
+      content: errorMessage,
+      dismissible: false,
+      onClosed: () {
+        _isProcessing = false;
+        if (isBack) {
+          Navigator.pop(context);
+        }
+      },
+    );
+  }
+
+  Future<void> _stopCamera() async {
+    if (controller != null) {
+      await controller?.pauseCamera();
+    }
   }
 }
