@@ -125,11 +125,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                 }
 
                 viewModel.setAmount(_input);
-                // TODO: sendInfo 불필요
-                Navigator.pushNamed(context, '/fee-selection', arguments: {
-                  'sendInfo':
-                      SendInfo(address: '', amount: double.parse(_input))
-                });
+                Navigator.pushNamed(context, '/fee-selection');
               },
               isActive: _enableNextButton,
               backgroundColor: MyColors.black,

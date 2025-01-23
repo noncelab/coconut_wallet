@@ -135,17 +135,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                       viewModel.setEstimatedFee(_estimatedFee!);
                       viewModel.setFeeRate(satsPerVb);
 
-                      // TODO: remove arguments
-                      Navigator.pushNamed(context, '/send-confirm', arguments: {
-                        'id': _viewModel.walletId,
-                        'fullSendInfo': FullSendInfo(
-                          address: _viewModel.recipientAddress,
-                          amount: amount,
-                          satsPerVb: satsPerVb,
-                          estimatedFee: _estimatedFee,
-                          isMaxMode: _isMaxMode,
-                        )
-                      });
+                      Navigator.pushNamed(context, '/send-confirm');
                     }),
                 body: SafeArea(
                     child: SingleChildScrollView(

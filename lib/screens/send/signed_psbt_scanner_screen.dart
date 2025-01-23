@@ -83,7 +83,6 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       controller?.pauseCamera();
       await _stopCamera();
       if (mounted) {
-        // TODO: remove arguments
         Navigator.pushReplacementNamed(context, '/broadcasting');
       }
     } catch (e) {
