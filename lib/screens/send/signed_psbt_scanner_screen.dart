@@ -126,7 +126,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     }
 
     try {
-      if (!_viewModel.compareAmountAndTxHashWithUnsignedPsbt(psbt)) {
+      if (!_viewModel.isPsbtAmountAndTxHashEqualTo(psbt)) {
         _showAlert('전송 정보가 달라요.\n처음부터 다시 시도해 주세요.');
         return;
       }

@@ -10,7 +10,7 @@ class SignedPsbtScannerViewModel {
 
   bool get isMultisig => _sendInfoProvider.isMultisig!;
 
-  bool compareAmountAndTxHashWithUnsignedPsbt(PSBT signedPsbt) {
+  bool isPsbtAmountAndTxHashEqualTo(PSBT signedPsbt) {
     try {
       var unsignedPsbt = PSBT.parse(_sendInfoProvider.txWaitingForSign!);
 
