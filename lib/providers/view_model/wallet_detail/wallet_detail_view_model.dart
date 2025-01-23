@@ -51,7 +51,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   int? _prevTxCount;
 
   List<TransferDTO> _txList = [];
-  List<TransferDTO> get txList => _txModel?.txList ?? [];
+  List<TransferDTO> get txList => _txList;
 
   List<model.UTXO> _utxoList = [];
   List<model.UTXO> get utxoList => _utxoList;
@@ -103,15 +103,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool get isUpdatedTagList => _tagModel?.isUpdatedTagList ?? false;
 
   /// Common Methods -----------------------------------------------------------
-  void loadTxList() {
-    _txModel?.initTxList(_walletId);
-  }
-
   void providerListener(AppStateModel appStateModel,
       TransactionProvider transaction, UtxoTagProvider utxoTag) async {
     _tagModel ??= utxoTag;
-    _txModel ??= transaction;
-
+    notifyListeners();
     // initialize
     if (_appStateModel == null) {
       _appStateModel = appStateModel;
@@ -126,7 +121,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       if (appStateModel.walletInitState == WalletInitState.finished) {
         getUtxoListWithHoldingAddress();
       }
-      // _txList = appStateModel.getTxList(_walletId) ?? [];
+      _txList = appStateModel.getTxList(_walletId) ?? [];
 
       /// Faucet
       Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
@@ -174,8 +169,6 @@ class WalletDetailViewModel extends ChangeNotifier {
         notifyListeners();
       } catch (e) {}
     }
-
-    notifyListeners();
   }
 
   /// Wallet detail methods ----------------------------------------------------

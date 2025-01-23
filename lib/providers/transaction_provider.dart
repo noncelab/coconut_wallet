@@ -7,10 +7,10 @@ import 'package:flutter/cupertino.dart';
 class TransactionProvider extends ChangeNotifier {
   final WalletDataManager _walletDataManager = WalletDataManager();
   Transfer? _transaction;
-  List<TransferDTO>? _txList = [];
+  // List<TransferDTO>? _txList = [];
 
   Transfer? get transaction => _transaction;
-  List<TransferDTO>? get txList => _txList;
+  // List<TransferDTO>? get txList => _txList;
 
   void initTransaction(int walletId, String txHash, {String? utxoTo}) {
     final tx = _loadTransaction(walletId, txHash);
@@ -29,10 +29,10 @@ class TransactionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void initTxList(int walletId) {
-    _txList = _walletDataManager.getTxList(walletId);
-    notifyListeners();
-  }
+  // void initTxList(int walletId) {
+  //   _txList = _walletDataManager.getTxList(walletId);
+  //   notifyListeners();
+  // }
 
   bool updateTransactionMemo(int walletId, String txHash, String memo) {
     final result =

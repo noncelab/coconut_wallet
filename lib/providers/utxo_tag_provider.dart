@@ -24,6 +24,10 @@ class UtxoTagProvider extends ChangeNotifier {
   List<UtxoTag> get selectedTagList => _selectedTagList;
 
   void initTagList(int walletId, {String? utxoId}) {
+    print('initTagList -> $isUpdatedTagList');
+    print('initTagList -> $_tagList');
+    print('initTagList -> $_selectedTagList');
+
     _tagList = _loadUtxoTagList(walletId);
     if (utxoId != null) {
       _selectedTagList = _loadSelectedUtxoTagList(walletId, utxoId);

@@ -141,8 +141,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             _positionedTopWidgetSize.height;
       });
 
-      _viewModel?.loadTxList();
-
       if (_viewModel?.txList.isNotEmpty == true) {
         final RenderBox txSliverListRenderBox =
             _txSliverListKey.currentContext?.findRenderObject() as RenderBox;
