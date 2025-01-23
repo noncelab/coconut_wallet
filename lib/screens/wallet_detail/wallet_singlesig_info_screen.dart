@@ -152,7 +152,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                                 InformationRowItem(
                                   label: '태그 관리',
                                   showIcon: true,
-                                  onPressed: () async {
+                                  onPressed: () {
                                     Navigator.pushNamed(context, '/utxo-tag',
                                         arguments: {'id': widget.id});
                                   },

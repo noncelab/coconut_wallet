@@ -283,7 +283,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return ChangeNotifierProxyProvider3<AppStateModel, TransactionProvider,
         UtxoTagProvider, WalletDetailViewModel>(
       create: (_) => WalletDetailViewModel(widget.id),
-      update: (_, appStateModel, transaction, utxoTag, viewModel) {
+      update: (_, appStateModel, txModel, tagModel, viewModel) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (viewModel == null) {
             _viewModel = viewModel;
@@ -301,8 +301,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           }
         });
 
-        return viewModel!
-          ..providerListener(appStateModel, transaction, utxoTag);
+        return viewModel!..providerListener(appStateModel, txModel, tagModel);
       },
       child: Consumer<WalletDetailViewModel>(
         builder: (context, viewModel, child) {
@@ -798,8 +797,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         },
                       );
 
-                      viewModel.updateUtxoTagList(utxo.utxoId,
-                          viewModel.tagModel?.selectedTagList ?? []);
+                      if (viewModel.isUpdatedTagList) {
+                        viewModel.updateUtxoTagList(
+                            utxo.utxoId, viewModel.selectedTagList);
+                      }
                     },
                     child: UTXOItemCard(
                       utxo: viewModel.utxoList[itemIndex],

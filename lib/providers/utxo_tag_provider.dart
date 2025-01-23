@@ -1,9 +1,8 @@
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
-
-import '../utils/logger.dart';
 
 class UtxoTagProvider extends ChangeNotifier {
   final WalletDataManager _walletDataManager = WalletDataManager();
@@ -24,15 +23,12 @@ class UtxoTagProvider extends ChangeNotifier {
   List<UtxoTag> get selectedTagList => _selectedTagList;
 
   void initTagList(int walletId, {String? utxoId}) {
-    print('initTagList -> $isUpdatedTagList');
-    print('initTagList -> $_tagList');
-    print('initTagList -> $_selectedTagList');
-
+    _isUpdatedTagList = false;
     _tagList = _loadUtxoTagList(walletId);
     if (utxoId != null) {
-      _selectedTagList = _loadSelectedUtxoTagList(walletId, utxoId);
+      _selectedTagList = loadSelectedUtxoTagList(walletId, utxoId);
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   void setSelectedUtxoTag(UtxoTag? utxo) {
@@ -121,7 +117,8 @@ class UtxoTagProvider extends ChangeNotifier {
     }
 
     _tagList = _loadUtxoTagList(walletId);
-    _selectedTagList = _loadSelectedUtxoTagList(walletId, utxoId);
+    _selectedTagList = loadSelectedUtxoTagList(walletId, utxoId);
+    _isUpdatedTagList = true;
     notifyListeners();
   }
 
@@ -135,11 +132,10 @@ class UtxoTagProvider extends ChangeNotifier {
     return result.data ?? [];
   }
 
-  List<UtxoTag> _loadSelectedUtxoTagList(int walletId, String utxoId) {
+  List<UtxoTag> loadSelectedUtxoTagList(int walletId, String utxoId) {
     final result = _walletDataManager.loadUtxoTagListByUtxoId(walletId, utxoId);
     if (result.isError) {
-      Logger.log(
-          '-------------------------------------------------------------');
+      Logger.log('-----------------------------------------------------------');
       Logger.log(
           'loadSelectedUtxoTagList(walletId: $walletId, txHashIndex: $utxoId)');
       Logger.log(result.error);
@@ -147,9 +143,11 @@ class UtxoTagProvider extends ChangeNotifier {
     return result.data ?? [];
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-    print('Utxo Provider dispose()');
+  void resetData() {
+    _isUpdatedTagList = false;
+    _selectedUtxoTag = null;
+    _updatedTagName = null;
+    _tagList.clear();
+    _selectedTagList.clear();
   }
 }

@@ -50,8 +50,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   int? _prevTxCount;
 
-  List<TransferDTO> _txList = [];
-  List<TransferDTO> get txList => _txList;
+  List<TransferDTO> get txList => _txModel?.txList ?? [];
 
   List<model.UTXO> _utxoList = [];
   List<model.UTXO> get utxoList => _utxoList;
@@ -98,15 +97,21 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool _isRequesting = false;
   bool get isRequesting => _isRequesting;
 
-  UtxoTagProvider? get tagModel => _tagModel;
-
   bool get isUpdatedTagList => _tagModel?.isUpdatedTagList ?? false;
+  List<UtxoTag> get selectedTagList => _tagModel?.selectedTagList ?? [];
 
   /// Common Methods -----------------------------------------------------------
   void providerListener(AppStateModel appStateModel,
-      TransactionProvider transaction, UtxoTagProvider utxoTag) async {
-    _tagModel ??= utxoTag;
-    notifyListeners();
+      TransactionProvider txModel, UtxoTagProvider tagModel) async {
+    if (_tagModel == null) {
+      _tagModel = tagModel;
+      tagModel.initTagList(_walletId);
+    }
+    if (_txModel == null) {
+      _txModel = txModel;
+      txModel.initTxList(_walletId);
+    }
+
     // initialize
     if (_appStateModel == null) {
       _appStateModel = appStateModel;
@@ -121,7 +126,6 @@ class WalletDetailViewModel extends ChangeNotifier {
       if (appStateModel.walletInitState == WalletInitState.finished) {
         getUtxoListWithHoldingAddress();
       }
-      _txList = appStateModel.getTxList(_walletId) ?? [];
 
       /// Faucet
       Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
@@ -184,8 +188,7 @@ class WalletDetailViewModel extends ChangeNotifier {
                     _walletType, utxo.derivationPath) ==
                 1);
 
-        final tags = _appStateModel?.loadUtxoTagListByTxHashIndex(
-            _walletId, utxo.utxoId);
+        final tags = _tagModel?.loadSelectedUtxoTagList(_walletId, utxo.utxoId);
 
         utxos.add(model.UTXO(
           utxo.timestamp.toString(),
@@ -205,12 +208,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     model.UTXO.sortUTXO(_utxoList, _selectedFilter);
   }
 
-  void updateUtxoFilter(UtxoOrderEnum orderEnum) async {
-    _selectedFilter = orderEnum;
-    model.UTXO.sortUTXO(_utxoList, orderEnum);
-    notifyListeners();
-  }
-
   void _checkTxCount() {
     final txCount = _walletListBaseItem.txCount;
     final isLatestTxBlockHeightZero =
@@ -222,13 +219,16 @@ class WalletDetailViewModel extends ChangeNotifier {
     /// _walletListItem의 txCount, isLatestTxBlockHeightZero가 변경되었을 때만 트랜잭션 목록 업데이트
     if (_prevTxCount != txCount ||
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
-      List<TransferDTO>? newTxList = _appStateModel?.getTxList(_walletId);
-      if (newTxList != null) {
-        _txList = newTxList;
-      }
+      _txModel?.initTxList(_walletId);
     }
     _prevTxCount = txCount;
     _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;
+  }
+
+  void updateUtxoFilter(UtxoOrderEnum orderEnum) async {
+    _selectedFilter = orderEnum;
+    model.UTXO.sortUTXO(_utxoList, orderEnum);
+    notifyListeners();
   }
 
   void updateUtxoTagList(String utxoId, List<UtxoTag> utxoTagList) {
@@ -343,5 +343,12 @@ class WalletDetailViewModel extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _tagModel?.resetData();
+    _txModel?.resetData();
+    super.dispose();
   }
 }
