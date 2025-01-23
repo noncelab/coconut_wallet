@@ -1,18 +1,17 @@
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/app/send/fee_info.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:provider/provider.dart';
 
 class FeeSelectionItemCard extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isSelected;
   final bool isLoading;
   final FeeInfoWithLevel feeInfo;
+  final int? bitcoinPriceKrw;
 
   const FeeSelectionItemCard({
     super.key,
@@ -20,6 +19,7 @@ class FeeSelectionItemCard extends StatelessWidget {
     this.isLoading = false,
     this.isSelected = false,
     required this.feeInfo,
+    this.bitcoinPriceKrw,
   });
 
   @override
@@ -101,17 +101,12 @@ class FeeSelectionItemCard extends StatelessWidget {
                     const SizedBox(
                       height: 5,
                     ),
-                    Selector<UpbitConnectModel, int?>(
-                      selector: (context, model) => model.bitcoinPriceKrw,
-                      builder: (context, bitcoinPriceKrw, child) {
-                        return Text(
-                          bitcoinPriceKrw != null
-                              ? "${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(feeInfo.estimatedFee!, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}"
-                              : '',
-                          style: Styles.caption,
-                        );
-                      },
-                    ),
+                    Text(
+                      bitcoinPriceKrw != null
+                          ? "${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(feeInfo.estimatedFee!, bitcoinPriceKrw!).toDouble())} ${CurrencyCode.KRW.code}"
+                          : '',
+                      style: Styles.caption,
+                    )
                   ],
                 ),
               ),

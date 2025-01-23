@@ -21,30 +21,6 @@ import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
-int? handleFeeEstimationError(Exception e) {
-  try {
-    if (e.toString().contains("Insufficient amount. Estimated fee is")) {
-      // get finalFee from error message : 'Insufficient amount. Estimated fee is $finalFee'
-      var estimatedFee = int.parse(
-          e.toString().split("Insufficient amount. Estimated fee is ")[1]);
-      return estimatedFee;
-    }
-
-    if (e.toString().contains("Not enough amount for sending. (Fee")) {
-      // get finalFee from error message : 'Not enough amount for sending. (Fee : $finalFee)'
-      var estimatedFee = int.parse(e
-          .toString()
-          .split("Not enough amount for sending. (Fee : ")[1]
-          .split(")")[0]);
-      return estimatedFee;
-    }
-  } catch (_) {
-    return null;
-  }
-
-  return null;
-}
-
 class SendFeeSelectionScreen extends StatefulWidget {
   const SendFeeSelectionScreen({
     super.key,
@@ -79,12 +55,17 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider,
-            SendFeeSelectionViewModel>(
+    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider,
+            UpbitConnectModel, SendFeeSelectionViewModel>(
         create: (_) => _viewModel,
-        update: (_, connectivityProvider, walletProvider, viewModel) {
+        update: (_, connectivityProvider, walletProvider, upbitConnectModel,
+            viewModel) {
           if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
             viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+          }
+          if (upbitConnectModel.bitcoinPriceKrw != null &&
+              viewModel.bitcoinPriceKrw != upbitConnectModel.bitcoinPriceKrw) {
+            viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
           }
 
           return viewModel;
@@ -216,6 +197,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                           ? false
                                           : _selectedLevel ==
                                               feeInfos[index].level,
+                                      bitcoinPriceKrw:
+                                          viewModel.bitcoinPriceKrw,
                                       onPressed: () {
                                         setState(() {
                                           _selectedLevel =
@@ -315,7 +298,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         setFeeInfo(_customFeeInfo!, estimatedFee!);
       });
     } catch (error) {
-      int? estimatedFee = handleFeeEstimationError(error as Exception);
+      int? estimatedFee = _handleFeeEstimationError(error as Exception);
       if (estimatedFee != null) {
         setState(() {
           _customFeeInfo = FeeInfo(satsPerVb: customSatsPerVb);
@@ -358,6 +341,30 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       // TODO:
       //_model.recordUsedUtxoIdListWhenSend([]);
     });
+  }
+
+  int? _handleFeeEstimationError(Exception e) {
+    try {
+      if (e.toString().contains("Insufficient amount. Estimated fee is")) {
+        // get finalFee from error message : 'Insufficient amount. Estimated fee is $finalFee'
+        var estimatedFee = int.parse(
+            e.toString().split("Insufficient amount. Estimated fee is ")[1]);
+        return estimatedFee;
+      }
+
+      if (e.toString().contains("Not enough amount for sending. (Fee")) {
+        // get finalFee from error message : 'Not enough amount for sending. (Fee : $finalFee)'
+        var estimatedFee = int.parse(e
+            .toString()
+            .split("Not enough amount for sending. (Fee : ")[1]
+            .split(")")[0]);
+        return estimatedFee;
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
   }
 
   void setFeeInfo(FeeInfo feeInfo, int estimatedFee) {
@@ -409,7 +416,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
           setFeeInfo(feeInfo, estimatedFee!);
         });
       } catch (error) {
-        int? estimatedFee = handleFeeEstimationError(error as Exception);
+        int? estimatedFee = _handleFeeEstimationError(error as Exception);
         if (estimatedFee != null) {
           setState(() {
             setFeeInfo(feeInfo, estimatedFee);

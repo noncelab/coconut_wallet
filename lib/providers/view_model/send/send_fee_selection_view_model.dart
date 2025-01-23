@@ -124,4 +124,9 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
   }
+
+  void setBitcoinPriceKrw(int price) {
+    _bitcoinPriceKrw = price;
+    notifyListeners();
+  }
 }
