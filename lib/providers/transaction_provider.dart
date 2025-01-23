@@ -117,7 +117,6 @@ class TransactionProvider extends ChangeNotifier {
   void viewMoreInput() {
     if (_transaction == null) return;
 
-    // 더보기 누를때 +5
     _inputCountToShow = (_inputCountToShow + kViewMoreCount)
         .clamp(0, _transaction!.inputAddressList.length);
     if (_inputCountToShow == _transaction!.inputAddressList.length) {
@@ -134,6 +133,7 @@ class TransactionProvider extends ChangeNotifier {
     if (_outputCountToShow == _transaction!.outputAddressList.length) {
       _canSeeMoreOutputs = false;
     }
+
     notifyListeners();
   }
 

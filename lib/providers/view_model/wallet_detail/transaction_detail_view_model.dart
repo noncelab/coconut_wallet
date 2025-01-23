@@ -31,6 +31,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
   ValueNotifier<bool> get loadCompletedNotifier => _loadCompletedNotifier;
 
   void updateProvider(WalletProvider walletModel, TransactionProvider txModel) {
+    // addressBook 설정 이후 txModel 변경 감지
+    if (_addressBook != null) notifyListeners();
+
     if (walletModel.walletItemList.isNotEmpty && _addressBook == null) {
       _addressBook =
           walletModel.getWalletById(_walletId).walletBase.addressBook;
