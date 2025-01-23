@@ -61,10 +61,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         update: (_, connectivityProvider, walletProvider, upbitConnectModel,
             viewModel) {
           if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
-            viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+            });
           }
           if (upbitConnectModel.bitcoinPriceKrw != null) {
-            viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
+            });
           }
 
           return viewModel;

@@ -53,5 +53,6 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   updateBitcoinPriceKrw(int btcPriceInKrw) {
     _bitcoinPriceKrw = btcPriceInKrw;
+    notifyListeners();
   }
 }
