@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
-import 'package:coconut_wallet/model/api/response/app_version_response.dart';
+import 'package:coconut_wallet/services/model/response/app_version_response.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/services/app_version_service.dart';

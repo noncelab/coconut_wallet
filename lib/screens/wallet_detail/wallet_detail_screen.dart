@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/app/error/app_error.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/providers/app_state_model.dart'
     hide WalletInitState;
 import 'package:coconut_wallet/providers/connectivity_provider.dart';

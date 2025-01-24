@@ -1,11 +1,11 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/app/error/app_error.dart';
-import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/app/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/app/wallet/watch_only_wallet.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';

@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 

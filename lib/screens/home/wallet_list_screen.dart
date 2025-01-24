@@ -9,9 +9,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';

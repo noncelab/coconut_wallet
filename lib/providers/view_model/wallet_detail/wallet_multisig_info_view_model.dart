@@ -1,5 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';

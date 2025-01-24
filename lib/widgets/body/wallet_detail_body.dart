@@ -6,7 +6,7 @@ import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 
 class WalletDetailBody extends StatelessWidget {
   final Key txSliverListKey;

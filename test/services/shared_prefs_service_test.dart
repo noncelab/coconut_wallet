@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
+import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

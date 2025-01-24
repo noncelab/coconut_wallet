@@ -1,6 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
@@ -13,7 +13,7 @@ import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';

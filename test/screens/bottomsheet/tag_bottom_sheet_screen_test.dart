@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';

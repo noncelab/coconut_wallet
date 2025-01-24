@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';

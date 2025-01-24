@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/app/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
 SinglesigWalletListItem mapRealmWalletBaseToSinglesigWalletListItem(

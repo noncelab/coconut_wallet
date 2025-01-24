@@ -1,12 +1,12 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/api/error/default_error_response.dart';
-import 'package:coconut_wallet/model/api/request/faucet_request.dart';
-import 'package:coconut_wallet/model/api/response/faucet_response.dart';
-import 'package:coconut_wallet/model/api/response/faucet_status_response.dart';
-import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/services/model/error/default_error_response.dart';
+import 'package:coconut_wallet/services/model/request/faucet_request.dart';
+import 'package:coconut_wallet/services/model/response/faucet_response.dart';
+import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
+import 'package:coconut_wallet/model/faucet/faucet_history.dart';
+import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart'
     hide WalletInitState;
 import 'package:coconut_wallet/providers/wallet_provider.dart';

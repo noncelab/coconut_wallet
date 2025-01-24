@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 
 void main() {
   group('CustomTagSelector', () {
