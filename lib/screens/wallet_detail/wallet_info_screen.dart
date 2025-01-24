@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/providers/auth_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_singlesig_info_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
+import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
@@ -18,16 +19,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-class WalletSinglesigInfoScreen extends StatefulWidget {
+class WalletInfoScreen extends StatefulWidget {
   final int id;
-  const WalletSinglesigInfoScreen({super.key, required this.id});
+  final bool isMultisig;
+  const WalletInfoScreen(
+      {super.key, required this.id, required this.isMultisig});
 
   @override
-  State<WalletSinglesigInfoScreen> createState() =>
-      _WalletSinglesigInfoScreenState();
+  State<WalletInfoScreen> createState() => _WalletInfoScreenState();
 }
 
-class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
+class _WalletInfoScreenState extends State<WalletInfoScreen> {
   final GlobalKey _walletTooltipKey = GlobalKey();
   RenderBox? _walletTooltipIconRenderBox;
   Offset _walletTooltipIconPosition = Offset.zero;
@@ -37,20 +39,19 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<AuthProvider, WalletProvider,
-        WalletSinglesigInfoViewModel>(
-      create: (_) => WalletSinglesigInfoViewModel(
+    return ChangeNotifierProvider<WalletInfoViewModel>(
+      create: (_) => WalletInfoViewModel(
         widget.id,
+        widget.isMultisig,
         Provider.of<AuthProvider>(_, listen: false),
         Provider.of<WalletProvider>(_, listen: false),
       ),
-      update: (_, authProvider, walletProvider, viewModel) => viewModel!,
-      child: Consumer<WalletSinglesigInfoViewModel>(
+      child: Consumer<WalletInfoViewModel>(
         builder: (_, viewModel, child) {
           return Scaffold(
             backgroundColor: MyColors.black,
             appBar: CustomAppBar.build(
-                title: '지갑 정보',
+                title: viewModel.getTitleText(),
                 context: context,
                 hasRightIcon: false,
                 onBackPressed: () {
@@ -65,9 +66,9 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                       children: <Widget>[
                         Padding(
                           padding: const EdgeInsets.only(
-                              top: 20, bottom: 32, left: 16, right: 16),
+                              top: 20, left: 16, right: 16),
                           child: WalletInfoItemCard(
-                            walletItem: viewModel.wallet,
+                            walletItem: viewModel.getWalletItem(),
                             onTooltipClicked: () {
                               _removeTooltip();
 
@@ -90,6 +91,30 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                             tooltipKey: _walletTooltipKey,
                           ),
                         ),
+                        if (widget.isMultisig) ...{
+                          Container(
+                            margin: const EdgeInsets.only(top: 8, bottom: 32),
+                            child: ListView.separated(
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: viewModel.getMultisigSignersLength(),
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                return MultisigSignerCard(
+                                  index: index,
+                                  signer: viewModel.getMultisigSigner(index),
+                                  masterFingerprint:
+                                      viewModel.getMasterFingerprint(index),
+                                );
+                              },
+                            ),
+                          ),
+                        } else ...{
+                          const SizedBox(height: 32),
+                        },
                         Container(
                           decoration: BoxDecorations.boxDecoration,
                           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -116,48 +141,47 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                               const Divider(
                                   color: MyColors.transparentWhite_12,
                                   height: 1),
-                              InformationItemCard(
-                                label: '확장 공개키 보기',
-                                showIcon: true,
-                                onPressed: () async {
-                                  _removeTooltip();
-                                  if (viewModel.isSetPin) {
-                                    await CommonBottomSheets.showBottomSheet_90(
-                                      context: context,
-                                      child: CustomLoadingOverlay(
-                                        child: PinCheckScreen(
-                                          onComplete: () {
-                                            CommonBottomSheets
-                                                .showBottomSheet_90(
-                                              context: context,
-                                              child: QrcodeBottomSheet(
-                                                  qrData: viewModel
-                                                      .singlesigWallet
-                                                      .keyStore
-                                                      .extendedPublicKey
-                                                      .serialize(),
-                                                  title: '확장 공개키'),
-                                            );
-                                          },
+                              if (!widget.isMultisig) ...{
+                                InformationItemCard(
+                                  label: '확장 공개키 보기',
+                                  showIcon: true,
+                                  onPressed: () async {
+                                    _removeTooltip();
+                                    if (viewModel.isSetPin) {
+                                      await CommonBottomSheets
+                                          .showBottomSheet_90(
+                                        context: context,
+                                        child: CustomLoadingOverlay(
+                                          child: PinCheckScreen(
+                                            onComplete: () {
+                                              CommonBottomSheets
+                                                  .showBottomSheet_90(
+                                                context: context,
+                                                child: QrcodeBottomSheet(
+                                                    qrData: viewModel
+                                                        .getExtendedPublicKey(),
+                                                    title: '확장 공개키'),
+                                              );
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  } else {
-                                    CommonBottomSheets.showBottomSheet_90(
-                                      context: context,
-                                      child: QrcodeBottomSheet(
-                                        qrData: viewModel.singlesigWallet
-                                            .keyStore.extendedPublicKey
-                                            .serialize(),
-                                        title: '확장 공개키',
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                              const Divider(
-                                  color: MyColors.transparentWhite_12,
-                                  height: 1),
+                                      );
+                                    } else {
+                                      CommonBottomSheets.showBottomSheet_90(
+                                        context: context,
+                                        child: QrcodeBottomSheet(
+                                          qrData:
+                                              viewModel.getExtendedPublicKey(),
+                                          title: '확장 공개키',
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                                const Divider(
+                                    color: MyColors.transparentWhite_12,
+                                    height: 1),
+                              },
                               InformationItemCard(
                                 label: '태그 관리',
                                 showIcon: true,
@@ -277,7 +301,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    '지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요.',
+                                    viewModel.getTooltipText(),
                                     style: Styles.caption.merge(TextStyle(
                                       height: 1.3,
                                       fontFamily:
