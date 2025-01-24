@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
-import 'package:coconut_wallet/services/secure_storage_service.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +12,9 @@ import 'package:local_auth/local_auth.dart';
 import '../constants/secure_keys.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final SharedPrefs _sharedPrefs = SharedPrefs();
-  final SecureStorageService _secureStorageService = SecureStorageService();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final SecureStorageRepository _secureStorageService =
+      SecureStorageRepository();
   final LocalAuthentication _auth = LocalAuthentication();
 
   /// 사용자 생체인증 on/off 여부
@@ -132,8 +133,8 @@ class AuthProvider extends ChangeNotifier {
 
     // WalletDataManager().reset();
 
-    await SecureStorageService().deleteAll();
-    await SharedPrefs().clearSharedPref();
+    await SecureStorageRepository().deleteAll();
+    await SharedPrefsRepository().clearSharedPref();
     await checkDeviceBiometrics();
   }
 

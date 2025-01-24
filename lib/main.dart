@@ -6,7 +6,7 @@ import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/database_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -59,7 +59,7 @@ void main() {
     );
     Provider.debugCheckInvalidValueType = null;
 
-    await SharedPrefs().init();
+    await SharedPrefsRepository().init();
 
     // coconut 0.6 버전까지만 사용, 0.7버전부터 필요 없어짐
     final dbDirectory = await getAppDocumentDirectory(paths: ['objectbox']);

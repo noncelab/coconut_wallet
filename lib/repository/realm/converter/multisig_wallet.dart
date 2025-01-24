@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/repository/realm/model/coconut_wallet_data.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
 MultisigWalletListItem mapRealmMultisigWalletToMultisigWalletListItem(
     RealmMultisigWallet realmMultisigWallet, String? decryptedDescriptor) {

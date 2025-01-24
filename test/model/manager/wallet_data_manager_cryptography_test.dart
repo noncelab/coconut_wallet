@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/repository/wallet_data_manager_cryptography.dart';
+import 'package:coconut_wallet/repository/realm/wallet_data_manager_cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

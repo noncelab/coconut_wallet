@@ -9,18 +9,18 @@ import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/app/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/repository/converter/multisig_wallet.dart';
-import 'package:coconut_wallet/repository/converter/singlesig_wallet.dart';
-import 'package:coconut_wallet/repository/converter/transaction.dart';
-import 'package:coconut_wallet/repository/converter/utxo_tag.dart';
-import 'package:coconut_wallet/repository/migration/migrator_ver2_1_0.dart';
-import 'package:coconut_wallet/repository/realm/model/coconut_wallet_data.dart';
-import 'package:coconut_wallet/repository/realm/realm_id_service.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager_cryptography.dart';
+import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
+import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
+import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
+import 'package:coconut_wallet/repository/realm/converter/utxo_tag.dart';
+import 'package:coconut_wallet/repository/realm/migration/migrator_ver2_1_0.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/realm/wallet_data_manager_cryptography.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/app/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/services/secure_storage_service.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:realm/realm.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -29,8 +29,8 @@ class WalletDataManager {
   static const String nonceField = 'nonce';
   static const String pinField = kSecureStoragePinKey;
 
-  final SecureStorageService _storageService = SecureStorageService();
-  final SharedPrefs _sharedPrefs = SharedPrefs();
+  final SecureStorageRepository _storageService = SecureStorageRepository();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   static final WalletDataManager _instance = WalletDataManager._internal();
   factory WalletDataManager() => _instance;

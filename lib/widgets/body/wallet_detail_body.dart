@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/repository/converter/transaction.dart';
+import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';

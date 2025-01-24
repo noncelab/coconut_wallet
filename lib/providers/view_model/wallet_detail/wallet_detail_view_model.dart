@@ -10,9 +10,9 @@ import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart'
     hide WalletInitState;
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/converter/transaction.dart';
+import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -26,7 +26,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   AppStateModel? _appStateModel;
 
   WalletProvider? _walletProvider;
-  final SharedPrefs _sharedPrefs = SharedPrefs();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   /// Wallet detail variables --------------------------------------------------
   WalletListItemBase? _walletListBaseItem;

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SharedPrefs {
+class SharedPrefsRepository {
   // TODO: lib/contants/shared_pref_keys.dart로 옮긴 것을 사용하기
   static const String kSharedIsBalanceHidden = "SHARED_IS_BALANCE_HIDDEN";
   static const String lastUpdateTime = "LAST_UPDATE_TIME";
@@ -34,11 +34,12 @@ class SharedPrefs {
     _sharedPrefs = sp;
   }
 
-  static final SharedPrefs _instance = SharedPrefs._internal();
+  static final SharedPrefsRepository _instance =
+      SharedPrefsRepository._internal();
 
-  factory SharedPrefs() => _instance;
+  factory SharedPrefsRepository() => _instance;
 
-  SharedPrefs._internal();
+  SharedPrefsRepository._internal();
 
   Future<void> init() async {
     // init in main.dart

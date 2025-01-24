@@ -8,14 +8,14 @@ import 'package:coconut_wallet/model/api/error/default_error_response.dart';
 import 'package:coconut_wallet/model/api/response/faucet_response.dart';
 import 'package:coconut_wallet/model/api/response/faucet_status_response.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
 class FaucetRequestViewModel extends ChangeNotifier {
   static const int MAX_REQUEST_COUNT = 3;
   final Faucet _faucetService = Faucet();
-  final SharedPrefs _sharedPrefs = SharedPrefs();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final TextEditingController textController = TextEditingController();
 
   late AddressBook _walletAddressBook;

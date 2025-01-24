@@ -2,10 +2,10 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/repository/realm/model/coconut_wallet_data.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager_cryptography.dart';
-import 'package:coconut_wallet/services/secure_storage_service.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/wallet_data_manager_cryptography.dart';
+import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';
 
@@ -29,13 +29,13 @@ class MigratorVer2_1_0 {
 
   Future<bool> hasFailed() async {
     String? failedDateTime =
-        await SecureStorageService().read(key: migrationFailedField);
+        await SecureStorageRepository().read(key: migrationFailedField);
 
     return failedDateTime != null;
   }
 
   Future recordFailedDateTime() async {
-    await SecureStorageService().write(
+    await SecureStorageRepository().write(
         key: migrationFailedField, value: DateTime.now().toIso8601String());
   }
 
@@ -50,7 +50,7 @@ class MigratorVer2_1_0 {
     }
 
     String? walletListJsonString =
-        await SecureStorageService().read(key: walletListField);
+        await SecureStorageRepository().read(key: walletListField);
     if (walletListJsonString == null) return false;
 
     try {
@@ -128,10 +128,10 @@ class MigratorVer2_1_0 {
     }
 
     if (cryptography != null) {
-      await SecureStorageService()
+      await SecureStorageRepository()
           .write(key: WalletDataManager.nonceField, value: cryptography.nonce);
     }
-    await SecureStorageService().delete(key: walletListField);
+    await SecureStorageRepository().delete(key: walletListField);
     Logger.log('--> migration 성공');
   }
 }

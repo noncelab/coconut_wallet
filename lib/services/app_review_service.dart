@@ -4,7 +4,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:in_app_review/in_app_review.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 
 class AppReviewService {
   static const int gapToRequestReview = 5; // 리뷰 요청 간격 (앱 실행 횟수)
@@ -28,41 +28,45 @@ class AppReviewService {
 
   /// 비트코인 전송을 완료한 적이 있는지 여부를 반환한다.
   static bool? _hasCompletedBitcoinTransfer() {
-    final sharedPrefs = SharedPrefs();
-    return sharedPrefs.sharedPrefs.getBool(SharedPrefs.kHaveSent);
+    final sharedPrefs = SharedPrefsRepository();
+    return sharedPrefs.sharedPrefs.getBool(SharedPrefsRepository.kHaveSent);
   }
 
   static Future _setCompletedBitcoinTransfer() async {
-    await SharedPrefs().sharedPrefs.setBool(SharedPrefs.kHaveSent, true);
+    await SharedPrefsRepository()
+        .sharedPrefs
+        .setBool(SharedPrefsRepository.kHaveSent, true);
   }
 
   /// 리뷰를 남긴 적이 있는지 여부를 반환한다.
   static bool? _hasReviewed() {
-    final sharedPrefs = SharedPrefs();
-    return sharedPrefs.sharedPrefs.getBool(SharedPrefs.kHaveReviewed);
+    final sharedPrefs = SharedPrefsRepository();
+    return sharedPrefs.sharedPrefs.getBool(SharedPrefsRepository.kHaveReviewed);
   }
 
   static Future setHasReviewed() async {
-    await SharedPrefs().sharedPrefs.setBool(SharedPrefs.kHaveReviewed, true);
+    await SharedPrefsRepository()
+        .sharedPrefs
+        .setBool(SharedPrefsRepository.kHaveReviewed, true);
   }
 
   /// 비트코인 전송 첫 성공 후 앱 실행 횟수를 반환한다.
   /// 리뷰를 남긴 후에는 기록하지 않으므로 언제나 정확한 값은 아님
   static int? _getAppRunningCountAfterRejectReview() {
-    final sharedPrefs = SharedPrefs();
+    final sharedPrefs = SharedPrefsRepository();
     return sharedPrefs.sharedPrefs
-        .getInt(SharedPrefs.kAppRunCountAfterRejectReview);
+        .getInt(SharedPrefsRepository.kAppRunCountAfterRejectReview);
   }
 
   /// 비트코인 전송을 완료한 적이 있고, 리뷰를 남긴 적이 없으면, 앱 실행 시 마다 count를 1씩 증가시켜 저장한다.
   static Future<void> increaseAppRunningCountIfRejected() async {
-    final sharedPrefs = SharedPrefs();
+    final sharedPrefs = SharedPrefsRepository();
     if (_hasCompletedBitcoinTransfer() == true && _hasReviewed() != true) {
       final count = sharedPrefs.sharedPrefs
-              .getInt(SharedPrefs.kAppRunCountAfterRejectReview) ??
+              .getInt(SharedPrefsRepository.kAppRunCountAfterRejectReview) ??
           0;
-      await sharedPrefs.sharedPrefs
-          .setInt(SharedPrefs.kAppRunCountAfterRejectReview, count + 1);
+      await sharedPrefs.sharedPrefs.setInt(
+          SharedPrefsRepository.kAppRunCountAfterRejectReview, count + 1);
     }
   }
 

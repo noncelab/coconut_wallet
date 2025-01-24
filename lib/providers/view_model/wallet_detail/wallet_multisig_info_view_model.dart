@@ -2,14 +2,14 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:flutter/cupertino.dart';
 
 class WalletMultisigInfoViewModel extends ChangeNotifier {
   final int _walletId;
   final AuthProvider _authModel;
   final WalletProvider _walletModel;
-  final SharedPrefs _sharedPrefs = SharedPrefs();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   late MultisigWalletListItem _wallet;
   late List<KeyStore> _keystoreList;

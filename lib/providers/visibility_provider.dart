@@ -5,13 +5,14 @@
 // 3. 지갑 목록이 비었는지 → 지갑이 몇 개인지?! - 홈
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
-import 'package:coconut_wallet/services/secure_storage_service.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:flutter/material.dart';
 
 class VisibilityProvider extends ChangeNotifier {
-  final SharedPrefs _sharedPrefs = SharedPrefs();
-  final SecureStorageService _secureStorageService = SecureStorageService();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final SecureStorageRepository _secureStorageService =
+      SecureStorageRepository();
 
   /// iOS에서 앱 지워도 secureStorage가 남아있어서 지우기 위해 사용
   /// onBoading 노출 여부
