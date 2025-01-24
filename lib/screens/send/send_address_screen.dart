@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -11,7 +10,6 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
@@ -94,7 +92,8 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                   child: Container(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
                       child: TextButton(
-                          onPressed: () => _getClipboardText(viewModel),
+                          onPressed: () =>
+                              _setClipboardAddressAsRecipient(), // TODO: address = null일 때
                           style: OutlinedButton.styleFrom(
                             foregroundColor: viewModel.address != null
                                 ? MyColors.darkgrey
@@ -145,8 +144,11 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     _viewModel = SendAddressViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
-    _viewModel.loadData();
     _viewModel.clearSendInfoProvider();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel.loadDataFromClipboardIfValid();
+    });
   }
 
   // In order to get hot reload to work we need to pause the camera if the platform
@@ -181,11 +183,21 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     );
   }
 
-  Future<void> _getClipboardText(SendAddressViewModel viewModel) async {
-    if (viewModel.address == null) return;
+  void _goNext() async {
+    await _stopCamera();
 
-    ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-    _validateAddress(data?.text);
+    if (!mounted) return;
+    if (Platform.isAndroid) {
+      Navigator.pushReplacementNamed(context, "/send-amount").then((o) {
+        _isProcessing = false;
+      });
+    } else if (Platform.isIOS) {
+      Navigator.pushNamed(context, "/send-amount").then((o) {
+        _isProcessing = false;
+      }).then((_) {
+        controller?.resumeCamera();
+      });
+    }
   }
 
   void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
@@ -201,11 +213,37 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     this.controller = controller;
     controller.scannedDataStream.listen((scanData) {
       if (_isProcessing || scanData.code == null) return;
+      if (scanData.code!.isEmpty) return;
 
       _isProcessing = true;
 
-      _validateAddress(scanData.code);
+      _viewModel.validateAddress(scanData.code!).then((_) {
+        _viewModel.saveWalletIdAndReceipientAddress(widget.id, scanData.code!);
+        if (_viewModel.isNetworkOn) {
+          _goNext();
+        } else {
+          CustomToast.showWarningToast(
+              context: context, text: ErrorCodes.networkError.message);
+          _isProcessing = false;
+        }
+      }).catchError((e) {
+        CustomToast.showToast(context: context, text: e.toString());
+        _isProcessing = false;
+      });
     });
+  }
+
+  Future<void> _setClipboardAddressAsRecipient() async {
+    if (_viewModel.address == null) return;
+
+    if (_viewModel.isNetworkOn) {
+      _viewModel.saveWalletIdAndReceipientAddress(
+          widget.id, _viewModel.address!);
+      _goNext();
+    } else {
+      CustomToast.showWarningToast(
+          context: context, text: ErrorCodes.networkError.message);
+    }
   }
 
   Future<void> _stopCamera() async {
@@ -215,79 +253,6 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
         Logger.log('Camera paused successfully');
       } catch (e) {
         Logger.log('Failed to pause camera: $e');
-      }
-    }
-  }
-
-  void _validateAddress(String? recipient) async {
-    if (recipient == null || (recipient.isEmpty || recipient.length < 26)) {
-      CustomToast.showToast(context: context, text: '올바른 주소가 아니에요.');
-      _isProcessing = false;
-      return;
-    }
-
-    if (BitcoinNetwork.currentNetwork == BitcoinNetwork.testnet) {
-      if (recipient.startsWith('1') ||
-          recipient.startsWith('3') ||
-          recipient.startsWith('bc1')) {
-        CustomToast.showToast(context: context, text: '테스트넷 주소가 아니에요.');
-        _isProcessing = false;
-        return;
-      }
-    } else if (BitcoinNetwork.currentNetwork == BitcoinNetwork.mainnet) {
-      if (recipient.startsWith('m') ||
-          recipient.startsWith('n') ||
-          recipient.startsWith('2') ||
-          recipient.startsWith('tb1')) {
-        CustomToast.showToast(context: context, text: '메인넷 주소가 아니에요.');
-        _isProcessing = false;
-        return;
-      }
-    } else if (BitcoinNetwork.currentNetwork == BitcoinNetwork.regtest) {
-      if (!recipient.startsWith('bcrt1')) {
-        CustomToast.showToast(context: context, text: '레그테스트넷 주소가 아니에요.');
-        _isProcessing = false;
-        return;
-      }
-    }
-
-    bool result = false;
-    try {
-      result = WalletUtility.validateAddress(recipient);
-    } catch (e) {
-      CustomToast.showToast(context: context, text: '올바른 주소가 아니에요.');
-      _isProcessing = false;
-      return;
-    }
-
-    if (!result) {
-      CustomToast.showToast(context: context, text: '올바른 주소가 아니에요.');
-      _isProcessing = false;
-      return;
-    }
-
-    // 올바른 주소여서 다음 화면으로 넘어가기 전에 네트워크 상태 확인하기
-    if (_viewModel.isNetworkOn == false) {
-      CustomToast.showWarningToast(
-          context: context, text: ErrorCodes.networkError.message);
-      _isProcessing = false;
-      return;
-    }
-
-    await _stopCamera();
-    if (mounted) {
-      _viewModel.saveWalletIdAndReceipientAddress(widget.id, recipient);
-      // Go-router 제거 이후로 ios에서는 정상 작동하지만 안드로이드에서는 pushNamed로 화면 이동 시 카메라 컨트롤러 남아있는 이슈
-      if (Platform.isAndroid) {
-        Navigator.pushReplacementNamed(context, "/send-amount").then((o) {
-          _isProcessing = false;
-        });
-      } else if (Platform.isIOS) {
-        Navigator.pushNamed(context, "/send-amount").then((o) {
-          _isProcessing = false;
-        }).then((_) {
-          controller?.resumeCamera();
-        });
       }
     }
   }
