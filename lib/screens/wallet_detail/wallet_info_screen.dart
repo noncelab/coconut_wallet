@@ -42,16 +42,18 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     return ChangeNotifierProvider<WalletInfoViewModel>(
       create: (_) => WalletInfoViewModel(
         widget.id,
-        widget.isMultisig,
         Provider.of<AuthProvider>(_, listen: false),
         Provider.of<WalletProvider>(_, listen: false),
+        widget.isMultisig,
       ),
       child: Consumer<WalletInfoViewModel>(
         builder: (_, viewModel, child) {
           return Scaffold(
             backgroundColor: MyColors.black,
             appBar: CustomAppBar.build(
-                title: viewModel.getTitleText(),
+                title: widget.isMultisig
+                    ? viewModel.multisigItem.name
+                    : viewModel.singlesigItem.name,
                 context: context,
                 hasRightIcon: false,
                 onBackPressed: () {
@@ -68,7 +70,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           padding: const EdgeInsets.only(
                               top: 20, left: 16, right: 16),
                           child: WalletInfoItemCard(
-                            walletItem: viewModel.getWalletItem(),
+                            walletItem: widget.isMultisig
+                                ? viewModel.multisigItem
+                                : viewModel.singlesigItem,
                             onTooltipClicked: () {
                               _removeTooltip();
 
@@ -99,15 +103,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               shrinkWrap: true,
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: viewModel.getMultisigSignersLength(),
+                              itemCount: viewModel.multisigItem.signers.length,
                               separatorBuilder: (context, index) =>
                                   const SizedBox(height: 8),
                               itemBuilder: (context, index) {
                                 return MultisigSignerCard(
                                   index: index,
-                                  signer: viewModel.getMultisigSigner(index),
-                                  masterFingerprint:
-                                      viewModel.getMasterFingerprint(index),
+                                  signer: viewModel.multisigItem.signers[index],
+                                  masterFingerprint: viewModel
+                                      .keystoreList[index].masterFingerprint,
                                 );
                               },
                             ),
@@ -159,7 +163,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                                 context: context,
                                                 child: QrcodeBottomSheet(
                                                     qrData: viewModel
-                                                        .getExtendedPublicKey(),
+                                                        .singlesigWallet
+                                                        .keyStore
+                                                        .extendedPublicKey
+                                                        .serialize(),
                                                     title: '확장 공개키'),
                                               );
                                             },
@@ -170,8 +177,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       CommonBottomSheets.showBottomSheet_90(
                                         context: context,
                                         child: QrcodeBottomSheet(
-                                          qrData:
-                                              viewModel.getExtendedPublicKey(),
+                                          qrData: viewModel.singlesigWallet
+                                              .keyStore.extendedPublicKey
+                                              .serialize(),
                                           title: '확장 공개키',
                                         ),
                                       );
@@ -301,7 +309,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    viewModel.getTooltipText(),
+                                    widget.isMultisig
+                                        ? '${viewModel.multisigItem.signers.length}개의 키 중 ${viewModel.multisigItem.requiredSignatureCount}개로 서명해야 하는\n다중 서명 지갑이에요.'
+                                        : '지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요.',
                                     style: Styles.caption.merge(TextStyle(
                                       height: 1.3,
                                       fontFamily:
