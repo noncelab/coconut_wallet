@@ -430,10 +430,10 @@ class WalletProvider extends ChangeNotifier {
   }
 
   /// 네트워크가 꺼지면 네트워크를 해제함.
-  void setIsNetworkOn(bool isNetworkOn) {
+  void setIsNetworkOn(bool? isNetworkOn) {
     if (_isNetworkOn == isNetworkOn) return;
 
-    if (_isNetworkOn == null && isNetworkOn) {
+    if (_isNetworkOn == null && isNetworkOn == true) {
       _isNetworkOn = isNetworkOn;
       initWallet().catchError((_) {
         Logger.error(_);
@@ -443,7 +443,7 @@ class WalletProvider extends ChangeNotifier {
 
     _isNetworkOn = isNetworkOn;
 
-    if (!isNetworkOn) {
+    if (isNetworkOn == false) {
       handleNetworkDisconnected();
       notifyListeners();
     }

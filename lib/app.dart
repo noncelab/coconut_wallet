@@ -102,7 +102,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 authProvider, walletProvider) {
               try {
                 walletProvider!
-                    .setIsNetworkOn(connectivityProvider.isNetworkOn ?? false);
+                    .setIsNetworkOn(connectivityProvider.isNetworkOn);
 
                 return walletProvider;
               } catch (e) {
