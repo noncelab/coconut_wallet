@@ -83,7 +83,7 @@ class WalletDetailHeader extends StatelessWidget {
                         if (checkPrerequisites != null) {
                           if (!checkPrerequisites!()) return;
                         }
-                        // TODO: ReceiveAddressScreen에 walletId 말고 다른 매개변수 고려해보기
+
                         CommonBottomSheets.showBottomSheet_90(
                           context: context,
                           child: ReceiveAddressBottomSheet(

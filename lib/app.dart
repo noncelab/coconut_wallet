@@ -101,11 +101,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             update: (context, connectivityProvider, visiblityProvider,
                 authProvider, walletProvider) {
               try {
-                if (walletProvider!.isNetworkOn !=
-                    connectivityProvider.isNetworkOn) {
-                  walletProvider.setIsNetworkOn(
-                      connectivityProvider.isNetworkOn ?? false);
-                }
+                walletProvider!
+                    .setIsNetworkOn(connectivityProvider.isNetworkOn ?? false);
 
                 return walletProvider;
               } catch (e) {
@@ -168,34 +165,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         home: _screenStatus == AccessFlow.splash
             ? StartScreen(onComplete: _completeSplash)
             : _screenStatus == AccessFlow.main
-                ? AppGuard(
-                    child: ChangeNotifierProxyProvider3<
-                        WalletProvider,
-                        PreferenceProvider,
-                        VisibilityProvider,
-                        WalletListViewModel>(
-                      create: (_) => WalletListViewModel(
-                        Provider.of<WalletProvider>(_, listen: false),
-                        Provider.of<VisibilityProvider>(_, listen: false),
-                        Provider.of<PreferenceProvider>(_, listen: false)
-                            .isBalanceHidden,
-                      ),
-                      update: (BuildContext context,
-                          WalletProvider walletProvider,
-                          PreferenceProvider preferenceProvider,
-                          VisibilityProvider visibilityProvider,
-                          WalletListViewModel? previous) {
-                        if (previous!.isBalanceHidden !=
-                            preferenceProvider.isBalanceHidden) {
-                          previous.setIsBalanceHidden(
-                              preferenceProvider.isBalanceHidden);
-                        }
-
-                        return previous
-                          ..onWalletProviderUpdated(walletProvider);
-                      },
-                      child: const WalletListScreen(),
-                    ),
+                ? const AppGuard(
+                    child: WalletListScreen(),
                   )
                 : CustomLoadingOverlay(
                     child: PinCheckScreen(

@@ -92,8 +92,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                   child: Container(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
                       child: TextButton(
-                          onPressed: () =>
-                              _setClipboardAddressAsRecipient(), // TODO: address = null일 때
+                          onPressed: () => _setClipboardAddressAsRecipient(),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: viewModel.address != null
                                 ? MyColors.darkgrey

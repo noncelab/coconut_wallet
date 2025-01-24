@@ -48,7 +48,6 @@ class WalletProvider extends ChangeNotifier {
   AppError? get walletInitError => _walletInitError;
 
   bool? _isNetworkOn;
-  bool? get isNetworkOn => _isNetworkOn;
 
   NodeConnector? _nodeConnector;
 
@@ -118,19 +117,19 @@ class WalletProvider extends ChangeNotifier {
       }
 
       // 네트워크 확인이 완료된 후 다음 과정 진행
-      if (isNetworkOn == null) {
+      if (_isNetworkOn == null) {
         Logger.log(">>>>> ===================== initWallet 끝 (네트워크 확인 전)");
         setWalletInitState(WalletInitState.networkWaiting);
         return;
       }
 
-      if (isNetworkOn == false) {
+      if (_isNetworkOn == false) {
         setWalletInitState(WalletInitState.error,
             error: ErrorCodes.networkError);
         return;
       }
 
-      if (isNetworkOn == true) {
+      if (_isNetworkOn == true) {
         await _initNodeConnectionWhenIsNull();
 
         // 1개만 업데이트 (하지만 나머지 지갑들도 업데이트 함)
@@ -161,12 +160,8 @@ class WalletProvider extends ChangeNotifier {
       // notifyListeners(); ^ setWalletInitState 안에서 실행되어서 주석처리 했습니다.
       _setLastUpdateTime();
 
-      // TODO: 화면에서 호출
-      //vibrateLight();
       Logger.log(">>>>> ===================== initWallet 정상 끝");
     } catch (e) {
-      // TODO: 화면에서 호출
-      // vibrateLightDouble();
       Logger.log(
           ">>>>> ===================== initWallet catch!! notifyListeners() ${e.toString()}");
       notifyListeners();
@@ -248,10 +243,6 @@ class WalletProvider extends ChangeNotifier {
         _walletItemList[index] = _walletDataManager.walletList[index];
         List<WalletListItemBase> updatedList = List.from(_walletItemList);
         _walletItemList = updatedList;
-
-        // TODO: 화면에서
-        // setAnimatedWalletFlags(
-        //     index: index, type: WalletSyncResult.existingWalletUpdated);
         result = WalletSyncResult.existingWalletUpdated;
         notifyListeners();
       }
@@ -440,6 +431,8 @@ class WalletProvider extends ChangeNotifier {
 
   /// 네트워크가 꺼지면 네트워크를 해제함.
   void setIsNetworkOn(bool isNetworkOn) {
+    if (_isNetworkOn == isNetworkOn) return;
+
     if (_isNetworkOn == null && isNetworkOn) {
       _isNetworkOn = isNetworkOn;
       initWallet().catchError((_) {
@@ -501,14 +494,10 @@ class WalletProvider extends ChangeNotifier {
 
   Future encryptWalletSecureData(String hashedPin) async {
     await _walletDataManager.encrypt(hashedPin);
-    // TODO: 화면에서 둘 다 호출
-    //await _subStateModel.savePinSet(hashedPin);
   }
 
   Future decryptWalletSecureData() async {
     await _walletDataManager.decrypt();
-    // TODO: 화면에서 둘 다 호출
-    //await _subStateModel.deletePin();
   }
 }
 
