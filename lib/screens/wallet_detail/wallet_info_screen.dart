@@ -51,9 +51,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           return Scaffold(
             backgroundColor: MyColors.black,
             appBar: CustomAppBar.build(
-                title: widget.isMultisig
-                    ? viewModel.multisigItem.name
-                    : viewModel.singlesigItem.name,
+                title:
+                    '${widget.isMultisig ? viewModel.multisigItem.name : viewModel.singlesigItem.name} 정보',
                 context: context,
                 hasRightIcon: false,
                 onBackPressed: () {
