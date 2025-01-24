@@ -3,19 +3,19 @@ import 'dart:async';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_singlesig_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
+import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class WalletSinglesigInfoScreen extends StatefulWidget {
@@ -36,27 +36,6 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
   int _tooltipRemainingTime = 0;
 
   @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _walletTooltipIconRenderBox =
-          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
-      _walletTooltipIconPosition =
-          _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
-      _tooltipTopPadding =
-          MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
-    });
-  }
-
-  _removeTooltip() {
-    setState(() {
-      _tooltipRemainingTime = 0;
-    });
-    _tooltipTimer?.cancel();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<AuthProvider, WalletProvider,
         WalletSinglesigInfoViewModel>(
@@ -65,7 +44,7 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
         Provider.of<AuthProvider>(_, listen: false),
         Provider.of<WalletProvider>(_, listen: false),
       ),
-      update: (_, authModel, walletModel, viewModel) => viewModel!,
+      update: (_, authProvider, walletProvider, viewModel) => viewModel!,
       child: Consumer<WalletSinglesigInfoViewModel>(
         builder: (_, viewModel, child) {
           return Scaffold(
@@ -327,5 +306,26 @@ class _WalletSinglesigInfoScreenState extends State<WalletSinglesigInfoScreen> {
   void dispose() {
     _tooltipTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _walletTooltipIconRenderBox =
+          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
+      _walletTooltipIconPosition =
+          _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
+      _tooltipTopPadding =
+          MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
+    });
+  }
+
+  _removeTooltip() {
+    setState(() {
+      _tooltipRemainingTime = 0;
+    });
+    _tooltipTimer?.cancel();
   }
 }

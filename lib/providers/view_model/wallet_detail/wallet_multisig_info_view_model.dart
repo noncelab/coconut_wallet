@@ -7,30 +7,30 @@ import 'package:flutter/cupertino.dart';
 
 class WalletMultisigInfoViewModel extends ChangeNotifier {
   final int _walletId;
-  final AuthProvider _authModel;
-  final WalletProvider _walletModel;
+  final AuthProvider _authProvider;
+  final WalletProvider _walletProvider;
   final SharedPrefs _sharedPrefs = SharedPrefs();
 
   late MultisigWalletListItem _wallet;
   late List<KeyStore> _keystoreList;
 
   WalletMultisigInfoViewModel(
-      this._walletId, this._authModel, this._walletModel) {
-    final walletBaseItem = _walletModel.getWalletById(_walletId);
+      this._walletId, this._authProvider, this._walletProvider) {
+    final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _wallet = walletBaseItem as MultisigWalletListItem;
 
     final multisigWallet = _wallet.walletBase as MultisignatureWallet;
     _keystoreList = multisigWallet.keyStoreList;
   }
 
-  MultisigWalletListItem get wallet => _wallet;
+  bool get isSetPin => _authProvider.isSetPin;
   List<KeyStore> get keystoreList => _keystoreList;
 
-  WalletInitState get walletInitState => _walletModel.walletInitState;
-  bool get isSetPin => _authModel.isSetPin;
+  MultisigWalletListItem get wallet => _wallet;
+  WalletInitState get walletInitState => _walletProvider.walletInitState;
 
   Future<void> deleteWallet() async {
     await _sharedPrefs.removeFaucetHistory(_walletId);
-    await _walletModel.deleteWallet(_walletId);
+    await _walletProvider.deleteWallet(_walletId);
   }
 }

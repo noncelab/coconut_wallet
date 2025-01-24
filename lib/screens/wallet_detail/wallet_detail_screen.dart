@@ -471,8 +471,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       return false;
     }
 
-    if (_viewModel.walletProvider?.walletInitState ==
-        WalletInitState.processing) {
+    if (_viewModel.walletInitState == WalletInitState.processing) {
       CustomToast.showToast(
           context: context, text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
       return false;
