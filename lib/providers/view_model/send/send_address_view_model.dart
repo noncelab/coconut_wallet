@@ -31,9 +31,9 @@ class SendAddressViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  saveWalletIdAndReceipientAddress(int id, String address) {
+  saveWalletIdAndRecipientAddress(int id, String address) {
     _sendInfoProvider.setWalletId(id);
-    _sendInfoProvider.setReceipientAddress(address);
+    _sendInfoProvider.setRecipientAddress(address);
   }
 
   setIsNetworkOn(bool? isNetworkOn) {

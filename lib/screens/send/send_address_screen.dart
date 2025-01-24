@@ -276,7 +276,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
     await _stopCamera();
     if (mounted) {
-      _viewModel.saveWalletIdAndReceipientAddress(widget.id, recipient);
+      _viewModel.saveWalletIdAndRecipientAddress(widget.id, recipient);
       // Go-router 제거 이후로 ios에서는 정상 작동하지만 안드로이드에서는 pushNamed로 화면 이동 시 카메라 컨트롤러 남아있는 이슈
       if (Platform.isAndroid) {
         Navigator.pushReplacementNamed(context, "/send-amount").then((o) {

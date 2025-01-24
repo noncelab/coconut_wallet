@@ -2,7 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 
 class SendInfoProvider {
   int? _walletId;
-  String? _receipientAddress;
+  String? _recipientAddress;
   double? _amount;
   int? _feeRate;
   int? _estimatedFee;
@@ -13,7 +13,7 @@ class SendInfoProvider {
   String? _signedPsbtBase64Encoded;
 
   int? get walletId => _walletId;
-  String? get receipientAddress => _receipientAddress;
+  String? get recipientAddress => _recipientAddress;
   double? get amount => _amount;
   int? get feeRate => _feeRate;
   int? get estimatedFee => _estimatedFee;
@@ -27,8 +27,8 @@ class SendInfoProvider {
     _walletId = id;
   }
 
-  setReceipientAddress(String address) {
-    _receipientAddress = address;
+  setRecipientAddress(String address) {
+    _recipientAddress = address;
   }
 
   setAmount(double amount) {
@@ -64,7 +64,7 @@ class SendInfoProvider {
   }
 
   clear() {
-    _walletId = _receipientAddress = _amount = _feeRate = _estimatedFee =
+    _walletId = _recipientAddress = _amount = _feeRate = _estimatedFee =
         _isMaxMode = _isMultisig =
             _transaction = _txWaitingForSign = _signedPsbtBase64Encoded = null;
   }
