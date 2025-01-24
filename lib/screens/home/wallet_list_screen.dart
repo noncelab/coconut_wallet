@@ -112,8 +112,6 @@ class _WalletListScreenState extends State<WalletListScreen>
                     // Pull to refresh, refresh indicator(hide)
                     CupertinoSliverRefreshControl(
                       onRefresh: () async {
-                        Logger.log(
-                            '--> currentContext: ${_itemKeys[0].currentContext}');
                         setState(() {
                           _isLastUpdateTimeVisible = false;
                         });
