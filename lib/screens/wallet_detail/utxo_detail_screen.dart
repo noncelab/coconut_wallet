@@ -332,7 +332,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                         .map((e) => e.name)
                                         .toList(),
                                     onSelected: (selectedNames, addTags) {
-                                      viewModel.tagModel?.updateUtxoTagList(
+                                      viewModel.tagProvider?.updateUtxoTagList(
                                         walletId: widget.id,
                                         utxoId: widget.utxo.utxoId,
                                         selectedNames: selectedNames,

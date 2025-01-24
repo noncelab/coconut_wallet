@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 class TransactionDetailViewModel extends ChangeNotifier {
   final int _walletId;
   final String _txHash;
-  final TransactionProvider _txModel;
+  final WalletProvider _walletProvider;
+  final TransactionProvider _txProvider;
 
   AddressBook? _addressBook;
   int? _currentBlockHeight;
@@ -14,28 +15,29 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final ValueNotifier<bool> _showDialogNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _loadCompletedNotifier = ValueNotifier(false);
 
-  TransactionDetailViewModel(this._walletId, this._txHash, this._txModel);
+  TransactionDetailViewModel(
+      this._walletId, this._txHash, this._walletProvider, this._txProvider);
 
   AddressBook? get addressBook => _addressBook;
   int? get currentBlockHeight => _currentBlockHeight;
 
-  TransactionProvider get txModel => _txModel;
-  Transfer? get transaction => _txModel.transaction;
-  bool get canSeeMoreInputs => _txModel.canSeeMoreInputs;
-  bool get canSeeMoreOutputs => _txModel.canSeeMoreOutputs;
-  int get inputCountToShow => _txModel.inputCountToShow;
-  int get outputCountToShow => _txModel.outputCountToShow;
+  TransactionProvider get txModel => _txProvider;
+  Transfer? get transaction => _txProvider.transaction;
+  bool get canSeeMoreInputs => _txProvider.canSeeMoreInputs;
+  bool get canSeeMoreOutputs => _txProvider.canSeeMoreOutputs;
+  int get inputCountToShow => _txProvider.inputCountToShow;
+  int get outputCountToShow => _txProvider.outputCountToShow;
 
   ValueNotifier<bool> get showDialogNotifier => _showDialogNotifier;
   ValueNotifier<bool> get loadCompletedNotifier => _loadCompletedNotifier;
 
-  void updateProvider(WalletProvider walletModel) {
-    if (walletModel.walletItemList.isNotEmpty && _addressBook == null) {
+  void updateProvider() {
+    if (_walletProvider.walletItemList.isNotEmpty && _addressBook == null) {
       _addressBook =
-          walletModel.getWalletById(_walletId).walletBase.addressBook;
-      _setCurrentBlockHeight(walletModel);
-      _txModel.initTransaction(_walletId, _txHash);
-      if (_txModel.initViewMoreButtons() == false) {
+          _walletProvider.getWalletById(_walletId).walletBase.addressBook;
+      _setCurrentBlockHeight(_walletProvider);
+      _txProvider.initTransaction(_walletId, _txHash);
+      if (_txProvider.initViewMoreButtons() == false) {
         _showDialogNotifier.value = true;
       }
     }

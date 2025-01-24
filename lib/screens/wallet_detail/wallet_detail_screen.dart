@@ -86,12 +86,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           Provider.of<TransactionProvider>(_, listen: false),
           Provider.of<UtxoTagProvider>(_, listen: false),
         );
-
         return _viewModel;
       },
       update: (_, walletProvider, txProvider, viewModel) {
         _updateFilterDropdownButtonRenderBox();
-
         return viewModel!..updateProvider();
       },
       child: Consumer<WalletDetailViewModel>(

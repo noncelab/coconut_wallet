@@ -43,26 +43,25 @@ class TransactionDetailScreen extends StatefulWidget {
 class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   final GlobalKey _balanceWidthKey = GlobalKey();
   Size _balanceWidthSize = Size.zero;
-  TransactionDetailViewModel? _viewModel;
+  late TransactionDetailViewModel _viewModel;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, TransactionProvider,
         TransactionDetailViewModel>(
-      create: (_) => TransactionDetailViewModel(
-        widget.id,
-        widget.txHash,
-        Provider.of<TransactionProvider>(_, listen: false),
-      ),
-      update: (_, walletModel, txModel, viewModel) {
-        if (_viewModel == null) {
-          _viewModel = viewModel;
-          _viewModel?.showDialogNotifier.addListener(_showDialogListener);
-          _viewModel?.loadCompletedNotifier.addListener(_loadCompletedListener);
-        }
-
-        return viewModel!..updateProvider(walletModel);
+      create: (_) {
+        _viewModel = TransactionDetailViewModel(
+          widget.id,
+          widget.txHash,
+          Provider.of<WalletProvider>(_, listen: false),
+          Provider.of<TransactionProvider>(_, listen: false),
+        );
+        _viewModel.showDialogNotifier.addListener(_showDialogListener);
+        _viewModel.loadCompletedNotifier.addListener(_loadCompletedListener);
+        return _viewModel;
       },
+      update: (_, walletProvider, txProvider, viewModel) =>
+          viewModel!..updateProvider(),
       child: Consumer<TransactionDetailViewModel>(
         builder: (_, viewModel, child) {
           if (viewModel.transaction == null) return Container();
@@ -312,8 +311,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   @override
   void dispose() {
-    _viewModel?.showDialogNotifier.removeListener(_showDialogListener);
-    _viewModel?.showDialogNotifier.removeListener(_loadCompletedListener);
+    _viewModel.showDialogNotifier.removeListener(_showDialogListener);
+    _viewModel.showDialogNotifier.removeListener(_loadCompletedListener);
     super.dispose();
   }
 

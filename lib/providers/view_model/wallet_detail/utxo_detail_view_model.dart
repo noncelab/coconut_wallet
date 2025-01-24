@@ -10,26 +10,26 @@ class UtxoDetailViewModel extends ChangeNotifier {
   final int _walletId;
   final model.UTXO _utxo;
 
-  final UtxoTagProvider _tagModel;
-  final TransactionProvider _txModel;
+  final UtxoTagProvider _tagProvider;
+  final TransactionProvider _txProvider;
 
   List<String> _dateString = [];
 
   UtxoDetailViewModel(
-      this._walletId, this._utxo, this._tagModel, this._txModel) {
+      this._walletId, this._utxo, this._tagProvider, this._txProvider) {
     _dateString = DateTimeUtil.formatDatetime(_utxo.timestamp).split('|');
-    _tagModel.initTagList(_walletId, utxoId: _utxo.utxoId);
-    _txModel.initTransaction(_walletId, _utxo.txHash, utxoTo: _utxo.to);
-    _txModel.initUtxoInOutputList();
+    _tagProvider.initTagList(_walletId, utxoId: _utxo.utxoId);
+    _txProvider.initTransaction(_walletId, _utxo.txHash, utxoTo: _utxo.to);
+    _txProvider.initUtxoInOutputList();
   }
 
-  UtxoTagProvider? get tagModel => _tagModel;
-  List<UtxoTag> get selectedTagList => _tagModel.selectedTagList;
-  List<UtxoTag> get tagList => _tagModel.tagList;
+  UtxoTagProvider? get tagProvider => _tagProvider;
+  List<UtxoTag> get selectedTagList => _tagProvider.selectedTagList;
+  List<UtxoTag> get tagList => _tagProvider.tagList;
 
-  Transfer? get transaction => _txModel.transaction;
-  int get utxoInputMaxCount => _txModel.utxoInputMaxCount;
-  int get utxoOutputMaxCount => _txModel.utxoOutputMaxCount;
+  Transfer? get transaction => _txProvider.transaction;
+  int get utxoInputMaxCount => _txProvider.utxoInputMaxCount;
+  int get utxoOutputMaxCount => _txProvider.utxoOutputMaxCount;
 
   List<String> get dateString => _dateString;
 }

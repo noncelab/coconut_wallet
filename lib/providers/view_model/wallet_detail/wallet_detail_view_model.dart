@@ -84,6 +84,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
 
     _txProvider.initTxList(_walletId);
+    _tagProvider.initTagList(_walletId);
 
     // Faucet
     Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
