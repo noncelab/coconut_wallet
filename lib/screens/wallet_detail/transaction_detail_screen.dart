@@ -49,15 +49,19 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, TransactionProvider,
         TransactionDetailViewModel>(
-      create: (_) => TransactionDetailViewModel(widget.id, widget.txHash),
-      update: (_, wallet, transaction, viewModel) {
+      create: (_) => TransactionDetailViewModel(
+        widget.id,
+        widget.txHash,
+        Provider.of<TransactionProvider>(_, listen: false),
+      ),
+      update: (_, walletModel, txModel, viewModel) {
         if (_viewModel == null) {
           _viewModel = viewModel;
           _viewModel?.showDialogNotifier.addListener(_showDialogListener);
           _viewModel?.loadCompletedNotifier.addListener(_loadCompletedListener);
         }
 
-        return viewModel!..updateProvider(wallet, transaction);
+        return viewModel!..updateProvider(walletModel);
       },
       child: Consumer<TransactionDetailViewModel>(
         builder: (_, viewModel, child) {
@@ -160,7 +164,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                 child: CustomUnderlinedButton(
                                   text: '더보기',
                                   onTap: () {
-                                    viewModel.txModel?.viewMoreInput();
+                                    viewModel.txModel.viewMoreInput();
                                   },
                                   fontSize: 12,
                                   lineHeight: 14,
@@ -217,7 +221,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                 child: CustomUnderlinedButton(
                                   text: '더보기',
                                   onTap: () {
-                                    viewModel.txModel?.viewMoreOutput();
+                                    viewModel.txModel.viewMoreOutput();
                                   },
                                   fontSize: 12,
                                   lineHeight: 14,
@@ -265,8 +269,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                   originalMemo:
                                       viewModel.transaction!.memo ?? '',
                                   onComplete: (memo) {
-                                    if (!viewModel
-                                        .updateTransactionMemo(memo)) {
+                                    if (!viewModel.txModel
+                                        .updateTransactionMemo(
+                                            widget.id, widget.txHash, memo)) {
                                       CustomToast.showWarningToast(
                                         context: context,
                                         text: '메모 업데이트에 실패 했습니다.',
