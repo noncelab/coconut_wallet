@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 

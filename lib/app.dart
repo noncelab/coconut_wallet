@@ -2,6 +2,7 @@ import 'package:coconut_wallet/appGuard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -29,7 +30,6 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_multisig_info_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_singlesig_info_screen.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/providers/app_state_model.dart';
@@ -81,6 +81,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         /// main 에서만 사용하는 모델
         if (_screenStatus == AccessFlow.main) ...{
           ChangeNotifierProvider(create: (_) => PreferenceProvider()),
+          Provider(create: (_) => SendInfoProvider()),
           ChangeNotifierProxyProvider3<ConnectivityProvider, VisibilityProvider,
               AuthProvider, WalletProvider>(
             create: (_) {
@@ -228,17 +229,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               ),
           '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
                 context,
-                (args) => UnsignedTransactionQrScreen(id: args['id']),
+                (args) =>
+                    UnsignedTransactionQrScreen(walletName: args['walletName']),
               ),
-          '/signed-psbt-scanner': (context) => buildScreenWithArguments(
-                context,
-                (args) => SignedPsbtScannerScreen(id: args['id']),
-              ),
-          '/broadcasting': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: BroadcastingScreen(id: args['id'])),
-              ),
+          '/signed-psbt-scanner': (context) => const SignedPsbtScannerScreen(),
+          '/broadcasting': (context) =>
+              const CustomLoadingOverlay(child: BroadcastingScreen()),
           '/broadcasting-complete': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
@@ -250,17 +246,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (args) => CustomLoadingOverlay(
                     child: SendAddressScreen(id: args['id'])),
               ),
-          '/send-amount': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: SendAmountScreen(
-                        id: args['id'], recipient: args['recipient'])),
-              ),
-          '/fee-selection': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: SendFeeSelectionScreen(
-                        id: args['id'], sendInfo: args['sendInfo'])),
+          '/send-amount': (context) => const SendAmountScreen(),
+          '/fee-selection': (context) => const CustomLoadingOverlay(
+                child: SendFeeSelectionScreen(),
               ),
           '/utxo-selection': (context) => buildScreenWithArguments(
                 context,
@@ -268,12 +256,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     child: SendUtxoSelectionScreen(
                         id: args['id'], sendInfo: args['sendInfo'])),
               ),
-          '/send-confirm': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: SendConfirmScreen(
-                        id: args['id'], sendInfo: args['fullSendInfo'])),
-              ),
+          '/send-confirm': (context) =>
+              const CustomLoadingOverlay(child: SendConfirmScreen()),
           '/utxo-detail': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
