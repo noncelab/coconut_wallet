@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart';
 class BroadcastingViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
+  late final UtxoTagProvider _tagProvider;
   late final WalletBase _walletBase;
   late final int _walletId;
   late bool? _isNetworkOn;
@@ -21,7 +23,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   late int? _bitcoinPriceKrw;
 
   BroadcastingViewModel(this._sendInfoProvider, this._walletProvider,
-      this._isNetworkOn, this._bitcoinPriceKrw) {
+      this._tagProvider, this._isNetworkOn, this._bitcoinPriceKrw) {
     _walletBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
@@ -49,6 +51,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   int? get totalAmount => _totalAmount;
   AddressType get walletAddressType => _walletBase.addressType;
   int get walletId => _walletId;
+
+  UtxoTagProvider get tagProvider => _tagProvider;
 
   Future<Result<String, CoconutError>> broadcast(Transaction signedTx) async {
     return await _walletProvider.broadcast(signedTx);
@@ -123,5 +127,10 @@ class BroadcastingViewModel extends ChangeNotifier {
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<void> updateTagsOfUsedUtxos(String signedTx) async {
+    await _tagProvider.updateTagsOfUsedUtxos(
+        _walletId, signedTx, _outputIndexesToMyAddress);
   }
 }
