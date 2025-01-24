@@ -1,8 +1,8 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/recommend_fee_service.dart';
 
-Future<RecommendedFee?> fetchRecommendedFees(AppStateModel model) async {
+Future<RecommendedFee?> fetchRecommendedFees(WalletProvider model) async {
   try {
     RecommendedFee recommendedFee = await RecommendFeeService.getRecommendFee();
 

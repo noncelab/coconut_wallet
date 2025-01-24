@@ -143,12 +143,14 @@ class UtxoTagProvider extends ChangeNotifier {
     _tagsMoveAllowed = false;
   }
 
-  void allowTagToMove() {
-    _tagsMoveAllowed = true;
-  }
+  // void allowTagToMove() {
+  //   _tagsMoveAllowed = true;
+  // }
 
-  void recordUsedUtxoIdListWhenSend(List<String> utxoIdList) {
+  void recordUsedUtxoIdListWhenSend(
+      List<String> utxoIdList, bool tagsMoveAllowed) {
     _usedUtxoIdListWhenSend = utxoIdList;
+    _tagsMoveAllowed = tagsMoveAllowed;
   }
 
   List<UtxoTag> loadSelectedUtxoTagList(int walletId, String utxoId) {
