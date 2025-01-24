@@ -6,7 +6,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
@@ -14,6 +13,7 @@ import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_tooltip.dart';
 import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -31,6 +31,7 @@ class WalletInfoScreen extends StatefulWidget {
 
 class _WalletInfoScreenState extends State<WalletInfoScreen> {
   final GlobalKey _walletTooltipKey = GlobalKey();
+  static const int kTooltipDuration = 5;
   RenderBox? _walletTooltipIconRenderBox;
   Offset _walletTooltipIconPosition = Offset.zero;
   double _tooltipTopPadding = 0;
@@ -51,8 +52,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           return Scaffold(
             backgroundColor: MyColors.black,
             appBar: CustomAppBar.build(
-                title:
-                    '${widget.isMultisig ? viewModel.multisigItem.name : viewModel.singlesigItem.name} 정보',
+                title: '${viewModel.walletName} 정보',
                 context: context,
                 hasRightIcon: false,
                 onBackPressed: () {
@@ -69,14 +69,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           padding: const EdgeInsets.only(
                               top: 20, left: 16, right: 16),
                           child: WalletInfoItemCard(
-                            walletItem: widget.isMultisig
-                                ? viewModel.multisigItem
-                                : viewModel.singlesigItem,
+                            walletItem: viewModel.walletItemBase,
                             onTooltipClicked: () {
                               _removeTooltip();
 
                               setState(() {
-                                _tooltipRemainingTime = 5;
+                                _tooltipRemainingTime = kTooltipDuration;
                               });
 
                               _tooltipTimer = Timer.periodic(
@@ -102,16 +100,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               shrinkWrap: true,
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: viewModel.multisigItem.signers.length,
+                              itemCount: viewModel.multisigTotalSignerCount,
                               separatorBuilder: (context, index) =>
                                   const SizedBox(height: 8),
                               itemBuilder: (context, index) {
                                 return MultisigSignerCard(
-                                  index: index,
-                                  signer: viewModel.multisigItem.signers[index],
-                                  masterFingerprint: viewModel
-                                      .keystoreList[index].masterFingerprint,
-                                );
+                                    index: index,
+                                    signer: viewModel.getSigner(index), //,
+                                    masterFingerprint: viewModel
+                                        .getSignerMasterFingerprint(index));
                               },
                             ),
                           ),
@@ -162,10 +159,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                                 context: context,
                                                 child: QrcodeBottomSheet(
                                                     qrData: viewModel
-                                                        .singlesigWallet
-                                                        .keyStore
-                                                        .extendedPublicKey
-                                                        .serialize(),
+                                                        .extendedPublicKey,
                                                     title: '확장 공개키'),
                                               );
                                             },
@@ -176,9 +170,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       CommonBottomSheets.showBottomSheet_90(
                                         context: context,
                                         child: QrcodeBottomSheet(
-                                          qrData: viewModel.singlesigWallet
-                                              .keyStore.extendedPublicKey
-                                              .serialize(),
+                                          qrData: viewModel.extendedPublicKey,
                                           title: '확장 공개키',
                                         ),
                                       );
@@ -282,48 +274,20 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                         ),
                       ],
                     ),
-                    Visibility(
-                      visible: _tooltipRemainingTime > 0,
-                      child: Positioned(
-                        top: _walletTooltipIconPosition.dy - _tooltipTopPadding,
-                        right: MediaQuery.of(context).size.width -
-                            _walletTooltipIconPosition.dx -
-                            (_walletTooltipIconRenderBox == null
-                                ? 0
-                                : _walletTooltipIconRenderBox!.size.width) -
-                            10,
-                        child: GestureDetector(
-                          onTap: () => _removeTooltip(),
-                          child: ClipPath(
-                            clipper: RightTriangleBubbleClipper(),
-                            child: Container(
-                              padding: const EdgeInsets.only(
-                                top: 25,
-                                left: 10,
-                                right: 10,
-                                bottom: 10,
-                              ),
-                              color: MyColors.white,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    widget.isMultisig
-                                        ? '${viewModel.multisigItem.signers.length}개의 키 중 ${viewModel.multisigItem.requiredSignatureCount}개로 서명해야 하는\n다중 서명 지갑이에요.'
-                                        : '지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요.',
-                                    style: Styles.caption.merge(TextStyle(
-                                      height: 1.3,
-                                      fontFamily:
-                                          CustomFonts.text.getFontFamily,
-                                      color: MyColors.darkgrey,
-                                    )),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    CustomTooltip(
+                      top: _walletTooltipIconPosition.dy - _tooltipTopPadding,
+                      right: MediaQuery.of(context).size.width -
+                          _walletTooltipIconPosition.dx -
+                          (_walletTooltipIconRenderBox == null
+                              ? 0
+                              : _walletTooltipIconRenderBox!.size.width) -
+                          10,
+                      text: widget.isMultisig
+                          ? '${viewModel.multisigTotalSignerCount}개의 키 중 ${viewModel.multisigRequiredSignerCount}개로 서명해야 하는\n다중 서명 지갑이에요.'
+                          : '지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요.',
+                      onTap: _removeTooltip,
+                      topPadding: _tooltipTopPadding,
+                      isVisible: _tooltipRemainingTime > 0,
                     ),
                   ],
                 ),
@@ -344,15 +308,25 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _walletTooltipIconRenderBox =
-          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox;
-      _walletTooltipIconPosition =
-          _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
-      _tooltipTopPadding =
-          MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
+      _initializeTooltipPosition();
     });
+  }
+
+  void _initializeTooltipPosition() {
+    try {
+      _walletTooltipIconRenderBox =
+          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox?;
+      if (_walletTooltipIconRenderBox != null) {
+        _walletTooltipIconPosition =
+            _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
+        _tooltipTopPadding =
+            MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
+      }
+    } catch (e) {
+      debugPrint('Tooltip position initialization failed: $e');
+      _walletTooltipIconPosition = Offset.zero;
+    }
   }
 
   _removeTooltip() {
