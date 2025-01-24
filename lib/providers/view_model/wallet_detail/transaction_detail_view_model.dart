@@ -30,9 +30,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
   ValueNotifier<bool> get loadCompletedNotifier => _loadCompletedNotifier;
 
   void updateProvider(WalletProvider walletModel) {
-    // addressBook 설정 이후 txModel 변경 감지
-    if (_addressBook != null) notifyListeners();
-
     if (walletModel.walletItemList.isNotEmpty && _addressBook == null) {
       _addressBook =
           walletModel.getWalletById(_walletId).walletBase.addressBook;
@@ -40,9 +37,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
       _txModel.initTransaction(_walletId, _txHash);
       if (_txModel.initViewMoreButtons() == false) {
         _showDialogNotifier.value = true;
-        notifyListeners();
       }
     }
+    notifyListeners();
   }
 
   void _setCurrentBlockHeight(WalletProvider walletProvider) async {
