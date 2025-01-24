@@ -218,7 +218,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
       _isProcessing = true;
 
       _viewModel.validateAddress(scanData.code!).then((_) {
-        _viewModel.saveWalletIdAndReceipientAddress(widget.id, scanData.code!);
+        _viewModel.saveWalletIdAndRecipientAddress(widget.id, scanData.code!);
         if (_viewModel.isNetworkOn) {
           _goNext();
         } else {
@@ -237,7 +237,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     if (_viewModel.address == null) return;
 
     if (_viewModel.isNetworkOn) {
-      _viewModel.saveWalletIdAndReceipientAddress(
+      _viewModel.saveWalletIdAndRecipientAddress(
           widget.id, _viewModel.address!);
       _goNext();
     } else {

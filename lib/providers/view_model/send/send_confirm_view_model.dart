@@ -16,7 +16,7 @@ class SendConfirmViewModel extends ChangeNotifier {
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
   }
 
-  String get address => _sendInfoProvider.receipientAddress!;
+  String get address => _sendInfoProvider.recipientAddress!;
   double get amount => _sendInfoProvider.amount!;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get estimatedFee => _sendInfoProvider.estimatedFee;
@@ -34,10 +34,10 @@ class SendConfirmViewModel extends ChangeNotifier {
     if (_sendInfoProvider.isMaxMode!) {
       generatedTx = await _walletListItemBase.walletFeature
           .generatePsbtWithMaximum(
-              _sendInfoProvider.receipientAddress!, _sendInfoProvider.feeRate!);
+              _sendInfoProvider.recipientAddress!, _sendInfoProvider.feeRate!);
     } else {
       generatedTx = await _walletListItemBase.walletFeature.generatePsbt(
-          _sendInfoProvider.receipientAddress!,
+          _sendInfoProvider.recipientAddress!,
           UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
           _sendInfoProvider.feeRate!);
     }

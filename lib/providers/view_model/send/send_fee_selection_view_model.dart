@@ -35,7 +35,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     _amount = _sendInfoProvider.amount!;
     _isMaxMode = _confirmedBalance ==
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
-    _recipientAddress = _sendInfoProvider.receipientAddress!;
+    _recipientAddress = _sendInfoProvider.recipientAddress!;
     _isNetworkOn = isNetworkOn;
 
     _updateSendInfoProvider(_isMultisigWallet, _isMaxMode);

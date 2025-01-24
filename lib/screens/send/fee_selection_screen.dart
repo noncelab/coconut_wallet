@@ -43,7 +43,7 @@ class FeeSelectionScreen extends StatefulWidget {
 }
 
 class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
-  final maxFeeLimit = 1000000;
+  static const int kMaxFeeLimit = 1000000;
   late int? _estimatedFee;
   bool? _isNetworkOn;
   int? _customSatsPerVb;
@@ -70,7 +70,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                   isActive: (isNetworkOn ?? false) &&
                       _estimatedFee != null &&
                       _estimatedFee != 0 &&
-                      _estimatedFee! < maxFeeLimit,
+                      _estimatedFee! < kMaxFeeLimit,
                   onBackPressed: () {
                     Navigator.pop(context);
                   },
@@ -134,12 +134,12 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                   text: '추천 수수료를 조회하지 못했어요. 수수료를 직접 입력해 주세요.')),
                           showIcon: true,
                           type: TooltipType.error),
-                    if (_estimatedFee != null && _estimatedFee! >= maxFeeLimit)
+                    if (_estimatedFee != null && _estimatedFee! >= kMaxFeeLimit)
                       CustomTooltip(
                           richText: RichText(
                               text: TextSpan(
                                   text:
-                                      '설정하신 수수료가 ${UnitUtil.satoshiToBitcoin(maxFeeLimit)}BTC 이상이에요.')),
+                                      '설정하신 수수료가 ${UnitUtil.satoshiToBitcoin(kMaxFeeLimit)}BTC 이상이에요.')),
                           showIcon: true,
                           type: TooltipType.warning),
 
