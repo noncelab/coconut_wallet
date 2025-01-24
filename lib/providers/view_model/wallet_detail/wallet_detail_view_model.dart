@@ -6,9 +6,10 @@ import 'package:coconut_wallet/model/api/response/faucet_response.dart';
 import 'package:coconut_wallet/model/api/response/faucet_status_response.dart';
 import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart'
-    hide WalletInitState;
+import 'package:coconut_wallet/providers/transaction_provider.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/converter/transaction.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
@@ -21,14 +22,14 @@ import 'package:flutter/cupertino.dart';
 class WalletDetailViewModel extends ChangeNotifier {
   static const int kMaxFaucetRequestCount = 3;
   final int _walletId;
+  final WalletProvider _walletProvider;
+  final TransactionProvider _txProvider;
+  final UtxoTagProvider _tagProvider;
 
-  /// Common variables ---------------------------------------------------------
-  AppStateModel? _appStateModel;
-
-  WalletProvider? _walletProvider;
   final SharedPrefs _sharedPrefs = SharedPrefs();
 
-  /// Wallet detail variables --------------------------------------------------
+  List<model.UTXO> _utxoList = [];
+
   WalletListItemBase? _walletListBaseItem;
   late WalletFeature _walletFeature;
   WalletType _walletType = WalletType.singleSignature;
@@ -41,16 +42,12 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool _isUtxoListLoadComplete = false;
   int? _prevTxCount;
 
-  List<TransferDTO> _txList = [];
-  List<model.UTXO> _utxoList = [];
-
   UtxoOrderEnum _selectedUtxoOrder = UtxoOrderEnum.byTimestampDesc;
   bool _faucetTooltipVisible = false;
 
-  /// Faucet variables ---------------------------------------------------------
+  /// Faucet
   final Faucet _faucetService = Faucet();
   late AddressBook _walletAddressBook;
-
   late FaucetRecord _faucetRecord;
 
   String _walletAddress = '';
@@ -68,8 +65,47 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   bool _isFaucetRequestLimitExceeded = false; // Faucet 요청가능 횟수 초과 여부
   bool _isRequesting = false;
-  WalletDetailViewModel(this._walletId);
-  AppStateModel? get appStateModel => _appStateModel;
+
+  WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
+      this._tagProvider) {
+    // 지갑 상세 초기화
+    _prevWalletInitState = _walletProvider.walletInitState;
+    _walletInitState = _walletProvider.walletInitState;
+    final walletBaseItem = _walletProvider.getWalletById(_walletId);
+    _walletListBaseItem = walletBaseItem;
+    _walletFeature = walletBaseItem.walletFeature;
+
+    _prevTxCount = walletBaseItem.txCount;
+    _prevIsLatestTxBlockHeightZero = walletBaseItem.isLatestTxBlockHeightZero;
+    _walletType = walletBaseItem.walletType;
+
+    if (_walletProvider.walletInitState == WalletInitState.finished) {
+      getUtxoListWithHoldingAddress();
+    }
+
+    _txProvider.initTxList(_walletId);
+
+    // Faucet
+    Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
+    _walletAddress = receiveAddress.address;
+    _derivationPath = receiveAddress.derivationPath;
+    _walletName = walletBaseItem.name.length > 20
+        ? '${walletBaseItem.name.substring(0, 17)}...'
+        : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
+    _receiveAddressIndex = receiveAddress.derivationPath.split('/').last;
+    _walletAddressBook = walletBaseItem.walletBase.addressBook;
+    _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
+    _checkFaucetRecord();
+    _getFaucetStatus();
+
+    showFaucetTooltip();
+  }
+
+  List<TransferDTO> get txList => _txProvider.txList;
+  bool get isUpdatedTagList => _tagProvider.isUpdatedTagList;
+  List<UtxoTag> get selectedTagList => _tagProvider.selectedTagList;
+
+  List<model.UTXO> get utxoList => _utxoList;
 
   String get derivationPath => _derivationPath;
   bool get faucetTooltipVisible => _faucetTooltipVisible;
@@ -83,9 +119,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   double get requestAmount => _requestAmount;
   UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
 
-  List<TransferDTO> get txList => _txList;
-  List<model.UTXO> get utxoList => _utxoList;
-
   String get walletAddress => _walletAddress;
 
   AddressBook get walletAddressBook => _walletAddressBook;
@@ -97,15 +130,37 @@ class WalletDetailViewModel extends ChangeNotifier {
   WalletProvider? get walletProvider => _walletProvider;
   WalletType get walletType => _walletType;
 
-  WalletStatus? getInitializedWalletStatus() {
-    try {
-      return _walletFeature.walletStatus;
-    } catch (e) {
-      return null;
+  void updateProvider() async {
+    if (_prevWalletInitState != WalletInitState.finished &&
+        _walletProvider.walletInitState == WalletInitState.finished) {
+      _checkTxCount();
+      getUtxoListWithHoldingAddress();
     }
+    _prevWalletInitState = _walletProvider.walletInitState;
+
+    if (_faucetRecord.count >= kMaxFaucetRequestCount) {
+      _isFaucetRequestLimitExceeded =
+          _faucetRecord.count >= kMaxFaucetRequestCount;
+    }
+
+    try {
+      final WalletListItemBase walletListItemBase =
+          _walletProvider.getWalletById(_walletId);
+      _walletAddress =
+          walletListItemBase.walletBase.getReceiveAddress().address;
+
+      /// 다음 Faucet 요청 수량 계산 1 -> 0.00021 -> 0.00021
+      _requestCount = _faucetRecord.count;
+      if (_requestCount == 0) {
+        _requestAmount = _faucetMaxAmount;
+      } else if (_requestCount <= 2) {
+        _requestAmount = _faucetMinAmount;
+      }
+    } catch (e) {}
+
+    notifyListeners();
   }
 
-  /// Wallet detail methods ----------------------------------------------------
   void getUtxoListWithHoldingAddress() {
     List<model.UTXO> utxos = [];
 
@@ -118,8 +173,8 @@ class WalletDetailViewModel extends ChangeNotifier {
                     _walletType, utxo.derivationPath) ==
                 1);
 
-        final tags = _appStateModel?.loadUtxoTagListByTxHashIndex(
-            _walletId, utxo.utxoId);
+        final tags =
+            _tagProvider.loadSelectedUtxoTagList(_walletId, utxo.utxoId);
 
         utxos.add(model.UTXO(
           utxo.timestamp.toString(),
@@ -139,72 +194,18 @@ class WalletDetailViewModel extends ChangeNotifier {
     model.UTXO.sortUTXO(_utxoList, _selectedUtxoOrder);
   }
 
-  /// Common Methods -----------------------------------------------------------
-  void providerListener(
-      AppStateModel appStateModel, WalletProvider walletProvider) async {
-    // initialize
-    if (_appStateModel == null || _walletProvider == null) {
-      // TODO: Tag 관련 Provider 완료 후 appStateModel 삭제 필요
-      _appStateModel ??= appStateModel;
-      _walletProvider ??= walletProvider;
-      _prevWalletInitState = walletProvider.walletInitState;
-      _walletInitState = walletProvider.walletInitState;
-      final walletBaseItem = walletProvider.getWalletById(_walletId);
-      _walletListBaseItem = walletBaseItem;
-      _walletFeature = walletBaseItem.walletFeature;
-      // debugPrint('wwwwwwwww: ${_walletFeature.walletStatus}');
-      _prevTxCount = walletBaseItem.txCount;
-      _prevIsLatestTxBlockHeightZero = walletBaseItem.isLatestTxBlockHeightZero;
-      _walletType = walletBaseItem.walletType;
-      if (walletProvider.walletInitState == WalletInitState.finished) {
-        getUtxoListWithHoldingAddress();
-      }
-      _txList = walletProvider.getTxList(_walletId) ?? [];
+  void updateUtxoTagList(String utxoId, List<UtxoTag> utxoTagList) {
+    final findUtxo = utxoList.firstWhere((item) => item.utxoId == utxoId);
+    findUtxo.tags?.clear();
+    findUtxo.tags?.addAll(utxoTagList);
+    notifyListeners();
+  }
 
-      /// Faucet
-      Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
-      _walletAddress = receiveAddress.address;
-      _derivationPath = receiveAddress.derivationPath;
-      _walletName = walletBaseItem.name.length > 20
-          ? '${walletBaseItem.name.substring(0, 17)}...'
-          : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
-      _receiveAddressIndex = receiveAddress.derivationPath.split('/').last;
-      _walletAddressBook = walletBaseItem.walletBase.addressBook;
-      _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-      _checkFaucetRecord();
-      _getFaucetStatus();
-
-      showFaucetTooltip();
-    }
-    // _stateListener
-    else {
-      if (_prevWalletInitState != WalletInitState.finished &&
-          walletProvider.walletInitState == WalletInitState.finished) {
-        _checkTxCount();
-        getUtxoListWithHoldingAddress();
-      }
-      _prevWalletInitState = walletProvider.walletInitState;
-
-      if (_faucetRecord.count >= kMaxFaucetRequestCount) {
-        _isFaucetRequestLimitExceeded =
-            _faucetRecord.count >= kMaxFaucetRequestCount;
-      }
-
-      try {
-        final WalletListItemBase walletListItemBase =
-            walletProvider.getWalletById(_walletId);
-        _walletAddress =
-            walletListItemBase.walletBase.getReceiveAddress().address;
-
-        /// 다음 Faucet 요청 수량 계산 1 -> 0.00021 -> 0.00021
-        _requestCount = _faucetRecord.count;
-        if (_requestCount == 0) {
-          _requestAmount = _faucetMaxAmount;
-        } else if (_requestCount <= 2) {
-          _requestAmount = _faucetMinAmount;
-        }
-        notifyListeners();
-      } catch (e) {}
+  WalletStatus? getInitializedWalletStatus() {
+    try {
+      return _walletFeature.walletStatus;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -239,7 +240,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
   }
 
-  /// Faucet methods -----------------------------------------------------------
+  /// Faucet methods
   void showFaucetTooltip() async {
     final faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     if (_walletListBaseItem!.balance == 0 && faucetHistory.count < 3) {
@@ -280,10 +281,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     /// _walletListItem의 txCount, isLatestTxBlockHeightZero가 변경되었을 때만 트랜잭션 목록 업데이트
     if (_prevTxCount != txCount ||
         _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
-      List<TransferDTO>? newTxList = _walletProvider?.getTxList(_walletId);
-      if (newTxList != null) {
-        _txList = newTxList;
-      }
+      _txProvider.initTxList(_walletId);
     }
     _prevTxCount = txCount;
     _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;

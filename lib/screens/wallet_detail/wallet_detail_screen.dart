@@ -4,10 +4,10 @@ import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
-import 'package:coconut_wallet/providers/app_state_model.dart'
-    hide WalletInitState;
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -73,20 +73,29 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   bool _isPullToRefreshing = false;
   Unit _currentUnit = Unit.btc;
 
-  WalletDetailViewModel? viewModel;
+  late WalletDetailViewModel _viewModel;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<WalletProvider, AppStateModel,
+    return ChangeNotifierProxyProvider2<WalletProvider, TransactionProvider,
         WalletDetailViewModel>(
-      create: (_) => WalletDetailViewModel(widget.id),
-      update: (_, walletProvider, appStateModel, viewModel) {
+      create: (_) {
+        _viewModel = WalletDetailViewModel(
+          widget.id,
+          Provider.of<WalletProvider>(_, listen: false),
+          Provider.of<TransactionProvider>(_, listen: false),
+          Provider.of<UtxoTagProvider>(_, listen: false),
+        );
+
+        return _viewModel;
+      },
+      update: (_, walletProvider, txProvider, viewModel) {
         _updateFilterDropdownButtonRenderBox();
-        return viewModel!..providerListener(appStateModel, walletProvider);
+
+        return viewModel!..updateProvider();
       },
       child: Consumer<WalletDetailViewModel>(
         builder: (context, viewModel, child) {
-          this.viewModel ??= viewModel;
           return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, _) {
@@ -168,10 +177,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                               arguments: {'id': widget.id});
                         }
 
-                        if (viewModel.appStateModel?.isUpdatedSelectedTagList ==
-                            true) {
-                          viewModel.appStateModel
-                              ?.setIsUpdateSelectedTagList(false);
+                        if (viewModel.isUpdatedTagList) {
                           viewModel.getUtxoListWithHoldingAddress();
                         }
                       },
@@ -284,28 +290,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                               viewModel.removeFaucetTooltip();
                             },
                             popFromUtxoDetail: (resultUtxo) {
-                              if (viewModel.appStateModel
-                                      ?.isUpdatedSelectedTagList ==
-                                  true) {
-                                viewModel.appStateModel
-                                    ?.setIsUpdateSelectedTagList(false);
-                                for (var utxo in viewModel.utxoList) {
-                                  if (utxo.utxoId == resultUtxo.utxoId) {
-                                    utxo.tags?.clear();
-                                    utxo.tags?.addAll(viewModel
-                                            .appStateModel?.selectedTagList ??
-                                        []);
-                                    setState(() {});
-                                    break;
-                                  }
-                                }
+                              if (viewModel.isUpdatedTagList) {
+                                viewModel.updateUtxoTagList(resultUtxo.utxoId,
+                                    viewModel.selectedTagList);
                               }
                             },
                           ),
                         ),
                         SliverToBoxAdapter(
                           child: SizedBox(
-                            height: _listBottomMarginHeight(viewModel),
+                            height: _listBottomMarginHeight(),
                           ),
                         ),
                       ],
@@ -418,7 +412,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             positionedTopWidgetSize.height;
       });
 
-      if (viewModel?.txList.isNotEmpty == true) {
+      if (_viewModel.txList.isNotEmpty == true) {
         final RenderBox txSliverListRenderBox =
             _txSliverListKey.currentContext?.findRenderObject() as RenderBox;
         _txSliverListSize = txSliverListRenderBox.size;
@@ -436,7 +430,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               _isHeaderDropdownVisible = false;
             });
             if (_stickyHeaderRenderBox == null &&
-                viewModel?.utxoList.isNotEmpty == true &&
+                _viewModel.utxoList.isNotEmpty == true &&
                 _selectedListType == WalletDetailTabType.utxo) {
               _stickyHeaderRenderBox = _stickyHeaderWidgetKey.currentContext
                   ?.findRenderObject() as RenderBox;
@@ -479,7 +473,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       return false;
     }
 
-    if (viewModel?.walletProvider?.walletInitState ==
+    if (_viewModel.walletProvider?.walletInitState ==
         WalletInitState.processing) {
       CustomToast.showToast(
           context: context, text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
@@ -493,14 +487,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return _selectedListType == WalletDetailTabType.transaction;
   }
 
-  double _listBottomMarginHeight(WalletDetailViewModel viewModel) {
+  double _listBottomMarginHeight() {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final availableHeight = screenHeight - _topPadding;
     if (_selectedListType == WalletDetailTabType.transaction &&
-        viewModel.txList.isNotEmpty) {
+        _viewModel.txList.isNotEmpty) {
       if (_stickyHeaderVisible) return 0;
       final totalHeight =
-          _txSliverListSize.height * viewModel.txList.length + 80;
+          _txSliverListSize.height * _viewModel.txList.length + 80;
       if (totalHeight > availableHeight) return 0;
       final remainingHeight = availableHeight -
           totalHeight -
@@ -512,11 +506,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
 
     if (_selectedListType == WalletDetailTabType.utxo &&
-        viewModel.utxoList.isNotEmpty) {
+        _viewModel.utxoList.isNotEmpty) {
       if (_stickyHeaderVisible) return 0;
       final totalHeight =
-          _utxoSliverListSize.height * viewModel.utxoList.length +
-              (12 * (viewModel.utxoList.length - 1));
+          _utxoSliverListSize.height * _viewModel.utxoList.length +
+              (12 * (_viewModel.utxoList.length - 1));
       if (totalHeight > availableHeight) return 0;
       final remainingHeight = availableHeight -
           totalHeight -
