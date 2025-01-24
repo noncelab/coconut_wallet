@@ -13,6 +13,7 @@ class SendAmountViewModel extends ChangeNotifier {
   late String _input;
   late bool _isNextButtonEnabled;
   int? _errorIndex;
+
   SendAmountViewModel(
       this._sendInfoProvider, this._walletProvider, this._isNetworkOn) {
     var wallet = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
@@ -21,6 +22,7 @@ class SendAmountViewModel extends ChangeNotifier {
     _input = '';
     _isNextButtonEnabled = false;
   }
+
   int get confirmedBalance => _confirmedBalance;
   int? get errorIndex => _errorIndex;
   String get input => _input;

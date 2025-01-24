@@ -52,11 +52,6 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   int get unconfirmedBalance => _unconfirmedBalance;
   int get walletId => _walletId;
 
-  void _updateSendInfoProvider(bool isMultisig, bool isMaxMode) {
-    _sendInfoProvider.setIsMultisig(_isMultisigWallet);
-    _sendInfoProvider.setIsMaxMode(_isMaxMode);
-  }
-
   Future<int?> estimateFee(int satsPerVb) async {
     return await _walletListItemBase.walletFeature.estimateFee(
         _recipientAddress, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
@@ -94,18 +89,6 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     }
   }
 
-  setAmount(double amount) {
-    _sendInfoProvider.setAmount(amount);
-  }
-
-  setEstimatedFee(int estimatedFee) {
-    _sendInfoProvider.setEstimatedFee(estimatedFee);
-  }
-
-  setFeeRate(int feeRate) {
-    _sendInfoProvider.setFeeRate(feeRate);
-  }
-
   double getAmount(int estimatedFee) {
     return _isMaxMode
         ? UnitUtil.satoshiToBitcoin(_confirmedBalance - estimatedFee)
@@ -120,13 +103,30 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
         confirmedBalance;
   }
 
-  void setIsNetworkOn(bool? isNetworkOn) {
-    _isNetworkOn = isNetworkOn;
-    notifyListeners();
+  setAmount(double amount) {
+    _sendInfoProvider.setAmount(amount);
   }
 
   void setBitcoinPriceKrw(int price) {
     _bitcoinPriceKrw = price;
     notifyListeners();
+  }
+
+  setEstimatedFee(int estimatedFee) {
+    _sendInfoProvider.setEstimatedFee(estimatedFee);
+  }
+
+  setFeeRate(int feeRate) {
+    _sendInfoProvider.setFeeRate(feeRate);
+  }
+
+  void setIsNetworkOn(bool? isNetworkOn) {
+    _isNetworkOn = isNetworkOn;
+    notifyListeners();
+  }
+
+  void _updateSendInfoProvider(bool isMultisig, bool isMaxMode) {
+    _sendInfoProvider.setIsMultisig(_isMultisigWallet);
+    _sendInfoProvider.setIsMaxMode(_isMaxMode);
   }
 }

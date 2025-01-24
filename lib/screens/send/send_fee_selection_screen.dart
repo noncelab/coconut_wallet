@@ -34,6 +34,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   static const maxFeeLimit =
       1000000; // sats, 사용자가 실수로 너무 큰 금액을 수수료로 지불하지 않도록 지정했습니다.
   final networkOffMessage = '네트워크 상태가 좋지 않아\n처음으로 돌아갑니다.';
+  final TextEditingController _customFeeController = TextEditingController();
   List<FeeInfoWithLevel> feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
     FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
@@ -45,12 +46,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   String? _selectedFeeLevel = TransactionFeeLevel.halfhour.text;
   int? _estimatedFee = 0;
   int? _fiatValue = 0;
-
-  final TextEditingController _customFeeController = TextEditingController();
   FeeInfo? _customFeeInfo;
-
   bool? _isRecommendedFeeFetchSuccess;
-
   late SendFeeSelectionViewModel _viewModel;
 
   @override
@@ -77,7 +74,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
           builder: (context, viewModel, child) {
             if (!viewModel.isNetworkOn) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                showAlertAndGoHome(networkOffMessage);
+                _showAlertAndGoHome(networkOffMessage);
               });
             }
 
@@ -86,7 +83,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                 appBar: CustomAppBar.buildWithNext(
                     title: "수수료",
                     context: context,
-                    isActive: canGoNext(),
+                    isActive: _canGoNext(),
                     onBackPressed: () {
                       Navigator.pop(context);
                     },
@@ -224,7 +221,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                       controller: _customFeeController,
                                       textInputType: TextInputType.number,
                                       onPressed: () {
-                                        handleCustomFeeInput(
+                                        _handleCustomFeeInput(
                                             _customFeeController.text);
                                       });
                                 },
@@ -244,7 +241,29 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         ));
   }
 
-  bool canGoNext() {
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = SendFeeSelectionViewModel(
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<WalletProvider>(context, listen: false),
+        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
+        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_viewModel.isNetworkOn) {
+        _startToSetRecommendedFee();
+      } else {
+        _showAlertAndGoHome(networkOffMessage);
+        return;
+      }
+
+      // TODO:
+      //_model.recordUsedUtxoIdListWhenSend([]);
+    });
+  }
+
+  bool _canGoNext() {
     int? satsPerVb = _customSelected
         ? _customFeeInfo?.satsPerVb
         : feeInfos
@@ -258,7 +277,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         _estimatedFee! < maxFeeLimit;
   }
 
-  void handleCustomFeeInput(String input) async {
+  void _handleCustomFeeInput(String input) async {
     if (input.isEmpty) {
       return;
     }
@@ -298,14 +317,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
       setState(() {
         _customFeeInfo = FeeInfo(satsPerVb: customSatsPerVb);
-        setFeeInfo(_customFeeInfo!, estimatedFee!);
+        _setFeeInfo(_customFeeInfo!, estimatedFee!);
       });
     } catch (error) {
       int? estimatedFee = _handleFeeEstimationError(error as Exception);
       if (estimatedFee != null) {
         setState(() {
           _customFeeInfo = FeeInfo(satsPerVb: customSatsPerVb);
-          setFeeInfo(_customFeeInfo!, estimatedFee);
+          _setFeeInfo(_customFeeInfo!, estimatedFee);
         });
       } else {
         // custom 수수료 조회 실패 알림
@@ -322,28 +341,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     if (mounted) {
       context.loaderOverlay.hide();
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _viewModel = SendFeeSelectionViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
-        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_viewModel.isNetworkOn) {
-        startToSetRecommendedFee();
-      } else {
-        showAlertAndGoHome(networkOffMessage);
-        return;
-      }
-
-      // TODO:
-      //_model.recordUsedUtxoIdListWhenSend([]);
-    });
   }
 
   int? _handleFeeEstimationError(Exception e) {
@@ -370,7 +367,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     return null;
   }
 
-  void setFeeInfo(FeeInfo feeInfo, int estimatedFee) {
+  void _setFeeInfo(FeeInfo feeInfo, int estimatedFee) {
     feeInfo.estimatedFee = estimatedFee;
     feeInfo.fiatValue = _viewModel.bitcoinPriceKrw != null
         ? FiatUtil.calculateFiatAmount(
@@ -391,7 +388,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     }
   }
 
-  Future<void> setRecommendedFees() async {
+  Future<void> _setRecommendedFees() async {
     var recommendedFees = await _viewModel.fetchRecommendedFees();
     if (recommendedFees == null) {
       setState(() {
@@ -416,13 +413,13 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
           estimatedFee = await _viewModel.estimateFee(feeInfo.satsPerVb!);
         }
         setState(() {
-          setFeeInfo(feeInfo, estimatedFee!);
+          _setFeeInfo(feeInfo, estimatedFee!);
         });
       } catch (error) {
         int? estimatedFee = _handleFeeEstimationError(error as Exception);
         if (estimatedFee != null) {
           setState(() {
-            setFeeInfo(feeInfo, estimatedFee);
+            _setFeeInfo(feeInfo, estimatedFee);
           });
         } else {
           _isRecommendedFeeFetchSuccess = false;
@@ -439,7 +436,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     }
   }
 
-  void showAlertAndGoHome(String message) {
+  void _showAlertAndGoHome(String message) {
     if (context.loaderOverlay.visible) {
       context.loaderOverlay.hide();
     }
@@ -464,9 +461,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         });
   }
 
-  Future<void> startToSetRecommendedFee() async {
+  Future<void> _startToSetRecommendedFee() async {
     context.loaderOverlay.show();
-    await setRecommendedFees();
+    await _setRecommendedFees();
     if (mounted) {
       context.loaderOverlay.hide();
     }

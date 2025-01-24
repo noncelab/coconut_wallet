@@ -10,17 +10,17 @@ class SendConfirmViewModel extends ChangeNotifier {
   late WalletListItemBase _walletListItemBase;
   late int? _bitcoinPriceKrw;
 
-  double get amount => _sendInfoProvider.amount!;
-  String get address => _sendInfoProvider.receipientAddress!;
-  int? get estimatedFee => _sendInfoProvider.estimatedFee;
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
-  String get walletName => _walletListItemBase.name;
-
   SendConfirmViewModel(
       this._sendInfoProvider, this._walletProvider, this._bitcoinPriceKrw) {
     _walletListItemBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
   }
+
+  String get address => _sendInfoProvider.receipientAddress!;
+  double get amount => _sendInfoProvider.amount!;
+  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
+  int? get estimatedFee => _sendInfoProvider.estimatedFee;
+  String get walletName => _walletListItemBase.name;
 
   Future<String> generateUnsignedPsbt() async {
     // utxo selection

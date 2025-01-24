@@ -1,17 +1,17 @@
 import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_address_view_model.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
@@ -30,45 +30,6 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   QRViewController? controller;
   bool _isProcessing = false;
   late SendAddressViewModel _viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewModel = SendAddressViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
-    _viewModel.loadData();
-    _viewModel.clearSendInfoProvider();
-  }
-
-  Future<void> _stopCamera() async {
-    if (controller != null) {
-      try {
-        await controller?.pauseCamera();
-        Logger.log('Camera paused successfully');
-      } catch (e) {
-        Logger.log('Failed to pause camera: $e');
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
-  }
-
-  // In order to get hot reload to work we need to pause the camera if the platform
-  // is android, or resume the camera if the platform is iOS.
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (Platform.isAndroid) {
-      controller?.pauseCamera();
-    } else if (Platform.isIOS) {
-      controller?.resumeCamera();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,6 +133,34 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     );
   }
 
+  @override
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = SendAddressViewModel(
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
+    _viewModel.loadData();
+    _viewModel.clearSendInfoProvider();
+  }
+
+  // In order to get hot reload to work we need to pause the camera if the platform
+  // is android, or resume the camera if the platform is iOS.
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (Platform.isAndroid) {
+      controller?.pauseCamera();
+    } else if (Platform.isIOS) {
+      controller?.resumeCamera();
+    }
+  }
+
   Widget _buildQrView(BuildContext context) {
     return QRView(
       key: qrKey,
@@ -217,6 +206,17 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
       _validateAddress(scanData.code);
     });
+  }
+
+  Future<void> _stopCamera() async {
+    if (controller != null) {
+      try {
+        await controller?.pauseCamera();
+        Logger.log('Camera paused successfully');
+      } catch (e) {
+        Logger.log('Failed to pause camera: $e');
+      }
+    }
   }
 
   void _validateAddress(String? recipient) async {

@@ -29,6 +29,16 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   String? get address => _address;
   int? get amount => _amount;
+  int? get amountValueInKrw {
+    if (_bitcoinPriceKrw == null || _amount == null) return null;
+    return FiatUtil.calculateFiatAmount(
+        sendingAmountWhenAddressIsMyChange != null
+            ? sendingAmountWhenAddressIsMyChange!
+            : amount!,
+        _bitcoinPriceKrw!);
+  }
+
+  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get fee => _fee;
   bool get isInitDone => _isInitDone;
   bool get isNetworkOn => _isNetworkOn == true;
@@ -39,15 +49,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   int? get totalAmount => _totalAmount;
   AddressType get walletAddressType => _walletBase.addressType;
   int get walletId => _walletId;
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
-  int? get amountValueInKrw {
-    if (_bitcoinPriceKrw == null || _amount == null) return null;
-    return FiatUtil.calculateFiatAmount(
-        sendingAmountWhenAddressIsMyChange != null
-            ? sendingAmountWhenAddressIsMyChange!
-            : amount!,
-        _bitcoinPriceKrw!);
-  }
 
   Future<Result<String, CoconutError>> broadcast(Transaction signedTx) async {
     return await _walletProvider.broadcast(signedTx);
@@ -55,6 +56,11 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   void clearSendInfo() {
     _sendInfoProvider.clear();
+  }
+
+  void setBitcoinPriceKrw(int bitcoinPriceKrw) {
+    _bitcoinPriceKrw = bitcoinPriceKrw;
+    notifyListeners();
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
@@ -117,10 +123,5 @@ class BroadcastingViewModel extends ChangeNotifier {
     } catch (e) {
       rethrow;
     }
-  }
-
-  void setBitcoinPriceKrw(int bitcoinPriceKrw) {
-    _bitcoinPriceKrw = bitcoinPriceKrw;
-    notifyListeners();
   }
 }

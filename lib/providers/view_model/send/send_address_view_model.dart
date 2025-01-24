@@ -7,20 +7,11 @@ class SendAddressViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late bool? _isNetworkOn;
   String? _address;
-  String? get address => _address;
-
   SendAddressViewModel(this._sendInfoProvider, this._isNetworkOn);
 
+  String? get address => _address;
+
   bool get isNetworkOn => _isNetworkOn == true;
-
-  saveWalletIdAndReceipientAddress(int id, String address) {
-    _sendInfoProvider.setWalletId(id);
-    _sendInfoProvider.setReceipientAddress(address);
-  }
-
-  setIsNetworkOn(bool? isNetworkOn) {
-    _isNetworkOn = isNetworkOn;
-  }
 
   clearSendInfoProvider() {
     _sendInfoProvider.clear();
@@ -38,5 +29,14 @@ class SendAddressViewModel extends ChangeNotifier {
       _address = null;
     }
     notifyListeners();
+  }
+
+  saveWalletIdAndReceipientAddress(int id, String address) {
+    _sendInfoProvider.setWalletId(id);
+    _sendInfoProvider.setReceipientAddress(address);
+  }
+
+  setIsNetworkOn(bool? isNetworkOn) {
+    _isNetworkOn = isNetworkOn;
   }
 }

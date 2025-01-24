@@ -53,15 +53,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
   final TextEditingController _customFeeController = TextEditingController();
 
-  double? get fiatValueInKrw {
-    if (_estimatedFee != null && _bitcoinPriceKrw != null) {
-      return FiatUtil.calculateFiatAmount(_estimatedFee!, _bitcoinPriceKrw!)
-          .toDouble();
-    }
-
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Selector<ConnectivityProvider, bool?>(
@@ -218,6 +209,15 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       TransactionFeeLevel transactionFeeLevel) {
     return widget.feeInfos
         .firstWhere((feeInfo) => feeInfo.level == transactionFeeLevel);
+  }
+
+  double? get fiatValueInKrw {
+    if (_estimatedFee != null && _bitcoinPriceKrw != null) {
+      return FiatUtil.calculateFiatAmount(_estimatedFee!, _bitcoinPriceKrw!)
+          .toDouble();
+    }
+
+    return null;
   }
 
   Future<void> _onChangedNetworkStatus(bool? isNetworkOn) async {

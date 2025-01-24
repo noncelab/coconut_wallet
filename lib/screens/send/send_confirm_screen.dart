@@ -4,13 +4,13 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
+import 'package:flutter/material.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 class SendConfirmScreen extends StatefulWidget {
@@ -22,16 +22,6 @@ class SendConfirmScreen extends StatefulWidget {
 
 class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late SendConfirmViewModel _viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _viewModel = _viewModel = SendConfirmViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,5 +133,15 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         },
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _viewModel = _viewModel = SendConfirmViewModel(
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<WalletProvider>(context, listen: false),
+        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw);
   }
 }

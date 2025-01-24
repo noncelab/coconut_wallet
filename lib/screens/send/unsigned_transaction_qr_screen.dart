@@ -1,10 +1,10 @@
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
-import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class UnsignedTransactionQrScreen extends StatefulWidget {
@@ -21,15 +21,6 @@ class _UnsignedTransactionQrScreenState
     extends State<UnsignedTransactionQrScreen> {
   late final String _psbtBase64;
   late final bool _isMultisig;
-
-  @override
-  void initState() {
-    super.initState();
-    final sendInfoProvider =
-        Provider.of<SendInfoProvider>(context, listen: false);
-    _psbtBase64 = sendInfoProvider.txWaitingForSign!;
-    _isMultisig = sendInfoProvider.isMultisig!;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,5 +96,14 @@ class _UnsignedTransactionQrScreenState
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final sendInfoProvider =
+        Provider.of<SendInfoProvider>(context, listen: false);
+    _psbtBase64 = sendInfoProvider.txWaitingForSign!;
+    _isMultisig = sendInfoProvider.isMultisig!;
   }
 }
