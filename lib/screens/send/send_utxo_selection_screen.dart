@@ -141,6 +141,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                   ),
                                 ),
                               ),
+                              viewModel.errorState,
+                              viewModel.selectedUtxoList.isEmpty,
+                              viewModel.selectedUtxoList.length,
+                              () => satoshiToBitcoinString(
+                                      _viewModel.calculateTotalAmountOfUtxoList(
+                                          _viewModel.selectedUtxoList))
+                                  .normalizeToFullCharacters(),
                             ),
                           ],
                         ),
@@ -229,6 +236,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                               ),
                             ),
                           ),
+                          viewModel.errorState,
+                          viewModel.selectedUtxoList.isEmpty,
+                          viewModel.selectedUtxoList.length,
+                          () => satoshiToBitcoinString(
+                                  _viewModel.calculateTotalAmountOfUtxoList(
+                                      _viewModel.selectedUtxoList))
+                              .normalizeToFullCharacters(),
                         ),
                       ),
                     ),
@@ -414,12 +428,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     List<String> usedUtxoIds =
         _viewModel.selectedUtxoList.map((e) => e.utxoId).toList();
 
-    bool isIncludeTag = usedUtxoIds.any((txHashIndex) =>
+    bool isTagIncluded = usedUtxoIds.any((txHashIndex) =>
         _viewModel.utxoTagMap[txHashIndex]?.isNotEmpty == true);
 
     _viewModel.updateSendInfoProvider();
 
-    if (isIncludeTag) {
+    if (isTagIncluded) {
       CustomDialogs.showCustomAlertDialog(
         context,
         title: '태그 적용',
@@ -595,14 +609,20 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     });
   }
 
-  Widget _totalUtxoAmountWidget(Widget textKeyWidget) {
+  Widget _totalUtxoAmountWidget(
+    Widget textKeyWidget,
+    ErrorState? errorState,
+    bool isSelectedUtxoListEmpty,
+    int selectedUtxoListLength,
+    Function calculateTotalAmountOfUtxoList,
+  ) {
     return Column(
       children: [
         Container(
           width: MediaQuery.sizeOf(context).width,
           decoration: BoxDecoration(
-            color: _viewModel.errorState == ErrorState.insufficientBalance ||
-                    _viewModel.errorState == ErrorState.insufficientUtxo
+            color: errorState == ErrorState.insufficientBalance ||
+                    errorState == ErrorState.insufficientUtxo
                 ? MyColors.transparentRed
                 : MyColors.transparentWhite_10,
             borderRadius: BorderRadius.circular(24),
@@ -623,10 +643,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   'UTXO 합계',
                   style: Styles.body2Bold.merge(
                     TextStyle(
-                        color: _viewModel.errorState ==
-                                    ErrorState.insufficientBalance ||
-                                _viewModel.errorState ==
-                                    ErrorState.insufficientUtxo
+                        color: errorState == ErrorState.insufficientBalance ||
+                                errorState == ErrorState.insufficientUtxo
                             ? MyColors.warningRed
                             : MyColors.white),
                   ),
@@ -635,16 +653,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   width: 4,
                 ),
                 Visibility(
-                  visible: _viewModel.selectedUtxoList.isNotEmpty,
+                  visible: !isSelectedUtxoListEmpty,
                   child: Text(
-                    '(${_viewModel.selectedUtxoList.length}개)',
+                    '($selectedUtxoListLength개)',
                     style: Styles.caption.merge(
                       TextStyle(
                           fontFamily: 'Pretendard',
-                          color: _viewModel.errorState ==
-                                      ErrorState.insufficientBalance ||
-                                  _viewModel.errorState ==
-                                      ErrorState.insufficientUtxo
+                          color: errorState == ErrorState.insufficientBalance ||
+                                  errorState == ErrorState.insufficientUtxo
                               ? MyColors.transparentWarningRed
                               : MyColors.transparentWhite_70),
                     ),
@@ -656,14 +672,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     children: [
                       Text(
                         // Transaction.estimatedFee,
-                        _viewModel.selectedUtxoList.isEmpty
+                        isSelectedUtxoListEmpty
                             ? '0 BTC'
-                            : '${satoshiToBitcoinString(_viewModel.calculateTotalAmountOfUtxoList(_viewModel.selectedUtxoList)).normalizeToFullCharacters()} BTC',
+                            : '${calculateTotalAmountOfUtxoList()} BTC',
                         style: Styles.body1Number.merge(TextStyle(
-                            color: _viewModel.errorState ==
+                            color: errorState ==
                                         ErrorState.insufficientBalance ||
-                                    _viewModel.errorState ==
-                                        ErrorState.insufficientUtxo
+                                    errorState == ErrorState.insufficientUtxo
                                 ? MyColors.warningRed
                                 : MyColors.white,
                             fontWeight: FontWeight.w700,
@@ -681,12 +696,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         ),
         if (!_isStickyHeaderVisible) ...{
           Visibility(
-            visible: _viewModel.errorState != null,
+            visible: errorState != null,
             maintainSize: true,
             maintainState: true,
             maintainAnimation: true,
             child: Text(
-              _viewModel.errorState?.displayMessage ?? '',
+              errorState?.displayMessage ?? '',
               style: Styles.warning.merge(
                 const TextStyle(
                   height: 16 / 12,
@@ -707,7 +722,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           maintainState: true,
           maintainSemantics: false,
           maintainInteractivity: false,
-          // visible: !_positionedTopWidgetVisible,
           child: Row(children: [
             CupertinoButton(
               onPressed: () {
