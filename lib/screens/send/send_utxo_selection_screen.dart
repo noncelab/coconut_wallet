@@ -394,16 +394,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
   }
 
-  Widget _divider(
-          {EdgeInsets padding = const EdgeInsets.symmetric(vertical: 12)}) =>
-      Container(
-        padding: padding,
-        child: const Divider(
-          height: 1,
-          color: MyColors.transparentWhite_10,
-        ),
-      );
-
   String _getCurrentOrder() {
     if (_viewModel.selectedUtxoOrder == UtxoOrderEnum.byTimestampDesc) {
       return '최신순';
