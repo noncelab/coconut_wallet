@@ -440,14 +440,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
         onConfirm: () {
           Navigator.of(context).pop();
-          _viewModel.tagProvider
-              .recordUsedUtxoIdListWhenSend(usedUtxoIds, true);
+          _viewModel.tagProvider.inheritPreviousUtxoTags(usedUtxoIds, true);
           _moveToSendConfirm();
         },
         onCancel: () {
           Navigator.of(context).pop();
-          _viewModel.tagProvider
-              .recordUsedUtxoIdListWhenSend(usedUtxoIds, false);
+          _viewModel.tagProvider.inheritPreviousUtxoTags(usedUtxoIds, false);
           _moveToSendConfirm();
         },
         confirmButtonText: '적용하기',
