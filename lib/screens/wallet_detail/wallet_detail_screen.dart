@@ -165,15 +165,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                             ));
                       },
                       onTitlePressed: () async {
-                        if (viewModel.walletType == WalletType.multiSignature) {
-                          await Navigator.pushNamed(
-                              context, '/wallet-multisig-info',
-                              arguments: {'id': widget.id});
-                        } else {
-                          await Navigator.pushNamed(
-                              context, '/wallet-singlesig-info',
-                              arguments: {'id': widget.id});
-                        }
+                        await Navigator.pushNamed(
+                            context, '/wallet-info', arguments: {
+                          'id': widget.id,
+                          'isMultisig':
+                              viewModel.walletType == WalletType.multiSignature
+                        });
 
                         if (viewModel.isUpdatedTagList) {
                           viewModel.getUtxoListWithHoldingAddress();
