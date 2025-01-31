@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/app/send/fee_info.dart';
@@ -71,9 +70,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   ) {
     _initialize();
   }
-  String get bitcoinPriceKrwString => upbitConnectModel.bitcoinPriceKrw != null
-      ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(sendAmount, upbitConnectModel.bitcoinPriceKrw!).toDouble())} ${CurrencyCode.KRW.code}'
-      : '';
 
   int? get change {
     if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) {
@@ -127,8 +123,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   String get estimatedFeeString => estimatedFee != null
       ? '${satoshiToBitcoinString(estimatedFee!).toString()} BTC'
       : '0 BTC';
-  String get sendAmountString =>
-      '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC';
   bool get isErrorInUpdateFeeInfoEstimateFee =>
       _isErrorInUpdateFeeInfoEstimateFee;
   bool get isMaxMode => _isMaxMode;
@@ -136,7 +130,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   int get needAmount => sendAmount + (_estimatedFee ?? 0);
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus =>
       _recommendedFeeFetchStatus;
-
   RecommendedFee? get recommendedFees => _recommendedFees;
 
   int? get requiredSignature => _requiredSignature;
@@ -163,6 +156,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
             _sendInfoProvider.amount!,
           );
   }
+
+  String get sendAmountString =>
+      '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC';
 
   SendInfoProvider get sendInfoProvider => _sendInfoProvider;
 

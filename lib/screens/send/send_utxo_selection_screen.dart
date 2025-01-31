@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/model/app/send/send_info.dart';
@@ -11,6 +12,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -102,33 +104,42 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                 top: 24,
                                 bottom: 20,
                               ),
-                              child: SendUtxoStickyHeader(
-                                errorState: viewModel.errorState,
-                                recommendedFeeFetchStatus:
-                                    viewModel.recommendedFeeFetchStatus,
-                                selectedLevel: viewModel.selectedLevel,
-                                updateFeeInfoEstimatedFee: () {
-                                  var result =
-                                      viewModel.updateFeeInfoEstimateFee();
-                                  if (result != true) {
-                                    CustomToast.showWarningToast(
-                                        context: context,
-                                        text: ErrorCodes.withMessage(
-                                                ErrorCodes.feeEstimationError,
-                                                viewModel.errorString)
-                                            .message);
-                                  }
+                              child: Selector<UpbitConnectModel, int?>(
+                                selector: (context, model) =>
+                                    model.bitcoinPriceKrw,
+                                builder: (context, bitcoinPriceKrw, child) {
+                                  return SendUtxoStickyHeader(
+                                    errorState: viewModel.errorState,
+                                    recommendedFeeFetchStatus:
+                                        viewModel.recommendedFeeFetchStatus,
+                                    selectedLevel: viewModel.selectedLevel,
+                                    updateFeeInfoEstimatedFee: () {
+                                      var result =
+                                          viewModel.updateFeeInfoEstimateFee();
+                                      if (result != true) {
+                                        CustomToast.showWarningToast(
+                                            context: context,
+                                            text: ErrorCodes.withMessage(
+                                                    ErrorCodes
+                                                        .feeEstimationError,
+                                                    viewModel.errorString)
+                                                .message);
+                                      }
+                                    },
+                                    onTapFeeButton: () => _onTapFeeButton(),
+                                    isMaxMode: viewModel.isMaxMode,
+                                    customFeeSelected:
+                                        viewModel.customFeeSelected,
+                                    sendAmount: viewModel.sendAmountString,
+                                    bitcoinPriceKrw: bitcoinPriceKrw != null
+                                        ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(viewModel.sendAmount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
+                                        : '',
+                                    estimatedFeeString:
+                                        viewModel.estimatedFeeString,
+                                    satsPerVb: viewModel.satsPerVb,
+                                    change: viewModel.change,
+                                  );
                                 },
-                                onTapFeeButton: () => _onTapFeeButton(),
-                                isMaxMode: viewModel.isMaxMode,
-                                customFeeSelected: viewModel.customFeeSelected,
-                                sendAmount: viewModel.sendAmountString,
-                                bitcoinPriceKrw:
-                                    viewModel.bitcoinPriceKrwString,
-                                estimatedFeeString:
-                                    viewModel.estimatedFeeString,
-                                satsPerVb: viewModel.satsPerVb,
-                                change: viewModel.change,
                               ),
                             ),
                             _totalUtxoAmountWidget(
