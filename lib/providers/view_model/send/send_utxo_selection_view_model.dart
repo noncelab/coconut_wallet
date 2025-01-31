@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/app/send/fee_info.dart';
@@ -71,9 +72,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _initialize();
   }
   String get bitcoinPriceKrwString => upbitConnectModel.bitcoinPriceKrw != null
-      ? addCommasToIntegerPart(FiatUtil.calculateFiatAmount(
-              sendAmount, upbitConnectModel.bitcoinPriceKrw!)
-          .toDouble())
+      ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(sendAmount, upbitConnectModel.bitcoinPriceKrw!).toDouble())} ${CurrencyCode.KRW.code}'
       : '';
 
   int? get change {
