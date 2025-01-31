@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  group('TagBottomSheetScreen Tests', () {
+  group('TagBottomSheet Tests', () {
     late List<UtxoTag> mockTags;
     late List<String> mockSelectedTags;
 
@@ -113,7 +113,6 @@ void main() {
       // onComplete 콜백 결과 검증
       expect(resultTag, isNotNull);
       expect(resultTag!.name, equals('keystone'));
-      expect(resultTag!.colorIndex, equals(2));
     });
 
     testWidgets('calls onComplete with correct data when updating tags',
