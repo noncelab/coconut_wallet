@@ -257,7 +257,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         MediaQuery.of(context).padding.top -
                         20,
                     left: 16,
-                    child: _orderDropDownWidget(),
+                    child: _orderDropdownWidget(),
                   ),
                 },
                 if (_isScrolledOrderDropdownVisible &&
@@ -267,7 +267,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         MediaQuery.of(context).padding.top -
                         65,
                     left: 16,
-                    child: _orderDropDownWidget(),
+                    child: _orderDropdownWidget(),
                   ),
                 }
               ],
@@ -490,7 +490,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   /// 필터 드롭다운 위젯
-  Widget _orderDropDownWidget() {
+  Widget _orderDropdownWidget() {
     return Material(
       borderRadius: BorderRadius.circular(16),
       child: CustomDropdown(
