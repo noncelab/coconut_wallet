@@ -226,7 +226,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   Future<void> setRecommendedFees() async {
-    var recommendedFees = await fetchRecommendedFees(_walletProvider);
+    var recommendedFees = await fetchRecommendedFees(
+        () => _walletProvider.getMinimumNetworkFeeRate());
     if (recommendedFees == null) {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
       notifyListeners();
