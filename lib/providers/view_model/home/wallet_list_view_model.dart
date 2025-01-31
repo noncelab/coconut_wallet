@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';

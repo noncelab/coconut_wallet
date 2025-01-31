@@ -1,6 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/app/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:json_annotation/json_annotation.dart';
 

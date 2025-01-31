@@ -1,20 +1,20 @@
 import 'dart:math';
 
 import 'package:coconut_wallet/constants/secure_keys.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:coconut_wallet/services/secure_storage_service.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 
 import '../utils/logger.dart';
 
 class AppSubStateModel with ChangeNotifier {
-  final SecureStorageService _secureStorageService = SecureStorageService();
+  final SecureStorageRepository _secureStorageService = SecureStorageRepository();
   final LocalAuthentication _auth = LocalAuthentication();
-  final SharedPrefs _sharedPrefs = SharedPrefs();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   /// 사용자 생체인증 on/off 여부
   bool _isSetBiometrics = false;
@@ -55,17 +55,17 @@ class AppSubStateModel with ChangeNotifier {
 
   setInitData() async {
     await checkDeviceBiometrics();
-    _isSetBiometrics = _sharedPrefs.getBool(SharedPrefs.kIsSetBiometrics);
-    _canCheckBiometrics = _sharedPrefs.getBool(SharedPrefs.kCanCheckBiometrics);
+    _isSetBiometrics = _sharedPrefs.getBool(SharedPrefsRepository.kIsSetBiometrics);
+    _canCheckBiometrics = _sharedPrefs.getBool(SharedPrefsRepository.kCanCheckBiometrics);
     _isNotEmptyWalletList =
-        _sharedPrefs.getBool(SharedPrefs.kIsNotEmptyWalletList);
-    _isSetPin = _sharedPrefs.getBool(SharedPrefs.kIsSetPin);
+        _sharedPrefs.getBool(SharedPrefsRepository.kIsNotEmptyWalletList);
+    _isSetPin = _sharedPrefs.getBool(SharedPrefsRepository.kIsSetPin);
     if (_sharedPrefs.isContainsKey(hasLaunchedBeforeKey)) {
       _hasLaunchedBefore = _sharedPrefs.getBool(hasLaunchedBeforeKey);
     }
-    _isBalanceHidden = _sharedPrefs.getBool(SharedPrefs.kIsBalanceHidden);
-    _isOpenTermsScreen = _sharedPrefs.getBool(SharedPrefs.kIsOpenTermsScreen);
-    _lastUpdateTime = _sharedPrefs.getInt(SharedPrefs.kLastUpdateTime);
+    _isBalanceHidden = _sharedPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden);
+    _isOpenTermsScreen = _sharedPrefs.getBool(SharedPrefsRepository.kIsOpenTermsScreen);
+    _lastUpdateTime = _sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
     shuffleNumbers();
   }
 
@@ -80,7 +80,7 @@ class AppSubStateModel with ChangeNotifier {
 
   Future<void> setLastUpdateTime() async {
     _lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
-    await _sharedPrefs.setInt(SharedPrefs.kLastUpdateTime, _lastUpdateTime);
+    await _sharedPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, _lastUpdateTime);
     notifyListeners();
   }
 
@@ -97,14 +97,14 @@ class AppSubStateModel with ChangeNotifier {
   /// 홈 화면 잔액 숨기기
   Future<void> changeIsBalanceHidden(bool isOn) async {
     _isBalanceHidden = isOn;
-    await _sharedPrefs.setBool(SharedPrefs.kIsBalanceHidden, isOn);
+    await _sharedPrefs.setBool(SharedPrefsRepository.kIsBalanceHidden, isOn);
     notifyListeners();
   }
 
   /// /// 용어집 바로가기 진입 여부 저장
   Future<void> setIsOpenTermsScreen() async {
     _isOpenTermsScreen = true;
-    await _sharedPrefs.setBool(SharedPrefs.kIsOpenTermsScreen, true);
+    await _sharedPrefs.setBool(SharedPrefsRepository.kIsOpenTermsScreen, true);
     notifyListeners();
   }
 
@@ -118,11 +118,11 @@ class AppSubStateModel with ChangeNotifier {
       _canCheckBiometrics =
           isEnabledBiometrics && availableBiometrics.isNotEmpty;
       _sharedPrefs.setBool(
-          SharedPrefs.kCanCheckBiometrics, _canCheckBiometrics);
+          SharedPrefsRepository.kCanCheckBiometrics, _canCheckBiometrics);
 
       if (!_canCheckBiometrics) {
         _isSetBiometrics = false;
-        _sharedPrefs.setBool(SharedPrefs.kIsSetBiometrics, false);
+        _sharedPrefs.setBool(SharedPrefsRepository.kIsSetBiometrics, false);
       }
 
       notifyListeners();
@@ -130,9 +130,9 @@ class AppSubStateModel with ChangeNotifier {
       // 생체 인식 기능 비활성화, 사용자가 권한 거부, 기기 하드웨어에 문제가 있는 경우, 기기 호환성 문제, 플랫폼 제한
       Logger.log(e);
       _canCheckBiometrics = false;
-      _sharedPrefs.setBool(SharedPrefs.kCanCheckBiometrics, false);
+      _sharedPrefs.setBool(SharedPrefsRepository.kCanCheckBiometrics, false);
       _isSetBiometrics = false;
-      _sharedPrefs.setBool(SharedPrefs.kIsSetBiometrics, false);
+      _sharedPrefs.setBool(SharedPrefsRepository.kIsSetBiometrics, false);
       notifyListeners();
     }
   }
@@ -163,15 +163,15 @@ class AppSubStateModel with ChangeNotifier {
   /// WalletList isNotEmpty 상태 저장
   Future<void> saveNotEmptyWalletList(bool isNotEmpty) async {
     _isNotEmptyWalletList = isNotEmpty;
-    await _sharedPrefs.setBool(SharedPrefs.kIsNotEmptyWalletList, isNotEmpty);
-    if (!isNotEmpty) await _sharedPrefs.setInt(SharedPrefs.kLastUpdateTime, 0);
+    await _sharedPrefs.setBool(SharedPrefsRepository.kIsNotEmptyWalletList, isNotEmpty);
+    if (!isNotEmpty) await _sharedPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, 0);
     notifyListeners();
   }
 
   /// 사용자 생체인증 활성화 여부 저장
   Future<void> saveIsSetBiometrics(bool value) async {
     _isSetBiometrics = value;
-    await _sharedPrefs.setBool(SharedPrefs.kIsSetBiometrics, value);
+    await _sharedPrefs.setBool(SharedPrefsRepository.kIsSetBiometrics, value);
     notifyListeners();
   }
 
@@ -180,7 +180,7 @@ class AppSubStateModel with ChangeNotifier {
     await _secureStorageService.write(
         key: kSecureStoragePinKey, value: hashedPin);
     _isSetPin = true;
-    _sharedPrefs.setBool(SharedPrefs.kIsSetPin, _isSetPin);
+    _sharedPrefs.setBool(SharedPrefsRepository.kIsSetPin, _isSetPin);
     notifyListeners();
   }
 
@@ -189,8 +189,8 @@ class AppSubStateModel with ChangeNotifier {
     await _secureStorageService.delete(key: kSecureStoragePinKey);
     _isSetPin = false;
     _isSetBiometrics = false;
-    _sharedPrefs.setBool(SharedPrefs.kIsSetPin, _isSetPin);
-    _sharedPrefs.setBool(SharedPrefs.kIsSetBiometrics, _isSetBiometrics);
+    _sharedPrefs.setBool(SharedPrefsRepository.kIsSetPin, _isSetPin);
+    _sharedPrefs.setBool(SharedPrefsRepository.kIsSetBiometrics, _isSetBiometrics);
     notifyListeners();
   }
 
@@ -213,8 +213,8 @@ class AppSubStateModel with ChangeNotifier {
 
     WalletDataManager().reset();
 
-    await SecureStorageService().deleteAll();
-    await SharedPrefs().clearSharedPref();
+    await SecureStorageRepository().deleteAll();
+    await SharedPrefsRepository().clearSharedPref();
     await checkDeviceBiometrics();
   }
 }

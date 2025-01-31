@@ -1,6 +1,6 @@
 import 'package:realm/realm.dart';
 
-part 'coconut_wallet_data.realm.dart'; // dart run realm generate
+part 'coconut_wallet_model.realm.dart'; // dart run realm generate
 
 @RealmModel()
 class _RealmWalletBase {

@@ -1,5 +1,5 @@
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';

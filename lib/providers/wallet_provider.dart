@@ -1,14 +1,14 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/app/error/app_error.dart';
-import 'package:coconut_wallet/model/app/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/app/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/app/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/repository/converter/transaction.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
+import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
+import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
@@ -34,7 +34,7 @@ enum WalletInitState {
 }
 
 class WalletProvider extends ChangeNotifier {
-  final SharedPrefs _sharedPrefs = SharedPrefs();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   // 잔액 갱신 전 local db에서 지갑 목록 조회를 끝냈는지 여부
   bool _isWalletsLoadedFromDb = false;
@@ -68,12 +68,12 @@ class WalletProvider extends ChangeNotifier {
     initWallet().catchError((_) {
       Logger.error(_);
     });
-    _lastUpdateTime = _sharedPrefs.getInt(SharedPrefs.kLastUpdateTime);
+    _lastUpdateTime = _sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
   }
 
   Future<void> _setLastUpdateTime() async {
     _lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
-    await _sharedPrefs.setInt(SharedPrefs.kLastUpdateTime, _lastUpdateTime);
+    await _sharedPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, _lastUpdateTime);
     notifyListeners();
   }
 

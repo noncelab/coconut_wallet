@@ -1,19 +1,19 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/api/error/default_error_response.dart';
-import 'package:coconut_wallet/model/api/request/faucet_request.dart';
-import 'package:coconut_wallet/model/api/response/faucet_response.dart';
-import 'package:coconut_wallet/model/api/response/faucet_status_response.dart';
-import 'package:coconut_wallet/model/app/faucet/faucet_history.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/model/app/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/services/model/error/default_error_response.dart';
+import 'package:coconut_wallet/services/model/request/faucet_request.dart';
+import 'package:coconut_wallet/services/model/response/faucet_response.dart';
+import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
+import 'package:coconut_wallet/model/faucet/faucet_history.dart';
+import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/converter/transaction.dart';
+import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -26,7 +26,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final TransactionProvider _txProvider;
   final UtxoTagProvider _tagProvider;
 
-  final SharedPrefs _sharedPrefs = SharedPrefs();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   List<model.UTXO> _utxoList = [];
 

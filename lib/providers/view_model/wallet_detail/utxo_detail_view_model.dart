@@ -1,6 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
-import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';

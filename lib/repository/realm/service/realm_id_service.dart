@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/repository/realm/model/coconut_wallet_data.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:realm/realm.dart';
 
 int generateNextId(Realm realm, String key) {

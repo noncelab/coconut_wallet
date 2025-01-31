@@ -2,11 +2,11 @@ import 'dart:io';
 
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
-import 'package:coconut_wallet/model/api/response/app_version_response.dart';
+import 'package:coconut_wallet/services/model/response/app_version_response.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/services/app_version_service.dart';
-import 'package:coconut_wallet/services/shared_prefs_service.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -17,7 +17,7 @@ class StartViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
   late final AuthProvider _authProvider;
 
-  final SharedPrefs _sharedPrefs = SharedPrefs();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final AppVersion _appVersionRepository = AppVersion();
 
   late PackageInfo _packageInfo;
@@ -65,7 +65,7 @@ class StartViewModel extends ChangeNotifier {
 
   Future<void> setNextUpdateDialogDate() async {
     final nextShowDate = DateTime.now().add(const Duration(days: 7));
-    _sharedPrefs.setString(SharedPrefs.kNextVersionUpdateDialogDate,
+    _sharedPrefs.setString(SharedPrefsRepository.kNextVersionUpdateDialogDate,
         nextShowDate.toIso8601String());
   }
 
@@ -106,7 +106,7 @@ class StartViewModel extends ChangeNotifier {
   /// 업데이트 다이얼로그 표시 여부 결정
   Future<bool> _shouldShowUpdateDialog() async {
     final nextShowDateString =
-        _sharedPrefs.getString(SharedPrefs.kNextVersionUpdateDialogDate);
+        _sharedPrefs.getString(SharedPrefsRepository.kNextVersionUpdateDialogDate);
 
     if (nextShowDateString.isEmpty) return true;
 

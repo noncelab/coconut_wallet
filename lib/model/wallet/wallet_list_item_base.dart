@@ -1,6 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/app/error/app_error.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 
 abstract class WalletListItemBase {
   static const String walletTypeField = 'walletType';

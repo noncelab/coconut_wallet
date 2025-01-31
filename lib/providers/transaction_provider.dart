@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/repository/converter/transaction.dart';
-import 'package:coconut_wallet/repository/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
+import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/cupertino.dart';

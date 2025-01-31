@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'coconut_wallet_data.dart';
+part of 'coconut_wallet_model.dart';
 
 // **************************************************************************
 // RealmObjectGenerator

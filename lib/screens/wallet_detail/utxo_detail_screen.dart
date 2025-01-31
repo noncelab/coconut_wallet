@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
