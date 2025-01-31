@@ -27,7 +27,7 @@ class UtxoTagProvider extends ChangeNotifier {
   List<UtxoTag> get selectedTagList => _selectedTagList;
 
   List<String> get usedUtxoIdListWhenSend => _usedUtxoIdListWhenSend;
-  bool get tagsMoveAllowed => _isTagsMoveAllowed;
+  bool get isTagsMoveAllowed => _isTagsMoveAllowed;
 
   void initTagList(int walletId, {String? utxoId}) {
     _isUpdatedTagList = false;
@@ -143,14 +143,10 @@ class UtxoTagProvider extends ChangeNotifier {
     _isTagsMoveAllowed = false;
   }
 
-  // void allowTagToMove() {
-  //   _tagsMoveAllowed = true;
-  // }
-
   void recordUsedUtxoIdListWhenSend(
-      List<String> utxoIdList, bool tagsMoveAllowed) {
+      List<String> utxoIdList, bool isTagsMoveAllowed) {
     _usedUtxoIdListWhenSend = utxoIdList;
-    _isTagsMoveAllowed = tagsMoveAllowed;
+    _isTagsMoveAllowed = isTagsMoveAllowed;
   }
 
   List<UtxoTag> loadSelectedUtxoTagList(int walletId, String utxoId) {
