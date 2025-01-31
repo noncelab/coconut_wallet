@@ -130,7 +130,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   Future<void> updateTagsOfUsedUtxos(String signedTx) async {
-    await _tagProvider.updateTagsOfUsedUtxos(
+    await _tagProvider.transferTagsToNewUtxos(
         _walletId, signedTx, _outputIndexesToMyAddress);
   }
 }
