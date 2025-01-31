@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -69,6 +70,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   ) {
     _initialize();
   }
+  String get bitcoinPriceKrwString => upbitConnectModel.bitcoinPriceKrw != null
+      ? addCommasToIntegerPart(FiatUtil.calculateFiatAmount(
+              sendAmount, upbitConnectModel.bitcoinPriceKrw!)
+          .toDouble())
+      : '';
+
   int? get change {
     if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) {
       return null;
@@ -91,10 +98,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   int get confirmedBalance => _confirmedBalance;
-
   List<UTXO> get confirmedUtxoList => _confirmedUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;
   bool get customFeeSelected => _selectedLevel == null;
+
   ErrorState? get errorState {
     if (_estimatedFee == null) {
       return null;
@@ -118,6 +125,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   String get errorString => _errorString;
   int? get estimatedFee => _estimatedFee;
+  String get estimatedFeeString => estimatedFee != null
+      ? '${satoshiToBitcoinString(estimatedFee!).toString()} BTC'
+      : '0 BTC';
+  String get sendAmountString =>
+      '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC';
   bool get isErrorInUpdateFeeInfoEstimateFee =>
       _isErrorInUpdateFeeInfoEstimateFee;
   bool get isMaxMode => _isMaxMode;
@@ -125,8 +137,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   int get needAmount => sendAmount + (_estimatedFee ?? 0);
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus =>
       _recommendedFeeFetchStatus;
+
   RecommendedFee? get recommendedFees => _recommendedFees;
+
   int? get requiredSignature => _requiredSignature;
+
   int? get satsPerVb =>
       _selectedFeeInfoWithLevel?.satsPerVb ?? _customFeeInfo?.satsPerVb;
 
@@ -155,6 +170,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   UtxoTagProvider get tagProvider => _tagProvider;
 
   int? get totalSigner => _totalSigner;
+
   UpbitConnectModel get upbitConnectModel => _upbitConnectModel;
 
   List<UtxoTag> get utxoTagList => _tagProvider.tagList;

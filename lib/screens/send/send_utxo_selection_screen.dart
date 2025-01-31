@@ -122,10 +122,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                 onTapFeeButton: () => _onTapFeeButton(),
                                 isMaxMode: viewModel.isMaxMode,
                                 customFeeSelected: viewModel.customFeeSelected,
-                                sendAmount: viewModel.sendAmount,
+                                sendAmount: viewModel.sendAmountString,
                                 bitcoinPriceKrw:
-                                    viewModel.upbitConnectModel.bitcoinPriceKrw,
-                                estimatedFee: viewModel.estimatedFee,
+                                    viewModel.bitcoinPriceKrwString,
+                                estimatedFeeString:
+                                    viewModel.estimatedFeeString,
                                 satsPerVb: viewModel.satsPerVb,
                                 change: viewModel.change,
                               ),
