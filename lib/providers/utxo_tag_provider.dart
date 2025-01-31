@@ -16,7 +16,7 @@ class UtxoTagProvider extends ChangeNotifier {
   bool _isUpdatedTagList = false;
 
   List<String> _usedUtxoIdListWhenSend = [];
-  bool _tagsMoveAllowed = false;
+  bool _isTagsMoveAllowed = false;
 
   bool get isUpdatedTagList => _isUpdatedTagList;
 
@@ -27,7 +27,7 @@ class UtxoTagProvider extends ChangeNotifier {
   List<UtxoTag> get selectedTagList => _selectedTagList;
 
   List<String> get usedUtxoIdListWhenSend => _usedUtxoIdListWhenSend;
-  bool get tagsMoveAllowed => _tagsMoveAllowed;
+  bool get tagsMoveAllowed => _isTagsMoveAllowed;
 
   void initTagList(int walletId, {String? utxoId}) {
     _isUpdatedTagList = false;
@@ -130,7 +130,7 @@ class UtxoTagProvider extends ChangeNotifier {
 
   Future updateTagsOfUsedUtxos(
       int walletId, String signedTx, List<int> outputIndexes) async {
-    List<String> newUtxoIds = _tagsMoveAllowed
+    List<String> newUtxoIds = _isTagsMoveAllowed
         ? outputIndexes.map((index) => makeUtxoId(signedTx, index)).toList()
         : [];
 
@@ -140,7 +140,7 @@ class UtxoTagProvider extends ChangeNotifier {
       Logger.error(result.error);
     }
     _usedUtxoIdListWhenSend = [];
-    _tagsMoveAllowed = false;
+    _isTagsMoveAllowed = false;
   }
 
   // void allowTagToMove() {
@@ -150,7 +150,7 @@ class UtxoTagProvider extends ChangeNotifier {
   void recordUsedUtxoIdListWhenSend(
       List<String> utxoIdList, bool tagsMoveAllowed) {
     _usedUtxoIdListWhenSend = utxoIdList;
-    _tagsMoveAllowed = tagsMoveAllowed;
+    _isTagsMoveAllowed = tagsMoveAllowed;
   }
 
   List<UtxoTag> loadSelectedUtxoTagList(int walletId, String utxoId) {
