@@ -13,7 +13,7 @@ void main() {
     const double qrSize = 200.0;
     const int milliSeconds = 500;
 
-    testWidgets('렌더링 테스트', (WidgetTester tester) async {
+    testWidgets('rendering test', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: AnimatedQrView(

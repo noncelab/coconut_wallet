@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('WalletDetailTab', () {
-    testWidgets('콜백 테스트', (tester) async {
+    testWidgets('callback test', (tester) async {
       WalletDetailTabType selectedListType = WalletDetailTabType.transaction;
       bool isDropdownVisible = false;
       await tester.pumpWidget(MaterialApp(

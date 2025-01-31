@@ -6,7 +6,7 @@ void main() {
   group('CustomTagHorizontalSelector', () {
     final tags = ['coconut', 'keystone', 'jade', 'blue_wallet', 'nun_chuck'];
 
-    testWidgets('렌더링, 콜백 테스트', (tester) async {
+    testWidgets('rendering, callback test', (tester) async {
       String? selectedTag;
       await tester.pumpWidget(
         MaterialApp(

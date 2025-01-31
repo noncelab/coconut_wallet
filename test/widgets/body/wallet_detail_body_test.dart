@@ -33,7 +33,7 @@ void main() {
     List<model.UTXO> mockUtxoList = [];
     List<TransferDTO> mockTxList = [];
 
-    testWidgets('Transaction 렌더링 테스트', (tester) async {
+    testWidgets('transaction rendering test', (tester) async {
       final txList = [
         FakeTransferDTO(
             transactionHash: 'hash_1',
@@ -78,7 +78,7 @@ void main() {
       expect(find.byType(TransactionItemCard), findsWidgets);
     });
 
-    testWidgets('UTXO 렌더링 테스트', (tester) async {
+    testWidgets('utxo rendering test', (tester) async {
       final utxoList = [
         FakeUTXO(amount: 1, index: 0),
         FakeUTXO(amount: 1, index: 1),

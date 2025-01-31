@@ -15,7 +15,7 @@ void main() {
       mockOnFailed = (String error) {};
     });
 
-    testWidgets('렌더링 테스트', (WidgetTester tester) async {
+    testWidgets('rendering test', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

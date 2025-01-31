@@ -27,7 +27,7 @@ void main() {
     ];
     UtxoTag? selectedTag;
 
-    testWidgets('렌더링, 콜백 테스트', (tester) async {
+    testWidgets('rendering, callback test', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

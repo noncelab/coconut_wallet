@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  group('MemoBottomSheet Tests', () {
+  group('MemoBottomSheet=', () {
     String mockMemo = 'updateMemo';
 
     testWidgets('calls onComplete with correct data when changing memo',

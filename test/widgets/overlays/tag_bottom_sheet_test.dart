@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  group('TagBottomSheet Tests', () {
+  group('TagBottomSheet', () {
     late List<UtxoTag> mockTags;
     late List<String> mockSelectedTags;
 

@@ -28,7 +28,8 @@ void main() {
       final dateTime = DateTime.now().millisecondsSinceEpoch;
       when(mockPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, dateTime))
           .thenAnswer((_) async => true);
-      when(mockPrefs.getInt(SharedPrefsRepository.kLastUpdateTime)).thenReturn(dateTime);
+      when(mockPrefs.getInt(SharedPrefsRepository.kLastUpdateTime))
+          .thenReturn(dateTime);
 
       await sharedPrefs.sharedPrefs
           .setInt(SharedPrefsRepository.kLastUpdateTime, dateTime);
@@ -46,7 +47,8 @@ void main() {
 
       final encodedData = json.encode(histories
           .map((key, value) => MapEntry(key.toString(), value.toJson())));
-      when(mockPrefs.setString(SharedPrefsRepository.kFaucetHistories, encodedData))
+      when(mockPrefs.setString(
+              SharedPrefsRepository.kFaucetHistories, encodedData))
           .thenAnswer((_) async => true);
       when(mockPrefs.getString(SharedPrefsRepository.kFaucetHistories))
           .thenReturn(encodedData);
@@ -63,11 +65,13 @@ void main() {
     test('IS_BALANCE_HIDDEN boolean must be saved and imported', () async {
       when(mockPrefs.setBool(SharedPrefsRepository.kIsBalanceHidden, true))
           .thenAnswer((_) async => true);
-      when(mockPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden)).thenReturn(true);
+      when(mockPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden))
+          .thenReturn(true);
 
-      await sharedPrefs.sharedPrefs.setBool(SharedPrefsRepository.kIsBalanceHidden, true);
-      final result =
-          sharedPrefs.sharedPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden);
+      await sharedPrefs.sharedPrefs
+          .setBool(SharedPrefsRepository.kIsBalanceHidden, true);
+      final result = sharedPrefs.sharedPrefs
+          .getBool(SharedPrefsRepository.kIsBalanceHidden);
 
       expect(result, true);
     });
