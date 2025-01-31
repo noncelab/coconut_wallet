@@ -404,7 +404,7 @@ class WalletDataManager {
     }
   }
 
-  Future<RealmResult<void>> updateTagsOfUsedUtxos(
+  Future<RealmResult<void>> updateTagsOfSpentUtxos(
       int walletId, List<String> usedUtxoIds, List<String> newUtxoIds) async {
     try {
       final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");

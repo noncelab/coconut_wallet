@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/model/app/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/repository/wallet_data_manager.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
 
@@ -14,6 +15,9 @@ class UtxoTagProvider extends ChangeNotifier {
   String? _updatedTagName;
   bool _isUpdatedTagList = false;
 
+  List<String> _previousUtxoIds = [];
+  bool _isTagsMoveAllowed = false;
+
   bool get isUpdatedTagList => _isUpdatedTagList;
 
   UtxoTag? get selectedUtxoTag => _selectedUtxoTag;
@@ -21,6 +25,9 @@ class UtxoTagProvider extends ChangeNotifier {
 
   List<UtxoTag> get tagList => _tagList;
   List<UtxoTag> get selectedTagList => _selectedTagList;
+
+  List<String> get previousUtxoIds => _previousUtxoIds;
+  bool get isTagsMoveAllowed => _isTagsMoveAllowed;
 
   void initTagList(int walletId, {String? utxoId}) {
     _isUpdatedTagList = false;
@@ -121,14 +128,25 @@ class UtxoTagProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<UtxoTag> _loadUtxoTagList(int walletId) {
-    final result = _walletDataManager.loadUtxoTagList(walletId);
+  Future transferTagsToNewUtxos(
+      int walletId, String signedTx, List<int> outputIndexes) async {
+    List<String> newUtxoIds = _isTagsMoveAllowed
+        ? outputIndexes.map((index) => makeUtxoId(signedTx, index)).toList()
+        : [];
+
+    final result = await _walletDataManager.updateTagsOfSpentUtxos(
+        walletId, _previousUtxoIds, newUtxoIds);
     if (result.isError) {
-      Logger.log('-----------------------------------------------------------');
-      Logger.log('loadUtxoTagList(walletId: $walletId)');
-      Logger.log(result.error);
+      Logger.error(result.error);
     }
-    return result.data ?? [];
+    _previousUtxoIds = [];
+    _isTagsMoveAllowed = false;
+  }
+
+  void inheritPreviousUtxoTags(
+      List<String> utxoIdList, bool isTagsMoveAllowed) {
+    _previousUtxoIds = utxoIdList;
+    _isTagsMoveAllowed = isTagsMoveAllowed;
   }
 
   List<UtxoTag> loadSelectedUtxoTagList(int walletId, String utxoId) {
@@ -137,6 +155,16 @@ class UtxoTagProvider extends ChangeNotifier {
       Logger.log('-----------------------------------------------------------');
       Logger.log(
           'loadSelectedUtxoTagList(walletId: $walletId, txHashIndex: $utxoId)');
+      Logger.log(result.error);
+    }
+    return result.data ?? [];
+  }
+
+  List<UtxoTag> _loadUtxoTagList(int walletId) {
+    final result = _walletDataManager.loadUtxoTagList(walletId);
+    if (result.isError) {
+      Logger.log('-----------------------------------------------------------');
+      Logger.log('loadUtxoTagList(walletId: $walletId)');
       Logger.log(result.error);
     }
     return result.data ?? [];

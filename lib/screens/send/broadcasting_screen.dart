@@ -3,6 +3,7 @@ import 'package:coconut_wallet/model/app/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -51,13 +52,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         vibrateLight();
         _viewModel.clearSendInfo();
 
-        // TODO:
-        // List<String> newUtxoIds = _model.tagsMoveAllowed
-        //     ? outputIndexesToMyAddress
-        //         .map((index) => makeUtxoId(signedTx.transactionHash, index))
-        //         .toList()
-        //     : [];
-        // await _model.updateTagsOfUsedUtxos(widget.id, newUtxoIds);
+        await _viewModel.updateTagsOfUsedUtxos(signedTx.transactionHash);
+
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,
@@ -236,6 +232,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     _viewModel = BroadcastingViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
+        Provider.of<UtxoTagProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
         Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw);
 
