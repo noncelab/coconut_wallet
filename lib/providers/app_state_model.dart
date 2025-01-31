@@ -79,7 +79,7 @@ class AppStateModel extends ChangeNotifier {
   late final WalletDataManager _walletDataManager;
 
   AppStateModel(this._subStateModel, this._walletDataManager) {
-    //initWallet();
+    initWallet();
   }
 
   /// [_subStateModel]의 변동사항 업데이트
@@ -570,15 +570,15 @@ class AppStateModel extends ChangeNotifier {
   bool _isUpdatedSelectedTagList = false;
   bool get isUpdatedSelectedTagList => _isUpdatedSelectedTagList;
 
-  Future updateTagsOfUsedUtxos(int walletId, List<String> newUtxoIds) async {
-    final result = await _walletDataManager.updateTagsOfUsedUtxos(
-        walletId, _usedUtxoIdListWhenSend, newUtxoIds);
-    if (result.isError) {
-      Logger.error(result.error);
-    }
-    _usedUtxoIdListWhenSend = [];
-    _tagsMoveAllowed = false;
-  }
+  // Future updateTagsOfUsedUtxos(int walletId, List<String> newUtxoIds) async {
+  //   final result = await _walletDataManager.updateTagsOfUsedUtxos(
+  //       walletId, _usedUtxoIdListWhenSend, newUtxoIds);
+  //   if (result.isError) {
+  //     Logger.error(result.error);
+  //   }
+  //   _usedUtxoIdListWhenSend = [];
+  //   _tagsMoveAllowed = false;
+  // }
   // Future moveTagsFromUsedUtxosToNewUtxos(
   //     int walletId, List<String> newUtxoIds) async {
   //   await _walletDataManager.moveTagsFromUsedUtxosToNewUtxos(

@@ -12,6 +12,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
@@ -389,7 +390,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Future<void> _setRecommendedFees() async {
-    var recommendedFees = await _viewModel.fetchRecommendedFees();
+    var recommendedFees = await fetchRecommendedFees(
+        () => _viewModel.walletProvider.getMinimumNetworkFeeRate());
     if (recommendedFees == null) {
       setState(() {
         _isRecommendedFeeFetchSuccess = false;

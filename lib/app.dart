@@ -221,11 +221,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/fee-selection': (context) => const CustomLoadingOverlay(
                 child: SendFeeSelectionScreen(),
               ),
-          '/utxo-selection': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: SendUtxoSelectionScreen(
-                        id: args['id'], sendInfo: args['sendInfo'])),
+          '/utxo-selection': (context) => const CustomLoadingOverlay(
+                child: SendUtxoSelectionScreen(),
               ),
           '/send-confirm': (context) =>
               const CustomLoadingOverlay(child: SendConfirmScreen()),
