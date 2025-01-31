@@ -1,12 +1,12 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/repository/converter/transaction.dart';
+import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/widgets/body/wallet_detail_body.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:coconut_wallet/model/app/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 
 class FakeTransferDTO extends TransferDTO {
   FakeTransferDTO({
