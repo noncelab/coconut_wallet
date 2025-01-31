@@ -465,18 +465,18 @@ class AppStateModel extends ChangeNotifier {
 
   /// 네트워크가 꺼지면 네트워크를 해제함.
   void setIsNetworkOn(bool isNetworkOn) {
-    if (_isNetworkOn == null && isNetworkOn) {
-      _isNetworkOn = isNetworkOn;
-      initWallet();
-      return;
-    }
+    // if (_isNetworkOn == null && isNetworkOn) {
+    //   _isNetworkOn = isNetworkOn;
+    //   initWallet();
+    //   return;
+    // }
 
-    _isNetworkOn = isNetworkOn;
+    // _isNetworkOn = isNetworkOn;
 
-    if (!isNetworkOn) {
-      handleNetworkDisconnected();
-      notifyListeners();
-    }
+    // if (!isNetworkOn) {
+    //   handleNetworkDisconnected();
+    //   notifyListeners();
+    // }
   }
 
   Future<dynamic> startFaucetRequest(String address, double amount) async {
