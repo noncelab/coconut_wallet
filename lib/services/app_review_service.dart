@@ -33,7 +33,9 @@ class AppReviewService {
   }
 
   static Future _setCompletedBitcoinTransfer() async {
-    await SharedPrefsRepository().sharedPrefs.setBool(SharedPrefsRepository.kHaveSent, true);
+    await SharedPrefsRepository()
+        .sharedPrefs
+        .setBool(SharedPrefsRepository.kHaveSent, true);
   }
 
   /// 리뷰를 남긴 적이 있는지 여부를 반환한다.
@@ -43,7 +45,9 @@ class AppReviewService {
   }
 
   static Future setHasReviewed() async {
-    await SharedPrefsRepository().sharedPrefs.setBool(SharedPrefsRepository.kHaveReviewed, true);
+    await SharedPrefsRepository()
+        .sharedPrefs
+        .setBool(SharedPrefsRepository.kHaveReviewed, true);
   }
 
   /// 비트코인 전송 첫 성공 후 앱 실행 횟수를 반환한다.
@@ -61,8 +65,8 @@ class AppReviewService {
       final count = sharedPrefs.sharedPrefs
               .getInt(SharedPrefsRepository.kAppRunCountAfterRejectReview) ??
           0;
-      await sharedPrefs.sharedPrefs
-          .setInt(SharedPrefsRepository.kAppRunCountAfterRejectReview, count + 1);
+      await sharedPrefs.sharedPrefs.setInt(
+          SharedPrefsRepository.kAppRunCountAfterRejectReview, count + 1);
     }
   }
 

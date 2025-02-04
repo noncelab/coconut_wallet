@@ -105,8 +105,8 @@ class StartViewModel extends ChangeNotifier {
 
   /// 업데이트 다이얼로그 표시 여부 결정
   Future<bool> _shouldShowUpdateDialog() async {
-    final nextShowDateString =
-        _sharedPrefs.getString(SharedPrefsRepository.kNextVersionUpdateDialogDate);
+    final nextShowDateString = _sharedPrefs
+        .getString(SharedPrefsRepository.kNextVersionUpdateDialogDate);
 
     if (nextShowDateString.isEmpty) return true;
 

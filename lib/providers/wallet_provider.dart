@@ -68,12 +68,14 @@ class WalletProvider extends ChangeNotifier {
     initWallet().catchError((_) {
       Logger.error(_);
     });
-    _lastUpdateTime = _sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
+    _lastUpdateTime =
+        _sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
   }
 
   Future<void> _setLastUpdateTime() async {
     _lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
-    await _sharedPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, _lastUpdateTime);
+    await _sharedPrefs.setInt(
+        SharedPrefsRepository.kLastUpdateTime, _lastUpdateTime);
     notifyListeners();
   }
 

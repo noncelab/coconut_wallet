@@ -34,7 +34,8 @@ class SharedPrefsRepository {
     _sharedPrefs = sp;
   }
 
-  static final SharedPrefsRepository _instance = SharedPrefsRepository._internal();
+  static final SharedPrefsRepository _instance =
+      SharedPrefsRepository._internal();
 
   factory SharedPrefsRepository() => _instance;
 

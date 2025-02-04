@@ -11,7 +11,8 @@ import 'package:flutter/material.dart';
 
 class VisibilityProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  final SecureStorageRepository _secureStorageService = SecureStorageRepository();
+  final SecureStorageRepository _secureStorageService =
+      SecureStorageRepository();
 
   /// iOS에서 앱 지워도 secureStorage가 남아있어서 지우기 위해 사용
   /// onBoading 노출 여부

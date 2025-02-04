@@ -47,11 +47,11 @@ class SendConfirmViewModel extends ChangeNotifier {
     return generatedTx;
   }
 
-  setTxWaitingForSign(String transaction) {
+  void setTxWaitingForSign(String transaction) {
     _sendInfoProvider.setTxWaitingForSign(transaction);
   }
 
-  updateBitcoinPriceKrw(int btcPriceInKrw) {
+  void updateBitcoinPriceKrw(int btcPriceInKrw) {
     _bitcoinPriceKrw = btcPriceInKrw;
     notifyListeners();
   }
