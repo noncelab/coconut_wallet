@@ -73,6 +73,8 @@ dependencies:
   coconut_lib: ^0.8.2
   realm: ^20.0.0
   cryptography: ^2.7.0
+  slang: ^4.4.1
+  slang_flutter: ^4.4.0
 
 dev_dependencies:
   flutter_test:

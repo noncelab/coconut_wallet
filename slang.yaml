@@ -1,0 +1,6 @@
+groups: true
+base_locale: kr
+fallback_strategy: base_locale
+input_directory: assets/i18n
+input_file_pattern: .i18n.yaml
+output_directory: lib/localization
