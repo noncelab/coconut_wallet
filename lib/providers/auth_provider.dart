@@ -13,7 +13,8 @@ import '../constants/secure_keys.dart';
 
 class AuthProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  final SecureStorageRepository _secureStorageService = SecureStorageRepository();
+  final SecureStorageRepository _secureStorageService =
+      SecureStorageRepository();
   final LocalAuthentication _auth = LocalAuthentication();
 
   /// 사용자 생체인증 on/off 여부

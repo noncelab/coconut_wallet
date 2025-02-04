@@ -12,7 +12,8 @@ import 'package:coconut_wallet/utils/hash_util.dart';
 import '../utils/logger.dart';
 
 class AppSubStateModel with ChangeNotifier {
-  final SecureStorageRepository _secureStorageService = SecureStorageRepository();
+  final SecureStorageRepository _secureStorageService =
+      SecureStorageRepository();
   final LocalAuthentication _auth = LocalAuthentication();
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
@@ -55,17 +56,22 @@ class AppSubStateModel with ChangeNotifier {
 
   setInitData() async {
     await checkDeviceBiometrics();
-    _isSetBiometrics = _sharedPrefs.getBool(SharedPrefsRepository.kIsSetBiometrics);
-    _canCheckBiometrics = _sharedPrefs.getBool(SharedPrefsRepository.kCanCheckBiometrics);
+    _isSetBiometrics =
+        _sharedPrefs.getBool(SharedPrefsRepository.kIsSetBiometrics);
+    _canCheckBiometrics =
+        _sharedPrefs.getBool(SharedPrefsRepository.kCanCheckBiometrics);
     _isNotEmptyWalletList =
         _sharedPrefs.getBool(SharedPrefsRepository.kIsNotEmptyWalletList);
     _isSetPin = _sharedPrefs.getBool(SharedPrefsRepository.kIsSetPin);
     if (_sharedPrefs.isContainsKey(hasLaunchedBeforeKey)) {
       _hasLaunchedBefore = _sharedPrefs.getBool(hasLaunchedBeforeKey);
     }
-    _isBalanceHidden = _sharedPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden);
-    _isOpenTermsScreen = _sharedPrefs.getBool(SharedPrefsRepository.kIsOpenTermsScreen);
-    _lastUpdateTime = _sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
+    _isBalanceHidden =
+        _sharedPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden);
+    _isOpenTermsScreen =
+        _sharedPrefs.getBool(SharedPrefsRepository.kIsOpenTermsScreen);
+    _lastUpdateTime =
+        _sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
     shuffleNumbers();
   }
 
@@ -80,7 +86,8 @@ class AppSubStateModel with ChangeNotifier {
 
   Future<void> setLastUpdateTime() async {
     _lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
-    await _sharedPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, _lastUpdateTime);
+    await _sharedPrefs.setInt(
+        SharedPrefsRepository.kLastUpdateTime, _lastUpdateTime);
     notifyListeners();
   }
 
@@ -163,8 +170,10 @@ class AppSubStateModel with ChangeNotifier {
   /// WalletList isNotEmpty 상태 저장
   Future<void> saveNotEmptyWalletList(bool isNotEmpty) async {
     _isNotEmptyWalletList = isNotEmpty;
-    await _sharedPrefs.setBool(SharedPrefsRepository.kIsNotEmptyWalletList, isNotEmpty);
-    if (!isNotEmpty) await _sharedPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, 0);
+    await _sharedPrefs.setBool(
+        SharedPrefsRepository.kIsNotEmptyWalletList, isNotEmpty);
+    if (!isNotEmpty)
+      await _sharedPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, 0);
     notifyListeners();
   }
 
@@ -190,7 +199,8 @@ class AppSubStateModel with ChangeNotifier {
     _isSetPin = false;
     _isSetBiometrics = false;
     _sharedPrefs.setBool(SharedPrefsRepository.kIsSetPin, _isSetPin);
-    _sharedPrefs.setBool(SharedPrefsRepository.kIsSetBiometrics, _isSetBiometrics);
+    _sharedPrefs.setBool(
+        SharedPrefsRepository.kIsSetBiometrics, _isSetBiometrics);
     notifyListeners();
   }
 

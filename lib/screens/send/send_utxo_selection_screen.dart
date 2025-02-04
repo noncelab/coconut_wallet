@@ -2,7 +2,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
-import 'package:coconut_wallet/model/send/send_info.dart';
 
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -461,16 +460,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _moveToSendConfirm() {
-    Navigator.pushNamed(context, '/send-confirm', arguments: {
-      'id': _viewModel.sendInfoProvider.walletId,
-      'fullSendInfo': FullSendInfo(
-          address: _viewModel.sendInfoProvider.recipientAddress!,
-          amount: UnitUtil.satoshiToBitcoin(_viewModel.sendAmount),
-          satsPerVb: _viewModel.satsPerVb!,
-          estimatedFee: _viewModel.estimatedFee!,
-          isMaxMode: _viewModel.isMaxMode,
-          transaction: _viewModel.transaction)
-    });
+    Navigator.pushNamed(context, '/send-confirm');
   }
 
   void _onTapFeeButton() async {

@@ -9,15 +9,19 @@ class SendConfirmViewModel extends ChangeNotifier {
   late final WalletProvider _walletProvider;
   late WalletListItemBase _walletListItemBase;
   late int? _bitcoinPriceKrw;
+  late double _amount;
+  late String _address;
 
   SendConfirmViewModel(
       this._sendInfoProvider, this._walletProvider, this._bitcoinPriceKrw) {
     _walletListItemBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
+    _amount = _sendInfoProvider.amount!;
+    _address = _sendInfoProvider.recipientAddress!;
   }
 
-  String get address => _sendInfoProvider.recipientAddress!;
-  double get amount => _sendInfoProvider.amount!;
+  double get amount => _amount;
+  String get address => _address;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get estimatedFee => _sendInfoProvider.estimatedFee;
   String get walletName => _walletListItemBase.name;
@@ -47,11 +51,11 @@ class SendConfirmViewModel extends ChangeNotifier {
     return generatedTx;
   }
 
-  setTxWaitingForSign(String transaction) {
+  void setTxWaitingForSign(String transaction) {
     _sendInfoProvider.setTxWaitingForSign(transaction);
   }
 
-  updateBitcoinPriceKrw(int btcPriceInKrw) {
+  void updateBitcoinPriceKrw(int btcPriceInKrw) {
     _bitcoinPriceKrw = btcPriceInKrw;
     notifyListeners();
   }

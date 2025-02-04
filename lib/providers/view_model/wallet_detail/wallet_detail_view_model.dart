@@ -299,6 +299,7 @@ class WalletDetailViewModel extends ChangeNotifier {
           _requestAmount = _faucetMinAmount;
         }
       }
+      // TODO: 에러 처리
     } finally {
       notifyListeners();
     }

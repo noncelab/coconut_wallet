@@ -9,7 +9,8 @@ class PreferenceProvider extends ChangeNotifier {
   bool get isBalanceHidden => _isBalanceHidden;
 
   PreferenceProvider() {
-    _isBalanceHidden = _sharedPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden);
+    _isBalanceHidden =
+        _sharedPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden);
   }
 
   /// 홈 화면 잔액 숨기기
