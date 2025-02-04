@@ -33,6 +33,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final UtxoTagProvider _tagProvider;
   final SendInfoProvider _sendInfoProvider;
+  late int _sendAmount;
   UpbitConnectModel _upbitConnectModel;
   WalletBase? _walletBase;
   Transaction? transaction;
@@ -68,7 +69,46 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     this._sendInfoProvider,
     this._upbitConnectModel,
   ) {
-    _initialize();
+    _walletBaseItem =
+        _walletProvider.getWalletById(_sendInfoProvider.walletId!);
+    _requiredSignature =
+        _walletBaseItem!.walletType == WalletType.multiSignature
+            ? (_walletBaseItem as MultisigWalletListItem).requiredSignatureCount
+            : null;
+    _totalSigner = _walletBaseItem!.walletType == WalletType.multiSignature
+        ? (_walletBaseItem as MultisigWalletListItem).signers.length
+        : null;
+
+    if (_walletProvider.walletInitState == WalletInitState.finished) {
+      _confirmedUtxoList =
+          _getAllConfirmedUtxoList(_walletBaseItem!.walletFeature);
+      UTXO.sortUTXO(_confirmedUtxoList, selectedUtxoOrder);
+      addDisplayUtxoList();
+    } else {
+      _confirmedUtxoList = _selectedUtxoList = [];
+    }
+
+    if (_walletBaseItem!.walletType == WalletType.multiSignature) {
+      _walletBase = (_walletBaseItem! as MultisigWalletListItem).walletBase;
+      _confirmedBalance = (_walletBase as MultisignatureWallet).getBalance();
+    } else {
+      _walletBase = (_walletBaseItem as SinglesigWalletListItem).walletBase;
+      _confirmedBalance = (_walletBase as SingleSignatureWallet).getBalance();
+    }
+
+    _isMaxMode = _confirmedBalance ==
+        UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
+    _sendAmount = _isMaxMode
+        ? UnitUtil.bitcoinToSatoshi(
+              _sendInfoProvider.amount!,
+            ) -
+            (_estimatedFee ?? 0)
+        : UnitUtil.bitcoinToSatoshi(
+            _sendInfoProvider.amount!,
+          );
+    transaction = _createTransaction(_isMaxMode, 1, _walletBase!);
+    _syncSelectedUtxosWithTransaction();
+    notifyListeners();
   }
 
   int? get change {
@@ -118,6 +158,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     return null;
   }
 
+  int get sendAmount => _sendAmount;
   String get errorString => _errorString;
   int? get estimatedFee => _estimatedFee;
   String get estimatedFeeString => estimatedFee != null
@@ -127,7 +168,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       _isErrorInUpdateFeeInfoEstimateFee;
   bool get isMaxMode => _isMaxMode;
   bool get isUtxoTagListEmpty => _tagProvider.tagList.isEmpty;
-  int get needAmount => sendAmount + (_estimatedFee ?? 0);
+  int get needAmount => _sendAmount + (_estimatedFee ?? 0);
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus =>
       _recommendedFeeFetchStatus;
   RecommendedFee? get recommendedFees => _recommendedFees;
@@ -146,27 +187,14 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
 
-  int get sendAmount {
-    return _isMaxMode
-        ? UnitUtil.bitcoinToSatoshi(
-              _sendInfoProvider.amount!,
-            ) -
-            (_estimatedFee ?? 0)
-        : UnitUtil.bitcoinToSatoshi(
-            _sendInfoProvider.amount!,
-          );
-  }
-
   String get sendAmountString =>
-      '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC';
+      '${satoshiToBitcoinString(_sendAmount).normalizeToFullCharacters()} BTC';
 
   SendInfoProvider get sendInfoProvider => _sendInfoProvider;
 
   UtxoTagProvider get tagProvider => _tagProvider;
 
   int? get totalSigner => _totalSigner;
-
-  UpbitConnectModel get upbitConnectModel => _upbitConnectModel;
 
   List<UtxoTag> get utxoTagList => _tagProvider.tagList;
 
@@ -372,42 +400,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       _estimatedFee = estimatedFee;
       return;
     }
-  }
-
-  /// 초기화
-  void _initialize() {
-    _walletBaseItem =
-        _walletProvider.getWalletById(_sendInfoProvider.walletId!);
-    _requiredSignature =
-        _walletBaseItem!.walletType == WalletType.multiSignature
-            ? (_walletBaseItem as MultisigWalletListItem).requiredSignatureCount
-            : null;
-    _totalSigner = _walletBaseItem!.walletType == WalletType.multiSignature
-        ? (_walletBaseItem as MultisigWalletListItem).signers.length
-        : null;
-
-    if (_walletProvider.walletInitState == WalletInitState.finished) {
-      _confirmedUtxoList =
-          _getAllConfirmedUtxoList(_walletBaseItem!.walletFeature);
-      UTXO.sortUTXO(_confirmedUtxoList, selectedUtxoOrder);
-      addDisplayUtxoList();
-    } else {
-      _confirmedUtxoList = _selectedUtxoList = [];
-    }
-
-    if (_walletBaseItem!.walletType == WalletType.multiSignature) {
-      _walletBase = (_walletBaseItem! as MultisigWalletListItem).walletBase;
-      _confirmedBalance = (_walletBase as MultisignatureWallet).getBalance();
-    } else {
-      _walletBase = (_walletBaseItem as SinglesigWalletListItem).walletBase;
-      _confirmedBalance = (_walletBase as SingleSignatureWallet).getBalance();
-    }
-
-    _isMaxMode = _confirmedBalance ==
-        UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
-    transaction = _createTransaction(_isMaxMode, 1, _walletBase!);
-    _syncSelectedUtxosWithTransaction();
-    notifyListeners();
   }
 
   bool _isSelectedUtxoEnough() {
