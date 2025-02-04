@@ -58,10 +58,6 @@ class BroadcastingViewModel extends ChangeNotifier {
     return await _walletProvider.broadcast(signedTx);
   }
 
-  void clearSendInfo() {
-    _sendInfoProvider.clear();
-  }
-
   void setBitcoinPriceKrw(int bitcoinPriceKrw) {
     _bitcoinPriceKrw = bitcoinPriceKrw;
     notifyListeners();

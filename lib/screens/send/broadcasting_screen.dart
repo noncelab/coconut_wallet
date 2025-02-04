@@ -50,8 +50,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
       if (result.isSuccess) {
         vibrateLight();
-        _viewModel.clearSendInfo();
-
         await _viewModel.updateTagsOfUsedUtxos(signedTx.transactionHash);
 
         if (!mounted) return;

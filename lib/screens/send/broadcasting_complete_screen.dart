@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -89,6 +90,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
     super.initState();
     _animationController = BottomSheet.createAnimationController(this);
     _animationController.duration = const Duration(seconds: 2);
+    Provider.of<SendInfoProvider>(context, listen: false).clear();
   }
 
   void onTap(BuildContext context) {
