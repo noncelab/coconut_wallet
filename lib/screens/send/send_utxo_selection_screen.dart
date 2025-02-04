@@ -48,6 +48,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   final GlobalKey _orderDropdownButtonKey = GlobalKey();
   final GlobalKey _scrolledOrderDropdownButtonKey = GlobalKey();
+  final List<UtxoOrderEnum> _utxoOrderOptions = [
+    UtxoOrderEnum.byAmountDesc,
+    UtxoOrderEnum.byAmountAsc,
+    UtxoOrderEnum.byTimestampDesc,
+    UtxoOrderEnum.byTimestampAsc,
+  ];
+  late UtxoOrderEnum _selectedUtxoOrder;
   bool _isStickyHeaderVisible = false; // 스크롤시 상단에 붙어있는 위젯
   bool _isOrderDropdownVisible = false; // 필터 드롭다운(확장형)
   bool _isScrolledOrderDropdownVisible = false; // 필터 드롭다운(축소형)
@@ -126,7 +133,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                                 .message);
                                       }
                                     },
-                                    onTapFeeButton: () => _onTapFeeButton(),
+                                    onTapFeeButton: () =>
+                                        _onTapFeeChangeButton(),
                                     isMaxMode: viewModel.isMaxMode,
                                     customFeeSelected:
                                         viewModel.customFeeSelected,
@@ -145,7 +153,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                             _totalUtxoAmountWidget(
                               Text(
                                 key: _orderDropdownButtonKey,
-                                _getCurrentOrder(),
+                                _selectedUtxoOrder.text,
                                 style: Styles.caption2.merge(
                                   const TextStyle(
                                     color: MyColors.white,
@@ -240,7 +248,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         child: _totalUtxoAmountWidget(
                           Text(
                             key: _scrolledOrderDropdownButtonKey,
-                            _getCurrentOrder(),
+                            _selectedUtxoOrder.text,
                             style: Styles.caption2.merge(
                               const TextStyle(
                                 color: MyColors.white,
@@ -268,7 +276,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         MediaQuery.of(context).padding.top -
                         20,
                     left: 16,
-                    child: _orderDropdownWidget(),
+                    child: _utxoOrderDropdownWidget(),
                   ),
                 },
                 if (_isScrolledOrderDropdownVisible &&
@@ -278,7 +286,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         MediaQuery.of(context).padding.top -
                         65,
                     left: 16,
-                    child: _orderDropdownWidget(),
+                    child: _utxoOrderDropdownWidget(),
                   ),
                 }
               ],
@@ -287,29 +295,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         ),
       ),
     );
-  }
-
-  Transaction createTransaction(
-      bool isMaxMode, int feeRate, WalletBase walletBase) {
-    if (isMaxMode) {
-      return Transaction.forSweep(
-          _viewModel.sendInfoProvider.recipientAddress!, feeRate, walletBase);
-    }
-
-    try {
-      return Transaction.forPayment(
-          _viewModel.sendInfoProvider.recipientAddress!,
-          UnitUtil.bitcoinToSatoshi(_viewModel.sendInfoProvider.amount!),
-          feeRate,
-          walletBase);
-    } catch (e) {
-      if (e.toString().contains('Not enough amount for sending. (Fee')) {
-        return Transaction.forSweep(
-            _viewModel.sendInfoProvider.recipientAddress!, feeRate, walletBase);
-      }
-
-      rethrow;
-    }
   }
 
   @override
@@ -322,12 +307,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   void initState() {
     try {
       super.initState();
+      _selectedUtxoOrder = _utxoOrderOptions[0];
       _viewModel = SendUtxoSelectionViewModel(
-        Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<UtxoTagProvider>(context, listen: false),
-        Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<UpbitConnectModel>(context, listen: false),
-      );
+          Provider.of<WalletProvider>(context, listen: false),
+          Provider.of<UtxoTagProvider>(context, listen: false),
+          Provider.of<SendInfoProvider>(context, listen: false),
+          Provider.of<UpbitConnectModel>(context, listen: false),
+          Provider.of<ConnectivityProvider>(context, listen: false),
+          _selectedUtxoOrder);
 
       _scrollController = ScrollController();
 
@@ -335,7 +322,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         double threshold = _headerTopContainerSize.height + 24;
         double offset = _scrollController.offset;
         if (_isOrderDropdownVisible || _isScrolledOrderDropdownVisible) {
-          _removeOrderDropdown();
+          _removeUtxoOrderDropdown();
         }
         setState(() {
           _isStickyHeaderVisible = offset >= threshold;
@@ -380,74 +367,33 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
   }
 
-  void _applyOrder(UtxoOrderEnum orderEnum) async {
-    if (orderEnum == _viewModel.selectedUtxoOrder) return;
-    //_scrollController.jumpTo(0);
-    _viewModel.setSelectedUtxoOrder(orderEnum);
-    await Future.delayed(const Duration(milliseconds: 100));
-    if (mounted) {
-      setState(() {
-        UTXO.sortUTXO(_viewModel.confirmedUtxoList, orderEnum);
-        _viewModel.addDisplayUtxoList();
-      });
-    }
-  }
-
   void _deselectAll() {
-    _removeOrderDropdown();
-    _viewModel.clearUtxoList();
-    if (!_viewModel.isMaxMode) {
-      _viewModel.transaction = Transaction.fromUtxoList([],
-          _viewModel.sendInfoProvider.recipientAddress!,
-          UnitUtil.bitcoinToSatoshi(_viewModel.sendInfoProvider.amount!),
-          _viewModel.satsPerVb ?? 1,
-          _viewModel.walletBase!);
-    }
-  }
-
-  String _getCurrentOrder() {
-    if (_viewModel.selectedUtxoOrder == UtxoOrderEnum.byTimestampDesc) {
-      return '최신순';
-    } else if (_viewModel.selectedUtxoOrder == UtxoOrderEnum.byTimestampAsc) {
-      return '오래된 순';
-    } else if (_viewModel.selectedUtxoOrder == UtxoOrderEnum.byAmountDesc) {
-      return '큰 금액순';
-    } else {
-      return '작은 금액순';
-    }
+    _removeUtxoOrderDropdown();
+    _viewModel.deselectAllUtxo();
   }
 
   void _goNext() {
-    _removeOrderDropdown();
-    var connectivityProvider =
-        Provider.of<ConnectivityProvider>(context, listen: false);
-    if (connectivityProvider.isNetworkOn != true) {
+    _removeUtxoOrderDropdown();
+    if (!_viewModel.isNetworkOn) {
       CustomToast.showWarningToast(
           context: context, text: ErrorCodes.networkError.message);
       return;
     }
-
-    List<String> usedUtxoIds =
-        _viewModel.selectedUtxoList.map((e) => e.utxoId).toList();
-
-    bool isTagIncluded = usedUtxoIds.any((txHashIndex) =>
-        _viewModel.utxoTagMap[txHashIndex]?.isNotEmpty == true);
-
     _viewModel.updateSendInfoProvider();
 
-    if (isTagIncluded) {
+    if (_viewModel.hasTaggedUtxo()) {
       CustomDialogs.showCustomAlertDialog(
         context,
         title: '태그 적용',
         message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
         onConfirm: () {
           Navigator.of(context).pop();
-          _viewModel.tagProvider.inheritPreviousUtxoTags(usedUtxoIds, true);
+          _viewModel.saveUsedUtxoIdsWhenTagged(isTagsMoveAllowed: true);
           _moveToSendConfirm();
         },
         onCancel: () {
           Navigator.of(context).pop();
-          _viewModel.tagProvider.inheritPreviousUtxoTags(usedUtxoIds, false);
+          _viewModel.saveUsedUtxoIdsWhenTagged(isTagsMoveAllowed: false);
           _moveToSendConfirm();
         },
         confirmButtonText: '적용하기',
@@ -463,12 +409,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     Navigator.pushNamed(context, '/send-confirm');
   }
 
-  void _onTapFeeButton() async {
+  void _onTapFeeChangeButton() async {
     if (_viewModel.errorState == null) {
       _viewModel.updateFeeInfoEstimateFee();
     }
     Result<int, CoconutError>? minimumFeeRate =
-        await _viewModel.walletProvider.getMinimumNetworkFeeRate();
+        await _viewModel.getMinimumFeeRateFromNetwork();
 
     if (!mounted) {
       return;
@@ -491,43 +437,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
   }
 
-  /// 필터 드롭다운 위젯
-  Widget _orderDropdownWidget() {
-    return Material(
-      borderRadius: BorderRadius.circular(16),
-      child: CustomDropdown(
-        buttons: [
-          UtxoOrderEnum.byAmountDesc.text,
-          UtxoOrderEnum.byAmountAsc.text,
-          UtxoOrderEnum.byTimestampDesc.text,
-          UtxoOrderEnum.byTimestampAsc.text,
-        ],
-        dividerColor: Colors.black,
-        onTapButton: (index) {
-          switch (index) {
-            case 0: // 큰 금액순
-              _applyOrder(UtxoOrderEnum.byAmountDesc);
-              break;
-            case 1: // 작은 금액순
-              _applyOrder(UtxoOrderEnum.byAmountAsc);
-              break;
-            case 2: // 최신순
-              _applyOrder(UtxoOrderEnum.byTimestampDesc);
-              break;
-            case 3: // 오래된 순
-              _applyOrder(UtxoOrderEnum.byTimestampAsc);
-              break;
-          }
-          setState(() {
-            _isOrderDropdownVisible = _isScrolledOrderDropdownVisible = false;
-          });
-        },
-        selectedButton: _viewModel.selectedUtxoOrder.text,
-      ),
-    );
-  }
-
-  void _removeOrderDropdown() {
+  void _removeUtxoOrderDropdown() {
     setState(() {
       _isOrderDropdownVisible = false;
       _isScrolledOrderDropdownVisible = false;
@@ -535,69 +445,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _selectAll() {
-    _removeOrderDropdown();
-    _viewModel.setSelectedUtxoList(List.from(_viewModel.confirmedUtxoList));
-
-    if (!_viewModel.isMaxMode) {
-      _viewModel.transaction = Transaction.fromUtxoList(
-          _viewModel.selectedUtxoList,
-          _viewModel.sendInfoProvider.recipientAddress!,
-          UnitUtil.bitcoinToSatoshi(_viewModel.sendInfoProvider.amount!),
-          _viewModel.satsPerVb ?? 1,
-          _viewModel.walletBase!);
-      if (_viewModel.estimatedFee != null &&
-          _viewModel.isSelectedUtxoEnough()) {
-        _viewModel
-            .setEstimatedFee(_viewModel.estimateFee(_viewModel.satsPerVb!));
-      }
-    }
+    _removeUtxoOrderDropdown();
+    _viewModel.selectAllUtxo();
   }
 
-  /// UTXO 선택 상태를 토글하는 함수
   void _toggleSelection(UTXO utxo) {
-    _removeOrderDropdown();
-    setState(() {
-      if (_viewModel.selectedUtxoList.contains(utxo)) {
-        if (!_viewModel.isMaxMode) {
-          _viewModel.transaction!.removeInputWithUtxo(
-              utxo, _viewModel.satsPerVb ?? 1, _viewModel.walletBase!,
-              requiredSignature: _viewModel.requiredSignature,
-              totalSinger: _viewModel.totalSigner);
-        }
-
-        // 모두 선택 시 List.from 으로 전체 리스트, 필터 리스트 구분 될 때
-        // 라이브러리 UTXO에 copyWith 구현 필요함
-        final keyToRemove = '${utxo.transactionHash}_${utxo.index}';
-
-        _viewModel.setSelectedUtxoList(_viewModel.selectedUtxoList
-            .fold<Map<String, UTXO>>({}, (map, utxo) {
-              final key = '${utxo.transactionHash}_${utxo.index}';
-              if (key != keyToRemove) {
-                // 제거할 키가 아니면 추가
-                map[key] = utxo;
-              }
-              return map;
-            })
-            .values
-            .toList());
-
-        if (_viewModel.estimatedFee != null &&
-            _viewModel.isSelectedUtxoEnough()) {
-          _viewModel
-              .setEstimatedFee(_viewModel.estimateFee(_viewModel.satsPerVb!));
-        }
-      } else {
-        if (!_viewModel.isMaxMode) {
-          _viewModel.transaction!.addInputWithUtxo(
-              utxo, _viewModel.satsPerVb ?? 1, _viewModel.walletBase!,
-              requiredSignature: _viewModel.requiredSignature,
-              totalSinger: _viewModel.totalSigner);
-          _viewModel.setEstimatedFee(
-              _viewModel.estimateFee(_viewModel.satsPerVb ?? 1));
-        }
-        _viewModel.selectedUtxoList.add(utxo);
-      }
-    });
+    _removeUtxoOrderDropdown();
+    _viewModel.toggleUtxoSelection(utxo);
   }
 
   Widget _totalUtxoAmountWidget(
@@ -721,7 +575,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     if (_isStickyHeaderVisible
                         ? _isScrolledOrderDropdownVisible
                         : _isOrderDropdownVisible) {
-                      _removeOrderDropdown();
+                      _removeUtxoOrderDropdown();
                     } else {
                       _scrollController.jumpTo(_scrollController.offset);
 
@@ -760,7 +614,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: '모두 해제',
                     onTap: () {
-                      _removeOrderDropdown();
+                      _removeUtxoOrderDropdown();
                       _deselectAll();
                     },
                   ),
@@ -769,7 +623,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: '모두 선택',
                     onTap: () async {
-                      _removeOrderDropdown();
+                      _removeUtxoOrderDropdown();
                       _selectAll();
                     },
                   )
@@ -779,6 +633,33 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           ]),
         ),
       ],
+    );
+  }
+
+  /// 필터 드롭다운 위젯
+  Widget _utxoOrderDropdownWidget() {
+    return Material(
+      borderRadius: BorderRadius.circular(16),
+      child: CustomDropdown(
+        buttons: _utxoOrderOptions.map((order) => order.text).toList(),
+        dividerColor: Colors.black,
+        onTapButton: (index) async {
+          bool isChanged = _selectedUtxoOrder != _utxoOrderOptions[index];
+          setState(() {
+            if (isChanged) {
+              _selectedUtxoOrder = _utxoOrderOptions[index];
+            }
+            _isOrderDropdownVisible = _isScrolledOrderDropdownVisible = false;
+          });
+
+          if (!isChanged) return;
+          await Future.delayed(const Duration(milliseconds: 100));
+          if (mounted) {
+            _viewModel.changeUtxoOrder(_utxoOrderOptions[index]);
+          }
+        },
+        selectedButton: _selectedUtxoOrder.text,
+      ),
     );
   }
 }

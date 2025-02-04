@@ -4,8 +4,8 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -30,12 +30,14 @@ enum ErrorState {
 }
 
 class SendUtxoSelectionViewModel extends ChangeNotifier {
-  final WalletProvider _walletProvider;
-  final UtxoTagProvider _tagProvider;
-  final SendInfoProvider _sendInfoProvider;
+  late final WalletProvider _walletProvider;
+  late final UtxoTagProvider _tagProvider;
+  late final SendInfoProvider _sendInfoProvider;
+  late final UpbitConnectModel _upbitConnectModel;
+  late final ConnectivityProvider _connectivityProvider;
   late int _sendAmount;
-  UpbitConnectModel _upbitConnectModel;
-  WalletBase? _walletBase;
+  late String _recipientAddress;
+  late WalletBase _walletBase;
   Transaction? transaction;
   WalletListItemBase? _walletBaseItem;
   List<UTXO> _confirmedUtxoList = [];
@@ -45,7 +47,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   TransactionFeeLevel? _selectedLevel = TransactionFeeLevel.halfhour;
 
   RecommendedFee? _recommendedFees;
-  UtxoOrderEnum _selectedUtxoOrder = UtxoOrderEnum.byTimestampDesc; // 초기 정렬 방식
 
   FeeInfo? _customFeeInfo;
   bool _isMaxMode = false;
@@ -64,11 +65,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   String selectedUtxoTagName = '전체'; // 선택된 태그
   final Map<String, List<UtxoTag>> _utxoTagMap = {};
   SendUtxoSelectionViewModel(
-    this._walletProvider,
-    this._tagProvider,
-    this._sendInfoProvider,
-    this._upbitConnectModel,
-  ) {
+      this._walletProvider,
+      this._tagProvider,
+      this._sendInfoProvider,
+      this._upbitConnectModel,
+      this._connectivityProvider,
+      UtxoOrderEnum initialUtxoOrder) {
     _walletBaseItem =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _requiredSignature =
@@ -79,23 +81,19 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         ? (_walletBaseItem as MultisigWalletListItem).signers.length
         : null;
 
+    // TODO: 불필요한 if문인지 확인 필요
     if (_walletProvider.walletInitState == WalletInitState.finished) {
       _confirmedUtxoList =
           _getAllConfirmedUtxoList(_walletBaseItem!.walletFeature);
-      UTXO.sortUTXO(_confirmedUtxoList, selectedUtxoOrder);
-      addDisplayUtxoList();
+      UTXO.sortUTXO(_confirmedUtxoList, initialUtxoOrder);
+      _initUtxoTagMap();
     } else {
       _confirmedUtxoList = _selectedUtxoList = [];
     }
 
-    if (_walletBaseItem!.walletType == WalletType.multiSignature) {
-      _walletBase = (_walletBaseItem! as MultisigWalletListItem).walletBase;
-      _confirmedBalance = (_walletBase as MultisignatureWallet).getBalance();
-    } else {
-      _walletBase = (_walletBaseItem as SinglesigWalletListItem).walletBase;
-      _confirmedBalance = (_walletBase as SingleSignatureWallet).getBalance();
-    }
-
+    _walletBase = _walletBaseItem!.walletBase;
+    _confirmedBalance = _walletBaseItem!.walletFeature.getBalance();
+    _recipientAddress = _sendInfoProvider.recipientAddress!;
     _isMaxMode = _confirmedBalance ==
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _sendAmount = _isMaxMode
@@ -185,8 +183,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   List<UTXO> get selectedUtxoList => _selectedUtxoList;
 
-  UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
-
   String get sendAmountString =>
       '${satoshiToBitcoinString(_sendAmount).normalizeToFullCharacters()} BTC';
 
@@ -210,14 +206,14 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       ? null
       : feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel);
 
-  void addDisplayUtxoList() {
-    _utxoTagMap.clear();
+  bool get isNetworkOn => _connectivityProvider.isNetworkOn == true;
+
+  void _initUtxoTagMap() {
     for (var (element) in _confirmedUtxoList) {
       final tags = _tagProvider.loadSelectedUtxoTagList(
           _sendInfoProvider.walletId!, element.utxoId);
       _utxoTagMap[element.utxoId] = tags;
     }
-    notifyListeners();
   }
 
   void addSelectedUtxoList(UTXO utxo) {
@@ -234,7 +230,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   int estimateFee(int feeRate) {
-    return transaction!.estimateFee(feeRate, _walletBase!.addressType,
+    return transaction!.estimateFee(feeRate, _walletBase.addressType,
         requiredSignature: _requiredSignature, totalSinger: _totalSigner);
   }
 
@@ -308,11 +304,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void setSelectedUtxoList(List<UTXO> utxoList) {
     _selectedUtxoList = utxoList;
-    notifyListeners();
-  }
-
-  void setSelectedUtxoOrder(UtxoOrderEnum value) {
-    _selectedUtxoOrder = value;
     notifyListeners();
   }
 
@@ -424,6 +415,83 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
           utxo.index == inputs[i].index));
     }
     _selectedUtxoList = result;
+    notifyListeners();
+  }
+
+  void deselectAllUtxo() {
+    clearUtxoList();
+    if (!_isMaxMode) {
+      transaction = Transaction.fromUtxoList(
+          [], _recipientAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
+    }
+  }
+
+  void selectAllUtxo() {
+    setSelectedUtxoList(List.from(confirmedUtxoList));
+
+    if (!isMaxMode) {
+      transaction = Transaction.fromUtxoList(selectedUtxoList,
+          _recipientAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
+
+      if (estimatedFee != null && isSelectedUtxoEnough()) {
+        setEstimatedFee(estimateFee(satsPerVb ?? 1));
+      }
+    }
+  }
+
+  void toggleUtxoSelection(UTXO utxo) {
+    if (selectedUtxoList.contains(utxo)) {
+      if (!_isMaxMode) {
+        transaction!.removeInputWithUtxo(utxo, satsPerVb ?? 1, _walletBase,
+            requiredSignature: _requiredSignature, totalSinger: _totalSigner);
+      }
+
+      // 모두 선택 시 List.from 으로 전체 리스트, 필터 리스트 구분 될 때
+      // 라이브러리 UTXO에 copyWith 구현 필요함
+      final keyToRemove = '${utxo.transactionHash}_${utxo.index}';
+
+      setSelectedUtxoList(selectedUtxoList
+          .fold<Map<String, UTXO>>({}, (map, utxo) {
+            final key = '${utxo.transactionHash}_${utxo.index}';
+            if (key != keyToRemove) {
+              // 제거할 키가 아니면 추가
+              map[key] = utxo;
+            }
+            return map;
+          })
+          .values
+          .toList());
+
+      if (estimatedFee != null && _isSelectedUtxoEnough()) {
+        setEstimatedFee(estimateFee(satsPerVb!));
+      }
+    } else {
+      if (!_isMaxMode) {
+        transaction!.addInputWithUtxo(utxo, satsPerVb ?? 1, _walletBase,
+            requiredSignature: _requiredSignature, totalSinger: _totalSigner);
+        setEstimatedFee(estimateFee(satsPerVb ?? 1));
+      }
+      selectedUtxoList.add(utxo);
+    }
+  }
+
+  Future<Result<int, CoconutError>?> getMinimumFeeRateFromNetwork() async {
+    return await _walletProvider.getMinimumNetworkFeeRate();
+  }
+
+  bool hasTaggedUtxo() {
+    return _selectedUtxoList
+        .any((utxo) => _utxoTagMap[utxo.utxoId]?.isNotEmpty == true);
+  }
+
+  void saveUsedUtxoIdsWhenTagged({required bool isTagsMoveAllowed}) {
+    _tagProvider.saveUsedUtxoIdsIncludingTagged(
+        _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+        isTagsMoveAllowed: isTagsMoveAllowed);
+  }
+
+  void changeUtxoOrder(UtxoOrderEnum orderEnum) async {
+    UTXO.sortUTXO(_confirmedUtxoList, orderEnum);
     notifyListeners();
   }
 }

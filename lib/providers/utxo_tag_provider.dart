@@ -15,7 +15,7 @@ class UtxoTagProvider extends ChangeNotifier {
   String? _updatedTagName;
   bool _isUpdatedTagList = false;
 
-  List<String> _previousUtxoIds = [];
+  List<String> _usedUtxoIds = [];
   bool _isTagsMoveAllowed = false;
 
   bool get isUpdatedTagList => _isUpdatedTagList;
@@ -26,7 +26,7 @@ class UtxoTagProvider extends ChangeNotifier {
   List<UtxoTag> get tagList => _tagList;
   List<UtxoTag> get selectedTagList => _selectedTagList;
 
-  List<String> get previousUtxoIds => _previousUtxoIds;
+  List<String> get previousUtxoIds => _usedUtxoIds;
   bool get isTagsMoveAllowed => _isTagsMoveAllowed;
 
   void initTagList(int walletId, {String? utxoId}) {
@@ -135,17 +135,18 @@ class UtxoTagProvider extends ChangeNotifier {
         : [];
 
     final result = await _walletDataManager.updateTagsOfSpentUtxos(
-        walletId, _previousUtxoIds, newUtxoIds);
+        walletId, _usedUtxoIds, newUtxoIds);
     if (result.isError) {
       Logger.error(result.error);
     }
-    _previousUtxoIds = [];
+    _usedUtxoIds = [];
     _isTagsMoveAllowed = false;
   }
 
-  void inheritPreviousUtxoTags(
-      List<String> utxoIdList, bool isTagsMoveAllowed) {
-    _previousUtxoIds = utxoIdList;
+  // 사용한 utxo 중, 태그된 것이 하나라도 있는 경우, 사용한 utxo id 목록을 저장
+  void saveUsedUtxoIdsIncludingTagged(List<String> utxoIdList,
+      {required bool isTagsMoveAllowed}) {
+    _usedUtxoIds = utxoIdList;
     _isTagsMoveAllowed = isTagsMoveAllowed;
   }
 
