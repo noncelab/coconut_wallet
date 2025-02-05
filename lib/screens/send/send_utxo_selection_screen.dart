@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -10,7 +9,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -66,8 +64,18 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   Widget build(BuildContext context) {
     // try-catch: initState _viewModel 생성 실패로 lateError 발생 할 수 있음
     try {
-      return ChangeNotifierProvider.value(
-        value: _viewModel,
+      return ChangeNotifierProxyProvider2<UpbitConnectModel,
+          ConnectivityProvider, SendUtxoSelectionViewModel>(
+        create: (_) => _viewModel,
+        update: (_, upbitConnectModel, connectivityProvider, viewModel) {
+          if (upbitConnectModel.bitcoinPriceKrw != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              viewModel!
+                  .updateBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
+            });
+          }
+          return viewModel!;
+        },
         child: Consumer<SendUtxoSelectionViewModel>(
           builder: (context, viewModel, child) => Scaffold(
             appBar: CustomAppBar.buildWithNext(
@@ -100,43 +108,34 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                           child: Column(
                             children: [
                               Container(
-                                key: _headerTopContainerKey,
-                                width: MediaQuery.sizeOf(context).width,
-                                decoration: BoxDecoration(
-                                  color: MyColors.transparentWhite_10,
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                padding: const EdgeInsets.only(
-                                  left: 24,
-                                  right: 24,
-                                  top: 24,
-                                  bottom: 20,
-                                ),
-                                child: Selector<UpbitConnectModel, int?>(
-                                  selector: (context, model) =>
-                                      model.bitcoinPriceKrw,
-                                  builder: (context, bitcoinPriceKrw, child) {
-                                    return SendUtxoStickyHeader(
-                                      errorState: viewModel.errorState,
-                                      recommendedFeeFetchStatus:
-                                          viewModel.recommendedFeeFetchStatus,
-                                      selectedLevel: viewModel.selectedLevel,
-                                      onTapFeeButton: () =>
-                                          _onTapFeeChangeButton(),
-                                      isMaxMode: viewModel.isMaxMode,
-                                      customFeeSelected:
-                                          viewModel.customFeeSelected,
-                                      sendAmount: viewModel.sendAmount,
-                                      bitcoinPriceKrw: bitcoinPriceKrw != null
-                                          ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(viewModel.sendAmount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
-                                          : '',
-                                      estimatedFee: viewModel.estimatedFee,
-                                      satsPerVb: viewModel.satsPerVb,
-                                      change: viewModel.change,
-                                    );
-                                  },
-                                ),
-                              ),
+                                  key: _headerTopContainerKey,
+                                  width: MediaQuery.sizeOf(context).width,
+                                  decoration: BoxDecoration(
+                                    color: MyColors.transparentWhite_10,
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  padding: const EdgeInsets.only(
+                                    left: 24,
+                                    right: 24,
+                                    top: 24,
+                                    bottom: 20,
+                                  ),
+                                  child: SendUtxoStickyHeader(
+                                    errorState: viewModel.errorState,
+                                    recommendedFeeFetchStatus:
+                                        viewModel.recommendedFeeFetchStatus,
+                                    selectedLevel: viewModel.selectedLevel,
+                                    onTapFeeButton: () =>
+                                        _onTapFeeChangeButton(),
+                                    isMaxMode: viewModel.isMaxMode,
+                                    customFeeSelected:
+                                        viewModel.customFeeSelected,
+                                    sendAmount: viewModel.sendAmount,
+                                    bitcoinPriceKrw: viewModel.bitcoinPriceKrw,
+                                    estimatedFee: viewModel.estimatedFee,
+                                    satsPerVb: viewModel.satsPerVb,
+                                    change: viewModel.change,
+                                  )),
                               _totalUtxoAmountWidget(
                                 Text(
                                   key: _orderDropdownButtonKey,
@@ -294,8 +293,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           Provider.of<WalletProvider>(context, listen: false),
           Provider.of<UtxoTagProvider>(context, listen: false),
           Provider.of<SendInfoProvider>(context, listen: false),
-          Provider.of<UpbitConnectModel>(context, listen: false),
           Provider.of<ConnectivityProvider>(context, listen: false),
+          Provider.of<UpbitConnectModel>(context, listen: false)
+              .bitcoinPriceKrw,
           _selectedUtxoOrder);
 
       _scrollController.addListener(() {

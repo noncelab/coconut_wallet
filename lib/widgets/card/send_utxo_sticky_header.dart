@@ -1,8 +1,11 @@
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +17,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
   final bool isMaxMode;
   final bool customFeeSelected;
   final int sendAmount;
-  final String bitcoinPriceKrw;
+  final int? bitcoinPriceKrw;
   final int? estimatedFee;
   final int? satsPerVb;
   final int? change;
@@ -36,6 +39,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Logger.log('--> bitcoinPriceKrw: $bitcoinPriceKrw');
     return Column(
       children: [
         Row(
@@ -78,7 +82,11 @@ class SendUtxoStickyHeader extends StatelessWidget {
                         '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
                         style: Styles.body2Number,
                       ),
-                      Text(bitcoinPriceKrw, style: Styles.caption),
+                      Text(
+                          bitcoinPriceKrw != null
+                              ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(sendAmount, bitcoinPriceKrw!).toDouble())} ${CurrencyCode.KRW.code}'
+                              : '',
+                          style: Styles.caption),
                     ],
                   ),
                 ],

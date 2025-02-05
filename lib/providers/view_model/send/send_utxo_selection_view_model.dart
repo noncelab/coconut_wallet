@@ -8,7 +8,6 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
@@ -34,8 +33,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   late final WalletProvider _walletProvider;
   late final UtxoTagProvider _tagProvider;
   late final SendInfoProvider _sendInfoProvider;
-  late final UpbitConnectModel _upbitConnectModel;
   late final ConnectivityProvider _connectivityProvider;
+  late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;
   late WalletBase _walletBase;
@@ -71,8 +70,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       this._walletProvider,
       this._tagProvider,
       this._sendInfoProvider,
-      this._upbitConnectModel,
       this._connectivityProvider,
+      this._bitcoinPriceKrw,
       UtxoOrderEnum initialUtxoOrder) {
     _walletBaseItem =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
@@ -158,6 +157,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     return null;
   }
 
+  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get estimatedFee => _estimatedFee;
   bool get isMaxMode => _isMaxMode;
   bool get isUtxoTagListEmpty => _tagProvider.tagList.isEmpty;
@@ -352,9 +352,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
     feeInfo.estimatedFee = estimatedFee;
-    feeInfo.fiatValue = _upbitConnectModel.bitcoinPriceKrw != null
-        ? FiatUtil.calculateFiatAmount(
-            estimatedFee, _upbitConnectModel.bitcoinPriceKrw!)
+    feeInfo.fiatValue = _bitcoinPriceKrw != null
+        ? FiatUtil.calculateFiatAmount(estimatedFee, _bitcoinPriceKrw!)
         : null;
 
     if (feeInfo is FeeInfoWithLevel && feeInfo.level == _selectedLevel) {
@@ -443,5 +442,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMaxMode(isMaxMode);
     _sendInfoProvider.setIsMultisig(_requiredSignature != null);
     _sendInfoProvider.setTransaction(_transaction);
+  }
+
+  void updateBitcoinPriceKrw(int btcPriceInKrw) {
+    _bitcoinPriceKrw = btcPriceInKrw;
+    notifyListeners();
   }
 }
