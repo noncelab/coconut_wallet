@@ -1,7 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
-
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -45,8 +44,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   late SendUtxoSelectionViewModel _viewModel;
 
-  final GlobalKey _orderDropdownButtonKey = GlobalKey();
-  final GlobalKey _scrolledOrderDropdownButtonKey = GlobalKey();
   final List<UtxoOrderEnum> _utxoOrderOptions = [
     UtxoOrderEnum.byAmountDesc,
     UtxoOrderEnum.byAmountAsc,
@@ -54,12 +51,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     UtxoOrderEnum.byTimestampAsc,
   ];
   late UtxoOrderEnum _selectedUtxoOrder;
+
+  final GlobalKey _orderDropdownButtonKey = GlobalKey();
+  final GlobalKey _scrolledOrderDropdownButtonKey = GlobalKey();
   bool _isStickyHeaderVisible = false; // 스크롤시 상단에 붙어있는 위젯
   bool _isOrderDropdownVisible = false; // 필터 드롭다운(확장형)
   bool _isScrolledOrderDropdownVisible = false; // 필터 드롭다운(축소형)
   late Offset _orderDropdownButtonPosition;
   late Offset _scrolledOrderDropdownButtonPosition;
-
   final GlobalKey _headerTopContainerKey = GlobalKey();
   Size _headerTopContainerSize = const Size(0, 0);
 
@@ -127,7 +126,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                       isMaxMode: viewModel.isMaxMode,
                                       customFeeSelected:
                                           viewModel.customFeeSelected,
-                                      sendAmount: viewModel.sendAmountString,
+                                      sendAmount: viewModel.sendAmount,
                                       bitcoinPriceKrw: bitcoinPriceKrw != null
                                           ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(viewModel.sendAmount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
                                           : '',

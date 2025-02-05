@@ -13,7 +13,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
   final VoidCallback onTapFeeButton;
   final bool isMaxMode;
   final bool customFeeSelected;
-  final String sendAmount;
+  final int sendAmount;
   final String bitcoinPriceKrw;
   final int? estimatedFee;
   final int? satsPerVb;
@@ -75,7 +75,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        sendAmount,
+                        '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
                         style: Styles.body2Number,
                       ),
                       Text(bitcoinPriceKrw, style: Styles.caption),
