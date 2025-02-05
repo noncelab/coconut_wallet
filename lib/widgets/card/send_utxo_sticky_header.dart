@@ -10,13 +10,12 @@ class SendUtxoStickyHeader extends StatelessWidget {
   final ErrorState? errorState;
   final RecommendedFeeFetchStatus recommendedFeeFetchStatus;
   final TransactionFeeLevel? selectedLevel;
-  final VoidCallback updateFeeInfoEstimatedFee;
   final VoidCallback onTapFeeButton;
   final bool isMaxMode;
   final bool customFeeSelected;
   final String sendAmount;
   final String bitcoinPriceKrw;
-  final String estimatedFeeString;
+  final int? estimatedFee;
   final int? satsPerVb;
   final int? change;
 
@@ -25,13 +24,12 @@ class SendUtxoStickyHeader extends StatelessWidget {
     required this.errorState,
     required this.recommendedFeeFetchStatus,
     this.selectedLevel = TransactionFeeLevel.halfhour,
-    required this.updateFeeInfoEstimatedFee,
     required this.onTapFeeButton,
     required this.isMaxMode,
     required this.customFeeSelected,
     required this.sendAmount,
     required this.bitcoinPriceKrw,
-    required this.estimatedFeeString,
+    required this.estimatedFee,
     required this.satsPerVb,
     required this.change,
   });
@@ -156,7 +154,9 @@ class SendUtxoStickyHeader extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                estimatedFeeString,
+                                estimatedFee != null
+                                    ? '${satoshiToBitcoinString(estimatedFee!).toString()} BTC'
+                                    : '0 BTC',
                                 style: Styles.body2Number,
                               ),
                               if (satsPerVb != null) ...{

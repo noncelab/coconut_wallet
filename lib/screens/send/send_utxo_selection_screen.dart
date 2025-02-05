@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 
@@ -42,9 +41,9 @@ class SendUtxoSelectionScreen extends StatefulWidget {
 
 class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   final String allLabelName = '전체';
+  final ScrollController _scrollController = ScrollController();
 
   late SendUtxoSelectionViewModel _viewModel;
-  late final ScrollController _scrollController;
 
   final GlobalKey _orderDropdownButtonKey = GlobalKey();
   final GlobalKey _scrolledOrderDropdownButtonKey = GlobalKey();
@@ -66,235 +65,219 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
-      child: Consumer<SendUtxoSelectionViewModel>(
-        builder: (context, viewModel, child) => Scaffold(
-          appBar: CustomAppBar.buildWithNext(
-              backgroundColor: MyColors.black,
-              title: 'UTXO 고르기',
-              context: context,
-              nextButtonTitle: '완료',
-              isActive: viewModel.estimatedFee != null &&
-                  viewModel.errorState == null,
-              onNextPressed: () => _goNext()),
-          body: ConstrainedBox(
-            constraints:
-                BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
-            child: Stack(
-              children: [
-                SingleChildScrollView(
-                  controller: _scrollController,
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                          top: 10,
-                          bottom: 10,
-                        ),
-                        alignment: Alignment.center,
-                        color: MyColors.black,
-                        child: Column(
-                          children: [
-                            Container(
-                              key: _headerTopContainerKey,
-                              width: MediaQuery.sizeOf(context).width,
-                              decoration: BoxDecoration(
-                                color: MyColors.transparentWhite_10,
-                                borderRadius: BorderRadius.circular(24),
+    // try-catch: initState _viewModel 생성 실패로 lateError 발생 할 수 있음
+    try {
+      return ChangeNotifierProvider.value(
+        value: _viewModel,
+        child: Consumer<SendUtxoSelectionViewModel>(
+          builder: (context, viewModel, child) => Scaffold(
+            appBar: CustomAppBar.buildWithNext(
+                backgroundColor: MyColors.black,
+                title: 'UTXO 고르기',
+                context: context,
+                nextButtonTitle: '완료',
+                isActive: viewModel.estimatedFee != null &&
+                    viewModel.estimatedFee != 0 &&
+                    viewModel.errorState == null,
+                onNextPressed: () => _goNext()),
+            body: ConstrainedBox(
+              constraints:
+                  BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                            top: 10,
+                            bottom: 10,
+                          ),
+                          alignment: Alignment.center,
+                          color: MyColors.black,
+                          child: Column(
+                            children: [
+                              Container(
+                                key: _headerTopContainerKey,
+                                width: MediaQuery.sizeOf(context).width,
+                                decoration: BoxDecoration(
+                                  color: MyColors.transparentWhite_10,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                padding: const EdgeInsets.only(
+                                  left: 24,
+                                  right: 24,
+                                  top: 24,
+                                  bottom: 20,
+                                ),
+                                child: Selector<UpbitConnectModel, int?>(
+                                  selector: (context, model) =>
+                                      model.bitcoinPriceKrw,
+                                  builder: (context, bitcoinPriceKrw, child) {
+                                    return SendUtxoStickyHeader(
+                                      errorState: viewModel.errorState,
+                                      recommendedFeeFetchStatus:
+                                          viewModel.recommendedFeeFetchStatus,
+                                      selectedLevel: viewModel.selectedLevel,
+                                      onTapFeeButton: () =>
+                                          _onTapFeeChangeButton(),
+                                      isMaxMode: viewModel.isMaxMode,
+                                      customFeeSelected:
+                                          viewModel.customFeeSelected,
+                                      sendAmount: viewModel.sendAmountString,
+                                      bitcoinPriceKrw: bitcoinPriceKrw != null
+                                          ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(viewModel.sendAmount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
+                                          : '',
+                                      estimatedFee: viewModel.estimatedFee,
+                                      satsPerVb: viewModel.satsPerVb,
+                                      change: viewModel.change,
+                                    );
+                                  },
+                                ),
                               ),
-                              padding: const EdgeInsets.only(
-                                left: 24,
-                                right: 24,
-                                top: 24,
-                                bottom: 20,
-                              ),
-                              child: Selector<UpbitConnectModel, int?>(
-                                selector: (context, model) =>
-                                    model.bitcoinPriceKrw,
-                                builder: (context, bitcoinPriceKrw, child) {
-                                  return SendUtxoStickyHeader(
-                                    errorState: viewModel.errorState,
-                                    recommendedFeeFetchStatus:
-                                        viewModel.recommendedFeeFetchStatus,
-                                    selectedLevel: viewModel.selectedLevel,
-                                    updateFeeInfoEstimatedFee: () {
-                                      var result =
-                                          viewModel.updateFeeInfoEstimateFee();
-                                      if (result != true) {
-                                        CustomToast.showWarningToast(
-                                            context: context,
-                                            text: ErrorCodes.withMessage(
-                                                    ErrorCodes
-                                                        .feeEstimationError,
-                                                    viewModel.errorString)
-                                                .message);
-                                      }
-                                    },
-                                    onTapFeeButton: () =>
-                                        _onTapFeeChangeButton(),
-                                    isMaxMode: viewModel.isMaxMode,
-                                    customFeeSelected:
-                                        viewModel.customFeeSelected,
-                                    sendAmount: viewModel.sendAmountString,
-                                    bitcoinPriceKrw: bitcoinPriceKrw != null
-                                        ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(viewModel.sendAmount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
-                                        : '',
-                                    estimatedFeeString:
-                                        viewModel.estimatedFeeString,
-                                    satsPerVb: viewModel.satsPerVb,
-                                    change: viewModel.change,
-                                  );
-                                },
-                              ),
-                            ),
-                            _totalUtxoAmountWidget(
-                              Text(
-                                key: _orderDropdownButtonKey,
-                                _selectedUtxoOrder.text,
-                                style: Styles.caption2.merge(
-                                  const TextStyle(
-                                    color: MyColors.white,
-                                    fontSize: 12,
+                              _totalUtxoAmountWidget(
+                                Text(
+                                  key: _orderDropdownButtonKey,
+                                  _selectedUtxoOrder.text,
+                                  style: Styles.caption2.merge(
+                                    const TextStyle(
+                                      color: MyColors.white,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
+                                viewModel.errorState,
+                                viewModel.selectedUtxoList.length,
+                                viewModel.selectedUtxoAmountSum,
                               ),
-                              viewModel.errorState,
-                              viewModel.selectedUtxoList.isEmpty,
-                              viewModel.selectedUtxoList.length,
-                              () => satoshiToBitcoinString(
-                                      _viewModel.calculateTotalAmountOfUtxoList(
-                                          _viewModel.selectedUtxoList))
-                                  .normalizeToFullCharacters(),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Visibility(
-                        visible: !viewModel.isUtxoTagListEmpty,
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 16, bottom: 12),
-                          child: CustomTagHorizontalSelector(
-                            tags: viewModel.utxoTagList
-                                .map((e) => e.name)
-                                .toList(),
-                            onSelectedTag: (tagName) {
-                              viewModel.setSelectedUtxoTagName(tagName);
-                              setState(() {
-                                _isStickyHeaderVisible = false;
-                              });
-                            },
+                            ],
                           ),
                         ),
-                      ),
-                      ListView.separated(
-                          physics: const NeverScrollableScrollPhysics(),
-                          shrinkWrap: true,
-                          padding: const EdgeInsets.only(
-                              top: 0, bottom: 30, left: 16, right: 16),
-                          itemCount: viewModel.confirmedUtxoList.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 0),
-                          itemBuilder: (context, index) {
-                            final utxo = viewModel.confirmedUtxoList[index];
-                            final utxoHasSelectedTag = viewModel
-                                        .selectedUtxoTagName ==
-                                    allLabelName ||
-                                viewModel.utxoTagMap[utxo.utxoId]?.any((e) =>
-                                        e.name ==
-                                        viewModel.selectedUtxoTagName) ==
-                                    true;
+                        Visibility(
+                          visible: !viewModel.isUtxoTagListEmpty,
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 16, bottom: 12),
+                            child: CustomTagHorizontalSelector(
+                              tags: viewModel.utxoTagList
+                                  .map((e) => e.name)
+                                  .toList(),
+                              onSelectedTag: (tagName) {
+                                viewModel.setSelectedUtxoTagName(tagName);
+                                setState(() {
+                                  _isStickyHeaderVisible = false;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        ListView.separated(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.only(
+                                top: 0, bottom: 30, left: 16, right: 16),
+                            itemCount: viewModel.confirmedUtxoList.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 0),
+                            itemBuilder: (context, index) {
+                              final utxo = viewModel.confirmedUtxoList[index];
+                              final utxoHasSelectedTag = viewModel
+                                          .selectedUtxoTagName ==
+                                      allLabelName ||
+                                  viewModel.utxoTagMap[utxo.utxoId]?.any((e) =>
+                                          e.name ==
+                                          viewModel.selectedUtxoTagName) ==
+                                      true;
 
-                            if (utxoHasSelectedTag) {
-                              if (viewModel.selectedUtxoTagName !=
-                                      allLabelName &&
-                                  !utxoHasSelectedTag) {
+                              if (utxoHasSelectedTag) {
+                                if (viewModel.selectedUtxoTagName !=
+                                        allLabelName &&
+                                    !utxoHasSelectedTag) {
+                                  return const SizedBox();
+                                }
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  child: SelectableUtxoItemCard(
+                                    key: ValueKey(utxo.transactionHash),
+                                    utxo: utxo,
+                                    isSelected: viewModel.selectedUtxoList
+                                        .contains(utxo),
+                                    utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+                                    onSelected: _toggleSelection,
+                                  ),
+                                );
+                              } else {
                                 return const SizedBox();
                               }
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                child: SelectableUtxoItemCard(
-                                  key: ValueKey(utxo.transactionHash),
-                                  utxo: utxo,
-                                  isSelected:
-                                      viewModel.selectedUtxoList.contains(utxo),
-                                  utxoTags: viewModel.utxoTagMap[utxo.utxoId],
-                                  onSelected: _toggleSelection,
-                                ),
-                              );
-                            } else {
-                              return const SizedBox();
-                            }
-                          }),
-                    ],
+                            }),
+                      ],
+                    ),
                   ),
-                ),
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: IgnorePointer(
-                    ignoring: !_isStickyHeaderVisible,
-                    child: Opacity(
-                      opacity: _isStickyHeaderVisible ? 1 : 0,
-                      child: Container(
-                        color: MyColors.black,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                        ),
-                        child: _totalUtxoAmountWidget(
-                          Text(
-                            key: _scrolledOrderDropdownButtonKey,
-                            _selectedUtxoOrder.text,
-                            style: Styles.caption2.merge(
-                              const TextStyle(
-                                color: MyColors.white,
-                                fontSize: 12,
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: IgnorePointer(
+                      ignoring: !_isStickyHeaderVisible,
+                      child: Opacity(
+                        opacity: _isStickyHeaderVisible ? 1 : 0,
+                        child: Container(
+                          color: MyColors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                          ),
+                          child: _totalUtxoAmountWidget(
+                            Text(
+                              key: _scrolledOrderDropdownButtonKey,
+                              _selectedUtxoOrder.text,
+                              style: Styles.caption2.merge(
+                                const TextStyle(
+                                  color: MyColors.white,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
+                            viewModel.errorState,
+                            viewModel.selectedUtxoList.length,
+                            viewModel.selectedUtxoAmountSum,
                           ),
-                          viewModel.errorState,
-                          viewModel.selectedUtxoList.isEmpty,
-                          viewModel.selectedUtxoList.length,
-                          () => satoshiToBitcoinString(
-                                  _viewModel.calculateTotalAmountOfUtxoList(
-                                      _viewModel.selectedUtxoList))
-                              .normalizeToFullCharacters(),
                         ),
                       ),
                     ),
                   ),
-                ),
-                if (_isOrderDropdownVisible &&
-                    viewModel.confirmedUtxoList.isNotEmpty) ...{
-                  Positioned(
-                    top: _orderDropdownButtonPosition.dy -
-                        _scrollController.offset -
-                        MediaQuery.of(context).padding.top -
-                        20,
-                    left: 16,
-                    child: _utxoOrderDropdownWidget(),
-                  ),
-                },
-                if (_isScrolledOrderDropdownVisible &&
-                    viewModel.confirmedUtxoList.isNotEmpty) ...{
-                  Positioned(
-                    top: _scrolledOrderDropdownButtonPosition.dy -
-                        MediaQuery.of(context).padding.top -
-                        65,
-                    left: 16,
-                    child: _utxoOrderDropdownWidget(),
-                  ),
-                }
-              ],
+                  if (_isOrderDropdownVisible &&
+                      viewModel.confirmedUtxoList.isNotEmpty) ...{
+                    Positioned(
+                      top: _orderDropdownButtonPosition.dy -
+                          _scrollController.offset -
+                          MediaQuery.of(context).padding.top -
+                          20,
+                      left: 16,
+                      child: _utxoOrderDropdownWidget(),
+                    ),
+                  },
+                  if (_isScrolledOrderDropdownVisible &&
+                      viewModel.confirmedUtxoList.isNotEmpty) ...{
+                    Positioned(
+                      top: _scrolledOrderDropdownButtonPosition.dy -
+                          MediaQuery.of(context).padding.top -
+                          65,
+                      left: 16,
+                      child: _utxoOrderDropdownWidget(),
+                    ),
+                  }
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
+    } catch (_) {
+      return Container();
+    }
   }
 
   @override
@@ -315,8 +298,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           Provider.of<UpbitConnectModel>(context, listen: false),
           Provider.of<ConnectivityProvider>(context, listen: false),
           _selectedUtxoOrder);
-
-      _scrollController = ScrollController();
 
       _scrollController.addListener(() {
         double threshold = _headerTopContainerSize.height + 24;
@@ -345,12 +326,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
             _headerTopContainerKey.currentContext?.findRenderObject()
                 as RenderBox;
         _headerTopContainerSize = headerTopContainerRenderBox.size;
-
-        await _viewModel.setRecommendedFees();
-        if (_viewModel.recommendedFeeFetchStatus ==
-            RecommendedFeeFetchStatus.succeed) {
-          _viewModel.updateFeeRate(_viewModel.satsPerVb!);
-        }
       });
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -373,13 +348,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _goNext() {
-    _removeUtxoOrderDropdown();
-    if (!_viewModel.isNetworkOn) {
-      CustomToast.showWarningToast(
-          context: context, text: ErrorCodes.networkError.message);
+    try {
+      _viewModel.checkGoingNextAvailable();
+    } catch (e) {
+      CustomToast.showWarningToast(context: context, text: e.toString());
       return;
     }
-    _viewModel.updateSendInfoProvider();
+
+    _removeUtxoOrderDropdown();
 
     if (_viewModel.hasTaggedUtxo()) {
       CustomDialogs.showCustomAlertDialog(
@@ -410,9 +386,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _onTapFeeChangeButton() async {
-    if (_viewModel.errorState == null) {
-      _viewModel.updateFeeInfoEstimateFee();
-    }
     Result<int, CoconutError>? minimumFeeRate =
         await _viewModel.getMinimumFeeRateFromNetwork();
 
@@ -454,13 +427,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _viewModel.toggleUtxoSelection(utxo);
   }
 
-  Widget _totalUtxoAmountWidget(
-    Widget textKeyWidget,
-    ErrorState? errorState,
-    bool isSelectedUtxoListEmpty,
-    int selectedUtxoListLength,
-    Function calculateTotalAmountOfUtxoList,
-  ) {
+  Widget _totalUtxoAmountWidget(Widget textKeyWidget, ErrorState? errorState,
+      int selectedUtxoListLength, int totalSelectedUtxoAmount) {
     return Column(
       children: [
         Container(
@@ -498,7 +466,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   width: 4,
                 ),
                 Visibility(
-                  visible: !isSelectedUtxoListEmpty,
+                  visible: selectedUtxoListLength != 0,
                   child: Text(
                     '($selectedUtxoListLength개)',
                     style: Styles.caption.merge(
@@ -517,9 +485,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     children: [
                       Text(
                         // Transaction.estimatedFee,
-                        isSelectedUtxoListEmpty
+                        selectedUtxoListLength == 0
                             ? '0 BTC'
-                            : '${calculateTotalAmountOfUtxoList()} BTC',
+                            : '${satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()} BTC',
                         style: Styles.body1Number.merge(TextStyle(
                             color: errorState ==
                                         ErrorState.insufficientBalance ||
