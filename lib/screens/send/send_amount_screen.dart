@@ -48,17 +48,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
             appBar: CustomAppBar.buildWithNext(
               title: '보내기',
               context: context,
-              onNextPressed: () {
-                // 다음 화면으로 넘어가기 전에 네트워크 상태 확인하기
-                if (viewModel.isNetworkOn == false) {
-                  CustomToast.showWarningToast(
-                      context: context, text: ErrorCodes.networkError.message);
-                  return;
-                }
-
-                viewModel.setAmountWithInput();
-                Navigator.pushNamed(context, '/fee-selection');
-              },
+              onNextPressed: () => _goNextScreen('/fee-selection'),
               isActive: viewModel.isNextButtonEnabled,
               backgroundColor: MyColors.black,
               isBottom: false,
@@ -190,25 +180,14 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                           padding:
                                               const EdgeInsets.only(top: 4),
                                           child: CustomUnderlinedButton(
-                                            text: 'UTXO 고르기',
-                                            fontSize: 14,
-                                            lineHeight: 21,
-                                            isEnable: viewModel.errorIndex ==
-                                                    null &&
-                                                viewModel.isNextButtonEnabled,
-                                            onTap: () {
-                                              viewModel.setAmountWithInput();
-                                              // TODO: remove sendInfo
-                                              Navigator.pushNamed(
-                                                  context, '/utxo-selection',
-                                                  arguments: {
-                                                    'sendInfo': SendInfo(
-                                                        address: '',
-                                                        amount: double.parse(
-                                                            viewModel.input))
-                                                  });
-                                            },
-                                          ),
+                                              text: 'UTXO 고르기',
+                                              fontSize: 14,
+                                              lineHeight: 21,
+                                              isEnable: viewModel.errorIndex ==
+                                                      null &&
+                                                  viewModel.isNextButtonEnabled,
+                                              onTap: () => _goNextScreen(
+                                                  '/utxo-selection')),
                                         )
                                       ],
                                     ),
@@ -261,5 +240,17 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
+  }
+
+  void _goNextScreen(String routeName) {
+    try {
+      _viewModel.checkGoingNextAvailable();
+    } catch (e) {
+      CustomToast.showWarningToast(context: context, text: e.toString());
+      return;
+    }
+
+    _viewModel.setAmountWithInput();
+    Navigator.pushNamed(context, routeName);
   }
 }

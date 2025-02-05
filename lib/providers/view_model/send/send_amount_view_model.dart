@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
@@ -106,5 +107,12 @@ class SendAmountViewModel extends ChangeNotifier {
     _isNextButtonEnabled = true;
 
     notifyListeners();
+  }
+
+  // TODO: 추후 반환 타입 변경
+  void checkGoingNextAvailable() {
+    if (_isNetworkOn != true) {
+      throw ErrorCodes.networkError.message;
+    }
   }
 }
