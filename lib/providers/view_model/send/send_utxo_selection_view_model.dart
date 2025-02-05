@@ -84,7 +84,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
     _confirmedUtxoList =
         _getAllConfirmedUtxoList(_walletBaseItem.walletFeature);
-    UTXO.sortUTXO(_confirmedUtxoList, initialUtxoOrder);
+    _sortConfirmedUtxoList(initialUtxoOrder);
     _initUtxoTagMap();
 
     _walletBase = _walletBaseItem.walletBase;
@@ -197,7 +197,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void changeUtxoOrder(UtxoOrderEnum orderEnum) async {
-    UTXO.sortUTXO(_confirmedUtxoList, orderEnum);
+    _sortConfirmedUtxoList(orderEnum);
     notifyListeners();
   }
 
@@ -447,5 +447,19 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   void updateBitcoinPriceKrw(int btcPriceInKrw) {
     _bitcoinPriceKrw = btcPriceInKrw;
     notifyListeners();
+  }
+
+  void _sortConfirmedUtxoList(UtxoOrderEnum basis) {
+    if (basis == UtxoOrderEnum.byAmountDesc) {
+      _confirmedUtxoList.sort((a, b) {
+        if (b.amount != a.amount) {
+          return b.amount.compareTo(a.amount);
+        }
+
+        return a.timestamp.compareTo(b.timestamp);
+      });
+    } else {
+      UTXO.sortUTXO(_confirmedUtxoList, basis);
+    }
   }
 }
