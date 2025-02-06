@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart'; // FIXME: remove model import
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -154,8 +155,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                       builder: (context, amountValueInKrw, child) {
                         if (amountValueInKrw != null) {
                           return Text(
-                              addCommasToIntegerPart(
-                                  amountValueInKrw.toDouble()),
+                              '${addCommasToIntegerPart(amountValueInKrw.toDouble())} ${CurrencyCode.KRW.code}',
                               style: Styles.label.merge(TextStyle(
                                   fontFamily:
                                       CustomFonts.number.getFontFamily)));
