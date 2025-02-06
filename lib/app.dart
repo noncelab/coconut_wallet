@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/appGuard.dart';
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -32,8 +32,6 @@ import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -69,9 +67,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        /// splash, main, pinCheck 에서 공통으로 사용하는 모델
-        ChangeNotifierProvider(create: (_) => AppSubStateModel()),
-
         ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
 
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
@@ -111,15 +106,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 return walletProvider;
               }
             },
-          ),
-          ChangeNotifierProxyProvider<AppSubStateModel, AppStateModel>(
-            create: (_) {
-              return AppStateModel(
-                  Provider.of<AppSubStateModel>(_, listen: false),
-                  WalletDataManager());
-            },
-            update: (_, subStateModel, appStateModel) =>
-                appStateModel!..updateWithSubState(subStateModel),
           ),
         },
       ],
