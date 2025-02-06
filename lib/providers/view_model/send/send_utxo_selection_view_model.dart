@@ -179,14 +179,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   List<UTXO> get selectedUtxoList => _selectedUtxoList;
 
-  int get sendAmount => _isMaxMode
-      ? UnitUtil.bitcoinToSatoshi(
-            _sendInfoProvider.amount!,
-          ) -
-          (_estimatedFee ?? 0)
-      : UnitUtil.bitcoinToSatoshi(
-          _sendInfoProvider.amount!,
-        );
+  int get sendAmount => _sendAmount;
 
   List<UtxoTag> get utxoTagList => _tagProvider.tagList;
 
