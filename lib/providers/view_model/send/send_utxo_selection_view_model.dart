@@ -254,7 +254,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void saveUsedUtxoIdsWhenTagged({required bool isTagsMoveAllowed}) {
-    _tagProvider.saveUsedUtxoIdsIncludingTagged(
+    _tagProvider.cacheUsedUtxoIds(
         _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
         isTagsMoveAllowed: isTagsMoveAllowed);
   }

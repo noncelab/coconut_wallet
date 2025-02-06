@@ -144,7 +144,7 @@ class UtxoTagProvider extends ChangeNotifier {
   }
 
   // 사용한 utxo 중, 태그된 것이 하나라도 있는 경우, 사용한 utxo id 목록을 저장
-  void saveUsedUtxoIdsIncludingTagged(List<String> utxoIdList,
+  void cacheUsedUtxoIds(List<String> utxoIdList,
       {required bool isTagsMoveAllowed}) {
     _usedUtxoIds = utxoIdList;
     _isTagsMoveAllowed = isTagsMoveAllowed;
