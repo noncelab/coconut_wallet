@@ -125,25 +125,23 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         if (!_checkStateAndShowToast()) return;
                         if (!_checkBalanceIsNotNullAndShowToast(
                             viewModel.walletListBaseItem!.balance)) return;
+
                         await CommonBottomSheets.showBottomSheet_50(
                             context: context,
                             child: FaucetRequestBottomSheet(
                               walletAddressBook: viewModel.walletAddressBook,
                               walletData: {
+                                'wallet_id': viewModel.walletId,
                                 'wallet_address': viewModel.walletAddress,
                                 'wallet_name': viewModel.walletName,
                                 'wallet_index': viewModel.receiveAddressIndex,
-                                'wallet_request_amount':
-                                    viewModel.requestAmount,
                               },
-                              isFaucetRequestLimitExceeded:
-                                  viewModel.isFaucetRequestLimitExceeded,
                               isRequesting: viewModel.isRequesting,
-                              onRequest: (address) {
+                              onRequest: (address, requestAmount) {
                                 if (viewModel.isRequesting) return;
 
-                                viewModel.requestTestBitcoin(address,
-                                    (success, message) {
+                                viewModel.requestTestBitcoin(
+                                    address, requestAmount, (success, message) {
                                   if (success) {
                                     Navigator.pop(context);
                                     vibrateLight();
