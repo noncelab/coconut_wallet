@@ -92,20 +92,15 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _recipientAddress = _sendInfoProvider.recipientAddress!;
     _isMaxMode = _confirmedBalance ==
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
-    _sendAmount = _isMaxMode
-        ? UnitUtil.bitcoinToSatoshi(
-              _sendInfoProvider.amount!,
-            ) -
-            (_estimatedFee ?? 0)
-        : UnitUtil.bitcoinToSatoshi(
-            _sendInfoProvider.amount!,
-          );
+    _setAmount();
+
     _transaction = _createTransaction(_isMaxMode, 1, _walletBase);
     _syncSelectedUtxosWithTransaction();
 
     _setRecommendedFees().then((bool result) async {
       if (result) {
         _updateFeeRateOfTransaction(satsPerVb!);
+        _setAmount();
       }
       notifyListeners();
     });
@@ -184,7 +179,14 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   List<UTXO> get selectedUtxoList => _selectedUtxoList;
 
-  int get sendAmount => _sendAmount;
+  int get sendAmount => _isMaxMode
+      ? UnitUtil.bitcoinToSatoshi(
+            _sendInfoProvider.amount!,
+          ) -
+          (_estimatedFee ?? 0)
+      : UnitUtil.bitcoinToSatoshi(
+          _sendInfoProvider.amount!,
+        );
 
   List<UtxoTag> get utxoTagList => _tagProvider.tagList;
 
@@ -239,6 +241,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
             .estimatedFee;
     _selectedLevel = feeSelectionResult[FeeSelectionScreen.selectedOptionField];
+    _setAmount();
     notifyListeners();
 
     _customFeeInfo =
@@ -251,6 +254,17 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
             .firstWhere((feeInfo) => feeInfo.level == _selectedLevel)
             .satsPerVb!;
     _updateFeeRateOfTransaction(satsPerVb);
+  }
+
+  void _setAmount() {
+    _sendAmount = _isMaxMode
+        ? UnitUtil.bitcoinToSatoshi(
+              _sendInfoProvider.amount!,
+            ) -
+            (_estimatedFee ?? 0)
+        : UnitUtil.bitcoinToSatoshi(
+            _sendInfoProvider.amount!,
+          );
   }
 
   void saveUsedUtxoIdsWhenTagged({required bool isTagsMoveAllowed}) {
