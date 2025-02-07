@@ -94,6 +94,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       },
       child: Consumer<WalletDetailViewModel>(
         builder: (context, viewModel, child) {
+          final balance = viewModel.walletListBaseItem?.balance;
           return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, _) {
@@ -125,9 +126,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           onFaucetIconPressed: () async {
                             _removeFilterDropdown();
                             viewModel.removeFaucetTooltip();
-                            if (!_checkStateAndShowToast()) return;
-                            if (!_checkBalanceIsNotNullAndShowToast(
-                                viewModel.walletListBaseItem!.balance)) return;
+                            if (!_checkStateAndShowToast(state, balance)) {
+                              return;
+                            }
                             await CommonBottomSheets.showBottomSheet_50(
                                 context: context,
                                 child: FaucetRequestBottomSheet(
@@ -193,7 +194,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                               onRefresh: () async {
                                 _isPullToRefreshing = true;
                                 try {
-                                  if (!_checkStateAndShowToast()) {
+                                  if (!_checkStateAndShowToast(
+                                      state, balance)) {
                                     return;
                                   }
                                   viewModel.walletProvider
@@ -213,8 +215,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                     walletId: widget.id,
                                     address: viewModel.walletAddress,
                                     derivationPath: viewModel.derivationPath,
-                                    balance:
-                                        viewModel.walletListBaseItem!.balance,
+                                    balance: balance,
                                     currentUnit: _currentUnit,
                                     btcPriceInKrw: bitcoinPriceKrw,
                                     onPressedUnitToggle: () {
@@ -225,18 +226,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                       viewModel.removeFaucetTooltip();
                                     },
                                     checkPrerequisites: () {
-                                      if (state == WalletInitState.error) {
-                                        CustomToast.showWarningToast(
-                                            context: context,
-                                            text:
-                                                '화면을 아래로 당겨 최신 데이터를 가져와 주세요.');
-                                        return false;
-                                      }
-
-                                      return _checkStateAndShowToast() &&
-                                          _checkBalanceIsNotNullAndShowToast(
-                                              viewModel
-                                                  .walletListBaseItem!.balance);
+                                      return _checkStateAndShowToast(
+                                          state, balance);
                                     },
                                   );
                                 },
@@ -324,7 +315,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         height: _appBarSize.height,
                         isVisible: _stickyHeaderVisible,
                         currentUnit: _currentUnit,
-                        balance: viewModel.walletListBaseItem!.balance,
+                        balance: balance,
                         receiveAddress: viewModel.walletListBaseItem!.walletBase
                             .getReceiveAddress(),
                         walletStatus: viewModel.getInitializedWalletStatus(),
@@ -463,16 +454,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     });
   }
 
-  bool _checkBalanceIsNotNullAndShowToast(int? balance) {
-    if (balance == null) {
-      CustomToast.showToast(
-          context: context, text: "화면을 아래로 당겨 최신 데이터를 가져와 주세요.");
-      return false;
-    }
-    return true;
-  }
-
-  bool _checkStateAndShowToast() {
+  bool _checkStateAndShowToast(WalletInitState state, int? balance) {
     var connectivityProvider =
         Provider.of<ConnectivityProvider>(context, listen: false);
     if (connectivityProvider.isNetworkOn == false) {
@@ -481,10 +463,18 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       return false;
     }
 
-    if (_viewModel.walletInitState == WalletInitState.processing) {
+    if (state == WalletInitState.processing) {
       CustomToast.showToast(
           context: context, text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
       return false;
+    }
+
+    if (!_isPullToRefreshing) {
+      if (balance == null || state == WalletInitState.error) {
+        CustomToast.showWarningToast(
+            context: context, text: '화면을 아래로 당겨 최신 데이터를 가져와 주세요.');
+        return false;
+      }
     }
 
     return true;
@@ -532,13 +522,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   void _onTapReceiveOrSend(int? balance, WalletInitState state,
       {String? address, String? path}) {
-    if (state == WalletInitState.error) {
-      CustomToast.showWarningToast(
-          context: context, text: '화면을 아래로 당겨 최신 데이터를 가져와 주세요.');
-      return;
-    }
-    if (!_checkStateAndShowToast()) return;
-    if (!_checkBalanceIsNotNullAndShowToast(balance)) return;
+    if (!_checkStateAndShowToast(state, balance)) return;
     if (address != null && path != null) {
       CommonBottomSheets.showBottomSheet_90(
         context: context,
