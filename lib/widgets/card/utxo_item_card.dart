@@ -44,43 +44,44 @@ class UTXOItemCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        dateString[0],
-                        style: isConfirmed
-                            ? Styles.caption
-                            : Styles.caption.merge(const TextStyle(
-                                color: MyColors.transparentWhite_20)),
-                      ),
-                      const SizedBox(
-                        width: 8,
-                      ),
-                      Text(
-                        '|',
-                        style: Styles.caption.merge(
-                          TextStyle(
-                            color: isConfirmed
-                                ? MyColors.transparentWhite_40
-                                : MyColors.transparentWhite_20,
+                  if (isConfirmed)
+                    Row(
+                      children: [
+                        Text(
+                          dateString[0],
+                          style: isConfirmed
+                              ? Styles.caption
+                              : Styles.caption.merge(const TextStyle(
+                                  color: MyColors.transparentWhite_20)),
+                        ),
+                        const SizedBox(
+                          width: 8,
+                        ),
+                        Text(
+                          '|',
+                          style: Styles.caption.merge(
+                            TextStyle(
+                              color: isConfirmed
+                                  ? MyColors.transparentWhite_40
+                                  : MyColors.transparentWhite_20,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(
-                        width: 8,
-                      ),
-                      Text(
-                        dateString[1],
-                        style: isConfirmed
-                            ? Styles.caption
-                            : Styles.caption.merge(
-                                const TextStyle(
-                                  color: MyColors.transparentWhite_20,
+                        const SizedBox(
+                          width: 8,
+                        ),
+                        Text(
+                          dateString[1],
+                          style: isConfirmed
+                              ? Styles.caption
+                              : Styles.caption.merge(
+                                  const TextStyle(
+                                    color: MyColors.transparentWhite_20,
+                                  ),
                                 ),
-                              ),
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,

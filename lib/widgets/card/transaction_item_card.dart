@@ -196,32 +196,33 @@ class TransactionItemCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Text(
-                    transactionTimeStamp != null ? transactionTimeStamp[0] : '',
-                    style: Styles.caption,
-                  ),
-                  const SizedBox(
-                    width: 8,
-                  ),
-                  Text(
-                    '|',
-                    style: Styles.caption.merge(
-                      const TextStyle(
-                        color: MyColors.transparentWhite_40,
+              if (transactionTimeStamp != null)
+                Row(
+                  children: [
+                    Text(
+                      transactionTimeStamp[0],
+                      style: Styles.caption,
+                    ),
+                    const SizedBox(
+                      width: 8,
+                    ),
+                    Text(
+                      '|',
+                      style: Styles.caption.merge(
+                        const TextStyle(
+                          color: MyColors.transparentWhite_40,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(
-                    width: 8,
-                  ),
-                  Text(
-                    transactionTimeStamp != null ? transactionTimeStamp[1] : '',
-                    style: Styles.caption,
-                  ),
-                ],
-              ),
+                    const SizedBox(
+                      width: 8,
+                    ),
+                    Text(
+                      transactionTimeStamp[1],
+                      style: Styles.caption,
+                    ),
+                  ],
+                ),
               const SizedBox(
                 height: 5.0,
               ),

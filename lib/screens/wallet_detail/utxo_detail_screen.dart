@@ -104,17 +104,19 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         ),
                         child: Column(
                           children: [
-                            HighlightedInfoArea(
-                              textList: viewModel.dateString,
-                              textStyle: Styles.body2Number.merge(
-                                const TextStyle(
-                                  color: MyColors.white,
+                            if (viewModel.dateString != null) ...{
+                              HighlightedInfoArea(
+                                textList: viewModel.dateString,
+                                textStyle: Styles.body2Number.merge(
+                                  const TextStyle(
+                                    color: MyColors.white,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(
-                              height: 24,
-                            ),
+                              const SizedBox(
+                                height: 24,
+                              ),
+                            },
                             Center(
                                 child: RichText(
                                     text: TextSpan(

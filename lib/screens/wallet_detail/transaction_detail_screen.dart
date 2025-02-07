@@ -83,13 +83,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        if (viewModel.transaction!.timestamp != null)
+                        if (viewModel.timestamp != null) ...{
                           HighlightedInfoArea(
                               textList: DateTimeUtil.formatTimeStamp(
-                                  viewModel.transaction!.timestamp!.toLocal())),
-                        const SizedBox(
-                          height: 24,
-                        ),
+                                  viewModel.timestamp!.toLocal())),
+                          const SizedBox(
+                            height: 24,
+                          ),
+                        },
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
