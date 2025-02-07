@@ -1,9 +1,9 @@
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/providers/app_state_model.dart';
-import 'package:coconut_wallet/providers/app_sub_state_model.dart';
 import 'package:coconut_wallet/widgets/custom_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
@@ -20,9 +20,9 @@ class AppGuard extends StatefulWidget {
 class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   final Connectivity _connectivity = Connectivity();
   bool? _isNetworkOn;
-  late AppStateModel _appStateModel;
-  late AppSubStateModel _appSubModel;
   late UpbitConnectModel _upbitConnectModel;
+  late WalletProvider _walletProvider;
+  late AuthProvider _authProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   late ConnectivityProvider _connectivityProvider;
   bool _isPause = false;
@@ -31,9 +31,10 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _appStateModel = Provider.of<AppStateModel>(context, listen: false);
-    _appSubModel = Provider.of<AppSubStateModel>(context, listen: false);
+
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
+    _walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider =
         Provider.of<ConnectivityProvider>(context, listen: false);
     _connectivity.onConnectivityChanged.listen(_checkConnectivity);
@@ -48,7 +49,6 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
     bool isNetworkOn = !result.contains(ConnectivityResult.none);
 
     if (_isNetworkOn != isNetworkOn) {
-      _appStateModel.setIsNetworkOn(isNetworkOn);
       _connectivityProvider.setIsNetworkOn(isNetworkOn);
       _isNetworkOn = isNetworkOn;
       _showToastAboutNetwork(isNetworkOn);
@@ -77,10 +77,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
       case AppLifecycleState.resumed:
         if (_isPause) {
           _isPause = false;
-          _appSubModel.checkDeviceBiometrics();
-          // if (_appStateModel.nodeConnection == null) {
-          //   _appStateModel.initWallet();
-          // }
+          _authProvider.checkDeviceBiometrics();
           if (_upbitConnectModel.upbitWebSocketService == null) {
             _upbitConnectModel.initUpbitWebSocketService();
           }
@@ -92,7 +89,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
         _isPause = true;
-        _appStateModel.disposeNodeConnector();
+        _walletProvider.disposeNodeConnector();
         _upbitConnectModel.disposeUpbitWebSocketService();
         break;
     }

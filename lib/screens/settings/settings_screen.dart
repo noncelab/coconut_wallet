@@ -24,8 +24,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreen extends State<SettingsScreen> {
-  //late AppSubStateModel _subModel;
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider3<AuthProvider, PreferenceProvider,
@@ -74,9 +72,6 @@ class _SettingsScreen extends State<SettingsScreen> {
                                     );
                                   } else {
                                     viewModel.deletePin();
-                                    // Provider.of<AppStateModel>(context,
-                                    //         listen: false)
-                                    //     .deletePin();
                                   }
                                 })),
                         if (viewModel.canCheckBiometrics && viewModel.isSetPin)
