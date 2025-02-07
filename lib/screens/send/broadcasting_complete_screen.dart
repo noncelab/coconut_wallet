@@ -43,13 +43,6 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                 const SizedBox(
                   height: 40,
                 ),
-                // SmallActionButton(
-                //     text: '트랜잭션 보기',
-                //     onPressed: () => launchUrl(Uri.parse(
-                //         "${CoconutWalletApp.kMempoolHost}/tx/${widget.txId}"))),
-                // const SizedBox(
-                //   height: 120,
-                // ),
                 GestureDetector(
                   onTap: () => onTap(context),
                   child: Container(
