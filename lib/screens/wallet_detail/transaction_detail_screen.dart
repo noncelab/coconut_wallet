@@ -316,6 +316,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _loadCompletedListener();
+    });
+  }
+
   Widget _amountText(Transfer tx) {
     String prefix;
     Color color;
@@ -365,6 +373,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     return '';
   }
 
+  void _loadCompletedListener() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final box =
+          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
+      _balanceWidthSize = box.size;
+      setState(() {});
+    });
+  }
+
   void _showDialogListener() {
     CustomDialogs.showCustomAlertDialog(
       context,
@@ -375,14 +392,5 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         Navigator.pop(context); // 지갑 상세 이동
       },
     );
-  }
-
-  void _loadCompletedListener() {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final box =
-          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
-      _balanceWidthSize = box.size;
-      setState(() {});
-    });
   }
 }

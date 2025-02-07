@@ -64,10 +64,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   late RenderBox _tabWidgetRenderBox;
 
   final GlobalKey _txSliverListKey = GlobalKey();
-  Size _txSliverListSize = const Size(0, 0);
 
   final GlobalKey _utxoSliverListKey = GlobalKey();
-  Size _utxoSliverListSize = const Size(0, 0);
 
   WalletDetailTabType _selectedListType = WalletDetailTabType.transaction;
   bool _isPullToRefreshing = false;
@@ -408,12 +406,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             positionedTopWidgetSize.height;
       });
 
-      if (_viewModel.txList.isNotEmpty == true) {
-        final RenderBox txSliverListRenderBox =
-            _txSliverListKey.currentContext?.findRenderObject() as RenderBox;
-        _txSliverListSize = txSliverListRenderBox.size;
-      }
-
       _scrollController.addListener(() {
         if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
           _removeFilterDropdown();
@@ -482,42 +474,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return _selectedListType == WalletDetailTabType.transaction;
   }
 
-  // double _listBottomMarginHeight() {
-  //   final screenHeight = MediaQuery.sizeOf(context).height;
-  //   final availableHeight = screenHeight - _topPadding;
-  //   if (_selectedListType == WalletDetailTabType.transaction &&
-  //       _viewModel.txList.isNotEmpty) {
-  //     if (_stickyHeaderVisible) return 0;
-  //     final totalHeight =
-  //         _txSliverListSize.height * _viewModel.txList.length + 80;
-  //     if (totalHeight > availableHeight) return 0;
-  //     final remainingHeight = availableHeight -
-  //         totalHeight -
-  //         _appBarSize.height -
-  //         kToolbarHeight +
-  //         10;
-  //     if (remainingHeight < 0) return 0;
-  //     return 300;
-  //   }
-  //
-  //   if (_selectedListType == WalletDetailTabType.utxo &&
-  //       _viewModel.utxoList.isNotEmpty) {
-  //     if (_stickyHeaderVisible) return 0;
-  //     final totalHeight =
-  //         _utxoSliverListSize.height * _viewModel.utxoList.length +
-  //             (12 * (_viewModel.utxoList.length - 1));
-  //     if (totalHeight > availableHeight) return 0;
-  //     final remainingHeight = availableHeight -
-  //         totalHeight -
-  //         _appBarSize.height -
-  //         kToolbarHeight +
-  //         10;
-  //     if (remainingHeight < 0) return 0;
-  //     return 300;
-  //   }
-  //   return 0;
-  // }
-
   void _onTapReceiveOrSend(int? balance, {String? address, String? path}) {
     if (!_checkStateAndShowToast()) return;
     if (!_checkBalanceIsNotNullAndShowToast(balance)) return;
@@ -562,9 +518,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
         _headerDropdownPosition =
             _tabWidgetRenderBox.localToGlobal(Offset.zero);
-        final RenderBox utxoSliverListRenderBox =
-            _utxoSliverListKey.currentContext?.findRenderObject() as RenderBox;
-        _utxoSliverListSize = utxoSliverListRenderBox.size;
       }
     }
   }
