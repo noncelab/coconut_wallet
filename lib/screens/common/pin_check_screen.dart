@@ -31,7 +31,6 @@ class _PinCheckScreenState extends State<PinCheckScreen>
       GlobalKey<PinInputPadState>();
   late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
-  //late AppSubStateModel _subModel;
   bool _isPause = false;
 
   @override
@@ -45,10 +44,6 @@ class _PinCheckScreenState extends State<PinCheckScreen>
     if (_authProvider.isSetBiometrics && _authProvider.canCheckBiometrics) {
       _verifyBiometric();
     }
-    //_subModel = Provider.of<AppSubStateModel>(context, listen: false);
-    // if (_subModel.isSetBiometrics && _subModel.canCheckBiometrics) {
-    //   _verifyBiometric();
-    // }
 
     /// appEntrance인 경우 AppGuard가 위젯트리에 없으므로 추가
     if (widget.appEntrance) {

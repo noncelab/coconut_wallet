@@ -21,7 +21,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   late String pin;
   late String pinConfirm;
   late String errorMessage;
-  //late AppSubStateModel _subModel;
   late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
 
@@ -31,7 +30,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     pin = '';
     pinConfirm = '';
     errorMessage = '';
-    //_subModel = Provider.of<AppSubStateModel>(context, listen: false);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _shuffledPinNumbers = _authProvider.getShuffledNumberPad(isSettings: true);
   }
@@ -170,17 +168,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         }).catchError((e) {
           returnToBackSequence('저장 중 문제가 발생했어요', isError: true);
         });
-        // Provider.of<AppStateModel>(context, listen: false)
-        //     .setPin(hashString(pin))
-        //     .then((_) async {
-        //   _showPinSetSuccessLottie();
-
-        //   Navigator.pop(context);
-        //   Navigator.pop(context);
-        // }).catchError((e) {
-        //   print(e);
-        //   returnToBackSequence('저장 중 문제가 발생했어요', isError: true);
-        // });
       }
     }
   }

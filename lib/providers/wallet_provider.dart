@@ -457,7 +457,7 @@ class WalletProvider extends ChangeNotifier {
 
       return _nodeConnector!.currentBlock.height;
     } catch (e) {
-      Logger.log('[app_state_model] getCurrentBlockHeight error: $e');
+      Logger.error(e);
       return null;
     }
   }
@@ -470,7 +470,7 @@ class WalletProvider extends ChangeNotifier {
           await _nodeConnector!.getNetworkMinimumFeeRate();
       return result;
     } catch (e) {
-      Logger.log('[app_state_model] getMinimumNetworkFeeRate error: $e');
+      Logger.error(e);
       return null;
     }
   }
