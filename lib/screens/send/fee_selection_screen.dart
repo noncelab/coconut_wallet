@@ -75,7 +75,8 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                     Navigator.pop(context);
                   },
                   nextButtonTitle: '완료',
-                  onNextPressed: _onDone),
+                  onNextPressed: _onDone,
+                  isBottom: true),
               body: SafeArea(
                   child: SingleChildScrollView(
                 child: Column(
