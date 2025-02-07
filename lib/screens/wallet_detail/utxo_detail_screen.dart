@@ -49,16 +49,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   bool _isUtxoTooltipVisible = false;
 
-  void _removeUtxoTooltip() {
-    _isUtxoTooltipVisible = false;
-    setState(() {});
-  }
-
-  void _toggleUtxoTooltip() {
-    _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
-    setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoDetailViewModel>(
@@ -466,20 +456,28 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(const Duration(milliseconds: 500));
-
       RenderBox utxoTooltipIconRenderBox =
           _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox;
       _utxoTooltipIconPosition =
           utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
       _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
 
-      RenderBox balanceWidthRenderBox =
+      final RenderBox balanceWidthRenderBox =
           _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
 
       setState(() {
         _balanceWidthSize = balanceWidthRenderBox.size;
       });
     });
+  }
+
+  void _removeUtxoTooltip() {
+    _isUtxoTooltipVisible = false;
+    setState(() {});
+  }
+
+  void _toggleUtxoTooltip() {
+    _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
+    setState(() {});
   }
 }
