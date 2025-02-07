@@ -184,6 +184,7 @@ class TransactionItemCard extends StatelessWidget {
         onPressed: () {
           onPressed();
         },
+        borderWidth: 0,
         borderRadius: MyBorder.defaultRadiusValue,
         child: Container(
           height: 84,

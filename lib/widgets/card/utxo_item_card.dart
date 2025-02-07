@@ -29,6 +29,7 @@ class UTXOItemCard extends StatelessWidget {
 
     return ShrinkAnimationButton(
       defaultColor: MyColors.transparentWhite_06,
+      borderWidth: 0,
       borderRadius: 20,
       onPressed: () {
         onPressed();

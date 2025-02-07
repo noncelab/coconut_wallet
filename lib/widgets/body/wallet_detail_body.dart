@@ -42,52 +42,55 @@ class WalletDetailBody extends StatelessWidget {
         ? SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                if (index.isOdd) return const SizedBox(height: 8);
                 if (isTransaction) {
                   final tx = txList[index];
-                  return TransactionItemCard(
-                    key: index == 0 ? txSliverListKey : null,
-                    tx: tx,
-                    currentUnit: currentUnit,
-                    id: walletId,
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/transaction-detail',
-                          arguments: {
-                            'id': walletId,
-                            'txHash': tx.transactionHash
-                          });
-                    },
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: TransactionItemCard(
+                      key: index == 0 ? txSliverListKey : null,
+                      tx: tx,
+                      currentUnit: currentUnit,
+                      id: walletId,
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/transaction-detail',
+                            arguments: {
+                              'id': walletId,
+                              'txHash': tx.transactionHash
+                            });
+                      },
+                    ),
                   );
                 } else {
-                  final itemIndex = index ~/ 2;
-                  return UTXOItemCard(
-                    key: index == 0 ? utxoSliverListKey : null,
-                    currentUnit: currentUnit,
-                    onPressed: () async {
-                      removePopup();
-                      final utxo = utxoList[itemIndex];
-                      await Navigator.pushNamed(
-                        context,
-                        '/utxo-detail',
-                        arguments: {
-                          'utxo': utxo,
-                          'id': walletId,
-                          'isChange': DerivationPathUtil.getChangeElement(
-                                walletType,
-                                utxo.derivationPath,
-                              ) ==
-                              1,
-                        },
-                      );
-                      popFromUtxoDetail?.call(utxo);
-                    },
-                    utxo: utxoList[itemIndex],
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: UTXOItemCard(
+                      key: index == 0 ? utxoSliverListKey : null,
+                      currentUnit: currentUnit,
+                      onPressed: () async {
+                        removePopup();
+                        final utxo = utxoList[index];
+                        await Navigator.pushNamed(
+                          context,
+                          '/utxo-detail',
+                          arguments: {
+                            'utxo': utxo,
+                            'id': walletId,
+                            'isChange': DerivationPathUtil.getChangeElement(
+                                  walletType,
+                                  utxo.derivationPath,
+                                ) ==
+                                1,
+                          },
+                        );
+                        popFromUtxoDetail?.call(utxo);
+                      },
+                      utxo: utxoList[index],
+                    ),
                   );
                 }
               },
-              childCount: isTransaction
-                  ? txList.length
-                  : utxoList.length * 2 - 1, // 항목 개수 지정
+              childCount:
+                  isTransaction ? txList.length : utxoList.length, // 항목 개수 지정
             ),
           )
         : SliverFillRemaining(
