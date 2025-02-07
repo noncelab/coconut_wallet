@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,9 +8,10 @@ enum WalletDetailTabType { transaction, utxo }
 
 class WalletDetailTab extends StatelessWidget {
   final WalletDetailTabType selectedListType;
-  final bool isUpdateProgress;
+  final WalletInitState state;
   final int utxoListLength;
   final bool isUtxoDropdownVisible;
+  final bool isPullToRefreshing;
   final String utxoOrderText;
   final Function onTapTransaction;
   final Function onTapUtxo;
@@ -17,9 +19,10 @@ class WalletDetailTab extends StatelessWidget {
   const WalletDetailTab({
     super.key,
     required this.selectedListType,
-    required this.isUpdateProgress,
+    required this.state,
     required this.utxoListLength,
     required this.isUtxoDropdownVisible,
+    required this.isPullToRefreshing,
     this.utxoOrderText = '',
     required this.onTapTransaction,
     required this.onTapUtxo,
@@ -100,7 +103,8 @@ class WalletDetailTab extends StatelessWidget {
               ),
               const Spacer(),
               Visibility(
-                visible: isUpdateProgress,
+                visible:
+                    !isPullToRefreshing && state == WalletInitState.processing,
                 child: Row(
                   children: [
                     const Text(
@@ -119,6 +123,28 @@ class WalletDetailTab extends StatelessWidget {
                       width: 20,
                       height: 20,
                     ),
+                  ],
+                ),
+              ),
+              Visibility(
+                visible: state == WalletInitState.error,
+                child: Row(
+                  children: [
+                    const Text(
+                      '업데이트 실패',
+                      style: TextStyle(
+                        fontFamily: 'Pretendard',
+                        color: MyColors.failedYellow,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        fontStyle: FontStyle.normal,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SvgPicture.asset('assets/svg/status-failure.svg',
+                        width: 18,
+                        colorFilter: const ColorFilter.mode(
+                            MyColors.failedYellow, BlendMode.srcIn)),
                   ],
                 ),
               ),
