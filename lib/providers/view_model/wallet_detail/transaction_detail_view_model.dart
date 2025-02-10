@@ -27,6 +27,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool get canSeeMoreOutputs => _txProvider.canSeeMoreOutputs;
   int get inputCountToShow => _txProvider.inputCountToShow;
   int get outputCountToShow => _txProvider.outputCountToShow;
+  DateTime? get timestamp {
+    final blockHeight = _txProvider.transaction?.blockHeight;
+    return (blockHeight != null && blockHeight > 0)
+        ? _txProvider.transaction!.timestamp
+        : null;
+  }
 
   ValueNotifier<bool> get showDialogNotifier => _showDialogNotifier;
   ValueNotifier<bool> get loadCompletedNotifier => _loadCompletedNotifier;

@@ -95,7 +95,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         child: Column(
                           children: [
                             HighlightedInfoArea(
-                              textList: viewModel.dateString,
+                              textList:
+                                  viewModel.dateString ?? ['--.--.--', '--:--'],
                               textStyle: Styles.body2Number.merge(
                                 const TextStyle(
                                   color: MyColors.white,
