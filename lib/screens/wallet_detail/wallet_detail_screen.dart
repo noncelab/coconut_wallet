@@ -77,24 +77,29 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<WalletProvider, TransactionProvider,
-        WalletDetailViewModel>(
+    return ChangeNotifierProxyProvider4<WalletProvider, TransactionProvider,
+        ConnectivityProvider, UpbitConnectModel, WalletDetailViewModel>(
       create: (_) {
         _viewModel = WalletDetailViewModel(
           widget.id,
           Provider.of<WalletProvider>(_, listen: false),
           Provider.of<TransactionProvider>(_, listen: false),
           Provider.of<UtxoTagProvider>(_, listen: false),
+          Provider.of<ConnectivityProvider>(_, listen: false),
+          Provider.of<UpbitConnectModel>(_, listen: false),
         );
         return _viewModel;
       },
-      update: (_, walletProvider, txProvider, viewModel) {
+      update: (_, walletProvider, txProvider, connectProvider, upbitModel,
+          viewModel) {
         _updateFilterDropdownButtonRenderBox();
         return viewModel!..updateProvider();
       },
       child: Consumer<WalletDetailViewModel>(
         builder: (context, viewModel, child) {
+          final state = viewModel.walletInitState;
           final balance = viewModel.walletListBaseItem?.balance;
+          final isNetworkOn = viewModel.isNetworkOn;
           return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, _) {
@@ -106,272 +111,257 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               onTap: () {
                 _removeFilterDropdown(); // 모든 터치 이벤트에서 실행
               },
-              child: Selector<WalletProvider, WalletInitState>(
-                selector: (_, selectorModel) => selectorModel.walletInitState,
-                builder: (context, state, child) {
-                  return Stack(
-                    children: [
-                      Scaffold(
-                        backgroundColor: MyColors.black,
-                        appBar: CustomAppBar.build(
-                          entireWidgetKey: _appBarKey,
-                          faucetIconKey: _faucetIconKey,
-                          backgroundColor: MyColors.black,
-                          title: TextUtils.ellipsisIfLonger(
-                            viewModel.walletListBaseItem!.name,
-                            maxLength: 15,
-                          ),
-                          context: context,
-                          hasRightIcon: true,
-                          onFaucetIconPressed: () async {
-                            _removeFilterDropdown();
-                            viewModel.removeFaucetTooltip();
-                            if (!_checkStateAndShowToast(state, balance)) {
-                              return;
-                            }
-                            await CommonBottomSheets.showBottomSheet_50(
-                                context: context,
-                                child: FaucetRequestBottomSheet(
-                                  walletAddressBook:
-                                      viewModel.walletAddressBook,
-                                  walletData: {
-                                    'wallet_address': viewModel.walletAddress,
-                                    'wallet_name': viewModel.walletName,
-                                    'wallet_index':
-                                        viewModel.receiveAddressIndex,
-                                    'wallet_request_amount':
-                                        viewModel.requestAmount,
-                                  },
-                                  isFaucetRequestLimitExceeded:
-                                      viewModel.isFaucetRequestLimitExceeded,
-                                  isRequesting: viewModel.isRequesting,
-                                  onRequest: (address) {
-                                    if (viewModel.isRequesting) return;
-
-                                    viewModel.requestTestBitcoin(address,
-                                        (success, message) {
-                                      if (success) {
-                                        Navigator.pop(context);
-                                        vibrateLight();
-                                        Future.delayed(
-                                            const Duration(seconds: 1), () {
-                                          viewModel.walletProvider?.initWallet(
-                                              targetId: widget.id,
-                                              syncOthers: false);
-                                        });
-                                        CustomToast.showToast(
-                                            context: context, text: message);
-                                      } else {
-                                        vibrateMedium();
-                                        CustomToast.showWarningToast(
-                                            context: context, text: message);
-                                      }
-                                    });
-                                  },
-                                ));
-                          },
-                          onTitlePressed: () async {
-                            await Navigator.pushNamed(context, '/wallet-info',
-                                arguments: {
-                                  'id': widget.id,
-                                  'isMultisig': viewModel.walletType ==
-                                      WalletType.multiSignature
-                                });
-
-                            if (viewModel.isUpdatedTagList) {
-                              viewModel.getUtxoListWithHoldingAddress();
-                            }
-                          },
-                          showFaucetIcon: true,
-                        ),
-                        body: CustomScrollView(
-                          controller: _scrollController,
-                          semanticChildCount: viewModel.txList.isEmpty
-                              ? 1
-                              : viewModel.txList.length,
-                          slivers: [
-                            CupertinoSliverRefreshControl(
-                              onRefresh: () async {
-                                _isPullToRefreshing = true;
-                                try {
-                                  if (!_checkStateAndShowToast(
-                                      state, balance)) {
-                                    return;
-                                  }
-                                  viewModel.walletProvider
-                                      ?.initWallet(targetId: widget.id);
-                                } finally {
-                                  _isPullToRefreshing = false;
-                                }
+              child: Stack(
+                children: [
+                  Scaffold(
+                    backgroundColor: MyColors.black,
+                    appBar: CustomAppBar.build(
+                      entireWidgetKey: _appBarKey,
+                      faucetIconKey: _faucetIconKey,
+                      backgroundColor: MyColors.black,
+                      title: TextUtils.ellipsisIfLonger(
+                        viewModel.walletListBaseItem!.name,
+                        maxLength: 15,
+                      ),
+                      context: context,
+                      hasRightIcon: true,
+                      onFaucetIconPressed: () async {
+                        _removeFilterDropdown();
+                        viewModel.removeFaucetTooltip();
+                        if (!_checkStateAndShowToast(
+                            state, balance, isNetworkOn)) {
+                          return;
+                        }
+                        await CommonBottomSheets.showBottomSheet_50(
+                            context: context,
+                            child: FaucetRequestBottomSheet(
+                              walletAddressBook: viewModel.walletAddressBook,
+                              walletData: {
+                                'wallet_address': viewModel.walletAddress,
+                                'wallet_name': viewModel.walletName,
+                                'wallet_index': viewModel.receiveAddressIndex,
+                                'wallet_request_amount':
+                                    viewModel.requestAmount,
                               },
-                            ),
-                            SliverToBoxAdapter(
-                              child: Selector<UpbitConnectModel, int?>(
-                                selector: (context, model) =>
-                                    model.bitcoinPriceKrw,
-                                builder: (context, bitcoinPriceKrw, child) {
-                                  return WalletDetailHeader(
-                                    key: _headerWidgetKey,
-                                    walletId: widget.id,
-                                    address: viewModel.walletAddress,
-                                    derivationPath: viewModel.derivationPath,
-                                    balance: balance,
-                                    currentUnit: _currentUnit,
-                                    btcPriceInKrw: bitcoinPriceKrw,
-                                    onPressedUnitToggle: () {
-                                      _toggleUnit();
-                                    },
-                                    removePopup: () {
-                                      _removeFilterDropdown();
-                                      viewModel.removeFaucetTooltip();
-                                    },
-                                    checkPrerequisites: () {
-                                      return _checkStateAndShowToast(
-                                          state, balance);
-                                    },
-                                  );
-                                },
-                              ),
-                            ),
-                            SliverToBoxAdapter(
-                              child: WalletDetailTab(
-                                key: _tabWidgetKey,
-                                selectedListType: _selectedListType,
-                                utxoListLength: viewModel.utxoList.length,
-                                state: state,
-                                isUtxoDropdownVisible: _selectedListType ==
-                                        WalletDetailTabType.utxo &&
+                              isFaucetRequestLimitExceeded:
+                                  viewModel.isFaucetRequestLimitExceeded,
+                              isRequesting: viewModel.isRequesting,
+                              onRequest: (address) {
+                                if (viewModel.isRequesting) return;
+
+                                viewModel.requestTestBitcoin(address,
+                                    (success, message) {
+                                  if (success) {
+                                    Navigator.pop(context);
+                                    vibrateLight();
+                                    Future.delayed(const Duration(seconds: 1),
+                                        () {
+                                      viewModel.walletProvider?.initWallet(
+                                          targetId: widget.id,
+                                          syncOthers: false);
+                                    });
+                                    CustomToast.showToast(
+                                        context: context, text: message);
+                                  } else {
+                                    vibrateMedium();
+                                    CustomToast.showWarningToast(
+                                        context: context, text: message);
+                                  }
+                                });
+                              },
+                            ));
+                      },
+                      onTitlePressed: () async {
+                        await Navigator.pushNamed(
+                            context, '/wallet-info', arguments: {
+                          'id': widget.id,
+                          'isMultisig':
+                              viewModel.walletType == WalletType.multiSignature
+                        });
+
+                        if (viewModel.isUpdatedTagList) {
+                          viewModel.getUtxoListWithHoldingAddress();
+                        }
+                      },
+                      showFaucetIcon: true,
+                    ),
+                    body: CustomScrollView(
+                      controller: _scrollController,
+                      semanticChildCount: viewModel.txList.isEmpty
+                          ? 1
+                          : viewModel.txList.length,
+                      slivers: [
+                        CupertinoSliverRefreshControl(
+                          onRefresh: () async {
+                            _isPullToRefreshing = true;
+                            try {
+                              if (!_checkStateAndShowToast(
+                                  state, balance, isNetworkOn)) {
+                                return;
+                              }
+                              viewModel.walletProvider
+                                  ?.initWallet(targetId: widget.id);
+                            } finally {
+                              _isPullToRefreshing = false;
+                            }
+                          },
+                        ),
+                        SliverToBoxAdapter(
+                          child: WalletDetailHeader(
+                            key: _headerWidgetKey,
+                            walletId: widget.id,
+                            address: viewModel.walletAddress,
+                            derivationPath: viewModel.derivationPath,
+                            balance: balance,
+                            currentUnit: _currentUnit,
+                            btcPriceInKrw: viewModel.bitcoinPriceKrw,
+                            onPressedUnitToggle: () {
+                              _toggleUnit();
+                            },
+                            removePopup: () {
+                              _removeFilterDropdown();
+                              viewModel.removeFaucetTooltip();
+                            },
+                            checkPrerequisites: () {
+                              return _checkStateAndShowToast(
+                                  state, balance, isNetworkOn);
+                            },
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: WalletDetailTab(
+                            key: _tabWidgetKey,
+                            selectedListType: _selectedListType,
+                            utxoListLength: viewModel.utxoList.length,
+                            state: state,
+                            isUtxoDropdownVisible:
+                                _selectedListType == WalletDetailTabType.utxo &&
                                     viewModel.utxoList.isNotEmpty &&
                                     !_stickyHeaderVisible,
-                                isPullToRefreshing: _isPullToRefreshing,
-                                utxoOrderText: viewModel.selectedUtxoOrder.text,
-                                onTapTransaction: () {
-                                  _toggleListType(
-                                      WalletDetailTabType.transaction,
-                                      viewModel.utxoList);
-                                },
-                                onTapUtxo: () {
-                                  _toggleListType(WalletDetailTabType.utxo,
-                                      viewModel.utxoList);
-                                },
-                                onTapUtxoDropdown: () {
-                                  _scrollController
-                                      .jumpTo(_scrollController.offset);
-                                  if (_isHeaderDropdownVisible ||
-                                      _isStickyHeaderDropdownVisible) {
-                                    _isHeaderDropdownVisible = false;
-                                  } else {
-                                    _isHeaderDropdownVisible = true;
-                                  }
-                                  setState(() {});
-                                },
-                              ),
-                            ),
-                            SliverSafeArea(
-                              minimum:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              sliver: WalletDetailBody(
-                                txSliverListKey: _txSliverListKey,
-                                utxoSliverListKey: _utxoSliverListKey,
-                                walletId: widget.id,
-                                walletType: viewModel.walletType,
-                                currentUnit: _currentUnit,
-                                isTransaction: _isSelectedTx(),
-                                isUtxoListLoadComplete:
-                                    viewModel.isUtxoListLoadComplete,
-                                txList: viewModel.txList,
-                                utxoList: viewModel.utxoList,
-                                removePopup: () {
-                                  _removeFilterDropdown();
-                                  viewModel.removeFaucetTooltip();
-                                },
-                                popFromUtxoDetail: (resultUtxo) {
-                                  if (viewModel.isUpdatedTagList) {
-                                    viewModel.updateUtxoTagList(
-                                        resultUtxo.utxoId,
-                                        viewModel.selectedTagList);
-                                  }
-                                },
-                              ),
-                            ),
-                            SliverToBoxAdapter(
-                              child: SizedBox(
-                                height: _listBottomMarginHeight(),
-                              ),
-                            ),
-                          ],
+                            isPullToRefreshing: _isPullToRefreshing,
+                            utxoOrderText: viewModel.selectedUtxoOrder.text,
+                            onTapTransaction: () {
+                              _toggleListType(WalletDetailTabType.transaction,
+                                  viewModel.utxoList);
+                            },
+                            onTapUtxo: () {
+                              _toggleListType(
+                                  WalletDetailTabType.utxo, viewModel.utxoList);
+                            },
+                            onTapUtxoDropdown: () {
+                              _scrollController
+                                  .jumpTo(_scrollController.offset);
+                              if (_isHeaderDropdownVisible ||
+                                  _isStickyHeaderDropdownVisible) {
+                                _isHeaderDropdownVisible = false;
+                              } else {
+                                _isHeaderDropdownVisible = true;
+                              }
+                              setState(() {});
+                            },
+                          ),
                         ),
-                      ),
-                      FaucetTooltip(
-                        text: '테스트용 비트코인으로 마음껏 테스트 해보세요',
-                        isVisible: viewModel.faucetTooltipVisible,
-                        width: MediaQuery.of(context).size.width,
-                        iconPosition: _faucetIconPosition,
-                        iconSize: _faucetIconSize,
-                        onTapRemove: viewModel.removeFaucetTooltip,
-                      ),
-                      WalletDetailStickyHeader(
-                        widgetKey: _stickyHeaderWidgetKey,
-                        height: _appBarSize.height,
-                        isVisible: _stickyHeaderVisible,
-                        currentUnit: _currentUnit,
-                        balance: balance,
-                        receiveAddress: viewModel.walletListBaseItem!.walletBase
-                            .getReceiveAddress(),
-                        walletStatus: viewModel.getInitializedWalletStatus(),
-                        selectedListType: _selectedListType,
-                        selectedFilter: viewModel.selectedUtxoOrder.text,
-                        onTapReceive: (balance, address, path) {
-                          _onTapReceiveOrSend(balance, state,
-                              address: address, path: path);
-                        },
-                        onTapSend: (balance) {
-                          _onTapReceiveOrSend(balance, state);
-                        },
-                        onTapDropdown: () {
-                          setState(() {
-                            _scrollController.jumpTo(_scrollController.offset);
-                            if (_isHeaderDropdownVisible ||
-                                _isStickyHeaderDropdownVisible) {
-                              _isStickyHeaderDropdownVisible = false;
-                            } else {
-                              _isStickyHeaderDropdownVisible = true;
-                            }
-                          });
-                        },
-                        removePopup: () {
-                          _removeFilterDropdown();
-                          viewModel.removeFaucetTooltip();
-                        },
-                      ),
-                      UtxoFilterDropdown(
-                        isVisible: viewModel.utxoList.isNotEmpty &&
-                                _isHeaderDropdownVisible ||
-                            _isStickyHeaderDropdownVisible,
-                        positionTop: _isHeaderDropdownVisible
-                            ? _headerDropdownPosition.dy +
-                                80 -
-                                _scrollController.offset * 0.01
-                            : _isStickyHeaderDropdownVisible
-                                ? _stickyHeaderDropdownPosition.dy + 92
-                                : 0,
-                        selectedFilter: viewModel.selectedUtxoOrder,
-                        onSelected: (filter) {
-                          setState(() {
-                            _isHeaderDropdownVisible =
-                                _isStickyHeaderDropdownVisible = false;
-                          });
-                          if (_stickyHeaderVisible) {
-                            _scrollController.animateTo(_topPadding + 1,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut);
-                          }
-                          viewModel.updateUtxoFilter(filter);
-                        },
-                      ),
-                    ],
-                  );
-                },
+                        SliverSafeArea(
+                          minimum: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: WalletDetailBody(
+                            txSliverListKey: _txSliverListKey,
+                            utxoSliverListKey: _utxoSliverListKey,
+                            walletId: widget.id,
+                            walletType: viewModel.walletType,
+                            currentUnit: _currentUnit,
+                            isTransaction: _isSelectedTx(),
+                            isUtxoListLoadComplete:
+                                viewModel.isUtxoListLoadComplete,
+                            txList: viewModel.txList,
+                            utxoList: viewModel.utxoList,
+                            removePopup: () {
+                              _removeFilterDropdown();
+                              viewModel.removeFaucetTooltip();
+                            },
+                            popFromUtxoDetail: (resultUtxo) {
+                              if (viewModel.isUpdatedTagList) {
+                                viewModel.updateUtxoTagList(resultUtxo.utxoId,
+                                    viewModel.selectedTagList);
+                              }
+                            },
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: _listBottomMarginHeight(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  FaucetTooltip(
+                    text: '테스트용 비트코인으로 마음껏 테스트 해보세요',
+                    isVisible: viewModel.faucetTooltipVisible,
+                    width: MediaQuery.of(context).size.width,
+                    iconPosition: _faucetIconPosition,
+                    iconSize: _faucetIconSize,
+                    onTapRemove: viewModel.removeFaucetTooltip,
+                  ),
+                  WalletDetailStickyHeader(
+                    widgetKey: _stickyHeaderWidgetKey,
+                    height: _appBarSize.height,
+                    isVisible: _stickyHeaderVisible,
+                    currentUnit: _currentUnit,
+                    balance: balance,
+                    receiveAddress: viewModel.walletListBaseItem!.walletBase
+                        .getReceiveAddress(),
+                    walletStatus: viewModel.getInitializedWalletStatus(),
+                    selectedListType: _selectedListType,
+                    selectedFilter: viewModel.selectedUtxoOrder.text,
+                    onTapReceive: (balance, address, path) {
+                      _onTapReceiveOrSend(balance, state, isNetworkOn,
+                          address: address, path: path);
+                    },
+                    onTapSend: (balance) {
+                      _onTapReceiveOrSend(balance, state, isNetworkOn);
+                    },
+                    onTapDropdown: () {
+                      setState(() {
+                        _scrollController.jumpTo(_scrollController.offset);
+                        if (_isHeaderDropdownVisible ||
+                            _isStickyHeaderDropdownVisible) {
+                          _isStickyHeaderDropdownVisible = false;
+                        } else {
+                          _isStickyHeaderDropdownVisible = true;
+                        }
+                      });
+                    },
+                    removePopup: () {
+                      _removeFilterDropdown();
+                      viewModel.removeFaucetTooltip();
+                    },
+                  ),
+                  UtxoFilterDropdown(
+                    isVisible: viewModel.utxoList.isNotEmpty &&
+                            _isHeaderDropdownVisible ||
+                        _isStickyHeaderDropdownVisible,
+                    positionTop: _isHeaderDropdownVisible
+                        ? _headerDropdownPosition.dy +
+                            80 -
+                            _scrollController.offset * 0.01
+                        : _isStickyHeaderDropdownVisible
+                            ? _stickyHeaderDropdownPosition.dy + 92
+                            : 0,
+                    selectedFilter: viewModel.selectedUtxoOrder,
+                    onSelected: (filter) {
+                      setState(() {
+                        _isHeaderDropdownVisible =
+                            _isStickyHeaderDropdownVisible = false;
+                      });
+                      if (_stickyHeaderVisible) {
+                        _scrollController.animateTo(_topPadding + 1,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut);
+                      }
+                      viewModel.updateUtxoFilter(filter);
+                    },
+                  ),
+                ],
               ),
             ),
           );
@@ -454,10 +444,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     });
   }
 
-  bool _checkStateAndShowToast(WalletInitState state, int? balance) {
-    var connectivityProvider =
-        Provider.of<ConnectivityProvider>(context, listen: false);
-    if (connectivityProvider.isNetworkOn == false) {
+  bool _checkStateAndShowToast(
+      WalletInitState state, int? balance, bool? isNetworkOn) {
+    if (isNetworkOn == false) {
       CustomToast.showWarningToast(
           context: context, text: ErrorCodes.networkError.message);
       return false;
@@ -520,9 +509,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return 0;
   }
 
-  void _onTapReceiveOrSend(int? balance, WalletInitState state,
+  void _onTapReceiveOrSend(
+      int? balance, WalletInitState state, bool? isNetworkOn,
       {String? address, String? path}) {
-    if (!_checkStateAndShowToast(state, balance)) return;
+    if (!_checkStateAndShowToast(state, balance, isNetworkOn)) return;
     if (address != null && path != null) {
       CommonBottomSheets.showBottomSheet_90(
         context: context,

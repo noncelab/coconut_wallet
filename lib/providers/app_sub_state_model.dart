@@ -172,8 +172,9 @@ class AppSubStateModel with ChangeNotifier {
     _isNotEmptyWalletList = isNotEmpty;
     await _sharedPrefs.setBool(
         SharedPrefsRepository.kIsNotEmptyWalletList, isNotEmpty);
-    if (!isNotEmpty)
+    if (!isNotEmpty) {
       await _sharedPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, 0);
+    }
     notifyListeners();
   }
 
