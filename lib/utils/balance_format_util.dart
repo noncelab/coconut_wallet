@@ -1,4 +1,21 @@
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:decimal/decimal.dart';
+
+class UnitUtil {
+  static double satoshiToBitcoin(int satoshi) {
+    return double.parse(satoshiToBitcoinString(satoshi));
+  }
+
+  static String satoshiToBitcoinString(int satoshi) {
+    return (satoshi / 100000000.0).toStringAsFixed(8);
+  }
+
+  /// 부동 소숫점 연산 시 오차가 발생할 수 있으므로 Decimal이용
+  static int bitcoinToSatoshi(double bitcoin) {
+    return (Decimal.parse(bitcoin.toString()) * Decimal.parse('100000000'))
+        .toDouble()
+        .toInt();
+  }
+}
 
 /// 사용자 친화적 형식의 비트코인 단위의 잔액
 ///

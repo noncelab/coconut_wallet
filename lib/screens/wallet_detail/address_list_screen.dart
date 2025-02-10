@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:coconut_lib/coconut_lib.dart' as coconut;
+import 'package:coconut_wallet/model/wallet/address.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -67,7 +68,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           if (this.viewModel == null) {
             this.viewModel = viewModel;
           }
-          List<coconut.Address>? addressList = isReceivingSelected
+          List<Address>? addressList = isReceivingSelected
               ? viewModel.receivingAddressList
               : viewModel.changeAddressList;
           return PopScope(
@@ -371,14 +372,16 @@ class _AddressListScreenState extends State<AddressListScreen> {
       });
 
       try {
-        final newAddresses = viewModel?.walletBase?.getAddressList(
-            kFirstCount +
-                (isReceivingSelected
-                        ? _receivingAddressPage
-                        : _changeAddressPage) *
-                    _limit,
-            _limit,
-            !isReceivingSelected);
+        // TODO: getAddressList
+        List<Address> newAddresses = [];
+        // final newAddresses = viewModel?.walletBase?.getAddressList(
+        //     kFirstCount +
+        //         (isReceivingSelected
+        //             ? _receivingAddressPage
+        //             : _changeAddressPage) *
+        //         _limit,
+        // _limit,
+        // !isReceivingSelected);
 
         setState(() {
           if (isReceivingSelected) {

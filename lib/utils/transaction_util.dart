@@ -1,8 +1,9 @@
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/model/wallet/transfer.dart';
 
 class TransactionUtil {
-  static TransactionStatus? getStatus(Transfer tx) {
+  static TransactionStatus? getStatus(TransactionRecord tx) {
     if (tx.transferType == TransactionTypeEnum.received.name) {
       if (tx.blockHeight == 0 || tx.blockHeight == null) {
         return TransactionStatus.receiving;

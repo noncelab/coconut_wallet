@@ -1,4 +1,4 @@
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';

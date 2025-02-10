@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 
 class FaucetRequestBottomSheet extends StatefulWidget {
   final Map<String, dynamic> walletData;
-  final AddressBook walletAddressBook;
+  // final AddressBook walletAddressBook;
   final bool isFaucetRequestLimitExceeded;
   final bool isRequesting;
   final Function(String) onRequest;
@@ -17,7 +17,7 @@ class FaucetRequestBottomSheet extends StatefulWidget {
   const FaucetRequestBottomSheet({
     super.key,
     required this.walletData,
-    required this.walletAddressBook,
+    // required this.walletAddressBook,
     required this.isFaucetRequestLimitExceeded,
     required this.isRequesting,
     required this.onRequest,
@@ -236,8 +236,10 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
   bool _isValidAddress(String address) {
     try {
-      return widget.walletAddressBook.contains(_walletAddress) &&
-          WalletUtility.validateAddress(address);
+      // TODO: walletAddressBook
+      return false;
+      // return widget.walletAddressBook.contains(_walletAddress) &&
+      //     WalletUtility.validateAddress(address);
     } catch (_) {
       return false;
     }

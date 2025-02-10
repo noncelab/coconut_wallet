@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/wallet/address.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -13,7 +14,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
   final Unit currentUnit;
   final int? balance;
   final Address receiveAddress;
-  final WalletStatus? walletStatus;
   final WalletDetailTabType selectedListType;
   final String selectedFilter;
   final Function(int?, String, String) onTapReceive;
@@ -27,7 +27,8 @@ class WalletDetailStickyHeader extends StatelessWidget {
     required this.currentUnit,
     required this.balance,
     required this.receiveAddress,
-    required this.walletStatus,
+    // TODO: walletStatus
+    // required this.walletStatus,
     required this.selectedListType,
     required this.selectedFilter,
     required this.onTapReceive,
@@ -40,7 +41,8 @@ class WalletDetailStickyHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final walletAddress = receiveAddress.address;
     final derivationPath = receiveAddress.derivationPath;
-    final utxoListIsNotEmpty = walletStatus?.utxoList.isNotEmpty == true;
+    // TODO: utxoListIsNotEmpty
+    final utxoListIsNotEmpty = false;
     return Positioned(
       top: height,
       left: 0,

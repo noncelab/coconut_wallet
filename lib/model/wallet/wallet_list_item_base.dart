@@ -31,7 +31,8 @@ abstract class WalletListItemBase {
       this.txCount,
       this.isLatestTxBlockHeightZero = false});
 
-  WalletFeature get walletFeature {
+  // TODO: walletFeature
+  dynamic get walletFeature {
     switch (walletType) {
       case WalletType.singleSignature:
         return walletBase as SingleSignatureWallet;
@@ -42,29 +43,11 @@ abstract class WalletListItemBase {
     }
   }
 
-  Future _fetchWalletStatusFromNetwork(NodeConnector nodeConnector) async {
-    try {
-      await walletFeature.fetchOnChainData(nodeConnector);
-    } catch (e) {
-      throw AppError(ErrorCodes.walletSyncFailedError.code, e.toString());
-    }
-  }
+  // TODO: _fetchWalletStatusFromNetwork(NodeConnector nodeConnector)
 
-  bool _shouldUpdateToLatest() {
-    if (walletFeature.walletStatus == null) {
-      return false;
-    }
+  // TODO: _shouldUpdateToLatest()
 
-    return txCount == null ||
-        txCount != walletFeature.walletStatus!.transactionList.length ||
-        isLatestTxBlockHeightZero ||
-        balance == null;
-  }
-
-  Future<bool> checkIfWalletShouldUpdate(NodeConnector nodeConnector) async {
-    await _fetchWalletStatusFromNetwork(nodeConnector);
-    return _shouldUpdateToLatest();
-  }
+  // TODO: checkIfWalletShouldUpdate(NodeConnector nodeConnector)
 
   @override
   String toString() =>

@@ -1,5 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -9,6 +11,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -385,7 +388,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _onTapFeeChangeButton() async {
-    Result<int, CoconutError>? minimumFeeRate =
+    Result<int, AppError>? minimumFeeRate =
         await _viewModel.getMinimumFeeRateFromNetwork();
 
     if (!mounted) {

@@ -1,4 +1,4 @@
-import 'package:coconut_lib/coconut_lib.dart';
+import 'network_enums.dart';
 
 extension UtxoOrderEnumExtension on UtxoOrderEnum {
   String get text {

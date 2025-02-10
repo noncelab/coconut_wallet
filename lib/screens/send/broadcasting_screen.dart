@@ -11,6 +11,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
@@ -36,8 +37,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         psbt.getSignedTransaction(_viewModel.walletAddressType);
 
     try {
-      Result<String, CoconutError> result =
-          await _viewModel.broadcast(signedTx);
+      Result<String, AppError> result = await _viewModel.broadcast(signedTx);
 
       setOverlayLoading(false);
 

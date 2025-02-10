@@ -1,4 +1,4 @@
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 
 class FiatUtil {
   static int calculateFiatAmount(int satoshiAmount, int exchangeRate) {

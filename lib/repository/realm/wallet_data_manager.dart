@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/transfer.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
@@ -226,7 +227,8 @@ class WalletDataManager {
   Future _updateWalletAsLatest(
       WalletListItemBase walletItem, RealmWalletBase realmWallet) async {
     _checkInitialized();
-    WalletStatus walletStatus = walletItem.walletFeature.walletStatus!;
+    // TODO: WalletStatus
+    // WalletStatus walletStatus = walletItem.walletFeature.walletStatus!;
     RealmResults<RealmTransaction>? unconfirmedRealmTxs;
     List<RealmTransaction>?
         unconfirmedRealmTxList; // 새로운 row 추가 시 updateTargets 결과가 변경되기 때문에 처음 결과를 이 변수에 저장
@@ -238,12 +240,13 @@ class WalletDataManager {
     }
 
     // 항상 최신순으로 반환
-    List<Transfer> fetchedTxsSortedByBlockHeightAsc = walletItem.walletFeature
-        .getTransferList(
+    List<TransactionRecord> fetchedTxsSortedByBlockHeightAsc =
+        walletItem.walletFeature.getTransferList(
             cursor: 0,
-            count: walletStatus.transactionList.length -
-                (realmWallet.txCount ?? 0) +
-                (unconfirmedRealmTxs?.length ?? 0));
+            // TODO: WalletStatus
+            // count: walletStatus.transactionList.length -
+            //     (realmWallet.txCount ?? 0) +
+            (unconfirmedRealmTxs?.length ?? 0));
     int nextId = generateNextId(_realm, (RealmTransaction).toString());
     List<int> existingUnconfirmedTxIdsInFetchedTxs = [];
     await _realm.writeAsync(() {
@@ -304,7 +307,8 @@ class WalletDataManager {
         }
       }
 
-      realmWallet.txCount = walletStatus.transactionList.length;
+      // realmWallet.txCount = walletStatus.transactionList.length;
+      realmWallet.txCount = 0;
       realmWallet.isLatestTxBlockHeightZero =
           fetchedTxsSortedByBlockHeightAsc.isNotEmpty &&
               fetchedTxsSortedByBlockHeightAsc[0].blockHeight == 0;

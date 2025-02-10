@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/wallet/transfer.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -27,7 +28,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   List<UtxoTag> get selectedTagList => _tagProvider.selectedTagList;
   List<UtxoTag> get tagList => _tagProvider.tagList;
 
-  Transfer? get transaction => _txProvider.transaction;
+  TransactionRecord? get transaction => _txProvider.transaction;
   int get utxoInputMaxCount => _txProvider.utxoInputMaxCount;
   int get utxoOutputMaxCount => _txProvider.utxoOutputMaxCount;
 

@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/model/wallet/transfer.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
@@ -147,9 +148,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                               ? _balanceWidthSize.width
                                               : 100,
                                       rowType: InputOutputRowType.input,
-                                      isCurrentAddress: viewModel.addressBook
-                                          ?.contains(viewModel.transaction!
-                                              .inputAddressList[index].address),
+                                      // TODO: isCurrentAddress
+                                      isCurrentAddress: false,
+                                      // isCurrentAddress: viewModel.addressBook
+                                      //     ?.contains(viewModel.transaction!
+                                      //         .inputAddressList[index].address),
                                       transactionStatus: status,
                                     ),
                                     const SizedBox(height: 8),
@@ -202,11 +205,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                               ? _balanceWidthSize.width
                                               : 100,
                                       rowType: InputOutputRowType.output,
-                                      isCurrentAddress: viewModel.addressBook
-                                          ?.contains(viewModel
-                                              .transaction!
-                                              .outputAddressList[index]
-                                              .address),
+                                      // TODO: isCurrentAddress
+                                      isCurrentAddress: false,
+                                      // isCurrentAddress: viewModel.addressBook
+                                      //     ?.contains(viewModel
+                                      //         .transaction!
+                                      //         .outputAddressList[index]
+                                      //         .address),
                                       transactionStatus: status,
                                     ),
                                     const SizedBox(height: 8),
@@ -324,7 +329,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     });
   }
 
-  Widget _amountText(Transfer tx) {
+  Widget _amountText(TransactionRecord tx) {
     String prefix;
     Color color;
 
@@ -359,7 +364,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     );
   }
 
-  String _confirmedCountText(Transfer? tx, int? blockHeight) {
+  String _confirmedCountText(TransactionRecord? tx, int? blockHeight) {
     if (blockHeight == null || tx == null) {
       return '';
     }

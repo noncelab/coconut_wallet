@@ -33,8 +33,8 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
   void initState() {
     super.initState();
     _isPressing = false;
-    dateString = DateTimeUtil.formatDatetime(widget.utxo.timestamp.toString())
-        .split('|');
+    // TODO: timestamp
+    dateString = DateTimeUtil.formatDatetime('').split('|');
   }
 
   @override

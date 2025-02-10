@@ -1,8 +1,10 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
 class BroadcastingViewModel extends ChangeNotifier {
@@ -54,8 +56,10 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   UtxoTagProvider get tagProvider => _tagProvider;
 
-  Future<Result<String, CoconutError>> broadcast(Transaction signedTx) async {
-    return await _walletProvider.broadcast(signedTx);
+  // TODO: broadcast
+  Future<Result<String, AppError>> broadcast(Transaction signedTx) async {
+    throw UnimplementedError();
+    // return await _walletProvider.broadcast(signedTx);
   }
 
   void setBitcoinPriceKrw(int bitcoinPriceKrw) {

@@ -1,10 +1,11 @@
 import 'dart:convert';
 
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/wallet/address.dart';
+import 'package:coconut_wallet/model/wallet/transfer.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
 // Transfer -> _RealmTransaction 변환 함수
-RealmTransaction mapTransferToRealmTransaction(Transfer transfer,
+RealmTransaction mapTransferToRealmTransaction(TransactionRecord transfer,
     RealmWalletBase realmWalletBase, int id, DateTime? createdAt) {
   return RealmTransaction(id, transfer.transactionHash,
       walletBase: realmWalletBase,
@@ -57,7 +58,7 @@ Address jsonToAddress(Map<String, dynamic> json) {
       json['address'], json['derivationPath'], 0, false, json['amount']);
 }
 
-class TransferDTO extends Transfer {
+class TransferDTO extends TransactionRecord {
   String? note;
   DateTime? createdAt;
 

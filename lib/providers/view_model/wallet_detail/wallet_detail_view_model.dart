@@ -1,5 +1,6 @@
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/address.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
@@ -31,7 +32,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   List<model.UTXO> _utxoList = [];
 
   WalletListItemBase? _walletListBaseItem;
-  late WalletFeature _walletFeature;
+  // TODO: walletFeature
+  // late WalletFeature _walletFeature;
   WalletType _walletType = WalletType.singleSignature;
 
   WalletInitState _prevWalletInitState = WalletInitState.never;
@@ -45,7 +47,8 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   /// Faucet
   final Faucet _faucetService = Faucet();
-  late AddressBook _walletAddressBook;
+  // TODO: addressBook
+  // late AddressBook _walletAddressBook;
   late FaucetRecord _faucetRecord;
 
   String _walletAddress = '';
@@ -70,7 +73,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     _prevWalletInitState = _walletProvider.walletInitState;
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
-    _walletFeature = walletBaseItem.walletFeature;
+    // TODO: walletFeature
+    // _walletFeature = walletBaseItem.walletFeature;
 
     _prevTxCount = walletBaseItem.txCount;
     _prevIsLatestTxBlockHeightZero = walletBaseItem.isLatestTxBlockHeightZero;
@@ -84,14 +88,17 @@ class WalletDetailViewModel extends ChangeNotifier {
     _tagProvider.initTagList(_walletId);
 
     // Faucet
-    Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
+    // TODO: address
+    // Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
+    var receiveAddress = Address('', '', 0, false, 0);
     _walletAddress = receiveAddress.address;
     _derivationPath = receiveAddress.derivationPath;
     _walletName = walletBaseItem.name.length > 20
         ? '${walletBaseItem.name.substring(0, 17)}...'
         : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
     _receiveAddressIndex = receiveAddress.derivationPath.split('/').last;
-    _walletAddressBook = walletBaseItem.walletBase.addressBook;
+    // TODO: addressBook
+    // _walletAddressBook = walletBaseItem.walletBase.addressBook;
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetRecord();
     _getFaucetStatus();
@@ -119,7 +126,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   String get walletAddress => _walletAddress;
 
-  AddressBook get walletAddressBook => _walletAddressBook;
+  // AddressBook get walletAddressBook => _walletAddressBook;
   WalletInitState get walletInitState => _walletProvider.walletInitState;
 
   WalletListItemBase? get walletListBaseItem => _walletListBaseItem;
@@ -128,41 +135,43 @@ class WalletDetailViewModel extends ChangeNotifier {
   WalletProvider? get walletProvider => _walletProvider;
   WalletType get walletType => _walletType;
 
-  WalletStatus? getInitializedWalletStatus() {
-    try {
-      return _walletFeature.walletStatus;
-    } catch (e) {
-      return null;
-    }
-  }
+  // WalletProvider
+  // WalletStatus? getInitializedWalletStatus() {
+  //   try {
+  //     return _walletFeature.walletStatus;
+  //   } catch (e) {
+  //     return null;
+  //   }
+  // }
 
   void getUtxoListWithHoldingAddress() {
     List<model.UTXO> utxos = [];
 
-    if (_walletFeature.walletStatus?.utxoList.isNotEmpty == true) {
-      for (var utxo in _walletFeature.walletStatus!.utxoList) {
-        String ownedAddress = _walletListBaseItem!.walletBase.getAddress(
-            DerivationPathUtil.getAccountIndex(
-                _walletType, utxo.derivationPath),
-            isChange: DerivationPathUtil.getChangeElement(
-                    _walletType, utxo.derivationPath) ==
-                1);
+    // TODO: walletFeature
+    // if (_walletFeature.walletStatus?.utxoList.isNotEmpty == true) {
+    //   for (var utxo in _walletFeature.walletStatus!.utxoList) {
+    //     String ownedAddress = _walletListBaseItem!.walletBase.getAddress(
+    //         DerivationPathUtil.getAccountIndex(
+    //             _walletType, utxo.derivationPath),
+    //         isChange: DerivationPathUtil.getChangeElement(
+    //                 _walletType, utxo.derivationPath) ==
+    //             1);
 
-        final tags =
-            _tagProvider.loadSelectedUtxoTagList(_walletId, utxo.utxoId);
+    //     final tags =
+    //         _tagProvider.loadSelectedUtxoTagList(_walletId, utxo.utxoId);
 
-        utxos.add(model.UTXO(
-          utxo.timestamp.toString(),
-          utxo.blockHeight.toString(),
-          utxo.amount,
-          ownedAddress,
-          utxo.derivationPath,
-          utxo.transactionHash,
-          utxo.index,
-          tags: tags,
-        ));
-      }
-    }
+    //     utxos.add(model.UTXO(
+    //       utxo.timestamp.toString(),
+    //       utxo.blockHeight.toString(),
+    //       utxo.amount,
+    //       ownedAddress,
+    //       utxo.derivationPath,
+    //       utxo.transactionHash,
+    //       utxo.index,
+    //       tags: tags,
+    //     ));
+    //   }
+    // }
 
     _isUtxoListLoadComplete = true;
     _utxoList = utxos;
@@ -225,8 +234,10 @@ class WalletDetailViewModel extends ChangeNotifier {
     try {
       final WalletListItemBase walletListItemBase =
           _walletProvider.getWalletById(_walletId);
-      _walletAddress =
-          walletListItemBase.walletBase.getReceiveAddress().address;
+      // TODO: address
+      // _walletAddress =
+      //     walletListItemBase.walletBase.getReceiveAddress().address;
+      _walletAddress = '';
 
       /// 다음 Faucet 요청 수량 계산 1 -> 0.00021 -> 0.00021
       _requestCount = _faucetRecord.count;

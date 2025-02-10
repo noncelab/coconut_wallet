@@ -50,20 +50,20 @@ class SendAddressViewModel extends ChangeNotifier {
       throw invalidAddressMessage;
     }
 
-    if (BitcoinNetwork.currentNetwork == BitcoinNetwork.testnet) {
+    if (NetworkType.currentNetworkType == NetworkType.testnet) {
       if (recipient.startsWith('1') ||
           recipient.startsWith('3') ||
           recipient.startsWith('bc1')) {
         throw noTestnetAddressMessage;
       }
-    } else if (BitcoinNetwork.currentNetwork == BitcoinNetwork.mainnet) {
+    } else if (NetworkType.currentNetworkType == NetworkType.mainnet) {
       if (recipient.startsWith('m') ||
           recipient.startsWith('n') ||
           recipient.startsWith('2') ||
           recipient.startsWith('tb1')) {
         throw noMainnetAddressMessage;
       }
-    } else if (BitcoinNetwork.currentNetwork == BitcoinNetwork.regtest) {
+    } else if (NetworkType.currentNetworkType == NetworkType.regtest) {
       if (!recipient.startsWith('bcrt1')) {
         throw noRegtestnetAddressMessage;
       }

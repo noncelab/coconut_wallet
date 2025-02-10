@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/model/wallet/transfer.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -16,7 +17,7 @@ class TransactionProvider extends ChangeNotifier {
   static const int kOutputMaxCount = 2;
   final WalletDataManager _walletDataManager = WalletDataManager();
 
-  Transfer? _transaction;
+  TransactionRecord? _transaction;
   List<TransferDTO> _txList = [];
 
   bool _canSeeMoreInputs = false;
@@ -28,7 +29,7 @@ class TransactionProvider extends ChangeNotifier {
   int _utxoInputMaxCount = kInputMaxCount;
   int _utxoOutputMaxCount = kOutputMaxCount;
 
-  Transfer? get transaction => _transaction;
+  TransactionRecord? get transaction => _transaction;
   List<TransferDTO> get txList => _txList;
 
   bool get canSeeMoreInputs => _canSeeMoreInputs;

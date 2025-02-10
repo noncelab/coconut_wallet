@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/wallet/address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -126,7 +127,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         await CommonBottomSheets.showBottomSheet_50(
                             context: context,
                             child: FaucetRequestBottomSheet(
-                              walletAddressBook: viewModel.walletAddressBook,
+                              // TODO: walletAddressBook
+                              // walletAddressBook: const [],
                               walletData: {
                                 'wallet_address': viewModel.walletAddress,
                                 'wallet_name': viewModel.walletName,
@@ -313,9 +315,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     isVisible: _stickyHeaderVisible,
                     currentUnit: _currentUnit,
                     balance: viewModel.walletListBaseItem!.balance,
-                    receiveAddress: viewModel.walletListBaseItem!.walletBase
-                        .getReceiveAddress(),
-                    walletStatus: viewModel.getInitializedWalletStatus(),
+                    // TODO: receiveAddress
+                    receiveAddress: Address('', '', 0, false, 0),
+                    // walletStatus: viewModel.getInitializedWalletStatus(),
+                    // walletStatus: null,
                     selectedListType: _selectedListType,
                     selectedFilter: viewModel.selectedUtxoOrder.text,
                     onTapReceive: (balance, address, path) {

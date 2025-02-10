@@ -3,6 +3,7 @@ import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/material.dart';
 
 class SendAmountViewModel extends ChangeNotifier {
@@ -95,7 +96,7 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   void setMaxAmount() {
-    _input = UnitUtil.satoshiToBitcoin(_confirmedBalance).toStringAsFixed(8);
+    _input = UnitUtil.satoshiToBitcoinString(_confirmedBalance);
 
     if (double.parse(_input) <= dustLimit / 1e8) {
       _errorIndex = 1;

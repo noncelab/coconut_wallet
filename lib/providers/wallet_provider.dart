@@ -10,6 +10,7 @@ import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
 /// Represents the initialization state of a wallet. 처음 초기화 때만 사용하지 않고 refresh 할 때도 사용합니다.
@@ -49,7 +50,8 @@ class WalletProvider extends ChangeNotifier {
 
   bool? _isNetworkOn;
 
-  NodeConnector? _nodeConnector;
+  /// TODO: NodeConnector
+  // NodeConnector? _nodeConnector;
 
   List<WalletListItemBase> _walletItemList = [];
   List<WalletListItemBase> get walletItemList => _walletItemList;
@@ -89,8 +91,9 @@ class WalletProvider extends ChangeNotifier {
 
   // 앱 AppLifecycleState detached or paused일 때 nodeConnector 종료
   void disposeNodeConnector() {
-    _nodeConnector?.stopFetching();
-    _nodeConnector = null;
+    // TODO: NodeConnector
+    // _nodeConnector?.stopFetching();
+    // _nodeConnector = null;
   }
 
   /// 지갑 목록 화면에서 '마지막 업데이트' 일시를 보여주기 위해,
@@ -171,34 +174,37 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
+  /// TODO: NodeConnector
   Future _initNodeConnectionWhenIsNull() async {
-    if (_nodeConnector != null) return;
-    _nodeConnector = await _initNodeConnection();
+    throw UnimplementedError();
+    //   if (_nodeConnector != null) return;
+    //   _nodeConnector = await _initNodeConnection();
   }
 
-  Future<NodeConnector> _initNodeConnection() async {
-    try {
-      Logger.log(">>>>> 2. _initNodeConnection");
-      NodeConnector nodeConnector = await NodeConnector.connectSync(
-          CoconutWalletApp.kElectrumHost, CoconutWalletApp.kElectrumPort,
-          ssl: CoconutWalletApp.kElectrumIsSSL);
+  /// TODO: NodeConnector
+  // Future<NodeConnector> _initNodeConnection() async {
+  //   try {
+  //     Logger.log(">>>>> 2. _initNodeConnection");
+  //     NodeConnector nodeConnector = await NodeConnector.connectSync(
+  //         CoconutWalletApp.kElectrumHost, CoconutWalletApp.kElectrumPort,
+  //         ssl: CoconutWalletApp.kElectrumIsSSL);
 
-      if (nodeConnector.connectionStatus == SocketConnectionStatus.connected) {
-        return nodeConnector;
-      }
+  //     if (nodeConnector.connectionStatus == SocketConnectionStatus.connected) {
+  //       return nodeConnector;
+  //     }
 
-      if (nodeConnector.connectionStatus == SocketConnectionStatus.terminated) {
-        setWalletInitState(WalletInitState.impossible);
-      }
+  //     if (nodeConnector.connectionStatus == SocketConnectionStatus.terminated) {
+  //       setWalletInitState(WalletInitState.impossible);
+  //     }
 
-      throw 'NodeConnector is not connected.';
-    } catch (e) {
-      setWalletInitState(WalletInitState.error,
-          error: ErrorCodes.withMessage(
-              ErrorCodes.nodeConnectionError, e.toString()));
-      rethrow;
-    }
-  }
+  //     throw 'NodeConnector is not connected.';
+  //   } catch (e) {
+  //     setWalletInitState(WalletInitState.error,
+  //         error: ErrorCodes.withMessage(
+  //             ErrorCodes.nodeConnectionError, e.toString()));
+  //     rethrow;
+  //   }
+  // }
 
   WalletListItemBase getWalletById(int id) {
     if (_walletItemList.isEmpty) {
@@ -403,18 +409,20 @@ class WalletProvider extends ChangeNotifier {
 
   Future<List<WalletListItemBase>> _filterWalletsToUpdate(
       List<WalletListItemBase> wallets) async {
-    if (_nodeConnector == null) {
-      throw StateError(
-          '[filterWalletsToUpdate] _nodeConnector must not be null');
-    }
+    // TODO: NodeConnector
+    // if (_nodeConnector == null) {
+    //   throw StateError(
+    //       '[filterWalletsToUpdate] _nodeConnector must not be null');
+    // }
 
     List<WalletListItemBase> result = [];
     for (var wallet in wallets) {
-      var shouldUpdate =
-          await wallet.checkIfWalletShouldUpdate(_nodeConnector!);
-      if (shouldUpdate) {
-        result.add(wallet);
-      }
+      // TODO: checkIfWalletShouldUpdate
+      // var shouldUpdate =
+      //     await wallet.checkIfWalletShouldUpdate(_nodeConnector!);
+      // if (shouldUpdate) {
+      //   result.add(wallet);
+      // }
     }
 
     return result;
@@ -455,43 +463,23 @@ class WalletProvider extends ChangeNotifier {
     try {
       await _initNodeConnectionWhenIsNull();
 
-      return _nodeConnector!.currentBlock.height;
+      // TODO: NodeConnector
+      // return _nodeConnector!.currentBlock.height;
+      return 0;
     } catch (e) {
       Logger.error(e);
       return null;
     }
   }
 
-  Future<Result<int, CoconutError>?> getMinimumNetworkFeeRate() async {
-    try {
-      await _initNodeConnectionWhenIsNull();
-
-      Result<int, CoconutError> result =
-          await _nodeConnector!.getNetworkMinimumFeeRate();
-      return result;
-    } catch (e) {
-      Logger.error(e);
-      return null;
-    }
+  // TODO: getMinimumNetworkFeeRate
+  Future<Result<int, AppError>?> getMinimumNetworkFeeRate() async {
+    throw UnimplementedError();
   }
 
-  Future<Result<String, CoconutError>> broadcast(Transaction signedTx) async {
-    await _initNodeConnectionWhenIsNull();
-
-    Result<String, CoconutError> result =
-        await _nodeConnector!.broadcast(signedTx.serialize());
-
-    if (result.isFailure) {
-      return result;
-    }
-
-    _walletDataManager
-        .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
-        .catchError((_) {
-      // ignore intentionally
-      Logger.error(_);
-    });
-    return result;
+  // TODO: broadcast
+  Future<Result<String, AppError>> broadcast(Transaction signedTx) async {
+    throw UnimplementedError();
   }
 
   Future encryptWalletSecureData(String hashedPin) async {

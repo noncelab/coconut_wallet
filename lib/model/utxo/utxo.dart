@@ -1,5 +1,5 @@
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 
 class UTXO {
   final String timestamp;

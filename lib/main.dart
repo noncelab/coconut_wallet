@@ -73,7 +73,7 @@ void main() {
       // ignore
     }
 
-    BitcoinNetwork.setNetwork(BitcoinNetwork.regtest);
+    NetworkType.setNetworkType(NetworkType.regtest);
 
     String envFile = '$appFlavor.env';
     await dotenv.load(fileName: envFile);

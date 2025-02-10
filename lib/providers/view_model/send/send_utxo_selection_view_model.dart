@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -12,9 +13,12 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
+import 'package:coconut_wallet/services/network/dto/mempool_response_type.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
@@ -82,8 +86,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         ? (_walletBaseItem as MultisigWalletListItem).signers.length
         : null;
 
-    _confirmedUtxoList =
-        _getAllConfirmedUtxoList(_walletBaseItem.walletFeature);
+    // TODO: getAllConfirmedUtxoList
+    _confirmedUtxoList = _getAllConfirmedUtxoList(_walletBaseItem.walletBase);
     _sortConfirmedUtxoList(initialUtxoOrder);
     _initUtxoTagMap();
 
@@ -116,7 +120,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       return null;
     }
 
-    var change = _transaction.getChangeAmount(_walletBase.addressBook);
+    // TODO: getChangeAmount
+    // var change = _transaction.getChangeAmount(_walletBase.addressBook);
+    int change = 0;
+
     if (change != 0) return change;
     if (_estimatedFee == null) return null;
     // utxo가 모자랄 때도 change = 0으로 반환되기 때문에 진짜 잔돈이 0인지 아닌지 확인이 필요
@@ -208,8 +215,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   void deselectAllUtxo() {
     _clearUtxoList();
     if (!_isMaxMode) {
-      _transaction = Transaction.fromUtxoList(
-          [], _recipientAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
+      // TODO: fromUtxoList
+      throw UnimplementedError();
+      // _transaction = Transaction.fromUtxoList([], _recipientAddress,
+      //     'changeAddress', _sendAmount, satsPerVb ?? 1, _walletBase);
     }
   }
 
@@ -218,8 +227,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         requiredSignature: _requiredSignature, totalSinger: _totalSigner);
   }
 
-  Future<Result<int, CoconutError>?> getMinimumFeeRateFromNetwork() async {
-    return await _walletProvider.getMinimumNetworkFeeRate();
+  Future<Result<int, AppError>?> getMinimumFeeRateFromNetwork() async {
+    // return await _walletProvider.getMinimumNetworkFeeRate();
+    throw UnimplementedError();
   }
 
   bool hasTaggedUtxo() {
@@ -270,8 +280,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     setSelectedUtxoList(List.from(confirmedUtxoList));
 
     if (!isMaxMode) {
-      _transaction = Transaction.fromUtxoList(selectedUtxoList,
-          _recipientAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
+      // TODO: fromUtxoList
+      throw UnimplementedError();
+      // _transaction = Transaction.fromUtxoList(selectedUtxoList,
+      //     _recipientAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
 
       if (estimatedFee != null && isSelectedUtxoEnough()) {
         setEstimatedFee(estimateFee(satsPerVb ?? 1));
@@ -331,30 +343,38 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   Transaction _createTransaction(
       bool isMaxMode, int feeRate, WalletBase walletBase) {
     if (isMaxMode) {
-      return Transaction.forSweep(
-          _sendInfoProvider.recipientAddress!, feeRate, walletBase);
+      // TODO: forSweep
+      throw UnimplementedError();
+      // return Transaction.forSweep(
+      //     _sendInfoProvider.recipientAddress!, feeRate, walletBase);
     }
 
     try {
-      return Transaction.forPayment(
-          _sendInfoProvider.recipientAddress!,
-          UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
-          feeRate,
-          walletBase);
+      // TODO: forPayment
+      throw UnimplementedError();
+      // return Transaction.forPayment(
+      //     _sendInfoProvider.recipientAddress!,
+      //     UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+      //     feeRate,
+      //     walletBase);
     } catch (e) {
       if (e.toString().contains('Not enough amount for sending. (Fee')) {
-        return Transaction.forSweep(
-            _sendInfoProvider.recipientAddress!, feeRate, walletBase);
+        // TODO: forSweep
+        throw UnimplementedError();
+        // return Transaction.forSweep(
+        //     _sendInfoProvider.recipientAddress!, feeRate, walletBase);
       }
 
       rethrow;
     }
   }
 
-  List<UTXO> _getAllConfirmedUtxoList(WalletFeature wallet) {
-    return wallet.walletStatus!.utxoList
-        .where((utxo) => utxo.blockHeight != 0)
-        .toList();
+  List<UTXO> _getAllConfirmedUtxoList(WalletBase wallet) {
+    // TODO: wallet.walletStatus!.utxoList
+    throw UnimplementedError();
+    // return wallet.walletStatus!.utxoList
+    //     .where((utxo) => utxo.blockHeight != 0)
+    //     .toList();
   }
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
@@ -391,8 +411,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   Future<bool> _setRecommendedFees() async {
-    var recommendedFees = await fetchRecommendedFees(
-        () => _walletProvider.getMinimumNetworkFeeRate());
+    var recommendedFees =
+        await fetchRecommendedFees(() => getMinimumFeeRateFromNetwork());
 
     if (recommendedFees == null) {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
@@ -463,10 +483,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
           return b.amount.compareTo(a.amount);
         }
 
-        return a.timestamp.compareTo(b.timestamp);
+        // TODO: a.timestamp.compareTo(b.timestamp);
+        throw UnimplementedError();
       });
     } else {
-      UTXO.sortUTXO(_confirmedUtxoList, basis);
+      // TODO: UTXO.sortUTXO(_confirmedUtxoList, basis);
+      throw UnimplementedError();
     }
   }
 }

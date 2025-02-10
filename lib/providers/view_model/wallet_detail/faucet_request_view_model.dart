@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/wallet/address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
@@ -18,7 +19,6 @@ class FaucetRequestViewModel extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final TextEditingController textController = TextEditingController();
 
-  late AddressBook _walletAddressBook;
   late FaucetRecord _faucetRecord;
 
   bool isLoading = true;
@@ -66,15 +66,17 @@ class FaucetRequestViewModel extends ChangeNotifier {
   }
 
   void initReceivingAddress(WalletListItemBase walletBaseItem) {
-    Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
+    // TODO: getReceiveAddress
+    throw UnimplementedError();
+    // Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
 
-    _walletAddress = receiveAddress.address;
-    _walletId = walletBaseItem.id;
-    _walletName = walletBaseItem.name.length > 20
-        ? '${walletBaseItem.name.substring(0, 17)}...'
-        : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
-    _walletIndex = receiveAddress.derivationPath.split('/').last;
-    _walletAddressBook = walletBaseItem.walletBase.addressBook;
+    // _walletAddress = receiveAddress.address;
+    // _walletId = walletBaseItem.id;
+    // _walletName = walletBaseItem.name.length > 20
+    //     ? '${walletBaseItem.name.substring(0, 17)}...'
+    //     : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
+    // _walletIndex = receiveAddress.derivationPath.split('/').last;
+    // _walletAddressBook = walletBaseItem.walletBase.addressBook;
   }
 
   @override
@@ -154,8 +156,10 @@ class FaucetRequestViewModel extends ChangeNotifier {
 
   bool _isValidAddress(String address) {
     try {
-      return _walletAddressBook.contains(inputText) &&
-          WalletUtility.validateAddress(address);
+      // TODO: _walletAddressBook.contains(inputText)
+      throw UnimplementedError();
+      // return _walletAddressBook.contains(inputText) &&
+      //     WalletUtility.validateAddress(address);
     } catch (_) {
       return false;
     }

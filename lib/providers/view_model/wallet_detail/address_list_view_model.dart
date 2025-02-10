@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/wallet/address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
@@ -26,8 +27,10 @@ class AddressListViewModel extends ChangeNotifier {
   void _initialize(int id, int firstCount) {
     _walletBaseItem = _walletProvider.getWalletById(id);
     _walletBase = _walletBaseItem!.walletBase;
-    _receivingAddressList = _walletBase!.getAddressList(0, firstCount, false);
-    _changeAddressList = _walletBase!.getAddressList(0, firstCount, true);
+    // TODO: getAddressList
+    throw UnimplementedError();
+    // _receivingAddressList = _walletBase!.getAddressList(0, firstCount, false);
+    // _changeAddressList = _walletBase!.getAddressList(0, firstCount, true);
     notifyListeners();
   }
 }

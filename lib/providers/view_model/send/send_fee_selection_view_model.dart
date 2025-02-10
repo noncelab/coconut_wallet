@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/material.dart';
 
 class SendFeeSelectionViewModel extends ChangeNotifier {
