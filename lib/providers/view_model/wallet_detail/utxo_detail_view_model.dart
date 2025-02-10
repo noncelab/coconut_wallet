@@ -17,13 +17,13 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
   UtxoDetailViewModel(
       this._walletId, this._utxo, this._tagProvider, this._txProvider) {
+    _tagProvider.initTagList(_walletId, utxoId: _utxo.utxoId);
+    _txProvider.initTransaction(_walletId, _utxo.txHash, utxoTo: _utxo.to);
+    _txProvider.initUtxoInOutputList();
     final blockHeight = _txProvider.transaction?.blockHeight;
     _dateString = (blockHeight != null && blockHeight > 0)
         ? DateTimeUtil.formatDatetime(_utxo.timestamp).split('|')
         : null;
-    _tagProvider.initTagList(_walletId, utxoId: _utxo.utxoId);
-    _txProvider.initTransaction(_walletId, _utxo.txHash, utxoTo: _utxo.to);
-    _txProvider.initUtxoInOutputList();
   }
 
   UtxoTagProvider? get tagProvider => _tagProvider;
