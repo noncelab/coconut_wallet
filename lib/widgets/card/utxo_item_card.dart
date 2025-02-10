@@ -22,10 +22,11 @@ class UTXOItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<String> dateString =
-        DateTimeUtil.formatDatetime(utxo.timestamp).split('|');
-    bool isChange = utxo.derivationPath.split('/')[4] == '1';
     bool isConfirmed = int.parse(utxo.blockHeight) != 0;
+    List<String> dateString = isConfirmed
+        ? DateTimeUtil.formatDatetime(utxo.timestamp).split('|')
+        : ['--.--.--', '--:--'];
+    bool isChange = utxo.derivationPath.split('/')[4] == '1';
 
     return ShrinkAnimationButton(
       defaultColor: MyColors.transparentWhite_06,
@@ -44,44 +45,43 @@ class UTXOItemCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  if (isConfirmed)
-                    Row(
-                      children: [
-                        Text(
-                          dateString[0],
-                          style: isConfirmed
-                              ? Styles.caption
-                              : Styles.caption.merge(const TextStyle(
-                                  color: MyColors.transparentWhite_20)),
-                        ),
-                        const SizedBox(
-                          width: 8,
-                        ),
-                        Text(
-                          '|',
-                          style: Styles.caption.merge(
-                            TextStyle(
-                              color: isConfirmed
-                                  ? MyColors.transparentWhite_40
-                                  : MyColors.transparentWhite_20,
-                            ),
+                  Row(
+                    children: [
+                      Text(
+                        dateString[0],
+                        style: isConfirmed
+                            ? Styles.caption
+                            : Styles.caption.merge(const TextStyle(
+                                color: MyColors.transparentWhite_20)),
+                      ),
+                      const SizedBox(
+                        width: 8,
+                      ),
+                      Text(
+                        '|',
+                        style: Styles.caption.merge(
+                          TextStyle(
+                            color: isConfirmed
+                                ? MyColors.transparentWhite_40
+                                : MyColors.transparentWhite_20,
                           ),
                         ),
-                        const SizedBox(
-                          width: 8,
-                        ),
-                        Text(
-                          dateString[1],
-                          style: isConfirmed
-                              ? Styles.caption
-                              : Styles.caption.merge(
-                                  const TextStyle(
-                                    color: MyColors.transparentWhite_20,
-                                  ),
+                      ),
+                      const SizedBox(
+                        width: 8,
+                      ),
+                      Text(
+                        dateString[1],
+                        style: isConfirmed
+                            ? Styles.caption
+                            : Styles.caption.merge(
+                                const TextStyle(
+                                  color: MyColors.transparentWhite_20,
                                 ),
-                        ),
-                      ],
-                    ),
+                              ),
+                      ),
+                    ],
+                  ),
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,

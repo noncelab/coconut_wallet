@@ -176,7 +176,7 @@ class TransactionItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<String>? transactionTimeStamp = tx.getDateTimeToDisplay() == null
-        ? null
+        ? ['--.--.--', '--:--']
         : DateTimeUtil.formatTimeStamp(tx.getDateTimeToDisplay()!.toLocal());
 
     return ShrinkAnimationButton(
@@ -196,33 +196,32 @@ class TransactionItemCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (transactionTimeStamp != null)
-                Row(
-                  children: [
-                    Text(
-                      transactionTimeStamp[0],
-                      style: Styles.caption,
-                    ),
-                    const SizedBox(
-                      width: 8,
-                    ),
-                    Text(
-                      '|',
-                      style: Styles.caption.merge(
-                        const TextStyle(
-                          color: MyColors.transparentWhite_40,
-                        ),
+              Row(
+                children: [
+                  Text(
+                    transactionTimeStamp[0],
+                    style: Styles.caption,
+                  ),
+                  const SizedBox(
+                    width: 8,
+                  ),
+                  Text(
+                    '|',
+                    style: Styles.caption.merge(
+                      const TextStyle(
+                        color: MyColors.transparentWhite_40,
                       ),
                     ),
-                    const SizedBox(
-                      width: 8,
-                    ),
-                    Text(
-                      transactionTimeStamp[1],
-                      style: Styles.caption,
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(
+                    width: 8,
+                  ),
+                  Text(
+                    transactionTimeStamp[1],
+                    style: Styles.caption,
+                  ),
+                ],
+              ),
               const SizedBox(
                 height: 5.0,
               ),
