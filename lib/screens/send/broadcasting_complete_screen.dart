@@ -8,10 +8,8 @@ import 'package:provider/provider.dart';
 
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
-  final String txId;
 
-  const BroadcastingCompleteScreen(
-      {super.key, required this.id, required this.txId});
+  const BroadcastingCompleteScreen({super.key, required this.id});
 
   @override
   State<BroadcastingCompleteScreen> createState() =>

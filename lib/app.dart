@@ -195,8 +195,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/broadcasting-complete': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
-                    child: BroadcastingCompleteScreen(
-                        id: args['id'], txId: args['txId'])),
+                    child: BroadcastingCompleteScreen(id: args['id'])),
               ),
           '/send-address': (context) => buildScreenWithArguments(
                 context,
