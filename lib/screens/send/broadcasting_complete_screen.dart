@@ -1,20 +1,15 @@
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
-  final String txId;
 
-  const BroadcastingCompleteScreen(
-      {super.key, required this.id, required this.txId});
+  const BroadcastingCompleteScreen({super.key, required this.id});
 
   @override
   State<BroadcastingCompleteScreen> createState() =>
@@ -45,13 +40,6 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                 ),
                 const SizedBox(
                   height: 40,
-                ),
-                SmallActionButton(
-                    text: '트랜잭션 보기',
-                    onPressed: () => launchUrl(Uri.parse(
-                        "${CoconutWalletApp.kMempoolHost}/tx/${widget.txId}"))),
-                const SizedBox(
-                  height: 120,
                 ),
                 GestureDetector(
                   onTap: () => onTap(context),
