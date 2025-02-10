@@ -49,14 +49,9 @@ class DioClient {
     }
   }
 
-  Future<dynamic> getFaucetStatus() async {
-    try {
-      final response = await _dio.get('/faucet/status');
-      return FaucetStatusResponse.fromJson(response.data);
-    } catch (e) {
-      Logger.log("[ERROR] : $e");
-      throw e.toString();
-    }
+  Future<FaucetStatusResponse> getFaucetStatus() async {
+    final response = await _dio.get('/faucet/status');
+    return FaucetStatusResponse.fromJson(response.data);
   }
 
   Future<dynamic> getLatestAppVersion() async {

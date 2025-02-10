@@ -1,6 +1,10 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/faucet/faucet_history.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/faucet_service.dart';
+import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_text_field.dart';
@@ -10,15 +14,13 @@ import 'package:flutter/material.dart';
 class FaucetRequestBottomSheet extends StatefulWidget {
   final Map<String, dynamic> walletData;
   final AddressBook walletAddressBook;
-  final bool isFaucetRequestLimitExceeded;
   final bool isRequesting;
-  final Function(String) onRequest;
+  final Function(String, double) onRequest;
 
   const FaucetRequestBottomSheet({
     super.key,
     required this.walletData,
     required this.walletAddressBook,
-    required this.isFaucetRequestLimitExceeded,
     required this.isRequesting,
     required this.onRequest,
   });
@@ -28,50 +30,80 @@ class FaucetRequestBottomSheet extends StatefulWidget {
       _FaucetRequestBottomSheetState();
 }
 
+enum _AvailabilityState { checking, bad, good, dailyLimitReached }
+
 class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
+  final int kMaxFaucetRequestCount = 3;
+  _AvailabilityState _state = _AvailabilityState.checking;
+  late int _todayRequestCount;
+  double _requestAmount = 0;
+
+  late int _walletId;
   String _walletAddress = '';
   String _walletName = '';
   String _walletIndex = '';
-  double _requestAmount = 0;
 
   final TextEditingController textController = TextEditingController();
 
   Duration _remainingTime = const Duration();
   Timer? _timer;
   String _remainingTimeString = '';
-  bool _isFaucetRequestLimitExceeded = false;
   bool _isErrorInAddress = false;
   bool _isRequesting = false;
 
   bool canRequestFaucet() =>
-      !_isErrorInAddress && !_isFaucetRequestLimitExceeded && !_isRequesting;
+      _state == _AvailabilityState.good &&
+      _requestAmount > 0 &&
+      !_isErrorInAddress &&
+      !_isRequesting;
 
   @override
   void initState() {
     super.initState();
+    _walletId = widget.walletData['wallet_id'];
     _walletAddress = widget.walletData['wallet_address'] ?? '';
     _walletName = widget.walletData['wallet_name'] ?? '';
     _walletIndex = widget.walletData['wallet_index'] ?? '';
-    _requestAmount = widget.walletData['wallet_request_amount'] ?? 0;
     textController.text = _walletAddress;
-
-    _isFaucetRequestLimitExceeded = widget.isFaucetRequestLimitExceeded;
     _isRequesting = widget.isRequesting;
 
-    if (_isFaucetRequestLimitExceeded) {
+    var requestHistory =
+        SharedPrefsRepository().getFaucetHistoryWithId(_walletId);
+    _todayRequestCount = requestHistory.isToday ? requestHistory.count : 0;
+
+    if (_todayRequestCount >= kMaxFaucetRequestCount) {
+      _requestAmount = 0;
+      _state = _AvailabilityState.dailyLimitReached;
       _startTimer();
+    } else {
+      _setAvailabilityAndAmount();
     }
+  }
+
+  void _setAvailabilityAndAmount() async {
+    await Faucet().getStatus().then((FaucetStatusResponse response) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _requestAmount =
+              (_todayRequestCount == 0) ? response.maxLimit : response.minLimit;
+          _state = (_requestAmount != 0)
+              ? _AvailabilityState.good
+              : _AvailabilityState.bad;
+        });
+      });
+    }).catchError((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _requestAmount = 0;
+          _state = _AvailabilityState.bad;
+        });
+      });
+    });
   }
 
   @override
   void didUpdateWidget(covariant FaucetRequestBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isFaucetRequestLimitExceeded !=
-            oldWidget.isFaucetRequestLimitExceeded &&
-        widget.isFaucetRequestLimitExceeded) {
-      _startTimer();
-    }
-
     if (widget.isRequesting != oldWidget.isRequesting) {
       _isRequesting = widget.isRequesting;
       setState(() {});
@@ -164,7 +196,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
               ignoring: !canRequestFaucet(),
               child: CupertinoButton(
                   onPressed: () {
-                    widget.onRequest.call(_walletAddress);
+                    widget.onRequest.call(_walletAddress, _requestAmount);
                     FocusScope.of(context).unfocus();
                   },
                   borderRadius: BorderRadius.circular(8.0),
@@ -175,23 +207,33 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                   child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 28, vertical: 12),
-                      child: Text(
-                        _isRequesting
-                            ? '요청 중...'
-                            : '${formatNumber(_requestAmount)} BTC 요청하기',
-                        style: Styles.label.merge(TextStyle(
-                            color: (canRequestFaucet())
-                                ? MyColors.black
-                                : MyColors.transparentBlack_50,
-                            letterSpacing: -0.1,
-                            fontWeight: FontWeight.w600)),
-                      ))),
+                      child: _state == _AvailabilityState.checking
+                          ? const SizedBox(
+                              height: 28,
+                              width: 28,
+                              child: CircularProgressIndicator(
+                                color: MyColors.white,
+                              ),
+                            )
+                          : Text(
+                              _isRequesting
+                                  ? '요청 중...'
+                                  : '${formatNumber(_requestAmount)} BTC 요청하기',
+                              style: Styles.label.merge(TextStyle(
+                                  color: (canRequestFaucet())
+                                      ? MyColors.black
+                                      : MyColors.transparentBlack_50,
+                                  letterSpacing: -0.1,
+                                  fontWeight: FontWeight.w600)),
+                            ))),
             ),
             const SizedBox(height: 4),
-            if (_isErrorInAddress) ...{
-              _buildWarningMessage('올바른 주소인지 확인해 주세요'),
-            } else if (_isFaucetRequestLimitExceeded) ...{
+            if (_state == _AvailabilityState.bad) ...{
+              _buildWarningMessage('수도꼭지 단수 상태예요. 잠시 후 다시 시도해 주세요.'),
+            } else if (_state == _AvailabilityState.dailyLimitReached) ...{
               _buildWarningMessage('$_remainingTimeString 후에 다시 시도해 주세요'),
+            } else if (_isErrorInAddress) ...{
+              _buildWarningMessage('올바른 주소인지 확인해 주세요'),
             }
           ],
         ),
@@ -205,7 +247,6 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
     _remainingTime = midnight.difference(now);
     _remainingTimeString = _formatDuration(_remainingTime);
-    _isFaucetRequestLimitExceeded = true;
 
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -214,11 +255,20 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
       if (_remainingTime.inSeconds <= 0) {
         timer.cancel();
-        _isFaucetRequestLimitExceeded = false;
-        _isErrorInAddress = false;
+        _todayRequestCount = 0;
+        _resetFaucetRecord().then((_) {
+          _setAvailabilityAndAmount();
+        });
       }
       setState(() {});
     });
+  }
+
+  Future<void> _resetFaucetRecord() {
+    return SharedPrefsRepository().saveFaucetHistory(FaucetRecord(
+        id: _walletId,
+        dateTime: DateTime.now().millisecondsSinceEpoch,
+        count: 0));
   }
 
   void _validateAddress(String address) {
