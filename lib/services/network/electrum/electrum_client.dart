@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/services/network/dto/electrum_response_types.dart';
+import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:convert/convert.dart';
 
-part '../dto/electrum_request_types.dart';
+part '../../model/request/electrum_request_types.dart';
 
 class ElectrumClient {
   // static final ElectrumClient _instance = ElectrumClient._();

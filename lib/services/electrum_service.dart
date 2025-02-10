@@ -2,17 +2,17 @@ import 'package:async/async.dart';
 import 'package:coconut_lib/coconut_lib.dart' as lib;
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo.dart';
-import 'package:coconut_wallet/services/network/dto/block_header.dart';
+import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/services/network/dto/block_timestamp.dart';
-import 'package:coconut_wallet/services/network/dto/fetch_transaction_response.dart';
-import 'package:coconut_wallet/services/network/dto/mempool_response_type.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
+import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/network/electrum/electrum_client.dart';
-import 'package:coconut_wallet/services/network/node_connector/node_client.dart';
-import 'package:coconut_wallet/services/network/stream/base_stream_state.dart';
+import 'package:coconut_wallet/services/network/node_client.dart';
+import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
 
 /// @nodoc
-class ElectrumApi extends NodeClient {
+class ElectrumService extends NodeClient {
   // static final ElectrumApi _instance = ElectrumApi._();
 
   ElectrumClient _client;
@@ -20,11 +20,11 @@ class ElectrumApi extends NodeClient {
   @override
   int get reqId => _client.reqId;
 
-  ElectrumApi._() : _client = ElectrumClient();
+  ElectrumService._() : _client = ElectrumClient();
 
-  factory ElectrumApi(String host, int port,
+  factory ElectrumService(String host, int port,
       {bool ssl = true, ElectrumClient? client}) {
-    ElectrumApi instance = ElectrumApi._();
+    ElectrumService instance = ElectrumService._();
     if (client != null) {
       instance._client = client;
     }
@@ -36,9 +36,9 @@ class ElectrumApi extends NodeClient {
     return instance;
   }
 
-  static Future<ElectrumApi> connectSync(String host, int port,
+  static Future<ElectrumService> connectSync(String host, int port,
       {bool ssl = true, ElectrumClient? client}) async {
-    var instance = ElectrumApi._();
+    var instance = ElectrumService._();
 
     if (client != null) {
       instance._client = client;
@@ -394,13 +394,6 @@ class ElectrumApi extends NodeClient {
 
   /// Electrum의 mempool.get_fee_histogram과 blockchain.estimatefee를 이용하여
   /// mempool.space API와 같은 형태의 추천 수수료 정보를 반환합니다.
-  /// 반환 형식: {
-  ///    'fastestFee': ...,
-  ///    'halfHourFee': ...,
-  ///    'hourFee': ...,
-  ///    'economyFee': ...,
-  ///    'minimumFee': ...
-  /// }
   Future<RecommendedFee> getRecommendedFees() async {
     // 1. mempool.get_fee_histogram 호출
     //    결과는 [[fee, vsize], [fee, vsize], ...] 형태이며 fee 단위는 sat/vB.

@@ -1,36 +1,10 @@
 import 'dart:async';
 import 'dart:isolate';
 
-import 'package:coconut_wallet/services/network/dto/block_timestamp.dart';
-import 'package:coconut_wallet/services/network/node_connector/node_client.dart';
+import 'package:coconut_wallet/services/model/isolate/isolate_connector_data.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/network/node_client.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-
-class IsolateConnectorData {
-  final SendPort _sendPort;
-  final NodeClientFactory _factory;
-  final String _host;
-  final int _port;
-  final bool _ssl;
-
-  SendPort get sendPort => _sendPort;
-
-  IsolateConnectorData(
-      this._sendPort, this._factory, this._host, this._port, this._ssl) {
-    if (_host.isEmpty) {
-      throw Exception('Host cannot be empty');
-    }
-    if (_port <= 0 || _port > 65535) {
-      throw Exception('Port must be between 1 and 65535');
-    }
-  }
-}
-
-enum IsolateMessageType {
-  broadcast,
-  getNetworkMinimumFeeRate,
-  getLatestBlock,
-  getTransaction,
-}
 
 abstract class IsolateManager {
   bool get isInitialized;
@@ -129,7 +103,7 @@ class DefaultIsolateManager implements IsolateManager {
     port.listen((message) async {
       if (message is List && message.length == 3) {
         final nodeClient =
-            await data._factory.create(data._host, data._port, ssl: data._ssl);
+            await data.factory.create(data.host, data.port, ssl: data.ssl);
 
         IsolateMessageType messageType = message[0];
         SendPort replyPort = message[1];

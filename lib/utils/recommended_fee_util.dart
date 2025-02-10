@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/services/network/dto/mempool_response_type.dart';
+import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/recommend_fee_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
 

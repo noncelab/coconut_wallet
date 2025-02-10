@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/model/wallet/transfer.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 
 class TransactionUtil {
   static TransactionStatus? getStatus(TransactionRecord tx) {

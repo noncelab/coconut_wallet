@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/model/wallet/address.dart';
-import 'package:coconut_wallet/model/wallet/transfer.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
 // Transfer -> _RealmTransaction 변환 함수

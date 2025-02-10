@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/services/network/dto/mempool_response_type.dart';
+import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:http/http.dart';
 
 class RecommendFeeService {
