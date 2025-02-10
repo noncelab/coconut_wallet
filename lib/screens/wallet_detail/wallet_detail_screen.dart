@@ -446,7 +446,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   bool _checkStateAndShowToast(
       WalletInitState state, int? balance, bool? isNetworkOn) {
-    if (isNetworkOn == false) {
+    if (isNetworkOn != true) {
       CustomToast.showWarningToast(
           context: context, text: ErrorCodes.networkError.message);
       return false;
