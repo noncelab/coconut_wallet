@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -44,12 +45,12 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 if (isFirst)
-                  const Text(
-                    "비트코인 전송을 완료하셨군요👍",
+                  Text(
+                    t.user_experience_survey_bottom_sheet.text1,
                     style: Styles.h3,
                   ),
-                const Text(
-                  "코코넛 월렛이 도움이 되었나요?",
+                Text(
+                  t.user_experience_survey_bottom_sheet.text2,
                   style: Styles.h3,
                 ),
                 const SizedBox(
@@ -66,7 +67,7 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                           color: MyColors.primary),
                       child: Text(
-                        '네, 좋아요!',
+                        t.user_experience_survey_bottom_sheet.text3,
                         style: Styles.label.merge(const TextStyle(
                             color: MyColors.darkgrey,
                             fontWeight: FontWeight.bold)),
@@ -88,7 +89,7 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                           color: MyColors.transparentWhite_15),
                       child: Text(
-                        '그냥 그래요',
+                        t.user_experience_survey_bottom_sheet.text4,
                         style: Styles.label.merge(const TextStyle(
                             color: MyColors.white,
                             fontWeight: FontWeight.bold)),

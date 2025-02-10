@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart'; // FIXME: remove model import
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -45,7 +46,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         vibrateMedium();
         if (!mounted) return;
         showAlertDialog(
-            context: context, content: "전송 실패\n${result.error?.message}");
+            context: context,
+            content: t.alert.error_send
+                .broadcasting_failed(error: result.error!.message));
         return;
       }
 
@@ -65,9 +68,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     } catch (_) {
       Logger.log(">>>>> broadcast error: $_");
       setOverlayLoading(false);
-      String message = '[전송 실패]\n${_.toString()}';
+      String message =
+          t.alert.error_send.broadcasting_failed(error: _.toString());
       if (_.toString().contains('min relay fee not met')) {
-        message = '[전송 실패]\n수수료율을 높여서\n다시 시도해주세요.';
+        message = t.alert.error_send.insufficient_fee;
       }
       if (!mounted) return;
       showAlertDialog(context: context, content: message);
@@ -99,7 +103,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               FloatingActionButtonLocation.centerFloat,
           backgroundColor: MyColors.black,
           appBar: CustomAppBar.buildWithNext(
-              title: '최종 확인',
+              title: t.broadcasting_screen.title,
               context: context,
               isActive: viewModel.isInitDone,
               onNextPressed: () {
@@ -125,8 +129,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                     const SizedBox(
                       height: 40,
                     ),
-                    const Text(
-                      "아래 정보로 송금할게요",
+                    Text(
+                      t.broadcasting_screen.description,
                       style: Styles.h3,
                     ),
                     Container(
@@ -141,8 +145,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                                         ? viewModel.sendingAmountWhenAddressIsMyChange!
                                         : viewModel.amount!)
                                     : "",
-                                children: const <TextSpan>[
-                                  TextSpan(text: ' BTC', style: Styles.unit)
+                                children: <TextSpan>[
+                                  TextSpan(
+                                      text: ' ${t.btc}', style: Styles.unit)
                                 ]),
                             style: Styles.balance1,
                           ),
@@ -177,25 +182,25 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                               child: Column(
                                 children: [
                                   InformationItemCard(
-                                      label: '보낼 주소',
+                                      label: t.recipient,
                                       value: viewModel.address ?? "",
                                       isNumber: true),
                                   const Divider(
                                       color: MyColors.transparentWhite_12,
                                       height: 1),
                                   InformationItemCard(
-                                      label: '예상 수수료',
+                                      label: t.estimated_fee,
                                       value: viewModel.fee != null
-                                          ? "${satoshiToBitcoinString(viewModel.fee!)} BTC"
+                                          ? "${satoshiToBitcoinString(viewModel.fee!)} ${t.btc}"
                                           : '',
                                       isNumber: true),
                                   const Divider(
                                       color: MyColors.transparentWhite_12,
                                       height: 1),
                                   InformationItemCard(
-                                      label: '총 소요 수량',
+                                      label: t.total_cost,
                                       value: viewModel.totalAmount != null
-                                          ? "${satoshiToBitcoinString(viewModel.totalAmount!)} BTC"
+                                          ? "${satoshiToBitcoinString(viewModel.totalAmount!)} ${t.btc}"
                                           : '',
                                       isNumber: true),
                                 ],
@@ -205,8 +210,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                       const SizedBox(
                         height: 20,
                       ),
-                      const Text(
-                        "내 지갑으로 보내는 트랜잭션입니다.",
+                      Text(
+                        t.broadcasting_screen.self_sending,
                         textAlign: TextAlign.center,
                         style: Styles.caption,
                       ),
@@ -238,7 +243,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         _viewModel.setTxInfo();
       } catch (e) {
         vibrateMedium();
-        showAlertDialog(context: context, content: "트랜잭션 파싱 실패: $e");
+        showAlertDialog(
+            context: context, content: t.alert.error_tx.not_parsed(error: e));
       }
 
       setOverlayLoading(false);

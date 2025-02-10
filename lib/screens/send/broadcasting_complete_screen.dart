@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -34,8 +35,8 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
               children: [
                 SvgPicture.asset('assets/svg/completion-check.svg'),
                 const SizedBox(height: 8),
-                const Text(
-                  "전송 요청 완료",
+                Text(
+                  t.broadcasting_complete_screen.complete,
                   style: Styles.h3,
                 ),
                 const SizedBox(
@@ -50,7 +51,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                           borderRadius: BorderRadius.circular(14),
                           color: MyColors.primary),
                       child: Text(
-                        '확인',
+                        t.confirm,
                         style: Styles.label.merge(const TextStyle(
                             color: MyColors.darkgrey,
                             fontWeight: FontWeight.bold)),

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -20,7 +21,7 @@ class UtxoTagScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: MyColors.black,
           appBar: CustomAppBar.build(
-            title: '태그 관리',
+            title: t.tag_manage,
             context: context,
             hasRightIcon: true,
             showTestnetLabel: false,
@@ -39,7 +40,7 @@ class UtxoTagScreen extends StatelessWidget {
                       if (!model.addUtxoTag(id, utxoTag)) {
                         CustomToast.showWarningToast(
                           context: context,
-                          text: '태그 추가에 실패 했습니다.',
+                          text: t.toast.tag_add_failed,
                         );
                       }
                     },
@@ -58,7 +59,7 @@ class UtxoTagScreen extends StatelessWidget {
                   if (model.tagList.isEmpty == true) ...{
                     const SizedBox(height: 56),
                     Text(
-                      '태그가 없어요',
+                      t.utxo_tag_screen.no_such_tag,
                       style: Styles.body2.copyWith(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -66,7 +67,7 @@ class UtxoTagScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '+ 버튼을 눌러 태그를 추가해 보세요',
+                      t.utxo_tag_screen.add_tag,
                       style: Styles.body2
                           .copyWith(fontSize: 13, color: MyColors.gray200),
                     ),
@@ -76,7 +77,7 @@ class UtxoTagScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         CustomUnderlinedButton(
-                          text: '편집',
+                          text: t.edit,
                           onTap: () {
                             showModalBottomSheet(
                               context: context,
@@ -89,7 +90,7 @@ class UtxoTagScreen extends StatelessWidget {
                                   if (!model.updateUtxoTag(id, utxoTag)) {
                                     CustomToast.showWarningToast(
                                       context: context,
-                                      text: '태그 편집에 실패 했습니다.',
+                                      text: t.toast.tag_update_failed,
                                     );
                                   }
                                 },
@@ -100,27 +101,35 @@ class UtxoTagScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         CustomUnderlinedButton(
-                          text: '삭제',
+                          text: t.delete,
                           onTap: () {
                             CustomDialogs.showCustomAlertDialog(
                               context,
-                              title: '태그 삭제',
-                              message:
-                                  '#${model.selectedUtxoTag?.name}를 정말로 삭제하시겠어요?\n${model.selectedUtxoTag?.utxoIdList?.isNotEmpty == true ? '${model.selectedUtxoTag?.utxoIdList?.length}개 UTXO에 적용되어 있어요.' : ''}',
+                              title: t.alert.tag_delete.title,
+                              message: model.selectedUtxoTag?.utxoIdList
+                                          ?.isNotEmpty ==
+                                      true
+                                  ? t.alert.tag_delete.description_utxo_tag(
+                                      name: model.selectedUtxoTag!.name,
+                                      count: model.selectedUtxoTag?.utxoIdList!
+                                              .length ??
+                                          0)
+                                  : t.alert.tag_delete.description(
+                                      name: model.selectedUtxoTag!.name),
                               onConfirm: () {
                                 if (model.deleteUtxoTag(id)) {
                                   Navigator.of(context).pop();
                                 } else {
                                   CustomToast.showWarningToast(
                                     context: context,
-                                    text: '태그 삭제에 실패 했습니다.',
+                                    text: t.toast.tag_delete_failed,
                                   );
                                 }
                               },
                               onCancel: () {
                                 Navigator.of(context).pop();
                               },
-                              confirmButtonText: '삭제하기',
+                              confirmButtonText: t.delete,
                               confirmButtonColor: MyColors.warningRed,
                             );
                           },

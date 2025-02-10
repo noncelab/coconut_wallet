@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
@@ -42,7 +43,7 @@ class _SettingsScreen extends State<SettingsScreen> {
           return Scaffold(
               backgroundColor: MyColors.black,
               appBar: CustomAppBar.build(
-                title: '설정',
+                title: t.settings,
                 context: context,
                 hasRightIcon: false,
                 isBottom: true,
@@ -54,10 +55,10 @@ class _SettingsScreen extends State<SettingsScreen> {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _category('보안'),
+                      _category(t.security),
                       ButtonGroup(buttons: [
                         SingleButton(
-                            title: '비밀번호 설정하기',
+                            title: t.settings_screen.set_password,
                             rightElement: CupertinoSwitch(
                                 value: viewModel.isSetPin,
                                 activeColor: MyColors.primary,
@@ -76,7 +77,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                                 })),
                         if (viewModel.canCheckBiometrics && viewModel.isSetPin)
                           SingleButton(
-                            title: '생체 인증 사용하기',
+                            title: t.settings_screen.use_biometric,
                             rightElement: CupertinoSwitch(
                                 value: viewModel.isSetBiometrics,
                                 activeColor: MyColors.primary,
@@ -91,7 +92,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                           ),
                         if (viewModel.isSetPin)
                           SingleButton(
-                              title: '비밀번호 바꾸기',
+                              title: t.settings_screen.change_password,
                               onPressed: () async {
                                 final bool? result =
                                     await CommonBottomSheets.showBottomSheet_90(
@@ -109,7 +110,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                       const SizedBox(height: 16),
                       ButtonContainer(
                           child: SingleButton(
-                        title: '홈 화면 잔액 숨기기',
+                        title: t.settings_screen.hide_balance,
                         rightElement: CupertinoSwitch(
                             value: viewModel.isBalanceHidden,
                             activeColor: MyColors.primary,

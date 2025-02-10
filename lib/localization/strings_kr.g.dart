@@ -44,6 +44,9 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   late final Translations _root = this; // ignore: unused_field
 
   // Translations
+  String get coconut_wallet => 'coconut_wallet';
+  String get coconut_vault => 'coconut_vault';
+  String get coconut_lib => 'coconut_lib';
   String get glossary => '용어집';
   String get confirm => '확인';
   String get close => '닫기';
@@ -67,6 +70,8 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get modify => '변경';
   String get change => '잔돈';
   String get sign => '서명하기';
+  String get testnet => '테스트넷';
+  String get btc => 'BTC';
   String get tx_list => '거래 내역';
   String get utxo_list => 'UTXO 목록';
   String get wallet_id => '지갑 ID';
@@ -77,12 +82,12 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get block_num => '블록 번호';
   String get inquiry_details => '문의 내용';
   String get utxo_total => 'UTXO 합계';
-  String get send_address => '보낼 주소';
+  String get recipient => '보낼 주소';
   String get estimated_fee => '예상 수수료';
   String get total_cost => '총 소요 수량';
-  String get manual_input => '직접 입력';
+  String get input_directly => '직접 입력';
   String get mnemonic_wordlist => '니모닉 문구 단어집';
-  String get self_security => '셀프 보안 점검';
+  String get self_security_check => '셀프 보안 점검';
   String get app_info => '앱 정보';
   String get update_failed => '업데이트 실패';
   String get calculation_failed => '계산 실패';
@@ -107,7 +112,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get view_tx_details => '거래 자세히 보기';
   String get view_more => '더보기';
   String get view_mempool => '멤풀 보기';
-  String get view_all_address => '전체 주소 보기';
+  String get view_all_addresses => '전체 주소 보기';
   String get select_utxo => 'UTXO 고르기';
   String get select_all => '모두 선택';
   String get unselect_all => '모두 해제';
@@ -137,8 +142,8 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   late final TranslationsBroadcastingCompleteScreenKr
       broadcasting_complete_screen =
       TranslationsBroadcastingCompleteScreenKr.internal(_root);
-  late final TranslationsBroadcastingScreeKr broadcasting_scree =
-      TranslationsBroadcastingScreeKr.internal(_root);
+  late final TranslationsBroadcastingScreenKr broadcasting_screen =
+      TranslationsBroadcastingScreenKr.internal(_root);
   late final TranslationsSendAddressScreenKr send_address_screen =
       TranslationsSendAddressScreenKr.internal(_root);
   late final TranslationsSendConfirmScreenKr send_confirm_screen =
@@ -277,20 +282,19 @@ class TranslationsBroadcastingCompleteScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text1 => '전송 요청 완료';
-  String get text2 => '트랜잭션 보기';
+  String get complete => '전송 요청 완료';
 }
 
-// Path: broadcasting_scree
-class TranslationsBroadcastingScreeKr {
-  TranslationsBroadcastingScreeKr.internal(this._root);
+// Path: broadcasting_screen
+class TranslationsBroadcastingScreenKr {
+  TranslationsBroadcastingScreenKr.internal(this._root);
 
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text1 => '최종 확인';
-  String get text2 => '아래 정보로 송금할게요';
-  String get text3 => '내 지갑으로 보내는 트랜잭션입니다.';
+  String get title => '최종 확인';
+  String get description => '아래 정보로 송금할게요';
+  String get self_sending => '내 지갑으로 보내는 트랜잭션입니다.';
 }
 
 // Path: send_address_screen
@@ -310,7 +314,7 @@ class TranslationsSendConfirmScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text => '입력 정보 확인';
+  String get title => '입력 정보 확인';
 }
 
 // Path: signed_psbt_scanner_screen
@@ -320,7 +324,7 @@ class TranslationsSignedPsbtScannerScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text => '서명 트랜잭션 읽기';
+  String get title => '서명 트랜잭션 읽기';
 }
 
 // Path: app_info_screen
@@ -330,14 +334,19 @@ class TranslationsAppInfoScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text1 => '포우팀이 만듭니다.';
-  String get text2 => '궁금한 점이 있으신가요?';
-  String get text3 => 'POW 커뮤니티 바로가기';
-  String get text4 => '텔레그램 채널로 문의하기';
-  String get text5 => 'X로 문의하기';
-  String get text6 => '이메일로 문의하기';
-  String get text7 => '라이선스 안내';
-  String get text8 => '오픈소스 개발 참여하기';
+  String get made_by_team_pow => '포우팀이 만듭니다.';
+  String get category1_ask => '궁금한 점이 있으신가요?';
+  String get go_to_pow => 'POW 커뮤니티 바로가기';
+  String get ask_to_telegram => '텔레그램 채널로 문의하기';
+  String get ask_to_x => 'X로 문의하기';
+  String get ask_to_email => '이메일로 문의하기';
+  String get category2_opensource => 'Coconut Wallet은 오픈소스입니다';
+  String get license => '라이선스 안내';
+  String get contribution => '오픈소스 개발 참여하기';
+  String version_and_date(
+          {required Object version, required Object releasedAt}) =>
+      'CoconutWallet ver. ${version} (released at ${releasedAt})';
+  String get inquiry => '문의 내용';
 }
 
 // Path: bip39_list_screen
@@ -347,8 +356,8 @@ class TranslationsBip39ListScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String text1({required Object text}) => '\'${text}\' 검색 결과';
-  String get text2 => '검색 결과가 없어요';
+  String result({required Object text}) => '\'${text}\' 검색 결과';
+  String get no_result => '검색 결과가 없어요';
 }
 
 // Path: pin_setting_screen
@@ -358,8 +367,8 @@ class TranslationsPinSettingScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text1 => '새로운 비밀번호를 눌러주세요';
-  String get text2 => '다시 한번 확인할게요';
+  String get new_password => '새로운 비밀번호를 눌러주세요';
+  String get enter_again => '다시 한번 확인할게요';
 }
 
 // Path: settings_screen
@@ -369,10 +378,10 @@ class TranslationsSettingsScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text1 => '비밀번호 설정하기';
-  String get text2 => '생체 인증 사용하기';
-  String get text3 => '비밀번호 바꾸기';
-  String get text4 => '홈 화면 잔액 숨기기';
+  String get set_password => '비밀번호 설정하기';
+  String get use_biometric => '생체 인증 사용하기';
+  String get change_password => '비밀번호 바꾸기';
+  String get hide_balance => '홈 화면 잔액 숨기기';
 }
 
 // Path: address_list_screen
@@ -382,9 +391,10 @@ class TranslationsAddressListScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String text1({required Object name}) => '${name}의 주소';
-  String text2({required Object index}) => '주소 - ${index}';
-  String get text3 => '입금';
+  String wallet_name({required Object name}) => '${name}의 주소';
+  String address_index({required Object index}) => '주소 - ${index}';
+  String get receiving => '입금';
+  String get change => '잔돈';
 }
 
 // Path: transaction_detail_screen
@@ -394,8 +404,8 @@ class TranslationsTransactionDetailScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String text({required Object height, required Object count}) =>
-      '\'${height} (${count} 승인)\'';
+  String confirmation({required Object height, required Object count}) =>
+      '${height} (${count} 승인)';
 }
 
 // Path: utxo_detail_screen
@@ -405,8 +415,8 @@ class TranslationsUtxoDetailScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text1 => '승인 대기중';
-  String get text2 => '보유 주소';
+  String get pending => '승인 대기중';
+  String get address => '보유 주소';
 }
 
 // Path: utxo_tag_screen
@@ -416,8 +426,8 @@ class TranslationsUtxoTagScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text1 => '태그가 없어요';
-  String get text2 => '+ 버튼을 눌러 태그를 추가해 보세요';
+  String get no_such_tag => '태그가 없어요';
+  String get add_tag => '+ 버튼을 눌러 태그를 추가해 보세요';
 }
 
 // Path: wallet_info_screen
@@ -427,8 +437,8 @@ class TranslationsWalletInfoScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String text1({required Object name}) => '${name} 정보';
-  String get text2 => '확장 공개키 보기';
+  String title({required Object name}) => '${name} 정보';
+  String get view_xpub => '확장 공개키 보기';
 }
 
 // Path: wallet_list_add_guide_card
@@ -462,12 +472,13 @@ class TranslationsFaucetRequestBottomSheetKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text1 => '주소를 입력해 주세요.\n주소는 [받기] 버튼을 눌러서 확인할 수 있어요.';
-  String get text2 => '테스트 비트코인 받기';
-  String text3({required Object name, required Object index}) =>
+  String get title => '테스트 비트코인 받기';
+  String get recipient => '받을 주소';
+  String get placeholder => '주소를 입력해 주세요.\n주소는 [받기] 버튼을 눌러서 확인할 수 있어요.';
+  String my_address({required Object name, required Object index}) =>
       '내 지갑(${name}) 주소 - ${index}';
-  String get text4 => '요청 중...';
-  String text5({required Object bitcoin}) => '${bitcoin} BTC 요청하기';
+  String get requesting => '요청 중...';
+  String request_amount({required Object bitcoin}) => '${bitcoin} BTC 요청하기';
 }
 
 // Path: license_bottom_sheet
@@ -493,10 +504,10 @@ class TranslationsOnboardingBottomSheetKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text1 => '건너뛰기 |';
-  String get text2 => '사용하시다 도움이 필요할 때';
-  String get text3 => '튜토리얼 안내 버튼';
-  String get text4 => '을 눌러주세요';
+  String get skip => '건너뛰기 |';
+  String get when_need_help => '사용하시다 도움이 필요할 때';
+  String get guide_btn => '튜토리얼 안내 버튼';
+  String get press => '을 눌러주세요';
 }
 
 // Path: security_self_check_bottom_sheet
@@ -579,23 +590,21 @@ class TranslationsErrorKr {
   String get app_1202 => '데이터를 찾을 수 없습니다.';
   String get app_1203 => 'Realm 작업 중 오류가 발생했습니다.';
   String get network_connect => '네트워크 연결이 없습니다.';
-  String get low_balance => '잔액이 부족해요.';
+  String get insufficient_balance => '잔액이 부족해요.';
   String get dio_cancel => '(요청취소)Request to the server was cancelled.';
   String get dio_connect => '(연결시간초과)Connection timed out.';
   String get dio_receive => '(수신시간초과)Receiving timeout occurred.';
   String get dio_send => '(요청시간초과)Request send timeout.';
   String get dio_unknown => 'Unexpected error occurred.';
   String get dio_default => 'Something went wrong';
-  String get utxo1 => '잔액이 부족하여 수수료를 낼 수 없어요';
-  String get utxo2 => 'UTXO 합계가 모자라요';
-  String get utxo3 => '추천 수수료를 조회하지 못했어요.\n\'변경\'버튼을 눌러서 수수료를 직접 입력해 주세요.';
+  late final TranslationsErrorFeeSelectionKr fee_selection =
+      TranslationsErrorFeeSelectionKr.internal(_root);
   String get address1 => '올바른 주소가 아니에요.';
   String get address2 => '테스트넷 주소가 아니에요.';
   String get address3 => '메인넷 주소가 아니에요.';
   String get address4 => '레그테스트넷 주소가 아니에요.';
-  String pin_check1({required Object count}) => '${count}번 다시 시도할 수 있어요';
-  String get pin_check2 => '더 이상 시도할 수 없어요\n앱을 종료해 주세요';
-  String get pin_check3 => '비밀번호가 일치하지 않아요';
+  late final TranslationsErrorPinCheckKr pin_check =
+      TranslationsErrorPinCheckKr.internal(_root);
   String get pin_already_in_use => '이미 사용중인 비밀번호예요';
   String get pin_processing_failed => '처리 중 문제가 발생했어요';
   String get pin_saving_failed => '저장 중 문제가 발생했어요';
@@ -611,9 +620,9 @@ class TranslationsTextFieldKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get fee => '수수료를 자연수로 입력해 주세요.';
-  String get fee_btn => '직접 입력하기';
-  String get mnemonic_hint => '영문으로 검색해 보세요';
+  String get enter_fee_as_natural_number => '수수료를 자연수로 입력해 주세요.';
+  String get enter_fee_directly => '직접 입력하기';
+  String get search_mnemonic_word => '영문으로 검색해 보세요';
 }
 
 // Path: tooltip
@@ -631,13 +640,13 @@ class TranslationsTooltipKr {
   String get wallet_add3 => '에서 사용하시려는 지갑을 선택하고, ';
   String get wallet_add4 => '내보내기 ';
   String get wallet_add5 => '화면에 나타나는 QR 코드를 스캔해 주세요.';
-  String send({required Object bitcoin}) =>
+  String amount_to_be_sent({required Object bitcoin}) =>
       '받기 완료된 비트코인만 전송 가능해요.\n받는 중인 금액: ${bitcoin} BTC';
-  String get psbt => '볼트 앱에서 생성된 서명 트랜잭션이 보이시나요? 이제, QR 코드를 스캔해 주세요.';
-  String get tx1 => '볼트에서';
-  String tx2({required Object name}) => '${name} 선택, ';
-  String get tx3 => '로 이동하여 아래 QR 코드를 스캔해 주세요.';
-  String get address_external =>
+  String get scan_signed_psbt =>
+      '볼트 앱에서 생성된 서명 트랜잭션이 보이시나요? 이제, QR 코드를 스캔해 주세요.';
+  late final TranslationsTooltipUnsignedTxQrKr unsigned_tx_qr =
+      TranslationsTooltipUnsignedTxQrKr.internal(_root);
+  String get address_receiving =>
       '비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라 해요.';
   String get address_change =>
       '다른 사람에게 비트코인을 보내고 남은 비트코인을 거슬러 받는 주소예요. 영어로 Change라 해요.';
@@ -669,13 +678,13 @@ class TranslationsToastKr {
   String get back_exit => '뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.';
   String min_fee({required Object minimum}) =>
       '현재 최소 수수료는 ${minimum} sats/vb 입니다.';
-  String get loading => '최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.';
+  String get fetching_onchain_data => '최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.';
   String get screen_capture => '스크린 캡처가 감지되었습니다.';
   String get no_balance => '잔액이 없습니다.';
-  String get memo_update_failed => '메모 업데이트에 실패 했습니다.';
-  String get tag_add_failed => '태그 추가에 실패 했습니다.';
-  String get tag_update_failed => '태그 편집에 실패 했습니다.';
-  String get tag_delete_failed => '태그 삭제에 실패 했습니다.';
+  String get memo_update_failed => '메모를 업데이트하지 못했어요.';
+  String get tag_add_failed => '태그를 추가하지 못했어요.';
+  String get tag_update_failed => '태그를 편집할 수 없어요.';
+  String get tag_delete_failed => '태그를 삭제할 수 없어요.';
   String get wallet_detail_refresh => '화면을 아래로 당겨 최신 데이터를 가져와 주세요.';
 }
 
@@ -686,51 +695,225 @@ class TranslationsAlertKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String error_tx1({required Object error}) => '트랜잭션 파싱 실패: ${error}';
-  String error_tx2({required Object error}) => '트랜잭션 생성 실패 ${error}';
-  String error_send1({required Object error}) => '[전송 실패]\n${error}';
-  String get error_send2 => '잔액이 부족해요';
-  String error_send3({required Object bitcoin}) =>
-      '${bitcoin} BTC 부터 전송할 수 있어요';
-  String get error_send4 => '네트워크 상태가 좋지 않아\n처음으로 돌아갑니다.';
-  String get error_sign1 => '잘못된 QR코드예요.\n다시 확인해 주세요.';
-  String get error_sign2 => '전송 정보가 달라요.\n처음부터 다시 시도해 주세요.';
-  String error_sign3({required Object count}) => '${count}개 서명이 더 필요해요';
-  String get error_sign5 => '잘못된 서명 정보에요. 다시 시도해 주세요.';
-  String error_scan1({required Object error}) => '\'[스캔 실패] ${error}\'';
-  String error_scan2({required Object error}) =>
+  late final TranslationsAlertErrorTxKr error_tx =
+      TranslationsAlertErrorTxKr.internal(_root);
+  late final TranslationsAlertErrorSendKr error_send =
+      TranslationsAlertErrorSendKr.internal(_root);
+  late final TranslationsAlertSignedPsbtKr signed_psbt =
+      TranslationsAlertSignedPsbtKr.internal(_root);
+  String scan_failed({required Object error}) => '\'[스캔 실패] ${error}\'';
+  String scan_failed_description({required Object error}) =>
       'QR코드 스캔에 실패했어요. 다시 시도해 주세요.\n${error}';
-  String get tutorial_title => '도움이 필요하신가요?';
-  String get tutorial_msg => '튜토리얼 사이트로\n안내해 드릴게요';
-  String get tutorial_btn => '튜토리얼 보기';
-  String get pin1_title => '비밀번호를 잊으셨나요?';
-  String get pin1_text =>
+  late final TranslationsAlertTutorialKr tutorial =
+      TranslationsAlertTutorialKr.internal(_root);
+  late final TranslationsAlertForgotPasswordKr forgot_password =
+      TranslationsAlertForgotPasswordKr.internal(_root);
+  late final TranslationsAlertWalletAddKr wallet_add =
+      TranslationsAlertWalletAddKr.internal(_root);
+  late final TranslationsAlertWalletDeleteKr wallet_delete =
+      TranslationsAlertWalletDeleteKr.internal(_root);
+  late final TranslationsAlertUpdateKr update =
+      TranslationsAlertUpdateKr.internal(_root);
+  String get error_occurs => '오류 발생';
+  String contact_admin({required Object error}) => '관리자에게 문의하세요. ${error}';
+  late final TranslationsAlertTagApplyKr tag_apply =
+      TranslationsAlertTagApplyKr.internal(_root);
+  late final TranslationsAlertTxDetailKr tx_detail =
+      TranslationsAlertTxDetailKr.internal(_root);
+  late final TranslationsAlertTagDeleteKr tag_delete =
+      TranslationsAlertTagDeleteKr.internal(_root);
+  late final TranslationsAlertFaucetKr faucet =
+      TranslationsAlertFaucetKr.internal(_root);
+}
+
+// Path: error.fee_selection
+class TranslationsErrorFeeSelectionKr {
+  TranslationsErrorFeeSelectionKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get insufficient_balance_to_pay_fee => '잔액이 부족하여 수수료를 낼 수 없어요';
+  String get insufficient_utxo_sum => 'UTXO 합계가 모자라요';
+  String get recommended_fee_unavailable =>
+      '추천 수수료를 조회하지 못했어요.\n\'변경\' 버튼을 눌러 수수료를 직접 입력해 주세요.';
+}
+
+// Path: error.pin_check
+class TranslationsErrorPinCheckKr {
+  TranslationsErrorPinCheckKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String trial_count({required Object count}) => '${count}번 다시 시도할 수 있어요';
+  String get failed => '더 이상 시도할 수 없어요\n앱을 종료해 주세요';
+  String get unmatched => '비밀번호가 일치하지 않아요';
+}
+
+// Path: tooltip.unsigned_tx_qr
+class TranslationsTooltipUnsignedTxQrKr {
+  TranslationsTooltipUnsignedTxQrKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get in_vault => '볼트에서';
+  String select_wallet({required Object name}) => '${name} 선택, ';
+  String get scan_qr_below => '로 이동하여 아래 QR 코드를 스캔해 주세요.';
+}
+
+// Path: alert.error_tx
+class TranslationsAlertErrorTxKr {
+  TranslationsAlertErrorTxKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String not_parsed({required Object error}) => '트랜잭션 파싱 실패: ${error}';
+  String not_created({required Object error}) => '트랜잭션 생성 실패 ${error}';
+}
+
+// Path: alert.error_send
+class TranslationsAlertErrorSendKr {
+  TranslationsAlertErrorSendKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String broadcasting_failed({required Object error}) => '[전송 실패]\n${error}';
+  String get insufficient_balance => '잔액이 부족해요';
+  String minimum_amount({required Object bitcoin}) =>
+      '${bitcoin} BTC 부터 전송할 수 있어요';
+  String get poor_network => '네트워크 상태가 좋지 않아\n처음으로 돌아갑니다.';
+  String get insufficient_fee => '[전송 실패]\n수수료율을 높여서\n다시 시도해주세요.';
+}
+
+// Path: alert.signed_psbt
+class TranslationsAlertSignedPsbtKr {
+  TranslationsAlertSignedPsbtKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get invalid_qr => '잘못된 QR코드예요.\n다시 확인해 주세요.';
+  String get wrong_send_info => '전송 정보가 달라요.\n처음부터 다시 시도해 주세요.';
+  String need_more_sign({required Object count}) => '${count}개 서명이 더 필요해요';
+  String get invalid_signature => '잘못된 서명 정보에요. 다시 시도해 주세요.';
+}
+
+// Path: alert.tutorial
+class TranslationsAlertTutorialKr {
+  TranslationsAlertTutorialKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get title => '도움이 필요하신가요?';
+  String get description => '튜토리얼 사이트로\n안내해 드릴게요';
+  String get btn_view => '튜토리얼 보기';
+}
+
+// Path: alert.forgot_password
+class TranslationsAlertForgotPasswordKr {
+  TranslationsAlertForgotPasswordKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get title => '비밀번호를 잊으셨나요?';
+  String get description =>
       '[다시 설정]을 눌러 비밀번호를 초기화할 수 있어요. 비밀번호를 바꾸면 동기화된 지갑 목록이 초기화 돼요.';
-  String get pin1_btn => '다시 설정';
-  String get wallet1_title => '업데이트 실패';
-  String wallet1_text({required Object name}) => '${name}에 업데이트할 정보가 없어요';
-  String get wallet2_title => '이름 중복';
-  String get wallet2_text => '같은 이름을 가진 지갑이 있습니다.\n이름을 변경한 후 동기화 해주세요.';
-  String get wallet3_title => '보기 전용 지갑 추가 실패';
-  String get wallet3_text => '잘못된 지갑 정보입니다.';
-  String get wallet4_title => '지갑 삭제';
-  String get wallet5_text => '지갑을 정말 삭제하시겠어요?';
-  String get app_title => '업데이트 알림';
-  String get app_text => '안정적인 서비스 이용을 위해\n최신 버전으로 업데이트 해주세요.';
-  String get app_btn1 => '업데이트 하기';
-  String get app_btn2 => '다음에 하기';
-  String get utxo1_title => '오류 발생';
-  String utxo1_text({required Object error}) => '관리자에게 문의하세요. ${error}';
-  String get utxo2_title => '태그 적용';
-  String get utxo2_text => '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?';
-  String get utxo2_btn => '적용하기';
-  String get tx_detail_title => '트랜잭션 가져오기 실패';
-  String get tx_detail_text => '잠시 후 다시 시도해 주세요';
-  String get tag_title => '태그 삭제';
-  String tag_text1({required Object name}) => '#${name}를 정말로 삭제하시겠어요?\n';
-  String tag_text2({required Object count}) => '${count}개  UTXO에 적용되어 있어요.';
-  String get faucet1 => '올바른 주소인지 확인해 주세요';
-  String faucet2({required Object count}) => '${count} 후에 다시 시도해 주세요';
+  String get btn_reset => '다시 설정';
+}
+
+// Path: alert.wallet_add
+class TranslationsAlertWalletAddKr {
+  TranslationsAlertWalletAddKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get update_failed => '업데이트 실패';
+  String update_failed_description({required Object name}) =>
+      '${name}에 업데이트할 정보가 없어요';
+  String get duplicate_name => '이름 중복';
+  String get duplicate_name_description =>
+      '같은 이름을 가진 지갑이 있습니다.\n이름을 변경한 후 동기화 해주세요.';
+  String get add_failed => '보기 전용 지갑 추가 실패';
+  String get add_failed_description => '잘못된 지갑 정보입니다.';
+}
+
+// Path: alert.wallet_delete
+class TranslationsAlertWalletDeleteKr {
+  TranslationsAlertWalletDeleteKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get confirm_delete => '지갑 삭제';
+  String get confirm_delete_description => '지갑을 정말 삭제하시겠어요?';
+}
+
+// Path: alert.update
+class TranslationsAlertUpdateKr {
+  TranslationsAlertUpdateKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get title => '업데이트 알림';
+  String get description => '안정적인 서비스 이용을 위해\n최신 버전으로 업데이트 해주세요.';
+  String get btn_update => '업데이트 하기';
+  String get btn_do_later => '다음에 하기';
+}
+
+// Path: alert.tag_apply
+class TranslationsAlertTagApplyKr {
+  TranslationsAlertTagApplyKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get title => '태그 적용';
+  String get description => '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?';
+  String get btn_apply => '적용하기';
+}
+
+// Path: alert.tx_detail
+class TranslationsAlertTxDetailKr {
+  TranslationsAlertTxDetailKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get fetch_failed => '트랜잭션 가져오기 실패';
+  String get fetch_failed_description => '잠시 후 다시 시도해 주세요';
+}
+
+// Path: alert.tag_delete
+class TranslationsAlertTagDeleteKr {
+  TranslationsAlertTagDeleteKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get title => '태그 삭제';
+  String description({required Object name}) => '#${name}를 정말로 삭제하시겠어요?\n';
+  String description_utxo_tag({required Object name, required Object count}) =>
+      '${name}를 정말로 삭제하시겠어요?\n${count}개 UTXO에 적용되어 있어요.';
+}
+
+// Path: alert.faucet
+class TranslationsAlertFaucetKr {
+  TranslationsAlertFaucetKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get no_test_bitcoin => '수도꼭지 단수 상태예요. 잠시 후 다시 시도해 주세요.';
+  String get check_address => '올바른 주소인지 확인해 주세요';
+  String try_again({required Object count}) => '${count} 후에 다시 시도해 주세요';
 }
 
 /// Flat map(s) containing all translations.
@@ -738,6 +921,12 @@ class TranslationsAlertKr {
 extension on Translations {
   dynamic _flatMapFunction(String path) {
     switch (path) {
+      case 'coconut_wallet':
+        return 'coconut_wallet';
+      case 'coconut_vault':
+        return 'coconut_vault';
+      case 'coconut_lib':
+        return 'coconut_lib';
       case 'glossary':
         return '용어집';
       case 'confirm':
@@ -784,6 +973,10 @@ extension on Translations {
         return '잔돈';
       case 'sign':
         return '서명하기';
+      case 'testnet':
+        return '테스트넷';
+      case 'btc':
+        return 'BTC';
       case 'tx_list':
         return '거래 내역';
       case 'utxo_list':
@@ -804,17 +997,17 @@ extension on Translations {
         return '문의 내용';
       case 'utxo_total':
         return 'UTXO 합계';
-      case 'send_address':
+      case 'recipient':
         return '보낼 주소';
       case 'estimated_fee':
         return '예상 수수료';
       case 'total_cost':
         return '총 소요 수량';
-      case 'manual_input':
+      case 'input_directly':
         return '직접 입력';
       case 'mnemonic_wordlist':
         return '니모닉 문구 단어집';
-      case 'self_security':
+      case 'self_security_check':
         return '셀프 보안 점검';
       case 'app_info':
         return '앱 정보';
@@ -864,7 +1057,7 @@ extension on Translations {
         return '더보기';
       case 'view_mempool':
         return '멤풀 보기';
-      case 'view_all_address':
+      case 'view_all_addresses':
         return '전체 주소 보기';
       case 'select_utxo':
         return 'UTXO 고르기';
@@ -932,74 +1125,81 @@ extension on Translations {
         return '물론이죠';
       case 'positive_feedback_screen.text4':
         return '다음에 할게요';
-      case 'broadcasting_complete_screen.text1':
+      case 'broadcasting_complete_screen.complete':
         return '전송 요청 완료';
-      case 'broadcasting_complete_screen.text2':
-        return '트랜잭션 보기';
-      case 'broadcasting_scree.text1':
+      case 'broadcasting_screen.title':
         return '최종 확인';
-      case 'broadcasting_scree.text2':
+      case 'broadcasting_screen.description':
         return '아래 정보로 송금할게요';
-      case 'broadcasting_scree.text3':
+      case 'broadcasting_screen.self_sending':
         return '내 지갑으로 보내는 트랜잭션입니다.';
       case 'send_address_screen.text':
         return 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
-      case 'send_confirm_screen.text':
+      case 'send_confirm_screen.title':
         return '입력 정보 확인';
-      case 'signed_psbt_scanner_screen.text':
+      case 'signed_psbt_scanner_screen.title':
         return '서명 트랜잭션 읽기';
-      case 'app_info_screen.text1':
+      case 'app_info_screen.made_by_team_pow':
         return '포우팀이 만듭니다.';
-      case 'app_info_screen.text2':
+      case 'app_info_screen.category1_ask':
         return '궁금한 점이 있으신가요?';
-      case 'app_info_screen.text3':
+      case 'app_info_screen.go_to_pow':
         return 'POW 커뮤니티 바로가기';
-      case 'app_info_screen.text4':
+      case 'app_info_screen.ask_to_telegram':
         return '텔레그램 채널로 문의하기';
-      case 'app_info_screen.text5':
+      case 'app_info_screen.ask_to_x':
         return 'X로 문의하기';
-      case 'app_info_screen.text6':
+      case 'app_info_screen.ask_to_email':
         return '이메일로 문의하기';
-      case 'app_info_screen.text7':
+      case 'app_info_screen.category2_opensource':
+        return 'Coconut Wallet은 오픈소스입니다';
+      case 'app_info_screen.license':
         return '라이선스 안내';
-      case 'app_info_screen.text8':
+      case 'app_info_screen.contribution':
         return '오픈소스 개발 참여하기';
-      case 'bip39_list_screen.text1':
+      case 'app_info_screen.version_and_date':
+        return ({required Object version, required Object releasedAt}) =>
+            'CoconutWallet ver. ${version} (released at ${releasedAt})';
+      case 'app_info_screen.inquiry':
+        return '문의 내용';
+      case 'bip39_list_screen.result':
         return ({required Object text}) => '\'${text}\' 검색 결과';
-      case 'bip39_list_screen.text2':
+      case 'bip39_list_screen.no_result':
         return '검색 결과가 없어요';
-      case 'pin_setting_screen.text1':
+      case 'pin_setting_screen.new_password':
         return '새로운 비밀번호를 눌러주세요';
-      case 'pin_setting_screen.text2':
+      case 'pin_setting_screen.enter_again':
         return '다시 한번 확인할게요';
-      case 'settings_screen.text1':
+      case 'settings_screen.set_password':
         return '비밀번호 설정하기';
-      case 'settings_screen.text2':
+      case 'settings_screen.use_biometric':
         return '생체 인증 사용하기';
-      case 'settings_screen.text3':
+      case 'settings_screen.change_password':
         return '비밀번호 바꾸기';
-      case 'settings_screen.text4':
+      case 'settings_screen.hide_balance':
         return '홈 화면 잔액 숨기기';
-      case 'address_list_screen.text1':
+      case 'address_list_screen.wallet_name':
         return ({required Object name}) => '${name}의 주소';
-      case 'address_list_screen.text2':
+      case 'address_list_screen.address_index':
         return ({required Object index}) => '주소 - ${index}';
-      case 'address_list_screen.text3':
+      case 'address_list_screen.receiving':
         return '입금';
-      case 'transaction_detail_screen.text':
+      case 'address_list_screen.change':
+        return '잔돈';
+      case 'transaction_detail_screen.confirmation':
         return ({required Object height, required Object count}) =>
-            '\'${height} (${count} 승인)\'';
-      case 'utxo_detail_screen.text1':
+            '${height} (${count} 승인)';
+      case 'utxo_detail_screen.pending':
         return '승인 대기중';
-      case 'utxo_detail_screen.text2':
+      case 'utxo_detail_screen.address':
         return '보유 주소';
-      case 'utxo_tag_screen.text1':
+      case 'utxo_tag_screen.no_such_tag':
         return '태그가 없어요';
-      case 'utxo_tag_screen.text2':
+      case 'utxo_tag_screen.add_tag':
         return '+ 버튼을 눌러 태그를 추가해 보세요';
-      case 'wallet_info_screen.text1':
+      case 'wallet_info_screen.title':
         return ({required Object name}) => '${name} 정보';
-      case 'wallet_info_screen.text2':
+      case 'wallet_info_screen.view_xpub':
         return '확장 공개키 보기';
       case 'wallet_list_add_guide_card.text1':
         return '보기 전용 지갑을 추가해 주세요';
@@ -1013,16 +1213,18 @@ extension on Translations {
         return '오른쪽 위 ';
       case 'wallet_list_terms_shortcut_card.text3':
         return ' - 용어집 또는 여기를 눌러 바로가기';
-      case 'faucet_request_bottom_sheet.text1':
-        return '주소를 입력해 주세요.\n주소는 [받기] 버튼을 눌러서 확인할 수 있어요.';
-      case 'faucet_request_bottom_sheet.text2':
+      case 'faucet_request_bottom_sheet.title':
         return '테스트 비트코인 받기';
-      case 'faucet_request_bottom_sheet.text3':
+      case 'faucet_request_bottom_sheet.recipient':
+        return '받을 주소';
+      case 'faucet_request_bottom_sheet.placeholder':
+        return '주소를 입력해 주세요.\n주소는 [받기] 버튼을 눌러서 확인할 수 있어요.';
+      case 'faucet_request_bottom_sheet.my_address':
         return ({required Object name, required Object index}) =>
             '내 지갑(${name}) 주소 - ${index}';
-      case 'faucet_request_bottom_sheet.text4':
+      case 'faucet_request_bottom_sheet.requesting':
         return '요청 중...';
-      case 'faucet_request_bottom_sheet.text5':
+      case 'faucet_request_bottom_sheet.request_amount':
         return ({required Object bitcoin}) => '${bitcoin} BTC 요청하기';
       case 'license_bottom_sheet.text1':
         return 'Coconut Wallet';
@@ -1034,13 +1236,13 @@ extension on Translations {
         return '에서 확인해 주세요.\n\n이 애플리케이션에 포함된 타사 소프트웨어에 대한 저작권을 다음과 같이 명시합니다. 이에 대해 궁금한 사항이 있으시면 ';
       case 'license_bottom_sheet.text5':
         return '으로 문의해 주시기 바랍니다.';
-      case 'onboarding_bottom_sheet.text1':
+      case 'onboarding_bottom_sheet.skip':
         return '건너뛰기 |';
-      case 'onboarding_bottom_sheet.text2':
+      case 'onboarding_bottom_sheet.when_need_help':
         return '사용하시다 도움이 필요할 때';
-      case 'onboarding_bottom_sheet.text3':
+      case 'onboarding_bottom_sheet.guide_btn':
         return '튜토리얼 안내 버튼';
-      case 'onboarding_bottom_sheet.text4':
+      case 'onboarding_bottom_sheet.press':
         return '을 눌러주세요';
       case 'security_self_check_bottom_sheet.text1':
         return '나의 개인키는 내가 스스로 책임집니다.';
@@ -1116,7 +1318,7 @@ extension on Translations {
         return 'Realm 작업 중 오류가 발생했습니다.';
       case 'error.network_connect':
         return '네트워크 연결이 없습니다.';
-      case 'error.low_balance':
+      case 'error.insufficient_balance':
         return '잔액이 부족해요.';
       case 'error.dio_cancel':
         return '(요청취소)Request to the server was cancelled.';
@@ -1130,12 +1332,12 @@ extension on Translations {
         return 'Unexpected error occurred.';
       case 'error.dio_default':
         return 'Something went wrong';
-      case 'error.utxo1':
+      case 'error.fee_selection.insufficient_balance_to_pay_fee':
         return '잔액이 부족하여 수수료를 낼 수 없어요';
-      case 'error.utxo2':
+      case 'error.fee_selection.insufficient_utxo_sum':
         return 'UTXO 합계가 모자라요';
-      case 'error.utxo3':
-        return '추천 수수료를 조회하지 못했어요.\n\'변경\'버튼을 눌러서 수수료를 직접 입력해 주세요.';
+      case 'error.fee_selection.recommended_fee_unavailable':
+        return '추천 수수료를 조회하지 못했어요.\n\'변경\' 버튼을 눌러 수수료를 직접 입력해 주세요.';
       case 'error.address1':
         return '올바른 주소가 아니에요.';
       case 'error.address2':
@@ -1144,11 +1346,11 @@ extension on Translations {
         return '메인넷 주소가 아니에요.';
       case 'error.address4':
         return '레그테스트넷 주소가 아니에요.';
-      case 'error.pin_check1':
+      case 'error.pin_check.trial_count':
         return ({required Object count}) => '${count}번 다시 시도할 수 있어요';
-      case 'error.pin_check2':
+      case 'error.pin_check.failed':
         return '더 이상 시도할 수 없어요\n앱을 종료해 주세요';
-      case 'error.pin_check3':
+      case 'error.pin_check.unmatched':
         return '비밀번호가 일치하지 않아요';
       case 'error.pin_already_in_use':
         return '이미 사용중인 비밀번호예요';
@@ -1162,11 +1364,11 @@ extension on Translations {
         return '데이터를 불러오는 중 오류가 발생했습니다.';
       case 'error.data_not_found':
         return '데이터가 없습니다.';
-      case 'text_field.fee':
+      case 'text_field.enter_fee_as_natural_number':
         return '수수료를 자연수로 입력해 주세요.';
-      case 'text_field.fee_btn':
+      case 'text_field.enter_fee_directly':
         return '직접 입력하기';
-      case 'text_field.mnemonic_hint':
+      case 'text_field.search_mnemonic_word':
         return '영문으로 검색해 보세요';
       case 'tooltip.recommended_fee1':
         return '추천 수수료를 조회하지 못했어요. 수수료를 직접 입력해 주세요.';
@@ -1182,18 +1384,18 @@ extension on Translations {
         return '내보내기 ';
       case 'tooltip.wallet_add5':
         return '화면에 나타나는 QR 코드를 스캔해 주세요.';
-      case 'tooltip.send':
+      case 'tooltip.amount_to_be_sent':
         return ({required Object bitcoin}) =>
             '받기 완료된 비트코인만 전송 가능해요.\n받는 중인 금액: ${bitcoin} BTC';
-      case 'tooltip.psbt':
+      case 'tooltip.scan_signed_psbt':
         return '볼트 앱에서 생성된 서명 트랜잭션이 보이시나요? 이제, QR 코드를 스캔해 주세요.';
-      case 'tooltip.tx1':
+      case 'tooltip.unsigned_tx_qr.in_vault':
         return '볼트에서';
-      case 'tooltip.tx2':
+      case 'tooltip.unsigned_tx_qr.select_wallet':
         return ({required Object name}) => '${name} 선택, ';
-      case 'tooltip.tx3':
+      case 'tooltip.unsigned_tx_qr.scan_qr_below':
         return '로 이동하여 아래 QR 코드를 스캔해 주세요.';
-      case 'tooltip.address_external':
+      case 'tooltip.address_receiving':
         return '비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라 해요.';
       case 'tooltip.address_change':
         return '다른 사람에게 비트코인을 보내고 남은 비트코인을 거슬러 받는 주소예요. 영어로 Change라 해요.';
@@ -1213,106 +1415,111 @@ extension on Translations {
       case 'toast.min_fee':
         return ({required Object minimum}) =>
             '현재 최소 수수료는 ${minimum} sats/vb 입니다.';
-      case 'toast.loading':
+      case 'toast.fetching_onchain_data':
         return '최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.';
       case 'toast.screen_capture':
         return '스크린 캡처가 감지되었습니다.';
       case 'toast.no_balance':
         return '잔액이 없습니다.';
       case 'toast.memo_update_failed':
-        return '메모 업데이트에 실패 했습니다.';
+        return '메모를 업데이트하지 못했어요.';
       case 'toast.tag_add_failed':
-        return '태그 추가에 실패 했습니다.';
+        return '태그를 추가하지 못했어요.';
       case 'toast.tag_update_failed':
-        return '태그 편집에 실패 했습니다.';
+        return '태그를 편집할 수 없어요.';
       case 'toast.tag_delete_failed':
-        return '태그 삭제에 실패 했습니다.';
+        return '태그를 삭제할 수 없어요.';
       case 'toast.wallet_detail_refresh':
         return '화면을 아래로 당겨 최신 데이터를 가져와 주세요.';
-      case 'alert.error_tx1':
+      case 'alert.error_tx.not_parsed':
         return ({required Object error}) => '트랜잭션 파싱 실패: ${error}';
-      case 'alert.error_tx2':
+      case 'alert.error_tx.not_created':
         return ({required Object error}) => '트랜잭션 생성 실패 ${error}';
-      case 'alert.error_send1':
+      case 'alert.error_send.broadcasting_failed':
         return ({required Object error}) => '[전송 실패]\n${error}';
-      case 'alert.error_send2':
+      case 'alert.error_send.insufficient_balance':
         return '잔액이 부족해요';
-      case 'alert.error_send3':
+      case 'alert.error_send.minimum_amount':
         return ({required Object bitcoin}) => '${bitcoin} BTC 부터 전송할 수 있어요';
-      case 'alert.error_send4':
+      case 'alert.error_send.poor_network':
         return '네트워크 상태가 좋지 않아\n처음으로 돌아갑니다.';
-      case 'alert.error_sign1':
+      case 'alert.error_send.insufficient_fee':
+        return '[전송 실패]\n수수료율을 높여서\n다시 시도해주세요.';
+      case 'alert.signed_psbt.invalid_qr':
         return '잘못된 QR코드예요.\n다시 확인해 주세요.';
-      case 'alert.error_sign2':
+      case 'alert.signed_psbt.wrong_send_info':
         return '전송 정보가 달라요.\n처음부터 다시 시도해 주세요.';
-      case 'alert.error_sign3':
+      case 'alert.signed_psbt.need_more_sign':
         return ({required Object count}) => '${count}개 서명이 더 필요해요';
-      case 'alert.error_sign5':
+      case 'alert.signed_psbt.invalid_signature':
         return '잘못된 서명 정보에요. 다시 시도해 주세요.';
-      case 'alert.error_scan1':
+      case 'alert.scan_failed':
         return ({required Object error}) => '\'[스캔 실패] ${error}\'';
-      case 'alert.error_scan2':
+      case 'alert.scan_failed_description':
         return ({required Object error}) =>
             'QR코드 스캔에 실패했어요. 다시 시도해 주세요.\n${error}';
-      case 'alert.tutorial_title':
+      case 'alert.tutorial.title':
         return '도움이 필요하신가요?';
-      case 'alert.tutorial_msg':
+      case 'alert.tutorial.description':
         return '튜토리얼 사이트로\n안내해 드릴게요';
-      case 'alert.tutorial_btn':
+      case 'alert.tutorial.btn_view':
         return '튜토리얼 보기';
-      case 'alert.pin1_title':
+      case 'alert.forgot_password.title':
         return '비밀번호를 잊으셨나요?';
-      case 'alert.pin1_text':
+      case 'alert.forgot_password.description':
         return '[다시 설정]을 눌러 비밀번호를 초기화할 수 있어요. 비밀번호를 바꾸면 동기화된 지갑 목록이 초기화 돼요.';
-      case 'alert.pin1_btn':
+      case 'alert.forgot_password.btn_reset':
         return '다시 설정';
-      case 'alert.wallet1_title':
+      case 'alert.wallet_add.update_failed':
         return '업데이트 실패';
-      case 'alert.wallet1_text':
+      case 'alert.wallet_add.update_failed_description':
         return ({required Object name}) => '${name}에 업데이트할 정보가 없어요';
-      case 'alert.wallet2_title':
+      case 'alert.wallet_add.duplicate_name':
         return '이름 중복';
-      case 'alert.wallet2_text':
+      case 'alert.wallet_add.duplicate_name_description':
         return '같은 이름을 가진 지갑이 있습니다.\n이름을 변경한 후 동기화 해주세요.';
-      case 'alert.wallet3_title':
+      case 'alert.wallet_add.add_failed':
         return '보기 전용 지갑 추가 실패';
-      case 'alert.wallet3_text':
+      case 'alert.wallet_add.add_failed_description':
         return '잘못된 지갑 정보입니다.';
-      case 'alert.wallet4_title':
+      case 'alert.wallet_delete.confirm_delete':
         return '지갑 삭제';
-      case 'alert.wallet5_text':
+      case 'alert.wallet_delete.confirm_delete_description':
         return '지갑을 정말 삭제하시겠어요?';
-      case 'alert.app_title':
+      case 'alert.update.title':
         return '업데이트 알림';
-      case 'alert.app_text':
+      case 'alert.update.description':
         return '안정적인 서비스 이용을 위해\n최신 버전으로 업데이트 해주세요.';
-      case 'alert.app_btn1':
+      case 'alert.update.btn_update':
         return '업데이트 하기';
-      case 'alert.app_btn2':
+      case 'alert.update.btn_do_later':
         return '다음에 하기';
-      case 'alert.utxo1_title':
+      case 'alert.error_occurs':
         return '오류 발생';
-      case 'alert.utxo1_text':
+      case 'alert.contact_admin':
         return ({required Object error}) => '관리자에게 문의하세요. ${error}';
-      case 'alert.utxo2_title':
+      case 'alert.tag_apply.title':
         return '태그 적용';
-      case 'alert.utxo2_text':
+      case 'alert.tag_apply.description':
         return '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?';
-      case 'alert.utxo2_btn':
+      case 'alert.tag_apply.btn_apply':
         return '적용하기';
-      case 'alert.tx_detail_title':
+      case 'alert.tx_detail.fetch_failed':
         return '트랜잭션 가져오기 실패';
-      case 'alert.tx_detail_text':
+      case 'alert.tx_detail.fetch_failed_description':
         return '잠시 후 다시 시도해 주세요';
-      case 'alert.tag_title':
+      case 'alert.tag_delete.title':
         return '태그 삭제';
-      case 'alert.tag_text1':
+      case 'alert.tag_delete.description':
         return ({required Object name}) => '#${name}를 정말로 삭제하시겠어요?\n';
-      case 'alert.tag_text2':
-        return ({required Object count}) => '${count}개  UTXO에 적용되어 있어요.';
-      case 'alert.faucet1':
+      case 'alert.tag_delete.description_utxo_tag':
+        return ({required Object name, required Object count}) =>
+            '${name}를 정말로 삭제하시겠어요?\n${count}개 UTXO에 적용되어 있어요.';
+      case 'alert.faucet.no_test_bitcoin':
+        return '수도꼭지 단수 상태예요. 잠시 후 다시 시도해 주세요.';
+      case 'alert.faucet.check_address':
         return '올바른 주소인지 확인해 주세요';
-      case 'alert.faucet2':
+      case 'alert.faucet.try_again':
         return ({required Object count}) => '${count} 후에 다시 시도해 주세요';
       default:
         return null;

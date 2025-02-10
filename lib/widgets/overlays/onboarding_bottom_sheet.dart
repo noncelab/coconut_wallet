@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -65,7 +66,7 @@ class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
                     child: Row(
                       children: [
                         Text(
-                          '건너뛰기 |',
+                          t.onboarding_bottom_sheet.skip,
                           style: Styles.caption.merge(
                             TextStyle(
                               color: _isCountdownFinished
@@ -121,7 +122,7 @@ class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      '사용하시다 도움이 필요할 때',
+                      t.onboarding_bottom_sheet.when_need_help,
                       style: Styles.h3.merge(
                         const TextStyle(
                           fontWeight: FontWeight.w500,
@@ -130,11 +131,11 @@ class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
                     ),
                     RichText(
                       text: TextSpan(
-                        text: '튜토리얼 안내 버튼',
+                        text: t.onboarding_bottom_sheet.guide_btn,
                         style: Styles.h3,
                         children: <TextSpan>[
                           TextSpan(
-                            text: '을 눌러주세요',
+                            text: t.onboarding_bottom_sheet.press,
                             style: Styles.h3.merge(
                               const TextStyle(
                                 fontWeight: FontWeight.w500,

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
@@ -52,7 +53,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         return AnimatedDialog(
           context: buildContext,
           lottieAddress: 'assets/lottie/pin-locked-success.json',
-          // body: '비밀번호가 설정되었습니다.',
           duration: 400,
         );
       },
@@ -115,11 +115,12 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           bool isAlreadyUsingPin = await _comparePin(pin);
 
           if (isAlreadyUsingPin) {
-            returnToBackSequence('이미 사용중인 비밀번호예요', firstSequence: true);
+            returnToBackSequence(t.error.pin_already_in_use,
+                firstSequence: true);
             return;
           }
         } catch (error) {
-          returnToBackSequence('처리 중 문제가 발생했어요', isError: true);
+          returnToBackSequence(t.error.pin_processing_failed, isError: true);
           return;
         }
         setState(() {
@@ -142,7 +143,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
       if (pinConfirm.length == 4) {
         if (pin != pinConfirm) {
-          returnToBackSequence('비밀번호가 일치하지 않아요');
+          returnToBackSequence(t.error.pin_incorrect);
           return;
         }
 
@@ -157,7 +158,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         await Provider.of<WalletProvider>(context, listen: false)
             .encryptWalletSecureData(hashedPin)
             .catchError((e) {
-          returnToBackSequence('저장 중 문제가 발생했어요', isError: true);
+          returnToBackSequence(t.error.pin_saving_failed, isError: true);
         });
 
         _authProvider.savePinSet(hashedPin).then((_) async {
@@ -166,7 +167,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           Navigator.pop(context);
           Navigator.pop(context);
         }).catchError((e) {
-          returnToBackSequence('저장 중 문제가 발생했어요', isError: true);
+          returnToBackSequence(t.error.pin_saving_failed, isError: true);
         });
       }
     }
@@ -175,7 +176,9 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   @override
   Widget build(BuildContext context) {
     return PinInputPad(
-      title: step == 0 ? '새로운 비밀번호를 눌러주세요' : '다시 한번 확인할게요',
+      title: step == 0
+          ? t.pin_setting_screen.new_password
+          : t.pin_setting_screen.enter_again,
       pin: step == 0 ? pin : pinConfirm,
       errorMessage: errorMessage,
       onKeyTap: _onKeyTap,

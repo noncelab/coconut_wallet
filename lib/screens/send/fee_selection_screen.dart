@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -65,7 +66,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
           return Scaffold(
               backgroundColor: MyColors.black,
               appBar: CustomAppBar.buildWithNext(
-                  title: "수수료",
+                  title: t.fee,
                   context: context,
                   isActive: (isNetworkOn ?? false) &&
                       _estimatedFee != null &&
@@ -74,7 +75,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                   onBackPressed: () {
                     Navigator.pop(context);
                   },
-                  nextButtonTitle: '완료',
+                  nextButtonTitle: t.complete,
                   onNextPressed: _onDone,
                   isBottom: true),
               body: SafeArea(
@@ -97,13 +98,13 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                 color: MyColors.transparentWhite_12, width: 1)),
                         child: Text(
                             _selectedFeeLevel == null
-                                ? '직접 입력'
+                                ? t.input_directly
                                 : _selectedFeeLevel!.text,
                             style: Styles.caption),
                       ),
                       Text(
                           _estimatedFee != null
-                              ? '${(satoshiToBitcoinString(_estimatedFee!))} BTC'
+                              ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
                               : '',
                           style: Styles.fee),
                       Selector<UpbitConnectModel, int?>(
@@ -131,16 +132,18 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                         widget.isRecommendedFeeFetchSuccess == false)
                       CustomTooltip(
                           richText: RichText(
-                              text: const TextSpan(
-                                  text: '추천 수수료를 조회하지 못했어요. 수수료를 직접 입력해 주세요.')),
+                              text: TextSpan(
+                                  text: t.error.fee_selection
+                                      .recommended_fee_unavailable)),
                           showIcon: true,
                           type: TooltipType.error),
                     if (_estimatedFee != null && _estimatedFee! >= kMaxFeeLimit)
                       CustomTooltip(
                           richText: RichText(
                               text: TextSpan(
-                                  text:
-                                      '설정하신 수수료가 ${UnitUtil.satoshiToBitcoin(kMaxFeeLimit)}BTC 이상이에요.')),
+                                  text: t.tooltip.recommended_fee2(
+                                      bitcoin: UnitUtil.satoshiToBitcoin(
+                                          kMaxFeeLimit)))),
                           showIcon: true,
                           type: TooltipType.warning),
 
@@ -172,13 +175,14 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                               onTap: () {
                                 showTextFieldDialog(
                                   context: context,
-                                  content: '수수료를 자연수로 입력해 주세요.',
+                                  content:
+                                      t.text_field.enter_fee_as_natural_number,
                                   controller: _customFeeController,
                                   textInputType: TextInputType.number,
                                   onPressed: _onCustomFeeRateInput,
                                 );
                               },
-                              text: '직접 입력하기',
+                              text: t.text_field.enter_fee_directly,
                               fontSize: 14,
                               lineHeight: 21,
                               defaultColor: _selectedFeeLevel == null
@@ -241,7 +245,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
         customSatsPerVb < widget.networkMinimumFeeRate!) {
       CustomToast.showToast(
           context: context,
-          text: "현재 최소 수수료는 ${widget.networkMinimumFeeRate} sats/vb 입니다.");
+          text: t.toast.min_fee(minimum: widget.networkMinimumFeeRate!));
       _customFeeController.clear();
       return null;
     }

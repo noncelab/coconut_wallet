@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
@@ -128,8 +129,8 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                       Navigator.pop(context);
                     },
                   ),
-                  const Text(
-                    '테스트 비트코인 받기',
+                  Text(
+                    t.faucet_request_bottom_sheet.title,
                     style: Styles.body1,
                   ),
                   Visibility(
@@ -157,14 +158,14 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 30),
-                  const Text(
-                    '받을 주소',
+                  Text(
+                    t.faucet_request_bottom_sheet.recipient,
                     style: Styles.body1Bold,
                   ),
                   const SizedBox(height: 10),
                   CustomTextField(
                       controller: textController,
-                      placeholder: "주소를 입력해 주세요.\n주소는 [받기] 버튼을 눌러서 확인할 수 있어요.",
+                      placeholder: t.faucet_request_bottom_sheet.placeholder,
                       onChanged: (text) {
                         _validateAddress(text.toLowerCase());
                       },
@@ -183,7 +184,8 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Text(
-                        '내 지갑($_walletName) 주소 - $_walletIndex',
+                        t.faucet_request_bottom_sheet
+                            .my_address(name: _walletName, index: _walletIndex),
                         style: Styles.body2Number,
                       ),
                     ),
@@ -217,8 +219,11 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                             )
                           : Text(
                               _isRequesting
-                                  ? '요청 중...'
-                                  : '${formatNumber(_requestAmount)} BTC 요청하기',
+                                  ? t.faucet_request_bottom_sheet.requesting
+                                  : t.faucet_request_bottom_sheet
+                                      .request_amount(
+                                          bitcoin:
+                                              formatNumber(_requestAmount)),
                               style: Styles.label.merge(TextStyle(
                                   color: (canRequestFaucet())
                                       ? MyColors.black
@@ -229,11 +234,12 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
             ),
             const SizedBox(height: 4),
             if (_state == _AvailabilityState.bad) ...{
-              _buildWarningMessage('수도꼭지 단수 상태예요. 잠시 후 다시 시도해 주세요.'),
+              _buildWarningMessage(t.alert.faucet.no_test_bitcoin),
             } else if (_state == _AvailabilityState.dailyLimitReached) ...{
-              _buildWarningMessage('$_remainingTimeString 후에 다시 시도해 주세요'),
+              _buildWarningMessage(
+                  t.alert.faucet.try_again(count: _remainingTimeString)),
             } else if (_isErrorInAddress) ...{
-              _buildWarningMessage('올바른 주소인지 확인해 주세요'),
+              _buildWarningMessage(t.alert.faucet.check_address),
             }
           ],
         ),

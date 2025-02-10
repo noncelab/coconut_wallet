@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -37,7 +38,7 @@ class SendUtxoSelectionScreen extends StatefulWidget {
 }
 
 class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
-  final String allLabelName = '전체';
+  final String allLabelName = t.all;
   final ScrollController _scrollController = ScrollController();
 
   late SendUtxoSelectionViewModel _viewModel;
@@ -80,9 +81,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           builder: (context, viewModel, child) => Scaffold(
             appBar: CustomAppBar.buildWithNext(
                 backgroundColor: MyColors.black,
-                title: 'UTXO 고르기',
+                title: t.select_utxo,
                 context: context,
-                nextButtonTitle: '완료',
+                nextButtonTitle: t.complete,
                 isActive: viewModel.estimatedFee != null &&
                     viewModel.estimatedFee != 0 &&
                     viewModel.errorState == null,
@@ -330,8 +331,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         CustomDialogs.showCustomAlertDialog(
           context,
-          title: '오류 발생',
-          message: '관리자에게 문의하세요. ${e.toString()}',
+          title: t.alert.error_occurs,
+          message: t.alert.contact_admin(error: e.toString()),
           onConfirm: () {
             Navigator.of(context).pop();
             Navigator.of(context).pop();
@@ -359,8 +360,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     if (_viewModel.hasTaggedUtxo()) {
       CustomDialogs.showCustomAlertDialog(
         context,
-        title: '태그 적용',
-        message: '기존 UTXO의 태그를 새 UTXO에도 적용하시겠어요?',
+        title: t.alert.tag_apply.title,
+        message: t.alert.tag_apply.description,
         onConfirm: () {
           Navigator.of(context).pop();
           _viewModel.saveUsedUtxoIdsWhenTagged(isTagsMoveAllowed: true);
@@ -371,9 +372,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           _viewModel.saveUsedUtxoIdsWhenTagged(isTagsMoveAllowed: false);
           _moveToSendConfirm();
         },
-        confirmButtonText: '적용하기',
+        confirmButtonText: t.alert.tag_apply.btn_apply,
         confirmButtonColor: MyColors.primary,
-        cancelButtonText: '아니오',
+        cancelButtonText: t.no,
       );
     } else {
       _moveToSendConfirm();
@@ -452,7 +453,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
             child: Row(
               children: [
                 Text(
-                  'UTXO 합계',
+                  t.utxo_total,
                   style: Styles.body2Bold.merge(
                     TextStyle(
                         color: errorState == ErrorState.insufficientBalance ||
@@ -467,7 +468,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 Visibility(
                   visible: selectedUtxoListLength != 0,
                   child: Text(
-                    '($selectedUtxoListLength개)',
+                    t.utxo_count(count: selectedUtxoListLength),
                     style: Styles.caption.merge(
                       TextStyle(
                           fontFamily: 'Pretendard',
@@ -485,8 +486,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                       Text(
                         // Transaction.estimatedFee,
                         selectedUtxoListLength == 0
-                            ? '0 BTC'
-                            : '${satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()} BTC',
+                            ? '0 ${t.btc}'
+                            : '${satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()} ${t.btc}',
                         style: Styles.body1Number.merge(TextStyle(
                             color: errorState ==
                                         ErrorState.insufficientBalance ||
@@ -579,7 +580,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   ),
                   CustomUnderlinedButton(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    text: '모두 해제',
+                    text: t.unselect_all,
                     onTap: () {
                       _removeUtxoOrderDropdown();
                       _deselectAll();
@@ -588,7 +589,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   SvgPicture.asset('assets/svg/row-divider.svg'),
                   CustomUnderlinedButton(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    text: '모두 선택',
+                    text: t.select_all,
                     onTap: () async {
                       _removeUtxoOrderDropdown();
                       _selectAll();

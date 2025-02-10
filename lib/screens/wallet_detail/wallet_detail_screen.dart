@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -291,7 +292,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     ),
                   ),
                   FaucetTooltip(
-                    text: '테스트용 비트코인으로 마음껏 테스트 해보세요',
+                    text: t.tooltip.faucet,
                     isVisible: viewModel.faucetTooltipVisible,
                     width: MediaQuery.of(context).size.width,
                     iconPosition: _faucetIconPosition,
@@ -444,14 +445,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     if (state == WalletInitState.processing) {
       CustomToast.showToast(
-          context: context, text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
+          context: context, text: t.toast.fetching_onchain_data);
       return false;
     }
 
     if (!_isPullToRefreshing) {
       if (balance == null || state == WalletInitState.error) {
         CustomToast.showWarningToast(
-            context: context, text: '화면을 아래로 당겨 최신 데이터를 가져와 주세요.');
+            context: context, text: t.toast.wallet_detail_refresh);
         return false;
       }
     }

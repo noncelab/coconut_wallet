@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.dart';
@@ -25,8 +26,9 @@ class SendAmountScreen extends StatefulWidget {
 
 class _SendAmountScreenState extends State<SendAmountScreen> {
   final errorMessages = [
-    '잔액이 부족해요',
-    '${UnitUtil.satoshiToBitcoin(dustLimit + 1)}BTC 부터 전송할 수 있어요'
+    t.error.insufficient_balance,
+    t.alert.error_send
+        .minimum_amount(bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1))
   ];
   late SendAmountViewModel _viewModel;
 
@@ -44,7 +46,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
       child: Consumer<SendAmountViewModel>(
         builder: (context, viewModel, child) => Scaffold(
             appBar: CustomAppBar.buildWithNext(
-              title: '보내기',
+              title: t.send,
               context: context,
               onNextPressed: () => _goNextScreen('/fee-selection'),
               isActive: viewModel.isNextButtonEnabled,
@@ -67,8 +69,9 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                           MyColors.white.withOpacity(0.9),
                                       richText: RichText(
                                           text: TextSpan(
-                                        text:
-                                            '받기 완료된 비트코인만 전송 가능해요.\n받는 중인 금액: ${satoshiToBitcoinString(viewModel.unconfirmedBalance)} BTC',
+                                        text: t.tooltip.amount_to_be_sent(
+                                            bitcoin: satoshiToBitcoinString(
+                                                viewModel.unconfirmedBalance)),
                                         style: const TextStyle(
                                           fontFamily: 'Pretendard',
                                           fontWeight: FontWeight.normal,
@@ -121,7 +124,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                 child: RichText(
                                                     text: TextSpan(children: [
                                                   TextSpan(
-                                                      text: '최대 ',
+                                                      text: '${t.max} ',
                                                       style: Styles.caption.merge(TextStyle(
                                                           color: viewModel
                                                                       .errorIndex ==
@@ -134,7 +137,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                               .getFontFamily))),
                                                   TextSpan(
                                                       text:
-                                                          '${UnitUtil.satoshiToBitcoin(viewModel.confirmedBalance)} BTC',
+                                                          '${UnitUtil.satoshiToBitcoin(viewModel.confirmedBalance)} ${t.btc}',
                                                       style: Styles
                                                           .caption
                                                           .merge(TextStyle(
@@ -148,9 +151,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                 ])))),
                                         // BTC
                                         Text(
-                                          viewModel.input.isEmpty
-                                              ? '0 BTC'
-                                              : "${viewModel.input} BTC",
+                                          '${viewModel.input.isNotEmpty ? 0 : viewModel.input} ${t.btc}',
                                           style: TextStyle(
                                             fontFamily: CustomFonts
                                                 .number.getFontFamily,
@@ -178,7 +179,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                           padding:
                                               const EdgeInsets.only(top: 4),
                                           child: CustomUnderlinedButton(
-                                              text: 'UTXO 고르기',
+                                              text: t.select_utxo,
                                               fontSize: 14,
                                               lineHeight: 21,
                                               isEnable: viewModel.errorIndex ==

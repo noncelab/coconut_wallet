@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
@@ -43,7 +44,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
           return Scaffold(
               backgroundColor: MyColors.black,
               appBar: CustomAppBar.buildWithNext(
-                  title: "입력 정보 확인",
+                  title: t.send_confirm_screen.title,
                   context: context,
                   isActive: true,
                   onNextPressed: () {
@@ -57,7 +58,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                       context.loaderOverlay.hide();
                       showAlertDialog(
                           context: context,
-                          content: "트랜잭션 생성 실패 ${error.toString()}");
+                          content: t.alert.error_tx
+                              .not_created(error: error.toString()));
                     });
                   }),
               body: SafeArea(
@@ -69,8 +71,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                           TextSpan(
                               text: satoshiToBitcoinString(
                                   UnitUtil.bitcoinToSatoshi(_viewModel.amount)),
-                              children: const <TextSpan>[
-                                TextSpan(text: ' BTC', style: Styles.unit)
+                              children: <TextSpan>[
+                                TextSpan(text: ' ${t.btc}', style: Styles.unit)
                               ]),
                           style: Styles.balance1,
                         ),
@@ -102,28 +104,28 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                             child: Column(
                               children: [
                                 InformationItemCard(
-                                    label: '보낼 주소',
+                                    label: t.recipient,
                                     value: viewModel.address,
                                     isNumber: true),
                                 const Divider(
                                     color: MyColors.transparentWhite_12,
                                     height: 1),
                                 InformationItemCard(
-                                    label: '예상 수수료',
+                                    label: t.estimated_fee,
                                     value: viewModel.estimatedFee != null &&
                                             viewModel.estimatedFee != 0
-                                        ? '${satoshiToBitcoinString(viewModel.estimatedFee!)} BTC'
-                                        : '계산 실패',
+                                        ? '${satoshiToBitcoinString(viewModel.estimatedFee!)} ${t.btc}'
+                                        : t.calculation_failed,
                                     isNumber: true),
                                 const Divider(
                                     color: MyColors.transparentWhite_12,
                                     height: 1),
                                 InformationItemCard(
-                                    label: '총 소요 수량',
+                                    label: t.total_cost,
                                     value: viewModel.estimatedFee != null &&
                                             viewModel.estimatedFee != 0
                                         ? '${satoshiToBitcoinString(UnitUtil.bitcoinToSatoshi(viewModel.amount) + viewModel.estimatedFee!)} BTC'
-                                        : '계산 실패',
+                                        : t.calculation_failed,
                                     isNumber: true),
                               ],
                             ))),

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -102,14 +103,15 @@ class _PinCheckScreenState extends State<PinCheckScreen>
         if (widget.appEntrance) {
           attempt += 1;
           if (attempt < 3) {
-            errorMessage = '${kMaxNumberOfAttempts - attempt}번 다시 시도할 수 있어요';
+            errorMessage = t.error.pin_check
+                .trial_count(count: kMaxNumberOfAttempts - attempt);
             _shufflePinNumbers();
             vibrateLightDouble();
           } else {
-            errorMessage = '더 이상 시도할 수 없어요\n앱을 종료해 주세요';
+            errorMessage = t.error.pin_check.failed;
           }
         } else {
-          errorMessage = '비밀번호가 일치하지 않아요';
+          errorMessage = t.error.pin_check.unmatched;
           _shufflePinNumbers();
           vibrateLightDouble();
         }
@@ -149,11 +151,11 @@ class _PinCheckScreenState extends State<PinCheckScreen>
     vibrateMedium();
 
     CustomDialogs.showCustomAlertDialog(context,
-        title: '비밀번호를 잊으셨나요?',
-        message: '[다시 설정]을 눌러 비밀번호를 초기화할 수 있어요. 비밀번호를 바꾸면 동기화된 지갑 목록이 초기화 돼요.',
-        confirmButtonText: '다시 설정',
+        title: t.alert.forgot_password.title,
+        message: t.alert.forgot_password.description,
+        confirmButtonText: t.alert.forgot_password.btn_reset,
         confirmButtonColor: MyColors.warningRed,
-        cancelButtonText: '닫기', onConfirm: () async {
+        cancelButtonText: t.close, onConfirm: () async {
       await _authProvider.resetPassword();
       widget.onComplete?.call();
       Navigator.of(context).pop();
@@ -167,7 +169,7 @@ class _PinCheckScreenState extends State<PinCheckScreen>
     return PinInputPad(
       key: _pinInputScreenKey,
       appBarVisible: widget.appEntrance ? false : true,
-      title: widget.appEntrance ? '' : '비밀번호를 눌러주세요',
+      title: widget.appEntrance ? '' : t.pin_check_screen.text,
       initOptionVisible: widget.appEntrance ? true : false,
       pin: pin,
       errorMessage: errorMessage,
