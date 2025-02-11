@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -12,8 +13,8 @@ class Bip39ListScreen extends StatefulWidget {
 }
 
 class _Bip39ListScreenState extends State<Bip39ListScreen> {
-  final String _titleText = '니모닉 문구 단어집';
-  final String _hintText = '영문으로 검색해 보세요';
+  final String _titleText = t.mnemonic_wordlist;
+  final String _hintText = t.text_field.search_mnemonic_word;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
 
@@ -214,7 +215,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    '\'${_searchController.text}\' 검색 결과',
+                    t.bip39_list_screen.result(text: _searchController.text),
                     style: Styles.body1.merge(
                       const TextStyle(
                         color: MyColors.white,
@@ -228,7 +229,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                       padding: const EdgeInsets.only(top: 100),
                       child: Center(
                         child: Text(
-                          '검색 결과가 없어요',
+                          t.bip39_list_screen.no_result,
                           style: Styles.body1Bold.merge(
                             const TextStyle(
                                 color: MyColors.transparentWhite_70),

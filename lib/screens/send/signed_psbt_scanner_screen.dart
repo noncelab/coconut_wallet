@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -41,7 +42,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       child: Scaffold(
         backgroundColor: MyColors.black,
         appBar: CustomAppBar.build(
-          title: '서명 트랜잭션 읽기',
+          title: t.signed_psbt_scanner_screen.title,
           context: context,
           hasRightIcon: false,
           backgroundColor: MyColors.black.withOpacity(0.95),
@@ -59,9 +60,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
               child: CustomTooltip(
                   backgroundColor: MyColors.white.withOpacity(0.9),
                   richText: RichText(
-                    text: const TextSpan(
+                    text: TextSpan(
                       text: '[5] ',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Pretendard',
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
@@ -71,9 +72,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
                       ),
                       children: [
                         TextSpan(
-                          text:
-                              '볼트 앱에서 생성된 서명 트랜잭션이 보이시나요? 이제, QR 코드를 스캔해 주세요.',
-                          style: TextStyle(
+                          text: t.tooltip.scan_signed_psbt,
+                          style: const TextStyle(
                             fontWeight: FontWeight.normal,
                           ),
                         ),
@@ -121,20 +121,21 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     try {
       psbt = _viewModel.parseBase64EncodedToPsbt(signedPsbt);
     } catch (e) {
-      _showAlert('잘못된 QR코드예요.\n다시 확인해 주세요.');
+      _showAlert(t.alert.signed_psbt.invalid_qr);
       return;
     }
 
     try {
       if (!_viewModel.isPsbtAmountAndTxHashEqualTo(psbt)) {
-        _showAlert('전송 정보가 달라요.\n처음부터 다시 시도해 주세요.');
+        _showAlert(t.alert.signed_psbt.wrong_send_info);
         return;
       }
 
       if (_viewModel.isMultisig) {
         int missingCount = _viewModel.getMissingSignaturesCount(psbt);
         if (missingCount > 0) {
-          _showAlert('$missingCount 서명이 더 필요해요', isBack: true);
+          _showAlert(t.alert.signed_psbt.need_more_sign(count: missingCount),
+              isBack: true);
           controller?.pauseCamera();
           await _stopCamera();
           return;
@@ -149,7 +150,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         Navigator.pushReplacementNamed(context, '/broadcasting');
       }
     } catch (e) {
-      _showAlert('QR코드 스캔에 실패했어요. 다시 시도해 주세요.\n$e');
+      _showAlert(t.alert.scan_failed_description(error: e));
     }
   }
 
@@ -167,9 +168,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
     String errorMessage;
     if (message.contains('Invalid Scheme')) {
-      errorMessage = '잘못된 서명 정보에요. 다시 시도해 주세요.';
+      errorMessage = t.alert.signed_psbt.invalid_signature;
     } else {
-      errorMessage = '[스캔 실패] $message';
+      errorMessage = t.alert.scan_failed(error: message);
     }
 
     showAlertDialog(

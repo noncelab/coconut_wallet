@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
@@ -45,7 +46,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: CustomAppBar.build(
-          title: '보기 전용 지갑 추가',
+          title: t.wallet_add_scanner_screen.text,
           context: context,
           hasRightIcon: true,
           isBottom: true,
@@ -96,9 +97,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               child: CustomTooltip(
                   backgroundColor: MyColors.white.withOpacity(0.9),
                   richText: RichText(
-                    text: const TextSpan(
-                      text: '새로운 지갑을 추가하거나 이미 추가한 지갑의 정보를 업데이트할 수 있어요. ',
-                      style: TextStyle(
+                    text: TextSpan(
+                      text: t.tooltip.wallet_add1,
+                      style: const TextStyle(
                         fontFamily: 'Pretendard',
                         fontWeight: FontWeight.normal,
                         fontSize: 15,
@@ -108,26 +109,26 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                       ),
                       children: <TextSpan>[
                         TextSpan(
-                          text: '볼트',
-                          style: TextStyle(
+                          text: t.tooltip.wallet_add2,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         TextSpan(
-                          text: '에서 사용하시려는 지갑을 선택하고, ',
-                          style: TextStyle(
+                          text: t.tooltip.wallet_add3,
+                          style: const TextStyle(
                             fontWeight: FontWeight.normal,
                           ),
                         ),
                         TextSpan(
-                          text: '내보내기 ',
-                          style: TextStyle(
+                          text: t.tooltip.wallet_add4,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         TextSpan(
-                          text: '화면에 나타나는 QR 코드를 스캔해 주세요.',
-                          style: TextStyle(
+                          text: t.tooltip.wallet_add5,
+                          style: const TextStyle(
                             fontWeight: FontWeight.normal,
                           ),
                         ),
@@ -143,7 +144,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     Logger.log('${DateTime.now().toIso8601String()}_onPermissionSet $p');
     if (!p) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('no Permission')),
+        SnackBar(content: Text(t.snackbar.no_permission)),
       );
     }
   }
@@ -176,11 +177,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               {
                 vibrateLightDouble();
                 CustomDialogs.showCustomAlertDialog(context,
-                    title: '업데이트 실패',
-                    message: "${TextUtils.ellipsisIfLonger(
+                    title: t.alert.wallet_add.update_failed,
+                    message: t.alert.wallet_add.update_failed_description(
+                        name: TextUtils.ellipsisIfLonger(
                       model.getWalletById(value.walletId!).name,
                       maxLength: 15,
-                    )}에 업데이트할 정보가 없어요", onConfirm: () {
+                    )), onConfirm: () {
                   _isProcessing = false;
                   Navigator.pop(context);
                 });
@@ -189,8 +191,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             case WalletSyncResult.existingName:
               vibrateLightDouble();
               CustomDialogs.showCustomAlertDialog(context,
-                  title: '이름 중복',
-                  message: "같은 이름을 가진 지갑이 있습니다.\n이름을 변경한 후 동기화 해주세요.",
+                  title: t.alert.wallet_add.duplicate_name,
+                  message: t.alert.wallet_add.duplicate_name_description,
                   onConfirm: () {
                 _isProcessing = false;
                 Navigator.pop(context);
@@ -200,7 +202,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           vibrateLightDouble();
 
           CustomDialogs.showCustomAlertDialog(context,
-              title: '보기 전용 지갑 추가 실패',
+              title: t.alert.wallet_add.add_failed,
               message: error.toString(), onConfirm: () {
             _isProcessing = false;
             Navigator.pop(context);
@@ -214,7 +216,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         context.loaderOverlay.hide();
         Logger.log('Exception while QR Processing : $error');
         CustomDialogs.showCustomAlertDialog(context,
-            title: '보기 전용 지갑 추가 실패', message: "잘못된 지갑 정보입니다.", onConfirm: () {
+            title: t.alert.wallet_add.add_failed,
+            message: t.alert.wallet_add.add_failed_description, onConfirm: () {
           _isProcessing = false;
           Navigator.pop(context);
         });

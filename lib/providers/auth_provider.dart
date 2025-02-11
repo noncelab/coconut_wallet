@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
@@ -69,7 +70,7 @@ class AuthProvider extends ChangeNotifier {
     bool authenticated = false;
     try {
       authenticated = await _auth.authenticate(
-        localizedReason: '생체 인증을 진행해 주세요',
+        localizedReason: t.bio_auth_required,
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: true,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
@@ -60,8 +61,8 @@ class _StartScreenState extends State<StartScreen> {
   Future<bool> _showUpdateDialog() async {
     return (await CustomDialogs.showFutureCustomAlertDialog(
           context,
-          title: '업데이트 알림',
-          message: '안정적인 서비스 이용을 위해\n최신 버전으로 업데이트 해주세요.',
+          title: t.alert.update.title,
+          message: t.alert.update.description,
           onConfirm: () async {
             await _viewModel.launchUpdate();
             return true;
@@ -69,9 +70,9 @@ class _StartScreenState extends State<StartScreen> {
           onCancel: () {
             return false;
           },
-          confirmButtonText: '업데이트하기',
+          confirmButtonText: t.alert.update.btn_update,
           confirmButtonColor: MyColors.primary,
-          cancelButtonText: '다음에 하기',
+          cancelButtonText: t.alert.update.btn_do_later,
         )) ??
         false;
   }

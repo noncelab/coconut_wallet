@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -56,7 +57,7 @@ class _WalletListTermsShortcutCardState
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('모르는 용어가 있으신가요?',
+                Text(t.wallet_list_terms_shortcut_card.any_terms_you_dont_know,
                     style: Styles.body1
                         .merge(const TextStyle(fontWeight: FontWeight.w600))),
                 SizedBox(
@@ -64,8 +65,8 @@ class _WalletListTermsShortcutCardState
                   child: Text.rich(
                     TextSpan(
                       children: [
-                        const TextSpan(
-                          text: '오른쪽 위 ',
+                        TextSpan(
+                          text: t.wallet_list_terms_shortcut_card.top_right,
                           style: Styles.label,
                         ),
                         TextSpan(
@@ -73,8 +74,8 @@ class _WalletListTermsShortcutCardState
                           style: Styles.label
                               .merge(const TextStyle(letterSpacing: -2.0)),
                         ),
-                        const TextSpan(
-                          text: ' - 용어집 또는 여기를 눌러 바로가기',
+                        TextSpan(
+                          text: t.wallet_list_terms_shortcut_card.click_to_jump,
                           style: Styles.label,
                         ),
                       ],

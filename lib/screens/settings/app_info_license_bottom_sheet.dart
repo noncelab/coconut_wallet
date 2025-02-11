@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -47,7 +48,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
       child: Scaffold(
         backgroundColor: MyColors.black,
         appBar: CustomAppBar.build(
-          title: '라이선스 안내',
+          title: t.license_bottom_sheet.title,
           context: context,
           onBackPressed: null,
           hasRightIcon: false,
@@ -59,12 +60,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
             itemCount: dependencies.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
-                String copyrightText =
-                    '코코넛 월렛은 MIT 라이선스를 따르며 저작권은 대한민국의 논스랩 주식회사에 있습니다. MIT 라이선스 전문은 ';
-                String copyrightTextMiddle =
-                    '에서 확인해 주세요.\n\n이 애플리케이션에 포함된 타사 소프트웨어에 대한 저작권을 다음과 같이 명시합니다. 이에 대해 궁금한 사항이 있으시면 ';
-                String mitFullTextLink = 'https://mit-license.org';
-                String copyrightTextLast = '으로 문의해 주시기 바랍니다.';
+                const String mitFullTextLink = 'https://mit-license.org';
 
                 return Column(
                   children: [
@@ -81,7 +77,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                         color: MyColors.transparentWhite_90,
                       ),
                       child: Text(
-                        'Coconut Wallet',
+                        t.license_bottom_sheet.coconut_wallet,
                         style: Styles.body2Bold.merge(
                           const TextStyle(
                             color: MyColors.black,
@@ -98,7 +94,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                       ),
                       child: RichText(
                         text: TextSpan(
-                          text: copyrightText,
+                          text: t.license_bottom_sheet.copyright_text1,
                           style: Styles.caption,
                           children: <TextSpan>[
                             TextSpan(
@@ -113,7 +109,8 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                                   ..onTap = () async {
                                     launchURL(mitFullTextLink);
                                   }),
-                            TextSpan(text: copyrightTextMiddle),
+                            TextSpan(
+                                text: t.license_bottom_sheet.copyright_text2),
                             TextSpan(
                                 text: CONTACT_EMAIL_ADDRESS, // 색상을 다르게 할 텍스트
                                 style: Styles.caption.merge(
@@ -125,10 +122,10 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () async {
                                     launchURL(
-                                        'mailto:$CONTACT_EMAIL_ADDRESS?subject=[볼트] 라이선스 문의');
+                                        'mailto:$CONTACT_EMAIL_ADDRESS?subject=${t.license_bottom_sheet.email_subject}');
                                   }),
                             TextSpan(
-                              text: copyrightTextLast,
+                              text: t.license_bottom_sheet.copyright_text3,
                               style: Styles.caption,
                             ),
                           ],

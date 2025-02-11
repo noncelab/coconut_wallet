@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -26,12 +27,12 @@ class _WalletListAddGuideCardState extends State<WalletListAddGuideCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '보기 전용 지갑을 추가해 주세요',
+          Text(
+            t.wallet_list_add_guide_card.add_watch_only,
             style: Styles.title5,
           ),
-          const Text(
-            '오른쪽 위 + 버튼을 눌러도 추가할 수 있어요',
+          Text(
+            t.wallet_list_add_guide_card.top_right_icon,
             style: Styles.label,
           ),
           const SizedBox(height: 16),
@@ -46,7 +47,7 @@ class _WalletListAddGuideCardState extends State<WalletListAddGuideCard> {
                 vertical: 12,
               ),
               child: Text(
-                '바로 추가하기',
+                t.wallet_list_add_guide_card.btn_add,
                 style: Styles.label.merge(
                   const TextStyle(
                     color: MyColors.black,

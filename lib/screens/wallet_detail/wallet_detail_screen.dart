@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -15,13 +16,13 @@ import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/body/wallet_detail_body.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/overlays/faucet_request_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/overlays/receive_address_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/selector/wallet_detail_tab.dart';
 import 'package:coconut_wallet/widgets/tooltip/faucet_tooltip.dart';
 import 'package:flutter/cupertino.dart';
@@ -291,7 +292,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     ),
                   ),
                   FaucetTooltip(
-                    text: '테스트용 비트코인으로 마음껏 테스트 해보세요',
+                    text: t.tooltip.faucet,
                     isVisible: viewModel.faucetTooltipVisible,
                     width: MediaQuery.of(context).size.width,
                     iconPosition: _faucetIconPosition,
@@ -444,14 +445,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     if (state == WalletInitState.processing) {
       CustomToast.showToast(
-          context: context, text: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요.");
+          context: context, text: t.toast.fetching_onchain_data);
       return false;
     }
 
     if (!_isPullToRefreshing) {
       if (balance == null || state == WalletInitState.error) {
         CustomToast.showWarningToast(
-            context: context, text: '화면을 아래로 당겨 최신 데이터를 가져와 주세요.');
+            context: context, text: t.toast.wallet_detail_refresh);
         return false;
       }
     }

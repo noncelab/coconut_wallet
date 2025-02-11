@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/constants/app_info.dart';
-import 'package:coconut_wallet/widgets/overlays/user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';

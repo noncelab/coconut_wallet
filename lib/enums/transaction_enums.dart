@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
+
 enum TransactionStatus { received, receiving, sent, sending, self, selfsending }
 
 enum TransactionFeeLevel { fastest, halfhour, hour }
@@ -6,22 +8,22 @@ extension TransactionFeeLevelExtension on TransactionFeeLevel {
   String get text {
     switch (this) {
       case TransactionFeeLevel.fastest:
-        return "빠른 전송";
+        return t.transaction_enums.high_priority;
       case TransactionFeeLevel.halfhour:
-        return "보통 전송";
+        return t.transaction_enums.medium_priority;
       case TransactionFeeLevel.hour:
-        return "느린 전송";
+        return t.transaction_enums.low_priority;
     }
   }
 
   String get expectedTime {
     switch (this) {
       case TransactionFeeLevel.fastest:
-        return "~10분";
+        return t.transaction_enums.expected_time_high_priority;
       case TransactionFeeLevel.halfhour:
-        return "~30분";
+        return t.transaction_enums.expected_time_medium_priority;
       case TransactionFeeLevel.hour:
-        return "~1시간";
+        return t.transaction_enums.expected_time_low_priority;
     }
   }
 }

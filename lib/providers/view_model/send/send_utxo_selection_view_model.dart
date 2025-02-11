@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -19,14 +20,20 @@ import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 enum ErrorState {
-  insufficientBalance('잔액이 부족하여 수수료를 낼 수 없어요'),
-  failedToFetchRecommendedFee(
-      '추천 수수료를 조회하지 못했어요.\n\'변경\'버튼을 눌러서 수수료를 직접 입력해 주세요.'),
-  insufficientUtxo('UTXO 합계가 모자라요');
+  insufficientBalance,
+  failedToFetchRecommendedFee,
+  insufficientUtxo;
 
-  final String displayMessage;
-
-  const ErrorState(this.displayMessage);
+  String get displayMessage {
+    switch (this) {
+      case ErrorState.insufficientBalance:
+        return t.errors.fee_selection_error.insufficient_balance;
+      case ErrorState.failedToFetchRecommendedFee:
+        return t.errors.fee_selection_error.recommended_fee_unavailable;
+      case ErrorState.insufficientUtxo:
+        return t.errors.fee_selection_error.insufficient_utxo;
+    }
+  }
 }
 
 class SendUtxoSelectionViewModel extends ChangeNotifier {
@@ -62,7 +69,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     FeeInfoWithLevel(level: TransactionFeeLevel.hour),
   ];
 
-  String selectedUtxoTagName = '전체'; // 선택된 태그
+  String selectedUtxoTagName = t.all; // 선택된 태그, default: 전체
   final Map<String, List<UtxoTag>> _utxoTagMap = {};
   int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
 
