@@ -20,15 +20,15 @@ class SecuritySelfCheckBottomSheet extends StatefulWidget {
 class _SecuritySelfCheckBottomSheetState
     extends State<SecuritySelfCheckBottomSheet> {
   final List<ChecklistItem> _items = [
-    ChecklistItem(title: t.security_self_check_bottom_sheet.text1),
-    ChecklistItem(title: t.security_self_check_bottom_sheet.text2),
-    ChecklistItem(title: t.security_self_check_bottom_sheet.text3),
-    ChecklistItem(title: t.security_self_check_bottom_sheet.text4),
-    ChecklistItem(title: t.security_self_check_bottom_sheet.text5),
-    ChecklistItem(title: t.security_self_check_bottom_sheet.text6),
-    ChecklistItem(title: t.security_self_check_bottom_sheet.text7),
-    ChecklistItem(title: t.security_self_check_bottom_sheet.text8),
-    ChecklistItem(title: t.security_self_check_bottom_sheet.text9),
+    ChecklistItem(title: t.security_self_check_bottom_sheet.check1),
+    ChecklistItem(title: t.security_self_check_bottom_sheet.check2),
+    ChecklistItem(title: t.security_self_check_bottom_sheet.check3),
+    ChecklistItem(title: t.security_self_check_bottom_sheet.check4),
+    ChecklistItem(title: t.security_self_check_bottom_sheet.check5),
+    ChecklistItem(title: t.security_self_check_bottom_sheet.check6),
+    ChecklistItem(title: t.security_self_check_bottom_sheet.check7),
+    ChecklistItem(title: t.security_self_check_bottom_sheet.check8),
+    ChecklistItem(title: t.security_self_check_bottom_sheet.check9),
   ];
 
   // bool get _allItemsChecked {
@@ -65,7 +65,7 @@ class _SecuritySelfCheckBottomSheetState
                         horizontal: 24, vertical: 16),
                     decoration: BoxDecorations.boxDecoration,
                     child: Text(
-                      t.security_self_check_bottom_sheet.text10,
+                      t.security_self_check_bottom_sheet.guidance,
                       style: Styles.subLabel.merge(const TextStyle(
                           fontWeight: FontWeight.w600, color: Colors.white)),
                     )),

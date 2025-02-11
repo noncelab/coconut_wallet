@@ -4,6 +4,9 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
+// Usage
+// wallet_list_screen.dart
+// broadcast_complete_screen.dart (app_reveiw_service.dart가 호출)
 class UserExperienceSurveyBottomSheet extends StatelessWidget {
   final bool isFirst;
 

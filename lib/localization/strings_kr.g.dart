@@ -467,16 +467,16 @@ class TranslationsSecuritySelfCheckBottomSheetKr {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
-	String get text1 => '나의 개인키는 내가 스스로 책임집니다.';
-	String get text2 => '니모닉 문구 화면을 캡처하거나 촬영하지 않습니다.';
-	String get text3 => '니모닉 문구를 네트워크와 연결된 환경에 저장하지 않습니다.';
-	String get text4 => '니모닉 문구의 순서와 단어의 철자를 확인합니다.';
-	String get text5 => '패스프레이즈에 혹시 의도하지 않은 문자가 포함되지는 않았는지 한번 더 확인합니다.';
-	String get text6 => '니모닉 문구와 패스프레이즈는 아무도 없는 안전한 곳에서 확인합니다.';
-	String get text7 => '니모닉 문구와 패스프레이즈를 함께 보관하지 않습니다.';
-	String get text8 => '소액으로 보내기 테스트를 한 후 지갑 사용을 시작합니다.';
-	String get text9 => '위 사항을 주기적으로 점검하고, 안전하게 니모닉 문구를 보관하겠습니다.';
-	String get text10 => '아래 점검 항목을 숙지하고 비트코인을 반드시 안전하게 보관합니다.';
+	String get check1 => '나의 개인키는 내가 스스로 책임집니다.';
+	String get check2 => '니모닉 문구 화면을 캡처하거나 촬영하지 않습니다.';
+	String get check3 => '니모닉 문구를 네트워크와 연결된 환경에 저장하지 않습니다.';
+	String get check4 => '니모닉 문구의 순서와 단어의 철자를 확인합니다.';
+	String get check5 => '패스프레이즈에 혹시 의도하지 않은 문자가 포함되지는 않았는지 한번 더 확인합니다.';
+	String get check6 => '니모닉 문구와 패스프레이즈는 아무도 없는 안전한 곳에서 확인합니다.';
+	String get check7 => '니모닉 문구와 패스프레이즈를 함께 보관하지 않습니다.';
+	String get check8 => '소액으로 보내기 테스트를 한 후 지갑 사용을 시작합니다.';
+	String get check9 => '위 사항을 주기적으로 점검하고, 안전하게 니모닉 문구를 보관하겠습니다.';
+	String get guidance => '아래 자가 점검 항목을 숙지하고 니모닉 문구를 반드시 안전하게 보관합니다.';
 }
 
 // Path: tag_bottom_sheet
@@ -1016,16 +1016,16 @@ extension on Translations {
 			case 'onboarding_bottom_sheet.when_need_help': return '사용하시다 도움이 필요할 때';
 			case 'onboarding_bottom_sheet.guide_btn': return '튜토리얼 안내 버튼';
 			case 'onboarding_bottom_sheet.press': return '을 눌러주세요';
-			case 'security_self_check_bottom_sheet.text1': return '나의 개인키는 내가 스스로 책임집니다.';
-			case 'security_self_check_bottom_sheet.text2': return '니모닉 문구 화면을 캡처하거나 촬영하지 않습니다.';
-			case 'security_self_check_bottom_sheet.text3': return '니모닉 문구를 네트워크와 연결된 환경에 저장하지 않습니다.';
-			case 'security_self_check_bottom_sheet.text4': return '니모닉 문구의 순서와 단어의 철자를 확인합니다.';
-			case 'security_self_check_bottom_sheet.text5': return '패스프레이즈에 혹시 의도하지 않은 문자가 포함되지는 않았는지 한번 더 확인합니다.';
-			case 'security_self_check_bottom_sheet.text6': return '니모닉 문구와 패스프레이즈는 아무도 없는 안전한 곳에서 확인합니다.';
-			case 'security_self_check_bottom_sheet.text7': return '니모닉 문구와 패스프레이즈를 함께 보관하지 않습니다.';
-			case 'security_self_check_bottom_sheet.text8': return '소액으로 보내기 테스트를 한 후 지갑 사용을 시작합니다.';
-			case 'security_self_check_bottom_sheet.text9': return '위 사항을 주기적으로 점검하고, 안전하게 니모닉 문구를 보관하겠습니다.';
-			case 'security_self_check_bottom_sheet.text10': return '아래 점검 항목을 숙지하고 비트코인을 반드시 안전하게 보관합니다.';
+			case 'security_self_check_bottom_sheet.check1': return '나의 개인키는 내가 스스로 책임집니다.';
+			case 'security_self_check_bottom_sheet.check2': return '니모닉 문구 화면을 캡처하거나 촬영하지 않습니다.';
+			case 'security_self_check_bottom_sheet.check3': return '니모닉 문구를 네트워크와 연결된 환경에 저장하지 않습니다.';
+			case 'security_self_check_bottom_sheet.check4': return '니모닉 문구의 순서와 단어의 철자를 확인합니다.';
+			case 'security_self_check_bottom_sheet.check5': return '패스프레이즈에 혹시 의도하지 않은 문자가 포함되지는 않았는지 한번 더 확인합니다.';
+			case 'security_self_check_bottom_sheet.check6': return '니모닉 문구와 패스프레이즈는 아무도 없는 안전한 곳에서 확인합니다.';
+			case 'security_self_check_bottom_sheet.check7': return '니모닉 문구와 패스프레이즈를 함께 보관하지 않습니다.';
+			case 'security_self_check_bottom_sheet.check8': return '소액으로 보내기 테스트를 한 후 지갑 사용을 시작합니다.';
+			case 'security_self_check_bottom_sheet.check9': return '위 사항을 주기적으로 점검하고, 안전하게 니모닉 문구를 보관하겠습니다.';
+			case 'security_self_check_bottom_sheet.guidance': return '아래 자가 점검 항목을 숙지하고 니모닉 문구를 반드시 안전하게 보관합니다.';
 			case 'tag_bottom_sheet.title_new_tag': return '새 태그';
 			case 'tag_bottom_sheet.title_edit_tag': return '태그 편집';
 			case 'tag_bottom_sheet.add_new_tag': return '새 태그 만들기';
