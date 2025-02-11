@@ -1,44 +1,46 @@
-import 'package:coconut_lib/coconut_lib.dart' as lib;
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
+import 'package:coconut_wallet/utils/result.dart';
 
 /// @nodoc
 abstract class NodeClient {
   int gapLimit = 20;
   int get reqId;
 
-  Future<String> broadcast(String rawTransaction);
+  Future<Result<String, AppError>> broadcast(String rawTransaction);
 
-  Future<int> getNetworkMinimumFeeRate();
+  Future<Result<int, AppError>> getNetworkMinimumFeeRate();
 
-  Future<BlockTimestamp> getLatestBlock();
+  Future<Result<BlockTimestamp, AppError>> getLatestBlock();
 
-  Future<String> getTransaction(String transactionHash);
+  Future<Result<String, AppError>> getTransaction(String transactionHash);
 
   /// [knownTransactionHashes]: already confirmed transaction hashes
   Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
-      lib.WalletBase wallet,
+      WalletBase wallet,
       {Set<String>? knownTransactionHashes,
       int receiveUsedIndex = 0,
       int changeUsedIndex = 0});
 
   Stream<BaseStreamState<BlockTimestamp>> fetchBlocksByHeight(Set<int> heights);
 
-  Future<WalletBalance> getBalance(lib.WalletBase wallet,
+  Future<Result<WalletBalance, AppError>> getBalance(WalletBase wallet,
       {int receiveUsedIndex = 0, int changeUsedIndex = 0});
 
-  Stream<BaseStreamState<lib.Transaction>> fetchTransactionDetails(
+  Stream<BaseStreamState<Transaction>> fetchTransactionDetails(
       Set<String> transactionHashes);
 
-  Stream<BaseStreamState<UTXO>> fetchUtxos(lib.WalletBase wallet,
+  Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
       {int receiveUsedIndex = 0, int changeUsedIndex = 0});
 
-  Future<List<lib.Transaction>> fetchPreviousTransactions(
-      lib.Transaction transaction, List<lib.Transaction> existingTxList);
+  Future<Result<List<Transaction>, AppError>> fetchPreviousTransactions(
+      Transaction transaction, List<Transaction> existingTxList);
 
   void dispose();
 }

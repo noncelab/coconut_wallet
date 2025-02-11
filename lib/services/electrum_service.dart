@@ -1,6 +1,7 @@
-import 'package:async/async.dart';
-import 'package:coconut_lib/coconut_lib.dart' as lib;
+import 'package:async/async.dart' as async;
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -10,6 +11,8 @@ import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/network/electrum/electrum_client.dart';
 import 'package:coconut_wallet/services/network/node_client.dart';
 import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/result.dart';
 
 /// @nodoc
 class ElectrumService extends NodeClient {
@@ -49,14 +52,26 @@ class ElectrumService extends NodeClient {
     return instance;
   }
 
-  @override
-  Future<String> broadcast(String rawTransaction) async {
-    return _client.broadcast(rawTransaction);
+  Future<Result<T, AppError>> _wrapResult<T>(Future<T> future) async {
+    try {
+      return Result.success(await future);
+    } catch (e) {
+      if (e is AppError) {
+        return Result.failure(e);
+      }
+
+      return Result.failure(ErrorCodes.nodeUnknown);
+    }
   }
 
   @override
-  Future<int> getNetworkMinimumFeeRate() {
-    return _client.getMempoolFeeHistogram().then((feeHistogram) {
+  Future<Result<String, AppError>> broadcast(String rawTransaction) async {
+    return _wrapResult(_client.broadcast(rawTransaction));
+  }
+
+  @override
+  Future<Result<int, AppError>> getNetworkMinimumFeeRate() {
+    return _wrapResult(_client.getMempoolFeeHistogram().then((feeHistogram) {
       if (feeHistogram.isEmpty) {
         return 1;
       }
@@ -69,23 +84,24 @@ class ElectrumService extends NodeClient {
       });
 
       return minimumFeeRate.ceil();
-    });
+    }));
   }
 
   @override
-  Future<BlockTimestamp> getLatestBlock() async {
-    return _client.getCurrentBlock().then((result) {
+  Future<Result<BlockTimestamp, AppError>> getLatestBlock() async {
+    return _wrapResult(_client.getCurrentBlock().then((result) {
       var blockHeader = BlockHeader.parse(result.height, result.hex);
       return BlockTimestamp(
           blockHeader.height,
           DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
               isUtc: true));
-    });
+    }));
   }
 
   @override
-  Future<String> getTransaction(String transactionHash) async {
-    return _client.getTransaction(transactionHash);
+  Future<Result<String, AppError>> getTransaction(
+      String transactionHash) async {
+    return _wrapResult(_client.getTransaction(transactionHash));
   }
 
   @override
@@ -95,7 +111,7 @@ class ElectrumService extends NodeClient {
 
   @override
   Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
-      lib.WalletBase wallet,
+      WalletBase wallet,
       {Set<String>? knownTransactionHashes,
       int receiveUsedIndex = 0,
       int changeUsedIndex = 0}) async* {
@@ -110,14 +126,14 @@ class ElectrumService extends NodeClient {
         initialIndex: changeUsedIndex);
 
     await for (final state
-        in StreamGroup.merge([receiveStream, changeStream])) {
+        in async.StreamGroup.merge([receiveStream, changeStream])) {
       yield state;
       if (state.hasError) return;
     }
   }
 
   Stream<BaseStreamState<FetchTransactionResponse>> _fetchTransactions(
-      lib.WalletBase wallet,
+      WalletBase wallet,
       {Set<String>? knownTransactionHashes,
       int initialIndex = 0,
       required bool isChange}) async* {
@@ -168,7 +184,7 @@ class ElectrumService extends NodeClient {
         }
       });
 
-      yield* StreamGroup.merge(streams);
+      yield* async.StreamGroup.merge(streams);
 
       currentAddressIndex += addressScripts.length;
       if (currentAddressIndex >= addressScanLimit) break;
@@ -197,31 +213,34 @@ class ElectrumService extends NodeClient {
       }
     });
 
-    await for (final state in StreamGroup.merge(streams)) {
+    await for (final state in async.StreamGroup.merge(streams)) {
       yield state;
       if (state.hasError) return;
     }
   }
 
   @override
-  Future<WalletBalance> getBalance(lib.WalletBase wallet,
+  Future<Result<WalletBalance, AppError>> getBalance(WalletBase wallet,
       {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async {
-    int receiveScanLimit = receiveUsedIndex + 1;
-    int changeScanLimit = changeUsedIndex + 1;
+    return _wrapResult(Future(() async {
+      int receiveScanLimit = receiveUsedIndex + 1;
+      int changeScanLimit = changeUsedIndex + 1;
 
-    final receiveBalanceFutures = _getBalance(wallet, receiveScanLimit, false);
-    final changeBalanceFutures = _getBalance(wallet, changeScanLimit, true);
+      final receiveBalanceFutures =
+          _getBalance(wallet, receiveScanLimit, false);
+      final changeBalanceFutures = _getBalance(wallet, changeScanLimit, true);
 
-    final [receive, change] = await Future.wait([
-      Future.wait(receiveBalanceFutures),
-      Future.wait(changeBalanceFutures)
-    ]);
+      final [receive, change] = await Future.wait([
+        Future.wait(receiveBalanceFutures),
+        Future.wait(changeBalanceFutures)
+      ]);
 
-    return WalletBalance(receive, change);
+      return WalletBalance(receive, change);
+    }));
   }
 
   Iterable<Future<AddressBalance>> _getBalance(
-      lib.WalletBase wallet, int scanLimit, bool isChange) {
+      WalletBase wallet, int scanLimit, bool isChange) {
     if (scanLimit == 0) return [];
     Map<int, String> scripts =
         _prepareAddressScriptsMap(wallet, 0, scanLimit, isChange);
@@ -234,14 +253,14 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Future<List<lib.Transaction>> fetchPreviousTransactions(
-      lib.Transaction transaction, List<lib.Transaction> existingTxList) async {
+  Future<Result<List<Transaction>, AppError>> fetchPreviousTransactions(
+      Transaction transaction, List<Transaction> existingTxList) async {
     if (transaction.inputs.isEmpty) {
-      return [];
+      return Result.success([]);
     }
 
     if (_isCoinbaseTransaction(transaction)) {
-      return [];
+      return Result.success([]);
     }
 
     Set<String> toFetchTransactionHashes = {};
@@ -256,24 +275,30 @@ class ElectrumService extends NodeClient {
 
     var futures = toFetchTransactionHashes.map((transactionHash) async {
       var inputTx = await _client.getTransaction(transactionHash);
-      return lib.Transaction.parse(inputTx);
+      return Transaction.parse(inputTx);
     });
 
-    List<lib.Transaction> fetchedTransactions = await Future.wait(futures);
+    try {
+      List<Transaction> fetchedTransactions = await Future.wait(futures);
 
-    fetchedTransactions.addAll(existingTxList);
+      fetchedTransactions.addAll(existingTxList);
 
-    List<lib.Transaction> previousTransactions = [];
+      List<Transaction> previousTransactions = [];
 
-    for (var input in transaction.inputs) {
-      previousTransactions.add(fetchedTransactions
-          .firstWhere((tx) => tx.transactionHash == input.transactionHash));
+      for (var input in transaction.inputs) {
+        previousTransactions.add(fetchedTransactions
+            .firstWhere((tx) => tx.transactionHash == input.transactionHash));
+      }
+
+      return Result.success(previousTransactions);
+    } catch (e) {
+      // TODO: 트랜잭션 조회 오류 핸들링
+      Logger.error(e);
+      return Result.failure(ErrorCodes.nodeUnknown);
     }
-
-    return previousTransactions;
   }
 
-  bool _isCoinbaseTransaction(lib.Transaction tx) {
+  bool _isCoinbaseTransaction(Transaction tx) {
     if (tx.inputs.length != 1) {
       return false;
     }
@@ -287,46 +312,46 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Stream<BaseStreamState<lib.Transaction>> fetchTransactionDetails(
+  Stream<BaseStreamState<Transaction>> fetchTransactionDetails(
       Set<String> transactionHashes) async* {
-    Iterable<Stream<BaseStreamState<lib.Transaction>>> streams =
+    Iterable<Stream<BaseStreamState<Transaction>>> streams =
         transactionHashes.map((transactionHash) async* {
       try {
         var transaction = await _client.getTransaction(transactionHash);
-        yield BaseStreamState<lib.Transaction>.success(
-            'fetchTransactionDetails', lib.Transaction.parse(transaction));
+        yield BaseStreamState<Transaction>.success(
+            'fetchTransactionDetails', Transaction.parse(transaction));
       } catch (e, stack) {
-        yield BaseStreamState<lib.Transaction>.error(
+        yield BaseStreamState<Transaction>.error(
             'fetchTransactionDetails', e.toString(), stack);
       }
     });
 
-    await for (final state in StreamGroup.merge(streams)) {
+    await for (final state in async.StreamGroup.merge(streams)) {
       yield state;
       if (state.hasError) return;
     }
   }
 
   @override
-  Stream<BaseStreamState<UTXO>> fetchUtxos(lib.WalletBase wallet,
+  Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
       {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async* {
     final receiveStream = _fetchUtxos(wallet, receiveUsedIndex + 1, false);
     final changeStream = _fetchUtxos(wallet, changeUsedIndex + 1, true);
 
     await for (final state
-        in StreamGroup.merge([receiveStream, changeStream])) {
+        in async.StreamGroup.merge([receiveStream, changeStream])) {
       yield state;
       if (state.hasError) return;
     }
   }
 
-  Stream<BaseStreamState<UTXO>> _fetchUtxos(
-      lib.WalletBase wallet, int scanLimit, bool isChange) async* {
+  Stream<BaseStreamState<UtxoState>> _fetchUtxos(
+      WalletBase wallet, int scanLimit, bool isChange) async* {
     if (scanLimit == 0) return;
     Map<int, String> scripts =
         _prepareAddressScriptsMap(wallet, 0, scanLimit, isChange);
 
-    Iterable<Stream<BaseStreamState<UTXO>>> streams =
+    Iterable<Stream<BaseStreamState<UtxoState>>> streams =
         scripts.entries.map((entry) async* {
       try {
         var utxos = await _client.getUnspentList(entry.value);
@@ -336,27 +361,27 @@ class ElectrumService extends NodeClient {
               '${wallet.derivationPath}/${isChange ? 1 : 0}/${entry.key}';
 
           // TODO: Utxo 타임스탬프 추가
-          yield BaseStreamState<UTXO>.success(
+          yield BaseStreamState<UtxoState>.success(
               'fetchUtxos',
-              UTXO(
-                  '0',
-                  utxo.height.toString(),
-                  utxo.value,
-                  wallet.getAddress(entry.key, isChange: isChange),
-                  derivationPath,
-                  utxo.txHash,
-                  utxo.txPos));
+              UtxoState(
+                  transactionHash: utxo.txHash,
+                  index: utxo.txPos,
+                  amount: utxo.value,
+                  derivationPath: derivationPath,
+                  blockHeight: utxo.height,
+                  to: wallet.getAddress(entry.key, isChange: isChange)));
         }
       } catch (e, stack) {
-        yield BaseStreamState<UTXO>.error('fetchUtxos', e.toString(), stack);
+        yield BaseStreamState<UtxoState>.error(
+            'fetchUtxos', e.toString(), stack);
       }
     });
 
-    yield* StreamGroup.merge(streams);
+    yield* async.StreamGroup.merge(streams);
   }
 
   Map<int, String> _prepareAddressScriptsMap(
-    lib.WalletBase wallet,
+    WalletBase wallet,
     int startIndex,
     int endIndex,
     bool isChange,
@@ -377,11 +402,11 @@ class ElectrumService extends NodeClient {
     }
   }
 
-  String _getScriptForAddress(lib.WalletBase wallet, String address) {
-    if (wallet.addressType == lib.AddressType.p2wpkh) {
-      return lib.ScriptPublicKey.p2wpkh(address).serialize();
-    } else if (wallet.addressType == lib.AddressType.p2wsh) {
-      return lib.ScriptPublicKey.p2wsh(address).serialize();
+  String _getScriptForAddress(WalletBase wallet, String address) {
+    if (wallet.addressType == AddressType.p2wpkh) {
+      return ScriptPublicKey.p2wpkh(address).serialize();
+    } else if (wallet.addressType == AddressType.p2wsh) {
+      return ScriptPublicKey.p2wsh(address).serialize();
     }
     throw 'Unsupported address type: ${wallet.addressType.scriptType}';
   }

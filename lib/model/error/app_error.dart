@@ -40,4 +40,7 @@ class ErrorCodes {
   static const AppError realmNotFound = AppError('1202', '데이터를 찾을 수 없습니다.');
   static const AppError realmException =
       AppError('1203', 'Realm 작업 중 오류가 발생했습니다.');
+
+  static const AppError nodeUnknown =
+      AppError('1300', '노드 연결 중 알 수 없는 오류가 발생했습니다.');
 }
