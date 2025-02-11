@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
-import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -25,7 +25,7 @@ const _divider = Divider(color: MyColors.transparentWhite_15);
 
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
-  final model.UTXO utxo;
+  final UtxoState utxo;
   final bool isChange;
 
   const UtxoDetailScreen({
@@ -370,11 +370,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                 Navigator.pushNamed(
                                     context, '/transaction-detail', arguments: {
                                   'id': widget.id,
-                                  'txHash': widget.utxo.txHash
+                                  'txHash': widget.utxo.transactionHash
                                 });
                               },
                               child: Text(
-                                widget.utxo.txHash,
+                                widget.utxo.transactionHash,
                                 style: Styles.body2Number
                                     .merge(const TextStyle(height: 22 / 14)),
                               ),

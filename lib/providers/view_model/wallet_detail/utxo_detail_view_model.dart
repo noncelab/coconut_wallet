@@ -1,5 +1,4 @@
-import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -9,7 +8,7 @@ import 'package:flutter/material.dart';
 
 class UtxoDetailViewModel extends ChangeNotifier {
   final int _walletId;
-  final model.UTXO _utxo;
+  final UtxoState _utxo;
 
   final UtxoTagProvider _tagProvider;
   final TransactionProvider _txProvider;
@@ -20,7 +19,8 @@ class UtxoDetailViewModel extends ChangeNotifier {
       this._walletId, this._utxo, this._tagProvider, this._txProvider) {
     _dateString = DateTimeUtil.formatDatetime(_utxo.timestamp).split('|');
     _tagProvider.initTagList(_walletId, utxoId: _utxo.utxoId);
-    _txProvider.initTransaction(_walletId, _utxo.txHash, utxoTo: _utxo.to);
+    _txProvider.initTransaction(_walletId, _utxo.transactionHash,
+        utxoTo: _utxo.to);
     _txProvider.initUtxoInOutputList();
   }
 

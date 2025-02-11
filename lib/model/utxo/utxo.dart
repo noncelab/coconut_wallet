@@ -1,24 +1,29 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 
-class UTXO {
+class UtxoState extends UTXO {
   final String timestamp;
   final String blockHeight;
-  final int amount;
   final String to; // 소유 주소
-  final String derivationPath;
-  final String txHash;
-  final int index;
   List<UtxoTag>? tags;
 
-  UTXO(this.timestamp, this.blockHeight, this.amount, this.to,
-      this.derivationPath, this.txHash, this.index,
-      {this.tags});
+  UtxoState({
+    required String transactionHash,
+    required int index,
+    required int amount,
+    required String derivationPath,
+    required this.timestamp,
+    required this.blockHeight,
+    required this.to,
+    this.tags,
+  }) : super(transactionHash, index, amount, derivationPath);
 
-  static void sortUTXO(List<UTXO> utxos, UtxoOrderEnum order) {
+  static void sortUtxo(List<UtxoState> utxos, UtxoOrderEnum order) {
     int getLastIndex(String path) => int.parse(path.split('/').last);
 
-    int compareUTXOs(UTXO a, UTXO b, bool isAscending, bool byAmount) {
+    int compareUtxos(
+        UtxoState a, UtxoState b, bool isAscending, bool byAmount) {
       int primaryCompare = byAmount
           ? (isAscending ? a.amount : b.amount)
               .compareTo(isAscending ? b.amount : a.amount)
@@ -40,16 +45,16 @@ class UTXO {
     utxos.sort((a, b) {
       switch (order) {
         case UtxoOrderEnum.byAmountDesc:
-          return compareUTXOs(a, b, false, true);
+          return compareUtxos(a, b, false, true);
         case UtxoOrderEnum.byAmountAsc:
-          return compareUTXOs(a, b, true, true);
+          return compareUtxos(a, b, true, true);
         case UtxoOrderEnum.byTimestampDesc:
-          return compareUTXOs(a, b, false, false);
+          return compareUtxos(a, b, false, false);
         case UtxoOrderEnum.byTimestampAsc:
-          return compareUTXOs(a, b, true, false);
+          return compareUtxos(a, b, true, false);
       }
     });
   }
 
-  String get utxoId => '$txHash$index';
+  String get utxoId => '$transactionHash$index';
 }

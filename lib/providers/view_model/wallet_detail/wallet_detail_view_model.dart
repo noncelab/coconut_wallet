@@ -1,12 +1,12 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/utxo/utxo.dart';
 import 'package:coconut_wallet/model/wallet/address.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
 import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
-import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -15,9 +15,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/cupertino.dart';
 
 class WalletDetailViewModel extends ChangeNotifier {
@@ -29,7 +27,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
-  List<model.UTXO> _utxoList = [];
+  List<UtxoState> _utxoList = [];
 
   WalletListItemBase? _walletListBaseItem;
   // TODO: walletFeature
@@ -122,7 +120,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
 
   List<TransferDTO> get txList => _txProvider.txList;
-  List<model.UTXO> get utxoList => _utxoList;
+  List<UtxoState> get utxoList => _utxoList;
 
   String get walletAddress => _walletAddress;
 
@@ -145,7 +143,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   // }
 
   void getUtxoListWithHoldingAddress() {
-    List<model.UTXO> utxos = [];
+    List<UtxoState> utxos = [];
 
     // TODO: walletFeature
     // if (_walletFeature.walletStatus?.utxoList.isNotEmpty == true) {
@@ -175,7 +173,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
     _isUtxoListLoadComplete = true;
     _utxoList = utxos;
-    model.UTXO.sortUTXO(_utxoList, _selectedUtxoOrder);
+    UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
   }
 
   void removeFaucetTooltip() {
@@ -253,7 +251,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   void updateUtxoFilter(UtxoOrderEnum selectedUtxoFilter) async {
     _selectedUtxoOrder = selectedUtxoFilter;
-    model.UTXO.sortUTXO(_utxoList, selectedUtxoFilter);
+    UtxoState.sortUtxo(_utxoList, selectedUtxoFilter);
     notifyListeners();
   }
 

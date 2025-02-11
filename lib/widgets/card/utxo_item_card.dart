@@ -9,7 +9,7 @@ import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 
 class UTXOItemCard extends StatelessWidget {
-  final model.UTXO utxo;
+  final model.UtxoState utxo;
   final Unit currentUnit;
   final Function onPressed;
 
