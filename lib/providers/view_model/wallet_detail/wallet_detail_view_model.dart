@@ -2,10 +2,11 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/address.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
-import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -24,6 +25,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final TransactionProvider _txProvider;
   final UtxoTagProvider _tagProvider;
+  final ConnectivityProvider _connectProvider;
+  final UpbitConnectModel _upbitConnectModel;
 
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
@@ -55,18 +58,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   String _walletName = '';
   String _receiveAddressIndex = '';
 
-  double _requestAmount = 0.0;
-  int _requestCount = 0;
-
-  /// faucet 상태 조회 후 수령할 수 있는 최댓값과 최솟값
-  double _faucetMaxAmount = 0;
-  double _faucetMinAmount = 0;
-
-  bool _isFaucetRequestLimitExceeded = false; // Faucet 요청가능 횟수 초과 여부
   bool _isRequesting = false;
 
   WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
-      this._tagProvider) {
+      this._tagProvider, this._connectProvider, this._upbitConnectModel) {
     // 지갑 상세 초기화
     _prevWalletInitState = _walletProvider.walletInitState;
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
@@ -99,14 +94,13 @@ class WalletDetailViewModel extends ChangeNotifier {
     // _walletAddressBook = walletBaseItem.walletBase.addressBook;
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetRecord();
-    _getFaucetStatus();
+    //_getFaucetStatus();
 
     showFaucetTooltip();
   }
 
   String get derivationPath => _derivationPath;
   bool get faucetTooltipVisible => _faucetTooltipVisible;
-  bool get isFaucetRequestLimitExceeded => _isFaucetRequestLimitExceeded;
 
   bool get isRequesting => _isRequesting;
 
@@ -114,7 +108,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
 
   String get receiveAddressIndex => _receiveAddressIndex;
-  double get requestAmount => _requestAmount;
 
   List<UtxoTag> get selectedTagList => _tagProvider.selectedTagList;
   UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
@@ -122,6 +115,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   List<TransferDTO> get txList => _txProvider.txList;
   List<UtxoState> get utxoList => _utxoList;
 
+  int get walletId => _walletId;
   String get walletAddress => _walletAddress;
 
   // AddressBook get walletAddressBook => _walletAddressBook;
@@ -141,6 +135,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   //     return null;
   //   }
   // }
+  bool? get isNetworkOn => _connectProvider.isNetworkOn;
+  int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
 
   void getUtxoListWithHoldingAddress() {
     List<UtxoState> utxos = [];
@@ -181,14 +177,14 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> requestTestBitcoin(
-      String address, Function(bool, String) onResult) async {
+  Future<void> requestTestBitcoin(String address, double requestAmount,
+      Function(bool, String) onResult) async {
     _isRequesting = true;
     notifyListeners();
 
     try {
       final response = await _faucetService
-          .getTestCoin(FaucetRequest(address: address, amount: _requestAmount));
+          .getTestCoin(FaucetRequest(address: address, amount: requestAmount));
       if (response is FaucetResponse) {
         onResult(true, '테스트 비트코인을 요청했어요. 잠시만 기다려 주세요.');
         _updateFaucetRecord();
@@ -199,6 +195,7 @@ class WalletDetailViewModel extends ChangeNotifier {
         onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       }
     } catch (e) {
+      Logger.error(e);
       // Error handling
       onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
@@ -224,26 +221,14 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
     _prevWalletInitState = _walletProvider.walletInitState;
 
-    if (_faucetRecord.count >= kMaxFaucetRequestCount) {
-      _isFaucetRequestLimitExceeded =
-          _faucetRecord.count >= kMaxFaucetRequestCount;
-    }
-
     try {
       final WalletListItemBase walletListItemBase =
           _walletProvider.getWalletById(_walletId);
+
       // TODO: address
       // _walletAddress =
       //     walletListItemBase.walletBase.getReceiveAddress().address;
       _walletAddress = '';
-
-      /// 다음 Faucet 요청 수량 계산 1 -> 0.00021 -> 0.00021
-      _requestCount = _faucetRecord.count;
-      if (_requestCount == 0) {
-        _requestAmount = _faucetMaxAmount;
-      } else if (_requestCount <= 2) {
-        _requestAmount = _faucetMinAmount;
-      }
     } catch (e) {}
 
     notifyListeners();
@@ -263,17 +248,12 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _checkFaucetRecord() {
+    _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     if (!_faucetRecord.isToday) {
       // 오늘 처음 요청
       _initFaucetRecord();
       _saveFaucetRecordToSharedPrefs();
       return;
-    }
-
-    if (_faucetRecord.count >= kMaxFaucetRequestCount) {
-      _isFaucetRequestLimitExceeded =
-          _faucetRecord.count >= kMaxFaucetRequestCount;
-      notifyListeners();
     }
   }
 
@@ -292,26 +272,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
     _prevTxCount = txCount;
     _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;
-  }
-
-  Future<void> _getFaucetStatus() async {
-    try {
-      final response = await _faucetService.getStatus();
-      if (response is FaucetStatusResponse) {
-        // _isLoading = false;
-        _faucetMaxAmount = response.maxLimit;
-        _faucetMinAmount = response.minLimit;
-        _requestCount = _faucetRecord.count;
-        if (_requestCount == 0) {
-          _requestAmount = _faucetMaxAmount;
-        } else if (_requestCount <= 2) {
-          _requestAmount = _faucetMinAmount;
-        }
-      }
-      // TODO: 에러 처리
-    } finally {
-      notifyListeners();
-    }
   }
 
   void _initFaucetRecord() {
@@ -333,7 +293,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     int dateTime = DateTime.now().millisecondsSinceEpoch;
     _faucetRecord =
         _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
-    _requestCount++;
     _saveFaucetRecordToSharedPrefs();
   }
 }

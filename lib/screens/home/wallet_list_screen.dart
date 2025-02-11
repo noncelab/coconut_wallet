@@ -1,8 +1,9 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
-import 'package:coconut_wallet/widgets/overlays/user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,14 +19,14 @@ import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_terms_shortcut_card.dart';
-import 'package:coconut_wallet/widgets/overlays/onboarding_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_onboarding_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/overlays/security_self_check_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/overlays/terms_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_security_self_check_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_terms_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/wallet_init_status_indicator.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -59,11 +60,11 @@ class _WalletListScreenState extends State<WalletListScreen>
   late WalletListViewModel _viewModel;
 
   final List<String> _dropdownButtons = [
-    '용어집',
-    '니모닉 문구 단어집',
-    '셀프 보안 점검',
-    '설정',
-    '앱 정보 보기'
+    t.glossary,
+    t.mnemonic_wordlist,
+    t.self_security_check,
+    t.settings,
+    t.view_app_info,
   ];
   late final List<Future<Object?> Function()> _dropdownActions;
 
@@ -98,7 +99,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                   _lastPressedAt = now;
                   Fluttertoast.showToast(
                     backgroundColor: MyColors.grey,
-                    msg: "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.",
+                    msg: t.toast.back_exit,
                     toastLength: Toast.LENGTH_SHORT,
                   );
                 } else {
@@ -313,7 +314,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       _viewModel.initWallet().catchError((_) {
         Logger.log('--> error catch');
       }).whenComplete(() {
-        Logger.log('---> wallet stateu: ${_viewModel.walletInitState}');
+        Logger.log('---> wallet state: ${_viewModel.walletInitState}');
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_viewModel.walletInitState == WalletInitState.error) {
             CustomToast.showWarningToast(

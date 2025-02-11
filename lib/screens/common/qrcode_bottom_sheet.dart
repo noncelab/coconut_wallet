@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
 
+// Usage:
+// address_list_screen.dart
+// wallet_info_screen.dart
 class QrcodeBottomSheet extends StatelessWidget {
   const QrcodeBottomSheet(
       {super.key, required this.qrData, this.qrcodeTopWidget, this.title});

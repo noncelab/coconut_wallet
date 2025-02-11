@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/cupertino.dart';
 
 import '../styles.dart';
@@ -17,7 +18,7 @@ class TestnetLabelWidget extends StatelessWidget {
         vertical: 4,
       ),
       child: Text(
-        '테스트넷',
+        t.testnet,
         style: Styles.label.merge(
           const TextStyle(
             fontSize: 10,

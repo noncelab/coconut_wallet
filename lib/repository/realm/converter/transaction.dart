@@ -76,10 +76,6 @@ class TransferDTO extends TransactionRecord {
       this.createdAt);
 
   DateTime? getDateTimeToDisplay() {
-    if (blockHeight != null && blockHeight == 0 && createdAt != null) {
-      return createdAt;
-    }
-
-    return timestamp;
+    return (blockHeight != null && blockHeight == 0) ? null : timestamp;
   }
 }

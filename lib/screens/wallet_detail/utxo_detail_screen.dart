@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -14,7 +15,7 @@ import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
-import 'package:coconut_wallet/widgets/overlays/tag_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
@@ -71,7 +72,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                 Scaffold(
                   backgroundColor: MyColors.black,
                   appBar: CustomAppBar.build(
-                    title: 'UTXO',
+                    title: t.utxo,
                     context: context,
                     showTestnetLabel: false,
                     hasRightIcon: true,
@@ -95,7 +96,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         child: Column(
                           children: [
                             HighlightedInfoArea(
-                              textList: viewModel.dateString,
+                              textList:
+                                  viewModel.dateString ?? ['--.--.--', '--:--'],
                               textStyle: Styles.body2Number.merge(
                                 const TextStyle(
                                   color: MyColors.white,
@@ -113,9 +115,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                         style: Styles.h1Number.merge(
                                             const TextStyle(
                                                 fontSize: 24, height: 1)),
-                                        children: const <TextSpan>[
+                                        children: <TextSpan>[
                                   TextSpan(
-                                      text: ' BTC', style: Styles.body2Number)
+                                      text: " ${t.btc}",
+                                      style: Styles.body2Number)
                                 ]))),
                             const SizedBox(
                               height: 8,
@@ -143,7 +146,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
                                   Text(
-                                    '승인 대기중',
+                                    t.utxo_detail_screen.pending,
                                     style: Styles.body3.merge(
                                       const TextStyle(
                                         color: MyColors.secondary,
@@ -216,7 +219,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                     ),
                                     const SizedBox(height: 8),
                                     InputOutputDetailRow(
-                                      address: '수수료',
+                                      address: t.fee,
                                       balance: 142,
                                       balanceMaxWidth:
                                           _balanceWidthSize.width > 0
@@ -273,8 +276,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             ),
                             const SizedBox(height: 25),
                             UnderlineButtonItemCard(
-                                label: '보유 주소',
-                                underlineButtonLabel: '멤풀 보기',
+                                label: t.utxo_detail_screen.address,
+                                underlineButtonLabel: t.view_mempool,
                                 onTapUnderlineButton: () => launchUrl(Uri.parse(
                                     "${CoconutWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
                                 isChangeTagVisible: widget.isChange,
@@ -299,7 +302,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                 )),
                             _divider,
                             UnderlineButtonItemCard(
-                              label: '거래 메모',
+                              label: t.tx_memo,
                               child: Text(
                                 tx.memo?.isNotEmpty == true ? tx.memo! : '-',
                                 style: Styles.body2Number
@@ -308,8 +311,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             ),
                             _divider,
                             UnderlineButtonItemCard(
-                              label: '태그',
-                              underlineButtonLabel: '편집',
+                              label: t.tag,
+                              underlineButtonLabel: t.edit,
                               onTapUnderlineButton: () {
                                 showModalBottomSheet(
                                   context: context,
@@ -364,8 +367,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             ),
                             _divider,
                             UnderlineButtonItemCard(
-                              label: '트랜잭션 ID',
-                              underlineButtonLabel: '거래 자세히 보기',
+                              label: t.tx_id,
+                              underlineButtonLabel: t.view_tx_details,
                               onTapUnderlineButton: () {
                                 Navigator.pushNamed(
                                     context, '/transaction-detail', arguments: {
@@ -381,8 +384,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             ),
                             _divider,
                             UnderlineButtonItemCard(
-                                label: '블록 번호',
-                                underlineButtonLabel: '멤풀 보기',
+                                label: t.block_num,
+                                underlineButtonLabel: t.view_mempool,
                                 onTapUnderlineButton: () => launchUrl(Uri.parse(
                                     "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
                                 child: Text(
@@ -432,7 +435,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                               ),
                               color: MyColors.white,
                               child: Text(
-                                'UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.',
+                                t.tooltip.utxo,
                                 style: Styles.caption.merge(TextStyle(
                                   height: 1.3,
                                   fontFamily: CustomFonts.text.getFontFamily,

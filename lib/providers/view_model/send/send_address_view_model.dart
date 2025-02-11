@@ -1,13 +1,14 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class SendAddressViewModel extends ChangeNotifier {
-  final invalidAddressMessage = '올바른 주소가 아니에요.';
-  final noTestnetAddressMessage = '테스트넷 주소가 아니에요.';
-  final noMainnetAddressMessage = '메인넷 주소가 아니에요.';
-  final noRegtestnetAddressMessage = '레그테스트넷 주소가 아니에요.';
+  final invalidAddressMessage = t.errors.address_error.invalid;
+  final noTestnetAddressMessage = t.errors.address_error.not_for_testnet;
+  final noMainnetAddressMessage = t.errors.address_error.not_for_mainnet;
+  final noRegtestnetAddressMessage = t.errors.address_error.not_for_regtest;
 
   late final SendInfoProvider _sendInfoProvider;
   late bool? _isNetworkOn;

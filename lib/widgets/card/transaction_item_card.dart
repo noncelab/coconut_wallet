@@ -176,7 +176,7 @@ class TransactionItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     List<String>? transactionTimeStamp = tx.getDateTimeToDisplay() == null
-        ? null
+        ? ['--.--.--', '--:--']
         : DateTimeUtil.formatTimeStamp(tx.getDateTimeToDisplay()!.toLocal());
 
     return ShrinkAnimationButton(
@@ -184,6 +184,7 @@ class TransactionItemCard extends StatelessWidget {
         onPressed: () {
           onPressed();
         },
+        borderWidth: 0,
         borderRadius: MyBorder.defaultRadiusValue,
         child: Container(
           height: 84,
@@ -198,7 +199,7 @@ class TransactionItemCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    transactionTimeStamp != null ? transactionTimeStamp[0] : '',
+                    transactionTimeStamp[0],
                     style: Styles.caption,
                   ),
                   const SizedBox(
@@ -216,7 +217,7 @@ class TransactionItemCard extends StatelessWidget {
                     width: 8,
                   ),
                   Text(
-                    transactionTimeStamp != null ? transactionTimeStamp[1] : '',
+                    transactionTimeStamp[1],
                     style: Styles.caption,
                   ),
                 ],

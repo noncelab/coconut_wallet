@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -7,7 +8,7 @@ import 'package:coconut_wallet/providers/view_model/send/send_address_view_model
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +48,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
         return Scaffold(
             backgroundColor: MyColors.black,
             appBar: CustomAppBar.build(
-              title: '보내기',
+              title: t.send,
               context: context,
               hasRightIcon: true,
               rightIconButton: IconButton(
@@ -82,7 +83,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                   child: Container(
                       padding: const EdgeInsets.only(top: 32),
                       child: Text(
-                        'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요',
+                        t.send_address_screen.text,
                         textAlign: TextAlign.center,
                         style: Styles.label
                             .merge(const TextStyle(color: MyColors.white)),
@@ -110,7 +111,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                           ),
                           child: viewModel.address != null
                               ? Text.rich(TextSpan(
-                                  text: '주소 ',
+                                  text: '${t.address} ',
                                   style: Styles.label.merge(const TextStyle(
                                       color: MyColors.darkgrey)),
                                   children: [
@@ -121,9 +122,9 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                                               fontFamily: CustomFonts
                                                   .number.getFontFamily,
                                               fontWeight: FontWeight.bold)),
-                                      const TextSpan(text: ' 붙여넣기')
+                                      TextSpan(text: ' ${t.paste}')
                                     ]))
-                              : Text('붙여넣기',
+                              : Text(t.paste,
                                   style: Styles.label.merge(const TextStyle(
                                       color: MyColors.transparentWhite_20))))))
             ]));
@@ -203,7 +204,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     Logger.log('${DateTime.now().toIso8601String()}_onPermissionSet $p');
     if (!p) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('no Permission')),
+        SnackBar(content: Text(t.snackbar.no_permission)),
       );
     }
   }

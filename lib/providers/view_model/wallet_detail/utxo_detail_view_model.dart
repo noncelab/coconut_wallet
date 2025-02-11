@@ -13,15 +13,18 @@ class UtxoDetailViewModel extends ChangeNotifier {
   final UtxoTagProvider _tagProvider;
   final TransactionProvider _txProvider;
 
-  List<String> _dateString = [];
+  late final List<String>? _dateString;
 
   UtxoDetailViewModel(
       this._walletId, this._utxo, this._tagProvider, this._txProvider) {
-    _dateString = DateTimeUtil.formatTimeStamp(_utxo.timestamp);
     _tagProvider.initTagList(_walletId, utxoId: _utxo.utxoId);
     _txProvider.initTransaction(_walletId, _utxo.transactionHash,
         utxoTo: _utxo.to);
     _txProvider.initUtxoInOutputList();
+    final blockHeight = _txProvider.transaction?.blockHeight;
+    _dateString = (blockHeight != null && blockHeight > 0)
+        ? DateTimeUtil.formatTimeStamp(_utxo.timestamp)
+        : null;
   }
 
   UtxoTagProvider? get tagProvider => _tagProvider;
@@ -32,5 +35,5 @@ class UtxoDetailViewModel extends ChangeNotifier {
   int get utxoInputMaxCount => _txProvider.utxoInputMaxCount;
   int get utxoOutputMaxCount => _txProvider.utxoOutputMaxCount;
 
-  List<String> get dateString => _dateString;
+  List<String>? get dateString => _dateString;
 }

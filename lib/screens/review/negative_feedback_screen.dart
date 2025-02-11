@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -41,15 +42,15 @@ class NegativeFeedbackScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  "죄송합니다😭",
+                  t.negative_feedback_screen.text1,
                   style:
                       Styles.h2.merge(const TextStyle(color: MyColors.white)),
                 ),
                 const SizedBox(
                   height: 20,
                 ),
-                const Text(
-                  "불편한 점이나 개선사항을 저희에게 알려주세요!",
+                Text(
+                  t.negative_feedback_screen.text2,
                   style: Styles.body1,
                 ),
                 const SizedBox(
@@ -65,7 +66,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                           color: MyColors.primary),
                       child: Text(
-                        '1:1 메시지 보내기',
+                        t.negative_feedback_screen.text3,
                         style: Styles.label.merge(const TextStyle(
                             color: MyColors.darkgrey,
                             fontWeight: FontWeight.bold)),
@@ -85,7 +86,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                           color: MyColors.transparentWhite_15),
                       child: Text(
-                        '다음에 할게요',
+                        t.negative_feedback_screen.text4,
                         style: Styles.label.merge(const TextStyle(
                             color: MyColors.white,
                             fontWeight: FontWeight.bold)),

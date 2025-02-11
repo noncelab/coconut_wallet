@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter/material.dart';
@@ -39,15 +40,15 @@ class PositiveFeedbackScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  "감사합니다🥰",
+                  t.positive_feedback_screen.text1,
                   style:
                       Styles.h2.merge(const TextStyle(color: MyColors.white)),
                 ),
                 const SizedBox(
                   height: 20,
                 ),
-                const Text(
-                  "그렇다면 스토어에 리뷰를 남겨주시겠어요?",
+                Text(
+                  t.positive_feedback_screen.text2,
                   style: Styles.body1,
                 ),
                 const SizedBox(
@@ -63,7 +64,7 @@ class PositiveFeedbackScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                           color: MyColors.primary),
                       child: Text(
-                        '물론이죠',
+                        t.positive_feedback_screen.text3,
                         style: Styles.label.merge(const TextStyle(
                             color: MyColors.darkgrey,
                             fontWeight: FontWeight.bold)),
@@ -83,7 +84,7 @@ class PositiveFeedbackScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                           color: MyColors.transparentWhite_15),
                       child: Text(
-                        '다음에 할게요',
+                        t.positive_feedback_screen.text4,
                         style: Styles.label.merge(const TextStyle(
                             color: MyColors.white,
                             fontWeight: FontWeight.bold)),

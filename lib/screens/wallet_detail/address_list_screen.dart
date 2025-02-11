@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:coconut_lib/coconut_lib.dart' as coconut;
 import 'package:coconut_wallet/model/wallet/address.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -11,7 +11,7 @@ import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/overlays/qrcode_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -107,7 +107,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             )
                           : null,
                       title: Text(
-                        '${viewModel.walletBaseItem?.name}의 주소',
+                        t.address_list_screen
+                            .wallet_name(name: viewModel.walletBaseItem!.name),
                         style: Styles.appbarTitle,
                       ),
                       centerTitle: true,
@@ -149,7 +150,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                                         qrData:
                                                             addressList[index]
                                                                 .address,
-                                                        title: '주소 - $index'));
+                                                        title: t
+                                                            .address_list_screen
+                                                            .address_index(
+                                                                index: index)));
                                           },
                                           address: addressList[index].address,
                                           derivationPath:
@@ -239,7 +243,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
             Expanded(
                 child: TooltipButton(
               isSelected: isReceivingSelected,
-              text: '입금',
+              text: t.address_list_screen.receiving,
               isLeft: true,
               iconKey: _depositTooltipKey,
               onTap: () {
@@ -259,7 +263,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
             Expanded(
                 child: TooltipButton(
               isSelected: !isReceivingSelected,
-              text: '잔돈',
+              text: t.address_list_screen.change,
               isLeft: false,
               iconKey: _changeTooltipKey,
               onTap: () {
@@ -311,7 +315,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 ),
                 color: MyColors.white,
                 child: Text(
-                  '비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라 해요.',
+                  t.tooltip.address_receiving,
                   style: Styles.caption.merge(TextStyle(
                     height: 1.3,
                     fontFamily: CustomFonts.text.getFontFamily,
@@ -349,7 +353,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 ),
                 color: MyColors.white,
                 child: Text(
-                  '다른 사람에게 비트코인을 보내고 남은 비트코인을 거슬러 받는 주소예요. 영어로 Change라 해요.',
+                  t.tooltip.address_change,
                   style: Styles.caption.merge(TextStyle(
                     height: 1.3,
                     fontFamily: CustomFonts.text.getFontFamily,

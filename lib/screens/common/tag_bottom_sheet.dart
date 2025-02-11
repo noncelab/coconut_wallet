@@ -1,12 +1,13 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -16,6 +17,11 @@ import 'package:uuid/uuid.dart';
 /// - [create] : 새 태그 생성
 /// - [update] : 선택된 태그 수정
 enum TagBottomSheetType { select, create, update }
+
+
+// Usage:
+// utxo_detail_screen.dart
+// utxo_tag.screen.dart
 
 /// [TagBottomSheet] : 태그 선택 변경, 태그 수정, 태그 생성 BottomSheet
 /// [type] : BottomSheet Type
@@ -185,7 +191,9 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                     ),
                   ),
                   Text(
-                    TagBottomSheetType.create == _type ? '새 태그' : '태그 편집',
+                    TagBottomSheetType.create == _type
+                        ? t.tag_bottom_sheet.title_new_tag
+                        : t.tag_bottom_sheet.title_edit_tag,
                     style: Styles.body2Bold.copyWith(
                       fontSize: 16,
                     ),
@@ -194,7 +202,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                     CustomAppbarButton(
                       isActive: _isSelectButtonEnabled,
                       isActivePrimaryColor: false,
-                      text: '완료',
+                      text: t.complete,
                       onPressed: () {
                         widget.onSelected
                             ?.call(_selectedUtxoTagNames, _createdUtxoTags);
@@ -208,7 +216,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                           !_utxoTags.any((tag) => tag.name == _updateTagName) &&
                           !_controller.text.endsWith(' '),
                       isActivePrimaryColor: false,
-                      text: '완료',
+                      text: t.complete,
                       onPressed: () {
                         final id = const Uuid().v4();
                         final createdUtxoTag = UtxoTag(
@@ -238,7 +246,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                     CustomAppbarButton(
                       isActive: _isUpdateButtonEnabled,
                       isActivePrimaryColor: false,
-                      text: '완료',
+                      text: t.complete,
                       onPressed: () {
                         if (widget.updateUtxoTag != null) {
                           int tagIndex =
@@ -289,7 +297,8 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                                     if (_selectedUtxoTagNames.length == 5) {
                                       CustomToast.showToast(
                                           context: context,
-                                          text: "태그는 최대 5개 지정할 수 있어요",
+                                          text:
+                                              t.tag_bottom_sheet.max_tag_count,
                                           seconds: 2);
                                       return;
                                     }

@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart';
@@ -28,7 +29,7 @@ class _UnsignedTransactionQrScreenState
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       backgroundColor: MyColors.black,
       appBar: CustomAppBar.buildWithNext(
-          title: '보내기',
+          title: t.send,
           context: context,
           onNextPressed: () {
             Navigator.pushNamed(context, '/signed-psbt-scanner');
@@ -56,22 +57,23 @@ class _UnsignedTransactionQrScreenState
                           color: MyColors.black,
                         ),
                         children: <TextSpan>[
-                          const TextSpan(
-                            text: '볼트에서',
-                            style: TextStyle(
+                          TextSpan(
+                            text: t.tooltip.unsigned_tx_qr.in_vault,
+                            style: const TextStyle(
                               fontWeight: FontWeight.normal,
                             ),
                           ),
                           TextSpan(
                             text:
-                                ' ${widget.walletName} 선택, \'${_isMultisig ? '다중 서명하기' : '서명하기'}\'',
+                                ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} '
+                                '\'${_isMultisig ? t.sign_multisig : t.sign}\'',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const TextSpan(
-                            text: '로 이동하여 아래 QR 코드를 스캔해 주세요.',
-                            style: TextStyle(
+                          TextSpan(
+                            text: t.tooltip.unsigned_tx_qr.scan_qr_below,
+                            style: const TextStyle(
                               fontWeight: FontWeight.normal,
                             ),
                           ),

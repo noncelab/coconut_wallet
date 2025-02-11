@@ -22,12 +22,15 @@ class UTXOItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<String> dateString = DateTimeUtil.formatTimeStamp(utxo.timestamp);
-    bool isChange = utxo.derivationPath.split('/')[4] == '1';
     bool isConfirmed = utxo.blockHeight != 0;
+    List<String> dateString = isConfirmed
+        ? DateTimeUtil.formatTimeStamp(utxo.timestamp)
+        : ['--.--.--', '--:--'];
+    bool isChange = utxo.derivationPath.split('/')[4] == '1';
 
     return ShrinkAnimationButton(
       defaultColor: MyColors.transparentWhite_06,
+      borderWidth: 0,
       borderRadius: 20,
       onPressed: () {
         onPressed();

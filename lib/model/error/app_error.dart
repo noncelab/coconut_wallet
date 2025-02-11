@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
+
 class AppError {
   final String code;
   final String message;
@@ -13,34 +15,29 @@ class ErrorCodes {
     return AppError(error.code, '${error.message}: $addedMessage');
   }
 
-  static const AppError storageReadError =
-      AppError('1001', '저장소에서 데이터를 불러오는데 실패했습니다.');
-  static const AppError storageWriteError =
-      AppError('1002', '저장소에 데이터를 저장하는데 실패했습니다.');
-  static const AppError networkError =
-      AppError('1003', '네트워크에 연결할 수 없어요. 연결 상태를 확인해 주세요.');
-  static const AppError nodeConnectionError =
-      AppError('1004', '비트코인 노드와 연결하는데 실패했습니다.');
-  static const AppError fetchWalletError =
-      AppError('1005', '지갑을 가져오는데 실패했습니다.');
-  static const AppError walletSyncFailedError =
-      AppError('1006', '네트워크에서 지갑 정보 불러오기 실패');
-  static const AppError fetchBalanceError = AppError('1007', '잔액 조회를 실패했습니다.');
-  static const AppError fetchTransferListError =
-      AppError('1008', '트랜잭션 목록 조회를 실패했습니다.');
-  static const AppError fetchTransactionsError =
-      AppError('1009', '거래 내역을 가져오는데 실패했습니다.');
-  static const AppError databasePathError =
-      AppError('1010', 'DB 경로를 찾을 수 없습니다.');
-
-  static const AppError feeEstimationError =
-      AppError('1100', "수수료 계산을 실패했습니다.");
-
-  static const AppError realmUnknown = AppError('1201', '알 수 없는 오류가 발생했습니다.');
-  static const AppError realmNotFound = AppError('1202', '데이터를 찾을 수 없습니다.');
-  static const AppError realmException =
-      AppError('1203', 'Realm 작업 중 오류가 발생했습니다.');
-
-  static const AppError nodeUnknown =
-      AppError('1300', '노드 연결 중 알 수 없는 오류가 발생했습니다.');
+  static AppError storageReadError =
+      AppError('1001', t.errors.storage_read_error);
+  static AppError storageWriteError =
+      AppError('1002', t.errors.storage_write_error);
+  static AppError networkError = AppError('1003', t.errors.network_error);
+  static AppError nodeConnectionError =
+      AppError('1004', t.errors.node_connection_error);
+  static AppError fetchWalletError =
+      AppError('1005', t.errors.fetch_wallet_error);
+  static AppError walletSyncFailedError =
+      AppError('1006', t.errors.wallet_sync_failed_error);
+  static AppError fetchBalanceError =
+      AppError('1007', t.errors.fetch_balance_error);
+  static AppError fetchTransferListError =
+      AppError('1008', t.errors.fetch_transfer_list_error);
+  static AppError fetchTransactionsError =
+      AppError('1009', t.errors.fetch_transactions_error);
+  static AppError databasePathError =
+      AppError('1010', t.errors.database_path_error);
+  static AppError feeEstimationError =
+      AppError('1100', t.errors.fee_estimation_error);
+  static AppError realmUnknown = AppError('1201', t.errors.realm_unknown);
+  static AppError realmNotFound = AppError('1202', t.errors.realm_not_found);
+  static AppError realmException = AppError('1203', t.errors.realm_exception);
+  static AppError nodeUnknown = AppError('1300', t.errors.node_unknown);
 }

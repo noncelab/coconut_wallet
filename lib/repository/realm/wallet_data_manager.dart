@@ -274,7 +274,7 @@ class WalletDataManager {
               fetchedTxsSortedByBlockHeightAsc[i],
               realmWallet,
               nextId++,
-              record?.createdAt);
+              record?.createdAt ?? DateTime.now());
           try {
             _realm.add<RealmTransaction>(newRealmTransaction);
           } catch (e) {
@@ -716,8 +716,8 @@ class WalletDataManager {
 
     final unconfirmed =
         transactions.query('blockHeight = 0 SORT(createdAt DESC)');
-    final confirmed =
-        transactions.query('blockHeight != 0 SORT(timestamp DESC)');
+    final confirmed = transactions
+        .query('blockHeight != 0 SORT(timestamp DESC, createdAt DESC)');
 
     for (var t in unconfirmed) {
       result.add(mapRealmTransactionToTransfer(t));
