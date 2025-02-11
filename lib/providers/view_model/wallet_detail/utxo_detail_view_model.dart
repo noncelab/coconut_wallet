@@ -17,7 +17,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
   UtxoDetailViewModel(
       this._walletId, this._utxo, this._tagProvider, this._txProvider) {
-    _dateString = DateTimeUtil.formatDatetime(_utxo.timestamp).split('|');
+    _dateString = DateTimeUtil.formatTimeStamp(_utxo.timestamp);
     _tagProvider.initTagList(_walletId, utxoId: _utxo.utxoId);
     _txProvider.initTransaction(_walletId, _utxo.transactionHash,
         utxoTo: _utxo.to);

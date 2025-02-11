@@ -12,14 +12,6 @@ class DateTimeUtil {
     return [formattedDate, formattedTime];
   }
 
-  static String formatDatetime(String timestamp) {
-    var dateTime =
-        DateTime.fromMillisecondsSinceEpoch(int.parse(timestamp) * 1000);
-    //var kstDateTime = dateTime.add(const Duration(hours: 9)); // UTC+9 for KST
-    var formattedDate = DateFormat('yy.MM.dd | HH:mm').format(dateTime);
-    return formattedDate;
-  }
-
   static String formatLastUpdateTime(int millisecondsSinceEpoch) {
     DateTime dateTime =
         DateTime.fromMillisecondsSinceEpoch(millisecondsSinceEpoch);

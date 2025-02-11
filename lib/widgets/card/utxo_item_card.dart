@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -9,7 +9,7 @@ import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 
 class UTXOItemCard extends StatelessWidget {
-  final model.UtxoState utxo;
+  final UtxoState utxo;
   final Unit currentUnit;
   final Function onPressed;
 
@@ -22,10 +22,9 @@ class UTXOItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<String> dateString =
-        DateTimeUtil.formatDatetime(utxo.timestamp).split('|');
+    List<String> dateString = DateTimeUtil.formatTimeStamp(utxo.timestamp);
     bool isChange = utxo.derivationPath.split('/')[4] == '1';
-    bool isConfirmed = int.parse(utxo.blockHeight) != 0;
+    bool isConfirmed = utxo.blockHeight != 0;
 
     return ShrinkAnimationButton(
       defaultColor: MyColors.transparentWhite_06,

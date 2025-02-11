@@ -1,11 +1,12 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 
 class UtxoState extends UTXO {
-  final String timestamp;
-  final String blockHeight;
+  final int blockHeight;
   final String to; // 소유 주소
+  late DateTime timestamp;
   List<UtxoTag>? tags;
 
   UtxoState({
@@ -13,11 +14,21 @@ class UtxoState extends UTXO {
     required int index,
     required int amount,
     required String derivationPath,
-    required this.timestamp,
     required this.blockHeight,
     required this.to,
     this.tags,
   }) : super(transactionHash, index, amount, derivationPath);
+
+  void updateTimestamp(DateTime timestamp) {
+    this.timestamp = timestamp;
+  }
+
+  static void updateTimestampFromBlocks(
+      List<UtxoState> utxos, Map<int, BlockTimestamp> blockTimestamps) {
+    for (var utxo in utxos) {
+      utxo.updateTimestamp(blockTimestamps[utxo.blockHeight]!.timestamp);
+    }
+  }
 
   static void sortUtxo(List<UtxoState> utxos, UtxoOrderEnum order) {
     int getLastIndex(String path) => int.parse(path.split('/').last);

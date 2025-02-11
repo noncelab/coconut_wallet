@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
+import 'package:coconut_wallet/model/utxo/utxo.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -48,8 +49,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   late int? _totalSigner;
   late WalletListItemBase _walletBaseItem;
 
-  List<UTXO> _confirmedUtxoList = [];
-  List<UTXO> _selectedUtxoList = [];
+  List<UtxoState> _confirmedUtxoList = [];
+  List<UtxoState> _selectedUtxoList = [];
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
       RecommendedFeeFetchStatus.fetching;
   TransactionFeeLevel? _selectedLevel = TransactionFeeLevel.halfhour;
@@ -135,7 +136,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   int get confirmedBalance => _confirmedBalance;
-  List<UTXO> get confirmedUtxoList => _confirmedUtxoList;
+  List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;
   bool get customFeeSelected => _selectedLevel == null;
   ErrorState? get errorState {
@@ -192,7 +193,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   Map<String, List<UtxoTag>> get utxoTagMap => _utxoTagMap;
 
-  void addSelectedUtxoList(UTXO utxo) {
+  void addSelectedUtxoList(UtxoState utxo) {
     _selectedUtxoList.add(utxo);
     _cachedSelectedUtxoAmountSum = null;
     notifyListeners();
@@ -296,7 +297,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSelectedUtxoList(List<UTXO> utxoList) {
+  void setSelectedUtxoList(List<UtxoState> utxoList) {
     _selectedUtxoList = utxoList;
     _cachedSelectedUtxoAmountSum = null;
     notifyListeners();
@@ -369,7 +370,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     }
   }
 
-  List<UTXO> _getAllConfirmedUtxoList(WalletBase wallet) {
+  List<UtxoState> _getAllConfirmedUtxoList(WalletBase wallet) {
     // TODO: wallet.walletStatus!.utxoList
     throw UnimplementedError();
     // return wallet.walletStatus!.utxoList
@@ -434,7 +435,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _syncSelectedUtxosWithTransaction() {
     var inputs = _transaction.inputs;
-    List<UTXO> result = [];
+    List<UtxoState> result = [];
     for (int i = 0; i < inputs.length; i++) {
       result.add(_confirmedUtxoList.firstWhere((utxo) =>
           utxo.transactionHash == inputs[i].transactionHash &&

@@ -1,4 +1,4 @@
-import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/utxo/utxo.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -8,10 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 class SelectableUtxoItemCard extends StatefulWidget {
-  final UTXO utxo;
+  final UtxoState utxo;
   final bool isSelected;
   final List<UtxoTag>? utxoTags;
-  final Function(UTXO) onSelected;
+  final Function(UtxoState) onSelected;
 
   const SelectableUtxoItemCard({
     super.key,
@@ -34,7 +34,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
     super.initState();
     _isPressing = false;
     // TODO: timestamp
-    dateString = DateTimeUtil.formatDatetime('').split('|');
+    dateString = DateTimeUtil.formatTimeStamp(widget.utxo.timestamp);
   }
 
   @override

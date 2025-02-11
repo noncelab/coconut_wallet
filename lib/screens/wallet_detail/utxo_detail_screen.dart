@@ -138,7 +138,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                               maintainAnimation: true,
                               maintainState: true,
                               maintainSize: true,
-                              visible: int.parse(widget.utxo.blockHeight) == 0,
+                              visible: widget.utxo.blockHeight == 0,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
@@ -386,7 +386,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                 onTapUnderlineButton: () => launchUrl(Uri.parse(
                                     "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
                                 child: Text(
-                                  widget.utxo.blockHeight,
+                                  widget.utxo.blockHeight.toString(),
                                   style: Styles.body2Number
                                       .merge(const TextStyle(height: 22 / 14)),
                                 )),
