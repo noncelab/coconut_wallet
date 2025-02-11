@@ -193,9 +193,9 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               color: MyColors.white,
             ));
           } else if (snapshot.hasError) {
-            return Center(child: Text(t.error.data_loading_failed));
+            return Center(child: Text(t.errors.data_loading_failed));
           } else if (!snapshot.hasData) {
-            return Center(child: Text(t.error.data_not_found));
+            return Center(child: Text(t.errors.data_not_found));
           }
 
           PackageInfo packageInfo = snapshot.data!;
@@ -344,7 +344,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   final Uri params = Uri(
                       scheme: 'mailto',
                       path: CONTACT_EMAIL_ADDRESS,
-                      query: 'subject=$EMAIL_SUBJECT&body=$info');
+                      query: 'subject=${t.email_subject}&body=$info');
 
                   launchURL(params.toString());
                 }),
@@ -423,9 +423,9 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               color: MyColors.white,
             ));
           } else if (snapshot.hasError) {
-            return Center(child: Text(t.error.data_loading_failed));
+            return Center(child: Text(t.errors.data_loading_failed));
           } else if (!snapshot.hasData) {
-            return Center(child: Text(t.error.data_not_found));
+            return Center(child: Text(t.errors.data_not_found));
           }
 
           PackageInfo packageInfo = snapshot.data!;

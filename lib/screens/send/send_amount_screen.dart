@@ -26,7 +26,7 @@ class SendAmountScreen extends StatefulWidget {
 
 class _SendAmountScreenState extends State<SendAmountScreen> {
   final errorMessages = [
-    t.error.insufficient_balance,
+    t.errors.insufficient_balance,
     t.alert.error_send
         .minimum_amount(bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1))
   ];

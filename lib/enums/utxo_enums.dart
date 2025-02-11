@@ -1,16 +1,17 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 
 extension UtxoOrderEnumExtension on UtxoOrderEnum {
   String get text {
     switch (this) {
       case UtxoOrderEnum.byAmountDesc:
-        return "큰 금액순";
+        return t.utxo_order_enums.amt_desc;
       case UtxoOrderEnum.byAmountAsc:
-        return "작은 금액순";
+        return t.utxo_order_enums.amt_asc;
       case UtxoOrderEnum.byTimestampDesc:
-        return "최신순";
+        return t.utxo_order_enums.time_desc;
       case UtxoOrderEnum.byTimestampAsc:
-        return "오래된 순";
+        return t.utxo_order_enums.time_asc;
     }
   }
 }

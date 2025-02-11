@@ -185,7 +185,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                         CustomTooltip(
                             richText: RichText(
                                 text: TextSpan(
-                                    text: t.error.insufficient_balance)),
+                                    text: t.errors.insufficient_balance)),
                             showIcon: true,
                             type: TooltipType.warning),
                       Padding(

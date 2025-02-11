@@ -133,7 +133,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                       CustomTooltip(
                           richText: RichText(
                               text: TextSpan(
-                                  text: t.error.fee_selection
+                                  text: t.errors.fee_selection_error
                                       .recommended_fee_unavailable)),
                           showIcon: true,
                           type: TooltipType.error),

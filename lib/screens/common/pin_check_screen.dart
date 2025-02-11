@@ -103,15 +103,15 @@ class _PinCheckScreenState extends State<PinCheckScreen>
         if (widget.appEntrance) {
           attempt += 1;
           if (attempt < 3) {
-            errorMessage = t.error.pin_check
+            errorMessage = t.errors.pin_check_error
                 .trial_count(count: kMaxNumberOfAttempts - attempt);
             _shufflePinNumbers();
             vibrateLightDouble();
           } else {
-            errorMessage = t.error.pin_check.failed;
+            errorMessage = t.errors.pin_check_error.failed;
           }
         } else {
-          errorMessage = t.error.pin_check.unmatched;
+          errorMessage = t.errors.pin_check_error.incorrect;
           _shufflePinNumbers();
           vibrateLightDouble();
         }

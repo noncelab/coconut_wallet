@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -104,7 +105,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
     return Scaffold(
         backgroundColor: MyColors.black,
         appBar: CustomAppBar.build(
-            title: '용어집',
+            title: t.glossary,
             context: context,
             onBackPressed: null,
             hasRightIcon: false,
@@ -120,7 +121,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
                 children: [
                   AskCard(
                     imagePath: 'assets/images/pow_logo.png',
-                    title: '포우에 물어보기',
+                    title: t.terms_bottom_sheet.ask_to_pow,
                     backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
                     gutter: TermsBottomSheet.gutter,
                     url: 'https://powbitcoiner.com/',
@@ -129,7 +130,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
                   SizedBox(width: TermsBottomSheet.gutter / 2),
                   AskCard(
                       imagePath: 'assets/images/telegram_logo.png',
-                      title: '텔레그램에 물어보기',
+                      title: t.terms_bottom_sheet.ask_to_telegram,
                       backgroundColor: const Color.fromRGBO(233, 242, 255, 1),
                       gutter: TermsBottomSheet.gutter,
                       url: 'https://t.me/+s4D6-03LjaY5ZmU1'),
@@ -215,8 +216,8 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
                               .merge(const TextStyle(color: MyColors.white)),
                         ),
                         const SizedBox(height: 32),
-                        const Text(
-                          '같은 용어',
+                        Text(
+                          t.terms_bottom_sheet.synonym,
                           style: Styles.body2Bold,
                         ),
                         const SizedBox(height: 8),
@@ -228,8 +229,8 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
                                   .map<Widget>((text) => Keyword(keyword: text))
                                   .toList()),
                           const SizedBox(height: 32),
-                          const Text(
-                            '관련 용어',
+                          Text(
+                            t.terms_bottom_sheet.related_terms,
                             style: Styles.body2Bold,
                           ),
                           const SizedBox(height: 8),

@@ -115,12 +115,13 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           bool isAlreadyUsingPin = await _comparePin(pin);
 
           if (isAlreadyUsingPin) {
-            returnToBackSequence(t.error.pin_already_in_use,
+            returnToBackSequence(t.errors.pin_setting_error.already_in_use,
                 firstSequence: true);
             return;
           }
         } catch (error) {
-          returnToBackSequence(t.error.pin_processing_failed, isError: true);
+          returnToBackSequence(t.errors.pin_setting_error.process_failed,
+              isError: true);
           return;
         }
         setState(() {
@@ -143,7 +144,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
       if (pinConfirm.length == 4) {
         if (pin != pinConfirm) {
-          returnToBackSequence(t.error.pin_incorrect);
+          returnToBackSequence(t.errors.pin_setting_error.incorrect);
           return;
         }
 
@@ -158,7 +159,8 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         await Provider.of<WalletProvider>(context, listen: false)
             .encryptWalletSecureData(hashedPin)
             .catchError((e) {
-          returnToBackSequence(t.error.pin_saving_failed, isError: true);
+          returnToBackSequence(t.errors.pin_setting_error.save_failed,
+              isError: true);
         });
 
         _authProvider.savePinSet(hashedPin).then((_) async {
@@ -167,7 +169,8 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           Navigator.pop(context);
           Navigator.pop(context);
         }).catchError((e) {
-          returnToBackSequence(t.error.pin_saving_failed, isError: true);
+          returnToBackSequence(t.errors.pin_setting_error.save_failed,
+              isError: true);
         });
       }
     }
