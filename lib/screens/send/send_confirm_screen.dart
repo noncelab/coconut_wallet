@@ -139,7 +139,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   void initState() {
     super.initState();
 
-    _viewModel = _viewModel = SendConfirmViewModel(
+    _viewModel = SendConfirmViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
         Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw);

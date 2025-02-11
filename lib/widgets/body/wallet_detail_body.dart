@@ -6,7 +6,7 @@ import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 
 class WalletDetailBody extends StatelessWidget {
   final Key txSliverListKey;
@@ -17,8 +17,8 @@ class WalletDetailBody extends StatelessWidget {
   final bool isTransaction;
   final bool isUtxoListLoadComplete;
   final List<TransferDTO> txList;
-  final List<model.UtxoState> utxoList;
-  final Function(model.UtxoState)? popFromUtxoDetail;
+  final List<UtxoState> utxoList;
+  final Function(UtxoState)? popFromUtxoDetail;
   final Function removePopup;
   const WalletDetailBody({
     super.key,

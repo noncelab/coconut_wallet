@@ -25,4 +25,11 @@ enum IsolateMessageType {
   getNetworkMinimumFeeRate,
   getLatestBlock,
   getTransaction,
+  getBalance,
+  getRecommendedFees,
+  fetchBlocksByHeight,
+  fetchTransactions,
+  fetchTransactionDetails,
+  fetchUtxos,
+  fetchPreviousTransactions,
 }

@@ -1,8 +1,7 @@
 import 'package:async/async.dart' as async;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/model/utxo/utxo.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -12,15 +11,10 @@ import 'package:coconut_wallet/services/network/electrum/electrum_client.dart';
 import 'package:coconut_wallet/services/network/node_client.dart';
 import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/result.dart';
 
-/// @nodoc
 class ElectrumService extends NodeClient {
-  // static final ElectrumApi _instance = ElectrumApi._();
-
   ElectrumClient _client;
 
-  @override
   int get reqId => _client.reqId;
 
   ElectrumService._() : _client = ElectrumClient();
@@ -52,61 +46,47 @@ class ElectrumService extends NodeClient {
     return instance;
   }
 
-  Future<Result<T, AppError>> _wrapResult<T>(Future<T> future) async {
-    try {
-      return Result.success(await future);
-    } catch (e) {
-      if (e is AppError) {
-        return Result.failure(e);
-      }
+  @override
+  Future<String> broadcast(String rawTransaction) async {
+    return _client.broadcast(rawTransaction);
+  }
 
-      return Result.failure(ErrorCodes.nodeUnknown);
+  @override
+  Future<int> getNetworkMinimumFeeRate() async {
+    var feeHistogram = await _client.getMempoolFeeHistogram();
+    if (feeHistogram.isEmpty) {
+      return 1;
     }
-  }
 
-  @override
-  Future<Result<String, AppError>> broadcast(String rawTransaction) async {
-    return _wrapResult(_client.broadcast(rawTransaction));
-  }
-
-  @override
-  Future<Result<int, AppError>> getNetworkMinimumFeeRate() {
-    return _wrapResult(_client.getMempoolFeeHistogram().then((feeHistogram) {
-      if (feeHistogram.isEmpty) {
-        return 1;
+    num minimumFeeRate = feeHistogram.first.first;
+    feeHistogram.map((feeInfo) => feeInfo.first).forEach((feeRate) {
+      if (minimumFeeRate > feeRate) {
+        minimumFeeRate = feeRate;
       }
+    });
 
-      num minimumFeeRate = feeHistogram.first.first;
-      feeHistogram.map((feeInfo) => feeInfo.first).forEach((feeRate) {
-        if (minimumFeeRate > feeRate) {
-          minimumFeeRate = feeRate;
-        }
-      });
-
-      return minimumFeeRate.ceil();
-    }));
+    return minimumFeeRate.ceil();
   }
 
   @override
-  Future<Result<BlockTimestamp, AppError>> getLatestBlock() async {
-    return _wrapResult(_client.getCurrentBlock().then((result) {
-      var blockHeader = BlockHeader.parse(result.height, result.hex);
-      return BlockTimestamp(
-          blockHeader.height,
-          DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
-              isUtc: true));
-    }));
+  Future<BlockTimestamp> getLatestBlock() async {
+    var result = await _client.getCurrentBlock();
+    var blockHeader = BlockHeader.parse(result.height, result.hex);
+    return BlockTimestamp(
+      blockHeader.height,
+      DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
+          isUtc: true),
+    );
   }
 
   @override
-  Future<Result<String, AppError>> getTransaction(
-      String transactionHash) async {
-    return _wrapResult(_client.getTransaction(transactionHash));
+  Future<String> getTransaction(String transactionHash) async {
+    return _client.getTransaction(transactionHash);
   }
 
   @override
-  Future<void> dispose() async {
-    await _client.close();
+  void dispose() {
+    _client.close();
   }
 
   @override
@@ -220,23 +200,20 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Future<Result<WalletBalance, AppError>> getBalance(WalletBase wallet,
+  Future<WalletBalance> getBalance(WalletBase wallet,
       {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async {
-    return _wrapResult(Future(() async {
-      int receiveScanLimit = receiveUsedIndex + 1;
-      int changeScanLimit = changeUsedIndex + 1;
+    int receiveScanLimit = receiveUsedIndex + 1;
+    int changeScanLimit = changeUsedIndex + 1;
 
-      final receiveBalanceFutures =
-          _getBalance(wallet, receiveScanLimit, false);
-      final changeBalanceFutures = _getBalance(wallet, changeScanLimit, true);
+    final receiveBalanceFutures = _getBalance(wallet, receiveScanLimit, false);
+    final changeBalanceFutures = _getBalance(wallet, changeScanLimit, true);
 
-      final [receive, change] = await Future.wait([
-        Future.wait(receiveBalanceFutures),
-        Future.wait(changeBalanceFutures)
-      ]);
+    final [receive, change] = await Future.wait([
+      Future.wait(receiveBalanceFutures),
+      Future.wait(changeBalanceFutures)
+    ]);
 
-      return WalletBalance(receive, change);
-    }));
+    return WalletBalance(receive, change);
   }
 
   Iterable<Future<AddressBalance>> _getBalance(
@@ -253,14 +230,14 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Future<Result<List<Transaction>, AppError>> fetchPreviousTransactions(
+  Future<List<Transaction>> getPreviousTransactions(
       Transaction transaction, List<Transaction> existingTxList) async {
     if (transaction.inputs.isEmpty) {
-      return Result.success([]);
+      return [];
     }
 
     if (_isCoinbaseTransaction(transaction)) {
-      return Result.success([]);
+      return [];
     }
 
     Set<String> toFetchTransactionHashes = {};
@@ -290,11 +267,11 @@ class ElectrumService extends NodeClient {
             .firstWhere((tx) => tx.transactionHash == input.transactionHash));
       }
 
-      return Result.success(previousTransactions);
+      return previousTransactions;
     } catch (e) {
       // TODO: 트랜잭션 조회 오류 핸들링
       Logger.error(e);
-      return Result.failure(ErrorCodes.nodeUnknown);
+      return [];
     }
   }
 

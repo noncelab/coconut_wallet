@@ -66,7 +66,7 @@ class SocketManager {
     ++_connectionAttempts;
 
     if (_connectionAttempts > 1) {
-      print(
+      Logger.log(
           'Retrying to connect to $host:$port ($_connectionAttempts/$_maxConnectionAttempts)');
     }
 
