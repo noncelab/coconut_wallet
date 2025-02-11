@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
-import 'package:coconut_wallet/widgets/overlays/license_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';

@@ -8,7 +8,7 @@ import 'package:coconut_wallet/providers/view_model/send/send_address_view_model
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

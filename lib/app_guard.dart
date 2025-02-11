@@ -4,7 +4,7 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
 

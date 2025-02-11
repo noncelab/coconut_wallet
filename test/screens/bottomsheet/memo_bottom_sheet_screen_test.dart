@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/widgets/overlays/memo_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_memo_bottom_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';

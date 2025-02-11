@@ -7,7 +7,7 @@ import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
