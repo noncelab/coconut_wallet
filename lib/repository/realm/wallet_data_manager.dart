@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
