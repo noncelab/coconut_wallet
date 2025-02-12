@@ -1,10 +1,9 @@
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:realm/realm.dart';
 
-int generateNextId(Realm realm, String key) {
+int getLastId(Realm realm, String key) {
   // 해당 key에 대한 ID 값 조회
-  final counter =
-      realm.all<RealmIntegerId>().query(r'key == $0', [key]).firstOrNull;
+  final counter = realm.find<RealmIntegerId>(key);
   if (counter == null) {
     // ID 카운터가 없다면 새로운 카운터 추가
     realm.write(() {

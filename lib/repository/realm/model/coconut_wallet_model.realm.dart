@@ -744,3 +744,199 @@ class RealmUtxoTag extends _RealmUtxoTag
   @override
   SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
 }
+
+class RealmAddressBalance extends _RealmAddressBalance
+    with RealmEntity, RealmObjectBase, RealmObject {
+  RealmAddressBalance(
+    int id,
+    int index,
+    int confirmed,
+    int unconfirmed,
+  ) {
+    RealmObjectBase.set(this, 'id', id);
+    RealmObjectBase.set(this, 'index', index);
+    RealmObjectBase.set(this, 'confirmed', confirmed);
+    RealmObjectBase.set(this, 'unconfirmed', unconfirmed);
+  }
+
+  RealmAddressBalance._();
+
+  @override
+  int get id => RealmObjectBase.get<int>(this, 'id') as int;
+  @override
+  set id(int value) => RealmObjectBase.set(this, 'id', value);
+
+  @override
+  int get index => RealmObjectBase.get<int>(this, 'index') as int;
+  @override
+  set index(int value) => RealmObjectBase.set(this, 'index', value);
+
+  @override
+  int get confirmed => RealmObjectBase.get<int>(this, 'confirmed') as int;
+  @override
+  set confirmed(int value) => RealmObjectBase.set(this, 'confirmed', value);
+
+  @override
+  int get unconfirmed => RealmObjectBase.get<int>(this, 'unconfirmed') as int;
+  @override
+  set unconfirmed(int value) => RealmObjectBase.set(this, 'unconfirmed', value);
+
+  @override
+  Stream<RealmObjectChanges<RealmAddressBalance>> get changes =>
+      RealmObjectBase.getChanges<RealmAddressBalance>(this);
+
+  @override
+  Stream<RealmObjectChanges<RealmAddressBalance>> changesFor(
+          [List<String>? keyPaths]) =>
+      RealmObjectBase.getChangesFor<RealmAddressBalance>(this, keyPaths);
+
+  @override
+  RealmAddressBalance freeze() =>
+      RealmObjectBase.freezeObject<RealmAddressBalance>(this);
+
+  EJsonValue toEJson() {
+    return <String, dynamic>{
+      'id': id.toEJson(),
+      'index': index.toEJson(),
+      'confirmed': confirmed.toEJson(),
+      'unconfirmed': unconfirmed.toEJson(),
+    };
+  }
+
+  static EJsonValue _toEJson(RealmAddressBalance value) => value.toEJson();
+  static RealmAddressBalance _fromEJson(EJsonValue ejson) {
+    if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
+    return switch (ejson) {
+      {
+        'id': EJsonValue id,
+        'index': EJsonValue index,
+        'confirmed': EJsonValue confirmed,
+        'unconfirmed': EJsonValue unconfirmed,
+      } =>
+        RealmAddressBalance(
+          fromEJson(id),
+          fromEJson(index),
+          fromEJson(confirmed),
+          fromEJson(unconfirmed),
+        ),
+      _ => raiseInvalidEJson(ejson),
+    };
+  }
+
+  static final schema = () {
+    RealmObjectBase.registerFactory(RealmAddressBalance._);
+    register(_toEJson, _fromEJson);
+    return const SchemaObject(
+        ObjectType.realmObject, RealmAddressBalance, 'RealmAddressBalance', [
+      SchemaProperty('id', RealmPropertyType.int, primaryKey: true),
+      SchemaProperty('index', RealmPropertyType.int,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('confirmed', RealmPropertyType.int),
+      SchemaProperty('unconfirmed', RealmPropertyType.int),
+    ]);
+  }();
+
+  @override
+  SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
+}
+
+class RealmWalletBalance extends _RealmWalletBalance
+    with RealmEntity, RealmObjectBase, RealmObject {
+  RealmWalletBalance(
+    int id, {
+    Iterable<RealmAddressBalance> receiveAddressBalanceList = const [],
+    Iterable<RealmAddressBalance> changeAddressBalanceList = const [],
+  }) {
+    RealmObjectBase.set(this, 'id', id);
+    RealmObjectBase.set<RealmList<RealmAddressBalance>>(
+        this,
+        'receiveAddressBalanceList',
+        RealmList<RealmAddressBalance>(receiveAddressBalanceList));
+    RealmObjectBase.set<RealmList<RealmAddressBalance>>(
+        this,
+        'changeAddressBalanceList',
+        RealmList<RealmAddressBalance>(changeAddressBalanceList));
+  }
+
+  RealmWalletBalance._();
+
+  @override
+  int get id => RealmObjectBase.get<int>(this, 'id') as int;
+  @override
+  set id(int value) => RealmObjectBase.set(this, 'id', value);
+
+  @override
+  RealmList<RealmAddressBalance> get receiveAddressBalanceList =>
+      RealmObjectBase.get<RealmAddressBalance>(
+          this, 'receiveAddressBalanceList') as RealmList<RealmAddressBalance>;
+  @override
+  set receiveAddressBalanceList(
+          covariant RealmList<RealmAddressBalance> value) =>
+      throw RealmUnsupportedSetError();
+
+  @override
+  RealmList<RealmAddressBalance> get changeAddressBalanceList =>
+      RealmObjectBase.get<RealmAddressBalance>(this, 'changeAddressBalanceList')
+          as RealmList<RealmAddressBalance>;
+  @override
+  set changeAddressBalanceList(
+          covariant RealmList<RealmAddressBalance> value) =>
+      throw RealmUnsupportedSetError();
+
+  @override
+  Stream<RealmObjectChanges<RealmWalletBalance>> get changes =>
+      RealmObjectBase.getChanges<RealmWalletBalance>(this);
+
+  @override
+  Stream<RealmObjectChanges<RealmWalletBalance>> changesFor(
+          [List<String>? keyPaths]) =>
+      RealmObjectBase.getChangesFor<RealmWalletBalance>(this, keyPaths);
+
+  @override
+  RealmWalletBalance freeze() =>
+      RealmObjectBase.freezeObject<RealmWalletBalance>(this);
+
+  EJsonValue toEJson() {
+    return <String, dynamic>{
+      'id': id.toEJson(),
+      'receiveAddressBalanceList': receiveAddressBalanceList.toEJson(),
+      'changeAddressBalanceList': changeAddressBalanceList.toEJson(),
+    };
+  }
+
+  static EJsonValue _toEJson(RealmWalletBalance value) => value.toEJson();
+  static RealmWalletBalance _fromEJson(EJsonValue ejson) {
+    if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
+    return switch (ejson) {
+      {
+        'id': EJsonValue id,
+      } =>
+        RealmWalletBalance(
+          fromEJson(id),
+          receiveAddressBalanceList:
+              fromEJson(ejson['receiveAddressBalanceList']),
+          changeAddressBalanceList:
+              fromEJson(ejson['changeAddressBalanceList']),
+        ),
+      _ => raiseInvalidEJson(ejson),
+    };
+  }
+
+  static final schema = () {
+    RealmObjectBase.registerFactory(RealmWalletBalance._);
+    register(_toEJson, _fromEJson);
+    return const SchemaObject(
+        ObjectType.realmObject, RealmWalletBalance, 'RealmWalletBalance', [
+      SchemaProperty('id', RealmPropertyType.int, primaryKey: true),
+      SchemaProperty('receiveAddressBalanceList', RealmPropertyType.object,
+          linkTarget: 'RealmAddressBalance',
+          collectionType: RealmCollectionType.list),
+      SchemaProperty('changeAddressBalanceList', RealmPropertyType.object,
+          linkTarget: 'RealmAddressBalance',
+          collectionType: RealmCollectionType.list),
+    ]);
+  }();
+
+  @override
+  SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
+}

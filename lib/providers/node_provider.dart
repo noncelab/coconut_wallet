@@ -4,6 +4,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/services/isolate_manager.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
@@ -15,11 +17,14 @@ import 'package:flutter/foundation.dart';
 
 class NodeProvider extends ChangeNotifier {
   final IsolateManager _isolateManager;
-  Completer<void>? _syncCompleter;
+  final WalletDataManager _walletDataManager;
   final String _host;
   final int _port;
   final bool _ssl;
+  Completer<void>? _initCompleter;
+  Completer<void>? _syncCompleter;
 
+  bool get isInitialized => _initCompleter?.isCompleted ?? false;
   bool get isSyncing => _syncCompleter != null;
   String get host => _host;
   int get port => _port;
@@ -29,35 +34,37 @@ class NodeProvider extends ChangeNotifier {
     this._host,
     this._port,
     this._ssl,
-    this._isolateManager,
-  );
-
-  static Future<NodeProvider> connectSync(
-    String host,
-    int port, {
-    bool ssl = true,
+    this._walletDataManager, {
     IsolateManager? isolateManager,
     NodeClientFactory? nodeClientFactory,
-  }) async {
-    final manager = isolateManager ?? IsolateManager();
-    final factory = nodeClientFactory ?? ElectrumNodeClientFactory();
+  }) : _isolateManager = isolateManager ?? IsolateManager() {
+    _initCompleter = Completer<void>();
+    _initialize(nodeClientFactory);
+  }
 
-    await manager.initialize(factory, host, port, ssl);
-
-    NodeProvider nodeProvider = NodeProvider(host, port, ssl, manager);
-
-    return nodeProvider;
+  Future<void> _initialize(NodeClientFactory? nodeClientFactory) async {
+    try {
+      final factory = nodeClientFactory ?? ElectrumNodeClientFactory();
+      await _isolateManager.initialize(factory, _host, _port, _ssl);
+      _initCompleter?.complete();
+    } catch (e) {
+      _initCompleter?.completeError(e);
+    }
   }
 
   Future<Result<T, AppError>> _wrapResult<T>(Future<T> future) async {
+    if (!isInitialized) {
+      try {
+        await _initCompleter?.future;
+      } catch (e) {
+        return Result.failure(e is AppError ? e : ErrorCodes.nodeIsolateError);
+      }
+    }
+
     try {
       return Result.success(await future);
     } catch (e) {
-      if (e is AppError) {
-        return Result.failure(e);
-      }
-
-      return Result.failure(ErrorCodes.nodeUnknown);
+      return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
     }
   }
 
@@ -87,10 +94,17 @@ class NodeProvider extends ChangeNotifier {
     return _wrapResult(_isolateManager.getRecommendedFees());
   }
 
-  Future<Result<WalletBalance, AppError>> getBalance(WalletBase wallet,
+  Future<Result<WalletBalance, AppError>> getBalance(WalletListItemBase item,
       {int receiveUsedIndex = 0, int changeUsedIndex = 0}) async {
-    return _wrapResult(_isolateManager.getBalance(wallet,
+    final result = await _wrapResult(_isolateManager.getBalance(item.walletBase,
         receiveUsedIndex: receiveUsedIndex, changeUsedIndex: changeUsedIndex));
+
+    if (result.isSuccess) {
+      _walletDataManager.updateWalletBalance(item.id, result.value);
+      notifyListeners();
+    }
+
+    return result;
   }
 
   Stream<BaseStreamState<BlockTimestamp>> fetchBlocksByHeight(

@@ -71,3 +71,23 @@ class _RealmUtxoTag {
   late List<String> utxoIdList;
   late DateTime createAt;
 }
+
+@RealmModel()
+class _RealmAddressBalance {
+  @PrimaryKey()
+  late int id;
+  // 주소 인덱스
+  @Indexed()
+  late int index;
+  late int confirmed;
+  late int unconfirmed;
+}
+
+@RealmModel()
+class _RealmWalletBalance {
+  @PrimaryKey()
+  late int id;
+
+  late List<_RealmAddressBalance> receiveAddressBalanceList;
+  late List<_RealmAddressBalance> changeAddressBalanceList;
+}

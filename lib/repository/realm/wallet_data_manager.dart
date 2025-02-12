@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
@@ -246,7 +247,7 @@ class WalletDataManager {
             // count: walletStatus.transactionList.length -
             //     (realmWallet.txCount ?? 0) +
             (unconfirmedRealmTxs?.length ?? 0));
-    int nextId = generateNextId(_realm, (RealmTransaction).toString());
+    int nextId = getLastId(_realm, (RealmTransaction).toString());
     List<int> existingUnconfirmedTxIdsInFetchedTxs = [];
     await _realm.writeAsync(() {
       for (int i = fetchedTxsSortedByBlockHeightAsc.length - 1; i >= 0; i--) {
@@ -819,6 +820,140 @@ class WalletDataManager {
 
     await _storageService.delete(key: nonceField);
     _cryptography = null;
+  }
+
+  WalletBalance updateWalletBalance(int walletId, WalletBalance walletBalance) {
+    _checkInitialized();
+
+    RealmWalletBalance? realmWalletBalance =
+        _realm.find<RealmWalletBalance>(walletId);
+
+    if (realmWalletBalance == null) {
+      _createNewWalletBalance(walletId, walletBalance);
+      return walletBalance;
+    }
+
+    _updateExistingWalletBalance(realmWalletBalance, walletBalance);
+    return walletBalance;
+  }
+
+  void _createNewWalletBalance(int walletId, WalletBalance walletBalance) {
+    int walletBalanceLastId =
+        getLastId(_realm, (RealmWalletBalance).toString());
+    int addressBalanceLastId =
+        getLastId(_realm, (RealmAddressBalance).toString());
+
+    final (receiveBalances, changeBalances) = _createAddressBalances(
+      walletBalance,
+      addressBalanceLastId,
+    );
+
+    final newBalances = <RealmAddressBalance>[
+      ...receiveBalances,
+      ...changeBalances,
+    ];
+
+    // RealmAddressBalance 객체들 먼저 추가
+    _addAllAddressBalance(newBalances);
+
+    final realmWalletBalance = RealmWalletBalance(
+      ++walletBalanceLastId,
+      receiveAddressBalanceList: receiveBalances,
+      changeAddressBalanceList: changeBalances,
+    );
+
+    _realm.write(() {
+      _realm.add(realmWalletBalance);
+    });
+  }
+
+  (List<RealmAddressBalance>, List<RealmAddressBalance>) _createAddressBalances(
+    WalletBalance walletBalance,
+    int lastId,
+  ) {
+    // 받은 주소 잔액 데이터 변환
+    final receiveBalances = walletBalance.receiveAddressBalances
+        .map((balance) => RealmAddressBalance(
+              ++lastId,
+              balance.index,
+              balance.confirmed,
+              balance.unconfirmed,
+            ))
+        .toList();
+
+    // 변경 주소 잔액 데이터 변환
+    final changeBalances = walletBalance.changeAddressBalances
+        .map((balance) => RealmAddressBalance(
+              ++lastId,
+              balance.index,
+              balance.confirmed,
+              balance.unconfirmed,
+            ))
+        .toList();
+
+    return (receiveBalances, changeBalances);
+  }
+
+  void _updateExistingWalletBalance(
+    RealmWalletBalance realmWalletBalance,
+    WalletBalance walletBalance,
+  ) {
+    final updates = _collectBalanceUpdates(realmWalletBalance, walletBalance);
+    if (updates.isEmpty) return;
+
+    _realm.write(() {
+      for (var (realmBalance, newBalance) in updates) {
+        realmBalance.confirmed = newBalance.confirmed;
+        realmBalance.unconfirmed = newBalance.unconfirmed;
+      }
+    });
+  }
+
+  List<(RealmAddressBalance, AddressBalance)> _collectBalanceUpdates(
+    RealmWalletBalance realmWalletBalance,
+    WalletBalance walletBalance,
+  ) {
+    final updates = <(RealmAddressBalance, AddressBalance)>[];
+
+    void collectUpdates(
+      List<AddressBalance> newBalances,
+      RealmList<RealmAddressBalance> realmBalances,
+    ) {
+      // Map으로 변환하여 조회 성능 향상
+      final newBalanceMap = {
+        for (var balance in newBalances) balance.index: balance
+      };
+
+      for (var realmBalance in realmBalances) {
+        final newBalance = newBalanceMap[realmBalance.index];
+        if (newBalance == null) continue;
+
+        if (realmBalance.confirmed != newBalance.confirmed ||
+            realmBalance.unconfirmed != newBalance.unconfirmed) {
+          updates.add((realmBalance, newBalance));
+        }
+      }
+    }
+
+    collectUpdates(
+      walletBalance.changeAddressBalances,
+      realmWalletBalance.changeAddressBalanceList,
+    );
+    collectUpdates(
+      walletBalance.receiveAddressBalances,
+      realmWalletBalance.receiveAddressBalanceList,
+    );
+
+    return updates;
+  }
+
+  List<RealmAddressBalance> _addAllAddressBalance(
+      List<RealmAddressBalance> balances) {
+    _realm.write(() {
+      _realm.addAll<RealmAddressBalance>(balances);
+    });
+
+    return balances;
   }
 
   // not used

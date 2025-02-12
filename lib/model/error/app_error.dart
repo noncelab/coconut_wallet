@@ -40,4 +40,5 @@ class ErrorCodes {
   static AppError realmNotFound = AppError('1202', t.errors.realm_not_found);
   static AppError realmException = AppError('1203', t.errors.realm_exception);
   static AppError nodeUnknown = AppError('1300', t.errors.node_unknown);
+  static AppError nodeIsolateError = AppError('1301', t.errors.node_unknown);
 }
