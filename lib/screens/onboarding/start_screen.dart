@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class StartScreen extends StatefulWidget {
-  final void Function(AccessFlow nextScreen) onComplete;
+  final void Function(AppEntryFlow nextScreen) onComplete;
 
   const StartScreen({super.key, required this.onComplete});
 
@@ -53,7 +53,7 @@ class _StartScreenState extends State<StartScreen> {
       }
     }
 
-    AccessFlow nextScreen = await _viewModel.determineStartScreen();
+    AppEntryFlow nextScreen = await _viewModel.determineStartScreen();
     widget.onComplete(nextScreen);
   }
 

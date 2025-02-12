@@ -38,7 +38,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 
-enum AccessFlow { splash, main, pinCheck }
+enum AppEntryFlow { splash, main, pinCheck }
 
 class CoconutWalletApp extends StatefulWidget {
   static late String kElectrumHost;
@@ -54,12 +54,12 @@ class CoconutWalletApp extends StatefulWidget {
 
 class _CoconutWalletAppState extends State<CoconutWalletApp> {
   /// 0 = splash, 1 = main, 2 = pin check
-  AccessFlow _screenStatus = AccessFlow.splash;
+  AppEntryFlow _appEntryFlow = AppEntryFlow.splash;
 
   /// startSplash 완료 콜백
-  void _completeSplash(AccessFlow status) {
+  void _completeSplash(AppEntryFlow appEntryFlow) {
     setState(() {
-      _screenStatus = status;
+      _appEntryFlow = appEntryFlow;
     });
   }
 
@@ -77,7 +77,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
 
         /// main 에서만 사용하는 모델
-        if (_screenStatus == AccessFlow.main) ...{
+        if (_appEntryFlow == AppEntryFlow.main) ...{
           ChangeNotifierProvider(create: (_) => PreferenceProvider()),
           Provider(create: (_) => SendInfoProvider()),
           ChangeNotifierProxyProvider3<ConnectivityProvider, VisibilityProvider,
@@ -146,9 +146,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           barBackgroundColor: MyColors.black, // AppBar 배경 색상
         ),
         color: MyColors.black,
-        home: _screenStatus == AccessFlow.splash
+        home: _appEntryFlow == AppEntryFlow.splash
             ? StartScreen(onComplete: _completeSplash)
-            : _screenStatus == AccessFlow.main
+            : _appEntryFlow == AppEntryFlow.main
                 ? const AppGuard(
                     child: WalletListScreen(),
                   )
@@ -157,7 +157,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       appEntrance: true,
                       onComplete: () {
                         setState(() {
-                          _screenStatus = AccessFlow.main;
+                          _appEntryFlow = AppEntryFlow.main;
                         });
                       },
                     ),

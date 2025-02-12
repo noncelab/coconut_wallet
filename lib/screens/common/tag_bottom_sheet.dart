@@ -18,7 +18,6 @@ import 'package:uuid/uuid.dart';
 /// - [update] : 선택된 태그 수정
 enum TagBottomSheetType { select, create, update }
 
-
 // Usage:
 // utxo_detail_screen.dart
 // utxo_tag.screen.dart
