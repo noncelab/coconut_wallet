@@ -583,7 +583,7 @@ class TranslationsErrorsKr {
   String get fetch_wallet_error => '지갑을 가져오는데 실패했습니다.';
   String get wallet_sync_failed_error => '네트워크에서 지갑 정보 불러오기 실패';
   String get fetch_balance_error => '잔액 조회를 실패했습니다.';
-  String get fetch_transfer_list_error => '트랜잭션 목록 조회를 실패했습니다.';
+  String get fetch_transaction_list_error => '트랜잭션 목록 조회를 실패했습니다.';
   String get fetch_transactions_error => '거래 내역을 가져오는데 실패했습니다.';
   String get database_path_error => 'DB 경로를 찾을 수 없습니다.';
   String get fee_estimation_error => '수수료 계산을 실패했습니다.';
@@ -1322,7 +1322,7 @@ extension on Translations {
         return '네트워크에서 지갑 정보 불러오기 실패';
       case 'errors.fetch_balance_error':
         return '잔액 조회를 실패했습니다.';
-      case 'errors.fetch_transfer_list_error':
+      case 'errors.fetch_transaction_list_error':
         return '트랜잭션 목록 조회를 실패했습니다.';
       case 'errors.fetch_transactions_error':
         return '거래 내역을 가져오는데 실패했습니다.';

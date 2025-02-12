@@ -27,12 +27,12 @@ class AppReviewService {
   /// ----------------- 리뷰 요청 관련 로직 -----------------
 
   /// 비트코인 전송을 완료한 적이 있는지 여부를 반환한다.
-  static bool? _hasCompletedBitcoinTransfer() {
+  static bool? _hasCompletedBitcoinTransaction() {
     final sharedPrefs = SharedPrefsRepository();
     return sharedPrefs.sharedPrefs.getBool(SharedPrefsRepository.kHaveSent);
   }
 
-  static Future _setCompletedBitcoinTransfer() async {
+  static Future _setCompletedBitcoinTransaction() async {
     await SharedPrefsRepository()
         .sharedPrefs
         .setBool(SharedPrefsRepository.kHaveSent, true);
@@ -61,7 +61,7 @@ class AppReviewService {
   /// 비트코인 전송을 완료한 적이 있고, 리뷰를 남긴 적이 없으면, 앱 실행 시 마다 count를 1씩 증가시켜 저장한다.
   static Future<void> increaseAppRunningCountIfRejected() async {
     final sharedPrefs = SharedPrefsRepository();
-    if (_hasCompletedBitcoinTransfer() == true && _hasReviewed() != true) {
+    if (_hasCompletedBitcoinTransaction() == true && _hasReviewed() != true) {
       final count = sharedPrefs.sharedPrefs
               .getInt(SharedPrefsRepository.kAppRunCountAfterRejectReview) ??
           0;
@@ -98,14 +98,14 @@ class AppReviewService {
 
   static Future<dynamic>? showReviewScreenIfFirstSending(BuildContext context,
       {AnimationController? animationController}) {
-    if (_hasCompletedBitcoinTransfer() == true) return null;
-    _setCompletedBitcoinTransfer();
+    if (_hasCompletedBitcoinTransaction() == true) return null;
+    _setCompletedBitcoinTransaction();
     return _showReviewScreen(context,
         isFirst: true, animationController: animationController);
   }
 
   static bool shouldShowReviewScreen() {
-    if (_hasCompletedBitcoinTransfer() != true) return false;
+    if (_hasCompletedBitcoinTransaction() != true) return false;
     return _canRequestReview();
   }
 }

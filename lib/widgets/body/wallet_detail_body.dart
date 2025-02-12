@@ -16,7 +16,7 @@ class WalletDetailBody extends StatelessWidget {
   final Unit currentUnit;
   final bool isTransaction;
   final bool isUtxoListLoadComplete;
-  final List<TransferDTO> txList;
+  final List<TransactionDto> txList;
   final List<UtxoState> utxoList;
   final Function(UtxoState)? popFromUtxoDetail;
   final Function removePopup;

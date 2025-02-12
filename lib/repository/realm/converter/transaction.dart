@@ -4,33 +4,34 @@ import 'package:coconut_wallet/model/wallet/address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
-// Transfer -> _RealmTransaction 변환 함수
-RealmTransaction mapTransferToRealmTransaction(TransactionRecord transfer,
+// TransactionRecord -> _RealmTransaction 변환 함수
+RealmTransaction mapTransactionToRealmTransaction(TransactionRecord transaction,
     RealmWalletBase realmWalletBase, int id, DateTime? createdAt) {
-  return RealmTransaction(id, transfer.transactionHash,
+  return RealmTransaction(id, transaction.transactionHash,
       walletBase: realmWalletBase,
-      timestamp: transfer.timestamp,
-      blockHeight: transfer.blockHeight,
-      transferType: transfer.transferType,
-      memo: transfer.memo,
-      amount: transfer.amount,
-      fee: transfer.fee,
-      inputAddressList: transfer.inputAddressList
+      timestamp: transaction.timestamp,
+      blockHeight: transaction.blockHeight,
+      transactionType: transaction.transactionType,
+      memo: transaction.memo,
+      amount: transaction.amount,
+      fee: transaction.fee,
+      inputAddressList: transaction.inputAddressList
           .map((address) => jsonEncode(addressToJson(address)))
           .toList(),
-      outputAddressList: transfer.outputAddressList
+      outputAddressList: transaction.outputAddressList
           .map((address) => jsonEncode(addressToJson(address)))
           .toList(),
       createdAt: createdAt);
 }
 
-// note(트랜잭션 메모) 정보가 추가로 필요하여 TransferDTO를 반환
-TransferDTO mapRealmTransactionToTransfer(RealmTransaction realmTransaction) {
-  return TransferDTO(
+// note(트랜잭션 메모) 정보가 추가로 필요하여 TransactionDto를 반환
+TransactionDto mapRealmTransactionToTransaction(
+    RealmTransaction realmTransaction) {
+  return TransactionDto(
       realmTransaction.transactionHash,
       realmTransaction.timestamp,
       realmTransaction.blockHeight,
-      realmTransaction.transferType,
+      realmTransaction.transactionType,
       realmTransaction.memo,
       realmTransaction.amount,
       realmTransaction.fee,
@@ -58,15 +59,15 @@ Address jsonToAddress(Map<String, dynamic> json) {
       json['address'], json['derivationPath'], 0, false, json['amount']);
 }
 
-class TransferDTO extends TransactionRecord {
+class TransactionDto extends TransactionRecord {
   String? note;
   DateTime? createdAt;
 
-  TransferDTO(
+  TransactionDto(
       super.transactionHash,
       super.timestamp,
       super.blockHeight,
-      super.transferType,
+      super.transactionType,
       super.memo,
       super.amount,
       super.fee,

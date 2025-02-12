@@ -112,7 +112,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   List<UtxoTag> get selectedTagList => _tagProvider.selectedTagList;
   UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
 
-  List<TransferDTO> get txList => _txProvider.txList;
+  List<TransactionDto> get txList => _txProvider.txList;
   List<UtxoState> get utxoList => _utxoList;
 
   int get walletId => _walletId;

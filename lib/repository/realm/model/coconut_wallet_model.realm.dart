@@ -279,7 +279,7 @@ class RealmTransaction extends _RealmTransaction
     RealmWalletBase? walletBase,
     DateTime? timestamp,
     int? blockHeight,
-    String? transferType,
+    String? transactionType,
     String? memo,
     int? amount,
     int? fee,
@@ -293,7 +293,7 @@ class RealmTransaction extends _RealmTransaction
     RealmObjectBase.set(this, 'walletBase', walletBase);
     RealmObjectBase.set(this, 'timestamp', timestamp);
     RealmObjectBase.set(this, 'blockHeight', blockHeight);
-    RealmObjectBase.set(this, 'transferType', transferType);
+    RealmObjectBase.set(this, 'transactionType', transactionType);
     RealmObjectBase.set(this, 'memo', memo);
     RealmObjectBase.set(this, 'amount', amount);
     RealmObjectBase.set(this, 'fee', fee);
@@ -341,11 +341,11 @@ class RealmTransaction extends _RealmTransaction
       RealmObjectBase.set(this, 'blockHeight', value);
 
   @override
-  String? get transferType =>
-      RealmObjectBase.get<String>(this, 'transferType') as String?;
+  String? get transactionType =>
+      RealmObjectBase.get<String>(this, 'transactionType') as String?;
   @override
-  set transferType(String? value) =>
-      RealmObjectBase.set(this, 'transferType', value);
+  set transactionType(String? value) =>
+      RealmObjectBase.set(this, 'transactionType', value);
 
   @override
   String? get memo => RealmObjectBase.get<String>(this, 'memo') as String?;
@@ -410,7 +410,7 @@ class RealmTransaction extends _RealmTransaction
       'walletBase': walletBase.toEJson(),
       'timestamp': timestamp.toEJson(),
       'blockHeight': blockHeight.toEJson(),
-      'transferType': transferType.toEJson(),
+      'transactionType': transactionType.toEJson(),
       'memo': memo.toEJson(),
       'amount': amount.toEJson(),
       'fee': fee.toEJson(),
@@ -435,7 +435,7 @@ class RealmTransaction extends _RealmTransaction
           walletBase: fromEJson(ejson['walletBase']),
           timestamp: fromEJson(ejson['timestamp']),
           blockHeight: fromEJson(ejson['blockHeight']),
-          transferType: fromEJson(ejson['transferType']),
+          transactionType: fromEJson(ejson['transactionType']),
           memo: fromEJson(ejson['memo']),
           amount: fromEJson(ejson['amount']),
           fee: fromEJson(ejson['fee']),
@@ -460,7 +460,8 @@ class RealmTransaction extends _RealmTransaction
       SchemaProperty('timestamp', RealmPropertyType.timestamp,
           optional: true, indexType: RealmIndexType.regular),
       SchemaProperty('blockHeight', RealmPropertyType.int, optional: true),
-      SchemaProperty('transferType', RealmPropertyType.string, optional: true),
+      SchemaProperty('transactionType', RealmPropertyType.string,
+          optional: true),
       SchemaProperty('memo', RealmPropertyType.string, optional: true),
       SchemaProperty('amount', RealmPropertyType.int, optional: true),
       SchemaProperty('fee', RealmPropertyType.int, optional: true),

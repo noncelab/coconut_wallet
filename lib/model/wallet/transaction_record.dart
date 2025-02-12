@@ -6,38 +6,38 @@ class TransactionRecord {
   final String _transactionHash;
   final DateTime? _timestamp;
   final int? _blockHeight;
-  final String? _transferType;
+  final String? _transactionType;
   final String? _memo;
   final int? _amount;
   final int? _fee;
   final List<Address> _inputAddressList;
   final List<Address> _outputAddressList;
 
-  /// Get the transaction hash of this transfer.
+  /// Get the transaction hash of this transaction.
   String get transactionHash => _transactionHash;
 
-  /// Get the timestamp of this transfer.
+  /// Get the timestamp of this transaction.
   DateTime? get timestamp => _timestamp;
 
-  /// Get the block height of this transfer.
+  /// Get the block height of this transaction.
   int? get blockHeight => _blockHeight;
 
-  /// Get the transfer type of this transfer. (RECEIVED, SEND, SELF, UNKNOWN)
-  String? get transferType => _transferType;
+  /// Get the transaction type of this transaction. (RECEIVED, SEND, SELF, UNKNOWN)
+  String? get transactionType => _transactionType;
 
-  /// Get the memo of this transfer.
+  /// Get the memo of this transaction.
   String? get memo => _memo;
 
-  /// Get the amount of this transfer.
+  /// Get the amount of this transaction.
   int? get amount => _amount;
 
-  /// Get the fee of this transfer.
+  /// Get the fee of this transaction.
   int? get fee => _fee;
 
-  /// Get the input address list of this transfer.
+  /// Get the input address list of this transaction.
   List<Address> get inputAddressList => _inputAddressList;
 
-  /// Get the output address list of this transfer.
+  /// Get the output address list of this transaction.
   List<Address> get outputAddressList => _outputAddressList;
 
   /// @nodoc
@@ -45,7 +45,7 @@ class TransactionRecord {
       this._transactionHash,
       this._timestamp,
       this._blockHeight,
-      this._transferType,
+      this._transactionType,
       this._memo,
       this._amount,
       this._fee,

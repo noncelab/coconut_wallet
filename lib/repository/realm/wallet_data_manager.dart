@@ -240,7 +240,7 @@ class WalletDataManager {
 
     // 항상 최신순으로 반환
     List<TransactionRecord> fetchedTxsSortedByBlockHeightAsc =
-        walletItem.walletFeature.getTransferList(
+        walletItem.walletFeature.getTransactionList(
             cursor: 0,
             // TODO: WalletStatus
             // count: walletStatus.transactionList.length -
@@ -269,11 +269,12 @@ class WalletDataManager {
                   'transactionHash = \'${fetchedTxsSortedByBlockHeightAsc[i].transactionHash}\'')
               .firstOrNull;
 
-          RealmTransaction newRealmTransaction = mapTransferToRealmTransaction(
-              fetchedTxsSortedByBlockHeightAsc[i],
-              realmWallet,
-              nextId++,
-              record?.createdAt ?? DateTime.now());
+          RealmTransaction newRealmTransaction =
+              mapTransactionToRealmTransaction(
+                  fetchedTxsSortedByBlockHeightAsc[i],
+                  realmWallet,
+                  nextId++,
+                  record?.createdAt ?? DateTime.now());
           try {
             _realm.add<RealmTransaction>(newRealmTransaction);
           } catch (e) {
@@ -638,7 +639,7 @@ class WalletDataManager {
   }
 
   /// walletID, txHash 로 transaction 조회
-  RealmResult<TransferDTO?> loadTransaction(int walletId, String txHash) {
+  RealmResult<TransactionDto?> loadTransaction(int walletId, String txHash) {
     try {
       final transactions = _realm.query<RealmTransaction>(
           "walletBase.id == '$walletId' And transactionHash == '$txHash'");
@@ -649,7 +650,7 @@ class WalletDataManager {
       }
 
       return RealmResult(
-          data: mapRealmTransactionToTransfer(transactions.first));
+          data: mapRealmTransactionToTransaction(transactions.first));
     } catch (e) {
       return RealmResult(
         error: e is RealmException
@@ -660,7 +661,7 @@ class WalletDataManager {
   }
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
-  RealmResult<TransferDTO> updateTransactionMemo(
+  RealmResult<TransactionDto> updateTransactionMemo(
       int walletId, String txHash, String memo) {
     try {
       final transactions = _realm.query<RealmTransaction>(
@@ -677,7 +678,7 @@ class WalletDataManager {
         transaction.memo = memo;
       });
 
-      return RealmResult(data: mapRealmTransactionToTransfer(transaction));
+      return RealmResult(data: mapRealmTransactionToTransaction(transaction));
     } catch (e) {
       return RealmResult(
         error: e is RealmException
@@ -703,7 +704,7 @@ class WalletDataManager {
     _sharedPrefs.setInt(nextIdField, value);
   }
 
-  List<TransferDTO>? getTxList(int id) {
+  List<TransactionDto>? getTxList(int id) {
     _checkInitialized();
 
     final transactions = _realm
@@ -711,7 +712,7 @@ class WalletDataManager {
         .query('walletBase.id == $id SORT(timestamp DESC)');
 
     if (transactions.isEmpty) return null;
-    List<TransferDTO> result = [];
+    List<TransactionDto> result = [];
 
     final unconfirmed =
         transactions.query('blockHeight = 0 SORT(createdAt DESC)');
@@ -719,10 +720,10 @@ class WalletDataManager {
         .query('blockHeight != 0 SORT(timestamp DESC, createdAt DESC)');
 
     for (var t in unconfirmed) {
-      result.add(mapRealmTransactionToTransfer(t));
+      result.add(mapRealmTransactionToTransaction(t));
     }
     for (var t in confirmed) {
-      result.add(mapRealmTransactionToTransfer(t));
+      result.add(mapRealmTransactionToTransaction(t));
     }
 
     return result;

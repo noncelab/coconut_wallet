@@ -18,7 +18,7 @@ class TransactionProvider extends ChangeNotifier {
   final WalletDataManager _walletDataManager = WalletDataManager();
 
   TransactionRecord? _transaction;
-  List<TransferDTO> _txList = [];
+  List<TransactionDto> _txList = [];
 
   bool _canSeeMoreInputs = false;
   bool _canSeeMoreOutputs = false;
@@ -30,7 +30,7 @@ class TransactionProvider extends ChangeNotifier {
   int _utxoOutputMaxCount = kOutputMaxCount;
 
   TransactionRecord? get transaction => _transaction;
-  List<TransferDTO> get txList => _txList;
+  List<TransactionDto> get txList => _txList;
 
   bool get canSeeMoreInputs => _canSeeMoreInputs;
   bool get canSeeMoreOutputs => _canSeeMoreOutputs;
@@ -154,7 +154,7 @@ class TransactionProvider extends ChangeNotifier {
     return false;
   }
 
-  TransferDTO? _loadTransaction(int walletId, String txHash) {
+  TransactionDto? _loadTransaction(int walletId, String txHash) {
     final result = _walletDataManager.loadTransaction(walletId, txHash);
     if (result.isError) {
       Logger.log('-----------------------------------------------------------');

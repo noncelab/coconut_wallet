@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 class TransactionItemCard extends StatelessWidget {
-  final TransferDTO tx;
+  final TransactionDto tx;
   final Unit currentUnit;
   final int id;
   final Function onPressed;

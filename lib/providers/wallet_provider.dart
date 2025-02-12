@@ -435,7 +435,7 @@ class WalletProvider extends ChangeNotifier {
     _walletItemList = List.from(_walletDataManager.walletList);
   }
 
-  List<TransferDTO>? getTxList(int walletId) {
+  List<TransactionDto>? getTxList(int walletId) {
     return _walletDataManager.getTxList(walletId);
   }
 

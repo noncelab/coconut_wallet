@@ -128,7 +128,7 @@ class UtxoTagProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future transferTagsToNewUtxos(
+  Future transactionTagsToNewUtxos(
       int walletId, String signedTx, List<int> outputIndexes) async {
     List<String> newUtxoIds = _isTagsMoveAllowed
         ? outputIndexes.map((index) => makeUtxoId(signedTx, index)).toList()

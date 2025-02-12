@@ -37,7 +37,7 @@ class _RealmTransaction {
   @Indexed()
   DateTime? timestamp;
   int? blockHeight;
-  String? transferType;
+  String? transactionType;
   String? memo;
   int? amount;
   int? fee;

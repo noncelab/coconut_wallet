@@ -28,8 +28,8 @@ class ErrorCodes {
       AppError('1006', t.errors.wallet_sync_failed_error);
   static AppError fetchBalanceError =
       AppError('1007', t.errors.fetch_balance_error);
-  static AppError fetchTransferListError =
-      AppError('1008', t.errors.fetch_transfer_list_error);
+  static AppError fetchTransactionListError =
+      AppError('1008', t.errors.fetch_transaction_list_error);
   static AppError fetchTransactionsError =
       AppError('1009', t.errors.fetch_transactions_error);
   static AppError databasePathError =
