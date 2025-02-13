@@ -35,7 +35,7 @@ class ElectrumClient {
   }
 
   String _scriptToReversedHash(String script) {
-    String scriptHash = hashString(script);
+    String scriptHash = hexHashString(script);
     return hex.encode(hex.decode(scriptHash).reversed.toList());
   }
 
@@ -51,7 +51,7 @@ class ElectrumClient {
       'method': request.method,
       'params': request.params
     };
-    // print('[${DateTime.now()}] - $jsonRpcRequest');
+    // Logger.log('[${DateTime.now()}] - $jsonRpcRequest');
     await _socketManager.send(json.encode(jsonRpcRequest));
 
     final completer = Completer<Map>();
@@ -62,7 +62,7 @@ class ElectrumClient {
     if (res['error'] != null) {
       throw res['error'];
     }
-    // print('[${DateTime.now()}] - $res');
+    // Logger.log('[${DateTime.now()}] - $res');
     return fromJson(res['result'], id: requestId);
   }
 

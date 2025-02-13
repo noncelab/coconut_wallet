@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -135,7 +136,8 @@ class WalletProvider extends ChangeNotifier {
       }
 
       if (_isNetworkOn == true) {
-        await _initNodeConnectionWhenIsNull();
+        // TODO: NodeConnector
+        // await _initNodeConnectionWhenIsNull();
 
         // 1개만 업데이트 (하지만 나머지 지갑들도 업데이트 함)
         if (targetId != null) {
@@ -457,6 +459,10 @@ class WalletProvider extends ChangeNotifier {
       handleNetworkDisconnected();
       notifyListeners();
     }
+  }
+
+  WalletBalance getWalletBalance(int walletId) {
+    return _walletDataManager.getWalletBalance(walletId);
   }
 
   Future<int?> getCurrentBlockHeight() async {

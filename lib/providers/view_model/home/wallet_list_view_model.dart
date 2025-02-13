@@ -1,4 +1,6 @@
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -13,9 +15,10 @@ class WalletListViewModel extends ChangeNotifier {
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
   late WalletInitState _prevWalletInitState;
+  late final NodeProvider _nodeProvider;
 
-  WalletListViewModel(
-      this._walletProvider, this._visibilityProvider, this._isBalanceHidden) {
+  WalletListViewModel(this._walletProvider, this._visibilityProvider,
+      this._isBalanceHidden, this._nodeProvider) {
     _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
@@ -42,10 +45,14 @@ class WalletListViewModel extends ChangeNotifier {
 
   Future initWallet(
       {int? targetId, int? exceptionalId, bool syncOthers = true}) async {
-    return _walletProvider.initWallet(
+    _walletProvider.initWallet(
         targetId: targetId,
         exceptionalId: exceptionalId,
         syncOthers: syncOthers);
+
+    for (var item in walletItemList) {
+      await _nodeProvider.getBalance(item);
+    }
   }
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
@@ -78,5 +85,13 @@ class WalletListViewModel extends ChangeNotifier {
 
   void _onWalletInitStateFinished() {
     vibrateLight();
+  }
+
+  WalletBalance getWalletBalance(int id) {
+    return _walletProvider.getWalletBalance(id);
+  }
+
+  void onNodeProviderUpdated() {
+    notifyListeners();
   }
 }

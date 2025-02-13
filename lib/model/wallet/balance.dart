@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:coconut_wallet/utils/logger.dart';
+
 /// Represents the balance of a wallet.
 class Balance {
   int confirmed;
@@ -52,22 +54,13 @@ class WalletBalance extends Balance {
     List<AddressBalance> changeBalances, [
     bool isConfirmed = true,
   ]) {
-    int total = 0;
-    final int length1 = receiveBalances.length;
-    final int length2 = changeBalances.length;
+    final receiveTotal = receiveBalances
+        .map((e) => isConfirmed ? e.confirmed : e.unconfirmed)
+        .reduce((a, b) => a + b);
+    final changeTotal = changeBalances
+        .map((e) => isConfirmed ? e.confirmed : e.unconfirmed)
+        .reduce((a, b) => a + b);
 
-    for (var i = 0; i < length1; i++) {
-      total += isConfirmed
-          ? receiveBalances[i].confirmed
-          : receiveBalances[i].unconfirmed;
-    }
-
-    for (var i = 0; i < length2; i++) {
-      total += isConfirmed
-          ? changeBalances[i].confirmed
-          : changeBalances[i].unconfirmed;
-    }
-
-    return total;
+    return receiveTotal + changeTotal;
   }
 }

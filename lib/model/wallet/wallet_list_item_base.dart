@@ -32,16 +32,16 @@ abstract class WalletListItemBase {
       this.isLatestTxBlockHeightZero = false});
 
   // TODO: walletFeature
-  dynamic get walletFeature {
-    switch (walletType) {
-      case WalletType.singleSignature:
-        return walletBase as SingleSignatureWallet;
-      case WalletType.multiSignature:
-        return walletBase as MultisignatureWallet;
-      default:
-        throw StateError('wrong walletType: ${walletType.name}');
-    }
-  }
+  // dynamic get walletFeature {
+  //   switch (walletType) {
+  //     case WalletType.singleSignature:
+  //       return walletBase as SingleSignatureWallet;
+  //     case WalletType.multiSignature:
+  //       return walletBase as MultisignatureWallet;
+  //     default:
+  //       throw StateError('wrong walletType: ${walletType.name}');
+  //   }
+  // }
 
   // TODO: _fetchWalletStatusFromNetwork(NodeConnector nodeConnector)
 

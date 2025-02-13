@@ -19,8 +19,11 @@ class SendAmountViewModel extends ChangeNotifier {
   SendAmountViewModel(
       this._sendInfoProvider, this._walletProvider, this._isNetworkOn) {
     var wallet = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
-    _confirmedBalance = wallet.walletFeature.getBalance();
-    _unconfirmedBalance = wallet.walletFeature.getUnconfirmedBalance();
+    // TODO: getBalance, getUnconfirmedBalance
+    // _confirmedBalance = wallet.walletFeature.getBalance();
+    // _unconfirmedBalance = wallet.walletFeature.getUnconfirmedBalance();
+    _confirmedBalance = 0;
+    _unconfirmedBalance = 0;
     _input = '';
     _isNextButtonEnabled = false;
   }

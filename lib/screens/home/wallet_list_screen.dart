@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
@@ -70,19 +71,22 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<WalletProvider, PreferenceProvider,
-        VisibilityProvider, WalletListViewModel>(
+    return ChangeNotifierProxyProvider4<WalletProvider, PreferenceProvider,
+        VisibilityProvider, NodeProvider, WalletListViewModel>(
       create: (_) => _viewModel,
       update: (BuildContext context,
           WalletProvider walletProvider,
           PreferenceProvider preferenceProvider,
           VisibilityProvider visibilityProvider,
+          NodeProvider nodeProvider,
           WalletListViewModel? previous) {
         if (previous!.isBalanceHidden != preferenceProvider.isBalanceHidden) {
           previous.setIsBalanceHidden(preferenceProvider.isBalanceHidden);
         }
 
-        return previous..onWalletProviderUpdated(walletProvider);
+        return previous
+          ..onWalletProviderUpdated(walletProvider)
+          ..onNodeProviderUpdated();
       },
       child:
           Consumer<WalletListViewModel>(builder: (context, viewModel, child) {
@@ -254,6 +258,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false).isBalanceHidden,
+      Provider.of<NodeProvider>(context, listen: false),
     );
 
     _scrollController = ScrollController();
@@ -373,12 +378,12 @@ class _WalletListScreenState extends State<WalletListScreen>
       final WalletListItemBase(
         id: id,
         name: name,
-        balance: balance,
         iconIndex: iconIndex,
-        colorIndex: colorIndex
+        colorIndex: colorIndex,
       ) = viewModel.walletItemList[index];
-
       final base = viewModel.walletItemList[index];
+      final balance = viewModel.getWalletBalance(id);
+
       List<MultisigSigner>? signers;
       if (base.walletType == WalletType.multiSignature) {
         signers = (base as MultisigWalletListItem).signers;
@@ -394,7 +399,7 @@ class _WalletListScreenState extends State<WalletListScreen>
             key: _itemKeys[index],
             id: id,
             name: name,
-            balance: balance,
+            balance: balance.total,
             iconIndex: iconIndex,
             colorIndex: colorIndex,
             isLastItem: index == viewModel.walletItemList.length - 1,
@@ -416,7 +421,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               key: _itemKeys[index],
               id: id,
               name: name,
-              balance: balance,
+              balance: balance.total,
               iconIndex: iconIndex,
               colorIndex: colorIndex,
               isLastItem: index == viewModel.walletItemList.length - 1,
@@ -444,7 +449,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       return WalletItemCard(
         id: id,
         name: name,
-        balance: balance,
+        balance: balance.total,
         iconIndex: iconIndex,
         colorIndex: colorIndex,
         isLastItem: index == viewModel.walletItemList.length - 1,

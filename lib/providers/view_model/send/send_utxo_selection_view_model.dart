@@ -100,7 +100,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _initUtxoTagMap();
 
     _walletBase = _walletBaseItem.walletBase;
-    _confirmedBalance = _walletBaseItem.walletFeature.getBalance();
+    // _confirmedBalance = _walletBaseItem.walletFeature.getBalance();
+    _confirmedBalance = 0;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
     _isMaxMode = _confirmedBalance ==
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);

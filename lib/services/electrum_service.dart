@@ -202,8 +202,8 @@ class ElectrumService extends NodeClient {
   @override
   Future<WalletBalance> getBalance(WalletBase wallet,
       {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async {
-    int receiveScanLimit = receiveUsedIndex + 1;
-    int changeScanLimit = changeUsedIndex + 1;
+    int receiveScanLimit = receiveUsedIndex + 1 + gapLimit;
+    int changeScanLimit = changeUsedIndex + 1 + gapLimit;
 
     final receiveBalanceFutures = _getBalance(wallet, receiveScanLimit, false);
     final changeBalanceFutures = _getBalance(wallet, changeScanLimit, true);

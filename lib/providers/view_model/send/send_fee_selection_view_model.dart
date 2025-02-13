@@ -25,9 +25,12 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
       this._bitcoinPriceKrw, this._isNetworkOn) {
     _walletListItemBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
-    _confirmedBalance = _walletListItemBase.walletFeature.getBalance();
-    _unconfirmedBalance =
-        _walletListItemBase.walletFeature.getUnconfirmedBalance();
+    // TODO: getBalance, getUnconfirmedBalance
+    // _confirmedBalance = _walletListItemBase.walletFeature.getBalance();
+    // _unconfirmedBalance =
+    //     _walletListItemBase.walletFeature.getUnconfirmedBalance();
+    _confirmedBalance = 0;
+    _unconfirmedBalance = 0;
     _isMultisigWallet =
         _walletListItemBase.walletType == WalletType.multiSignature;
     _bitcoinPriceKrw = _bitcoinPriceKrw;
@@ -54,13 +57,17 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   WalletProvider get walletProvider => _walletProvider;
 
   Future<int?> estimateFee(int satsPerVb) async {
-    return await _walletListItemBase.walletFeature.estimateFee(
-        _recipientAddress, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
+    // TODO: estimateFee
+    // return await _walletListItemBase.walletFeature.estimateFee(
+    //     _recipientAddress, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
+    return 0;
   }
 
   Future<int?> estimateFeeWithMaximum(int satsPerVb) async {
-    return await _walletListItemBase.walletFeature
-        .estimateFeeWithMaximum(_recipientAddress, satsPerVb);
+    // TODO: estimateFeeWithMaximum
+    // return await _walletListItemBase.walletFeature
+    //     .estimateFeeWithMaximum(_recipientAddress, satsPerVb);
+    return 0;
   }
 
   double getAmount(int estimatedFee) {

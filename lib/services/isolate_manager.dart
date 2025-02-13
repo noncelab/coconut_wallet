@@ -229,12 +229,12 @@ class IsolateManager implements IsolateManagerBase {
 
   @override
   Future<String> broadcast(String rawTransaction) async {
-    return await _send<String>(IsolateMessageType.broadcast, [rawTransaction]);
+    return _send<String>(IsolateMessageType.broadcast, [rawTransaction]);
   }
 
   @override
   Future<int> getNetworkMinimumFeeRate() async {
-    return await _send<int>(IsolateMessageType.getNetworkMinimumFeeRate, []);
+    return _send<int>(IsolateMessageType.getNetworkMinimumFeeRate, []);
   }
 
   @override
@@ -244,7 +244,7 @@ class IsolateManager implements IsolateManagerBase {
 
   @override
   Future<String> getTransaction(String txHash) async {
-    return await _send<String>(IsolateMessageType.getTransaction, [txHash]);
+    return _send<String>(IsolateMessageType.getTransaction, [txHash]);
   }
 
   @override

@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/repository/realm/converter/balance.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
@@ -60,6 +61,8 @@ class WalletDataManager {
         RealmIntegerId.schema,
         TempBroadcastTimeRecord.schema,
         RealmUtxoTag.schema,
+        RealmWalletBalance.schema,
+        RealmAddressBalance.schema,
       ],
       schemaVersion: 1,
       migrationCallback: (migration, oldVersion) {},
@@ -240,13 +243,14 @@ class WalletDataManager {
     }
 
     // 항상 최신순으로 반환
-    List<TransactionRecord> fetchedTxsSortedByBlockHeightAsc =
-        walletItem.walletFeature.getTransactionList(
-            cursor: 0,
-            // TODO: WalletStatus
-            // count: walletStatus.transactionList.length -
-            //     (realmWallet.txCount ?? 0) +
-            (unconfirmedRealmTxs?.length ?? 0));
+    List<TransactionRecord> fetchedTxsSortedByBlockHeightAsc = [];
+    // TODO: getTransactionList
+    // walletItem.walletFeature.getTransactionList(
+    // cursor: 0,
+    // TODO: WalletStatus
+    // count: walletStatus.transactionList.length -
+    //     (realmWallet.txCount ?? 0) +
+    // (unconfirmedRealmTxs?.length ?? 0));
     int nextId = getLastId(_realm, (RealmTransaction).toString());
     List<int> existingUnconfirmedTxIdsInFetchedTxs = [];
     await _realm.writeAsync(() {
@@ -313,9 +317,9 @@ class WalletDataManager {
       realmWallet.isLatestTxBlockHeightZero =
           fetchedTxsSortedByBlockHeightAsc.isNotEmpty &&
               fetchedTxsSortedByBlockHeightAsc[0].blockHeight == 0;
-
-      realmWallet.balance = walletItem.walletFeature.getBalance() +
-          walletItem.walletFeature.getUnconfirmedBalance();
+      realmWallet.balance = 0;
+      // realmWallet.balance = walletItem.walletFeature.getBalance() +
+      //     walletItem.walletFeature.getUnconfirmedBalance();
     });
 
     saveNextId(_realm, (RealmTransaction).toString(), nextId);
@@ -744,6 +748,7 @@ class WalletDataManager {
       _realm.deleteAll<RealmMultisigWallet>();
       _realm.deleteAll<RealmTransaction>();
       _realm.deleteAll<RealmUtxoTag>();
+      _realm.deleteAll<RealmWalletBalance>();
     });
 
     _walletList = [];
@@ -959,6 +964,15 @@ class WalletDataManager {
   // not used
   void dispose() {
     _realm.close();
+  }
+
+  WalletBalance getWalletBalance(int walletId) {
+    final realmWalletBalance = _realm.find<RealmWalletBalance>(walletId);
+    if (realmWalletBalance == null) {
+      return WalletBalance([], []);
+    }
+
+    return mapRealmToWalletBalance(realmWalletBalance);
   }
 }
 
