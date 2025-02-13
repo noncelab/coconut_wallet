@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../styles.dart';
 
+@Deprecated('MyToast Deprecated')
 class MyToast {
   static Widget getToastWidget(String content) {
     Widget toast = Container(

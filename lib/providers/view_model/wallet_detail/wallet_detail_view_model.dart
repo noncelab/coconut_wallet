@@ -5,7 +5,6 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
-import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';

@@ -75,6 +75,11 @@ dependencies:
   cryptography: ^2.7.0
   slang: ^4.4.1
   slang_flutter: ^4.4.0
+  coconut_design_system:
+    git:
+      url: https://github.com/noncelab/coconut_design_system.git
+      ref: feat/overlays
+#    path: ../coconut_design_system
 
 dev_dependencies:
   flutter_test:

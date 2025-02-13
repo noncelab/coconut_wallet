@@ -318,6 +318,7 @@ toast:
   tag_update_failed: "태그를 편집할 수 없어요."
   tag_delete_failed: "태그를 삭제할 수 없어요."
   wallet_detail_refresh: "화면을 아래로 당겨 최신 데이터를 가져와 주세요."
+  qr_copy: "주소를 복사했어요!"
 
 alert:
   error_tx:

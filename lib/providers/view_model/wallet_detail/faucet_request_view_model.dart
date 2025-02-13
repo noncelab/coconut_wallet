@@ -6,7 +6,6 @@ import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
-import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -88,14 +87,12 @@ class FaucetRequestViewModel extends ChangeNotifier {
   Future<void> _getFaucetStatus() async {
     try {
       final response = await _faucetService.getStatus();
-      if (response is FaucetStatusResponse) {
-        isLoading = false;
-        _requestCount = _faucetRecord.count;
-        if (_requestCount == 0) {
-          _requestAmount = response.maxLimit;
-        } else if (_requestCount <= 2) {
-          _requestAmount = response.minLimit;
-        }
+      isLoading = false;
+      _requestCount = _faucetRecord.count;
+      if (_requestCount == 0) {
+        _requestAmount = response.maxLimit;
+      } else if (_requestCount <= 2) {
+        _requestAmount = response.minLimit;
       }
     } catch (_) {
       setErrorInStatus(true);

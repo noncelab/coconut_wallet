@@ -1,15 +1,15 @@
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/services.dart';
 
 import '../styles.dart';
-import '../utils/toast.dart';
 
 class QRCodeInfo extends StatefulWidget {
   final String qrData;
@@ -79,14 +79,13 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
                   }
                 }
 
-                FToast fToast = FToast();
-
-                fToast.init(context);
-                final toast = MyToast.getToastWidget("복사 완료");
-                fToast.showToast(
-                    child: toast,
-                    gravity: ToastGravity.BOTTOM,
-                    toastDuration: const Duration(seconds: 2));
+                if (context.mounted) {
+                  CoconutToast.showBottomToast(
+                    brightness: Brightness.dark,
+                    context: context,
+                    text: t.toast.qr_copy,
+                  );
+                }
               },
               height: 38,
               width: 97,

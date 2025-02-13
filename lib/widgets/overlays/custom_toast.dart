@@ -4,6 +4,7 @@ import 'package:coconut_wallet/styles.dart';
 
 bool _isToastVisible = false;
 
+@Deprecated('Custom Toast Deprecated')
 class CustomToast {
   static void showToast({
     required BuildContext context,

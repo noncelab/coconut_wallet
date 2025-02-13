@@ -1,10 +1,11 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
 
@@ -39,8 +40,13 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
         Provider.of<ConnectivityProvider>(context, listen: false);
     _connectivity.onConnectivityChanged.listen(_checkConnectivity);
     _screenListener.addScreenShotListener((_) {
-      CustomToast.showToast(
-          context: context, text: '스크린 캡처가 감지되었습니다.', seconds: 4);
+      CoconutToast.showToast(
+        brightness: Brightness.dark,
+        context: context,
+        text: t.toast.screen_capture,
+        seconds: 4,
+        isVisibleIcon: true,
+      );
     });
     _screenListener.watch();
   }
@@ -65,8 +71,13 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
 
   void _showToastAboutNetwork(bool isNetworkOn) {
     if (!isNetworkOn) {
-      CustomToast.showToast(
-          context: context, text: "네트워크 연결이 없습니다.", seconds: 7);
+      CoconutToast.showToast(
+        brightness: Brightness.dark,
+        context: context,
+        text: t.errors.network_connect,
+        isVisibleIcon: true,
+        seconds: 7,
+      );
     }
   }
 

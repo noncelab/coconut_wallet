@@ -677,6 +677,7 @@ class TranslationsToastKr {
   String get tag_update_failed => '태그를 편집할 수 없어요.';
   String get tag_delete_failed => '태그를 삭제할 수 없어요.';
   String get wallet_detail_refresh => '화면을 아래로 당겨 최신 데이터를 가져와 주세요.';
+  String get qr_copy => '주소를 복사했어요!';
 }
 
 // Path: alert
@@ -1438,6 +1439,8 @@ extension on Translations {
         return '태그를 삭제할 수 없어요.';
       case 'toast.wallet_detail_refresh':
         return '화면을 아래로 당겨 최신 데이터를 가져와 주세요.';
+      case 'toast.qr_copy':
+        return '주소를 복사했어요!';
       case 'alert.error_tx.not_parsed':
         return ({required Object error}) => '트랜잭션 파싱 실패: ${error}';
       case 'alert.error_tx.not_created':
