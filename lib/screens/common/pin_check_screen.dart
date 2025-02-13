@@ -150,18 +150,22 @@ class _PinCheckScreenState extends State<PinCheckScreen>
   void _showDialog() {
     vibrateMedium();
 
-    CustomDialogs.showCustomAlertDialog(context,
-        title: t.alert.forgot_password.title,
-        message: t.alert.forgot_password.description,
-        confirmButtonText: t.alert.forgot_password.btn_reset,
-        confirmButtonColor: MyColors.warningRed,
-        cancelButtonText: t.close, onConfirm: () async {
-      await _authProvider.resetPassword();
-      widget.onComplete?.call();
-      Navigator.of(context).pop();
-    }, onCancel: () {
-      Navigator.of(context).pop();
-    });
+    CustomDialogs.showCustomDialog(
+      context,
+      title: t.alert.forgot_password.title,
+      description: t.alert.forgot_password.description,
+      rightButtonText: t.alert.forgot_password.btn_reset,
+      rightButtonColor: MyColors.warningRed,
+      leftButtonText: t.close,
+      onTapRight: () async {
+        await _authProvider.resetPassword();
+        widget.onComplete?.call();
+        if (mounted) Navigator.of(context).pop();
+      },
+      onTapLeft: () {
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override

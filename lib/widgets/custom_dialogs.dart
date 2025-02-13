@@ -1,8 +1,47 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class CustomDialogs {
+  static Future<bool?> showCustomDialog(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required Function onTapRight,
+    String rightButtonText = '확인',
+    String leftButtonText = '취소',
+    Color? backgroundColor,
+    Color? titleColor,
+    Color? descriptionColor,
+    Color? rightButtonColor,
+    Color? leftButtonColor,
+    EdgeInsets? padding,
+    Function? onTapLeft,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          brightness: Brightness.dark,
+          title: title,
+          description: description,
+          onTapRight: onTapRight,
+          rightButtonText: rightButtonText,
+          leftButtonText: leftButtonText,
+          backgroundColor: backgroundColor,
+          titleColor: titleColor,
+          descriptionColor: descriptionColor,
+          rightButtonColor: rightButtonColor,
+          leftButtonColor: leftButtonColor,
+          padding: padding,
+          onTapLeft: onTapLeft,
+        );
+      },
+    );
+  }
+
+  @Deprecated("showCustomAlertDialog")
   static void showCustomAlertDialog(BuildContext context,
       {required String title,
       required String message,
@@ -41,87 +80,88 @@ class CustomDialogs {
     );
   }
 
-  static Future<bool?> showFutureCustomAlertDialog(BuildContext context,
-      {required String title,
-      required String message,
-      required Future<bool> Function() onConfirm,
-      required bool Function() onCancel,
-      String confirmButtonText = '확인',
-      String cancelButtonText = '취소',
-      Color confirmButtonColor = MyColors.white}) {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return CupertinoAlertDialog(
-            title: Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(title, style: Styles.body1Bold),
-            ),
-            content: Text(
-              message,
-              style: Styles.body2,
-              textAlign: TextAlign.center,
-            ),
-            actions: [
-              CupertinoDialogAction(
-                  isDefaultAction: true,
-                  onPressed: () {
-                    bool result = onCancel();
-                    Navigator.of(context, rootNavigator: true).pop(result);
-                  },
-                  child: Text(cancelButtonText, style: Styles.label)),
-              CupertinoDialogAction(
-                  isDefaultAction: true,
-                  onPressed: () async {
-                    await onConfirm();
-                  },
-                  child: Text(confirmButtonText,
-                      style: Styles.label
-                          .merge(TextStyle(color: confirmButtonColor)))),
-            ]);
-      },
-    );
-  }
+  // @Deprecated("showFutureCustomAlertDialog")
+  // static Future<bool?> showFutureCustomAlertDialog(BuildContext context,
+  //     {required String title,
+  //     required String message,
+  //     required Future<bool> Function() onConfirm,
+  //     required bool Function() onCancel,
+  //     String confirmButtonText = '확인',
+  //     String cancelButtonText = '취소',
+  //     Color confirmButtonColor = MyColors.white}) {
+  //   return showDialog<bool>(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     barrierColor: Colors.transparent,
+  //     builder: (BuildContext context) {
+  //       return CupertinoAlertDialog(
+  //           title: Padding(
+  //             padding: const EdgeInsets.only(bottom: 8.0),
+  //             child: Text(title, style: Styles.body1Bold),
+  //           ),
+  //           content: Text(
+  //             message,
+  //             style: Styles.body2,
+  //             textAlign: TextAlign.center,
+  //           ),
+  //           actions: [
+  //             CupertinoDialogAction(
+  //                 isDefaultAction: true,
+  //                 onPressed: () {
+  //                   bool result = onCancel();
+  //                   Navigator.of(context, rootNavigator: true).pop(result);
+  //                 },
+  //                 child: Text(cancelButtonText, style: Styles.label)),
+  //             CupertinoDialogAction(
+  //                 isDefaultAction: true,
+  //                 onPressed: () async {
+  //                   await onConfirm();
+  //                 },
+  //                 child: Text(confirmButtonText,
+  //                     style: Styles.label
+  //                         .merge(TextStyle(color: confirmButtonColor)))),
+  //           ]);
+  //     },
+  //   );
+  // }
 
-  static void showFullScreenDialog(
-      BuildContext context, String title, Widget body) {
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      fullscreenDialog: true,
-      builder: (BuildContext context) {
-        return Scaffold(
-            backgroundColor: Colors.black,
-            appBar: AppBar(
-                title: Text(title),
-                centerTitle: true,
-                backgroundColor: MyColors.black,
-                titleTextStyle: Styles.h3.merge(
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w400)),
-                toolbarTextStyle: Styles.h3,
-                actions: [
-                  IconButton(
-                    color: MyColors.white,
-                    focusColor: MyColors.transparentGrey,
-                    icon: const Icon(CupertinoIcons.xmark, size: 18),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  )
-                ]),
-            body: SafeArea(
-                child: SingleChildScrollView(
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height,
-                padding: Paddings.container,
-                color: MyColors.black,
-                child: Column(
-                  children: [body],
-                ),
-              ),
-            )));
-      },
-    ));
-  }
+  // static void showFullScreenDialog(
+  //     BuildContext context, String title, Widget body) {
+  //   Navigator.of(context).push(MaterialPageRoute<void>(
+  //     fullscreenDialog: true,
+  //     builder: (BuildContext context) {
+  //       return Scaffold(
+  //           backgroundColor: Colors.black,
+  //           appBar: AppBar(
+  //               title: Text(title),
+  //               centerTitle: true,
+  //               backgroundColor: MyColors.black,
+  //               titleTextStyle: Styles.h3.merge(
+  //                   const TextStyle(fontSize: 16, fontWeight: FontWeight.w400)),
+  //               toolbarTextStyle: Styles.h3,
+  //               actions: [
+  //                 IconButton(
+  //                   color: MyColors.white,
+  //                   focusColor: MyColors.transparentGrey,
+  //                   icon: const Icon(CupertinoIcons.xmark, size: 18),
+  //                   onPressed: () {
+  //                     Navigator.of(context).pop();
+  //                   },
+  //                 )
+  //               ]),
+  //           body: SafeArea(
+  //               child: SingleChildScrollView(
+  //             child: Container(
+  //               width: MediaQuery.of(context).size.width,
+  //               height: MediaQuery.of(context).size.height,
+  //               padding: Paddings.container,
+  //               color: MyColors.black,
+  //               child: Column(
+  //                 children: [body],
+  //               ),
+  //             ),
+  //           )));
+  //     },
+  //   ));
+  // }
 }

@@ -59,20 +59,20 @@ class _StartScreenState extends State<StartScreen> {
 
   /// 업데이트 다이얼로그 표시
   Future<bool> _showUpdateDialog() async {
-    return (await CustomDialogs.showFutureCustomAlertDialog(
+    return (await CustomDialogs.showCustomDialog(
           context,
           title: t.alert.update.title,
-          message: t.alert.update.description,
-          onConfirm: () async {
+          description: t.alert.update.description,
+          onTapRight: () async {
             await _viewModel.launchUpdate();
             return true;
           },
-          onCancel: () {
+          onTapLeft: () {
             return false;
           },
-          confirmButtonText: t.alert.update.btn_update,
-          confirmButtonColor: MyColors.primary,
-          cancelButtonText: t.alert.update.btn_do_later,
+          rightButtonText: t.alert.update.btn_update,
+          rightButtonColor: MyColors.primary,
+          leftButtonText: t.alert.update.btn_do_later,
         )) ??
         false;
   }
