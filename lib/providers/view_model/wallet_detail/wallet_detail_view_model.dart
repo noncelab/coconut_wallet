@@ -83,7 +83,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     // Faucet
     // TODO: address
     // Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
-    var receiveAddress = WalletAddress('', '', 0, false, 0, 0);
+    var receiveAddress = WalletAddress('', '', 0, false, 0, 0, 0);
     _walletAddress = receiveAddress.address;
     _derivationPath = receiveAddress.derivationPath;
     _walletName = walletBaseItem.name.length > 20

@@ -18,16 +18,20 @@ class RealmWalletBase extends _RealmWalletBase
     String descriptor,
     String name,
     String walletType, {
-    int lastUsedReceiveIndex = -1,
-    int lastUsedChangeIndex = -1,
+    int usedReceiveIndex = -1,
+    int usedChangeIndex = -1,
+    int generatedReceiveIndex = -1,
+    int generatedChangeIndex = -1,
     int? balance,
     int? txCount,
     bool isLatestTxBlockHeightZero = false,
   }) {
     if (!_defaultsSet) {
       _defaultsSet = RealmObjectBase.setDefaults<RealmWalletBase>({
-        'lastUsedReceiveIndex': -1,
-        'lastUsedChangeIndex': -1,
+        'usedReceiveIndex': -1,
+        'usedChangeIndex': -1,
+        'generatedReceiveIndex': -1,
+        'generatedChangeIndex': -1,
         'isLatestTxBlockHeightZero': false,
       });
     }
@@ -37,8 +41,10 @@ class RealmWalletBase extends _RealmWalletBase
     RealmObjectBase.set(this, 'descriptor', descriptor);
     RealmObjectBase.set(this, 'name', name);
     RealmObjectBase.set(this, 'walletType', walletType);
-    RealmObjectBase.set(this, 'lastUsedReceiveIndex', lastUsedReceiveIndex);
-    RealmObjectBase.set(this, 'lastUsedChangeIndex', lastUsedChangeIndex);
+    RealmObjectBase.set(this, 'usedReceiveIndex', usedReceiveIndex);
+    RealmObjectBase.set(this, 'usedChangeIndex', usedChangeIndex);
+    RealmObjectBase.set(this, 'generatedReceiveIndex', generatedReceiveIndex);
+    RealmObjectBase.set(this, 'generatedChangeIndex', generatedChangeIndex);
     RealmObjectBase.set(this, 'balance', balance);
     RealmObjectBase.set(this, 'txCount', txCount);
     RealmObjectBase.set(
@@ -82,18 +88,32 @@ class RealmWalletBase extends _RealmWalletBase
       RealmObjectBase.set(this, 'walletType', value);
 
   @override
-  int get lastUsedReceiveIndex =>
-      RealmObjectBase.get<int>(this, 'lastUsedReceiveIndex') as int;
+  int get usedReceiveIndex =>
+      RealmObjectBase.get<int>(this, 'usedReceiveIndex') as int;
   @override
-  set lastUsedReceiveIndex(int value) =>
-      RealmObjectBase.set(this, 'lastUsedReceiveIndex', value);
+  set usedReceiveIndex(int value) =>
+      RealmObjectBase.set(this, 'usedReceiveIndex', value);
 
   @override
-  int get lastUsedChangeIndex =>
-      RealmObjectBase.get<int>(this, 'lastUsedChangeIndex') as int;
+  int get usedChangeIndex =>
+      RealmObjectBase.get<int>(this, 'usedChangeIndex') as int;
   @override
-  set lastUsedChangeIndex(int value) =>
-      RealmObjectBase.set(this, 'lastUsedChangeIndex', value);
+  set usedChangeIndex(int value) =>
+      RealmObjectBase.set(this, 'usedChangeIndex', value);
+
+  @override
+  int get generatedReceiveIndex =>
+      RealmObjectBase.get<int>(this, 'generatedReceiveIndex') as int;
+  @override
+  set generatedReceiveIndex(int value) =>
+      RealmObjectBase.set(this, 'generatedReceiveIndex', value);
+
+  @override
+  int get generatedChangeIndex =>
+      RealmObjectBase.get<int>(this, 'generatedChangeIndex') as int;
+  @override
+  set generatedChangeIndex(int value) =>
+      RealmObjectBase.set(this, 'generatedChangeIndex', value);
 
   @override
   int? get balance => RealmObjectBase.get<int>(this, 'balance') as int?;
@@ -133,8 +153,10 @@ class RealmWalletBase extends _RealmWalletBase
       'descriptor': descriptor.toEJson(),
       'name': name.toEJson(),
       'walletType': walletType.toEJson(),
-      'lastUsedReceiveIndex': lastUsedReceiveIndex.toEJson(),
-      'lastUsedChangeIndex': lastUsedChangeIndex.toEJson(),
+      'usedReceiveIndex': usedReceiveIndex.toEJson(),
+      'usedChangeIndex': usedChangeIndex.toEJson(),
+      'generatedReceiveIndex': generatedReceiveIndex.toEJson(),
+      'generatedChangeIndex': generatedChangeIndex.toEJson(),
       'balance': balance.toEJson(),
       'txCount': txCount.toEJson(),
       'isLatestTxBlockHeightZero': isLatestTxBlockHeightZero.toEJson(),
@@ -160,10 +182,14 @@ class RealmWalletBase extends _RealmWalletBase
           fromEJson(descriptor),
           fromEJson(name),
           fromEJson(walletType),
-          lastUsedReceiveIndex:
-              fromEJson(ejson['lastUsedReceiveIndex'], defaultValue: -1),
-          lastUsedChangeIndex:
-              fromEJson(ejson['lastUsedChangeIndex'], defaultValue: -1),
+          usedReceiveIndex:
+              fromEJson(ejson['usedReceiveIndex'], defaultValue: -1),
+          usedChangeIndex:
+              fromEJson(ejson['usedChangeIndex'], defaultValue: -1),
+          generatedReceiveIndex:
+              fromEJson(ejson['generatedReceiveIndex'], defaultValue: -1),
+          generatedChangeIndex:
+              fromEJson(ejson['generatedChangeIndex'], defaultValue: -1),
           balance: fromEJson(ejson['balance']),
           txCount: fromEJson(ejson['txCount']),
           isLatestTxBlockHeightZero: fromEJson(
@@ -185,8 +211,10 @@ class RealmWalletBase extends _RealmWalletBase
       SchemaProperty('descriptor', RealmPropertyType.string),
       SchemaProperty('name', RealmPropertyType.string),
       SchemaProperty('walletType', RealmPropertyType.string),
-      SchemaProperty('lastUsedReceiveIndex', RealmPropertyType.int),
-      SchemaProperty('lastUsedChangeIndex', RealmPropertyType.int),
+      SchemaProperty('usedReceiveIndex', RealmPropertyType.int),
+      SchemaProperty('usedChangeIndex', RealmPropertyType.int),
+      SchemaProperty('generatedReceiveIndex', RealmPropertyType.int),
+      SchemaProperty('generatedChangeIndex', RealmPropertyType.int),
       SchemaProperty('balance', RealmPropertyType.int, optional: true),
       SchemaProperty('txCount', RealmPropertyType.int, optional: true),
       SchemaProperty('isLatestTxBlockHeightZero', RealmPropertyType.bool),
@@ -777,7 +805,7 @@ class RealmWalletAddress extends _RealmWalletAddress
     with RealmEntity, RealmObjectBase, RealmObject {
   RealmWalletAddress(
     int id,
-    String walletId,
+    int walletId,
     String address,
     int index,
     bool isChange,
@@ -807,10 +835,9 @@ class RealmWalletAddress extends _RealmWalletAddress
   set id(int value) => RealmObjectBase.set(this, 'id', value);
 
   @override
-  String get walletId =>
-      RealmObjectBase.get<String>(this, 'walletId') as String;
+  int get walletId => RealmObjectBase.get<int>(this, 'walletId') as int;
   @override
-  set walletId(String value) => RealmObjectBase.set(this, 'walletId', value);
+  set walletId(int value) => RealmObjectBase.set(this, 'walletId', value);
 
   @override
   String get address => RealmObjectBase.get<String>(this, 'address') as String;
@@ -920,7 +947,7 @@ class RealmWalletAddress extends _RealmWalletAddress
     return const SchemaObject(
         ObjectType.realmObject, RealmWalletAddress, 'RealmWalletAddress', [
       SchemaProperty('id', RealmPropertyType.int, primaryKey: true),
-      SchemaProperty('walletId', RealmPropertyType.string,
+      SchemaProperty('walletId', RealmPropertyType.int,
           indexType: RealmIndexType.regular),
       SchemaProperty('address', RealmPropertyType.string,
           indexType: RealmIndexType.regular),

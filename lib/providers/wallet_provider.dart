@@ -4,6 +4,7 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
@@ -462,6 +463,12 @@ class WalletProvider extends ChangeNotifier {
 
   Balance getWalletBalance(int walletId) {
     return _walletDataManager.getWalletBalance(walletId);
+  }
+
+  List<WalletAddress> getWalletAddressList(
+      WalletListItemBase wallet, int cursor, int count, bool isChange) {
+    return _walletDataManager.getWalletAddressList(
+        wallet, cursor, count, isChange);
   }
 
   Future<int?> getCurrentBlockHeight() async {

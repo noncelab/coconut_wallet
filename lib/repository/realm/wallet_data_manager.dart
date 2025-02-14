@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -8,8 +9,10 @@ import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
@@ -884,6 +887,136 @@ class WalletDataManager {
       realmWalletBalance.confirmed,
       realmWalletBalance.unconfirmed,
     );
+  }
+
+  List<WalletAddress> getWalletAddressList(
+    WalletListItemBase walletItemBase,
+    int cursor,
+    int count,
+    bool isChange,
+  ) {
+    _checkInitialized();
+
+    final realmWalletBase = _realm.find<RealmWalletBase>(walletItemBase.id);
+    if (realmWalletBase == null) {
+      throw StateError('[getWalletAddressList] Wallet not found');
+    }
+
+    _generateAndSaveNewAddressesIfNeeded(
+      walletItemBase: walletItemBase,
+      realmWalletBase: realmWalletBase,
+      cursor: cursor,
+      count: count,
+      isChange: isChange,
+    );
+
+    return _getAddressesFromDB(
+      walletId: walletItemBase.id,
+      cursor: cursor,
+      count: count,
+      isChange: isChange,
+    );
+  }
+
+  /// 필요한 경우 새로운 주소를 생성하고 저장
+  void _generateAndSaveNewAddressesIfNeeded({
+    required WalletListItemBase walletItemBase,
+    required RealmWalletBase realmWalletBase,
+    required int cursor,
+    required int count,
+    required bool isChange,
+  }) {
+    final currentIndex = isChange
+        ? realmWalletBase.generatedChangeIndex
+        : realmWalletBase.generatedReceiveIndex;
+
+    if (cursor + count > currentIndex) {
+      final startIndex = currentIndex + 1;
+      final endIndex = cursor + count;
+      final addressCount = endIndex - startIndex;
+
+      if (addressCount > 0) {
+        final addresses = _generateAddresses(
+          wallet: walletItemBase.walletBase,
+          startIndex: startIndex,
+          count: addressCount,
+          isChange: isChange,
+        );
+
+        _saveAddressesToDB(realmWalletBase, addresses, isChange);
+      }
+    }
+  }
+
+  /// DB에서 주소 목록 조회
+  List<WalletAddress> _getAddressesFromDB({
+    required int walletId,
+    required int cursor,
+    required int count,
+    required bool isChange,
+  }) {
+    final realmWalletAddress = _realm.all<RealmWalletAddress>().query(
+        'walletId = "$walletId" AND isChange = $isChange SORT(index ASC) LIMIT($count) OFFSET($cursor)');
+
+    return realmWalletAddress.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
+  void _saveAddressesToDB(RealmWalletBase realmWalletBase,
+      List<WalletAddress> addresses, bool isChange) {
+    int lastId = getLastId(_realm, (RealmWalletAddress).toString());
+
+    final realmAddresses = addresses
+        .map(
+          (address) => RealmWalletAddress(
+            ++lastId,
+            realmWalletBase.id,
+            address.address,
+            address.index,
+            isChange,
+            address.derivationPath,
+            address.isUsed,
+            address.confirmed,
+            address.unconfirmed,
+            address.total,
+          ),
+        )
+        .toList();
+
+    _realm.write(() {
+      _realm.addAll(realmAddresses);
+
+      // 생성된 주소 인덱스 업데이트
+      if (isChange) {
+        realmWalletBase.generatedChangeIndex = realmAddresses.last.index;
+      } else {
+        realmWalletBase.generatedReceiveIndex = realmAddresses.last.index;
+      }
+    });
+  }
+
+  WalletAddress _generateAddress(WalletBase wallet, int index, bool isChange) {
+    String address = wallet.getAddress(index, isChange: isChange);
+    String derivationPath =
+        '${wallet.derivationPath}${isChange ? '/1' : '/0'}/$index';
+
+    return WalletAddress(
+      address,
+      derivationPath,
+      index,
+      false,
+      0,
+      0,
+      0,
+    );
+  }
+
+  List<WalletAddress> _generateAddresses(
+      {required WalletBase wallet,
+      required int startIndex,
+      required int count,
+      required bool isChange}) {
+    return List.generate(count,
+        (index) => _generateAddress(wallet, startIndex + index, isChange));
   }
 }
 

@@ -12,8 +12,10 @@ class _RealmWalletBase {
   late String descriptor;
   late String name;
   late String walletType;
-  int lastUsedReceiveIndex = -1;
-  int lastUsedChangeIndex = -1;
+  int usedReceiveIndex = -1;
+  int usedChangeIndex = -1;
+  int generatedReceiveIndex = -1;
+  int generatedChangeIndex = -1;
   int? balance;
   int? txCount;
   bool isLatestTxBlockHeightZero = false;
@@ -79,7 +81,7 @@ class _RealmWalletAddress {
   @PrimaryKey()
   late int id;
   @Indexed()
-  late String walletId;
+  late int walletId;
   @Indexed()
   late String address;
   @Indexed()

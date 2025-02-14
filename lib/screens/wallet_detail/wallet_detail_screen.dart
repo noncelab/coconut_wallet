@@ -307,7 +307,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     isVisible: _stickyHeaderVisible,
                     currentUnit: _currentUnit,
                     // TODO: receiveAddress
-                    receiveAddress: WalletAddress('', '', 0, false, 0, 0),
+                    receiveAddress: WalletAddress('', '', 0, false, 0, 0, 0),
                     // receiveAddress: viewModel.walletListBaseItem!.walletBase
                     //     .getReceiveAddress(),
                     // TODO: walletStatus

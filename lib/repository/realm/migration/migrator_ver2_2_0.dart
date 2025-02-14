@@ -4,8 +4,10 @@
 // 입출력 주소의 derivationPath 정보를 저장하지 않음
 
 // _RealmWalletBase
-// late int lastUsedReceiveIndex;
-// late int lastUsedChangeIndex;
+//   int usedReceiveIndex = -1;
+//   int usedChangeIndex = -1;
+//   int generatedReceiveIndex = -1;
+//   int generatedChangeIndex = -1;
 
 // _RealmWalletAddress
 

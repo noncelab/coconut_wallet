@@ -6,6 +6,7 @@ class WalletAddress {
   bool _isUsed;
   int _confirmed;
   int _unconfirmed;
+  int _total;
 
   /// The address string.
   String get address => _address;
@@ -17,14 +18,18 @@ class WalletAddress {
   bool get isUsed => _isUsed;
 
   /// The amount of the address.
-  int get total => _confirmed + _unconfirmed;
+  int get total => _total;
+
+  int get confirmed => _confirmed;
+
+  int get unconfirmed => _unconfirmed;
 
   /// The index of the address.
   int get index => _index;
 
   /// Creates a new address object.
   WalletAddress(this._address, this._derivationPath, this._index, this._isUsed,
-      this._confirmed, this._unconfirmed);
+      this._confirmed, this._unconfirmed, this._total);
 
   /// @nodoc
   @override
