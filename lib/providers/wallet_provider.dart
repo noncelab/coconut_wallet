@@ -485,12 +485,12 @@ class WalletProvider extends ChangeNotifier {
   }
 
   // TODO: getMinimumNetworkFeeRate
-  Future<Result<int, AppError>?> getMinimumNetworkFeeRate() async {
+  Future<Result<int>?> getMinimumNetworkFeeRate() async {
     throw UnimplementedError();
   }
 
   // TODO: broadcast
-  Future<Result<String, AppError>> broadcast(Transaction signedTx) async {
+  Future<Result<String>> broadcast(Transaction signedTx) async {
     throw UnimplementedError();
   }
 

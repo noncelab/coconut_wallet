@@ -236,7 +236,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         requiredSignature: _requiredSignature, totalSinger: _totalSigner);
   }
 
-  Future<Result<int, AppError>?> getMinimumFeeRateFromNetwork() async {
+  Future<Result<int>?> getMinimumFeeRateFromNetwork() async {
     // return await _walletProvider.getMinimumNetworkFeeRate();
     throw UnimplementedError();
   }

@@ -111,7 +111,7 @@ class UtxoTagProvider extends ChangeNotifier {
     final updateUtxoTagListResult = _walletDataManager.updateUtxoTagList(
         walletId, utxoId, addTags, selectedNames);
 
-    if (updateUtxoTagListResult.isError) {
+    if (updateUtxoTagListResult.isFailure) {
       Logger.log('-----------------------------------------------------------');
       Logger.log('updateUtxoTagList('
           'walletId: $walletId,'
@@ -136,7 +136,7 @@ class UtxoTagProvider extends ChangeNotifier {
 
     final result = await _walletDataManager.updateTagsOfSpentUtxos(
         walletId, _usedUtxoIds, newUtxoIds);
-    if (result.isError) {
+    if (result.isFailure) {
       Logger.error(result.error);
     }
     _usedUtxoIds = [];
@@ -152,23 +152,23 @@ class UtxoTagProvider extends ChangeNotifier {
 
   List<UtxoTag> loadSelectedUtxoTagList(int walletId, String utxoId) {
     final result = _walletDataManager.loadUtxoTagListByUtxoId(walletId, utxoId);
-    if (result.isError) {
+    if (result.isFailure) {
       Logger.log('-----------------------------------------------------------');
       Logger.log(
           'loadSelectedUtxoTagList(walletId: $walletId, txHashIndex: $utxoId)');
       Logger.log(result.error);
     }
-    return result.data ?? [];
+    return result.value ?? [];
   }
 
   List<UtxoTag> _loadUtxoTagList(int walletId) {
     final result = _walletDataManager.loadUtxoTagList(walletId);
-    if (result.isError) {
+    if (result.isFailure) {
       Logger.log('-----------------------------------------------------------');
       Logger.log('loadUtxoTagList(walletId: $walletId)');
       Logger.log(result.error);
     }
-    return result.data ?? [];
+    return result.value ?? [];
   }
 
   void resetData() {

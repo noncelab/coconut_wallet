@@ -38,7 +38,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         psbt.getSignedTransaction(_viewModel.walletAddressType);
 
     try {
-      Result<String, AppError> result = await _viewModel.broadcast(signedTx);
+      Result<String> result = await _viewModel.broadcast(signedTx);
 
       setOverlayLoading(false);
 

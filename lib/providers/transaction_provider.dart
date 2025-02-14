@@ -156,12 +156,12 @@ class TransactionProvider extends ChangeNotifier {
 
   TransactionDto? _loadTransaction(int walletId, String txHash) {
     final result = _walletDataManager.loadTransaction(walletId, txHash);
-    if (result.isError) {
+    if (result.isFailure) {
       Logger.log('-----------------------------------------------------------');
       Logger.log('loadTransaction(id: $walletId, _utxoId: $txHash)');
       Logger.log(result.error);
     }
-    return result.data;
+    return result.value;
   }
 
   void resetData() {

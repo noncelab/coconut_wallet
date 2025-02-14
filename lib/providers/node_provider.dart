@@ -52,7 +52,7 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<Result<T, AppError>> _wrapResult<T>(Future<T> future) async {
+  Future<Result<T>> _wrapResult<T>(Future<T> future) async {
     if (!isInitialized) {
       try {
         await _initCompleter?.future;
@@ -68,33 +68,33 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<Result<String, AppError>> broadcast(String rawTransaction) async {
+  Future<Result<String>> broadcast(String rawTransaction) async {
     return _wrapResult(_isolateManager.broadcast(rawTransaction));
   }
 
-  Future<Result<int, AppError>> getNetworkMinimumFeeRate() async {
+  Future<Result<int>> getNetworkMinimumFeeRate() async {
     return _wrapResult(_isolateManager.getNetworkMinimumFeeRate());
   }
 
-  Future<Result<BlockTimestamp, AppError>> getLatestBlock() async {
+  Future<Result<BlockTimestamp>> getLatestBlock() async {
     return _wrapResult(_isolateManager.getLatestBlock());
   }
 
-  Future<Result<String, AppError>> getTransaction(String txHash) async {
+  Future<Result<String>> getTransaction(String txHash) async {
     return _wrapResult(_isolateManager.getTransaction(txHash));
   }
 
-  Future<Result<List<Transaction>, AppError>> getPreviousTransactions(
+  Future<Result<List<Transaction>>> getPreviousTransactions(
       Transaction transaction, List<Transaction> existingTxList) async {
     return _wrapResult(
         _isolateManager.getPreviousTransactions(transaction, existingTxList));
   }
 
-  Future<Result<RecommendedFee, AppError>> getRecommendedFees() async {
+  Future<Result<RecommendedFee>> getRecommendedFees() async {
     return _wrapResult(_isolateManager.getRecommendedFees());
   }
 
-  Future<Result<Balance, AppError>> getBalance(WalletListItemBase item,
+  Future<Result<Balance>> getBalance(WalletListItemBase item,
       {int receiveUsedIndex = 0, int changeUsedIndex = 0}) async {
     final result = await _wrapResult(_isolateManager.getBalance(item.walletBase,
         receiveUsedIndex: receiveUsedIndex, changeUsedIndex: changeUsedIndex));

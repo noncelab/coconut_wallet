@@ -57,7 +57,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   UtxoTagProvider get tagProvider => _tagProvider;
 
   // TODO: broadcast
-  Future<Result<String, AppError>> broadcast(Transaction signedTx) async {
+  Future<Result<String>> broadcast(Transaction signedTx) async {
     throw UnimplementedError();
     // return await _walletProvider.broadcast(signedTx);
   }

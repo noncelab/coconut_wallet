@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -25,6 +26,7 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -395,95 +397,53 @@ class WalletDataManager {
   }
 
   /// walletId 로 태그 목록 조회
-  RealmResult<List<UtxoTag>> loadUtxoTagList(int walletId) {
+  Result<List<UtxoTag>> loadUtxoTagList(int walletId) {
     _utxoTagList = [];
+    final tags = _realm
+        .all<RealmUtxoTag>()
+        .query("walletId == '$walletId' SORT(createAt DESC)");
 
-    try {
-      final tags = _realm
-          .all<RealmUtxoTag>()
-          .query("walletId == '$walletId' SORT(createAt DESC)");
-
-      _utxoTagList.addAll(tags.map(mapRealmUtxoTagToUtxoTag));
-
-      return RealmResult(data: _utxoTagList);
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+    var result = _handleRealm(
+      () {
+        _utxoTagList.addAll(tags.map(mapRealmUtxoTagToUtxoTag));
+        return _utxoTagList;
+      },
+    );
+    return result;
   }
 
-  Future<RealmResult<void>> updateTagsOfSpentUtxos(
+  Future<Result<void>> updateTagsOfSpentUtxos(
       int walletId, List<String> usedUtxoIds, List<String> newUtxoIds) async {
-    try {
-      final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
+    final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
 
-      await _realm.writeAsync(() {
-        for (int i = 0; i < tags.length; i++) {
-          if (tags[i].utxoIdList.isEmpty) continue;
+    return _handleAsyncRealm(
+      () async {
+        await _realm.writeAsync(() {
+          for (int i = 0; i < tags.length; i++) {
+            if (tags[i].utxoIdList.isEmpty) continue;
 
-          int previousCount = tags[i].utxoIdList.length;
+            int previousCount = tags[i].utxoIdList.length;
 
-          tags[i].utxoIdList.removeWhere((utxoId) =>
-              usedUtxoIds.any((targetUtxoId) => targetUtxoId == utxoId));
+            tags[i].utxoIdList.removeWhere((utxoId) =>
+                usedUtxoIds.any((targetUtxoId) => targetUtxoId == utxoId));
 
-          if (newUtxoIds.isNotEmpty) {
-            bool needToMove = previousCount > tags[i].utxoIdList.length;
-            if (needToMove) {
-              tags[i].utxoIdList.addAll(newUtxoIds);
+            if (newUtxoIds.isNotEmpty) {
+              bool needToMove = previousCount > tags[i].utxoIdList.length;
+              if (needToMove) {
+                tags[i].utxoIdList.addAll(newUtxoIds);
+              }
             }
           }
-        }
-      });
-      return RealmResult();
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+        });
+      },
+    );
   }
-  // Future<RealmResult<int>> deleteTags(int walletId, List<String> utxoIds) async {
-  //   try {
-  //     final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
-  //
-  //     if (tags.isEmpty) {
-  //       return RealmResult(data: 0);
-  //     }
-  //
-  //     int deleteCount = 0;
-  //
-  //     await _realm.writeAsync(() {
-  //       for (int i = 0; i < tags.length; i++) {
-  //         if (tags[i].utxoIdList.isEmpty) continue;
-  //
-  //         int previousCount = tags[i].utxoIdList.length;
-  //
-  //         tags[i].utxoIdList.removeWhere((utxoId) =>
-  //             utxoIds.any((targetUtxoId) => targetUtxoId == utxoId));
-  //         deleteCount += previousCount - tags[i].utxoIdList.length;
-  //       }
-  //     });
-  //
-  //     return RealmResult(data: deleteCount);
-  //   } catch (e) {
-  //     return RealmResult(
-  //       error: e is RealmException
-  //           ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-  //           : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-  //     );
-  //   }
-  // }
 
   /// walletId 로 조회된 태그 목록에서 txHashIndex 를 포함하고 있는 태그 목록 조회
-  RealmResult<List<UtxoTag>> loadUtxoTagListByUtxoId(
-      int walletId, String utxoId) {
-    _utxoTagList = [];
+  Result<List<UtxoTag>> loadUtxoTagListByUtxoId(int walletId, String utxoId) {
+    return _handleRealm(() {
+      _utxoTagList = [];
 
-    try {
       final tags = _realm
           .all<RealmUtxoTag>()
           .query("walletId == '$walletId' SORT(createAt DESC)");
@@ -494,42 +454,29 @@ class WalletDataManager {
             .map(mapRealmUtxoTagToUtxoTag),
       );
 
-      return RealmResult(data: _utxoTagList);
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+      return _utxoTagList;
+    });
   }
 
   /// 태그 추가
-  RealmResult<UtxoTag> addUtxoTag(
+  Result<UtxoTag> addUtxoTag(
       String id, int walletId, String name, int colorIndex) {
-    try {
+    return _handleRealm(() {
       final tag = RealmUtxoTag(id, walletId, name, colorIndex, DateTime.now());
       _realm.write(() {
         _realm.add(tag);
       });
-      return RealmResult(data: mapRealmUtxoTagToUtxoTag(tag));
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+      return mapRealmUtxoTagToUtxoTag(tag);
+    });
   }
 
   /// id 로 조회된 태그의 속성 업데이트
-  RealmResult<UtxoTag> updateUtxoTag(String id, String name, int colorIndex) {
-    try {
+  Result<UtxoTag> updateUtxoTag(String id, String name, int colorIndex) {
+    return _handleRealm(() {
       final tags = _realm.query<RealmUtxoTag>("id == '$id'");
 
       if (tags.isEmpty) {
-        return RealmResult(
-            error: ErrorCodes.withMessage(ErrorCodes.realmNotFound, ''));
+        throw ErrorCodes.realmNotFound;
       }
 
       final tag = tags.first;
@@ -538,24 +485,17 @@ class WalletDataManager {
         tag.name = name;
         tag.colorIndex = colorIndex;
       });
-      return RealmResult(data: mapRealmUtxoTagToUtxoTag(tag));
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+      return mapRealmUtxoTagToUtxoTag(tag);
+    });
   }
 
   /// id 로 조회된 태그 삭제
-  RealmResult<UtxoTag> deleteUtxoTag(String id) {
-    try {
+  Result<UtxoTag> deleteUtxoTag(String id) {
+    return _handleRealm(() {
       final tag = _realm.find<RealmUtxoTag>(id);
 
       if (tag == null) {
-        return RealmResult(
-            error: ErrorCodes.withMessage(ErrorCodes.realmNotFound, ''));
+        throw ErrorCodes.realmNotFound;
       }
 
       final removeTag = mapRealmUtxoTagToUtxoTag(tag);
@@ -564,24 +504,17 @@ class WalletDataManager {
         _realm.delete(tag);
       });
 
-      return RealmResult(data: removeTag);
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+      return removeTag;
+    });
   }
 
   /// walletId 로 조회된 태그 전체 삭제
-  RealmResult<bool> deleteAllUtxoTag(int walletId) {
-    try {
+  Result<bool> deleteAllUtxoTag(int walletId) {
+    return _handleRealm(() {
       final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
 
       if (tags.isEmpty) {
-        return RealmResult(
-            error: ErrorCodes.withMessage(ErrorCodes.realmNotFound, ''));
+        throw ErrorCodes.realmNotFound;
       }
 
       _realm.write(() {
@@ -590,14 +523,8 @@ class WalletDataManager {
         }
       });
 
-      return RealmResult(data: true);
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+      return true;
+    });
   }
 
   /// utxoIdList 변경
@@ -605,94 +532,69 @@ class WalletDataManager {
   /// - [utxoId] UTXO Id
   /// - [addTags] 추가할 UtxoTag 목록
   /// - [selectedNames] 선택된 태그명 목록
-  RealmResult<bool> updateUtxoTagList(int walletId, String utxoId,
+  Result<bool> updateUtxoTagList(int walletId, String utxoId,
       List<UtxoTag> addTags, List<String> selectedNames) {
-    try {
-      _realm.write(() {
-        // 새로운 태그 추가
-        final now = DateTime.now();
-        for (var utxoTag in addTags) {
-          final tag = RealmUtxoTag(
-            utxoTag.id,
-            walletId,
-            utxoTag.name,
-            utxoTag.colorIndex,
-            now,
-          );
-          _realm.add(tag);
-        }
-
-        // 태그 적용
-        final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
-        for (var tag in tags) {
-          if (selectedNames.contains(tag.name)) {
-            if (!tag.utxoIdList.contains(utxoId)) {
-              tag.utxoIdList.add(utxoId);
-            }
-          } else {
-            tag.utxoIdList.remove(utxoId);
+    return _handleRealm(
+      () {
+        _realm.write(() {
+          // 새로운 태그 추가
+          final now = DateTime.now();
+          for (var utxoTag in addTags) {
+            final tag = RealmUtxoTag(
+              utxoTag.id,
+              walletId,
+              utxoTag.name,
+              utxoTag.colorIndex,
+              now,
+            );
+            _realm.add(tag);
           }
-        }
-      });
 
-      return RealmResult(data: true);
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+          // 태그 적용
+          final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
+          for (var tag in tags) {
+            if (selectedNames.contains(tag.name)) {
+              if (!tag.utxoIdList.contains(utxoId)) {
+                tag.utxoIdList.add(utxoId);
+              }
+            } else {
+              tag.utxoIdList.remove(utxoId);
+            }
+          }
+        });
+
+        return true;
+      },
+    );
   }
 
   /// walletID, txHash 로 transaction 조회
-  RealmResult<TransactionDto?> loadTransaction(int walletId, String txHash) {
-    try {
-      final transactions = _realm.query<RealmTransaction>(
-          "walletBase.id == '$walletId' And transactionHash == '$txHash'");
+  Result<TransactionDto?> loadTransaction(int walletId, String txHash) {
+    final transactions = _realm.query<RealmTransaction>(
+        "walletBase.id == '$walletId' And transactionHash == '$txHash'");
 
-      if (transactions.isEmpty) {
-        return RealmResult(
-            error: ErrorCodes.withMessage(ErrorCodes.realmNotFound, ''));
-      }
-
-      return RealmResult(
-          data: mapRealmTransactionToTransaction(transactions.first));
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+    return _handleRealm(
+      () => transactions.isEmpty
+          ? null
+          : mapRealmTransactionToTransaction(transactions.first),
+    );
   }
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
-  RealmResult<TransactionDto> updateTransactionMemo(
+  Result<TransactionDto> updateTransactionMemo(
       int walletId, String txHash, String memo) {
-    try {
-      final transactions = _realm.query<RealmTransaction>(
-          "walletBase.id == '$walletId' And transactionHash == '$txHash'");
+    final transactions = _realm.query<RealmTransaction>(
+        "walletBase.id == '$walletId' And transactionHash == '$txHash'");
 
-      if (transactions.isEmpty) {
-        return RealmResult(
-            error: ErrorCodes.withMessage(ErrorCodes.realmNotFound, ''));
-      }
-
-      final transaction = transactions.first;
-
-      _realm.write(() {
-        transaction.memo = memo;
-      });
-
-      return RealmResult(data: mapRealmTransactionToTransaction(transaction));
-    } catch (e) {
-      return RealmResult(
-        error: e is RealmException
-            ? ErrorCodes.withMessage(ErrorCodes.realmException, e.message)
-            : ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-      );
-    }
+    return _handleRealm(
+      () {
+        final transaction = transactions.first;
+        _realm.write(() {
+          transaction.memo = memo;
+        });
+        return mapRealmTransactionToTransaction(transaction);
+      },
+    );
   }
 
   int _getNextWalletId() {
@@ -1018,19 +920,42 @@ class WalletDataManager {
     return List.generate(count,
         (index) => _generateAddress(wallet, startIndex + index, isChange));
   }
-}
 
-/// TODO: 임시
-class RealmResult<T> {
-  final T? data;
-  final AppError? error;
+  /// 공통 에러 핸들링
+  Result<T> _handleRealm<T>(
+    T Function() operation,
+  ) {
+    try {
+      return Result.success(operation());
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
 
-  RealmResult({this.data, this.error});
+  /// 비동기 공통 에러 핸들링
+  Future<Result<T>> _handleAsyncRealm<T>(
+    Future<T> Function() operation,
+  ) async {
+    try {
+      return Result.success(await operation());
+    } catch (e) {
+      return _handleError(e);
+    }
+  }
 
-  bool get isSuccess => error == null;
-  bool get isError => error != null;
+  _handleError(e) {
+    if (e is AppError) {
+      return Result.failure(e);
+    }
 
-  @override
-  String toString() =>
-      isSuccess ? 'RealmResult(data: $data)' : 'RealmResult(error: $error)';
+    if (e is RealmException) {
+      return Result.failure(
+        ErrorCodes.withMessage(ErrorCodes.realmException, e.message),
+      );
+    }
+
+    return Result.failure(
+      ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
+    );
+  }
 }
