@@ -235,6 +235,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                 _selectedListType == WalletDetailTabType.utxo &&
                                     viewModel.utxoList.isNotEmpty &&
                                     !_stickyHeaderVisible,
+                            isVisibleDropdownMenu: _isHeaderDropdownVisible,
                             isPullToRefreshing: _isPullToRefreshing,
                             utxoOrderText: viewModel.selectedUtxoOrder.text,
                             onTapTransaction: () {
@@ -245,15 +246,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                               _toggleListType(
                                   WalletDetailTabType.utxo, viewModel.utxoList);
                             },
-                            onTapUtxoDropdown: () {
+                            onTapUtxoDropdown: (value) {
                               _scrollController
                                   .jumpTo(_scrollController.offset);
-                              if (_isHeaderDropdownVisible ||
-                                  _isStickyHeaderDropdownVisible) {
-                                _isHeaderDropdownVisible = false;
-                              } else {
-                                _isHeaderDropdownVisible = true;
-                              }
+                              _isHeaderDropdownVisible = value;
                               setState(() {});
                             },
                           ),
@@ -303,6 +299,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     widgetKey: _stickyHeaderWidgetKey,
                     height: _appBarSize.height,
                     isVisible: _stickyHeaderVisible,
+                    isVisibleDropdownMenu: _isStickyHeaderDropdownVisible,
                     currentUnit: _currentUnit,
                     balance: balance,
                     receiveAddress: viewModel.walletListBaseItem!.walletBase
@@ -317,16 +314,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     onTapSend: (balance) {
                       _onTapReceiveOrSend(balance, state, isNetworkOn);
                     },
-                    onTapDropdown: () {
-                      setState(() {
-                        _scrollController.jumpTo(_scrollController.offset);
-                        if (_isHeaderDropdownVisible ||
-                            _isStickyHeaderDropdownVisible) {
-                          _isStickyHeaderDropdownVisible = false;
-                        } else {
-                          _isStickyHeaderDropdownVisible = true;
-                        }
-                      });
+                    onTapDropdown: (value) {
+                      _scrollController.jumpTo(_scrollController.offset);
+                      _isStickyHeaderDropdownVisible = value;
+                      setState(() {});
                     },
                     removePopup: () {
                       _removeFilterDropdown();
@@ -339,10 +330,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         _isStickyHeaderDropdownVisible,
                     positionTop: _isHeaderDropdownVisible
                         ? _headerDropdownPosition.dy +
-                            80 -
+                            78 -
                             _scrollController.offset * 0.01
                         : _isStickyHeaderDropdownVisible
-                            ? _stickyHeaderDropdownPosition.dy + 92
+                            ? _stickyHeaderDropdownPosition.dy + 90
                             : 0,
                     selectedFilter: viewModel.selectedUtxoOrder,
                     onSelected: (filter) {

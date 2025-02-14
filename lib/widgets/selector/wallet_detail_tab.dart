@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/cupertino.dart';
@@ -12,10 +13,11 @@ class WalletDetailTab extends StatelessWidget {
   final int utxoListLength;
   final bool isUtxoDropdownVisible;
   final bool isPullToRefreshing;
+  final bool isVisibleDropdownMenu;
   final String utxoOrderText;
   final Function onTapTransaction;
   final Function onTapUtxo;
-  final Function onTapUtxoDropdown;
+  final Function(bool) onTapUtxoDropdown;
   const WalletDetailTab({
     super.key,
     required this.selectedListType,
@@ -23,6 +25,7 @@ class WalletDetailTab extends StatelessWidget {
     required this.utxoListLength,
     required this.isUtxoDropdownVisible,
     required this.isPullToRefreshing,
+    required this.isVisibleDropdownMenu,
     this.utxoOrderText = '',
     required this.onTapTransaction,
     required this.onTapUtxo,
@@ -33,9 +36,9 @@ class WalletDetailTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(
-        left: 16.0,
-        right: 16.0,
-        bottom: 12.0,
+        left: 16,
+        right: 16,
+        bottom: 8,
         top: 30,
       ),
       child: Column(
@@ -150,39 +153,21 @@ class WalletDetailTab extends StatelessWidget {
               ),
             ],
           ),
-          if (isUtxoDropdownVisible) ...{
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CupertinoButton(
-                  onPressed: () {
-                    onTapUtxoDropdown();
-                  },
-                  minSize: 0,
-                  padding: const EdgeInsets.only(left: 8, top: 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        utxoOrderText,
-                        style: Styles.caption2.merge(
-                          const TextStyle(
-                            color: MyColors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 4,
-                      ),
-                      SvgPicture.asset(
-                        'assets/svg/arrow-down.svg',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          Visibility(
+            visible: isUtxoDropdownVisible,
+            child: Container(
+              alignment: Alignment.centerRight,
+              child: CoconutPulldown(
+                brightness: Brightness.dark,
+                title: utxoOrderText,
+                isOpen: isVisibleDropdownMenu,
+                fontSize: 12,
+                onChanged: (value) {
+                  onTapUtxoDropdown(value);
+                },
+              ),
             ),
-          }
+          )
         ],
       ),
     );

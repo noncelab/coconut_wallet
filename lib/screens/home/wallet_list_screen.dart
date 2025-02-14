@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
@@ -27,7 +28,6 @@ import 'package:coconut_wallet/screens/home/wallet_list_onboarding_bottom_sheet.
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_terms_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/wallet_init_status_indicator.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
@@ -213,7 +213,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                         ),
                         Align(
                           alignment: Alignment.topRight,
-                          child: CustomDropdown(
+                          child: CoconutPulldownMenu(
+                            brightness: Brightness.dark,
                             margin: EdgeInsets.only(
                                 top: (84 + MediaQuery.of(context).padding.top) -
                                     (MediaQuery.of(context).padding.top / 2),
@@ -221,7 +222,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                             backgroundColor: MyColors.grey,
                             buttons: _dropdownButtons,
                             dividerIndex: 3,
-                            onTapButton: (index) {
+                            onTap: (index) {
                               setState(() {
                                 _isDropdownMenuVisible = false;
                               });

@@ -1,16 +1,17 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/selector/wallet_detail_tab.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_svg/svg.dart';
 
 class WalletDetailStickyHeader extends StatelessWidget {
   final Key widgetKey;
   final double height;
   final bool isVisible;
   final Unit currentUnit;
+  final bool isVisibleDropdownMenu;
   final int? balance;
   final Address receiveAddress;
   final WalletStatus? walletStatus;
@@ -18,12 +19,13 @@ class WalletDetailStickyHeader extends StatelessWidget {
   final String selectedFilter;
   final Function(int?, String, String) onTapReceive;
   final Function(int?) onTapSend;
-  final Function onTapDropdown;
+  final Function(bool) onTapDropdown;
   final Function removePopup;
   const WalletDetailStickyHeader({
     required this.widgetKey,
     required this.height,
     required this.isVisible,
+    required this.isVisibleDropdownMenu,
     required this.currentUnit,
     required this.balance,
     required this.receiveAddress,
@@ -154,8 +156,8 @@ class WalletDetailStickyHeader extends StatelessWidget {
                     children: [
                       Container(
                         width: MediaQuery.sizeOf(context).width,
-                        padding: const EdgeInsets.only(
-                            top: 10, left: 16, right: 16, bottom: 9),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 16),
                         decoration: const BoxDecoration(
                           color: MyColors.black,
                           boxShadow: [
@@ -174,39 +176,17 @@ class WalletDetailStickyHeader extends StatelessWidget {
                           maintainAnimation: true,
                           maintainState: true,
                           maintainSize: true,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Container(),
-                              ),
-                              CupertinoButton(
-                                padding: const EdgeInsets.only(
-                                  top: 10,
-                                ),
-                                minSize: 0,
-                                onPressed: () {
-                                  onTapDropdown();
-                                },
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      selectedFilter,
-                                      style: Styles.caption2.merge(
-                                        const TextStyle(
-                                          color: MyColors.white,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      width: 5,
-                                    ),
-                                    SvgPicture.asset(
-                                        'assets/svg/arrow-down.svg'),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          child: Container(
+                            alignment: Alignment.centerRight,
+                            child: CoconutPulldown(
+                              brightness: Brightness.dark,
+                              title: selectedFilter,
+                              isOpen: isVisibleDropdownMenu,
+                              fontSize: 12,
+                              onChanged: (value) {
+                                onTapDropdown(value);
+                              },
+                            ),
                           ),
                         ),
                       ),

@@ -2,6 +2,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
+@Deprecated("CustomDropdown")
 class CustomDropdown extends StatefulWidget {
   final List<String> buttons;
   final Function onTapButton;
