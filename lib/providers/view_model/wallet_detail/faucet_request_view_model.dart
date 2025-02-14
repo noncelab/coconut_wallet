@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/wallet/address.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';

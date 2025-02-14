@@ -5,7 +5,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/address.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -307,7 +307,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     isVisible: _stickyHeaderVisible,
                     currentUnit: _currentUnit,
                     // TODO: receiveAddress
-                    receiveAddress: Address('', '', 0, false, 0),
+                    receiveAddress: WalletAddress('', '', 0, false, 0, 0),
                     // receiveAddress: viewModel.walletListBaseItem!.walletBase
                     //     .getReceiveAddress(),
                     // TODO: walletStatus

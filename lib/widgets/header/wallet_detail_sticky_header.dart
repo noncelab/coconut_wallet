@@ -1,5 +1,4 @@
-import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/wallet/address.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -13,7 +12,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
   final bool isVisible;
   final Unit currentUnit;
   final int? balance;
-  final Address receiveAddress;
+  final WalletAddress receiveAddress;
   final WalletDetailTabType selectedListType;
   final String selectedFilter;
   final Function(int?, String, String) onTapReceive;

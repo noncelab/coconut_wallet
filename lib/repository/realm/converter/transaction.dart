@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:coconut_wallet/model/wallet/address.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
@@ -45,18 +45,12 @@ TransactionDto mapRealmTransactionToTransaction(
       realmTransaction.createdAt);
 }
 
-Map<String, dynamic> addressToJson(Address address) {
-  return {
-    'address': address.address,
-    'derivationPath': address.derivationPath,
-    'amount': address.amount
-  };
+Map<String, dynamic> addressToJson(TransactionAddress address) {
+  return {'address': address.address, 'amount': address.amount};
 }
 
-Address jsonToAddress(Map<String, dynamic> json) {
-  /// index와 isUsed는 사용하지 않습니다.
-  return Address(
-      json['address'], json['derivationPath'], 0, false, json['amount']);
+TransactionAddress jsonToAddress(Map<String, dynamic> json) {
+  return TransactionAddress(json['address'], json['amount']);
 }
 
 class TransactionDto extends TransactionRecord {

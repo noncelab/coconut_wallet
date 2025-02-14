@@ -1,6 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/model/wallet/address.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 
 class TransactionRecord {
   final String _transactionHash;
@@ -10,8 +10,8 @@ class TransactionRecord {
   final String? _memo;
   final int? _amount;
   final int? _fee;
-  final List<Address> _inputAddressList;
-  final List<Address> _outputAddressList;
+  final List<TransactionAddress> _inputAddressList;
+  final List<TransactionAddress> _outputAddressList;
 
   /// Get the transaction hash of this transaction.
   String get transactionHash => _transactionHash;
@@ -35,10 +35,10 @@ class TransactionRecord {
   int? get fee => _fee;
 
   /// Get the input address list of this transaction.
-  List<Address> get inputAddressList => _inputAddressList;
+  List<TransactionAddress> get inputAddressList => _inputAddressList;
 
   /// Get the output address list of this transaction.
-  List<Address> get outputAddressList => _outputAddressList;
+  List<TransactionAddress> get outputAddressList => _outputAddressList;
 
   /// @nodoc
   TransactionRecord(
@@ -63,8 +63,8 @@ class TransactionRecord {
 
     int amount = 0;
     int fee = 0;
-    List<Address> inputAddressList = [];
-    List<Address> outputAddressList = [];
+    List<TransactionAddress> inputAddressList = [];
+    List<TransactionAddress> outputAddressList = [];
     int selfInputCount = 0;
     int selfOutputCount = 0;
 
@@ -100,8 +100,7 @@ class TransactionRecord {
         amount += output.amount;
       }
 
-      outputAddressList
-          .add(Address(outputAddress, derivationPath, 0, false, output.amount));
+      outputAddressList.add(TransactionAddress(outputAddress, output.amount));
     }
 
     TransactionTypeEnum txType;

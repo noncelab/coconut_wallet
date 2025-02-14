@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:async/async.dart' as async;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';

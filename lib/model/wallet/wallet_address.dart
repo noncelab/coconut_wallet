@@ -1,10 +1,11 @@
 /// Represents an address information in a wallet.
-class Address {
+class WalletAddress {
   final String _address;
   final String _derivationPath;
   final int _index;
   bool _isUsed;
-  int _amount;
+  int _confirmed;
+  int _unconfirmed;
 
   /// The address string.
   String get address => _address;
@@ -16,14 +17,14 @@ class Address {
   bool get isUsed => _isUsed;
 
   /// The amount of the address.
-  int get amount => _amount;
+  int get total => _confirmed + _unconfirmed;
 
   /// The index of the address.
   int get index => _index;
 
   /// Creates a new address object.
-  Address(this._address, this._derivationPath, this._index, this._isUsed,
-      this._amount);
+  WalletAddress(this._address, this._derivationPath, this._index, this._isUsed,
+      this._confirmed, this._unconfirmed);
 
   /// @nodoc
   @override
@@ -32,7 +33,7 @@ class Address {
   /// @nodoc
   @override
   bool operator ==(Object other) {
-    if (other is! Address) {
+    if (other is! WalletAddress) {
       return false;
     } else {
       return address == other.address;
@@ -40,8 +41,12 @@ class Address {
   }
 
   /// Set the amount of the address.
-  void setAmount(int amount) {
-    _amount = amount;
+  void setConfirmed(int confirmed) {
+    _confirmed = confirmed;
+  }
+
+  void setUnconfirmed(int unconfirmed) {
+    _unconfirmed = unconfirmed;
   }
 
   /// Set the used status of the address.

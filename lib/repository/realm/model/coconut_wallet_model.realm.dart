@@ -785,6 +785,7 @@ class RealmWalletAddress extends _RealmWalletAddress
     bool isUsed,
     int confirmed,
     int unconfirmed,
+    int total,
   ) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'walletId', walletId);
@@ -795,6 +796,7 @@ class RealmWalletAddress extends _RealmWalletAddress
     RealmObjectBase.set(this, 'isUsed', isUsed);
     RealmObjectBase.set(this, 'confirmed', confirmed);
     RealmObjectBase.set(this, 'unconfirmed', unconfirmed);
+    RealmObjectBase.set(this, 'total', total);
   }
 
   RealmWalletAddress._();
@@ -848,6 +850,11 @@ class RealmWalletAddress extends _RealmWalletAddress
   set unconfirmed(int value) => RealmObjectBase.set(this, 'unconfirmed', value);
 
   @override
+  int get total => RealmObjectBase.get<int>(this, 'total') as int;
+  @override
+  set total(int value) => RealmObjectBase.set(this, 'total', value);
+
+  @override
   Stream<RealmObjectChanges<RealmWalletAddress>> get changes =>
       RealmObjectBase.getChanges<RealmWalletAddress>(this);
 
@@ -871,6 +878,7 @@ class RealmWalletAddress extends _RealmWalletAddress
       'isUsed': isUsed.toEJson(),
       'confirmed': confirmed.toEJson(),
       'unconfirmed': unconfirmed.toEJson(),
+      'total': total.toEJson(),
     };
   }
 
@@ -888,6 +896,7 @@ class RealmWalletAddress extends _RealmWalletAddress
         'isUsed': EJsonValue isUsed,
         'confirmed': EJsonValue confirmed,
         'unconfirmed': EJsonValue unconfirmed,
+        'total': EJsonValue total,
       } =>
         RealmWalletAddress(
           fromEJson(id),
@@ -899,6 +908,7 @@ class RealmWalletAddress extends _RealmWalletAddress
           fromEJson(isUsed),
           fromEJson(confirmed),
           fromEJson(unconfirmed),
+          fromEJson(total),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -922,6 +932,7 @@ class RealmWalletAddress extends _RealmWalletAddress
       SchemaProperty('isUsed', RealmPropertyType.bool),
       SchemaProperty('confirmed', RealmPropertyType.int),
       SchemaProperty('unconfirmed', RealmPropertyType.int),
+      SchemaProperty('total', RealmPropertyType.int),
     ]);
   }();
 

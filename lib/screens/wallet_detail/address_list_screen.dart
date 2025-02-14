@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:coconut_wallet/model/wallet/address.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -68,7 +68,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           if (this.viewModel == null) {
             this.viewModel = viewModel;
           }
-          List<Address>? addressList = isReceivingSelected
+          List<WalletAddress>? addressList = isReceivingSelected
               ? viewModel.receivingAddressList
               : viewModel.changeAddressList;
           return PopScope(
@@ -160,7 +160,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                               addressList[index].derivationPath,
                                           isUsed: addressList[index].isUsed,
                                           balanceInSats:
-                                              addressList[index].amount,
+                                              addressList[index].total,
                                         ),
                                       ),
                                       if (_isLoadMoreRunning)
@@ -377,7 +377,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
       try {
         // TODO: getAddressList
-        List<Address> newAddresses = [];
+        List<WalletAddress> newAddresses = [];
         // final newAddresses = viewModel?.walletBase?.getAddressList(
         //     kFirstCount +
         //         (isReceivingSelected

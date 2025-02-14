@@ -90,6 +90,7 @@ class _RealmWalletAddress {
   late bool isUsed;
   late int confirmed;
   late int unconfirmed;
+  late int total;
 }
 
 // 지갑 목록 화면이나 상세 화면에서 전체 잔액을 삐르게 갱신하고 조회하기 위해 사용
