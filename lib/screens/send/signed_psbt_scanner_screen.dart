@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -56,32 +57,40 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             onFailed: _onFailedScanning,
           ),
           Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: CustomTooltip(
-                  backgroundColor: MyColors.white.withOpacity(0.9),
-                  richText: RichText(
-                    text: TextSpan(
-                      text: '[5] ',
-                      style: const TextStyle(
-                        fontFamily: 'Pretendard',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        height: 1.4,
-                        letterSpacing: 0.5,
-                        color: MyColors.black,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: t.tooltip.scan_signed_psbt,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
+            padding: const EdgeInsets.only(
+              top: 20,
+              left: CoconutLayout.defaultPadding,
+              right: CoconutLayout.defaultPadding,
+            ),
+            child: CoconutToolTip(
+              tooltipType: CoconutTooltipType.fixed,
+              tooltipState: CoconutTooltipState.info,
+              brightness: Brightness.dark,
+              backgroundColor: MyColors.white.withOpacity(0.9),
+              richText: RichText(
+                text: TextSpan(
+                  text: '[5] ',
+                  style: const TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    height: 1.4,
+                    letterSpacing: 0.5,
+                    color: MyColors.black,
                   ),
-                  showIcon: true,
-                  type: TooltipType.info)),
+                  children: [
+                    TextSpan(
+                      text: t.tooltip.scan_signed_psbt,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              showIcon: true,
+            ),
+          ),
         ]),
       ),
     );

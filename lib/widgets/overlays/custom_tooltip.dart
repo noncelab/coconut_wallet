@@ -3,7 +3,8 @@ import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:flutter/material.dart';
 
 // TODO: 임시 위젯, wallet_info_screen에서만 쓰임
-// FIXME: 동일하게 CustomTooltip 이름을 사용하는 위젯이 또 있어 통합하거나 리네임해야함.
+
+@Deprecated('Use CoconutTooltip instead')
 class CustomTooltip extends StatelessWidget {
   final double top;
   final double right;

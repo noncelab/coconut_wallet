@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
@@ -14,7 +15,6 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
-import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -122,30 +122,87 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                     ])),
 
                     if (_isNetworkOn == false)
-                      CustomTooltip(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: CoconutLayout.defaultPadding,
+                        ),
+                        child: CoconutToolTip(
+                          backgroundColor: CoconutColors.colorPalette[
+                                  CoconutTooltipState.warning.colorIndex]
+                              .withOpacity(
+                            0.18,
+                          ),
+                          tooltipType: CoconutTooltipType.fixed,
+                          brightness: Brightness.dark,
                           richText: RichText(
-                              text: TextSpan(
-                                  text: ErrorCodes.networkError.message)),
+                            text: TextSpan(
+                              text: ErrorCodes.networkError.message,
+                              style: CoconutTypography.body2_14_Number.setColor(
+                                CoconutColors.white,
+                              ),
+                            ),
+                          ),
                           showIcon: true,
-                          type: TooltipType.warning),
+                          tooltipState: CoconutTooltipState.warning,
+                        ),
+                      ),
+
                     if (_isNetworkOn == true &&
                         widget.isRecommendedFeeFetchSuccess == false)
-                      CustomTooltip(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: CoconutLayout.defaultPadding,
+                        ),
+                        child: CoconutToolTip(
+                          backgroundColor: CoconutColors.colorPalette[
+                                  CoconutTooltipState.error.colorIndex]
+                              .withOpacity(
+                            0.18,
+                          ),
+                          tooltipType: CoconutTooltipType.fixed,
+                          brightness: Brightness.dark,
                           richText: RichText(
-                              text: TextSpan(
-                                  text: t.errors.fee_selection_error
-                                      .recommended_fee_unavailable)),
+                            text: TextSpan(
+                              text: t.errors.fee_selection_error
+                                  .recommended_fee_unavailable,
+                              style: CoconutTypography.body2_14_Number.setColor(
+                                CoconutColors.white,
+                              ),
+                            ),
+                          ),
                           showIcon: true,
-                          type: TooltipType.error),
+                          tooltipState: CoconutTooltipState.error,
+                        ),
+                      ),
+
                     if (_estimatedFee != null && _estimatedFee! >= kMaxFeeLimit)
-                      CustomTooltip(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: CoconutLayout.defaultPadding,
+                        ),
+                        child: CoconutToolTip(
+                          backgroundColor: CoconutColors.colorPalette[
+                                  CoconutTooltipState.warning.colorIndex]
+                              .withOpacity(
+                            0.18,
+                          ),
+                          tooltipType: CoconutTooltipType.fixed,
+                          brightness: Brightness.dark,
                           richText: RichText(
-                              text: TextSpan(
-                                  text: t.tooltip.recommended_fee2(
-                                      bitcoin: UnitUtil.satoshiToBitcoin(
-                                          kMaxFeeLimit)))),
+                            text: TextSpan(
+                              text: t.tooltip.recommended_fee2(
+                                bitcoin:
+                                    UnitUtil.satoshiToBitcoin(kMaxFeeLimit),
+                              ),
+                              style: CoconutTypography.body2_14_Number.setColor(
+                                CoconutColors.white,
+                              ),
+                            ),
+                          ),
                           showIcon: true,
-                          type: TooltipType.warning),
+                          tooltipState: CoconutTooltipState.warning,
+                        ),
+                      ),
 
                     Padding(
                         padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),

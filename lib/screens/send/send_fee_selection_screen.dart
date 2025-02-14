@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
@@ -154,40 +155,111 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                       ])),
 
                       if (viewModel.isNetworkOn == false)
-                        CustomTooltip(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CoconutLayout.defaultPadding,
+                          ),
+                          child: CoconutToolTip(
+                            backgroundColor: CoconutColors.colorPalette[
+                                    CoconutTooltipState.warning.colorIndex]
+                                .withOpacity(0.18),
+                            tooltipType: CoconutTooltipType.fixed,
+                            brightness: Brightness.dark,
                             richText: RichText(
-                                text: TextSpan(
-                                    text: ErrorCodes.networkError.message)),
+                              text: TextSpan(
+                                text: ErrorCodes.networkError.message,
+                                style:
+                                    CoconutTypography.body2_14_Number.setColor(
+                                  CoconutColors.white,
+                                ),
+                              ),
+                            ),
                             showIcon: true,
-                            type: TooltipType.warning),
+                            tooltipState: CoconutTooltipState.warning,
+                          ),
+                        ),
+
                       if (viewModel.isNetworkOn == true &&
                           _isRecommendedFeeFetchSuccess == false)
-                        CustomTooltip(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CoconutLayout.defaultPadding,
+                          ),
+                          child: CoconutToolTip(
+                            backgroundColor: CoconutColors.colorPalette[
+                                    CoconutTooltipState.error.colorIndex]
+                                .withOpacity(0.18),
+                            tooltipType: CoconutTooltipType.fixed,
+                            brightness: Brightness.dark,
                             richText: RichText(
-                                text:
-                                    TextSpan(text: t.tooltip.recommended_fee1)),
+                              text: TextSpan(
+                                text: t.tooltip.recommended_fee1,
+                                style:
+                                    CoconutTypography.body2_14_Number.setColor(
+                                  CoconutColors.white,
+                                ),
+                              ),
+                            ),
                             showIcon: true,
-                            type: TooltipType.error),
+                            tooltipState: CoconutTooltipState.error,
+                          ),
+                        ),
                       if (_estimatedFee != null &&
                           _estimatedFee! >= maxFeeLimit)
-                        CustomTooltip(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CoconutLayout.defaultPadding,
+                          ),
+                          child: CoconutToolTip(
+                            backgroundColor: CoconutColors.colorPalette[
+                                    CoconutTooltipState.warning.colorIndex]
+                                .withOpacity(0.18),
+                            tooltipType: CoconutTooltipType.fixed,
+                            brightness: Brightness.dark,
                             richText: RichText(
-                                text: TextSpan(
-                                    text: t.tooltip.recommended_fee2(
-                                        bitcoin: UnitUtil.satoshiToBitcoin(
-                                            maxFeeLimit)))),
+                              text: TextSpan(
+                                text: t.tooltip.recommended_fee2(
+                                  bitcoin:
+                                      UnitUtil.satoshiToBitcoin(maxFeeLimit),
+                                ),
+                                style:
+                                    CoconutTypography.body2_14_Number.setColor(
+                                  CoconutColors.white,
+                                ),
+                              ),
+                            ),
                             showIcon: true,
-                            type: TooltipType.warning),
+                            tooltipState: CoconutTooltipState.warning,
+                          ),
+                        ),
                       if (_estimatedFee != null &&
                           _estimatedFee! != 0 &&
                           !_viewModel.isBalanceEnough(_estimatedFee) &&
                           _estimatedFee! < maxFeeLimit)
-                        CustomTooltip(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CoconutLayout.defaultPadding,
+                          ),
+                          child: CoconutToolTip(
+                            backgroundColor: CoconutColors.colorPalette[
+                                    CoconutTooltipState.warning.colorIndex]
+                                .withOpacity(0.18),
+                            tooltipType: CoconutTooltipType.fixed,
+                            brightness: Brightness.dark,
                             richText: RichText(
-                                text: TextSpan(
-                                    text: t.errors.insufficient_balance)),
+                              text: TextSpan(
+                                text: t.errors.insufficient_balance,
+                                style:
+                                    CoconutTypography.body2_14_Number.setColor(
+                                  CoconutColors.white,
+                                ),
+                              ),
+                            ),
                             showIcon: true,
-                            type: TooltipType.warning),
+                            tooltipState: CoconutTooltipState.warning,
+                          ),
+                        ),
+
                       Padding(
                           padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
                           child: Column(

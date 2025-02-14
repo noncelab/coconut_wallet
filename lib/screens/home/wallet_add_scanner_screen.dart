@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -13,7 +14,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../../widgets/appbar/custom_appbar.dart';
@@ -93,50 +93,56 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             ),
           ),
           Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: CustomTooltip(
-                  backgroundColor: MyColors.white.withOpacity(0.9),
-                  richText: RichText(
-                    text: TextSpan(
-                      text: t.tooltip.wallet_add1,
-                      style: const TextStyle(
-                        fontFamily: 'Pretendard',
-                        fontWeight: FontWeight.normal,
-                        fontSize: 15,
-                        height: 1.4,
-                        letterSpacing: 0.5,
-                        color: MyColors.black,
+              padding: const EdgeInsets.only(
+                top: 20,
+                left: 16,
+                right: 16,
+              ),
+              child: Stack(children: [
+                CoconutToolTip(
+                    brightness: Brightness.dark,
+                    tooltipType: CoconutTooltipType.fixed,
+                    backgroundColor:
+                        CoconutColors.colorPalette[4].withOpacity(0.18),
+                    baseBackgroundColor: CoconutColors.white,
+                    richText: RichText(
+                      text: TextSpan(
+                        text: t.tooltip.wallet_add1,
+                        style: CoconutTypography.body2_14.setColor(
+                          CoconutColors.black,
+                        ),
+                        children: <TextSpan>[
+                          TextSpan(
+                            text: t.tooltip.wallet_add2,
+                            style: CoconutTypography.body2_14_Bold.setColor(
+                              CoconutColors.black,
+                            ),
+                          ),
+                          TextSpan(
+                            text: t.tooltip.wallet_add3,
+                            style: CoconutTypography.body2_14.setColor(
+                              CoconutColors.black,
+                            ),
+                          ),
+                          TextSpan(
+                            text: t.tooltip.wallet_add4,
+                            style: CoconutTypography.body2_14_Bold.setColor(
+                              CoconutColors.black,
+                            ),
+                          ),
+                          TextSpan(
+                            text: t.tooltip.wallet_add5,
+                            style: CoconutTypography.body2_14.setColor(
+                              CoconutColors.black,
+                            ),
+                          ),
+                        ],
                       ),
-                      children: <TextSpan>[
-                        TextSpan(
-                          text: t.tooltip.wallet_add2,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextSpan(
-                          text: t.tooltip.wallet_add3,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ),
-                        TextSpan(
-                          text: t.tooltip.wallet_add4,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextSpan(
-                          text: t.tooltip.wallet_add5,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
-                  showIcon: true,
-                  type: TooltipType.info)),
+                    showIcon: true,
+                    borderColor: CoconutColors.colorPalette[4],
+                    tooltipState: CoconutTooltipState.info),
+              ])),
         ]));
   }
 

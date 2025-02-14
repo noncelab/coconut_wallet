@@ -2,6 +2,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:flutter/cupertino.dart';
 
+@Deprecated('Use CoconutTooltip instead')
 class FaucetTooltip extends StatefulWidget {
   final String text;
   final double width;

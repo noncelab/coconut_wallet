@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -287,14 +288,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       ],
                     ),
                   ),
-                  FaucetTooltip(
-                    text: t.tooltip.faucet,
-                    isVisible: viewModel.faucetTooltipVisible,
-                    width: MediaQuery.of(context).size.width,
-                    iconPosition: _faucetIconPosition,
-                    iconSize: _faucetIconSize,
-                    onTapRemove: viewModel.removeFaucetTooltip,
-                  ),
                   WalletDetailStickyHeader(
                     widgetKey: _stickyHeaderWidgetKey,
                     height: _appBarSize.height,
@@ -348,6 +341,30 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       }
                       viewModel.updateUtxoFilter(filter);
                     },
+                  ),
+                  Positioned(
+                    top: _faucetIconPosition.dy + _faucetIconSize.height - 10,
+                    right: MediaQuery.of(context).size.width -
+                        _faucetIconPosition.dx -
+                        _faucetIconSize.width +
+                        5,
+                    child: CoconutToolTip(
+                      tooltipType: CoconutTooltipType.placement,
+                      brightness: Brightness.dark,
+                      backgroundColor: MyColors.skybule,
+                      animateOnBuild: true,
+                      isBubbleClipperSideLeft: false,
+                      isPlacementTooltipVisible: viewModel.faucetTooltipVisible,
+                      richText: RichText(
+                        text: TextSpan(
+                          text: t.tooltip.faucet,
+                          style: CoconutTypography.body3_12
+                              .setColor(CoconutColors.black),
+                        ),
+                      ),
+                      width: MediaQuery.of(context).size.width,
+                      onTapRemove: viewModel.removeFaucetTooltip,
+                    ),
                   ),
                 ],
               ),

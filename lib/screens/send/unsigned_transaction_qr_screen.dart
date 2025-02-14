@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -36,14 +37,22 @@ class _UnsignedTransactionQrScreenState
           }),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Container(
+          child: SizedBox(
             width: MediaQuery.of(context).size.width,
-            padding: Paddings.container,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CustomTooltip(
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: 20,
+                    left: CoconutLayout.defaultPadding,
+                    right: CoconutLayout.defaultPadding,
+                  ),
+                  child: CoconutToolTip(
+                    tooltipType: CoconutTooltipType.fixed,
+                    tooltipState: CoconutTooltipState.info,
+                    brightness: Brightness.dark,
                     backgroundColor: MyColors.white.withOpacity(0.9),
                     richText: RichText(
                       text: TextSpan(
@@ -81,7 +90,8 @@ class _UnsignedTransactionQrScreenState
                       ),
                     ),
                     showIcon: true,
-                    type: TooltipType.info),
+                  ),
+                ),
                 Container(
                     margin: const EdgeInsets.only(top: 40),
                     padding: const EdgeInsets.all(4),

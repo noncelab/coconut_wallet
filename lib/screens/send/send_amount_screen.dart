@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -11,7 +12,6 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
-import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -64,25 +64,31 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                               child: Column(children: [
                                 const SizedBox(height: 16),
                                 if (viewModel.unconfirmedBalance > 0)
-                                  CustomTooltip(
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: CoconutLayout.defaultPadding,
+                                    ),
+                                    child: CoconutToolTip(
                                       backgroundColor:
                                           MyColors.white.withOpacity(0.9),
+                                      tooltipType: CoconutTooltipType.fixed,
+                                      brightness: Brightness.dark,
                                       richText: RichText(
-                                          text: TextSpan(
-                                        text: t.tooltip.amount_to_be_sent(
+                                        text: TextSpan(
+                                          text: t.tooltip.amount_to_be_sent(
                                             bitcoin: satoshiToBitcoinString(
-                                                viewModel.unconfirmedBalance)),
-                                        style: const TextStyle(
-                                          fontFamily: 'Pretendard',
-                                          fontWeight: FontWeight.normal,
-                                          fontSize: 15,
-                                          height: 1.4,
-                                          letterSpacing: 0.5,
-                                          color: MyColors.black,
+                                                viewModel.unconfirmedBalance),
+                                          ),
+                                          style: CoconutTypography.body2_14
+                                              .setColor(
+                                            CoconutColors.black,
+                                          ),
                                         ),
-                                      )),
+                                      ),
                                       showIcon: true,
-                                      type: TooltipType.info),
+                                      tooltipState: CoconutTooltipState.info,
+                                    ),
+                                  ),
                                 Expanded(
                                   child: Center(
                                     child: Column(

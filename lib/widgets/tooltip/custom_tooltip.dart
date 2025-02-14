@@ -19,6 +19,7 @@ enum TooltipType {
   }
 }
 
+@Deprecated('Use CoconutTooltip instead')
 class CustomTooltip extends StatefulWidget {
   final RichText richText;
   final TooltipType type;
