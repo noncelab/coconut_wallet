@@ -87,7 +87,7 @@ class WalletListViewModel extends ChangeNotifier {
     vibrateLight();
   }
 
-  WalletBalance getWalletBalance(int id) {
+  Balance getWalletBalance(int id) {
     return _walletProvider.getWalletBalance(id);
   }
 

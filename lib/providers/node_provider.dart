@@ -94,7 +94,7 @@ class NodeProvider extends ChangeNotifier {
     return _wrapResult(_isolateManager.getRecommendedFees());
   }
 
-  Future<Result<WalletBalance, AppError>> getBalance(WalletListItemBase item,
+  Future<Result<Balance, AppError>> getBalance(WalletListItemBase item,
       {int receiveUsedIndex = 0, int changeUsedIndex = 0}) async {
     final result = await _wrapResult(_isolateManager.getBalance(item.walletBase,
         receiveUsedIndex: receiveUsedIndex, changeUsedIndex: changeUsedIndex));

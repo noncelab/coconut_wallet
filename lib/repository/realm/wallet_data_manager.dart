@@ -10,7 +10,6 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/repository/realm/converter/balance.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
@@ -61,8 +60,8 @@ class WalletDataManager {
         RealmIntegerId.schema,
         TempBroadcastTimeRecord.schema,
         RealmUtxoTag.schema,
+        RealmWalletAddress.schema,
         RealmWalletBalance.schema,
-        RealmAddressBalance.schema,
       ],
       schemaVersion: 1,
       migrationCallback: (migration, oldVersion) {},
@@ -827,138 +826,47 @@ class WalletDataManager {
     _cryptography = null;
   }
 
-  WalletBalance updateWalletBalance(int walletId, WalletBalance walletBalance) {
+  updateWalletBalance(int walletId, Balance balance) {
     _checkInitialized();
 
+    RealmWalletBase? realmWalletBase = _realm.find<RealmWalletBase>(walletId);
     RealmWalletBalance? realmWalletBalance =
         _realm.find<RealmWalletBalance>(walletId);
 
-    if (realmWalletBalance == null) {
-      _createNewWalletBalance(walletId, walletBalance);
-      return walletBalance;
+    if (realmWalletBase == null) {
+      throw StateError('[updateWalletBalance] Wallet not found');
     }
 
-    _updateExistingWalletBalance(realmWalletBalance, walletBalance);
-    return walletBalance;
+    if (realmWalletBalance == null) {
+      _createNewWalletBalance(realmWalletBase, balance);
+      return;
+    }
+
+    _realm.write(() {
+      realmWalletBase.balance = balance.total;
+      realmWalletBalance.total = balance.total;
+      realmWalletBalance.confirmed = balance.confirmed;
+      realmWalletBalance.unconfirmed = balance.unconfirmed;
+    });
   }
 
-  void _createNewWalletBalance(int walletId, WalletBalance walletBalance) {
+  void _createNewWalletBalance(
+      RealmWalletBase realmWalletBase, Balance walletBalance) {
     int walletBalanceLastId =
         getLastId(_realm, (RealmWalletBalance).toString());
-    int addressBalanceLastId =
-        getLastId(_realm, (RealmAddressBalance).toString());
-
-    final (receiveBalances, changeBalances) = _createAddressBalances(
-      walletBalance,
-      addressBalanceLastId,
-    );
-
-    final newBalances = <RealmAddressBalance>[
-      ...receiveBalances,
-      ...changeBalances,
-    ];
-
-    // RealmAddressBalance 객체들 먼저 추가
-    _addAllAddressBalance(newBalances);
 
     final realmWalletBalance = RealmWalletBalance(
       ++walletBalanceLastId,
-      receiveAddressBalanceList: receiveBalances,
-      changeAddressBalanceList: changeBalances,
+      realmWalletBase.id,
+      walletBalance.confirmed + walletBalance.unconfirmed,
+      walletBalance.confirmed,
+      walletBalance.unconfirmed,
     );
 
     _realm.write(() {
+      realmWalletBase.balance = walletBalance.total;
       _realm.add(realmWalletBalance);
     });
-  }
-
-  (List<RealmAddressBalance>, List<RealmAddressBalance>) _createAddressBalances(
-    WalletBalance walletBalance,
-    int lastId,
-  ) {
-    // 받은 주소 잔액 데이터 변환
-    final receiveBalances = walletBalance.receiveAddressBalances
-        .map((balance) => RealmAddressBalance(
-              ++lastId,
-              balance.index,
-              balance.confirmed,
-              balance.unconfirmed,
-            ))
-        .toList();
-
-    // 변경 주소 잔액 데이터 변환
-    final changeBalances = walletBalance.changeAddressBalances
-        .map((balance) => RealmAddressBalance(
-              ++lastId,
-              balance.index,
-              balance.confirmed,
-              balance.unconfirmed,
-            ))
-        .toList();
-
-    return (receiveBalances, changeBalances);
-  }
-
-  void _updateExistingWalletBalance(
-    RealmWalletBalance realmWalletBalance,
-    WalletBalance walletBalance,
-  ) {
-    final updates = _collectBalanceUpdates(realmWalletBalance, walletBalance);
-    if (updates.isEmpty) return;
-
-    _realm.write(() {
-      for (var (realmBalance, newBalance) in updates) {
-        realmBalance.confirmed = newBalance.confirmed;
-        realmBalance.unconfirmed = newBalance.unconfirmed;
-      }
-    });
-  }
-
-  List<(RealmAddressBalance, AddressBalance)> _collectBalanceUpdates(
-    RealmWalletBalance realmWalletBalance,
-    WalletBalance walletBalance,
-  ) {
-    final updates = <(RealmAddressBalance, AddressBalance)>[];
-
-    void collectUpdates(
-      List<AddressBalance> newBalances,
-      RealmList<RealmAddressBalance> realmBalances,
-    ) {
-      // Map으로 변환하여 조회 성능 향상
-      final newBalanceMap = {
-        for (var balance in newBalances) balance.index: balance
-      };
-
-      for (var realmBalance in realmBalances) {
-        final newBalance = newBalanceMap[realmBalance.index];
-        if (newBalance == null) continue;
-
-        if (realmBalance.confirmed != newBalance.confirmed ||
-            realmBalance.unconfirmed != newBalance.unconfirmed) {
-          updates.add((realmBalance, newBalance));
-        }
-      }
-    }
-
-    collectUpdates(
-      walletBalance.changeAddressBalances,
-      realmWalletBalance.changeAddressBalanceList,
-    );
-    collectUpdates(
-      walletBalance.receiveAddressBalances,
-      realmWalletBalance.receiveAddressBalanceList,
-    );
-
-    return updates;
-  }
-
-  List<RealmAddressBalance> _addAllAddressBalance(
-      List<RealmAddressBalance> balances) {
-    _realm.write(() {
-      _realm.addAll<RealmAddressBalance>(balances);
-    });
-
-    return balances;
   }
 
   // not used
@@ -966,13 +874,16 @@ class WalletDataManager {
     _realm.close();
   }
 
-  WalletBalance getWalletBalance(int walletId) {
+  Balance getWalletBalance(int walletId) {
     final realmWalletBalance = _realm.find<RealmWalletBalance>(walletId);
     if (realmWalletBalance == null) {
-      return WalletBalance([], []);
+      return Balance(0, 0);
     }
 
-    return mapRealmToWalletBalance(realmWalletBalance);
+    return Balance(
+      realmWalletBalance.confirmed,
+      realmWalletBalance.unconfirmed,
+    );
   }
 }
 

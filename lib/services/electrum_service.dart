@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:async/async.dart' as async;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -200,7 +202,7 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Future<WalletBalance> getBalance(WalletBase wallet,
+  Future<Balance> getBalance(WalletBase wallet,
       {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async {
     int receiveScanLimit = receiveUsedIndex + 1 + gapLimit;
     int changeScanLimit = changeUsedIndex + 1 + gapLimit;
@@ -213,7 +215,20 @@ class ElectrumService extends NodeClient {
       Future.wait(changeBalanceFutures)
     ]);
 
-    return WalletBalance(receive, change);
+    int confirmed = 0;
+    int unconfirmed = 0;
+
+    for (var balance in receive) {
+      confirmed += balance.confirmed;
+      unconfirmed += balance.unconfirmed;
+    }
+
+    for (var balance in change) {
+      confirmed += balance.confirmed;
+      unconfirmed += balance.unconfirmed;
+    }
+
+    return Balance(confirmed, unconfirmed);
   }
 
   Iterable<Future<AddressBalance>> _getBalance(

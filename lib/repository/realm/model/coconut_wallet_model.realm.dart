@@ -18,12 +18,16 @@ class RealmWalletBase extends _RealmWalletBase
     String descriptor,
     String name,
     String walletType, {
+    int lastUsedReceiveIndex = -1,
+    int lastUsedChangeIndex = -1,
     int? balance,
     int? txCount,
     bool isLatestTxBlockHeightZero = false,
   }) {
     if (!_defaultsSet) {
       _defaultsSet = RealmObjectBase.setDefaults<RealmWalletBase>({
+        'lastUsedReceiveIndex': -1,
+        'lastUsedChangeIndex': -1,
         'isLatestTxBlockHeightZero': false,
       });
     }
@@ -33,6 +37,8 @@ class RealmWalletBase extends _RealmWalletBase
     RealmObjectBase.set(this, 'descriptor', descriptor);
     RealmObjectBase.set(this, 'name', name);
     RealmObjectBase.set(this, 'walletType', walletType);
+    RealmObjectBase.set(this, 'lastUsedReceiveIndex', lastUsedReceiveIndex);
+    RealmObjectBase.set(this, 'lastUsedChangeIndex', lastUsedChangeIndex);
     RealmObjectBase.set(this, 'balance', balance);
     RealmObjectBase.set(this, 'txCount', txCount);
     RealmObjectBase.set(
@@ -76,6 +82,20 @@ class RealmWalletBase extends _RealmWalletBase
       RealmObjectBase.set(this, 'walletType', value);
 
   @override
+  int get lastUsedReceiveIndex =>
+      RealmObjectBase.get<int>(this, 'lastUsedReceiveIndex') as int;
+  @override
+  set lastUsedReceiveIndex(int value) =>
+      RealmObjectBase.set(this, 'lastUsedReceiveIndex', value);
+
+  @override
+  int get lastUsedChangeIndex =>
+      RealmObjectBase.get<int>(this, 'lastUsedChangeIndex') as int;
+  @override
+  set lastUsedChangeIndex(int value) =>
+      RealmObjectBase.set(this, 'lastUsedChangeIndex', value);
+
+  @override
   int? get balance => RealmObjectBase.get<int>(this, 'balance') as int?;
   @override
   set balance(int? value) => RealmObjectBase.set(this, 'balance', value);
@@ -113,6 +133,8 @@ class RealmWalletBase extends _RealmWalletBase
       'descriptor': descriptor.toEJson(),
       'name': name.toEJson(),
       'walletType': walletType.toEJson(),
+      'lastUsedReceiveIndex': lastUsedReceiveIndex.toEJson(),
+      'lastUsedChangeIndex': lastUsedChangeIndex.toEJson(),
       'balance': balance.toEJson(),
       'txCount': txCount.toEJson(),
       'isLatestTxBlockHeightZero': isLatestTxBlockHeightZero.toEJson(),
@@ -138,6 +160,10 @@ class RealmWalletBase extends _RealmWalletBase
           fromEJson(descriptor),
           fromEJson(name),
           fromEJson(walletType),
+          lastUsedReceiveIndex:
+              fromEJson(ejson['lastUsedReceiveIndex'], defaultValue: -1),
+          lastUsedChangeIndex:
+              fromEJson(ejson['lastUsedChangeIndex'], defaultValue: -1),
           balance: fromEJson(ejson['balance']),
           txCount: fromEJson(ejson['txCount']),
           isLatestTxBlockHeightZero: fromEJson(
@@ -159,6 +185,8 @@ class RealmWalletBase extends _RealmWalletBase
       SchemaProperty('descriptor', RealmPropertyType.string),
       SchemaProperty('name', RealmPropertyType.string),
       SchemaProperty('walletType', RealmPropertyType.string),
+      SchemaProperty('lastUsedReceiveIndex', RealmPropertyType.int),
+      SchemaProperty('lastUsedChangeIndex', RealmPropertyType.int),
       SchemaProperty('balance', RealmPropertyType.int, optional: true),
       SchemaProperty('txCount', RealmPropertyType.int, optional: true),
       SchemaProperty('isLatestTxBlockHeightZero', RealmPropertyType.bool),
@@ -745,21 +773,31 @@ class RealmUtxoTag extends _RealmUtxoTag
   SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
 }
 
-class RealmAddressBalance extends _RealmAddressBalance
+class RealmWalletAddress extends _RealmWalletAddress
     with RealmEntity, RealmObjectBase, RealmObject {
-  RealmAddressBalance(
+  RealmWalletAddress(
     int id,
+    String walletId,
+    String address,
     int index,
+    bool isChange,
+    String derivationPath,
+    bool isUsed,
     int confirmed,
     int unconfirmed,
   ) {
     RealmObjectBase.set(this, 'id', id);
+    RealmObjectBase.set(this, 'walletId', walletId);
+    RealmObjectBase.set(this, 'address', address);
     RealmObjectBase.set(this, 'index', index);
+    RealmObjectBase.set(this, 'isChange', isChange);
+    RealmObjectBase.set(this, 'derivationPath', derivationPath);
+    RealmObjectBase.set(this, 'isUsed', isUsed);
     RealmObjectBase.set(this, 'confirmed', confirmed);
     RealmObjectBase.set(this, 'unconfirmed', unconfirmed);
   }
 
-  RealmAddressBalance._();
+  RealmWalletAddress._();
 
   @override
   int get id => RealmObjectBase.get<int>(this, 'id') as int;
@@ -767,9 +805,37 @@ class RealmAddressBalance extends _RealmAddressBalance
   set id(int value) => RealmObjectBase.set(this, 'id', value);
 
   @override
+  String get walletId =>
+      RealmObjectBase.get<String>(this, 'walletId') as String;
+  @override
+  set walletId(String value) => RealmObjectBase.set(this, 'walletId', value);
+
+  @override
+  String get address => RealmObjectBase.get<String>(this, 'address') as String;
+  @override
+  set address(String value) => RealmObjectBase.set(this, 'address', value);
+
+  @override
   int get index => RealmObjectBase.get<int>(this, 'index') as int;
   @override
   set index(int value) => RealmObjectBase.set(this, 'index', value);
+
+  @override
+  bool get isChange => RealmObjectBase.get<bool>(this, 'isChange') as bool;
+  @override
+  set isChange(bool value) => RealmObjectBase.set(this, 'isChange', value);
+
+  @override
+  String get derivationPath =>
+      RealmObjectBase.get<String>(this, 'derivationPath') as String;
+  @override
+  set derivationPath(String value) =>
+      RealmObjectBase.set(this, 'derivationPath', value);
+
+  @override
+  bool get isUsed => RealmObjectBase.get<bool>(this, 'isUsed') as bool;
+  @override
+  set isUsed(bool value) => RealmObjectBase.set(this, 'isUsed', value);
 
   @override
   int get confirmed => RealmObjectBase.get<int>(this, 'confirmed') as int;
@@ -782,40 +848,55 @@ class RealmAddressBalance extends _RealmAddressBalance
   set unconfirmed(int value) => RealmObjectBase.set(this, 'unconfirmed', value);
 
   @override
-  Stream<RealmObjectChanges<RealmAddressBalance>> get changes =>
-      RealmObjectBase.getChanges<RealmAddressBalance>(this);
+  Stream<RealmObjectChanges<RealmWalletAddress>> get changes =>
+      RealmObjectBase.getChanges<RealmWalletAddress>(this);
 
   @override
-  Stream<RealmObjectChanges<RealmAddressBalance>> changesFor(
+  Stream<RealmObjectChanges<RealmWalletAddress>> changesFor(
           [List<String>? keyPaths]) =>
-      RealmObjectBase.getChangesFor<RealmAddressBalance>(this, keyPaths);
+      RealmObjectBase.getChangesFor<RealmWalletAddress>(this, keyPaths);
 
   @override
-  RealmAddressBalance freeze() =>
-      RealmObjectBase.freezeObject<RealmAddressBalance>(this);
+  RealmWalletAddress freeze() =>
+      RealmObjectBase.freezeObject<RealmWalletAddress>(this);
 
   EJsonValue toEJson() {
     return <String, dynamic>{
       'id': id.toEJson(),
+      'walletId': walletId.toEJson(),
+      'address': address.toEJson(),
       'index': index.toEJson(),
+      'isChange': isChange.toEJson(),
+      'derivationPath': derivationPath.toEJson(),
+      'isUsed': isUsed.toEJson(),
       'confirmed': confirmed.toEJson(),
       'unconfirmed': unconfirmed.toEJson(),
     };
   }
 
-  static EJsonValue _toEJson(RealmAddressBalance value) => value.toEJson();
-  static RealmAddressBalance _fromEJson(EJsonValue ejson) {
+  static EJsonValue _toEJson(RealmWalletAddress value) => value.toEJson();
+  static RealmWalletAddress _fromEJson(EJsonValue ejson) {
     if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
     return switch (ejson) {
       {
         'id': EJsonValue id,
+        'walletId': EJsonValue walletId,
+        'address': EJsonValue address,
         'index': EJsonValue index,
+        'isChange': EJsonValue isChange,
+        'derivationPath': EJsonValue derivationPath,
+        'isUsed': EJsonValue isUsed,
         'confirmed': EJsonValue confirmed,
         'unconfirmed': EJsonValue unconfirmed,
       } =>
-        RealmAddressBalance(
+        RealmWalletAddress(
           fromEJson(id),
+          fromEJson(walletId),
+          fromEJson(address),
           fromEJson(index),
+          fromEJson(isChange),
+          fromEJson(derivationPath),
+          fromEJson(isUsed),
           fromEJson(confirmed),
           fromEJson(unconfirmed),
         ),
@@ -824,13 +905,21 @@ class RealmAddressBalance extends _RealmAddressBalance
   }
 
   static final schema = () {
-    RealmObjectBase.registerFactory(RealmAddressBalance._);
+    RealmObjectBase.registerFactory(RealmWalletAddress._);
     register(_toEJson, _fromEJson);
     return const SchemaObject(
-        ObjectType.realmObject, RealmAddressBalance, 'RealmAddressBalance', [
+        ObjectType.realmObject, RealmWalletAddress, 'RealmWalletAddress', [
       SchemaProperty('id', RealmPropertyType.int, primaryKey: true),
+      SchemaProperty('walletId', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('address', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
       SchemaProperty('index', RealmPropertyType.int,
           indexType: RealmIndexType.regular),
+      SchemaProperty('isChange', RealmPropertyType.bool,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('derivationPath', RealmPropertyType.string),
+      SchemaProperty('isUsed', RealmPropertyType.bool),
       SchemaProperty('confirmed', RealmPropertyType.int),
       SchemaProperty('unconfirmed', RealmPropertyType.int),
     ]);
@@ -843,19 +932,17 @@ class RealmAddressBalance extends _RealmAddressBalance
 class RealmWalletBalance extends _RealmWalletBalance
     with RealmEntity, RealmObjectBase, RealmObject {
   RealmWalletBalance(
-    int id, {
-    Iterable<RealmAddressBalance> receiveAddressBalanceList = const [],
-    Iterable<RealmAddressBalance> changeAddressBalanceList = const [],
-  }) {
+    int id,
+    int walletId,
+    int total,
+    int confirmed,
+    int unconfirmed,
+  ) {
     RealmObjectBase.set(this, 'id', id);
-    RealmObjectBase.set<RealmList<RealmAddressBalance>>(
-        this,
-        'receiveAddressBalanceList',
-        RealmList<RealmAddressBalance>(receiveAddressBalanceList));
-    RealmObjectBase.set<RealmList<RealmAddressBalance>>(
-        this,
-        'changeAddressBalanceList',
-        RealmList<RealmAddressBalance>(changeAddressBalanceList));
+    RealmObjectBase.set(this, 'walletId', walletId);
+    RealmObjectBase.set(this, 'total', total);
+    RealmObjectBase.set(this, 'confirmed', confirmed);
+    RealmObjectBase.set(this, 'unconfirmed', unconfirmed);
   }
 
   RealmWalletBalance._();
@@ -866,22 +953,24 @@ class RealmWalletBalance extends _RealmWalletBalance
   set id(int value) => RealmObjectBase.set(this, 'id', value);
 
   @override
-  RealmList<RealmAddressBalance> get receiveAddressBalanceList =>
-      RealmObjectBase.get<RealmAddressBalance>(
-          this, 'receiveAddressBalanceList') as RealmList<RealmAddressBalance>;
+  int get walletId => RealmObjectBase.get<int>(this, 'walletId') as int;
   @override
-  set receiveAddressBalanceList(
-          covariant RealmList<RealmAddressBalance> value) =>
-      throw RealmUnsupportedSetError();
+  set walletId(int value) => RealmObjectBase.set(this, 'walletId', value);
 
   @override
-  RealmList<RealmAddressBalance> get changeAddressBalanceList =>
-      RealmObjectBase.get<RealmAddressBalance>(this, 'changeAddressBalanceList')
-          as RealmList<RealmAddressBalance>;
+  int get total => RealmObjectBase.get<int>(this, 'total') as int;
   @override
-  set changeAddressBalanceList(
-          covariant RealmList<RealmAddressBalance> value) =>
-      throw RealmUnsupportedSetError();
+  set total(int value) => RealmObjectBase.set(this, 'total', value);
+
+  @override
+  int get confirmed => RealmObjectBase.get<int>(this, 'confirmed') as int;
+  @override
+  set confirmed(int value) => RealmObjectBase.set(this, 'confirmed', value);
+
+  @override
+  int get unconfirmed => RealmObjectBase.get<int>(this, 'unconfirmed') as int;
+  @override
+  set unconfirmed(int value) => RealmObjectBase.set(this, 'unconfirmed', value);
 
   @override
   Stream<RealmObjectChanges<RealmWalletBalance>> get changes =>
@@ -899,8 +988,10 @@ class RealmWalletBalance extends _RealmWalletBalance
   EJsonValue toEJson() {
     return <String, dynamic>{
       'id': id.toEJson(),
-      'receiveAddressBalanceList': receiveAddressBalanceList.toEJson(),
-      'changeAddressBalanceList': changeAddressBalanceList.toEJson(),
+      'walletId': walletId.toEJson(),
+      'total': total.toEJson(),
+      'confirmed': confirmed.toEJson(),
+      'unconfirmed': unconfirmed.toEJson(),
     };
   }
 
@@ -910,13 +1001,17 @@ class RealmWalletBalance extends _RealmWalletBalance
     return switch (ejson) {
       {
         'id': EJsonValue id,
+        'walletId': EJsonValue walletId,
+        'total': EJsonValue total,
+        'confirmed': EJsonValue confirmed,
+        'unconfirmed': EJsonValue unconfirmed,
       } =>
         RealmWalletBalance(
           fromEJson(id),
-          receiveAddressBalanceList:
-              fromEJson(ejson['receiveAddressBalanceList']),
-          changeAddressBalanceList:
-              fromEJson(ejson['changeAddressBalanceList']),
+          fromEJson(walletId),
+          fromEJson(total),
+          fromEJson(confirmed),
+          fromEJson(unconfirmed),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -928,12 +1023,11 @@ class RealmWalletBalance extends _RealmWalletBalance
     return const SchemaObject(
         ObjectType.realmObject, RealmWalletBalance, 'RealmWalletBalance', [
       SchemaProperty('id', RealmPropertyType.int, primaryKey: true),
-      SchemaProperty('receiveAddressBalanceList', RealmPropertyType.object,
-          linkTarget: 'RealmAddressBalance',
-          collectionType: RealmCollectionType.list),
-      SchemaProperty('changeAddressBalanceList', RealmPropertyType.object,
-          linkTarget: 'RealmAddressBalance',
-          collectionType: RealmCollectionType.list),
+      SchemaProperty('walletId', RealmPropertyType.int,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('total', RealmPropertyType.int),
+      SchemaProperty('confirmed', RealmPropertyType.int),
+      SchemaProperty('unconfirmed', RealmPropertyType.int),
     ]);
   }();
 

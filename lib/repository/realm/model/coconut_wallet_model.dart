@@ -12,6 +12,8 @@ class _RealmWalletBase {
   late String descriptor;
   late String name;
   late String walletType;
+  int lastUsedReceiveIndex = -1;
+  int lastUsedChangeIndex = -1;
   int? balance;
   int? txCount;
   bool isLatestTxBlockHeightZero = false;
@@ -73,21 +75,32 @@ class _RealmUtxoTag {
 }
 
 @RealmModel()
-class _RealmAddressBalance {
+class _RealmWalletAddress {
   @PrimaryKey()
   late int id;
-  // 주소 인덱스
+  @Indexed()
+  late String walletId;
+  @Indexed()
+  late String address;
   @Indexed()
   late int index;
+  @Indexed()
+  late bool isChange;
+  late String derivationPath;
+  late bool isUsed;
   late int confirmed;
   late int unconfirmed;
 }
 
+// 지갑 목록 화면이나 상세 화면에서 전체 잔액을 삐르게 갱신하고 조회하기 위해 사용
 @RealmModel()
 class _RealmWalletBalance {
   @PrimaryKey()
   late int id;
+  @Indexed()
+  late int walletId;
 
-  late List<_RealmAddressBalance> receiveAddressBalanceList;
-  late List<_RealmAddressBalance> changeAddressBalanceList;
+  late int total;
+  late int confirmed;
+  late int unconfirmed;
 }
