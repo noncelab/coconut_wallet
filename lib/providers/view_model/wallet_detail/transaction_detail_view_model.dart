@@ -1,23 +1,26 @@
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:flutter/material.dart';
 
 class TransactionDetailViewModel extends ChangeNotifier {
   final int _walletId;
   final String _txHash;
   final WalletProvider _walletProvider;
+  final NodeProvider _nodeProvider;
   final TransactionProvider _txProvider;
 
-  int? _currentBlockHeight;
+  BlockTimestamp? _currentBlock;
 
   final ValueNotifier<bool> _showDialogNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _loadCompletedNotifier = ValueNotifier(false);
 
-  TransactionDetailViewModel(
-      this._walletId, this._txHash, this._walletProvider, this._txProvider);
+  TransactionDetailViewModel(this._walletId, this._txHash, this._walletProvider,
+      this._txProvider, this._nodeProvider);
 
-  int? get currentBlockHeight => _currentBlockHeight;
+  BlockTimestamp? get currentBlock => _currentBlock;
 
   TransactionProvider get txModel => _txProvider;
   TransactionRecord? get transaction => _txProvider.transaction;
@@ -41,7 +44,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (_walletProvider.walletItemList.isNotEmpty) {
       // _addressBook =
       //     _walletProvider.getWalletById(_walletId).walletBase.addressBook;
-      _setCurrentBlockHeight(_walletProvider);
+      _setCurrentBlockHeight();
       _txProvider.initTransaction(_walletId, _txHash);
       if (_txProvider.initViewMoreButtons() == false) {
         _showDialogNotifier.value = true;
@@ -50,8 +53,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setCurrentBlockHeight(WalletProvider walletProvider) async {
-    _currentBlockHeight = await walletProvider.getCurrentBlockHeight();
-    notifyListeners();
+  void _setCurrentBlockHeight() async {
+    final result = await _nodeProvider.getLatestBlock();
+
+    if (result.isSuccess) {
+      _currentBlock = result.value;
+      notifyListeners();
+    }
   }
 }

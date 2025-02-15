@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
@@ -56,6 +57,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           widget.txHash,
           Provider.of<WalletProvider>(_, listen: false),
           Provider.of<TransactionProvider>(_, listen: false),
+          Provider.of<NodeProvider>(_, listen: false),
         );
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
         _viewModel.loadCompletedNotifier.addListener(_loadCompletedListener);
@@ -250,7 +252,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                         .toString(),
                                     count: _confirmedCountText(
                                         viewModel.transaction,
-                                        viewModel.currentBlockHeight))
+                                        viewModel.currentBlock?.height))
                                 : '-',
                             style: Styles.body1Number,
                           ),

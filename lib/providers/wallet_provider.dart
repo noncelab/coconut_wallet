@@ -471,19 +471,6 @@ class WalletProvider extends ChangeNotifier {
         wallet, cursor, count, isChange);
   }
 
-  Future<int?> getCurrentBlockHeight() async {
-    try {
-      await _initNodeConnectionWhenIsNull();
-
-      // TODO: NodeConnector
-      // return _nodeConnector!.currentBlock.height;
-      return 0;
-    } catch (e) {
-      Logger.error(e);
-      return null;
-    }
-  }
-
   // TODO: getMinimumNetworkFeeRate
   Future<Result<int>?> getMinimumNetworkFeeRate() async {
     throw UnimplementedError();

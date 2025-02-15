@@ -148,6 +148,7 @@ class IsolateManager implements IsolateManagerBase {
 
               replyPort.send(balanceResult);
               break;
+
             case IsolateMessageType.getRecommendedFees:
               var recommendedFeesResult = await nodeClient.getRecommendedFees();
               replyPort.send(recommendedFeesResult);
@@ -208,6 +209,7 @@ class IsolateManager implements IsolateManagerBase {
                 replyPort.send(state);
               }
               break;
+
             case IsolateMessageType.fetchPreviousTransactions:
               Transaction transaction = params[0];
               List<Transaction> existingTxList = params[1];
