@@ -1,9 +1,9 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -297,6 +297,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           Provider.of<UtxoTagProvider>(context, listen: false),
           Provider.of<SendInfoProvider>(context, listen: false),
           Provider.of<ConnectivityProvider>(context, listen: false),
+          Provider.of<NodeProvider>(context, listen: false),
           Provider.of<UpbitConnectModel>(context, listen: false)
               .bitcoinPriceKrw,
           _selectedUtxoOrder);

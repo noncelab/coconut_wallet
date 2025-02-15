@@ -471,11 +471,6 @@ class WalletProvider extends ChangeNotifier {
         wallet, cursor, count, isChange);
   }
 
-  // TODO: getMinimumNetworkFeeRate
-  Future<Result<int>?> getMinimumNetworkFeeRate() async {
-    throw UnimplementedError();
-  }
-
   // TODO: broadcast
   Future<Result<String>> broadcast(Transaction signedTx) async {
     throw UnimplementedError();

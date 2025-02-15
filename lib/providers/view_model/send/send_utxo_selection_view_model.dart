@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -19,9 +20,7 @@ import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 enum ErrorState {
@@ -42,10 +41,11 @@ enum ErrorState {
 }
 
 class SendUtxoSelectionViewModel extends ChangeNotifier {
-  late final WalletProvider _walletProvider;
-  late final UtxoTagProvider _tagProvider;
-  late final SendInfoProvider _sendInfoProvider;
-  late final ConnectivityProvider _connectivityProvider;
+  final WalletProvider _walletProvider;
+  final UtxoTagProvider _tagProvider;
+  final SendInfoProvider _sendInfoProvider;
+  final ConnectivityProvider _connectivityProvider;
+  final NodeProvider _nodeProvider;
   late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;
@@ -83,6 +83,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       this._tagProvider,
       this._sendInfoProvider,
       this._connectivityProvider,
+      this._nodeProvider,
       this._bitcoinPriceKrw,
       UtxoOrderEnum initialUtxoOrder) {
     _walletBaseItem =
@@ -237,8 +238,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   Future<Result<int>?> getMinimumFeeRateFromNetwork() async {
-    // return await _walletProvider.getMinimumNetworkFeeRate();
-    throw UnimplementedError();
+    return await _nodeProvider.getNetworkMinimumFeeRate();
   }
 
   bool hasTaggedUtxo() {
@@ -420,25 +420,26 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   Future<bool> _setRecommendedFees() async {
-    var recommendedFees =
-        await fetchRecommendedFees(() => getMinimumFeeRateFromNetwork());
+    final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
 
-    if (recommendedFees == null) {
+    if (recommendedFeesResult.isFailure) {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
       return false;
     }
+
+    final recommendedFees = recommendedFeesResult.value;
 
     feeInfos[0].satsPerVb = recommendedFees.fastestFee;
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
     feeInfos[2].satsPerVb = recommendedFees.hourFee;
 
-    var result = _updateFeeInfoEstimateFee();
-    if (result) {
+    final updateFeeInfoResult = _updateFeeInfoEstimateFee();
+    if (updateFeeInfoResult) {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
     } else {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
     }
-    return result;
+    return updateFeeInfoResult;
   }
 
   void _syncSelectedUtxosWithTransaction() {
@@ -458,7 +459,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       try {
         int estimatedFee = estimateFee(feeInfo.satsPerVb!);
         _initFeeInfo(feeInfo, estimatedFee);
-        //notifyListeners();
       } catch (e) {
         Logger.error(e);
         return false;

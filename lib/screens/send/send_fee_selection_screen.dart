@@ -1,10 +1,10 @@
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
@@ -13,7 +13,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
@@ -251,6 +250,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     _viewModel = SendFeeSelectionViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
+        Provider.of<NodeProvider>(context, listen: false),
         Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
 
@@ -393,14 +393,15 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Future<void> _setRecommendedFees() async {
-    var recommendedFees = await fetchRecommendedFees(
-        () => _viewModel.walletProvider.getMinimumNetworkFeeRate());
-    if (recommendedFees == null) {
+    var result = await _viewModel.nodeprovider.getRecommendedFees();
+    if (result.isFailure) {
       setState(() {
         _isRecommendedFeeFetchSuccess = false;
       });
       return;
     }
+
+    final recommendedFees = result.value;
 
     feeInfos[0].satsPerVb = recommendedFees.fastestFee;
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee;

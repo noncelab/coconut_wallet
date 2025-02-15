@@ -58,7 +58,7 @@ class ElectrumService extends NodeClient {
       return 1;
     }
 
-    num minimumFeeRate = feeHistogram.first.first;
+    num minimumFeeRate = feeHistogram.last.first;
     feeHistogram.map((feeInfo) => feeInfo.first).forEach((feeRate) {
       if (minimumFeeRate > feeRate) {
         minimumFeeRate = feeRate;
