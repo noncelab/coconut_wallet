@@ -12,6 +12,7 @@ import 'package:coconut_wallet/services/model/response/fetch_transaction_respons
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
 import 'package:coconut_wallet/services/network/node_client.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
 
@@ -68,8 +69,21 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<Result<String>> broadcast(String rawTransaction) async {
-    return _wrapResult(_isolateManager.broadcast(rawTransaction));
+  Future<Result<String>> broadcast(Transaction signedTx) async {
+    final result =
+        await _wrapResult(_isolateManager.broadcast(signedTx.serialize()));
+
+    if (result.isFailure) {
+      return result;
+    }
+
+    _walletDataManager
+        .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
+        .catchError((_) {
+      Logger.error(_);
+    });
+
+    return result;
   }
 
   Future<Result<int>> getNetworkMinimumFeeRate() async {

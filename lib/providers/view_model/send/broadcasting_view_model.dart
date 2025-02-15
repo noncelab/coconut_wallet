@@ -1,5 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -11,6 +11,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
   late final UtxoTagProvider _tagProvider;
+  late final NodeProvider _nodeProvider;
   late final WalletBase _walletBase;
   late final int _walletId;
   late bool? _isNetworkOn;
@@ -56,10 +57,8 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   UtxoTagProvider get tagProvider => _tagProvider;
 
-  // TODO: broadcast
   Future<Result<String>> broadcast(Transaction signedTx) async {
-    throw UnimplementedError();
-    // return await _walletProvider.broadcast(signedTx);
+    return _nodeProvider.broadcast(signedTx);
   }
 
   void setBitcoinPriceKrw(int bitcoinPriceKrw) {

@@ -471,11 +471,6 @@ class WalletProvider extends ChangeNotifier {
         wallet, cursor, count, isChange);
   }
 
-  // TODO: broadcast
-  Future<Result<String>> broadcast(Transaction signedTx) async {
-    throw UnimplementedError();
-  }
-
   Future encryptWalletSecureData(String hashedPin) async {
     await _walletDataManager.encrypt(hashedPin);
   }
