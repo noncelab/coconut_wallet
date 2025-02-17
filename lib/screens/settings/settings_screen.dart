@@ -1,9 +1,9 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -59,9 +59,11 @@ class _SettingsScreen extends State<SettingsScreen> {
                       ButtonGroup(buttons: [
                         SingleButton(
                             title: t.settings_screen.set_password,
-                            rightElement: CupertinoSwitch(
-                                value: viewModel.isSetPin,
-                                activeColor: MyColors.primary,
+                            rightElement: CoconutSwitch(
+                                brightness: Brightness.dark,
+                                isOn: viewModel.isSetPin,
+                                activeColor: CoconutColors.primary,
+                                thumbColor: CoconutColors.white,
                                 onChanged: (isOn) {
                                   if (isOn) {
                                     CommonBottomSheets.showBottomSheet_90<bool>(
@@ -78,9 +80,11 @@ class _SettingsScreen extends State<SettingsScreen> {
                         if (viewModel.canCheckBiometrics && viewModel.isSetPin)
                           SingleButton(
                             title: t.settings_screen.use_biometric,
-                            rightElement: CupertinoSwitch(
-                                value: viewModel.isSetBiometrics,
-                                activeColor: MyColors.primary,
+                            rightElement: CoconutSwitch(
+                                brightness: Brightness.dark,
+                                isOn: viewModel.isSetBiometrics,
+                                activeColor: CoconutColors.primary,
+                                thumbColor: CoconutColors.white,
                                 onChanged: (isOn) async {
                                   if (isOn) {
                                     viewModel.authenticateWithBiometrics(
@@ -111,9 +115,11 @@ class _SettingsScreen extends State<SettingsScreen> {
                       ButtonContainer(
                           child: SingleButton(
                         title: t.settings_screen.hide_balance,
-                        rightElement: CupertinoSwitch(
-                            value: viewModel.isBalanceHidden,
-                            activeColor: MyColors.primary,
+                        rightElement: CoconutSwitch(
+                            brightness: Brightness.dark,
+                            isOn: viewModel.isBalanceHidden,
+                            activeColor: CoconutColors.primary,
+                            thumbColor: CoconutColors.white,
                             onChanged: (value) {
                               viewModel.changeIsBalanceHidden(value);
                             }),

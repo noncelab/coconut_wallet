@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/styles.dart';
 
+@Deprecated("ToggleWidget")
 class ToggleWidget extends StatefulWidget {
   final String toggleName;
   final bool initialValue;

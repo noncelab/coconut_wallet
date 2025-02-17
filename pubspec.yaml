@@ -80,7 +80,7 @@ dependencies:
     git:
       url: https://github.com/noncelab/coconut_design_system.git
       ref: main
-  #  path: ../design_system/coconut_design_system
+#    path: ../design_system/coconut_design_system
 
 dev_dependencies:
   flutter_test:
