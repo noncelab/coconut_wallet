@@ -327,6 +327,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         : _isStickyHeaderDropdownVisible
                             ? _stickyHeaderDropdownPosition.dy + 90
                             : 0,
+                    positionRight: 16,
                     selectedFilter: viewModel.selectedUtxoOrder,
                     onSelected: (filter) {
                       setState(() {

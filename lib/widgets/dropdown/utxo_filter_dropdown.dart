@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 class UtxoFilterDropdown extends StatelessWidget {
   final bool isVisible;
   final double positionTop;
+  final double? positionLeft;
+  final double? positionRight;
   final UtxoOrderEnum selectedFilter;
   final Function onSelected;
   const UtxoFilterDropdown({
@@ -14,6 +16,8 @@ class UtxoFilterDropdown extends StatelessWidget {
     required this.positionTop,
     required this.selectedFilter,
     required this.onSelected,
+    this.positionLeft,
+    this.positionRight,
   });
 
   @override
@@ -28,7 +32,8 @@ class UtxoFilterDropdown extends StatelessWidget {
       visible: isVisible,
       child: Positioned(
         top: positionTop,
-        right: 16,
+        right: positionRight,
+        left: positionLeft,
         child: Material(
           borderRadius: BorderRadius.circular(16),
           child: CoconutPulldownMenu(

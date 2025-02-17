@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -16,11 +17,10 @@ import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/send_utxo_sticky_header.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
-import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -55,9 +55,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   final GlobalKey _scrolledOrderDropdownButtonKey = GlobalKey();
   bool _isStickyHeaderVisible = false; // 스크롤시 상단에 붙어있는 위젯
   bool _isOrderDropdownVisible = false; // 필터 드롭다운(확장형)
-  bool _isScrolledOrderDropdownVisible = false; // 필터 드롭다운(축소형)
+  // bool _isScrolledOrderDropdownVisible = false; // 필터 드롭다운(축소형)
   late Offset _orderDropdownButtonPosition;
-  late Offset _scrolledOrderDropdownButtonPosition;
+  // late Offset _scrolledOrderDropdownButtonPosition;
   final GlobalKey _headerTopContainerKey = GlobalKey();
   Size _headerTopContainerSize = const Size(0, 0);
 
@@ -138,16 +138,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                                     change: viewModel.change,
                                   )),
                               _totalUtxoAmountWidget(
-                                Text(
-                                  key: _orderDropdownButtonKey,
-                                  _selectedUtxoOrder.text,
-                                  style: Styles.caption2.merge(
-                                    const TextStyle(
-                                      color: MyColors.white,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
+                                _orderDropdownButtonKey,
                                 viewModel.errorState,
                                 viewModel.selectedUtxoList.length,
                                 viewModel.selectedUtxoAmountSum,
@@ -227,18 +218,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                           color: MyColors.black,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
+                            vertical: 4,
                           ),
                           child: _totalUtxoAmountWidget(
-                            Text(
-                              key: _scrolledOrderDropdownButtonKey,
-                              _selectedUtxoOrder.text,
-                              style: Styles.caption2.merge(
-                                const TextStyle(
-                                  color: MyColors.white,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
+                            _scrolledOrderDropdownButtonKey,
                             viewModel.errorState,
                             viewModel.selectedUtxoList.length,
                             viewModel.selectedUtxoAmountSum,
@@ -249,25 +232,29 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   ),
                   if (_isOrderDropdownVisible &&
                       viewModel.confirmedUtxoList.isNotEmpty) ...{
-                    Positioned(
-                      top: _orderDropdownButtonPosition.dy -
+                    UtxoFilterDropdown(
+                      isVisible: _isOrderDropdownVisible,
+                      positionTop: _orderDropdownButtonPosition.dy -
                           _scrollController.offset -
                           MediaQuery.of(context).padding.top -
-                          20,
-                      left: 16,
-                      child: _utxoOrderDropdownWidget(),
+                          (_isStickyHeaderVisible ? 20 : 16),
+                      positionLeft: 16,
+                      selectedFilter: _selectedUtxoOrder,
+                      onSelected: (filter) async {
+                        final isChanged = _selectedUtxoOrder != filter;
+                        if (isChanged) {
+                          _selectedUtxoOrder = filter;
+                          _isOrderDropdownVisible = false;
+                        }
+
+                        if (!isChanged) return;
+                        await Future.delayed(const Duration(milliseconds: 100));
+                        if (mounted) {
+                          _viewModel.changeUtxoOrder(filter);
+                        }
+                      },
                     ),
                   },
-                  if (_isScrolledOrderDropdownVisible &&
-                      viewModel.confirmedUtxoList.isNotEmpty) ...{
-                    Positioned(
-                      top: _scrolledOrderDropdownButtonPosition.dy -
-                          MediaQuery.of(context).padding.top -
-                          65,
-                      left: 16,
-                      child: _utxoOrderDropdownWidget(),
-                    ),
-                  }
                 ],
               ),
             ),
@@ -302,8 +289,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _scrollController.addListener(() {
         double threshold = _headerTopContainerSize.height + 24;
         double offset = _scrollController.offset;
-        if (_isOrderDropdownVisible || _isScrolledOrderDropdownVisible) {
-          _removeUtxoOrderDropdown();
+        if (_isOrderDropdownVisible) {
+          _setVisibleUtxoOrderDropdown(false);
         }
         setState(() {
           _isStickyHeaderVisible = offset >= threshold;
@@ -314,17 +301,14 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         RenderBox orderDropdownButtonRenderBox =
             _orderDropdownButtonKey.currentContext?.findRenderObject()
                 as RenderBox;
-        RenderBox scrolledOrderDropdownButtonRenderBox =
-            _scrolledOrderDropdownButtonKey.currentContext?.findRenderObject()
-                as RenderBox;
+
         _orderDropdownButtonPosition =
             orderDropdownButtonRenderBox.localToGlobal(Offset.zero);
-        _scrolledOrderDropdownButtonPosition =
-            scrolledOrderDropdownButtonRenderBox.localToGlobal(Offset.zero);
 
         RenderBox headerTopContainerRenderBox =
             _headerTopContainerKey.currentContext?.findRenderObject()
                 as RenderBox;
+
         _headerTopContainerSize = headerTopContainerRenderBox.size;
       });
     } catch (e) {
@@ -343,7 +327,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _deselectAll() {
-    _removeUtxoOrderDropdown();
+    _setVisibleUtxoOrderDropdown(false);
     _viewModel.deselectAllUtxo();
   }
 
@@ -355,7 +339,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return;
     }
 
-    _removeUtxoOrderDropdown();
+    _setVisibleUtxoOrderDropdown(false);
 
     if (_viewModel.hasTaggedUtxo()) {
       CustomDialogs.showCustomAlertDialog(
@@ -410,24 +394,23 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
   }
 
-  void _removeUtxoOrderDropdown() {
+  void _setVisibleUtxoOrderDropdown(bool visible) {
     setState(() {
-      _isOrderDropdownVisible = false;
-      _isScrolledOrderDropdownVisible = false;
+      _isOrderDropdownVisible = visible;
     });
   }
 
   void _selectAll() {
-    _removeUtxoOrderDropdown();
+    _setVisibleUtxoOrderDropdown(false);
     _viewModel.selectAllUtxo();
   }
 
   void _toggleSelection(UTXO utxo) {
-    _removeUtxoOrderDropdown();
+    _setVisibleUtxoOrderDropdown(false);
     _viewModel.toggleUtxoSelection(utxo);
   }
 
-  Widget _totalUtxoAmountWidget(Widget textKeyWidget, ErrorState? errorState,
+  Widget _totalUtxoAmountWidget(GlobalKey dropdownKey, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
     return Column(
       children: [
@@ -536,40 +519,18 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           maintainSemantics: false,
           maintainInteractivity: false,
           child: Row(children: [
-            CupertinoButton(
-              onPressed: () {
-                setState(
-                  () {
-                    if (_isStickyHeaderVisible
-                        ? _isScrolledOrderDropdownVisible
-                        : _isOrderDropdownVisible) {
-                      _removeUtxoOrderDropdown();
-                    } else {
-                      _scrollController.jumpTo(_scrollController.offset);
-
-                      if (_isStickyHeaderVisible) {
-                        _isScrolledOrderDropdownVisible = true;
-                      } else {
-                        _isOrderDropdownVisible = true;
-                      }
-                    }
-                  },
-                );
+            CoconutPulldown(
+              key: dropdownKey,
+              brightness: Brightness.dark,
+              title: _selectedUtxoOrder.text,
+              isOpen: _isOrderDropdownVisible,
+              fontSize: 12,
+              onChanged: (value) {
+                if (value) {
+                  _scrollController.jumpTo(_scrollController.offset);
+                }
+                _setVisibleUtxoOrderDropdown(value);
               },
-              minSize: 0,
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  textKeyWidget,
-                  const SizedBox(
-                    width: 4,
-                  ),
-                  SvgPicture.asset(
-                    'assets/svg/arrow-down.svg',
-                  ),
-                ],
-              ),
             ),
             Expanded(
               child: Row(
@@ -582,7 +543,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: t.unselect_all,
                     onTap: () {
-                      _removeUtxoOrderDropdown();
+                      _setVisibleUtxoOrderDropdown(false);
                       _deselectAll();
                     },
                   ),
@@ -591,43 +552,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: t.select_all,
                     onTap: () async {
-                      _removeUtxoOrderDropdown();
+                      _setVisibleUtxoOrderDropdown(false);
                       _selectAll();
                     },
                   )
                 ],
               ),
-            )
+            ),
           ]),
         ),
       ],
-    );
-  }
-
-  /// 필터 드롭다운 위젯
-  Widget _utxoOrderDropdownWidget() {
-    return Material(
-      borderRadius: BorderRadius.circular(16),
-      child: CustomDropdown(
-        buttons: _utxoOrderOptions.map((order) => order.text).toList(),
-        dividerColor: Colors.black,
-        onTapButton: (index) async {
-          bool isChanged = _selectedUtxoOrder != _utxoOrderOptions[index];
-          setState(() {
-            if (isChanged) {
-              _selectedUtxoOrder = _utxoOrderOptions[index];
-            }
-            _isOrderDropdownVisible = _isScrolledOrderDropdownVisible = false;
-          });
-
-          if (!isChanged) return;
-          await Future.delayed(const Duration(milliseconds: 100));
-          if (mounted) {
-            _viewModel.changeUtxoOrder(_utxoOrderOptions[index]);
-          }
-        },
-        selectedButton: _selectedUtxoOrder.text,
-      ),
     );
   }
 }
