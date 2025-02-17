@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -27,26 +28,28 @@ class _ChecklistTileState extends State<ChecklistTile> {
     isChecked = widget.item.isChecked;
   }
 
+  void _checked(bool checked) {
+    setState(() {
+      isChecked = checked;
+      widget.onChanged(isChecked); // 부모 상태 업데이트
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          isChecked = !isChecked;
-          widget.onChanged(isChecked); // 부모 상태 업데이트
-        });
+        _checked(!isChecked);
       },
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              isChecked
-                  ? Icons.check_circle_rounded
-                  : Icons.check_circle_outline_rounded,
-              size: 20.0,
-              color: MyColors.white,
+            CoconutCheckbox(
+              isSelected: isChecked,
+              brightness: Brightness.dark,
+              onChanged: _checked,
             ),
             const SizedBox(width: 8), // 체크박스와 텍스트 사이의 가로 간격 조정
             Expanded(
