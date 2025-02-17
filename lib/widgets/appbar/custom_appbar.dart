@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +9,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
-import 'package:coconut_wallet/widgets/label_testnet.dart';
 
 class CustomAppBar {
   static AppBar build({
@@ -39,12 +40,23 @@ class CustomAppBar {
           )
         },
         showTestnetLabel
-            ? const Column(
+            ? Column(
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     height: 3,
                   ),
-                  TestnetLabelWidget(),
+                  CoconutChip(
+                    color: CoconutColors.cyan,
+                    isRectangle: true,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+                    child: Text(
+                      t.testnet,
+                      style: CoconutTypography.caption_10_Bold.copyWith(
+                        color: CoconutColors.white,
+                      ),
+                    ),
+                  ),
                 ],
               )
             : Container(

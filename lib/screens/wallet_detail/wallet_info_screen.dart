@@ -15,7 +15,6 @@ import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_tooltip.dart';
 import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';

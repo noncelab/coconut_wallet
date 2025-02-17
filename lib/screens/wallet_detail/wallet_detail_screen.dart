@@ -25,7 +25,6 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/selector/wallet_detail_tab.dart';
-import 'package:coconut_wallet/widgets/tooltip/faucet_tooltip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

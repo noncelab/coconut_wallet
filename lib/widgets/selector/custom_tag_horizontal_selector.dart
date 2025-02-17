@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 
 /// [CustomTagHorizontalSelector] : 태그 목록을 보여주고 선택할 수 있는 위젯 (가로)
@@ -39,6 +39,7 @@ class _CustomTagHorizontalSelectorState
         itemCount: _tags.length,
         itemBuilder: (BuildContext context, int index) {
           final name = _tags[index];
+          final isSelected = _selectedTagName == name;
           return GestureDetector(
             onTap: () {
               setState(() {
@@ -46,29 +47,24 @@ class _CustomTagHorizontalSelectorState
               });
               widget.onSelectedTag.call(name);
             },
-            child: _tagSelectorChip(
-                index == 0 ? '전체' : '#$name', _selectedTagName == name),
+            child: Container(
+              margin: const EdgeInsets.only(right: 4),
+              child: CoconutChip(
+                color: isSelected ? CoconutColors.white : CoconutColors.gray800,
+                borderWidth: 0,
+                padding: const EdgeInsets.only(left: 12, right: 12, top: 6),
+                child: Text(
+                  name,
+                  style: CoconutTypography.body3_12.copyWith(
+                    color: !isSelected
+                        ? CoconutColors.white
+                        : CoconutColors.gray800,
+                  ),
+                ),
+              ),
+            ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _tagSelectorChip(String name, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      margin: const EdgeInsets.only(right: 4),
-      height: 32,
-      decoration: BoxDecoration(
-        color: isSelected ? MyColors.white : MyColors.gray800,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        name,
-        style: Styles.caption.copyWith(
-          color: isSelected ? MyColors.gray800 : MyColors.white,
-          letterSpacing: 0.1,
-        ),
       ),
     );
   }

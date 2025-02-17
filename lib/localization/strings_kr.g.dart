@@ -72,6 +72,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get sign => '서명하기';
   String get glossary => '용어집';
   String get settings => '설정';
+  String get copy => '복사하기';
   String get tx_list => '거래 내역';
   String get utxo_list => 'UTXO 목록';
   String get wallet_id => '지갑 ID';
@@ -995,6 +996,8 @@ extension on Translations {
         return '용어집';
       case 'settings':
         return '설정';
+      case 'copy':
+        return '복사하기';
       case 'tx_list':
         return '거래 내역';
       case 'utxo_list':

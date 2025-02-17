@@ -1,3 +1,5 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/cupertino.dart';
@@ -61,18 +63,17 @@ class AddressItemCard extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: MyColors.transparentWhite_15),
-                child: Text(isUsed ? '사용됨' : '사용 전',
-                    style: TextStyle(
-                        color: isUsed
-                            ? MyColors.primary
-                            : MyColors.transparentWhite_70,
-                        fontSize: 10,
-                        fontFamily: CustomFonts.text.getFontFamily)))
+            CoconutChip(
+              color: CoconutColors.white.withOpacity(0.15),
+              borderWidth: 0,
+              child: Text(
+                isUsed ? t.status_used : t.status_unused,
+                style: CoconutTypography.caption_10.copyWith(
+                  color:
+                      isUsed ? MyColors.primary : MyColors.transparentWhite_70,
+                ),
+              ),
+            ),
           ],
         ),
       ),

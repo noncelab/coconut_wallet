@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
+@Deprecated("CustomChip")
 class CustomChip extends StatelessWidget {
   final String text;
   final Color? borderColor;

@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../styles.dart';
 
+@Deprecated("TestnetLabelWidget")
 class TestnetLabelWidget extends StatelessWidget {
   const TestnetLabelWidget({super.key});
 

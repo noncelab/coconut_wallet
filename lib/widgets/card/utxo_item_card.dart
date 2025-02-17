@@ -1,11 +1,11 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo.dart' as model;
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
-import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 
 class UTXOItemCard extends StatelessWidget {
@@ -86,19 +86,21 @@ class UTXOItemCard extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (isChange)
-                          CustomChip(
-                            text: '잔돈',
-                            borderColor: isConfirmed
-                                ? null
-                                : MyColors.transparentWhite_20,
-                            textStyle: isConfirmed
-                                ? null
-                                : Styles.caption2.copyWith(
-                                    color: MyColors.transparentWhite_20,
-                                    height: 1.0,
-                                  ),
+                        if (isChange) ...{
+                          CoconutChip(
+                            color: Colors.transparent,
+                            borderColor: CoconutColors.white,
+                            borderWidth: 0.5,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            child: Text(
+                              t.change,
+                              style: CoconutTypography.caption_10.copyWith(
+                                color: CoconutColors.white,
+                              ),
+                            ),
                           ),
+                        },
                         const SizedBox(
                           width: 4,
                         ),
@@ -144,10 +146,11 @@ class UTXOItemCard extends StatelessWidget {
                 children: List.generate(
                   utxo.tags?.length ?? 0,
                   (index) => IntrinsicWidth(
-                    child: CustomTagChip(
+                    child: CoconutTagChip(
                       tag: utxo.tags?[index].name ?? '',
-                      colorIndex: utxo.tags?[index].colorIndex ?? 0,
-                      type: CustomTagChipType.fix,
+                      color: CoconutColors.backgroundColorPaletteDark[
+                          utxo.tags?[index].colorIndex ?? 0],
+                      status: CoconutChipStatus.none,
                     ),
                   ),
                 ),

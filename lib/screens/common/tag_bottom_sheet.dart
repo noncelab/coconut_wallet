@@ -4,7 +4,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -264,13 +263,14 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                                 _checkSelectButtonEnabled();
                               });
                             },
-                            child: CustomTagChip(
+                            child: CoconutTagChip(
                               tag: _utxoTags[index].name,
-                              colorIndex: _utxoTags[index].colorIndex,
-                              type: _selectedUtxoTagNames
+                              color: CoconutColors.backgroundColorPaletteDark[
+                                  _utxoTags[index].colorIndex],
+                              status: _selectedUtxoTagNames
                                       .contains(_utxoTags[index].name)
-                                  ? CustomTagChipType.select
-                                  : CustomTagChipType.disable,
+                                  ? CoconutChipStatus.selected
+                                  : CoconutChipStatus.unselected,
                             ),
                           ),
                         ),

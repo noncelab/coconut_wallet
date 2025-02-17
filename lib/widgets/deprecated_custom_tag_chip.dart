@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 /// fix: 고정, select: 선택됨, disable: 선택 안됨
 enum CustomTagChipType { fix, select, disable }
 
+@Deprecated("CustomTagChip")
 class CustomTagChip extends StatelessWidget {
   final String tag;
   final int colorIndex;

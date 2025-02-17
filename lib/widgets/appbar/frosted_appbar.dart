@@ -1,10 +1,11 @@
 import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/label_testnet.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 
@@ -58,7 +59,18 @@ class FrostedAppBar extends StatelessWidget {
                           const SizedBox(
                             width: 10,
                           ),
-                          const TestnetLabelWidget(),
+                          CoconutChip(
+                            color: CoconutColors.cyan,
+                            isRectangle: true,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 2, horizontal: 8),
+                            child: Text(
+                              t.testnet,
+                              style: CoconutTypography.caption_10_Bold.copyWith(
+                                color: CoconutColors.white,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),

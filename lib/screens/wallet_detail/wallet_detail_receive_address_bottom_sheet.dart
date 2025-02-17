@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -74,7 +75,7 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
                               color: MyColors.transparentWhite_15,
                             ),
                             child: Text(
-                              '전체 주소 보기',
+                              t.view_all_addresses,
                               style: Styles.caption.copyWith(
                                   fontFamily: CustomFonts.text.getFontFamily),
                             ),
