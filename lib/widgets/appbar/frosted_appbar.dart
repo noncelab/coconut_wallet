@@ -91,24 +91,20 @@ class FrostedAppBar extends StatelessWidget {
                             MyColors.white, BlendMode.srcIn),
                       ),
                       onPressed: () {
-                        CustomDialogs.showCustomAlertDialog(
-                          context,
-                          title: '도움이 필요하신가요?',
-                          message: '튜토리얼 사이트로\n안내해 드릴게요',
-                          onConfirm: () async {
-                            launchURL(
-                              'https://noncelab.gitbook.io/coconut.onl',
-                              defaultMode: false,
-                            );
-                            Navigator.of(context).pop();
-                          },
-                          onCancel: () {
-                            Navigator.of(context).pop();
-                          },
-                          confirmButtonText: '튜토리얼 보기',
-                          confirmButtonColor: MyColors.cyanblue,
-                          cancelButtonText: '닫기',
-                        );
+                        CustomDialogs.showCustomDialog(context,
+                            title: t.alert.tutorial.title,
+                            description: t.alert.tutorial.description,
+                            rightButtonColor: CoconutColors.cyan,
+                            rightButtonText: t.alert.tutorial.btn_view,
+                            leftButtonText: '닫기', onTapRight: () {
+                          launchURL(
+                            'https://noncelab.gitbook.io/coconut.onl',
+                            defaultMode: false,
+                          );
+                          Navigator.of(context).pop();
+                        }, onTapLeft: () {
+                          Navigator.of(context).pop();
+                        });
                       },
                       color: MyColors.white,
                     ),

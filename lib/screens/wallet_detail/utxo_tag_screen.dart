@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -103,10 +104,10 @@ class UtxoTagScreen extends StatelessWidget {
                         CustomUnderlinedButton(
                           text: t.delete,
                           onTap: () {
-                            CustomDialogs.showCustomAlertDialog(
+                            CustomDialogs.showCustomDialog(
                               context,
                               title: t.alert.tag_delete.title,
-                              message: model.selectedUtxoTag?.utxoIdList
+                              description: model.selectedUtxoTag?.utxoIdList
                                           ?.isNotEmpty ==
                                       true
                                   ? t.alert.tag_delete.description_utxo_tag(
@@ -116,7 +117,9 @@ class UtxoTagScreen extends StatelessWidget {
                                           0)
                                   : t.alert.tag_delete.description(
                                       name: model.selectedUtxoTag!.name),
-                              onConfirm: () {
+                              rightButtonColor: CoconutColors.red,
+                              rightButtonText: t.delete,
+                              onTapRight: () {
                                 if (model.deleteUtxoTag(id)) {
                                   Navigator.of(context).pop();
                                 } else {
@@ -126,11 +129,9 @@ class UtxoTagScreen extends StatelessWidget {
                                   );
                                 }
                               },
-                              onCancel: () {
+                              onTapLeft: () {
                                 Navigator.of(context).pop();
                               },
-                              confirmButtonText: t.delete,
-                              confirmButtonColor: MyColors.warningRed,
                             );
                           },
                           padding: const EdgeInsets.all(0),

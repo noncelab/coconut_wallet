@@ -238,12 +238,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     return;
                                   }
                                   _removeTooltip();
-                                  CustomDialogs.showCustomAlertDialog(
+                                  CustomDialogs.showCustomDialog(
                                     context,
                                     title: t.alert.wallet_delete.confirm_delete,
-                                    message: t.alert.wallet_delete
+                                    description: t.alert.wallet_delete
                                         .confirm_delete_description,
-                                    onConfirm: () async {
+                                    rightButtonColor: CoconutColors.red,
+                                    rightButtonText: t.delete,
+                                    onTapRight: () async {
                                       if (viewModel.isSetPin) {
                                         await CommonBottomSheets
                                             .showBottomSheet_90(
@@ -264,11 +266,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                             context, (route) => route.isFirst);
                                       }
                                     },
-                                    onCancel: () {
+                                    onTapLeft: () {
                                       Navigator.of(context).pop();
                                     },
-                                    confirmButtonText: t.delete,
-                                    confirmButtonColor: MyColors.warningRed,
                                   );
                                 },
                               ),

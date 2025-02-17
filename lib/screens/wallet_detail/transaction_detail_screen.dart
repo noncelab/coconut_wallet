@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
@@ -390,11 +391,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   void _showDialogListener() {
-    CustomDialogs.showCustomAlertDialog(
+    CustomDialogs.showCustomDialog(
       context,
       title: t.alert.tx_detail.fetch_failed,
-      message: t.alert.tx_detail.fetch_failed_description,
-      onConfirm: () {
+      description: t.alert.tx_detail.fetch_failed_description,
+      rightButtonColor: CoconutColors.white,
+      onTapRight: () {
         Navigator.pop(context); // 팝업 닫기
         Navigator.pop(context); // 지갑 상세 이동
       },

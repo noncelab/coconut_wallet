@@ -313,11 +313,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       });
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        CustomDialogs.showCustomAlertDialog(
+        CustomDialogs.showCustomDialog(
           context,
           title: t.alert.error_occurs,
-          message: t.alert.contact_admin(error: e.toString()),
-          onConfirm: () {
+          description: t.alert.contact_admin(error: e.toString()),
+          rightButtonColor: MyColors.white,
+          onTapRight: () {
             Navigator.of(context).pop();
             Navigator.of(context).pop();
           },
@@ -342,23 +343,23 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _setVisibleUtxoOrderDropdown(false);
 
     if (_viewModel.hasTaggedUtxo()) {
-      CustomDialogs.showCustomAlertDialog(
+      CustomDialogs.showCustomDialog(
         context,
         title: t.alert.tag_apply.title,
-        message: t.alert.tag_apply.description,
-        onConfirm: () {
-          Navigator.of(context).pop();
-          _viewModel.saveUsedUtxoIdsWhenTagged(isTagsMoveAllowed: true);
-          _moveToSendConfirm();
-        },
-        onCancel: () {
+        description: t.alert.tag_apply.description,
+        rightButtonColor: CoconutColors.primary,
+        rightButtonText: t.alert.tag_apply.btn_apply,
+        leftButtonText: t.no,
+        onTapLeft: () {
           Navigator.of(context).pop();
           _viewModel.saveUsedUtxoIdsWhenTagged(isTagsMoveAllowed: false);
           _moveToSendConfirm();
         },
-        confirmButtonText: t.alert.tag_apply.btn_apply,
-        confirmButtonColor: MyColors.primary,
-        cancelButtonText: t.no,
+        onTapRight: () {
+          Navigator.of(context).pop();
+          _viewModel.saveUsedUtxoIdsWhenTagged(isTagsMoveAllowed: true);
+          _moveToSendConfirm();
+        },
       );
     } else {
       _moveToSendConfirm();
