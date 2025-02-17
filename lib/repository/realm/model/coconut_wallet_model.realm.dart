@@ -331,8 +331,8 @@ class RealmTransaction extends _RealmTransaction
     with RealmEntity, RealmObjectBase, RealmObject {
   RealmTransaction(
     int id,
-    String transactionHash, {
-    RealmWalletBase? walletBase,
+    String transactionHash,
+    int walletId, {
     DateTime? timestamp,
     int? blockHeight,
     String? transactionType,
@@ -346,7 +346,7 @@ class RealmTransaction extends _RealmTransaction
   }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'transactionHash', transactionHash);
-    RealmObjectBase.set(this, 'walletBase', walletBase);
+    RealmObjectBase.set(this, 'walletId', walletId);
     RealmObjectBase.set(this, 'timestamp', timestamp);
     RealmObjectBase.set(this, 'blockHeight', blockHeight);
     RealmObjectBase.set(this, 'transactionType', transactionType);
@@ -376,12 +376,9 @@ class RealmTransaction extends _RealmTransaction
       RealmObjectBase.set(this, 'transactionHash', value);
 
   @override
-  RealmWalletBase? get walletBase =>
-      RealmObjectBase.get<RealmWalletBase>(this, 'walletBase')
-          as RealmWalletBase?;
+  int get walletId => RealmObjectBase.get<int>(this, 'walletId') as int;
   @override
-  set walletBase(covariant RealmWalletBase? value) =>
-      RealmObjectBase.set(this, 'walletBase', value);
+  set walletId(int value) => RealmObjectBase.set(this, 'walletId', value);
 
   @override
   DateTime? get timestamp =>
@@ -463,7 +460,7 @@ class RealmTransaction extends _RealmTransaction
     return <String, dynamic>{
       'id': id.toEJson(),
       'transactionHash': transactionHash.toEJson(),
-      'walletBase': walletBase.toEJson(),
+      'walletId': walletId.toEJson(),
       'timestamp': timestamp.toEJson(),
       'blockHeight': blockHeight.toEJson(),
       'transactionType': transactionType.toEJson(),
@@ -484,11 +481,12 @@ class RealmTransaction extends _RealmTransaction
       {
         'id': EJsonValue id,
         'transactionHash': EJsonValue transactionHash,
+        'walletId': EJsonValue walletId,
       } =>
         RealmTransaction(
           fromEJson(id),
           fromEJson(transactionHash),
-          walletBase: fromEJson(ejson['walletBase']),
+          fromEJson(walletId),
           timestamp: fromEJson(ejson['timestamp']),
           blockHeight: fromEJson(ejson['blockHeight']),
           transactionType: fromEJson(ejson['transactionType']),
@@ -510,9 +508,10 @@ class RealmTransaction extends _RealmTransaction
     return const SchemaObject(
         ObjectType.realmObject, RealmTransaction, 'RealmTransaction', [
       SchemaProperty('id', RealmPropertyType.int, primaryKey: true),
-      SchemaProperty('transactionHash', RealmPropertyType.string),
-      SchemaProperty('walletBase', RealmPropertyType.object,
-          optional: true, linkTarget: 'RealmWalletBase'),
+      SchemaProperty('transactionHash', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('walletId', RealmPropertyType.int,
+          indexType: RealmIndexType.regular),
       SchemaProperty('timestamp', RealmPropertyType.timestamp,
           optional: true, indexType: RealmIndexType.regular),
       SchemaProperty('blockHeight', RealmPropertyType.int, optional: true),

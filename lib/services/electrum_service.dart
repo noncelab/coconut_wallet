@@ -93,17 +93,20 @@ class ElectrumService extends NodeClient {
   Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
       WalletBase wallet,
       {Set<String>? knownTransactionHashes,
-      int receiveUsedIndex = 0,
-      int changeUsedIndex = 0}) async* {
-    final receiveStream = _fetchTransactions(wallet,
-        isChange: false,
-        knownTransactionHashes: knownTransactionHashes,
-        initialIndex: receiveUsedIndex);
+      int receiveUsedIndex = -1,
+      int changeUsedIndex = -1}) async* {
+    // TODO: receiveUsedIndex, changeUsedIndex
+    final receiveStream = _fetchTransactions(
+      wallet,
+      isChange: false,
+      knownTransactionHashes: knownTransactionHashes,
+    );
 
-    final changeStream = _fetchTransactions(wallet,
-        isChange: true,
-        knownTransactionHashes: knownTransactionHashes,
-        initialIndex: changeUsedIndex);
+    final changeStream = _fetchTransactions(
+      wallet,
+      isChange: true,
+      knownTransactionHashes: knownTransactionHashes,
+    );
 
     await for (final state
         in async.StreamGroup.merge([receiveStream, changeStream])) {
@@ -115,10 +118,9 @@ class ElectrumService extends NodeClient {
   Stream<BaseStreamState<FetchTransactionResponse>> _fetchTransactions(
       WalletBase wallet,
       {Set<String>? knownTransactionHashes,
-      int initialIndex = 0,
       required bool isChange}) async* {
     int addressScanLimit = gapLimit;
-    int currentAddressIndex = initialIndex;
+    int currentAddressIndex = 0;
     Set<String> processedTxHashes = knownTransactionHashes ?? {};
 
     while (currentAddressIndex < addressScanLimit) {
@@ -202,8 +204,8 @@ class ElectrumService extends NodeClient {
   @override
   Future<Balance> getBalance(WalletBase wallet,
       {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async {
-    int receiveScanLimit = receiveUsedIndex + 1 + gapLimit;
-    int changeScanLimit = changeUsedIndex + 1 + gapLimit;
+    int receiveScanLimit = receiveUsedIndex + gapLimit;
+    int changeScanLimit = changeUsedIndex + gapLimit;
 
     final receiveBalanceFutures = _getBalance(wallet, receiveScanLimit, false);
     final changeBalanceFutures = _getBalance(wallet, changeScanLimit, true);
@@ -325,8 +327,9 @@ class ElectrumService extends NodeClient {
   @override
   Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
       {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async* {
-    final receiveStream = _fetchUtxos(wallet, receiveUsedIndex + 1, false);
-    final changeStream = _fetchUtxos(wallet, changeUsedIndex + 1, true);
+    final receiveStream =
+        _fetchUtxos(wallet, receiveUsedIndex + gapLimit, false);
+    final changeStream = _fetchUtxos(wallet, changeUsedIndex + gapLimit, true);
 
     await for (final state
         in async.StreamGroup.merge([receiveStream, changeStream])) {

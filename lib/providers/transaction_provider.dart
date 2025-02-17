@@ -1,8 +1,8 @@
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/cupertino.dart';
@@ -18,7 +18,7 @@ class TransactionProvider extends ChangeNotifier {
   final WalletDataManager _walletDataManager = WalletDataManager();
 
   TransactionRecord? _transaction;
-  List<TransactionDto> _txList = [];
+  List<TransactionRecord> _txList = [];
 
   bool _canSeeMoreInputs = false;
   bool _canSeeMoreOutputs = false;
@@ -30,7 +30,7 @@ class TransactionProvider extends ChangeNotifier {
   int _utxoOutputMaxCount = kOutputMaxCount;
 
   TransactionRecord? get transaction => _transaction;
-  List<TransactionDto> get txList => _txList;
+  List<TransactionRecord> get txList => _txList;
 
   bool get canSeeMoreInputs => _canSeeMoreInputs;
   bool get canSeeMoreOutputs => _canSeeMoreOutputs;
@@ -154,7 +154,7 @@ class TransactionProvider extends ChangeNotifier {
     return false;
   }
 
-  TransactionDto? _loadTransaction(int walletId, String txHash) {
+  TransactionRecord? _loadTransaction(int walletId, String txHash) {
     final result = _walletDataManager.loadTransaction(walletId, txHash);
     if (result.isFailure) {
       Logger.log('-----------------------------------------------------------');
@@ -164,8 +164,29 @@ class TransactionProvider extends ChangeNotifier {
     return result.value;
   }
 
+  void addAllTransactions(int walletId, List<TransactionRecord> txList) {
+    _walletDataManager.addAllTransactions(walletId, txList);
+    initTxList(walletId);
+  }
+
   void resetData() {
     _transaction = null;
     _txList.clear();
+  }
+
+  List<TransactionRecord> getUnconfirmedTransactions(int walletId) {
+    return _txList
+        .where((tx) => tx.blockHeight == null || tx.blockHeight == 0)
+        .toList();
+  }
+
+  Future<void> updateTransactionStates(
+      int walletId,
+      List<String> txsToUpdate,
+      List<String> txsToDelete,
+      Map<String, FetchTransactionResponse> fetchedTxMap,
+      Map<int, BlockTimestamp> blockTimestampMap) async {
+    await _walletDataManager.updateTransactionStates(
+        walletId, txsToUpdate, txsToDelete, fetchedTxMap, blockTimestampMap);
   }
 }

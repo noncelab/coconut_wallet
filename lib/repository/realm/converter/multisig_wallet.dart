@@ -17,5 +17,7 @@ MultisigWalletListItem mapRealmMultisigWalletToMultisigWalletListItem(
       balance: realmMultisigWallet.walletBase!.balance,
       txCount: realmMultisigWallet.walletBase!.txCount,
       isLatestTxBlockHeightZero:
-          realmMultisigWallet.walletBase!.isLatestTxBlockHeightZero);
+          realmMultisigWallet.walletBase!.isLatestTxBlockHeightZero,
+      receiveUsedIndex: realmMultisigWallet.walletBase!.usedReceiveIndex,
+      changeUsedIndex: realmMultisigWallet.walletBase!.usedChangeIndex);
 }

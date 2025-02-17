@@ -1,17 +1,15 @@
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
 /// Represents the initialization state of a wallet. 처음 초기화 때만 사용하지 않고 refresh 할 때도 사용합니다.
@@ -51,9 +49,6 @@ class WalletProvider extends ChangeNotifier {
 
   bool? _isNetworkOn;
 
-  /// TODO: NodeConnector
-  // NodeConnector? _nodeConnector;
-
   List<WalletListItemBase> _walletItemList = [];
   List<WalletListItemBase> get walletItemList => _walletItemList;
 
@@ -84,17 +79,8 @@ class WalletProvider extends ChangeNotifier {
 
   /// 네트워크가 끊겼을 때 처리할 로직
   void handleNetworkDisconnected() {
-    disposeNodeConnector();
-
     if (_walletInitState == WalletInitState.finished) return;
     setWalletInitState(WalletInitState.error, error: ErrorCodes.networkError);
-  }
-
-  // 앱 AppLifecycleState detached or paused일 때 nodeConnector 종료
-  void disposeNodeConnector() {
-    // TODO: NodeConnector
-    // _nodeConnector?.stopFetching();
-    // _nodeConnector = null;
   }
 
   /// 지갑 목록 화면에서 '마지막 업데이트' 일시를 보여주기 위해,
@@ -136,15 +122,9 @@ class WalletProvider extends ChangeNotifier {
       }
 
       if (_isNetworkOn == true) {
-        // TODO: NodeConnector
-        // await _initNodeConnectionWhenIsNull();
-
         // 1개만 업데이트 (하지만 나머지 지갑들도 업데이트 함)
         if (targetId != null) {
           Logger.log(">>>>> 3. _fetchWalletLatestInfo id: $targetId");
-          int i =
-              _walletItemList.indexWhere((element) => element.id == targetId);
-          await _syncWalletsAsLatest([_walletItemList[i]]);
           // 나머지 지갑들도 업데이트
           if (syncOthers) {
             initWallet(exceptionalId: targetId);
@@ -156,11 +136,6 @@ class WalletProvider extends ChangeNotifier {
 
         Logger.log(
             ">>>>> 3. _fetchWalletLatestInfo (exceptionalId: $exceptionalId)");
-
-        var targets = exceptionalId == null
-            ? _walletItemList
-            : _walletItemList.where((e) => e.id != exceptionalId).toList();
-        await _syncWalletsAsLatest(targets);
       }
 
       setWalletInitState(WalletInitState.finished);
@@ -175,38 +150,6 @@ class WalletProvider extends ChangeNotifier {
       rethrow; // TODO: check
     }
   }
-
-  /// TODO: NodeConnector
-  Future _initNodeConnectionWhenIsNull() async {
-    throw UnimplementedError();
-    //   if (_nodeConnector != null) return;
-    //   _nodeConnector = await _initNodeConnection();
-  }
-
-  /// TODO: NodeConnector
-  // Future<NodeConnector> _initNodeConnection() async {
-  //   try {
-  //     Logger.log(">>>>> 2. _initNodeConnection");
-  //     NodeConnector nodeConnector = await NodeConnector.connectSync(
-  //         CoconutWalletApp.kElectrumHost, CoconutWalletApp.kElectrumPort,
-  //         ssl: CoconutWalletApp.kElectrumIsSSL);
-
-  //     if (nodeConnector.connectionStatus == SocketConnectionStatus.connected) {
-  //       return nodeConnector;
-  //     }
-
-  //     if (nodeConnector.connectionStatus == SocketConnectionStatus.terminated) {
-  //       setWalletInitState(WalletInitState.impossible);
-  //     }
-
-  //     throw 'NodeConnector is not connected.';
-  //   } catch (e) {
-  //     setWalletInitState(WalletInitState.error,
-  //         error: ErrorCodes.withMessage(
-  //             ErrorCodes.nodeConnectionError, e.toString()));
-  //     rethrow;
-  //   }
-  // }
 
   WalletListItemBase getWalletById(int id) {
     if (_walletItemList.isEmpty) {
@@ -389,12 +332,6 @@ class WalletProvider extends ChangeNotifier {
       return;
     }
 
-    // isolate
-    // final receivePort = ReceivePort();
-    // await Isolate.spawn(
-    //     isolateEntryDecodeWallets, [receivePort.sendPort, jsonArrayString]);
-    // final result = await receivePort.first as List<WalletListItemBase>;
-
     _walletItemList = wallets;
     //_animatedWalletFlags = List.filled(_walletItemList.length, null);
     //_subStateModel.saveNotEmptyWalletList(_walletItemList.isNotEmpty);
@@ -409,35 +346,7 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<WalletListItemBase>> _filterWalletsToUpdate(
-      List<WalletListItemBase> wallets) async {
-    // TODO: NodeConnector
-    // if (_nodeConnector == null) {
-    //   throw StateError(
-    //       '[filterWalletsToUpdate] _nodeConnector must not be null');
-    // }
-
-    List<WalletListItemBase> result = [];
-    for (var wallet in wallets) {
-      // TODO: checkIfWalletShouldUpdate
-      // var shouldUpdate =
-      //     await wallet.checkIfWalletShouldUpdate(_nodeConnector!);
-      // if (shouldUpdate) {
-      //   result.add(wallet);
-      // }
-    }
-
-    return result;
-  }
-
-  Future<void> _syncWalletsAsLatest(List<WalletListItemBase> targets) async {
-    List<WalletListItemBase> needToUpdateTargets =
-        await _filterWalletsToUpdate(targets);
-    await _walletDataManager.syncWithLatest(needToUpdateTargets);
-    _walletItemList = List.from(_walletDataManager.walletList);
-  }
-
-  List<TransactionDto>? getTxList(int walletId) {
+  List<TransactionRecord>? getTxList(int walletId) {
     return _walletDataManager.getTxList(walletId);
   }
 
@@ -477,6 +386,10 @@ class WalletProvider extends ChangeNotifier {
 
   Future decryptWalletSecureData() async {
     await _walletDataManager.decrypt();
+  }
+
+  bool containsAddress(WalletListItemBase wallet, String address) {
+    return _walletDataManager.containsAddress(wallet, address);
   }
 }
 

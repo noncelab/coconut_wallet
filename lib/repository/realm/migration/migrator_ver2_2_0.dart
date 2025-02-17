@@ -2,6 +2,9 @@
 
 // RealmTransaction
 // 입출력 주소의 derivationPath 정보를 저장하지 않음
+// transactionHash @Indexed
+// walletId @Indexed
+// walletBase 삭제
 
 // _RealmWalletBase
 //   int usedReceiveIndex = -1;

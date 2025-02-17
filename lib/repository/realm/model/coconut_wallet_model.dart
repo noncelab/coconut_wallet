@@ -35,9 +35,10 @@ class _RealmMultisigWallet {
 class _RealmTransaction {
   @PrimaryKey()
   late int id; // RealmIntegerId에 마지막 사용한 id 값을 저장합니다.
+  @Indexed()
   late String transactionHash;
-  // Realm은 N:0 관계를 지원하며, N:1 관계는 지원하지 않습니다. 따라서 1:1 관계를 설정할 수 없습니다.
-  late _RealmWalletBase? walletBase;
+  @Indexed()
+  late int walletId;
   @Indexed()
   DateTime? timestamp;
   int? blockHeight;

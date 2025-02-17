@@ -25,7 +25,7 @@ abstract class NodeClient {
   Future<RecommendedFee> getRecommendedFees();
 
   Future<Balance> getBalance(WalletBase wallet,
-      {int receiveUsedIndex = 0, int changeUsedIndex = 0});
+      {int receiveUsedIndex = -1, int changeUsedIndex = -1});
 
   Stream<BaseStreamState<BlockTimestamp>> fetchBlocksByHeight(Set<int> heights);
 
@@ -33,14 +33,14 @@ abstract class NodeClient {
   Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
       WalletBase wallet,
       {Set<String>? knownTransactionHashes,
-      int receiveUsedIndex = 0,
-      int changeUsedIndex = 0});
+      int receiveUsedIndex = -1,
+      int changeUsedIndex = -1});
 
   Stream<BaseStreamState<Transaction>> fetchTransactionDetails(
       Set<String> transactionHashes);
 
   Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
-      {int receiveUsedIndex = 0, int changeUsedIndex = 0});
+      {int receiveUsedIndex = -1, int changeUsedIndex = -1});
 
   void dispose();
 }

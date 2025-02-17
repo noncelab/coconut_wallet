@@ -15,9 +15,9 @@ int getLastId(Realm realm, String key) {
   }
 }
 
-void saveNextId(Realm realm, String key, int nextId) {
-  final counter = realm.all<RealmIntegerId>().query(r'key == $0', [key]).first;
+void saveLastId(Realm realm, String key, int lastId) {
+  final counter = realm.query<RealmIntegerId>(r'key == $0', [key]).first;
   realm.write(() {
-    counter.value = nextId;
+    counter.value = lastId;
   });
 }

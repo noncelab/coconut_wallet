@@ -26,6 +26,8 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -225,24 +227,20 @@ class WalletDataManager {
     }
   }
 
-  RealmResults<RealmTransaction> _getTransactions(int walletId) {
-    return _realm
-        .all<RealmTransaction>()
-        .query(r'walletBase.id = $0', [walletId]);
+  RealmResults<RealmTransaction> getUnconfirmedTransactions(int walletId) {
+    return _realm.query<RealmTransaction>(
+        r'walletId = $0 AND blockHeight = 0', [walletId]);
   }
 
   Future _updateWalletAsLatest(
       WalletListItemBase walletItem, RealmWalletBase realmWallet) async {
     _checkInitialized();
-    // TODO: WalletStatus
-    // WalletStatus walletStatus = walletItem.walletFeature.walletStatus!;
     RealmResults<RealmTransaction>? unconfirmedRealmTxs;
     List<RealmTransaction>?
         unconfirmedRealmTxList; // 새로운 row 추가 시 updateTargets 결과가 변경되기 때문에 처음 결과를 이 변수에 저장
     // 전송 중, 받는 중인 트랜잭션이 있는 경우
     if (walletItem.isLatestTxBlockHeightZero) {
-      unconfirmedRealmTxs =
-          _getTransactions(realmWallet.id).query('blockHeight == 0');
+      unconfirmedRealmTxs = getUnconfirmedTransactions(realmWallet.id);
       unconfirmedRealmTxList = unconfirmedRealmTxs.toList();
     }
 
@@ -273,15 +271,14 @@ class WalletDataManager {
           existingUnconfirmedTxIdsInFetchedTxs.add(existingRealmTx.id);
         } else {
           TempBroadcastTimeRecord? record = _realm
-              .all<TempBroadcastTimeRecord>()
-              .query(
+              .query<TempBroadcastTimeRecord>(
                   'transactionHash = \'${fetchedTxsSortedByBlockHeightAsc[i].transactionHash}\'')
               .firstOrNull;
 
           RealmTransaction newRealmTransaction =
               mapTransactionToRealmTransaction(
                   fetchedTxsSortedByBlockHeightAsc[i],
-                  realmWallet,
+                  realmWallet.id,
                   nextId++,
                   record?.createdAt ?? DateTime.now());
           try {
@@ -326,7 +323,7 @@ class WalletDataManager {
       //     walletItem.walletFeature.getUnconfirmedBalance();
     });
 
-    saveNextId(_realm, (RealmTransaction).toString(), nextId);
+    saveLastId(_realm, (RealmTransaction).toString(), nextId);
 
     _walletList!.firstWhere((w) => w.id == realmWallet.id)
       ..txCount = realmWallet.txCount
@@ -373,15 +370,13 @@ class WalletDataManager {
   void deleteWallet(int id) {
     _checkInitialized();
 
-    final RealmWalletBase walletBase =
-        _realm.all<RealmWalletBase>().query('id == $id').first;
-    final transactions =
-        _realm.all<RealmTransaction>().query('walletBase.id == $id');
+    final walletBase = _realm.query<RealmWalletBase>('id == $id').first;
+    final transactions = _realm.query<RealmTransaction>('walletId == $id');
     // TODO: utxos
 
     final realmMultisigWallet =
         walletBase.walletType == WalletType.multiSignature.name
-            ? _realm.all<RealmMultisigWallet>().query('id == $id').first
+            ? _realm.query<RealmMultisigWallet>('id == $id').first
             : null;
 
     _realm.write(() {
@@ -400,8 +395,7 @@ class WalletDataManager {
   Result<List<UtxoTag>> loadUtxoTagList(int walletId) {
     _utxoTagList = [];
     final tags = _realm
-        .all<RealmUtxoTag>()
-        .query("walletId == '$walletId' SORT(createAt DESC)");
+        .query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
 
     var result = _handleRealm(
       () {
@@ -569,9 +563,9 @@ class WalletDataManager {
   }
 
   /// walletID, txHash 로 transaction 조회
-  Result<TransactionDto?> loadTransaction(int walletId, String txHash) {
+  Result<TransactionRecord?> loadTransaction(int walletId, String txHash) {
     final transactions = _realm.query<RealmTransaction>(
-        "walletBase.id == '$walletId' And transactionHash == '$txHash'");
+        "walletId == '$walletId' And transactionHash == '$txHash'");
 
     return _handleRealm(
       () => transactions.isEmpty
@@ -581,10 +575,10 @@ class WalletDataManager {
   }
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
-  Result<TransactionDto> updateTransactionMemo(
+  Result<TransactionRecord> updateTransactionMemo(
       int walletId, String txHash, String memo) {
     final transactions = _realm.query<RealmTransaction>(
-        "walletBase.id == '$walletId' And transactionHash == '$txHash'");
+        "walletId == '$walletId' And transactionHash == '$txHash'");
 
     return _handleRealm(
       () {
@@ -613,15 +607,14 @@ class WalletDataManager {
     _sharedPrefs.setInt(nextIdField, value);
   }
 
-  List<TransactionDto>? getTxList(int id) {
+  List<TransactionRecord>? getTxList(int id) {
     _checkInitialized();
 
-    final transactions = _realm
-        .all<RealmTransaction>()
-        .query('walletBase.id == $id SORT(timestamp DESC)');
+    final transactions =
+        _realm.query<RealmTransaction>('walletId == $id SORT(timestamp DESC)');
 
     if (transactions.isEmpty) return null;
-    List<TransactionDto> result = [];
+    List<TransactionRecord> result = [];
 
     final unconfirmed =
         transactions.query('blockHeight = 0 SORT(createdAt DESC)');
@@ -772,6 +765,7 @@ class WalletDataManager {
       realmWalletBase.balance = walletBalance.total;
       _realm.add(realmWalletBalance);
     });
+    saveLastId(_realm, (RealmWalletBalance).toString(), walletBalanceLastId);
   }
 
   // not used
@@ -894,6 +888,7 @@ class WalletDataManager {
         realmWalletBase.generatedReceiveIndex = realmAddresses.last.index;
       }
     });
+    saveLastId(_realm, (RealmWalletAddress).toString(), lastId);
   }
 
   WalletAddress _generateAddress(WalletBase wallet, int index, bool isChange) {
@@ -957,5 +952,92 @@ class WalletDataManager {
     return Result.failure(
       ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
     );
+  }
+
+  Future<void> updateTransactionStates(
+    int walletId,
+    List<String> txsToUpdate,
+    List<String> txsToDelete,
+    Map<String, FetchTransactionResponse> fetchedTxMap,
+    Map<int, BlockTimestamp> blockTimestampMap,
+  ) async {
+    _checkInitialized();
+
+    final realmWalletBase = _realm.find<RealmWalletBase>(walletId);
+    if (realmWalletBase == null) {
+      throw StateError('[updateTransactionStates] Wallet not found');
+    }
+
+    RealmResults<RealmTransaction>? txsToDeleteRealm;
+    RealmResults<RealmTransaction>? txsToUpdateRealm;
+
+    if (txsToDelete.isNotEmpty) {
+      txsToDeleteRealm = _realm.query<RealmTransaction>(
+          'walletId == $walletId AND transactionHash IN \$0', [txsToDelete]);
+    }
+
+    if (txsToUpdate.isNotEmpty) {
+      txsToUpdateRealm = _realm.query<RealmTransaction>(
+          'walletId == $walletId AND transactionHash IN \$0', [txsToUpdate]);
+    }
+
+    await _realm.writeAsync(() {
+      // 1. 삭제할 트랜잭션 처리
+      if (txsToDeleteRealm != null) {
+        _realm.deleteMany(txsToDeleteRealm);
+      }
+
+      // 2. 업데이트할 트랜잭션 처리
+      if (txsToUpdateRealm != null) {
+        for (final tx in txsToUpdateRealm) {
+          final fetchedTx = fetchedTxMap[tx.transactionHash]!;
+          tx.blockHeight = fetchedTx.height;
+          tx.timestamp = blockTimestampMap[fetchedTx.height]!.timestamp;
+        }
+      }
+
+      // 3. 지갑의 최신 트랜잭션 상태 업데이트
+      realmWalletBase.isLatestTxBlockHeightZero =
+          fetchedTxMap.values.any((tx) => tx.height == 0);
+    });
+  }
+
+  Set<String> getExistingConfirmedTxHashes(int walletId) {
+    final realmTxs = _realm
+        .query<RealmTransaction>('walletId == $walletId AND blockHeight > 0');
+    return realmTxs.map((tx) => tx.transactionHash).toSet();
+  }
+
+  bool containsAddress(WalletListItemBase wallet, String address) {
+    final realmWalletAddress = _realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND address == $1',
+      [wallet.id, address],
+    );
+    return realmWalletAddress.isNotEmpty;
+  }
+
+  void addAllTransactions(int walletId, List<TransactionRecord> txList) {
+    _checkInitialized();
+
+    final realmWalletBase = _realm.find<RealmWalletBase>(walletId);
+    if (realmWalletBase == null) {
+      throw StateError('[addAllTransactions] Wallet not found');
+    }
+
+    final now = DateTime.now();
+    int lastId = getLastId(_realm, (RealmTransaction).toString());
+
+    final realmTxs = txList
+        .map((tx) => mapTransactionToRealmTransaction(
+              tx,
+              walletId,
+              ++lastId,
+              now,
+            ))
+        .toList();
+    _realm.write(() {
+      _realm.addAll(realmTxs);
+    });
+    saveLastId(_realm, (RealmTransaction).toString(), lastId);
   }
 }

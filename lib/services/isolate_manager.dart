@@ -62,8 +62,16 @@ class IsolateManager implements IsolateManagerBase {
         responsePort.close();
         throw data;
       }
+
+      // 명시적으로 null을 보내는 경우 스트림 종료
+      if (data == null) {
+        responsePort.close();
+        break;
+      }
       yield data as T;
     }
+
+    responsePort.close();
   }
 
   @override
@@ -134,8 +142,8 @@ class IsolateManager implements IsolateManagerBase {
 
             case IsolateMessageType.getBalance:
               WalletBase wallet = params[0];
-              int receiveUsedIndex = 0;
-              int changeUsedIndex = 0;
+              int? receiveUsedIndex;
+              int? changeUsedIndex;
 
               if (params.length == 3) {
                 receiveUsedIndex = params[1];
@@ -143,8 +151,8 @@ class IsolateManager implements IsolateManagerBase {
               }
 
               var balanceResult = await nodeClient.getBalance(wallet,
-                  receiveUsedIndex: receiveUsedIndex,
-                  changeUsedIndex: changeUsedIndex);
+                  receiveUsedIndex: receiveUsedIndex ?? -1,
+                  changeUsedIndex: changeUsedIndex ?? -1);
 
               replyPort.send(balanceResult);
               break;
@@ -165,8 +173,8 @@ class IsolateManager implements IsolateManagerBase {
             case IsolateMessageType.fetchTransactions:
               WalletBase wallet = params[0];
               Set<String> knownTransactionHashes = params[1];
-              int receiveUsedIndex = 0;
-              int changeUsedIndex = 0;
+              int receiveUsedIndex = -1;
+              int changeUsedIndex = -1;
 
               if (params.length == 4) {
                 receiveUsedIndex = params[2];
@@ -194,8 +202,8 @@ class IsolateManager implements IsolateManagerBase {
 
             case IsolateMessageType.fetchUtxos:
               WalletBase wallet = params[0];
-              int receiveUsedIndex = 0;
-              int changeUsedIndex = 0;
+              int receiveUsedIndex = -1;
+              int changeUsedIndex = -1;
 
               if (params.length == 3) {
                 receiveUsedIndex = params[1];
@@ -219,6 +227,7 @@ class IsolateManager implements IsolateManagerBase {
               break;
           }
           nodeClient.dispose();
+          replyPort.send(null);
         } catch (e) {
           Logger.error('Error in isolate processing: $e');
           replyPort.send(Exception('Error in isolate processing'));
@@ -264,7 +273,7 @@ class IsolateManager implements IsolateManagerBase {
 
   @override
   Future<Balance> getBalance(WalletBase wallet,
-      {int receiveUsedIndex = 0, int changeUsedIndex = 0}) {
+      {int receiveUsedIndex = -1, int changeUsedIndex = -1}) {
     return _send<Balance>(IsolateMessageType.getBalance,
         [wallet, receiveUsedIndex, changeUsedIndex]);
   }
@@ -280,8 +289,8 @@ class IsolateManager implements IsolateManagerBase {
   Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
       WalletBase wallet,
       {Set<String>? knownTransactionHashes,
-      int receiveUsedIndex = 0,
-      int changeUsedIndex = 0}) {
+      int receiveUsedIndex = -1,
+      int changeUsedIndex = -1}) {
     return _sendStream<BaseStreamState<FetchTransactionResponse>>(
         IsolateMessageType.fetchTransactions,
         [wallet, knownTransactionHashes, receiveUsedIndex, changeUsedIndex]);
@@ -296,7 +305,7 @@ class IsolateManager implements IsolateManagerBase {
 
   @override
   Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
-      {int receiveUsedIndex = 0, int changeUsedIndex = 0}) {
+      {int receiveUsedIndex = -1, int changeUsedIndex = -1}) {
     return _sendStream<BaseStreamState<UtxoState>>(
         IsolateMessageType.fetchUtxos,
         [wallet, receiveUsedIndex, changeUsedIndex]);

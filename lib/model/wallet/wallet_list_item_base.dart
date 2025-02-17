@@ -1,6 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 
 abstract class WalletListItemBase {
   static const String walletTypeField = 'walletType';
@@ -12,6 +11,8 @@ abstract class WalletListItemBase {
   final String descriptor;
   WalletType walletType;
   int? balance;
+  int receiveUsedIndex;
+  int changeUsedIndex;
 
   /// wallet.fetchOnChainData(nodeConnector) 또는 _nodeConnector.fetch 결과에서 txCount가 변경되지 않았는지 확인용
   int? txCount;
@@ -29,7 +30,9 @@ abstract class WalletListItemBase {
       required this.walletType,
       this.balance,
       this.txCount,
-      this.isLatestTxBlockHeightZero = false});
+      this.isLatestTxBlockHeightZero = false,
+      this.receiveUsedIndex = -1,
+      this.changeUsedIndex = -1});
 
   // TODO: walletFeature
   // dynamic get walletFeature {
@@ -42,12 +45,6 @@ abstract class WalletListItemBase {
   //       throw StateError('wrong walletType: ${walletType.name}');
   //   }
   // }
-
-  // TODO: _fetchWalletStatusFromNetwork(NodeConnector nodeConnector)
-
-  // TODO: _shouldUpdateToLatest()
-
-  // TODO: checkIfWalletShouldUpdate(NodeConnector nodeConnector)
 
   @override
   String toString() =>

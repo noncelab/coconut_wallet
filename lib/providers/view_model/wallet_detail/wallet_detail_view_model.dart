@@ -1,11 +1,19 @@
+import 'dart:collection';
+
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -13,9 +21,10 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
+import 'package:coconut_wallet/services/model/stream/stream_state.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -27,7 +36,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final UtxoTagProvider _tagProvider;
   final ConnectivityProvider _connectProvider;
   final UpbitConnectModel _upbitConnectModel;
-
+  final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   List<UtxoState> _utxoList = [];
@@ -60,8 +69,14 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   bool _isRequesting = false;
 
-  WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
-      this._tagProvider, this._connectProvider, this._upbitConnectModel) {
+  WalletDetailViewModel(
+      this._walletId,
+      this._walletProvider,
+      this._txProvider,
+      this._tagProvider,
+      this._connectProvider,
+      this._upbitConnectModel,
+      this._nodeProvider) {
     // 지갑 상세 초기화
     _prevWalletInitState = _walletProvider.walletInitState;
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
@@ -112,7 +127,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   List<UtxoTag> get selectedTagList => _tagProvider.selectedTagList;
   UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
 
-  List<TransactionDto> get txList => _txProvider.txList;
+  List<TransactionRecord> get txList => _txProvider.txList;
   List<UtxoState> get utxoList => _utxoList;
 
   int get walletId => _walletId;
@@ -295,4 +310,265 @@ class WalletDetailViewModel extends ChangeNotifier {
         _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
     _saveFaucetRecordToSharedPrefs();
   }
+
+  // TODO: TransactionProvider에서 처리하는 것이 적절해보임
+  /// 트랜잭션의 정보를 모두 제공하기 위해서 3단계를 거쳐야 합니다.
+  /// 1. 이미 DB에 저장되어 알고있는 트랸잭션을 제외한 새로운 트랜잭션 조회
+  /// 2. 조회된 트랜잭션의 블록 타임스탬프 조회
+  /// 3. 조회된 트랜잭션의 정확한 금액, 수수료 계산을 위해 입력(이전) 트랜잭션 조회
+  Future<void> fetchTransactions() async {
+    // 1. 새로운 트랜잭션 조회
+    final fetchedTxs = await _fetchNewTransactions();
+    // 2. 미확인 트랜잭션 상태 업데이트
+    await _updateUnconfirmedTransactions(fetchedTxs);
+
+    if (fetchedTxs.isEmpty) {
+      return;
+    }
+
+    // 3. 트랜잭션의 블록 타임스탬프 조회
+    final txBlockHeightMap = _createTxBlockHeightMap(fetchedTxs);
+    final blockTimestampMap = await _fetchBlockTimestamps(fetchedTxs);
+
+    // 4. 트랜잭션 상세 조회 및 처리
+    final fetchedTransactions = await _fetchTransactionDetails(fetchedTxs);
+
+    // 5. 트랜잭션 레코드 생성 및 저장
+    final newTransactionRecords = await _createTransactionRecords(
+      fetchedTransactions,
+      txBlockHeightMap,
+      blockTimestampMap,
+    );
+
+    // DB에 저장
+    _txProvider.addAllTransactions(walletId, newTransactionRecords);
+    notifyListeners();
+  }
+
+  /// 미확인 트랜잭션의 상태를 업데이트합니다.
+  Future<void> _updateUnconfirmedTransactions(
+      List<FetchTransactionResponse> fetchedTxs) async {
+    // 1. DB에서 미확인 트랜잭션 조회
+    final unconfirmedTxs = _txProvider.getUnconfirmedTransactions(walletId);
+    if (unconfirmedTxs.isEmpty) {
+      return;
+    }
+
+    // 2. 새로 조회한 트랜잭션과 비교
+    final fetchedTxMap = {for (var tx in fetchedTxs) tx.transactionHash: tx};
+
+    final List<String> txsToUpdate = [];
+    final List<String> txsToDelete = [];
+
+    for (final unconfirmedTx in unconfirmedTxs) {
+      final fetchedTx = fetchedTxMap[unconfirmedTx.transactionHash];
+
+      if (fetchedTx == null) {
+        // INFO: RBF(Replace-By-Fee)에 의해서 처리되지 않은 트랜잭션이 삭제된 경우를 대비
+        // INFO: 추후에는 삭제가 아니라 '무효화됨'으로 표기될 수 있음
+        txsToDelete.add(unconfirmedTx.transactionHash);
+      } else if (fetchedTx.height > 0) {
+        // 블록에 포함된 경우 (confirmed)
+        txsToUpdate.add(unconfirmedTx.transactionHash);
+      }
+    }
+
+    if (txsToUpdate.isEmpty && txsToDelete.isEmpty) {
+      return;
+    }
+
+    // 3. 블록 타임스탬프 조회 (업데이트할 트랜잭션이 있는 경우)
+    Map<int, BlockTimestamp> blockTimestampMap = txsToUpdate.isEmpty
+        ? {}
+        : await _fetchBlockTimestamps(fetchedTxs
+            .where((tx) => txsToUpdate.contains(tx.transactionHash))
+            .toList());
+
+    // 4. 트랜잭션 상태 업데이트
+    await _txProvider.updateTransactionStates(
+      walletId,
+      txsToUpdate,
+      txsToDelete,
+      fetchedTxMap,
+      blockTimestampMap,
+    );
+  }
+
+  /// 새로운 트랜잭션을 조회합니다.
+  Future<List<FetchTransactionResponse>> _fetchNewTransactions() async {
+    Set<String> knownTransactionHashes = _txProvider.txList
+        .where((tx) {
+          if (tx.blockHeight == null) {
+            return false;
+          }
+          return tx.blockHeight! > 0;
+        })
+        .map((tx) => tx.transactionHash)
+        .toSet();
+
+    final List<FetchTransactionResponse> transactions = [];
+
+    await for (final state in _nodeProvider.fetchTransactions(
+        _walletListBaseItem!,
+        knownTransactionHashes: knownTransactionHashes)) {
+      if (state is SuccessState<FetchTransactionResponse>) {
+        transactions.add(state.data);
+      }
+    }
+
+    return transactions;
+  }
+
+  /// 트랜잭션 해시와 블록 높이를 매핑하는 맵을 생성합니다.
+  Map<String, int> _createTxBlockHeightMap(
+      List<FetchTransactionResponse> fetchedTxs) {
+    return HashMap.fromEntries(
+        fetchedTxs.map((tx) => MapEntry(tx.transactionHash, tx.height)));
+  }
+
+  /// 블록 타임스탬프를 조회합니다.
+  Future<Map<int, BlockTimestamp>> _fetchBlockTimestamps(
+      List<FetchTransactionResponse> fetchedTxs) async {
+    final toFetchBlockHeights = fetchedTxs
+        .map((tx) => tx.height)
+        .where((blockHeight) => blockHeight > 0)
+        .toSet();
+
+    return await _nodeProvider
+        .fetchBlocksByHeight(toFetchBlockHeights)
+        .where((state) => state is SuccessState<BlockTimestamp>)
+        .cast<SuccessState<BlockTimestamp>>()
+        .map((state) => state.data)
+        .fold<Map<int, BlockTimestamp>>({}, (map, blockTimestamp) {
+      map[blockTimestamp.height] = blockTimestamp;
+      return map;
+    });
+  }
+
+  /// 트랜잭션 상세 정보를 조회합니다.
+  Future<List<Transaction>> _fetchTransactionDetails(
+      List<FetchTransactionResponse> fetchedTxs) async {
+    final fetchedTxHashes = fetchedTxs.map((tx) => tx.transactionHash).toSet();
+
+    return await _nodeProvider
+        .fetchTransactionDetails(fetchedTxHashes)
+        .where((state) => state is SuccessState<Transaction>)
+        .cast<SuccessState<Transaction>>()
+        .map((state) => state.data)
+        .toList();
+  }
+
+  /// 트랜잭션 레코드를 생성합니다.
+  Future<List<TransactionRecord>> _createTransactionRecords(
+    List<Transaction> fetchedTransactions,
+    Map<String, int> txBlockHeightMap,
+    Map<int, BlockTimestamp> blockTimestampMap,
+  ) async {
+    return Future.wait(fetchedTransactions.map((tx) async {
+      final previousTxsResult =
+          await _nodeProvider.getPreviousTransactions(tx, []);
+
+      if (previousTxsResult.isFailure) {
+        throw ErrorCodes.fetchTransactionsError;
+      }
+
+      final txDetails =
+          await _processTransactionDetails(tx, previousTxsResult.value);
+
+      return TransactionRecord.fromTransactions(
+        transactionHash: tx.transactionHash,
+        timestamp:
+            blockTimestampMap[txBlockHeightMap[tx.transactionHash]!]!.timestamp,
+        blockHeight: txBlockHeightMap[tx.transactionHash]!,
+        inputAddressList: txDetails.inputAddressList,
+        outputAddressList: txDetails.outputAddressList,
+        transactionType: txDetails.txType.name,
+        amount: txDetails.amount,
+        fee: txDetails.fee,
+      );
+    }));
+  }
+
+  /// 트랜잭션의 입출력 상세 정보를 처리합니다.
+  Future<_TransactionDetails> _processTransactionDetails(
+    Transaction tx,
+    List<Transaction> previousTxs,
+  ) async {
+    List<TransactionAddress> inputAddressList = [];
+    int selfInputCount = 0;
+    int selfOutputCount = 0;
+    int fee = 0;
+    int amount = 0;
+
+    // 입력 처리
+    for (int i = 0; i < tx.inputs.length; i++) {
+      final input = tx.inputs[i];
+      final previousOutput = previousTxs[i].outputs[input.index];
+      final inputAddress = TransactionAddress(
+          previousOutput.scriptPubKey.getAddress(), previousOutput.amount);
+      inputAddressList.add(inputAddress);
+
+      fee += inputAddress.amount;
+
+      if (_walletProvider.containsAddress(
+          _walletListBaseItem!, inputAddress.address)) {
+        selfInputCount++;
+        amount -= inputAddress.amount;
+      }
+    }
+
+    // 출력 처리
+    List<TransactionAddress> outputAddressList = [];
+    for (int i = 0; i < tx.outputs.length; i++) {
+      final output = tx.outputs[i];
+      final outputAddress =
+          TransactionAddress(output.scriptPubKey.getAddress(), output.amount);
+      outputAddressList.add(outputAddress);
+
+      fee -= outputAddress.amount;
+
+      if (_walletProvider.containsAddress(
+          _walletListBaseItem!, outputAddress.address)) {
+        selfOutputCount++;
+        amount += outputAddress.amount;
+      }
+    }
+
+    // 트랜잭션 유형 결정
+    TransactionTypeEnum txType;
+    if (selfInputCount > 0 &&
+        selfOutputCount == tx.outputs.length &&
+        selfInputCount == tx.inputs.length) {
+      txType = TransactionTypeEnum.self;
+    } else if (selfInputCount > 0 && selfOutputCount < tx.outputs.length) {
+      txType = TransactionTypeEnum.sent;
+    } else {
+      txType = TransactionTypeEnum.received;
+    }
+
+    return _TransactionDetails(
+      inputAddressList: inputAddressList,
+      outputAddressList: outputAddressList,
+      txType: txType,
+      amount: amount,
+      fee: fee,
+    );
+  }
+}
+
+/// 트랜잭션 상세 정보를 담는 클래스
+class _TransactionDetails {
+  final List<TransactionAddress> inputAddressList;
+  final List<TransactionAddress> outputAddressList;
+  final TransactionTypeEnum txType;
+  final int amount;
+  final int fee;
+
+  _TransactionDetails({
+    required this.inputAddressList,
+    required this.outputAddressList,
+    required this.txType,
+    required this.amount,
+    required this.fee,
+  });
 }

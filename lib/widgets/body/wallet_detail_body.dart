@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
@@ -16,7 +16,7 @@ class WalletDetailBody extends StatelessWidget {
   final Unit currentUnit;
   final bool isTransaction;
   final bool isUtxoListLoadComplete;
-  final List<TransactionDto> txList;
+  final List<TransactionRecord> txList;
   final List<UtxoState> utxoList;
   final Function(UtxoState)? popFromUtxoDetail;
   final Function removePopup;

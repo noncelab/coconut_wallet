@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -21,8 +21,8 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   final Connectivity _connectivity = Connectivity();
   bool? _isNetworkOn;
   late UpbitConnectModel _upbitConnectModel;
-  late WalletProvider _walletProvider;
   late AuthProvider _authProvider;
+  late NodeProvider _nodeProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   late ConnectivityProvider _connectivityProvider;
   bool _isPause = false;
@@ -33,7 +33,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
-    _walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    _nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider =
         Provider.of<ConnectivityProvider>(context, listen: false);
@@ -89,7 +89,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
         _isPause = true;
-        _walletProvider.disposeNodeConnector();
+        _nodeProvider.dispose();
         _upbitConnectModel.disposeUpbitWebSocketService();
         break;
     }

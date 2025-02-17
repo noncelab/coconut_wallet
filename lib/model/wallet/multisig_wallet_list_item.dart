@@ -15,7 +15,9 @@ class MultisigWalletListItem extends WalletListItemBase {
       required this.requiredSignatureCount,
       super.balance,
       super.txCount,
-      super.isLatestTxBlockHeightZero})
+      super.isLatestTxBlockHeightZero,
+      super.receiveUsedIndex,
+      super.changeUsedIndex})
       : super(walletType: WalletType.multiSignature) {
     walletBase = MultisignatureWallet.fromDescriptor(descriptor);
     name = name.replaceAll('\n', ' ');

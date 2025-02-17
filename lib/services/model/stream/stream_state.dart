@@ -1,6 +1,9 @@
 import 'base_stream_state.dart';
 
 class SuccessState<T> extends BaseStreamState<T> {
+  @override
+  T get data => super.data!;
+
   const SuccessState({
     required super.timestamp,
     required super.methodName,

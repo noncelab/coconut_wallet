@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 class TransactionItemCard extends StatelessWidget {
-  final TransactionDto tx;
+  final TransactionRecord tx;
   final Unit currentUnit;
   final int id;
   final Function onPressed;

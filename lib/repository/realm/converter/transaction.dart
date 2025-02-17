@@ -5,10 +5,9 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
 // TransactionRecord -> _RealmTransaction 변환 함수
-RealmTransaction mapTransactionToRealmTransaction(TransactionRecord transaction,
-    RealmWalletBase realmWalletBase, int id, DateTime? createdAt) {
-  return RealmTransaction(id, transaction.transactionHash,
-      walletBase: realmWalletBase,
+RealmTransaction mapTransactionToRealmTransaction(
+    TransactionRecord transaction, int walletId, int id, DateTime? createdAt) {
+  return RealmTransaction(id, transaction.transactionHash, walletId,
       timestamp: transaction.timestamp,
       blockHeight: transaction.blockHeight,
       transactionType: transaction.transactionType,
@@ -25,9 +24,9 @@ RealmTransaction mapTransactionToRealmTransaction(TransactionRecord transaction,
 }
 
 // note(트랜잭션 메모) 정보가 추가로 필요하여 TransactionDto를 반환
-TransactionDto mapRealmTransactionToTransaction(
+TransactionRecord mapRealmTransactionToTransaction(
     RealmTransaction realmTransaction) {
-  return TransactionDto(
+  return TransactionRecord(
       realmTransaction.transactionHash,
       realmTransaction.timestamp,
       realmTransaction.blockHeight,
@@ -41,7 +40,6 @@ TransactionDto mapRealmTransactionToTransaction(
       realmTransaction.outputAddressList
           .map((element) => jsonToAddress(jsonDecode(element)))
           .toList(),
-      realmTransaction.note,
       realmTransaction.createdAt);
 }
 
@@ -51,26 +49,4 @@ Map<String, dynamic> addressToJson(TransactionAddress address) {
 
 TransactionAddress jsonToAddress(Map<String, dynamic> json) {
   return TransactionAddress(json['address'], json['amount']);
-}
-
-class TransactionDto extends TransactionRecord {
-  String? note;
-  DateTime? createdAt;
-
-  TransactionDto(
-      super.transactionHash,
-      super.timestamp,
-      super.blockHeight,
-      super.transactionType,
-      super.memo,
-      super.amount,
-      super.fee,
-      super.inputAddressList,
-      super.outputAddressList,
-      this.note,
-      this.createdAt);
-
-  DateTime? getDateTimeToDisplay() {
-    return (blockHeight != null && blockHeight == 0) ? null : timestamp;
-  }
 }

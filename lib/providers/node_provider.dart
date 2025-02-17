@@ -108,13 +108,14 @@ class NodeProvider extends ChangeNotifier {
     return _wrapResult(_isolateManager.getRecommendedFees());
   }
 
-  Future<Result<Balance>> getBalance(WalletListItemBase item,
-      {int receiveUsedIndex = 0, int changeUsedIndex = 0}) async {
-    final result = await _wrapResult(_isolateManager.getBalance(item.walletBase,
-        receiveUsedIndex: receiveUsedIndex, changeUsedIndex: changeUsedIndex));
+  Future<Result<Balance>> getBalance(WalletListItemBase walletItem) async {
+    final result = await _wrapResult(_isolateManager.getBalance(
+        walletItem.walletBase,
+        receiveUsedIndex: walletItem.receiveUsedIndex,
+        changeUsedIndex: walletItem.changeUsedIndex));
 
     if (result.isSuccess) {
-      _walletDataManager.updateWalletBalance(item.id, result.value);
+      _walletDataManager.updateWalletBalance(walletItem.id, result.value);
       notifyListeners();
     }
 
@@ -127,14 +128,14 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
-      WalletBase wallet,
-      {Set<String>? knownTransactionHashes,
-      int receiveUsedIndex = 0,
-      int changeUsedIndex = 0}) {
-    return _isolateManager.fetchTransactions(wallet,
-        knownTransactionHashes: knownTransactionHashes,
-        receiveUsedIndex: receiveUsedIndex,
-        changeUsedIndex: changeUsedIndex);
+      WalletListItemBase walletItemBase,
+      {Set<String>? knownTransactionHashes}) {
+    return _isolateManager.fetchTransactions(
+      walletItemBase.walletBase,
+      knownTransactionHashes: knownTransactionHashes,
+      receiveUsedIndex: walletItemBase.receiveUsedIndex,
+      changeUsedIndex: walletItemBase.changeUsedIndex,
+    );
   }
 
   Stream<BaseStreamState<Transaction>> fetchTransactionDetails(
@@ -143,7 +144,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
-      {int receiveUsedIndex = 0, int changeUsedIndex = 0}) {
+      {int receiveUsedIndex = -1, int changeUsedIndex = -1}) {
     return _isolateManager.fetchUtxos(wallet,
         receiveUsedIndex: receiveUsedIndex, changeUsedIndex: changeUsedIndex);
   }

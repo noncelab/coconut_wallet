@@ -11,5 +11,7 @@ SinglesigWalletListItem mapRealmWalletBaseToSinglesigWalletListItem(
       descriptor: decryptedDescriptor ?? realmWalletBase.descriptor,
       balance: realmWalletBase.balance,
       txCount: realmWalletBase.txCount,
-      isLatestTxBlockHeightZero: realmWalletBase.isLatestTxBlockHeightZero);
+      isLatestTxBlockHeightZero: realmWalletBase.isLatestTxBlockHeightZero,
+      receiveUsedIndex: realmWalletBase.usedReceiveIndex,
+      changeUsedIndex: realmWalletBase.usedChangeIndex);
 }
