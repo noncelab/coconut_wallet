@@ -904,10 +904,10 @@ class WalletDataManager {
     return realmTxs.map((tx) => tx.transactionHash).toSet();
   }
 
-  bool containsAddress(WalletListItemBase wallet, String address) {
+  bool containsAddress(int walletId, String address) {
     final realmWalletAddress = _realm.query<RealmWalletAddress>(
       r'walletId == $0 AND address == $1',
-      [wallet.id, address],
+      [walletId, address],
     );
     return realmWalletAddress.isNotEmpty;
   }

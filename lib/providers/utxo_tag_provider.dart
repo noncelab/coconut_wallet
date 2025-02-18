@@ -157,8 +157,9 @@ class UtxoTagProvider extends ChangeNotifier {
       Logger.log(
           'loadSelectedUtxoTagList(walletId: $walletId, txHashIndex: $utxoId)');
       Logger.log(result.error);
+      return [];
     }
-    return result.value ?? [];
+    return result.value;
   }
 
   List<UtxoTag> _loadUtxoTagList(int walletId) {
@@ -167,8 +168,9 @@ class UtxoTagProvider extends ChangeNotifier {
       Logger.log('-----------------------------------------------------------');
       Logger.log('loadUtxoTagList(walletId: $walletId)');
       Logger.log(result.error);
+      return [];
     }
-    return result.value ?? [];
+    return result.value;
   }
 
   void resetData() {

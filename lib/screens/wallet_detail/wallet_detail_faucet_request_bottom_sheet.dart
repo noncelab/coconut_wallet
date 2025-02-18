@@ -297,7 +297,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   bool _isValidAddress(String address) {
     try {
       return widget.walletProvider
-              .containsAddress(widget.walletItem, address) &&
+              .containsAddress(widget.walletItem.id, address) &&
           WalletUtility.validateAddress(address);
     } catch (_) {
       return false;

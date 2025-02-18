@@ -38,6 +38,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
   ValueNotifier<bool> get showDialogNotifier => _showDialogNotifier;
   ValueNotifier<bool> get loadCompletedNotifier => _loadCompletedNotifier;
 
+  WalletProvider get walletProvider => _walletProvider;
+
   void updateProvider() {
     // TODO: addressBook
     // if (_walletProvider.walletItemList.isNotEmpty && _addressBook == null) {

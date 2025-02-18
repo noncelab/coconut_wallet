@@ -375,7 +375,7 @@ class ElectrumService extends NodeClient {
           String derivationPath =
               '${wallet.derivationPath}/${isChange ? 1 : 0}/${entry.key}';
 
-          // TODO: Utxo 타임스탬프 추가
+          /// Utxo 타임스탬프 추가는 updateTimestampFromBlocks에서 처리
           yield BaseStreamState<UtxoState>.success(
               'fetchUtxos',
               UtxoState(
@@ -434,6 +434,7 @@ class ElectrumService extends NodeClient {
 
   /// Electrum의 mempool.get_fee_histogram과 blockchain.estimatefee를 이용하여
   /// mempool.space API와 같은 형태의 추천 수수료 정보를 반환합니다.
+  @override
   Future<RecommendedFee> getRecommendedFees() async {
     // 1. mempool.get_fee_histogram 호출
     //    결과는 [[fee, vsize], [fee, vsize], ...] 형태이며 fee 단위는 sat/vB.

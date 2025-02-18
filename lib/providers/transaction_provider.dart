@@ -442,7 +442,7 @@ class TransactionProvider extends ChangeNotifier {
       fee += inputAddress.amount;
 
       if (walletProvider.containsAddress(
-          walletItemBase, inputAddress.address)) {
+          walletItemBase.id, inputAddress.address)) {
         selfInputCount++;
         amount -= inputAddress.amount;
       }
@@ -459,7 +459,7 @@ class TransactionProvider extends ChangeNotifier {
       fee -= outputAddress.amount;
 
       if (walletProvider.containsAddress(
-          walletItemBase, outputAddress.address)) {
+          walletItemBase.id, outputAddress.address)) {
         selfOutputCount++;
         amount += outputAddress.amount;
       }

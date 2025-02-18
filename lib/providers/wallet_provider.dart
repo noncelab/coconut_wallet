@@ -400,8 +400,8 @@ class WalletProvider extends ChangeNotifier {
     await _walletDataManager.decrypt();
   }
 
-  bool containsAddress(WalletListItemBase wallet, String address) {
-    return _walletDataManager.containsAddress(wallet, address);
+  bool containsAddress(int walletId, String address) {
+    return _walletDataManager.containsAddress(walletId, address);
   }
 
   /// 지갑 주소의 사용여부와 잔액을 업데이트 합니다.

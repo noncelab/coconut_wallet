@@ -151,11 +151,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                               ? _balanceWidthSize.width
                                               : 100,
                                       rowType: InputOutputRowType.input,
-                                      // TODO: isCurrentAddress
-                                      isCurrentAddress: false,
-                                      // isCurrentAddress: viewModel.addressBook
-                                      //     ?.contains(viewModel.transaction!
-                                      //         .inputAddressList[index].address),
+                                      isCurrentAddress: viewModel.walletProvider
+                                          .containsAddress(
+                                              widget.id,
+                                              viewModel
+                                                  .transaction!
+                                                  .inputAddressList[index]
+                                                  .address),
                                       transactionStatus: status,
                                     ),
                                     const SizedBox(height: 8),
