@@ -318,8 +318,10 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
 
     if (_viewModel.walletItemList.isNotEmpty) {
-      _viewModel.initWallet().catchError((_) {
+      _viewModel.initWallet().catchError((_, stackTrace) {
         Logger.log('--> error catch');
+        Logger.error(_);
+        Logger.error(stackTrace);
       }).whenComplete(() {
         Logger.log('---> wallet state: ${_viewModel.walletInitState}');
         WidgetsBinding.instance.addPostFrameCallback((_) {

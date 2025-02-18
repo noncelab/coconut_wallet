@@ -149,9 +149,13 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.fetchTransactionDetails(transactionHashes);
   }
 
-  Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
-      {int receiveUsedIndex = -1, int changeUsedIndex = -1}) {
-    return _isolateManager.fetchUtxos(wallet,
+  Stream<BaseStreamState<UtxoState>> fetchUtxos(
+    WalletListItemBase wallet,
+  ) {
+    final receiveUsedIndex = wallet.receiveUsedIndex;
+    final changeUsedIndex = wallet.changeUsedIndex;
+
+    return _isolateManager.fetchUtxos(wallet.walletBase,
         receiveUsedIndex: receiveUsedIndex, changeUsedIndex: changeUsedIndex);
   }
 

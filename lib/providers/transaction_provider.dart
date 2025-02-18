@@ -5,6 +5,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -270,8 +271,8 @@ class TransactionProvider extends ChangeNotifier {
 
     // 2. 트랜잭션의 블록 타임스탬프 조회
     final txBlockHeightMap = _createTxBlockHeightMap(fetchTxResList);
-    final blockTimestampMap =
-        await _fetchBlockTimestamps(fetchTxResList, nodeProvider);
+    final blockTimestampMap = await _fetchBlockTimestamps(
+        txBlockHeightMap.values.toSet(), nodeProvider);
 
     // 3. 트랜잭션 상세 조회 및 처리
     final fetchedTransactions =
@@ -332,7 +333,8 @@ class TransactionProvider extends ChangeNotifier {
         : await _fetchBlockTimestamps(
             fetchedTxs
                 .where((tx) => txsToUpdate.contains(tx.transactionHash))
-                .toList(),
+                .map((tx) => tx.height)
+                .toSet(),
             nodeProvider);
 
     // 4. 트랜잭션 상태 업데이트
@@ -348,21 +350,16 @@ class TransactionProvider extends ChangeNotifier {
   /// 트랜잭션 해시와 블록 높이를 매핑하는 맵을 생성합니다.
   Map<String, int> _createTxBlockHeightMap(
       List<FetchTransactionResponse> fetchTxResList) {
-    return HashMap.fromEntries(
-        fetchTxResList.map((tx) => MapEntry(tx.transactionHash, tx.height)));
+    return HashMap.fromEntries(fetchTxResList
+        .where((tx) => tx.height > 0)
+        .map((tx) => MapEntry(tx.transactionHash, tx.height)));
   }
 
   /// 블록 타임스탬프를 조회합니다.
   Future<Map<int, BlockTimestamp>> _fetchBlockTimestamps(
-      List<FetchTransactionResponse> fetchTxResList,
-      NodeProvider nodeProvider) async {
-    final toFetchBlockHeights = fetchTxResList
-        .map((tx) => tx.height)
-        .where((blockHeight) => blockHeight > 0)
-        .toSet();
-
+      Set<int> blockHeights, NodeProvider nodeProvider) async {
     return await nodeProvider
-        .fetchBlocksByHeight(toFetchBlockHeights)
+        .fetchBlocksByHeight(blockHeights)
         .where((state) => state is SuccessState<BlockTimestamp>)
         .cast<SuccessState<BlockTimestamp>>()
         .map((state) => state.data)
@@ -487,6 +484,23 @@ class TransactionProvider extends ChangeNotifier {
       amount: amount,
       fee: fee,
     );
+  }
+
+  Future<List<UtxoState>> fetchUtxos(
+      WalletListItemBase walletItem, NodeProvider nodeProvider) async {
+    final utxos = await nodeProvider
+        .fetchUtxos(walletItem)
+        .map((state) => state.data)
+        .where((utxo) => utxo != null)
+        .map((utxo) => utxo!)
+        .toList();
+
+    final blockTimestampMap = await _fetchBlockTimestamps(
+        utxos.map((utxo) => utxo.blockHeight).toSet(), nodeProvider);
+
+    UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
+
+    return utxos;
   }
 }
 

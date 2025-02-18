@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -138,37 +139,29 @@ class WalletDetailViewModel extends ChangeNotifier {
   int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
 
   void getUtxoListWithHoldingAddress() {
-    List<UtxoState> utxos = [];
+    if (_walletListBaseItem == null) return;
 
-    // TODO: walletFeature
-    // if (_walletFeature.walletStatus?.utxoList.isNotEmpty == true) {
-    //   for (var utxo in _walletFeature.walletStatus!.utxoList) {
-    //     String ownedAddress = _walletListBaseItem!.walletBase.getAddress(
-    //         DerivationPathUtil.getAccountIndex(
-    //             _walletType, utxo.derivationPath),
-    //         isChange: DerivationPathUtil.getChangeElement(
-    //                 _walletType, utxo.derivationPath) ==
-    //             1);
+    _utxoList = _walletListBaseItem!.utxoList;
 
-    //     final tags =
-    //         _tagProvider.loadSelectedUtxoTagList(_walletId, utxo.utxoId);
+    if (_utxoList.isNotEmpty) {
+      for (var utxo in _utxoList) {
+        String ownedAddress = _walletListBaseItem!.walletBase.getAddress(
+            DerivationPathUtil.getAccountIndex(
+                _walletType, utxo.derivationPath),
+            isChange: DerivationPathUtil.getChangeElement(
+                    _walletType, utxo.derivationPath) ==
+                1);
 
-    //     utxos.add(model.UTXO(
-    //       utxo.timestamp.toString(),
-    //       utxo.blockHeight.toString(),
-    //       utxo.amount,
-    //       ownedAddress,
-    //       utxo.derivationPath,
-    //       utxo.transactionHash,
-    //       utxo.index,
-    //       tags: tags,
-    //     ));
-    //   }
-    // }
+        final tags =
+            _tagProvider.loadSelectedUtxoTagList(_walletId, utxo.utxoId);
+
+        utxo.tags = tags;
+      }
+    }
 
     _isUtxoListLoadComplete = true;
-    _utxoList = utxos;
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
+    notifyListeners();
   }
 
   void removeFaucetTooltip() {

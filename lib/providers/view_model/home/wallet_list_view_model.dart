@@ -5,6 +5,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 
@@ -53,24 +54,32 @@ class WalletListViewModel extends ChangeNotifier {
         syncOthers: syncOthers);
 
     for (var walletItem in walletItemList) {
+      Logger.log('>>>>> walletItem: ${walletItem.name}');
+      // 새로운 내역이 있는지 조회
       final newTxResList =
           await _transactionProvider.fetchNewTransactionResponses(
               walletItem, _nodeProvider, _walletProvider);
 
-      // 잔액 먼저 갱신 후 트랜잭션 조회
+      // 잔액 조회
       final balanceResult = await _nodeProvider.getBalance(walletItem);
       if (balanceResult.isSuccess) {
         _walletProvider.updateWalletAddressList(walletItem,
             balanceResult.value.$1, balanceResult.value.$2, newTxResList);
       }
-
-      // TODO: 잔액 화면에 갱신 안되는 버그 수정
       notifyListeners();
 
+      // 트랜잭션 내역 조회
       if (newTxResList.isNotEmpty) {
         await _transactionProvider.fetchTransactions(
             walletItem, newTxResList, _nodeProvider, _walletProvider);
       }
+      notifyListeners();
+
+      // UTXO 조회
+      walletItem.utxoList =
+          await _transactionProvider.fetchUtxos(walletItem, _nodeProvider);
+
+      notifyListeners();
     }
   }
 
