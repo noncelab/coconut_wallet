@@ -212,123 +212,9 @@ class WalletDataManager {
     return multisigWallet;
   }
 
-  /// 업데이트 해야 되는 지갑과 업데이트 내용에 따라 db와 _walletList 업데이트 합니다.
-  /// 만약 업데이트 과정에서 에러 발생시, 에러를 반환합니다.
-  Future syncWithLatest(List<WalletListItemBase> targets) async {
-    _checkInitialized();
-    var sortedTargets = List.from(targets)
-      ..sort((a, b) => a.id.compareTo(b.id));
-    final realmWallets = _realm.all<RealmWalletBase>().query(
-        r'id IN $0 SORT(id ASC)',
-        [sortedTargets.map((wallet) => wallet.id).toList()]);
-
-    for (int i = 0; i < sortedTargets.length; i++) {
-      await _updateWalletAsLatest(sortedTargets[i], realmWallets[i]);
-    }
-  }
-
   RealmResults<RealmTransaction> getUnconfirmedTransactions(int walletId) {
     return _realm.query<RealmTransaction>(
         r'walletId = $0 AND blockHeight = 0', [walletId]);
-  }
-
-  Future _updateWalletAsLatest(
-      WalletListItemBase walletItem, RealmWalletBase realmWallet) async {
-    _checkInitialized();
-    RealmResults<RealmTransaction>? unconfirmedRealmTxs;
-    List<RealmTransaction>?
-        unconfirmedRealmTxList; // 새로운 row 추가 시 updateTargets 결과가 변경되기 때문에 처음 결과를 이 변수에 저장
-    // 전송 중, 받는 중인 트랜잭션이 있는 경우
-    if (walletItem.isLatestTxBlockHeightZero) {
-      unconfirmedRealmTxs = getUnconfirmedTransactions(realmWallet.id);
-      unconfirmedRealmTxList = unconfirmedRealmTxs.toList();
-    }
-
-    // 항상 최신순으로 반환
-    List<TransactionRecord> fetchedTxsSortedByBlockHeightAsc = [];
-    // TODO: getTransactionList
-    // walletItem.walletFeature.getTransactionList(
-    // cursor: 0,
-    // TODO: WalletStatus
-    // count: walletStatus.transactionList.length -
-    //     (realmWallet.txCount ?? 0) +
-    // (unconfirmedRealmTxs?.length ?? 0));
-    int nextId = getLastId(_realm, (RealmTransaction).toString());
-    List<int> existingUnconfirmedTxIdsInFetchedTxs = [];
-    await _realm.writeAsync(() {
-      for (int i = fetchedTxsSortedByBlockHeightAsc.length - 1; i >= 0; i--) {
-        RealmTransaction? existingRealmTx;
-        if (unconfirmedRealmTxs != null) {
-          existingRealmTx = unconfirmedRealmTxs.query(r'transactionHash = $0', [
-            fetchedTxsSortedByBlockHeightAsc[i].transactionHash
-          ]).firstOrNull;
-        }
-
-        if (existingRealmTx != null) {
-          existingRealmTx
-            ..timestamp = fetchedTxsSortedByBlockHeightAsc[i].timestamp
-            ..blockHeight = fetchedTxsSortedByBlockHeightAsc[i].blockHeight;
-          existingUnconfirmedTxIdsInFetchedTxs.add(existingRealmTx.id);
-        } else {
-          TempBroadcastTimeRecord? record = _realm
-              .query<TempBroadcastTimeRecord>(
-                  'transactionHash = \'${fetchedTxsSortedByBlockHeightAsc[i].transactionHash}\'')
-              .firstOrNull;
-
-          RealmTransaction newRealmTransaction =
-              mapTransactionToRealmTransaction(
-                  fetchedTxsSortedByBlockHeightAsc[i],
-                  realmWallet.id,
-                  nextId++,
-                  record?.createdAt ?? DateTime.now());
-          try {
-            _realm.add<RealmTransaction>(newRealmTransaction);
-          } catch (e) {
-            if (e is RealmException) {
-              if (e.message.contains('RLM_ERR_OBJECT_ALREADY_EXISTS')) {
-                newRealmTransaction.id = nextId++;
-                _realm.add<RealmTransaction>(newRealmTransaction);
-              }
-            }
-          }
-
-          // 코코넛 월렛 안의 지갑끼리 주고받은 경우를 위해 삭제 시점을 아래로 변경
-          // 컨펌된 트랜잭션의 TempBroadcastTimeRecord 삭제
-          if (record != null &&
-              fetchedTxsSortedByBlockHeightAsc[i].blockHeight != 0) {
-            _realm.delete<TempBroadcastTimeRecord>(record);
-          }
-        }
-      }
-
-      // INFO: RBF(Replace-By-Fee)에 의해서 처리되지 않은 트랜잭션이 삭제된 경우를 대비
-      // INFO: 추후에는 삭제가 아니라 '무효화됨'으로 표기될 수 있음
-      if (unconfirmedRealmTxList != null && unconfirmedRealmTxList.isNotEmpty) {
-        for (var ut in unconfirmedRealmTxList) {
-          var index = existingUnconfirmedTxIdsInFetchedTxs
-              .indexWhere((x) => x == ut.id);
-          if (index == -1) {
-            _realm.delete(ut);
-          }
-        }
-      }
-
-      // realmWallet.txCount = walletStatus.transactionList.length;
-      realmWallet.txCount = 0;
-      realmWallet.isLatestTxBlockHeightZero =
-          fetchedTxsSortedByBlockHeightAsc.isNotEmpty &&
-              fetchedTxsSortedByBlockHeightAsc[0].blockHeight == 0;
-      realmWallet.balance = 0;
-      // realmWallet.balance = walletItem.walletFeature.getBalance() +
-      //     walletItem.walletFeature.getUnconfirmedBalance();
-    });
-
-    saveLastId(_realm, (RealmTransaction).toString(), nextId);
-
-    _walletList!.firstWhere((w) => w.id == realmWallet.id)
-      ..txCount = realmWallet.txCount
-      ..isLatestTxBlockHeightZero = realmWallet.isLatestTxBlockHeightZero
-      ..balance = realmWallet.balance;
   }
 
   void updateWalletUI(int id, WatchOnlyWallet watchOnlyWallet) {
@@ -372,6 +258,8 @@ class WalletDataManager {
 
     final walletBase = _realm.query<RealmWalletBase>('id == $id').first;
     final transactions = _realm.query<RealmTransaction>('walletId == $id');
+    final walletBalance = _realm.query<RealmWalletBalance>('walletId == $id');
+    final walletAddress = _realm.query<RealmWalletAddress>('walletId == $id');
     // TODO: utxos
 
     final realmMultisigWallet =
@@ -385,6 +273,8 @@ class WalletDataManager {
       if (realmMultisigWallet != null) {
         _realm.delete(realmMultisigWallet);
       }
+      _realm.deleteMany(walletBalance);
+      _realm.deleteMany(walletAddress);
     });
 
     final index = _walletList!.indexWhere((item) => item.id == id);
