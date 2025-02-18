@@ -274,11 +274,11 @@ class WalletProvider extends ChangeNotifier {
     return hasChanged;
   }
 
-  Future<void> deleteWallet(int id) async {
-    _walletDataManager.deleteWallet(id);
+  Future<void> deleteWallet(int walletId) async {
+    _walletDataManager.deleteWallet(walletId);
     _walletItemList = List.from(_walletDataManager.walletList);
     //_walletItemList = _walletDataManager.walletList;
-    _walletDataManager.deleteAllUtxoTag(id);
+    _walletDataManager.deleteAllUtxoTag(walletId);
     _setWalletCount(_walletItemList.length);
     //if (_walletItemList.isEmpty) {
     //_subStateModel.saveNotEmptyWalletList(false);

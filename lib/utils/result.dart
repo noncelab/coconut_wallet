@@ -13,7 +13,7 @@ class Result<T> {
   }
 
   factory Result.failure(AppError error) {
-    return Result._(error: error);
+    return Result<T>._(error: error);
   }
 
   bool get isSuccess => _value != null;

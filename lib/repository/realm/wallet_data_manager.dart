@@ -253,19 +253,24 @@ class WalletDataManager {
     }
   }
 
-  void deleteWallet(int id) {
+  void deleteWallet(int walletId) {
     _checkInitialized();
 
-    final walletBase = _realm.query<RealmWalletBase>('id == $id').first;
-    final transactions = _realm.query<RealmTransaction>('walletId == $id');
-    final walletBalance = _realm.query<RealmWalletBalance>('walletId == $id');
-    final walletAddress = _realm.query<RealmWalletAddress>('walletId == $id');
+    final walletBaseResults = _realm.query<RealmWalletBase>('id == $walletId');
+    final walletBase = walletBaseResults.first;
+    final transactions =
+        _realm.query<RealmTransaction>('walletId == $walletId');
+    final walletBalance =
+        _realm.query<RealmWalletBalance>('walletId == $walletId');
+    final walletAddress =
+        _realm.query<RealmWalletAddress>('walletId == $walletId');
     // TODO: utxos
 
-    final realmMultisigWallet =
+    final realmMultisigWalletResults =
         walletBase.walletType == WalletType.multiSignature.name
-            ? _realm.query<RealmMultisigWallet>('id == $id').first
+            ? _realm.query<RealmMultisigWallet>('id == $walletId')
             : null;
+    final realmMultisigWallet = realmMultisigWalletResults?.first;
 
     _realm.write(() {
       _realm.delete(walletBase);
@@ -277,7 +282,7 @@ class WalletDataManager {
       _realm.deleteMany(walletAddress);
     });
 
-    final index = _walletList!.indexWhere((item) => item.id == id);
+    final index = _walletList!.indexWhere((item) => item.id == walletId);
     _walletList!.removeAt(index);
   }
 
@@ -287,7 +292,7 @@ class WalletDataManager {
     final tags = _realm
         .query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
 
-    var result = _handleRealm(
+    var result = _handleRealm<List<UtxoTag>>(
       () {
         _utxoTagList.addAll(tags.map(mapRealmUtxoTagToUtxoTag));
         return _utxoTagList;
@@ -325,7 +330,7 @@ class WalletDataManager {
 
   /// walletId 로 조회된 태그 목록에서 txHashIndex 를 포함하고 있는 태그 목록 조회
   Result<List<UtxoTag>> loadUtxoTagListByUtxoId(int walletId, String utxoId) {
-    return _handleRealm(() {
+    return _handleRealm<List<UtxoTag>>(() {
       _utxoTagList = [];
 
       final tags = _realm
@@ -345,7 +350,7 @@ class WalletDataManager {
   /// 태그 추가
   Result<UtxoTag> addUtxoTag(
       String id, int walletId, String name, int colorIndex) {
-    return _handleRealm(() {
+    return _handleRealm<UtxoTag>(() {
       final tag = RealmUtxoTag(id, walletId, name, colorIndex, DateTime.now());
       _realm.write(() {
         _realm.add(tag);
@@ -356,7 +361,7 @@ class WalletDataManager {
 
   /// id 로 조회된 태그의 속성 업데이트
   Result<UtxoTag> updateUtxoTag(String id, String name, int colorIndex) {
-    return _handleRealm(() {
+    return _handleRealm<UtxoTag>(() {
       final tags = _realm.query<RealmUtxoTag>("id == '$id'");
 
       if (tags.isEmpty) {
@@ -375,7 +380,7 @@ class WalletDataManager {
 
   /// id 로 조회된 태그 삭제
   Result<UtxoTag> deleteUtxoTag(String id) {
-    return _handleRealm(() {
+    return _handleRealm<UtxoTag>(() {
       final tag = _realm.find<RealmUtxoTag>(id);
 
       if (tag == null) {
@@ -394,18 +399,14 @@ class WalletDataManager {
 
   /// walletId 로 조회된 태그 전체 삭제
   Result<bool> deleteAllUtxoTag(int walletId) {
-    return _handleRealm(() {
+    return _handleRealm<bool>(() {
       final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
 
       if (tags.isEmpty) {
         throw ErrorCodes.realmNotFound;
       }
 
-      _realm.write(() {
-        for (var tag in tags) {
-          _realm.delete(tag);
-        }
-      });
+      _realm.deleteMany(tags);
 
       return true;
     });
@@ -418,7 +419,7 @@ class WalletDataManager {
   /// - [selectedNames] 선택된 태그명 목록
   Result<bool> updateUtxoTagList(int walletId, String utxoId,
       List<UtxoTag> addTags, List<String> selectedNames) {
-    return _handleRealm(
+    return _handleRealm<bool>(
       () {
         _realm.write(() {
           // 새로운 태그 추가
@@ -457,7 +458,7 @@ class WalletDataManager {
     final transactions = _realm.query<RealmTransaction>(
         "walletId == '$walletId' And transactionHash == '$txHash'");
 
-    return _handleRealm(
+    return _handleRealm<TransactionRecord?>(
       () => transactions.isEmpty
           ? null
           : mapRealmTransactionToTransaction(transactions.first),
@@ -470,7 +471,7 @@ class WalletDataManager {
     final transactions = _realm.query<RealmTransaction>(
         "walletId == '$walletId' And transactionHash == '$txHash'");
 
-    return _handleRealm(
+    return _handleRealm<TransactionRecord>(
       () {
         final transaction = transactions.first;
         _realm.write(() {
@@ -812,7 +813,7 @@ class WalletDataManager {
     try {
       return Result.success(operation());
     } catch (e) {
-      return _handleError(e);
+      return _handleError<T>(e);
     }
   }
 
@@ -827,18 +828,18 @@ class WalletDataManager {
     }
   }
 
-  _handleError(e) {
+  Result<T> _handleError<T>(e) {
     if (e is AppError) {
-      return Result.failure(e);
+      return Result<T>.failure(e);
     }
 
     if (e is RealmException) {
-      return Result.failure(
+      return Result<T>.failure(
         ErrorCodes.withMessage(ErrorCodes.realmException, e.message),
       );
     }
 
-    return Result.failure(
+    return Result<T>.failure(
       ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
     );
   }
