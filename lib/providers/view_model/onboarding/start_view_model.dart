@@ -36,7 +36,7 @@ class StartViewModel extends ChangeNotifier {
   int get walletCount => _visibilityProvider.walletCount;
 
   /// 시작 화면 결정
-  Future<AccessFlow> determineStartScreen() async {
+  Future<AppEntryFlow> determineStartScreen() async {
     // Splash 보여주기 위한 딜레이
     await Future.delayed(const Duration(seconds: 2));
     if (!hasLaunchedBefore) {
@@ -45,9 +45,9 @@ class StartViewModel extends ChangeNotifier {
     debugPrint(
         'walletCount --> ${_visibilityProvider.walletCount}\nisSetPin --> ${_authProvider.isSetPin}');
     if (_visibilityProvider.walletCount == 0 || !_authProvider.isSetPin) {
-      return AccessFlow.main;
+      return AppEntryFlow.main;
     } else {
-      return AccessFlow.pinCheck;
+      return AppEntryFlow.pinCheck;
     }
   }
 
