@@ -214,7 +214,6 @@ class _WalletListScreenState extends State<WalletListScreen>
                         Align(
                           alignment: Alignment.topRight,
                           child: CoconutPulldownMenu(
-                            brightness: Brightness.dark,
                             margin: EdgeInsets.only(
                                 top: (84 + MediaQuery.of(context).padding.top) -
                                     (MediaQuery.of(context).padding.top / 2),

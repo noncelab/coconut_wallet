@@ -290,7 +290,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                       child: CoconutToolTip(
                         tooltipType: CoconutTooltipType.placement,
                         width: MediaQuery.sizeOf(context).width,
-                        brightness: Brightness.dark,
                         backgroundColor: CoconutColors.white,
                         isBubbleClipperSideLeft: false,
                         isPlacementTooltipVisible: _tooltipRemainingTime > 0,

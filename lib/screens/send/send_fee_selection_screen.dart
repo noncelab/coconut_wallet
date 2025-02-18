@@ -163,7 +163,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                     CoconutTooltipState.warning.colorIndex]
                                 .withOpacity(0.18),
                             tooltipType: CoconutTooltipType.fixed,
-                            brightness: Brightness.dark,
                             richText: RichText(
                               text: TextSpan(
                                 text: ErrorCodes.networkError.message,
@@ -189,7 +188,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                     CoconutTooltipState.error.colorIndex]
                                 .withOpacity(0.18),
                             tooltipType: CoconutTooltipType.fixed,
-                            brightness: Brightness.dark,
                             richText: RichText(
                               text: TextSpan(
                                 text: t.tooltip.recommended_fee1,
@@ -214,7 +212,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                     CoconutTooltipState.warning.colorIndex]
                                 .withOpacity(0.18),
                             tooltipType: CoconutTooltipType.fixed,
-                            brightness: Brightness.dark,
                             richText: RichText(
                               text: TextSpan(
                                 text: t.tooltip.recommended_fee2(
@@ -244,7 +241,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                     CoconutTooltipState.warning.colorIndex]
                                 .withOpacity(0.18),
                             tooltipType: CoconutTooltipType.fixed,
-                            brightness: Brightness.dark,
                             richText: RichText(
                               text: TextSpan(
                                 text: t.errors.insufficient_balance,

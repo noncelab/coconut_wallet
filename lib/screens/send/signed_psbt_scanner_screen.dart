@@ -64,7 +64,6 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             child: CoconutToolTip(
               tooltipType: CoconutTooltipType.fixed,
               tooltipState: CoconutTooltipState.info,
-              brightness: Brightness.dark,
               backgroundColor: MyColors.white.withOpacity(0.9),
               richText: RichText(
                 text: TextSpan(

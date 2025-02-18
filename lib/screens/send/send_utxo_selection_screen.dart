@@ -522,7 +522,6 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           child: Row(children: [
             CoconutPulldown(
               key: dropdownKey,
-              brightness: Brightness.dark,
               title: _selectedUtxoOrder.text,
               isOpen: _isOrderDropdownVisible,
               fontSize: 12,

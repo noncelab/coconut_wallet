@@ -200,7 +200,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
       child: CoconutBottomSheet(
-        brightness: Brightness.dark,
         bottomMargin: TagBottomSheetType.select == _type ? 84 : 8,
         appBar: CoconutAppBar.buildWithNext(
           title: TagBottomSheetType.create == _type

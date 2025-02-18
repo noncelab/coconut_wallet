@@ -21,7 +21,6 @@ class CustomDialogs {
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
-          brightness: Brightness.dark,
           title: title,
           description: description,
           onTapRight: onTapRight,

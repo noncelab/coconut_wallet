@@ -60,7 +60,6 @@ class _SettingsScreen extends State<SettingsScreen> {
                         SingleButton(
                             title: t.settings_screen.set_password,
                             rightElement: CoconutSwitch(
-                                brightness: Brightness.dark,
                                 isOn: viewModel.isSetPin,
                                 activeColor: CoconutColors.primary,
                                 thumbColor: CoconutColors.white,
@@ -81,7 +80,6 @@ class _SettingsScreen extends State<SettingsScreen> {
                           SingleButton(
                             title: t.settings_screen.use_biometric,
                             rightElement: CoconutSwitch(
-                                brightness: Brightness.dark,
                                 isOn: viewModel.isSetBiometrics,
                                 activeColor: CoconutColors.primary,
                                 thumbColor: CoconutColors.white,
@@ -116,7 +114,6 @@ class _SettingsScreen extends State<SettingsScreen> {
                           child: SingleButton(
                         title: t.settings_screen.hide_balance,
                         rightElement: CoconutSwitch(
-                            brightness: Brightness.dark,
                             isOn: viewModel.isBalanceHidden,
                             activeColor: CoconutColors.primary,
                             thumbColor: CoconutColors.white,

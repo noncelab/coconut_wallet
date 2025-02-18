@@ -100,7 +100,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               ),
               child: Stack(children: [
                 CoconutToolTip(
-                    brightness: Brightness.dark,
                     tooltipType: CoconutTooltipType.fixed,
                     backgroundColor:
                         CoconutColors.colorPalette[4].withOpacity(0.18),

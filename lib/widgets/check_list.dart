@@ -48,7 +48,6 @@ class _ChecklistTileState extends State<ChecklistTile> {
           children: [
             CoconutCheckbox(
               isSelected: isChecked,
-              brightness: Brightness.dark,
               onChanged: _checked,
             ),
             const SizedBox(width: 8), // 체크박스와 텍스트 사이의 가로 간격 조정

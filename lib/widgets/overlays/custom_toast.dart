@@ -10,7 +10,6 @@ class CustomToast {
     bool visibleIcon = true,
   }) {
     CoconutToast.showToast(
-      brightness: Brightness.dark,
       context: context,
       text: text,
       seconds: seconds,
@@ -29,7 +28,6 @@ class CustomToast {
     int seconds = 5,
   }) {
     CoconutToast.showToast(
-      brightness: Brightness.dark,
       context: context,
       text: text,
       seconds: seconds,

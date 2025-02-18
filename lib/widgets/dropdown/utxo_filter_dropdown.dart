@@ -37,7 +37,6 @@ class UtxoFilterDropdown extends StatelessWidget {
         child: Material(
           borderRadius: BorderRadius.circular(16),
           child: CoconutPulldownMenu(
-            brightness: Brightness.dark,
             buttons: buttons,
             dividerColor: Colors.black,
             selectedIndex: buttons.indexOf(selectedFilter.text),

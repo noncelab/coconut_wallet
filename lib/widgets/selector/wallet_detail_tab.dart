@@ -158,7 +158,6 @@ class WalletDetailTab extends StatelessWidget {
             child: Container(
               alignment: Alignment.centerRight,
               child: CoconutPulldown(
-                brightness: Brightness.dark,
                 title: utxoOrderText,
                 isOpen: isVisibleDropdownMenu,
                 fontSize: 12,

@@ -350,7 +350,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         5,
                     child: CoconutToolTip(
                       tooltipType: CoconutTooltipType.placement,
-                      brightness: Brightness.dark,
                       backgroundColor: MyColors.skybule,
                       animateOnBuild: true,
                       isBubbleClipperSideLeft: false,

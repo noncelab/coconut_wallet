@@ -72,7 +72,6 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                       backgroundColor:
                                           MyColors.white.withOpacity(0.9),
                                       tooltipType: CoconutTooltipType.fixed,
-                                      brightness: Brightness.dark,
                                       richText: RichText(
                                         text: TextSpan(
                                           text: t.tooltip.amount_to_be_sent(

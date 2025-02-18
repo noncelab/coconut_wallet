@@ -179,7 +179,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
                           child: Container(
                             alignment: Alignment.centerRight,
                             child: CoconutPulldown(
-                              brightness: Brightness.dark,
                               title: selectedFilter,
                               isOpen: isVisibleDropdownMenu,
                               fontSize: 12,

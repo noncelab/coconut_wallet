@@ -133,7 +133,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                             0.18,
                           ),
                           tooltipType: CoconutTooltipType.fixed,
-                          brightness: Brightness.dark,
                           richText: RichText(
                             text: TextSpan(
                               text: ErrorCodes.networkError.message,
@@ -160,7 +159,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                             0.18,
                           ),
                           tooltipType: CoconutTooltipType.fixed,
-                          brightness: Brightness.dark,
                           richText: RichText(
                             text: TextSpan(
                               text: t.errors.fee_selection_error
@@ -187,7 +185,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                             0.18,
                           ),
                           tooltipType: CoconutTooltipType.fixed,
-                          brightness: Brightness.dark,
                           richText: RichText(
                             text: TextSpan(
                               text: t.tooltip.recommended_fee2(
