@@ -665,14 +665,20 @@ class WalletDataManager {
   }
 
   Balance getWalletBalance(int walletId) {
-    final realmWalletBalance = _realm.find<RealmWalletBalance>(walletId);
-    if (realmWalletBalance == null) {
+    final realmWalletBalance =
+        _realm.query<RealmWalletBalance>('walletId == $walletId');
+
+    if (realmWalletBalance.isEmpty) {
+      _createNewWalletBalance(
+        _realm.find<RealmWalletBase>(walletId)!,
+        Balance(0, 0),
+      );
       return Balance(0, 0);
     }
 
     return Balance(
-      realmWalletBalance.confirmed,
-      realmWalletBalance.unconfirmed,
+      realmWalletBalance.first.confirmed,
+      realmWalletBalance.first.unconfirmed,
     );
   }
 
