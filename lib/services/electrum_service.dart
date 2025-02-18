@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:async/async.dart' as async;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -121,6 +123,7 @@ class ElectrumService extends NodeClient {
       required bool isChange}) async* {
     int addressScanLimit = gapLimit;
     int currentAddressIndex = 0;
+    int lastUsedIndex = -1; // 마지막으로 사용된 인덱스 추적
     Set<String> processedTxHashes = knownTransactionHashes ?? {};
 
     while (currentAddressIndex < addressScanLimit) {
@@ -138,10 +141,13 @@ class ElectrumService extends NodeClient {
 
         try {
           final historyList = await _client.getHistory(script);
+
           if (historyList.isEmpty) {
             return;
           }
 
+          // 트랜잭션이 있는 경우 lastUsedIndex 업데이트
+          lastUsedIndex = max(lastUsedIndex, derivationIndex);
           addressScanLimit = derivationIndex + gapLimit + 1;
 
           var filteredHistoryList = historyList.where((history) {
@@ -171,6 +177,16 @@ class ElectrumService extends NodeClient {
       currentAddressIndex += addressScripts.length;
       if (currentAddressIndex >= addressScanLimit) break;
     }
+
+    // 스캔 완료 후 lastUsedIndex를 포함하는 완료 상태 전달
+    yield BaseStreamState<FetchTransactionResponse>.success(
+        'fetchTransactions',
+        FetchTransactionResponse(
+          transactionHash: '', // 완료 상태를 나타내는 빈 해시
+          height: -1, // 완료 상태를 나타내는 특수값
+          addressIndex: lastUsedIndex, // 마지막으로 사용된 인덱스
+          isChange: isChange,
+        ));
   }
 
   @override

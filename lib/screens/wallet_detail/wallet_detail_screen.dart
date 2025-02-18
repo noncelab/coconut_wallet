@@ -202,7 +202,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                               }
                               viewModel.walletProvider
                                   ?.initWallet(targetId: widget.id);
-                              viewModel.fetchTransactions();
                             } finally {
                               _isPullToRefreshing = false;
                             }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:flutter/cupertino.dart';
@@ -259,6 +260,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false).isBalanceHidden,
       Provider.of<NodeProvider>(context, listen: false),
+      Provider.of<TransactionProvider>(context, listen: false),
     );
 
     _scrollController = ScrollController();

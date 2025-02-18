@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -16,9 +17,10 @@ class WalletListViewModel extends ChangeNotifier {
   late final bool _isReviewScreenVisible;
   late WalletInitState _prevWalletInitState;
   late final NodeProvider _nodeProvider;
+  late final TransactionProvider _transactionProvider;
 
   WalletListViewModel(this._walletProvider, this._visibilityProvider,
-      this._isBalanceHidden, this._nodeProvider) {
+      this._isBalanceHidden, this._nodeProvider, this._transactionProvider) {
     _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
@@ -51,7 +53,17 @@ class WalletListViewModel extends ChangeNotifier {
         syncOthers: syncOthers);
 
     for (var item in walletItemList) {
+      final newTxResList = await _transactionProvider
+          .fetchNewTransactionResponses(item, _nodeProvider);
+
+      if (newTxResList.isNotEmpty) {
+        await _transactionProvider.fetchTransactions(
+            item, newTxResList, _nodeProvider, _walletProvider);
+      }
+
       await _nodeProvider.getBalance(item);
+      // TODO: 잔액 화면에 갱신 안되는 버그 수정
+      notifyListeners();
     }
   }
 
