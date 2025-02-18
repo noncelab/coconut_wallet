@@ -1,9 +1,9 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -40,12 +40,10 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
         Provider.of<ConnectivityProvider>(context, listen: false);
     _connectivity.onConnectivityChanged.listen(_checkConnectivity);
     _screenListener.addScreenShotListener((_) {
-      CoconutToast.showToast(
-        brightness: Brightness.dark,
+      CustomToast.showToast(
         context: context,
         text: t.toast.screen_capture,
         seconds: 4,
-        isVisibleIcon: true,
       );
     });
     _screenListener.watch();
@@ -71,11 +69,9 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
 
   void _showToastAboutNetwork(bool isNetworkOn) {
     if (!isNetworkOn) {
-      CoconutToast.showToast(
-        brightness: Brightness.dark,
+      CustomToast.showWarningToast(
         context: context,
         text: t.errors.network_connect,
-        isVisibleIcon: true,
         seconds: 7,
       );
     }
