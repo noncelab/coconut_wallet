@@ -23,14 +23,16 @@ class AddressListViewModel extends ChangeNotifier {
 
   WalletListItemBase? get walletBaseItem => _walletBaseItem;
 
+  WalletProvider get walletProvider => _walletProvider;
+
   /// 초기화
   void _initialize(int id, int firstCount) {
     _walletBaseItem = _walletProvider.getWalletById(id);
     _walletBase = _walletBaseItem!.walletBase;
-    // TODO: getAddressList
-    throw UnimplementedError();
-    // _receivingAddressList = _walletBase!.getAddressList(0, firstCount, false);
-    // _changeAddressList = _walletBase!.getAddressList(0, firstCount, true);
+    _receivingAddressList = _walletProvider.getWalletAddressList(
+        _walletBaseItem!, 0, firstCount, false);
+    _changeAddressList = _walletProvider.getWalletAddressList(
+        _walletBaseItem!, 0, firstCount, true);
     notifyListeners();
   }
 }

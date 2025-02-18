@@ -48,10 +48,12 @@ class WalletAddress {
   /// Set the amount of the address.
   void setConfirmed(int confirmed) {
     _confirmed = confirmed;
+    _total = confirmed + _unconfirmed;
   }
 
   void setUnconfirmed(int unconfirmed) {
     _unconfirmed = unconfirmed;
+    _total = confirmed + _unconfirmed;
   }
 
   /// Set the used status of the address.

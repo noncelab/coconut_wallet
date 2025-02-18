@@ -791,16 +791,8 @@ class WalletDataManager {
     int count,
     bool isChange,
   ) {
-    _checkInitialized();
-
-    final realmWalletBase = _realm.find<RealmWalletBase>(walletItemBase.id);
-    if (realmWalletBase == null) {
-      throw StateError('[getWalletAddressList] Wallet not found');
-    }
-
-    _generateAndSaveNewAddressesIfNeeded(
+    ensureAddressesExist(
       walletItemBase: walletItemBase,
-      realmWalletBase: realmWalletBase,
       cursor: cursor,
       count: count,
       isChange: isChange,
@@ -815,13 +807,19 @@ class WalletDataManager {
   }
 
   /// 필요한 경우 새로운 주소를 생성하고 저장
-  void _generateAndSaveNewAddressesIfNeeded({
+  void ensureAddressesExist({
     required WalletListItemBase walletItemBase,
-    required RealmWalletBase realmWalletBase,
     required int cursor,
     required int count,
     required bool isChange,
   }) {
+    _checkInitialized();
+
+    final realmWalletBase = _realm.find<RealmWalletBase>(walletItemBase.id);
+    if (realmWalletBase == null) {
+      throw StateError('[getWalletAddressList] Wallet not found');
+    }
+
     final currentIndex = isChange
         ? realmWalletBase.generatedChangeIndex
         : realmWalletBase.generatedReceiveIndex;
@@ -851,10 +849,11 @@ class WalletDataManager {
     required int count,
     required bool isChange,
   }) {
-    final realmWalletAddress = _realm.all<RealmWalletAddress>().query(
-        'walletId = "$walletId" AND isChange = $isChange SORT(index ASC) LIMIT($count) OFFSET($cursor)');
+    final query = _realm.query<RealmWalletAddress>(
+        'walletId == $walletId AND isChange == $isChange SORT(index ASC)');
+    final paginatedResults = query.skip(cursor).take(count);
 
-    return realmWalletAddress.map((e) => mapRealmToWalletAddress(e)).toList();
+    return paginatedResults.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
   void _saveAddressesToDB(RealmWalletBase realmWalletBase,
@@ -1039,5 +1038,34 @@ class WalletDataManager {
       _realm.addAll(realmTxs);
     });
     saveLastId(_realm, (RealmTransaction).toString(), lastId);
+  }
+
+  // 잔액과 사용여부만 갱신합니다.
+  void updateWalletAddressList(WalletListItemBase walletItem,
+      List<WalletAddress> walletAddressList, bool isChange) {
+    _checkInitialized();
+
+    final realmWalletBase = _realm.find<RealmWalletBase>(walletItem.id);
+    if (realmWalletBase == null) {
+      throw StateError('[updateWalletAddressList] Wallet not found');
+    }
+
+    final realmWalletAddresses = _realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isChange == $1',
+      [walletItem.id, isChange],
+    );
+
+    _realm.write(() {
+      for (final walletAddress in walletAddressList) {
+        final realmAddress = realmWalletAddresses.firstWhere(
+          (a) => a.index == walletAddress.index,
+        );
+
+        realmAddress.confirmed = walletAddress.confirmed;
+        realmAddress.unconfirmed = walletAddress.unconfirmed;
+        realmAddress.total = walletAddress.total;
+        realmAddress.isUsed = walletAddress.isUsed;
+      }
+    });
   }
 }

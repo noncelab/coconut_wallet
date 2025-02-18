@@ -376,16 +376,15 @@ class _AddressListScreenState extends State<AddressListScreen> {
       });
 
       try {
-        // TODO: getAddressList
-        List<WalletAddress> newAddresses = [];
-        // final newAddresses = viewModel?.walletBase?.getAddressList(
-        //     kFirstCount +
-        //         (isReceivingSelected
-        //             ? _receivingAddressPage
-        //             : _changeAddressPage) *
-        //         _limit,
-        // _limit,
-        // !isReceivingSelected);
+        final newAddresses = viewModel?.walletProvider.getWalletAddressList(
+            viewModel!.walletBaseItem!,
+            kFirstCount +
+                (isReceivingSelected
+                        ? _receivingAddressPage
+                        : _changeAddressPage) *
+                    _limit,
+            _limit,
+            !isReceivingSelected);
 
         setState(() {
           if (isReceivingSelected) {

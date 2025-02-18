@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
@@ -13,18 +16,18 @@ import 'package:flutter/material.dart';
 
 class FaucetRequestBottomSheet extends StatefulWidget {
   final Map<String, dynamic> walletData;
-  // TODO: walletAddressBook
-  // final AddressBook walletAddressBook;
   final bool isRequesting;
   final Function(String, double) onRequest;
+  final WalletProvider walletProvider;
+  final WalletListItemBase walletItem;
 
   const FaucetRequestBottomSheet({
     super.key,
     required this.walletData,
-    // TODO: walletAddressBook
-    // required this.walletAddressBook,
     required this.isRequesting,
     required this.onRequest,
+    required this.walletProvider,
+    required this.walletItem,
   });
 
   @override
@@ -293,10 +296,9 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
   bool _isValidAddress(String address) {
     try {
-      // TODO: walletAddressBook
-      return false;
-      // return widget.walletAddressBook.contains(_walletAddress) &&
-      //     WalletUtility.validateAddress(address);
+      return widget.walletProvider
+              .containsAddress(widget.walletItem, address) &&
+          WalletUtility.validateAddress(address);
     } catch (_) {
       return false;
     }

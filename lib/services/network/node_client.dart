@@ -24,8 +24,14 @@ abstract class NodeClient {
 
   Future<RecommendedFee> getRecommendedFees();
 
-  Future<Balance> getBalance(WalletBase wallet,
-      {int receiveUsedIndex = -1, int changeUsedIndex = -1});
+  Future<
+          (
+            List<AddressBalance> receiveBalanceList,
+            List<AddressBalance> changeBalanceList,
+            Balance total
+          )>
+      getBalance(WalletBase wallet,
+          {int receiveUsedIndex = -1, int changeUsedIndex = -1});
 
   Stream<BaseStreamState<BlockTimestamp>> fetchBlocksByHeight(Set<int> heights);
 

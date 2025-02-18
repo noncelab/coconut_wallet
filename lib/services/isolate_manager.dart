@@ -272,9 +272,16 @@ class IsolateManager implements IsolateManagerBase {
   }
 
   @override
-  Future<Balance> getBalance(WalletBase wallet,
-      {int receiveUsedIndex = -1, int changeUsedIndex = -1}) {
-    return _send<Balance>(IsolateMessageType.getBalance,
+  Future<
+          (
+            List<AddressBalance> receiveBalanceList,
+            List<AddressBalance> changeBalanceList,
+            Balance total
+          )>
+      getBalance(WalletBase wallet,
+          {int receiveUsedIndex = -1, int changeUsedIndex = -1}) {
+    return _send<(List<AddressBalance>, List<AddressBalance>, Balance)>(
+        IsolateMessageType.getBalance,
         [wallet, receiveUsedIndex, changeUsedIndex]);
   }
 

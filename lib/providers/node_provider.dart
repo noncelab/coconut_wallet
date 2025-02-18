@@ -108,14 +108,20 @@ class NodeProvider extends ChangeNotifier {
     return _wrapResult(_isolateManager.getRecommendedFees());
   }
 
-  Future<Result<Balance>> getBalance(WalletListItemBase walletItem) async {
+  Future<
+      Result<
+          (
+            List<AddressBalance> receiveBalanceList,
+            List<AddressBalance> changeBalanceList,
+            Balance total
+          )>> getBalance(WalletListItemBase walletItem) async {
     final result = await _wrapResult(_isolateManager.getBalance(
         walletItem.walletBase,
         receiveUsedIndex: walletItem.receiveUsedIndex,
         changeUsedIndex: walletItem.changeUsedIndex));
 
     if (result.isSuccess) {
-      _walletDataManager.updateWalletBalance(walletItem.id, result.value);
+      _walletDataManager.updateWalletBalance(walletItem.id, result.value.$3);
       notifyListeners();
     }
 

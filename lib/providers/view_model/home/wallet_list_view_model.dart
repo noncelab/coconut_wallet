@@ -52,18 +52,25 @@ class WalletListViewModel extends ChangeNotifier {
         exceptionalId: exceptionalId,
         syncOthers: syncOthers);
 
-    for (var item in walletItemList) {
-      final newTxResList = await _transactionProvider
-          .fetchNewTransactionResponses(item, _nodeProvider);
+    for (var walletItem in walletItemList) {
+      final newTxResList =
+          await _transactionProvider.fetchNewTransactionResponses(
+              walletItem, _nodeProvider, _walletProvider);
+
+      // 잔액 먼저 갱신 후 트랜잭션 조회
+      final balanceResult = await _nodeProvider.getBalance(walletItem);
+      if (balanceResult.isSuccess) {
+        _walletProvider.updateWalletAddressList(walletItem,
+            balanceResult.value.$1, balanceResult.value.$2, newTxResList);
+      }
+
+      // TODO: 잔액 화면에 갱신 안되는 버그 수정
+      notifyListeners();
 
       if (newTxResList.isNotEmpty) {
         await _transactionProvider.fetchTransactions(
-            item, newTxResList, _nodeProvider, _walletProvider);
+            walletItem, newTxResList, _nodeProvider, _walletProvider);
       }
-
-      await _nodeProvider.getBalance(item);
-      // TODO: 잔액 화면에 갱신 안되는 버그 수정
-      notifyListeners();
     }
   }
 

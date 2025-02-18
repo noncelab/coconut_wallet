@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
@@ -55,6 +56,8 @@ class WalletProvider extends ChangeNotifier {
   /// 마지막 업데이트 시간
   int _lastUpdateTime = 0;
   int get lastUpdateTime => _lastUpdateTime;
+
+  int gapLimit = 20;
 
   late final WalletDataManager _walletDataManager;
 
@@ -374,6 +377,15 @@ class WalletProvider extends ChangeNotifier {
     return _walletDataManager.getWalletBalance(walletId);
   }
 
+  void generateWalletAddress(
+      WalletListItemBase walletItem, int usedIndex, bool isChange) {
+    _walletDataManager.ensureAddressesExist(
+        walletItemBase: walletItem,
+        cursor: usedIndex,
+        count: gapLimit,
+        isChange: isChange);
+  }
+
   List<WalletAddress> getWalletAddressList(
       WalletListItemBase wallet, int cursor, int count, bool isChange) {
     return _walletDataManager.getWalletAddressList(
@@ -390,6 +402,56 @@ class WalletProvider extends ChangeNotifier {
 
   bool containsAddress(WalletListItemBase wallet, String address) {
     return _walletDataManager.containsAddress(wallet, address);
+  }
+
+  /// 지갑 주소의 사용여부와 잔액을 업데이트 합니다.
+  /// 새로운 트랜잭션 이력이 있는 주소를 기준으로 업데이트 합니다.
+  void updateWalletAddressList(
+      WalletListItemBase walletItem,
+      List<AddressBalance> receiveBalanceList,
+      List<AddressBalance> changeBalanceList,
+      List<FetchTransactionResponse> newTxResList) {
+    final receiveBalanceMap = <int, AddressBalance>{};
+    final changeBalanceMap = <int, AddressBalance>{};
+
+    for (var addressBalance in receiveBalanceList) {
+      receiveBalanceMap[addressBalance.index] = addressBalance;
+    }
+
+    for (var addressBalance in changeBalanceList) {
+      changeBalanceMap[addressBalance.index] = addressBalance;
+    }
+
+    final newReceiveBalanceList = <WalletAddress>[];
+    final newChangeBalanceList = <WalletAddress>[];
+
+    for (var fetchTxRes in newTxResList) {
+      if (fetchTxRes.isChange) {
+        newChangeBalanceList.add(WalletAddress(
+            '',
+            '',
+            fetchTxRes.addressIndex,
+            true,
+            changeBalanceMap[fetchTxRes.addressIndex]!.confirmed,
+            changeBalanceMap[fetchTxRes.addressIndex]!.unconfirmed,
+            changeBalanceMap[fetchTxRes.addressIndex]!.total));
+      } else {
+        newReceiveBalanceList.add(WalletAddress(
+            '',
+            '',
+            fetchTxRes.addressIndex,
+            true,
+            receiveBalanceMap[fetchTxRes.addressIndex]!.confirmed,
+            receiveBalanceMap[fetchTxRes.addressIndex]!.unconfirmed,
+            receiveBalanceMap[fetchTxRes.addressIndex]!.total));
+      }
+    }
+
+    _walletDataManager.updateWalletAddressList(
+        walletItem, newReceiveBalanceList, false);
+    _walletDataManager.updateWalletAddressList(
+        walletItem, newChangeBalanceList, true);
+    notifyListeners();
   }
 }
 

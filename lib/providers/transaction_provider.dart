@@ -203,7 +203,9 @@ class TransactionProvider extends ChangeNotifier {
 
   /// 새로운 트랜잭션을 조회합니다.
   Future<List<FetchTransactionResponse>> fetchNewTransactionResponses(
-      WalletListItemBase walletItemBase, NodeProvider nodeProvider) async {
+      WalletListItemBase walletItemBase,
+      NodeProvider nodeProvider,
+      WalletProvider walletProvider) async {
     Set<String> knownTransactionHashes = txList
         .where((tx) {
           if (tx.blockHeight == null) {
@@ -235,14 +237,15 @@ class TransactionProvider extends ChangeNotifier {
       }
     }
 
-    Logger.log('receiveUsedIndex: $receiveUsedIndex');
-    Logger.log('changeUsedIndex: $changeUsedIndex');
-
     if (walletItemBase.receiveUsedIndex < receiveUsedIndex) {
       walletItemBase.receiveUsedIndex = receiveUsedIndex;
+      walletProvider.generateWalletAddress(
+          walletItemBase, receiveUsedIndex, false);
     }
     if (walletItemBase.changeUsedIndex < changeUsedIndex) {
       walletItemBase.changeUsedIndex = changeUsedIndex;
+      walletProvider.generateWalletAddress(
+          walletItemBase, changeUsedIndex, true);
     }
 
     return transactions;

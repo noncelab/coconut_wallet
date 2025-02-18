@@ -218,8 +218,14 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Future<Balance> getBalance(WalletBase wallet,
-      {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async {
+  Future<
+          (
+            List<AddressBalance> receiveBalanceList,
+            List<AddressBalance> changeBalanceList,
+            Balance total
+          )>
+      getBalance(WalletBase wallet,
+          {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async {
     int receiveScanLimit = receiveUsedIndex + gapLimit;
     int changeScanLimit = changeUsedIndex + gapLimit;
 
@@ -244,7 +250,7 @@ class ElectrumService extends NodeClient {
       unconfirmed += balance.unconfirmed;
     }
 
-    return Balance(confirmed, unconfirmed);
+    return (receive, change, Balance(confirmed, unconfirmed));
   }
 
   Iterable<Future<AddressBalance>> _getBalance(

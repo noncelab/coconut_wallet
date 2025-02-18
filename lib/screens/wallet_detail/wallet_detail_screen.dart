@@ -88,7 +88,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           Provider.of<UtxoTagProvider>(_, listen: false),
           Provider.of<ConnectivityProvider>(_, listen: false),
           Provider.of<UpbitConnectModel>(_, listen: false),
-          Provider.of<NodeProvider>(_, listen: false),
         );
         return _viewModel;
       },
@@ -169,6 +168,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                   }
                                 });
                               },
+                              walletProvider: viewModel.walletProvider!,
+                              walletItem: viewModel.walletListBaseItem!,
                             ));
                       },
                       onTitlePressed: () async {
