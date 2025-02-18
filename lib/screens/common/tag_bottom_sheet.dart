@@ -9,6 +9,7 @@ import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:uuid/uuid.dart';
 
 /// [TagBottomSheetType]
@@ -195,13 +196,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
@@ -308,14 +302,42 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                       ),
                     ),
                     Expanded(
-                      child: CustomLimitTextField(
+                      child: CoconutTextField(
+                        brightness: Brightness.dark,
                         controller: _controller,
                         focusNode: _focusNode,
+                        maxLength: 30,
+                        maxLines: 1,
                         prefix: const Padding(
                           padding: EdgeInsets.only(left: 16),
                           child: Text(
                             "#",
                             style: Styles.body2,
+                          ),
+                        ),
+                        suffix: GestureDetector(
+                          onTap: () {
+                            _controller.text = '';
+                            _updateTagName = '';
+                            _focusNode.requestFocus();
+                            setState(() {});
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 13),
+                            child: SvgPicture.asset(
+                              'assets/svg/text-field-clear.svg',
+                              width: 16,
+                              height: 16,
+                              colorFilter: ColorFilter.mode(
+                                _updateTagName.isEmpty
+                                    ? CoconutColors.onGray300(Brightness.dark)
+                                    : _updateTagName.runes.length == 30
+                                        ? CoconutColors.red
+                                        : CoconutColors.onBlack(
+                                            Brightness.dark),
+                                BlendMode.srcIn,
+                              ),
+                            ),
                           ),
                         ),
                         onChanged: (text) {
@@ -361,12 +383,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                             _checkUpdateButtonEnabled();
                           }
                           setState(() {});
-                        },
-                        onClear: () {
-                          setState(() {
-                            _controller.text = '';
-                            _updateTagName = '';
-                          });
                         },
                       ),
                     ),
