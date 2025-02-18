@@ -72,7 +72,7 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   void setTxInfo() async {
     try {
-      PSBT signedPsbt = PSBT.parse(signedTransaction);
+      Psbt signedPsbt = Psbt.parse(signedTransaction);
       // print("!!! -> ${_model.signedTransaction!}");
       List<PsbtOutput> outputs = signedPsbt.outputs;
 

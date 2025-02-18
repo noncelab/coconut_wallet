@@ -33,7 +33,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   void broadcast() async {
     setOverlayLoading(true);
-    PSBT psbt = PSBT.parse(_viewModel.signedTransaction);
+    Psbt psbt = Psbt.parse(_viewModel.signedTransaction);
     Transaction signedTx =
         psbt.getSignedTransaction(_viewModel.walletAddressType);
 
@@ -48,7 +48,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         showAlertDialog(
             context: context,
             content: t.alert.error_send
-                .broadcasting_failed(error: result.error!.message));
+                .broadcasting_failed(error: result.error.message));
         return;
       }
 

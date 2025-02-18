@@ -4,7 +4,9 @@ import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
@@ -12,7 +14,7 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
@@ -22,15 +24,13 @@ import 'package:coconut_wallet/repository/realm/migration/migrator_ver2_1_0.dart
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager_cryptography.dart';
-import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
-import 'package:realm/realm.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:realm/realm.dart';
 
 class WalletDataManager {
   static const String nextIdField = 'nextId';
@@ -414,7 +414,7 @@ class WalletDataManager {
 
   /// utxoIdList 변경
   /// - [walletId] 목록 검색
-  /// - [utxoId] UTXO Id
+  /// - [utxoId] Utxo Id
   /// - [addTags] 추가할 UtxoTag 목록
   /// - [selectedNames] 선택된 태그명 목록
   Result<bool> updateUtxoTagList(int walletId, String utxoId,

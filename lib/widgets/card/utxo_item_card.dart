@@ -8,12 +8,12 @@ import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 
-class UTXOItemCard extends StatelessWidget {
+class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
   final Unit currentUnit;
   final Function onPressed;
 
-  const UTXOItemCard({
+  const UtxoItemCard({
     super.key,
     required this.utxo,
     required this.currentUnit,

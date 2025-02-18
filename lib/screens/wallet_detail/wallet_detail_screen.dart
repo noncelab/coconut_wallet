@@ -398,7 +398,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       final topSelectorWidgetSize = headerWidgetRenderBox.size;
       final topHeaderWidgetSize = _tabWidgetRenderBox.size;
       final positionedTopWidgetSize =
-          positionedTopWidgetRenderBox.size; // 거래내역 - UTXO 리스트 위젯 영역
+          positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
 
       setState(() {
         _topPadding = topSelectorWidgetSize.height +

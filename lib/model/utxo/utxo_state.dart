@@ -3,7 +3,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 
-class UtxoState extends UTXO {
+class UtxoState extends Utxo {
   final int blockHeight;
   final String to; // 소유 주소
   late DateTime timestamp;

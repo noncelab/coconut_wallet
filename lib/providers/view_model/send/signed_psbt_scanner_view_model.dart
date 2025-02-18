@@ -10,7 +10,7 @@ class SignedPsbtScannerViewModel {
 
   bool get isMultisig => _sendInfoProvider.isMultisig!;
 
-  int getMissingSignaturesCount(PSBT psbt) {
+  int getMissingSignaturesCount(Psbt psbt) {
     if (!isMultisig) return 0;
 
     MultisignatureWallet multisigWallet = _walletProvider
@@ -29,9 +29,9 @@ class SignedPsbtScannerViewModel {
         .walletBase;
   }
 
-  bool isPsbtAmountAndTxHashEqualTo(PSBT signedPsbt) {
+  bool isPsbtAmountAndTxHashEqualTo(Psbt signedPsbt) {
     try {
-      var unsignedPsbt = PSBT.parse(_sendInfoProvider.txWaitingForSign!);
+      var unsignedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
 
       return unsignedPsbt.sendingAmount == signedPsbt.sendingAmount &&
           unsignedPsbt.unsignedTransaction?.transactionHash ==
@@ -41,8 +41,8 @@ class SignedPsbtScannerViewModel {
     }
   }
 
-  PSBT parseBase64EncodedToPsbt(String signedPsbtBase64Encoded) {
-    return PSBT.parse(signedPsbtBase64Encoded);
+  Psbt parseBase64EncodedToPsbt(String signedPsbtBase64Encoded) {
+    return Psbt.parse(signedPsbtBase64Encoded);
   }
 
   void setSignedPsbt(String signedPsbtBase64Encoded) {

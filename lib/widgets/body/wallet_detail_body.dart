@@ -63,7 +63,7 @@ class WalletDetailBody extends StatelessWidget {
                 } else {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    child: UTXOItemCard(
+                    child: UtxoItemCard(
                       key: index == 0 ? utxoSliverListKey : null,
                       currentUnit: currentUnit,
                       onPressed: () async {
@@ -104,8 +104,8 @@ class WalletDetailBody extends StatelessWidget {
                   isTransaction
                       ? '거래 내역이 없어요'
                       : isUtxoListLoadComplete
-                          ? 'UTXO가 없어요'
-                          : 'UTXO를 확인하는 중이에요',
+                          ? 'Utxo가 없어요'
+                          : 'Utxo를 확인하는 중이에요',
                   style: Styles.body1,
                 ),
               ),

@@ -117,7 +117,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     if (_isProcessing) return;
     _isProcessing = true;
 
-    PSBT psbt;
+    Psbt psbt;
     try {
       psbt = _viewModel.parseBase64EncodedToPsbt(signedPsbt);
     } catch (e) {

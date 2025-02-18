@@ -425,7 +425,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _viewModel.selectAllUtxo();
   }
 
-  void _toggleSelection(UTXO utxo) {
+  void _toggleSelection(Utxo utxo) {
     _removeUtxoOrderDropdown();
     _viewModel.toggleUtxoSelection(utxo);
   }

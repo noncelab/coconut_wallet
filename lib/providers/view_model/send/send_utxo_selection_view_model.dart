@@ -194,7 +194,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     return _cachedSelectedUtxoAmountSum!;
   }
 
-  List<UTXO> get selectedUtxoList => _selectedUtxoList;
+  List<Utxo> get selectedUtxoList => _selectedUtxoList;
 
   int get sendAmount => _sendAmount;
 
@@ -316,7 +316,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleUtxoSelection(UTXO utxo) {
+  void toggleUtxoSelection(Utxo utxo) {
     _cachedSelectedUtxoAmountSum = null;
     if (selectedUtxoList.contains(utxo)) {
       if (!_isMaxMode) {
@@ -339,7 +339,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  int _calculateTotalAmountOfUtxoList(List<UTXO> utxos) {
+  int _calculateTotalAmountOfUtxoList(List<Utxo> utxos) {
     return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
   }
 
@@ -496,7 +496,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         throw UnimplementedError();
       });
     } else {
-      // TODO: UTXO.sortUTXO(_confirmedUtxoList, basis);
+      // TODO: Utxo.sortUtxo(_confirmedUtxoList, basis);
       throw UnimplementedError();
     }
   }

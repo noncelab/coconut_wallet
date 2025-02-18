@@ -75,7 +75,7 @@ class WalletListViewModel extends ChangeNotifier {
       }
       notifyListeners();
 
-      // UTXO 조회
+      // Utxo 조회
       walletItem.utxoList =
           await _transactionProvider.fetchUtxos(walletItem, _nodeProvider);
 

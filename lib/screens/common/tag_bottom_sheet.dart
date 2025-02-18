@@ -25,7 +25,7 @@ enum TagBottomSheetType { select, create, update }
 /// [TagBottomSheet] : 태그 선택 변경, 태그 수정, 태그 생성 BottomSheet
 /// [type] : BottomSheet Type
 /// [utxoTags] : 지갑에 생성된 UtxoTag 전체 목록
-/// [selectedUtxoTagNames] : select type only, 선택된 UTXO name 목록
+/// [selectedUtxoTagNames] : select type only, 선택된 Utxo name 목록
 /// [updateUtxoTag] : update type only, 선택된 태그를 수정하기 위한 UtxoTag 객체
 /// [onSelected] : select type only, 태그 목록 선택 변경 및 새태그 생성 완료 콜백
 /// [onUpdated] : create type, update type 선택된 태그 편집 및 새 태그 생성 완료 콜백
@@ -57,7 +57,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   /// UtxoTag 생성 목록 - select type 에서 변경될 수 있음
   final List<UtxoTag> _createdUtxoTags = [];
 
-  /// 선택된 UTXO 의 UtxoTag name 목록 - select type 에서 변경될 수 있음
+  /// 선택된 Utxo 의 UtxoTag name 목록 - select type 에서 변경될 수 있음
   List<String> _selectedUtxoTagNames = [];
 
   /// BottomSheet 상태 - select type 에서 create 로 변경될 수 있음

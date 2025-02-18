@@ -30,7 +30,7 @@ class SendConfirmViewModel extends ChangeNotifier {
   Future<String> generateUnsignedPsbt() async {
     // utxo selection
     if (_sendInfoProvider.transaction != null) {
-      var psbt = PSBT.fromTransaction(
+      var psbt = Psbt.fromTransaction(
           _sendInfoProvider.transaction!, _walletListItemBase.walletBase);
       return psbt.serialize();
     }
