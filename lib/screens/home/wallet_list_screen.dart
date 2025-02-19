@@ -386,80 +386,64 @@ class _WalletListScreenState extends State<WalletListScreen>
         colorIndex: colorIndex,
       ) = viewModel.walletItemList[index];
       final base = viewModel.walletItemList[index];
+      // fixme: base.balance와 viewModel.getWalletBalance(id)의 값이 다름
       final balance = viewModel.getWalletBalance(id);
 
       List<MultisigSigner>? signers;
       if (base.walletType == WalletType.multiSignature) {
         signers = (base as MultisigWalletListItem).signers;
       }
-      if (_resultOfSyncFromVault?.result == WalletSyncResult.newWalletAdded &&
-          index == viewModel.walletItemList.length - 1) {
-        Logger.log('** $index: newWalletAdded');
 
-        _initializeLeftSlideAnimationController();
-        return SlideTransition(
-          position: _slideAnimation!,
-          child: WalletItemCard(
-            key: _itemKeys[index],
-            id: id,
-            name: name,
-            balance: balance.total,
-            iconIndex: iconIndex,
-            colorIndex: colorIndex,
-            isLastItem: index == viewModel.walletItemList.length - 1,
-            isBalanceHidden: viewModel.isBalanceHidden,
-            signers: signers,
-          ),
-        );
-      }
-      if (_resultOfSyncFromVault?.result ==
-              WalletSyncResult.existingWalletUpdated &&
-          viewModel.walletItemList[index].id ==
-              _resultOfSyncFromVault?.walletId!) {
-        _initializeBlinkAnimationController();
-
-        Logger.log('** $index: existingWalletUpdated');
-        return Stack(
-          children: [
-            WalletItemCard(
-              key: _itemKeys[index],
-              id: id,
-              name: name,
-              balance: balance.total,
-              iconIndex: iconIndex,
-              colorIndex: colorIndex,
-              isLastItem: index == viewModel.walletItemList.length - 1,
-              isBalanceHidden: viewModel.isBalanceHidden,
-              signers: signers,
-            ),
-            IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _blinkAnimation!,
-                builder: (context, child) {
-                  return Container(
-                    decoration: BoxDecoration(
-                        color: _blinkAnimation!.value,
-                        borderRadius: BorderRadius.circular(28)),
-                    width: itemCardWidth,
-                    height: itemCardHeight,
-                  );
-                },
-              ),
-            )
-          ],
-        );
-      }
-
-      return WalletItemCard(
+      final walletItemCard = WalletItemCard(
+        key: _itemKeys[index],
         id: id,
         name: name,
-        balance: balance.total,
+        balance: base.balance, // fixme: balance.total,
         iconIndex: iconIndex,
         colorIndex: colorIndex,
         isLastItem: index == viewModel.walletItemList.length - 1,
         isBalanceHidden: viewModel.isBalanceHidden,
         signers: signers,
       );
+
+      switch (_resultOfSyncFromVault?.result) {
+        case WalletSyncResult.newWalletAdded:
+          if (index == viewModel.walletItemList.length - 1) {
+            Logger.log('newWalletAdded');
+            _initializeLeftSlideAnimationController();
+            return SlideTransition(
+                position: _slideAnimation!, child: walletItemCard);
+          }
+          break;
+        case WalletSyncResult.existingWalletUpdated:
+          if (viewModel.walletItemList[index].id ==
+              _resultOfSyncFromVault?.walletId!) {
+            Logger.log('existingWalletUpdated');
+            _initializeBlinkAnimationController();
+            return Stack(
+              children: [
+                walletItemCard,
+                IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _blinkAnimation!,
+                    builder: (context, child) {
+                      return Container(
+                        decoration: BoxDecoration(
+                            color: _blinkAnimation!.value,
+                            borderRadius: BorderRadius.circular(28)),
+                        width: itemCardWidth,
+                        height: itemCardHeight,
+                      );
+                    },
+                  ),
+                )
+              ],
+            );
+          }
+          break;
+        default:
+          return walletItemCard;
+      }
     }
     return null;
   }
