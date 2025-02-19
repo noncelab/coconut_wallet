@@ -98,7 +98,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       child: Consumer<WalletDetailViewModel>(
         builder: (context, viewModel, child) {
           final state = viewModel.walletInitState;
-          final balance = viewModel.walletListBaseItem?.balance;
+          final balance = viewModel.balance;
+          // final balance = viewModel.walletListBaseItem?.balance;
           final isNetworkOn = viewModel.isNetworkOn;
           return PopScope(
             canPop: true,

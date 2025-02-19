@@ -125,17 +125,25 @@ class WalletDataManager {
             await _cryptography!.decrypt(walletBases[i].descriptor);
       }
 
+      var balance = getTotalBalanceFromDb(walletBases[i].id);
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
         _walletList!.add(mapRealmWalletBaseToSinglesigWalletListItem(
-            walletBases[i], decryptedDescriptor));
+            walletBases[i], decryptedDescriptor, balance));
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         _walletList!.add(mapRealmMultisigWalletToMultisigWalletListItem(
-            multisigWallets[multisigWalletIndex++], decryptedDescriptor));
+            multisigWallets[multisigWalletIndex++],
+            decryptedDescriptor,
+            balance));
       }
     }
 
     return List.from(_walletList!);
+  }
+
+  int getTotalBalanceFromDb(int walletId) {
+    var balance = _realm.query<RealmWalletBalance>('walletId == $walletId}');
+    return balance.last.total;
   }
 
   Future<SinglesigWalletListItem> addSinglesigWallet(
@@ -677,8 +685,8 @@ class WalletDataManager {
     }
 
     return Balance(
-      realmWalletBalance.first.confirmed,
-      realmWalletBalance.first.unconfirmed,
+      realmWalletBalance.last.confirmed,
+      realmWalletBalance.last.unconfirmed,
     );
   }
 

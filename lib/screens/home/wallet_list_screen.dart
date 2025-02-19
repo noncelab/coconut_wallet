@@ -386,7 +386,6 @@ class _WalletListScreenState extends State<WalletListScreen>
         colorIndex: colorIndex,
       ) = viewModel.walletItemList[index];
       final base = viewModel.walletItemList[index];
-      // fixme: base.balance와 viewModel.getWalletBalance(id)의 값이 다름
       final balance = viewModel.getWalletBalance(id);
 
       List<MultisigSigner>? signers;
@@ -398,7 +397,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         key: _itemKeys[index],
         id: id,
         name: name,
-        balance: base.balance, // fixme: balance.total,
+        balance: balance.total,
         iconIndex: iconIndex,
         colorIndex: colorIndex,
         isLastItem: index == viewModel.walletItemList.length - 1,
@@ -409,11 +408,13 @@ class _WalletListScreenState extends State<WalletListScreen>
       switch (_resultOfSyncFromVault?.result) {
         case WalletSyncResult.newWalletAdded:
           if (index == viewModel.walletItemList.length - 1) {
+            // todo: balance 업데이트 함수 호출 필요
             Logger.log('newWalletAdded');
             _initializeLeftSlideAnimationController();
             return SlideTransition(
                 position: _slideAnimation!, child: walletItemCard);
           }
+
           break;
         case WalletSyncResult.existingWalletUpdated:
           if (viewModel.walletItemList[index].id ==

@@ -60,12 +60,17 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   bool _isRequesting = false;
 
+  // fixme
+  int get balance =>
+      _walletProvider.getWalletBalance(_walletListBaseItem!.id).total;
+
   WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
       this._tagProvider, this._connectProvider, this._upbitConnectModel) {
     // 지갑 상세 초기화
     _prevWalletInitState = _walletProvider.walletInitState;
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
+
     // TODO: walletFeature
     // _walletFeature = walletBaseItem.walletFeature;
 
