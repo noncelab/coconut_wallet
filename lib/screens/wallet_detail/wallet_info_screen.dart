@@ -150,26 +150,24 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     _removeTooltip();
                                     if (viewModel.isSetPin) {
                                       await CommonBottomSheets
-                                          .showBottomSheet_90(
+                                          .showCustomBottomSheet(
                                         context: context,
-                                        child: CustomLoadingOverlay(
-                                          child: PinCheckScreen(
-                                            onComplete: () {
-                                              CommonBottomSheets
-                                                  .showBottomSheet_90(
-                                                context: context,
-                                                child: QrcodeBottomSheet(
-                                                    qrData: viewModel
-                                                        .extendedPublicKey,
-                                                    title:
-                                                        t.extended_public_key),
-                                              );
-                                            },
-                                          ),
+                                        child: PinCheckScreen(
+                                          onComplete: () {
+                                            CommonBottomSheets
+                                                .showCustomBottomSheet(
+                                              context: context,
+                                              child: QrcodeBottomSheet(
+                                                qrData:
+                                                    viewModel.extendedPublicKey,
+                                                title: t.extended_public_key,
+                                              ),
+                                            );
+                                          },
                                         ),
                                       );
                                     } else {
-                                      CommonBottomSheets.showBottomSheet_90(
+                                      CommonBottomSheets.showCustomBottomSheet(
                                         context: context,
                                         child: QrcodeBottomSheet(
                                           qrData: viewModel.extendedPublicKey,
@@ -248,7 +246,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     onTapRight: () async {
                                       if (viewModel.isSetPin) {
                                         await CommonBottomSheets
-                                            .showBottomSheet_90(
+                                            .showCustomBottomSheet(
                                           context: context,
                                           child: CustomLoadingOverlay(
                                             child: PinCheckScreen(

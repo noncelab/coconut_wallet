@@ -169,9 +169,10 @@ class _WalletListScreenState extends State<WalletListScreen>
                             if (viewModel.isTermsShortcutVisible)
                               WalletListTermsShortcutCard(
                                 onTap: () {
-                                  CommonBottomSheets.showBottomSheet_90(
-                                      context: context,
-                                      child: const TermsBottomSheet());
+                                  CommonBottomSheets.showCustomBottomSheet(
+                                    context: context,
+                                    child: const TermsBottomSheet(),
+                                  );
                                 },
                                 onCloseTap: viewModel.hideTermsShortcut,
                               ),
@@ -259,12 +260,12 @@ class _WalletListScreenState extends State<WalletListScreen>
     _scrollController = ScrollController();
 
     _dropdownActions = [
-      () => CommonBottomSheets.showBottomSheet_90(
+      () => CommonBottomSheets.showCustomBottomSheet(
           context: context, child: const TermsBottomSheet()),
       () => Navigator.pushNamed(context, '/mnemonic-word-list'),
-      () => CommonBottomSheets.showBottomSheet_90(
+      () => CommonBottomSheets.showCustomBottomSheet(
           context: context, child: const SecuritySelfCheckBottomSheet()),
-      () => CommonBottomSheets.showBottomSheet_90(
+      () => CommonBottomSheets.showCustomBottomSheet(
           context: context, child: const SettingsScreen()),
       () => Navigator.pushNamed(context, '/app-info'),
     ];
@@ -272,14 +273,13 @@ class _WalletListScreenState extends State<WalletListScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_viewModel.isOnBoardingVisible) {
         Future.delayed(const Duration(milliseconds: 1000)).then((_) {
-          CommonBottomSheets.showBottomSheet_100(
+          CommonBottomSheets.showCustomBottomSheet(
             context: context,
-            child: const OnboardingBottomSheet(),
             enableDrag: false,
-            backgroundColor: MyColors.nero,
             isDismissible: false,
             isScrollControlled: true,
             useSafeArea: false,
+            child: const OnboardingBottomSheet(),
           );
         });
       }
@@ -287,15 +287,15 @@ class _WalletListScreenState extends State<WalletListScreen>
       if (_viewModel.isReviewScreenVisible) {
         var animationController = BottomSheet.createAnimationController(this)
           ..duration = const Duration(seconds: 2);
-        await CommonBottomSheets.showBottomSheet_100(
-            context: context,
-            child: const UserExperienceSurveyBottomSheet(),
-            enableDrag: false,
-            backgroundColor: MyColors.nero,
-            isDismissible: false,
-            isScrollControlled: true,
-            useSafeArea: false,
-            animationController: animationController);
+        await CommonBottomSheets.showCustomBottomSheet(
+          context: context,
+          enableDrag: false,
+          isDismissible: false,
+          isScrollControlled: true,
+          useSafeArea: false,
+          animationController: animationController,
+          child: const UserExperienceSurveyBottomSheet(),
+        );
 
         Future.delayed(const Duration(seconds: 5), () {
           animationController.dispose();

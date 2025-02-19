@@ -1,7 +1,8 @@
-import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 /// [MemoBottomSheet] : 트랜잭션 메모 등록/수정 BottomSheet
 /// [originalMemo] : 변경할 트랜잭션 메모, default empty
@@ -40,92 +41,63 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
     _controller.selection = TextSelection.fromPosition(
       TextPosition(offset: _controller.text.length),
     );
-    _focusNode.requestFocus();
-  }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
+    _focusNode.requestFocus();
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
-      child: Container(
-        constraints: const BoxConstraints(
-          minHeight: 184,
-          maxHeight: 278,
+      child: CoconutBottomSheet(
+        useIntrinsicHeight: true,
+        bottomMargin: 16,
+        appBar: CoconutAppBar.buildWithNext(
+          title: t.tx_memo,
+          context: context,
+          brightness: Brightness.dark,
+          isBottom: true,
+          isActive: _isCompleteButtonEnabled,
+          nextButtonTitle: t.complete,
+          onNextPressed: () {
+            widget.onComplete(_updateMemo);
+            Navigator.pop(context);
+          },
         ),
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-        decoration: const BoxDecoration(
-          color: MyColors.bottomSheetBackground,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Close, Title, Complete Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: MyColors.white,
-                      size: 22,
-                    ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: CoconutTextField(
+            brightness: Brightness.dark,
+            controller: _controller,
+            focusNode: _focusNode,
+            maxLength: 30,
+            maxLines: 1,
+            suffix: GestureDetector(
+              onTap: () {
+                _controller.clear();
+                _updateMemo = '';
+                _focusNode.requestFocus();
+                setState(() {});
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 13),
+                child: SvgPicture.asset(
+                  'assets/svg/text-field-clear.svg',
+                  width: 16,
+                  height: 16,
+                  colorFilter: ColorFilter.mode(
+                    _updateMemo.runes.length == 30
+                        ? CoconutColors.red
+                        : CoconutColors.onBlack(Brightness.dark),
+                    BlendMode.srcIn,
                   ),
-                  Text(
-                    '거래 메모',
-                    style: Styles.body2Bold.copyWith(
-                      fontSize: 16,
-                    ),
-                  ),
-                  CustomAppbarButton(
-                    isActive: _isCompleteButtonEnabled,
-                    isActivePrimaryColor: false,
-                    text: '완료',
-                    onPressed: () {
-                      widget.onComplete(_updateMemo);
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 24),
-
-              // TextField
-              Column(
-                mainAxisSize: MainAxisSize.min, // 컨텐츠 크기에 맞추기
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // TextField
-                  CustomLimitTextField(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    onChanged: (text) {
-                      setState(() {
-                        _updateMemo = text;
-                      });
-                    },
-                    onClear: () {
-                      setState(() {
-                        _controller.clear();
-                        _updateMemo = '';
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ],
+            ),
+            onChanged: (text) {
+              _updateMemo = text;
+              setState(() {});
+            },
           ),
         ),
       ),

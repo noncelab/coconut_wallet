@@ -16,6 +16,7 @@ import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
@@ -314,11 +315,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                               label: t.tag,
                               underlineButtonLabel: t.edit,
                               onTapUnderlineButton: () {
-                                showModalBottomSheet(
+                                CommonBottomSheets.showCustomBottomSheet(
                                   context: context,
-                                  backgroundColor: MyColors.black,
-                                  isScrollControlled: true,
-                                  builder: (context) => TagBottomSheet(
+                                  child: TagBottomSheet(
                                     type: TagBottomSheetType.select,
                                     utxoTags: tags,
                                     selectedUtxoTagNames: selectedTags

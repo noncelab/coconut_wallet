@@ -5,6 +5,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
@@ -31,10 +32,9 @@ class UtxoTagScreen extends StatelessWidget {
             },
             rightIconButton: IconButton(
               onPressed: () {
-                showModalBottomSheet(
+                CommonBottomSheets.showCustomBottomSheet(
                   context: context,
-                  isScrollControlled: true,
-                  builder: (context) => TagBottomSheet(
+                  child: TagBottomSheet(
                     type: TagBottomSheetType.create,
                     utxoTags: model.tagList,
                     onUpdated: (utxoTag) {
@@ -80,10 +80,9 @@ class UtxoTagScreen extends StatelessWidget {
                         CustomUnderlinedButton(
                           text: t.edit,
                           onTap: () {
-                            showModalBottomSheet(
+                            CommonBottomSheets.showCustomBottomSheet(
                               context: context,
-                              isScrollControlled: true,
-                              builder: (context) => TagBottomSheet(
+                              child: TagBottomSheet(
                                 type: TagBottomSheetType.update,
                                 utxoTags: model.tagList,
                                 updateUtxoTag: model.selectedUtxoTag,

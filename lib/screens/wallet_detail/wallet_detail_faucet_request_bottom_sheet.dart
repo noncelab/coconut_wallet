@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
@@ -113,138 +114,245 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.close, color: MyColors.white),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  Text(
-                    t.faucet_request_bottom_sheet.title,
-                    style: Styles.body1,
-                  ),
-                  Visibility(
-                    visible: false,
-                    maintainSize: true,
-                    maintainAnimation: true,
-                    maintainState: true,
-                    maintainSemantics: false,
-                    maintainInteractivity: false,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: MyColors.white),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
+    return Padding(
+      padding: MediaQuery.of(context).viewInsets,
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: CoconutBottomSheet(
+          useIntrinsicHeight: true,
+          appBar: CoconutAppBar.build(
+            context: context,
+            title: t.faucet_request_bottom_sheet.title,
+            hasRightIcon: false,
+            isBottom: true,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.faucet_request_bottom_sheet.recipient,
+                      style: Styles.body1Bold,
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 30),
-                  Text(
-                    t.faucet_request_bottom_sheet.recipient,
-                    style: Styles.body1Bold,
-                  ),
-                  const SizedBox(height: 10),
-                  CustomTextField(
-                      controller: textController,
-                      placeholder: t.faucet_request_bottom_sheet.placeholder,
-                      onChanged: (text) {
-                        _validateAddress(text.toLowerCase());
-                      },
-                      maxLines: 2,
-                      style: Styles.body1.merge(TextStyle(
-                          fontFamily: CustomFonts.number.getFontFamily))),
-                  const SizedBox(height: 2),
-                  const SizedBox(height: 2),
-                  Visibility(
-                    visible: !_isErrorInAddress,
-                    maintainSize: true,
-                    maintainAnimation: true,
-                    maintainState: true,
-                    maintainSemantics: false,
-                    maintainInteractivity: false,
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        t.faucet_request_bottom_sheet
-                            .my_address(name: _walletName, index: _walletIndex),
-                        style: Styles.body2Number,
+                    const SizedBox(height: 10),
+                    CustomTextField(
+                        controller: textController,
+                        placeholder: t.faucet_request_bottom_sheet.placeholder,
+                        onChanged: (text) {
+                          _validateAddress(text.toLowerCase());
+                        },
+                        maxLines: 2,
+                        style: Styles.body1.merge(TextStyle(
+                            fontFamily: CustomFonts.number.getFontFamily))),
+                    const SizedBox(height: 2),
+                    const SizedBox(height: 2),
+                    Visibility(
+                      visible: !_isErrorInAddress,
+                      maintainSize: true,
+                      maintainAnimation: true,
+                      maintainState: true,
+                      maintainSemantics: false,
+                      maintainInteractivity: false,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          t.faucet_request_bottom_sheet.my_address(
+                              name: _walletName, index: _walletIndex),
+                          style: Styles.body2Number,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                IgnorePointer(
+                  ignoring: !canRequestFaucet(),
+                  child: CupertinoButton(
+                      onPressed: () {
+                        widget.onRequest.call(_walletAddress, _requestAmount);
+                        FocusScope.of(context).unfocus();
+                      },
+                      borderRadius: BorderRadius.circular(8.0),
+                      padding: EdgeInsets.zero,
+                      color: canRequestFaucet()
+                          ? MyColors.white
+                          : MyColors.transparentWhite_30,
+                      child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 28, vertical: 12),
+                          child: _state == _AvailabilityState.checking
+                              ? const SizedBox(
+                                  height: 28,
+                                  width: 28,
+                                  child: CircularProgressIndicator(
+                                    color: MyColors.white,
+                                  ),
+                                )
+                              : Text(
+                                  _isRequesting
+                                      ? t.faucet_request_bottom_sheet.requesting
+                                      : t.faucet_request_bottom_sheet
+                                          .request_amount(
+                                              bitcoin:
+                                                  formatNumber(_requestAmount)),
+                                  style: Styles.label.merge(TextStyle(
+                                      color: (canRequestFaucet())
+                                          ? MyColors.black
+                                          : MyColors.transparentBlack_50,
+                                      letterSpacing: -0.1,
+                                      fontWeight: FontWeight.w600)),
+                                ))),
+                ),
+                const SizedBox(height: 4),
+                if (_state == _AvailabilityState.bad) ...{
+                  _buildWarningMessage(t.alert.faucet.no_test_bitcoin),
+                } else if (_state == _AvailabilityState.dailyLimitReached) ...{
+                  _buildWarningMessage(
+                      t.alert.faucet.try_again(count: _remainingTimeString)),
+                } else if (_isErrorInAddress) ...{
+                  _buildWarningMessage(t.alert.faucet.check_address),
+                }
+              ],
             ),
-            const SizedBox(height: 24),
-            IgnorePointer(
-              ignoring: !canRequestFaucet(),
-              child: CupertinoButton(
-                  onPressed: () {
-                    widget.onRequest.call(_walletAddress, _requestAmount);
-                    FocusScope.of(context).unfocus();
-                  },
-                  borderRadius: BorderRadius.circular(8.0),
-                  padding: EdgeInsets.zero,
-                  color: canRequestFaucet()
-                      ? MyColors.white
-                      : MyColors.transparentWhite_30,
-                  child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 28, vertical: 12),
-                      child: _state == _AvailabilityState.checking
-                          ? const SizedBox(
-                              height: 28,
-                              width: 28,
-                              child: CircularProgressIndicator(
-                                color: MyColors.white,
-                              ),
-                            )
-                          : Text(
-                              _isRequesting
-                                  ? t.faucet_request_bottom_sheet.requesting
-                                  : t.faucet_request_bottom_sheet
-                                      .request_amount(
-                                          bitcoin:
-                                              formatNumber(_requestAmount)),
-                              style: Styles.label.merge(TextStyle(
-                                  color: (canRequestFaucet())
-                                      ? MyColors.black
-                                      : MyColors.transparentBlack_50,
-                                  letterSpacing: -0.1,
-                                  fontWeight: FontWeight.w600)),
-                            ))),
-            ),
-            const SizedBox(height: 4),
-            if (_state == _AvailabilityState.bad) ...{
-              _buildWarningMessage(t.alert.faucet.no_test_bitcoin),
-            } else if (_state == _AvailabilityState.dailyLimitReached) ...{
-              _buildWarningMessage(
-                  t.alert.faucet.try_again(count: _remainingTimeString)),
-            } else if (_isErrorInAddress) ...{
-              _buildWarningMessage(t.alert.faucet.check_address),
-            }
-          ],
+          ),
         ),
       ),
     );
+    // return GestureDetector(
+    //   onTap: () => FocusScope.of(context).unfocus(),
+    //   child: SingleChildScrollView(
+    //     child: Column(
+    //       children: [
+    //         Padding(
+    //           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    //           child: Row(
+    //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    //             children: [
+    //               IconButton(
+    //                 icon: const Icon(Icons.close, color: MyColors.white),
+    //                 onPressed: () {
+    //                   Navigator.pop(context);
+    //                 },
+    //               ),
+    //               Text(
+    //                 t.faucet_request_bottom_sheet.title,
+    //                 style: Styles.body1,
+    //               ),
+    //               Visibility(
+    //                 visible: false,
+    //                 maintainSize: true,
+    //                 maintainAnimation: true,
+    //                 maintainState: true,
+    //                 maintainSemantics: false,
+    //                 maintainInteractivity: false,
+    //                 child: IconButton(
+    //                   icon: const Icon(Icons.close, color: MyColors.white),
+    //                   onPressed: () {
+    //                     Navigator.pop(context);
+    //                   },
+    //                 ),
+    //               ),
+    //             ],
+    //           ),
+    //         ),
+    //         Padding(
+    //           padding: const EdgeInsets.symmetric(
+    //             horizontal: 16.0,
+    //           ),
+    //           child: Column(
+    //             crossAxisAlignment: CrossAxisAlignment.start,
+    //             children: [
+    //               const SizedBox(height: 30),
+    //               Text(
+    //                 t.faucet_request_bottom_sheet.recipient,
+    //                 style: Styles.body1Bold,
+    //               ),
+    //               const SizedBox(height: 10),
+    //               CustomTextField(
+    //                   controller: textController,
+    //                   placeholder: t.faucet_request_bottom_sheet.placeholder,
+    //                   onChanged: (text) {
+    //                     _validateAddress(text.toLowerCase());
+    //                   },
+    //                   maxLines: 2,
+    //                   style: Styles.body1.merge(TextStyle(
+    //                       fontFamily: CustomFonts.number.getFontFamily))),
+    //               const SizedBox(height: 2),
+    //               const SizedBox(height: 2),
+    //               Visibility(
+    //                 visible: !_isErrorInAddress,
+    //                 maintainSize: true,
+    //                 maintainAnimation: true,
+    //                 maintainState: true,
+    //                 maintainSemantics: false,
+    //                 maintainInteractivity: false,
+    //                 child: Align(
+    //                   alignment: Alignment.centerRight,
+    //                   child: Text(
+    //                     t.faucet_request_bottom_sheet
+    //                         .my_address(name: _walletName, index: _walletIndex),
+    //                     style: Styles.body2Number,
+    //                   ),
+    //                 ),
+    //               ),
+    //             ],
+    //           ),
+    //         ),
+    //         const SizedBox(height: 24),
+    //         IgnorePointer(
+    //           ignoring: !canRequestFaucet(),
+    //           child: CupertinoButton(
+    //               onPressed: () {
+    //                 widget.onRequest.call(_walletAddress, _requestAmount);
+    //                 FocusScope.of(context).unfocus();
+    //               },
+    //               borderRadius: BorderRadius.circular(8.0),
+    //               padding: EdgeInsets.zero,
+    //               color: canRequestFaucet()
+    //                   ? MyColors.white
+    //                   : MyColors.transparentWhite_30,
+    //               child: Container(
+    //                   padding: const EdgeInsets.symmetric(
+    //                       horizontal: 28, vertical: 12),
+    //                   child: _state == _AvailabilityState.checking
+    //                       ? const SizedBox(
+    //                           height: 28,
+    //                           width: 28,
+    //                           child: CircularProgressIndicator(
+    //                             color: MyColors.white,
+    //                           ),
+    //                         )
+    //                       : Text(
+    //                           _isRequesting
+    //                               ? t.faucet_request_bottom_sheet.requesting
+    //                               : t.faucet_request_bottom_sheet
+    //                                   .request_amount(
+    //                                       bitcoin:
+    //                                           formatNumber(_requestAmount)),
+    //                           style: Styles.label.merge(TextStyle(
+    //                               color: (canRequestFaucet())
+    //                                   ? MyColors.black
+    //                                   : MyColors.transparentBlack_50,
+    //                               letterSpacing: -0.1,
+    //                               fontWeight: FontWeight.w600)),
+    //                         ))),
+    //         ),
+    //         const SizedBox(height: 4),
+    //         if (_state == _AvailabilityState.bad) ...{
+    //           _buildWarningMessage(t.alert.faucet.no_test_bitcoin),
+    //         } else if (_state == _AvailabilityState.dailyLimitReached) ...{
+    //           _buildWarningMessage(
+    //               t.alert.faucet.try_again(count: _remainingTimeString)),
+    //         } else if (_isErrorInAddress) ...{
+    //           _buildWarningMessage(t.alert.faucet.check_address),
+    //         }
+    //       ],
+    //     ),
+    //   ),
+    // );
   }
 
   void _startTimer() {

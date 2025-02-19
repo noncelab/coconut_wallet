@@ -65,7 +65,8 @@ class _SettingsScreen extends State<SettingsScreen> {
                                 thumbColor: CoconutColors.white,
                                 onChanged: (isOn) {
                                   if (isOn) {
-                                    CommonBottomSheets.showBottomSheet_90<bool>(
+                                    CommonBottomSheets.showCustomBottomSheet<
+                                        bool>(
                                       context: context,
                                       child: const CustomLoadingOverlay(
                                         child: PinSettingScreen(
@@ -96,16 +97,17 @@ class _SettingsScreen extends State<SettingsScreen> {
                           SingleButton(
                               title: t.settings_screen.change_password,
                               onPressed: () async {
-                                final bool? result =
-                                    await CommonBottomSheets.showBottomSheet_90(
+                                final bool? result = await CommonBottomSheets
+                                    .showCustomBottomSheet(
                                         context: context,
                                         child: const CustomLoadingOverlay(
                                             child: PinCheckScreen()));
                                 if (result == true) {
-                                  await CommonBottomSheets.showBottomSheet_90(
-                                      context: context,
-                                      child: const CustomLoadingOverlay(
-                                          child: PinSettingScreen()));
+                                  await CommonBottomSheets
+                                      .showCustomBottomSheet(
+                                          context: context,
+                                          child: const CustomLoadingOverlay(
+                                              child: PinSettingScreen()));
                                 }
                               }),
                       ]),

@@ -7,13 +7,14 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/screens/common/fee_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -227,13 +228,12 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                             CustomUnderlinedButton(
                               padding: Paddings.widgetContainer,
                               onTap: () {
-                                showTextFieldDialog(
+                                CommonBottomSheets.showCustomBottomSheet(
                                   context: context,
-                                  content:
-                                      t.text_field.enter_fee_as_natural_number,
-                                  controller: _customFeeController,
-                                  textInputType: TextInputType.number,
-                                  onPressed: _onCustomFeeRateInput,
+                                  child: FeeBottomSheet(
+                                    fee: _customSatsPerVb,
+                                    onComplete: _onCustomFeeRateInput,
+                                  ),
                                 );
                               },
                               text: t.text_field.enter_fee_directly,
@@ -289,11 +289,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
     });
   }
 
-  void _onCustomFeeRateInput() async {
-    if (_customFeeController.text.isEmpty) {
-      return;
-    }
-
+  void _onCustomFeeRateInput(int customSatsPerVb) async {
     int customSatsPerVb = int.parse(_customFeeController.text);
     if (widget.networkMinimumFeeRate != null &&
         customSatsPerVb < widget.networkMinimumFeeRate!) {

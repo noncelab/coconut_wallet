@@ -136,7 +136,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                           onPressed: () {
                                             _removeTooltip();
                                             CommonBottomSheets
-                                                .showBottomSheet_90(
+                                                .showCustomBottomSheet(
                                                     context: context,
                                                     child: QrcodeBottomSheet(
                                                         qrcodeTopWidget: Text(

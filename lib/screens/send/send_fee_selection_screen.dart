@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/common/fee_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -18,6 +19,7 @@ import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -285,16 +287,13 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                               CustomUnderlinedButton(
                                 padding: Paddings.widgetContainer,
                                 onTap: () {
-                                  showTextFieldDialog(
-                                      context: context,
-                                      content: t.text_field
-                                          .enter_fee_as_natural_number,
-                                      controller: _customFeeController,
-                                      textInputType: TextInputType.number,
-                                      onPressed: () {
-                                        _handleCustomFeeInput(
-                                            _customFeeController.text);
-                                      });
+                                  CommonBottomSheets.showCustomBottomSheet(
+                                    context: context,
+                                    child: FeeBottomSheet(
+                                      fee: _customFeeInfo?.satsPerVb,
+                                      onComplete: _handleCustomFeeInput,
+                                    ),
+                                  );
                                 },
                                 text: t.text_field.enter_fee_directly,
                                 fontSize: 14,
@@ -348,14 +347,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         _estimatedFee! < maxFeeLimit;
   }
 
-  void _handleCustomFeeInput(String input) async {
-    if (input.isEmpty) {
-      return;
-    }
-
-    int customSatsPerVb;
+  void _handleCustomFeeInput(int customSatsPerVb) async {
     try {
-      customSatsPerVb = int.parse(input.trim());
       if (_minimumSatsPerVb != null && customSatsPerVb < _minimumSatsPerVb!) {
         CustomToast.showToast(
             context: context,

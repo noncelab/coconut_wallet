@@ -199,196 +199,201 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
-      child: CoconutBottomSheet(
-        bottomMargin: TagBottomSheetType.select == _type ? 84 : 8,
-        appBar: CoconutAppBar.buildWithNext(
-          title: TagBottomSheetType.create == _type
-              ? t.tag_bottom_sheet.title_new_tag
-              : t.tag_bottom_sheet.title_edit_tag,
-          context: context,
-          brightness: Brightness.dark,
-          isBottom: true,
-          isActive: _checkRightButtonActive(),
-          nextButtonTitle: t.complete,
-          onNextPressed: _onNextPressed,
-          onBackPressed: () {
-            if (_isTwoDepth) {
-              _resetCreate();
-            } else {
-              Navigator.pop(context);
-            }
-          },
-        ),
-        body: Container(
-          padding: const EdgeInsets.all(16),
-          width: double.maxFinite,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_type == TagBottomSheetType.select) ...{
-                // Tags
-                Visibility(
-                  visible: _utxoTags.isNotEmpty,
-                  child: SingleChildScrollView(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: List.generate(
-                        _utxoTags.length,
-                        (index) => IntrinsicWidth(
-                          child: GestureDetector(
-                            onTap: () {
-                              final tag = _utxoTags[index].name;
-                              setState(() {
-                                if (_selectedUtxoTagNames.contains(tag)) {
-                                  _selectedUtxoTagNames.remove(tag);
-                                } else {
-                                  if (_selectedUtxoTagNames.length == 5) {
-                                    CustomToast.showToast(
-                                        context: context,
-                                        text: t.tag_bottom_sheet.max_tag_count,
-                                        seconds: 2);
-                                    return;
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: CoconutBottomSheet(
+          useIntrinsicHeight: true,
+          bottomMargin: TagBottomSheetType.select == _type ? 84 : 8,
+          appBar: CoconutAppBar.buildWithNext(
+            title: TagBottomSheetType.create == _type
+                ? t.tag_bottom_sheet.title_new_tag
+                : t.tag_bottom_sheet.title_edit_tag,
+            context: context,
+            brightness: Brightness.dark,
+            isBottom: true,
+            isActive: _checkRightButtonActive(),
+            nextButtonTitle: t.complete,
+            onNextPressed: _onNextPressed,
+            onBackPressed: () {
+              if (_isTwoDepth) {
+                _resetCreate();
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+          body: Container(
+            padding: const EdgeInsets.all(16),
+            width: double.maxFinite,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_type == TagBottomSheetType.select) ...{
+                  // Tags
+                  Visibility(
+                    visible: _utxoTags.isNotEmpty,
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: List.generate(
+                          _utxoTags.length,
+                          (index) => IntrinsicWidth(
+                            child: GestureDetector(
+                              onTap: () {
+                                final tag = _utxoTags[index].name;
+                                setState(() {
+                                  if (_selectedUtxoTagNames.contains(tag)) {
+                                    _selectedUtxoTagNames.remove(tag);
+                                  } else {
+                                    if (_selectedUtxoTagNames.length == 5) {
+                                      CustomToast.showToast(
+                                          context: context,
+                                          text:
+                                              t.tag_bottom_sheet.max_tag_count,
+                                          seconds: 2);
+                                      return;
+                                    }
+                                    _selectedUtxoTagNames.add(tag);
                                   }
-                                  _selectedUtxoTagNames.add(tag);
-                                }
-                                _checkSelectButtonEnabled();
-                              });
-                            },
-                            child: CoconutTagChip(
-                              tag: _utxoTags[index].name,
-                              color: CoconutColors.backgroundColorPaletteDark[
-                                  _utxoTags[index].colorIndex],
-                              status: _selectedUtxoTagNames
-                                      .contains(_utxoTags[index].name)
-                                  ? CoconutChipStatus.selected
-                                  : CoconutChipStatus.unselected,
+                                  _checkSelectButtonEnabled();
+                                });
+                              },
+                              child: CoconutTagChip(
+                                tag: _utxoTags[index].name,
+                                color: CoconutColors.backgroundColorPaletteDark[
+                                    _utxoTags[index].colorIndex],
+                                status: _selectedUtxoTagNames
+                                        .contains(_utxoTags[index].name)
+                                    ? CoconutChipStatus.selected
+                                    : CoconutChipStatus.unselected,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                // Create new tag button
-                CustomUnderlinedButton(
-                  text: '새 태그 만들기',
-                  fontSize: 14,
-                  onTap: () {
-                    setState(() {
-                      _isTwoDepth = true;
-                      _type = TagBottomSheetType.create;
-                      _focusNode.requestFocus();
-                    });
-                  },
-                ),
-              } else ...{
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(right: 16, bottom: 16),
-                      child: CustomTagChipColorButton(
-                        colorIndex: widget.updateUtxoTag?.colorIndex ?? 0,
-                        isCreate: widget.updateUtxoTag == null,
-                        onTap: (index) {
-                          _updateTagColorIndex = index;
-                          _checkUpdateButtonEnabled();
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      child: CoconutTextField(
-                        brightness: Brightness.dark,
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        maxLength: 30,
-                        maxLines: 1,
-                        prefix: const Padding(
-                          padding: EdgeInsets.only(left: 16),
-                          child: Text(
-                            "#",
-                            style: Styles.body2,
-                          ),
-                        ),
-                        suffix: GestureDetector(
-                          onTap: () {
-                            _controller.text = '';
-                            _updateTagName = '';
-                            _focusNode.requestFocus();
-                            setState(() {});
+                  const SizedBox(height: 12),
+                  // Create new tag button
+                  CustomUnderlinedButton(
+                    text: '새 태그 만들기',
+                    fontSize: 14,
+                    onTap: () {
+                      setState(() {
+                        _isTwoDepth = true;
+                        _type = TagBottomSheetType.create;
+                        _focusNode.requestFocus();
+                      });
+                    },
+                  ),
+                } else ...{
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(right: 16, bottom: 16),
+                        child: CustomTagChipColorButton(
+                          colorIndex: widget.updateUtxoTag?.colorIndex ?? 0,
+                          isCreate: widget.updateUtxoTag == null,
+                          onTap: (index) {
+                            _updateTagColorIndex = index;
+                            _checkUpdateButtonEnabled();
                           },
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 13),
-                            child: SvgPicture.asset(
-                              'assets/svg/text-field-clear.svg',
-                              width: 16,
-                              height: 16,
-                              colorFilter: ColorFilter.mode(
-                                _updateTagName.isEmpty
-                                    ? CoconutColors.onGray300(Brightness.dark)
-                                    : _updateTagName.runes.length == 30
-                                        ? CoconutColors.red
-                                        : CoconutColors.onBlack(
-                                            Brightness.dark),
-                                BlendMode.srcIn,
+                        ),
+                      ),
+                      Expanded(
+                        child: CoconutTextField(
+                          brightness: Brightness.dark,
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          maxLength: 30,
+                          maxLines: 1,
+                          prefix: const Padding(
+                            padding: EdgeInsets.only(left: 16),
+                            child: Text(
+                              "#",
+                              style: Styles.body2,
+                            ),
+                          ),
+                          suffix: GestureDetector(
+                            onTap: () {
+                              _controller.text = '';
+                              _updateTagName = '';
+                              _focusNode.requestFocus();
+                              setState(() {});
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 13),
+                              child: SvgPicture.asset(
+                                'assets/svg/text-field-clear.svg',
+                                width: 16,
+                                height: 16,
+                                colorFilter: ColorFilter.mode(
+                                  _updateTagName.isEmpty
+                                      ? CoconutColors.onGray300(Brightness.dark)
+                                      : _updateTagName.runes.length == 30
+                                          ? CoconutColors.red
+                                          : CoconutColors.onBlack(
+                                              Brightness.dark),
+                                  BlendMode.srcIn,
+                                ),
                               ),
                             ),
                           ),
+                          onChanged: (text) {
+                            if (Platform.isIOS) {
+                              if (text.startsWith(' ')) {
+                                text = text.trim();
+                              }
+
+                              if (text.contains('#')) {
+                                text = text.replaceAll('#', '');
+                              }
+
+                              if (text.endsWith(' ')) {
+                                _updateTagName = text.trimRight();
+                                _isSelectButtonEnabled = false;
+                              } else {
+                                _updateTagName = text;
+                              }
+
+                              _controller.text = text;
+                            } else {
+                              if (text.startsWith(' ')) {
+                                _updateTagName = '';
+                                _controller.text = _updateTagName;
+                              } else if (text.contains('#')) {
+                                _updateTagName = text.replaceAll('#', '');
+                                _controller.text = _updateTagName;
+                              } else if (text.runes.length > 30) {
+                                _updateTagName =
+                                    String.fromCharCodes(text.runes.take(30));
+                                _controller.text = _updateTagName;
+                              } else {
+                                _updateTagName = text;
+                              }
+
+                              if (_updateTagName.endsWith(' ')) {
+                                _updateTagName = _updateTagName.trimRight();
+                                _isSelectButtonEnabled = false;
+                              }
+                            }
+
+                            if (_type == TagBottomSheetType.update) {
+                              _checkUpdateButtonEnabled();
+                            }
+                            setState(() {});
+                          },
                         ),
-                        onChanged: (text) {
-                          if (Platform.isIOS) {
-                            if (text.startsWith(' ')) {
-                              text = text.trim();
-                            }
-
-                            if (text.contains('#')) {
-                              text = text.replaceAll('#', '');
-                            }
-
-                            if (text.endsWith(' ')) {
-                              _updateTagName = text.trimRight();
-                              _isSelectButtonEnabled = false;
-                            } else {
-                              _updateTagName = text;
-                            }
-
-                            _controller.text = text;
-                          } else {
-                            if (text.startsWith(' ')) {
-                              _updateTagName = '';
-                              _controller.text = _updateTagName;
-                            } else if (text.contains('#')) {
-                              _updateTagName = text.replaceAll('#', '');
-                              _controller.text = _updateTagName;
-                            } else if (text.runes.length > 30) {
-                              _updateTagName =
-                                  String.fromCharCodes(text.runes.take(30));
-                              _controller.text = _updateTagName;
-                            } else {
-                              _updateTagName = text;
-                            }
-
-                            if (_updateTagName.endsWith(' ')) {
-                              _updateTagName = _updateTagName.trimRight();
-                              _isSelectButtonEnabled = false;
-                            }
-                          }
-
-                          if (_type == TagBottomSheetType.update) {
-                            _checkUpdateButtonEnabled();
-                          }
-                          setState(() {});
-                        },
                       ),
-                    ),
-                  ],
-                ),
-              },
-            ],
+                    ],
+                  ),
+                },
+              ],
+            ),
           ),
         ),
       ),

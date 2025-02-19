@@ -1,11 +1,11 @@
 import 'dart:convert';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class TermsBottomSheet extends StatefulWidget {
@@ -102,72 +102,75 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: MyColors.black,
-        appBar: CustomAppBar.build(
-            title: t.glossary,
-            context: context,
-            onBackPressed: null,
-            hasRightIcon: false,
-            isBottom: true,
-            showTestnetLabel: false),
-        body: Padding(
-            padding: EdgeInsets.only(
-                left: TermsBottomSheet.gutter,
-                right: TermsBottomSheet.gutter,
-                top: 20),
-            child: Column(children: [
-              Row(
-                children: [
-                  AskCard(
-                    imagePath: 'assets/images/pow_logo.png',
-                    title: t.terms_bottom_sheet.ask_to_pow,
-                    backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
-                    gutter: TermsBottomSheet.gutter,
-                    url: 'https://powbitcoiner.com/',
-                    externalBrowser: true,
-                  ),
-                  SizedBox(width: TermsBottomSheet.gutter / 2),
-                  AskCard(
-                      imagePath: 'assets/images/telegram_logo.png',
-                      title: t.terms_bottom_sheet.ask_to_telegram,
-                      backgroundColor: const Color.fromRGBO(233, 242, 255, 1),
-                      gutter: TermsBottomSheet.gutter,
-                      url: 'https://t.me/+s4D6-03LjaY5ZmU1'),
-                ],
+    return CoconutBottomSheet(
+      appBar: CoconutAppBar.build(
+          context: context,
+          title: t.glossary,
+          hasRightIcon: false,
+          isBottom: true),
+      body: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AskCard(
+                imagePath: 'assets/images/pow_logo.png',
+                title: t.terms_bottom_sheet.ask_to_pow,
+                backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
+                gutter: TermsBottomSheet.gutter,
+                url: 'https://powbitcoiner.com/',
+                externalBrowser: true,
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                  child: ListView(
-                      children: groupedTermList.keys.map((initial) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(initial, style: Styles.body1Bold),
-                    Wrap(
-                      children: groupedTermList[initial]!.map((term) {
-                        return Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: GestureDetector(
-                              onTap: () => _showBottomSheet(term),
-                              child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(32),
-                                      color: MyColors.borderLightgrey),
-                                  child: Text(term,
-                                      style: Styles.body2.merge(const TextStyle(
-                                          color:
-                                              MyColors.transparentWhite_70))))),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20)
-                  ],
-                );
-              }).toList()))
-            ])));
+              SizedBox(width: TermsBottomSheet.gutter / 2),
+              AskCard(
+                  imagePath: 'assets/images/telegram_logo.png',
+                  title: t.terms_bottom_sheet.ask_to_telegram,
+                  backgroundColor: const Color.fromRGBO(233, 242, 255, 1),
+                  gutter: TermsBottomSheet.gutter,
+                  url: 'https://t.me/+s4D6-03LjaY5ZmU1'),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ListView(
+                shrinkWrap: true,
+                children: groupedTermList.keys.map((initial) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(initial, style: Styles.body1Bold),
+                      Wrap(
+                        children: groupedTermList[initial]!.map((term) {
+                          return Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: GestureDetector(
+                                onTap: () => _showBottomSheet(term),
+                                child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(32),
+                                        color: MyColors.borderLightgrey),
+                                    child: Text(term,
+                                        style: Styles.body2.merge(
+                                            const TextStyle(
+                                                color: MyColors
+                                                    .transparentWhite_70))))),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20)
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showBottomSheet(String term) {

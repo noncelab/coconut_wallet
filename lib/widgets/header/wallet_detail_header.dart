@@ -84,7 +84,7 @@ class WalletDetailHeader extends StatelessWidget {
                           if (!checkPrerequisites!()) return;
                         }
 
-                        CommonBottomSheets.showBottomSheet_90(
+                        CommonBottomSheets.showCustomBottomSheet(
                           context: context,
                           child: ReceiveAddressBottomSheet(
                             id: walletId,

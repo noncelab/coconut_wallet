@@ -2,153 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class CommonBottomSheets {
-  static void showBottomSheet({
-    required String title,
+  static Future<T?> showCustomBottomSheet<T>({
     required BuildContext context,
     required Widget child,
-    TextStyle titleTextStyle = Styles.body2Bold,
-    bool isDismissible = true,
+    bool isScrollControlled = true,
+    bool useSafeArea = true,
     bool enableDrag = true,
-    bool isCloseButton = false,
-    EdgeInsetsGeometry titlePadding =
-        const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-  }) {
-    showModalBottomSheet(
+    bool isDismissible = true,
+    AnimationController? animationController,
+  }) async {
+    return showModalBottomSheet<T>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24.0),
-          topRight: Radius.circular(24.0),
-        ),
-      ),
-      builder: (context) {
-        return Padding(
-            padding: const EdgeInsets.only(bottom: 20),
-            child: Wrap(
-              children: <Widget>[
-                Padding(
-                  padding: titlePadding,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: isCloseButton
-                            ? () {
-                                Navigator.pop(context);
-                              }
-                            : null,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          color: Colors.transparent,
-                          child: isCloseButton
-                              ? const Icon(Icons.close_rounded,
-                                  color: MyColors.white)
-                              : Container(width: 16),
-                        ),
-                      ),
-                      Text(
-                        title,
-                        style: titleTextStyle,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        child: Container(width: 16),
-                      ),
-                    ],
-                  ),
-                ),
-                child
-              ],
-            ));
-      },
-      backgroundColor: MyColors.black,
-      isDismissible: isDismissible,
-      isScrollControlled: true,
+      isScrollControlled: isScrollControlled,
+      useSafeArea: useSafeArea,
       enableDrag: enableDrag,
-      useSafeArea: true,
+      isDismissible: isDismissible,
+      transitionAnimationController: animationController,
+      builder: (context) => child,
     );
   }
 
-  static Future<T?> showBottomSheet_50<T>(
+  static Future<T?> showBottomSheetWithScreen<T>(
       {required BuildContext context, required Widget child}) async {
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) {
         return Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.5,
-            width: MediaQuery.of(context).size.width,
-            child: child,
-          ),
-        );
+          padding: const EdgeInsets.only(bottom: 54),
+          child: child,
+        ); // child screen에서 type <T>를 반환하면 반환됩니다.
       },
       backgroundColor: MyColors.black,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(32),
+        ),
+      ),
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
     );
-  }
-
-  static Future<T?> showBottomSheet_90<T>(
-      {required BuildContext context, required Widget child}) async {
-    return showModalBottomSheet<T>(
-        context: context,
-        builder: (context) {
-          return child; // child screen에서 type <T>를 반환하면 반환됩니다.
-        },
-        backgroundColor: MyColors.black,
-        //isDismissible: false,
-        isScrollControlled: true,
-        enableDrag: true,
-        useSafeArea: true,
-        constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9));
-  }
-
-  static Future<T?> showBottomSheet_95<T>(
-      {required BuildContext context, required Widget child}) async {
-    return showModalBottomSheet<T>(
-        context: context,
-        builder: (context) {
-          return child; // child screen에서 type <T>를 반환하면 반환됩니다.
-        },
-        backgroundColor: MyColors.black,
-        //isDismissible: false,
-        isScrollControlled: true,
-        enableDrag: true,
-        useSafeArea: true,
-        constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.95));
-  }
-
-  static Future<T?> showBottomSheet_100<T>(
-      {required BuildContext context,
-      required Widget child,
-      bool enableDrag = true,
-      Color backgroundColor = MyColors.black,
-      bool isDismissible = false,
-      bool isScrollControlled = true,
-      bool useSafeArea = true,
-      AnimationController? animationController}) async {
-    return showModalBottomSheet<T>(
-        context: context,
-        builder: (context) {
-          return child; // child screen에서 type <T>를 반환하면 반환됩니다.
-        },
-        transitionAnimationController: animationController,
-        backgroundColor: backgroundColor,
-        isDismissible: isDismissible,
-        isScrollControlled: isScrollControlled,
-        enableDrag: enableDrag,
-        useSafeArea: useSafeArea,
-        constraints:
-            BoxConstraints(maxHeight: MediaQuery.of(context).size.height));
   }
 
   static Future<T?> showDraggableScrollableSheet<T>({

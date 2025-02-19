@@ -131,7 +131,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                             state, balance, isNetworkOn)) {
                           return;
                         }
-                        await CommonBottomSheets.showBottomSheet_50(
+                        await CommonBottomSheets.showCustomBottomSheet(
                             context: context,
                             child: FaucetRequestBottomSheet(
                               walletAddressBook: viewModel.walletAddressBook,
@@ -476,7 +476,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       {String? address, String? path}) {
     if (!_checkStateAndShowToast(state, balance, isNetworkOn)) return;
     if (address != null && path != null) {
-      CommonBottomSheets.showBottomSheet_90(
+      CommonBottomSheets.showCustomBottomSheet(
         context: context,
         child: ReceiveAddressBottomSheet(
           id: widget.id,

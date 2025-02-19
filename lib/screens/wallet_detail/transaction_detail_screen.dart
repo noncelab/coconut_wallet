@@ -17,6 +17,7 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
@@ -269,10 +270,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             label: t.tx_memo,
                             underlineButtonLabel: t.edit,
                             onTapUnderlineButton: () {
-                              showModalBottomSheet(
+                              CommonBottomSheets.showCustomBottomSheet(
                                 context: context,
-                                isScrollControlled: true,
-                                builder: (context) => MemoBottomSheet(
+                                child: MemoBottomSheet(
                                   originalMemo:
                                       viewModel.transaction!.memo ?? '',
                                   onComplete: (memo) {

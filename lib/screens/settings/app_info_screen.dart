@@ -397,8 +397,10 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
             SingleButton(
               title: t.app_info_screen.license,
               onPressed: () {
-                CommonBottomSheets.showBottomSheet_95(
-                    context: context, child: const LicenseBottomSheet());
+                CommonBottomSheets.showCustomBottomSheet(
+                  context: context,
+                  child: const LicenseBottomSheet(),
+                );
               },
             ),
             SingleButton(
