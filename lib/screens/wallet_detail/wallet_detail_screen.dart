@@ -15,7 +15,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/body/wallet_detail_body.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
@@ -27,6 +26,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_addre
 import 'package:coconut_wallet/widgets/selector/wallet_detail_tab.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 enum Unit { btc, sats }
@@ -114,59 +114,71 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                 children: [
                   Scaffold(
                     backgroundColor: MyColors.black,
-                    appBar: CustomAppBar.build(
+                    appBar: CoconutAppBar.build(
                       entireWidgetKey: _appBarKey,
-                      faucetIconKey: _faucetIconKey,
-                      backgroundColor: MyColors.black,
+                      context: context,
                       title: TextUtils.ellipsisIfLonger(
                         viewModel.walletListBaseItem!.name,
                         maxLength: 15,
                       ),
-                      context: context,
                       hasRightIcon: true,
-                      onFaucetIconPressed: () async {
-                        _removeFilterDropdown();
-                        viewModel.removeFaucetTooltip();
-                        if (!_checkStateAndShowToast(
-                            state, balance, isNetworkOn)) {
-                          return;
-                        }
-                        await CommonBottomSheets.showCustomBottomSheet(
-                            context: context,
-                            child: FaucetRequestBottomSheet(
-                              walletAddressBook: viewModel.walletAddressBook,
-                              walletData: {
-                                'wallet_id': viewModel.walletId,
-                                'wallet_address': viewModel.walletAddress,
-                                'wallet_name': viewModel.walletName,
-                                'wallet_index': viewModel.receiveAddressIndex,
-                              },
-                              isRequesting: viewModel.isRequesting,
-                              onRequest: (address, requestAmount) {
-                                if (viewModel.isRequesting) return;
+                      actionButtonList: [
+                        IconButton(
+                          key: _faucetIconKey,
+                          focusColor: MyColors.transparentGrey,
+                          icon: SvgPicture.asset(
+                            'assets/svg/faucet.svg',
+                            width: 18,
+                            height: 18,
+                          ),
+                          onPressed: () async {
+                            _removeFilterDropdown();
+                            viewModel.removeFaucetTooltip();
+                            if (!_checkStateAndShowToast(
+                                state, balance, isNetworkOn)) {
+                              return;
+                            }
+                            await CommonBottomSheets.showCustomBottomSheet(
+                                context: context,
+                                child: FaucetRequestBottomSheet(
+                                  walletAddressBook:
+                                      viewModel.walletAddressBook,
+                                  walletData: {
+                                    'wallet_id': viewModel.walletId,
+                                    'wallet_address': viewModel.walletAddress,
+                                    'wallet_name': viewModel.walletName,
+                                    'wallet_index':
+                                        viewModel.receiveAddressIndex,
+                                  },
+                                  isRequesting: viewModel.isRequesting,
+                                  onRequest: (address, requestAmount) {
+                                    if (viewModel.isRequesting) return;
 
-                                viewModel.requestTestBitcoin(
-                                    address, requestAmount, (success, message) {
-                                  if (success) {
-                                    Navigator.pop(context);
-                                    vibrateLight();
-                                    Future.delayed(const Duration(seconds: 1),
-                                        () {
-                                      viewModel.walletProvider?.initWallet(
-                                          targetId: widget.id,
-                                          syncOthers: false);
+                                    viewModel.requestTestBitcoin(
+                                        address, requestAmount,
+                                        (success, message) {
+                                      if (success) {
+                                        Navigator.pop(context);
+                                        vibrateLight();
+                                        Future.delayed(
+                                            const Duration(seconds: 1), () {
+                                          viewModel.walletProvider?.initWallet(
+                                              targetId: widget.id,
+                                              syncOthers: false);
+                                        });
+                                        CustomToast.showToast(
+                                            context: context, text: message);
+                                      } else {
+                                        vibrateMedium();
+                                        CustomToast.showWarningToast(
+                                            context: context, text: message);
+                                      }
                                     });
-                                    CustomToast.showToast(
-                                        context: context, text: message);
-                                  } else {
-                                    vibrateMedium();
-                                    CustomToast.showWarningToast(
-                                        context: context, text: message);
-                                  }
-                                });
-                              },
-                            ));
-                      },
+                                  },
+                                ));
+                          },
+                        ),
+                      ],
                       onTitlePressed: () async {
                         await Navigator.pushNamed(
                             context, '/wallet-info', arguments: {
@@ -179,7 +191,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           viewModel.getUtxoListWithHoldingAddress();
                         }
                       },
-                      showFaucetIcon: true,
                     ),
                     body: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),

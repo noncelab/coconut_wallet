@@ -104,10 +104,11 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
   Widget build(BuildContext context) {
     return CoconutBottomSheet(
       appBar: CoconutAppBar.build(
-          context: context,
-          title: t.glossary,
-          hasRightIcon: false,
-          isBottom: true),
+        context: context,
+        title: t.glossary,
+        hasRightIcon: false,
+        isBottom: true,
+      ),
       body: Column(
         children: [
           Row(

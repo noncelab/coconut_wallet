@@ -11,7 +11,6 @@ import 'package:coconut_wallet/screens/common/fee_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -66,7 +65,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
           });
           return Scaffold(
               backgroundColor: MyColors.black,
-              appBar: CustomAppBar.buildWithNext(
+              appBar: CoconutAppBar.buildWithNext(
                   title: t.fee,
                   context: context,
                   isActive: (isNetworkOn ?? false) &&

@@ -1,9 +1,9 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 
 class Bip39ListScreen extends StatefulWidget {
   const Bip39ListScreen({super.key});
@@ -114,12 +114,11 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: MyColors.black,
-        appBar: CustomAppBar.build(
-            title: _titleText,
-            context: context,
-            hasRightIcon: false,
-            showTestnetLabel: false,
-            isBottom: true),
+        appBar: CoconutAppBar.build(
+          title: _titleText,
+          context: context,
+          hasRightIcon: false,
+        ),
         floatingActionButton: Visibility(
           visible: _isFabShown,
           child: FloatingActionButton(

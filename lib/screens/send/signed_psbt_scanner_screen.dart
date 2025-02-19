@@ -10,7 +10,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_scanner.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
@@ -41,11 +40,11 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       },
       child: Scaffold(
         backgroundColor: MyColors.black,
-        appBar: CustomAppBar.build(
-          title: t.signed_psbt_scanner_screen.title,
+        appBar: CoconutAppBar.build(
           context: context,
+          title: t.signed_psbt_scanner_screen.title,
           hasRightIcon: false,
-          backgroundColor: MyColors.black.withOpacity(0.95),
+          backgroundColor: CoconutColors.black.withOpacity(0.95),
         ),
         body: Stack(children: [
           AnimatedQrScanner(

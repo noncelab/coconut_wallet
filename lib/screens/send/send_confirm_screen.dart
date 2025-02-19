@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -8,7 +9,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -43,7 +43,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         builder: (context, viewModel, child) {
           return Scaffold(
               backgroundColor: MyColors.black,
-              appBar: CustomAppBar.buildWithNext(
+              appBar: CoconutAppBar.buildWithNext(
                   title: t.send_confirm_screen.title,
                   context: context,
                   isActive: true,

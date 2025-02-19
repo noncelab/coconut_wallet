@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -22,35 +21,33 @@ class UtxoTagScreen extends StatelessWidget {
       builder: (context, model, child) {
         return Scaffold(
           backgroundColor: MyColors.black,
-          appBar: CustomAppBar.build(
-            title: t.tag_manage,
+          appBar: CoconutAppBar.build(
             context: context,
+            title: t.tag_manage,
             hasRightIcon: true,
-            showTestnetLabel: false,
-            onBackPressed: () {
-              Navigator.pop(context);
-            },
-            rightIconButton: IconButton(
-              onPressed: () {
-                CommonBottomSheets.showCustomBottomSheet(
-                  context: context,
-                  child: TagBottomSheet(
-                    type: TagBottomSheetType.create,
-                    utxoTags: model.tagList,
-                    onUpdated: (utxoTag) {
-                      if (!model.addUtxoTag(id, utxoTag)) {
-                        CustomToast.showWarningToast(
-                          context: context,
-                          text: t.toast.tag_add_failed,
-                        );
-                      }
-                    },
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add_rounded),
-              color: MyColors.white,
-            ),
+            actionButtonList: [
+              IconButton(
+                onPressed: () {
+                  CommonBottomSheets.showCustomBottomSheet(
+                    context: context,
+                    child: TagBottomSheet(
+                      type: TagBottomSheetType.create,
+                      utxoTags: model.tagList,
+                      onUpdated: (utxoTag) {
+                        if (!model.addUtxoTag(id, utxoTag)) {
+                          CustomToast.showWarningToast(
+                            context: context,
+                            text: t.toast.tag_add_failed,
+                          );
+                        }
+                      },
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add_rounded),
+                color: MyColors.white,
+              ),
+            ],
           ),
           body: SafeArea(
             child: Container(

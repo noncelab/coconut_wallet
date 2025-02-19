@@ -1,6 +1,6 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -27,11 +27,11 @@ class PositiveFeedbackScreen extends StatelessWidget {
         }
       },
       child: Scaffold(
-        appBar: CustomAppBar.build(
-            context: context,
-            title: '',
-            hasRightIcon: false,
-            showTestnetLabel: false),
+        appBar: CoconutAppBar.build(
+          context: context,
+          title: '',
+          hasRightIcon: false,
+        ),
         backgroundColor: MyColors.black,
         body: SafeArea(
           child: Center(

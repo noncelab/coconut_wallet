@@ -1,7 +1,7 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 
 enum FileType {
   license,
@@ -83,13 +83,11 @@ class _ReadFileViewScreenState extends State<ReadFileViewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MyColors.black,
-      appBar: CustomAppBar.build(
+      appBar: CoconutAppBar.build(
           title: appTitleText,
           context: context,
-          onBackPressed: null,
           hasRightIcon: false,
-          isBottom: true,
-          showTestnetLabel: false),
+          isBottom: true),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

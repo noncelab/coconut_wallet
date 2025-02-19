@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_vi
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
@@ -72,19 +71,17 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               children: [
                 Scaffold(
                   backgroundColor: MyColors.black,
-                  appBar: CustomAppBar.build(
-                    title: t.utxo,
+                  appBar: CoconutAppBar.build(
                     context: context,
-                    showTestnetLabel: false,
+                    title: t.utxo,
                     hasRightIcon: true,
-                    onBackPressed: () {
-                      Navigator.pop(context);
-                    },
-                    rightIconButton: IconButton(
-                      key: _utxoTooltipIconKey,
-                      icon: SvgPicture.asset('assets/svg/question-mark.svg'),
-                      onPressed: _toggleUtxoTooltip,
-                    ),
+                    actionButtonList: [
+                      IconButton(
+                        key: _utxoTooltipIconKey,
+                        icon: SvgPicture.asset('assets/svg/question-mark.svg'),
+                        onPressed: _toggleUtxoTooltip,
+                      ),
+                    ],
                   ),
                   body: SafeArea(
                     child: SingleChildScrollView(
@@ -420,7 +417,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         top: _utxoTooltipIconPosition.dy +
                             _utxoTooltipIconSize.height -
                             10,
-                        right: 5,
+                        right: 16,
                         child: GestureDetector(
                           onTap: _removeUtxoTooltip,
                           child: ClipPath(

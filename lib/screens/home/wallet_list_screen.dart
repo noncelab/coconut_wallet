@@ -265,7 +265,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       () => Navigator.pushNamed(context, '/mnemonic-word-list'),
       () => CommonBottomSheets.showCustomBottomSheet(
           context: context, child: const SecuritySelfCheckBottomSheet()),
-      () => CommonBottomSheets.showCustomBottomSheet(
+      () => CommonBottomSheets.showBottomSheetWithScreen(
           context: context, child: const SettingsScreen()),
       () => Navigator.pushNamed(context, '/app-info'),
     ];
@@ -291,8 +291,6 @@ class _WalletListScreenState extends State<WalletListScreen>
           context: context,
           enableDrag: false,
           isDismissible: false,
-          isScrollControlled: true,
-          useSafeArea: false,
           animationController: animationController,
           child: const UserExperienceSurveyBottomSheet(),
         );

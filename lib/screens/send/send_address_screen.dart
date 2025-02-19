@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -7,7 +8,6 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_address_view_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -47,25 +47,22 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
           Consumer<SendAddressViewModel>(builder: (context, viewModel, child) {
         return Scaffold(
             backgroundColor: MyColors.black,
-            appBar: CustomAppBar.build(
-              title: t.send,
+            appBar: CoconutAppBar.build(
               context: context,
+              title: t.send,
               hasRightIcon: true,
-              rightIconButton: IconButton(
-                onPressed: () {
-                  if (controller != null) {
-                    controller!.flipCamera();
-                  }
-                },
-                icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
-                color: MyColors.white,
-              ),
-              onBackPressed: () {
-                _stopCamera();
-                controller = null;
-                Navigator.of(context).pop();
-              },
-              backgroundColor: MyColors.black.withOpacity(0.95),
+              actionButtonList: [
+                IconButton(
+                  onPressed: () {
+                    if (controller != null) {
+                      controller!.flipCamera();
+                    }
+                  },
+                  icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
+                  color: MyColors.white,
+                ),
+              ],
+              backgroundColor: CoconutColors.black.withOpacity(0.95),
             ),
             body: Stack(children: [
               Positioned(

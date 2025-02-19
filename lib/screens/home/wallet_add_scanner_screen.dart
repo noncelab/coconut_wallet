@@ -16,7 +16,6 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import '../../widgets/appbar/custom_appbar.dart';
 
 class WalletAddScannerScreen extends StatefulWidget {
   const WalletAddScannerScreen({super.key});
@@ -45,22 +44,23 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: CustomAppBar.build(
-          title: t.wallet_add_scanner_screen.text,
+        appBar: CoconutAppBar.build(
           context: context,
+          title: t.wallet_add_scanner_screen.text,
           hasRightIcon: true,
           isBottom: true,
-          backgroundColor: MyColors.black.withOpacity(0.95),
-          rightIconButton: IconButton(
-            onPressed: () {
-              if (controller != null) {
-                controller!.flipCamera();
-              }
-            },
-            icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
-            color: MyColors.white,
-          ),
-          showTestnetLabel: false,
+          backgroundColor: CoconutColors.black.withOpacity(0.95),
+          actionButtonList: [
+            IconButton(
+              onPressed: () {
+                if (controller != null) {
+                  controller!.flipCamera();
+                }
+              },
+              icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
+              color: MyColors.white,
+            ),
+          ],
         ),
         body: Stack(children: [
           Container(

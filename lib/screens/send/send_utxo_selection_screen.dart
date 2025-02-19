@@ -12,7 +12,6 @@ import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/send_utxo_sticky_header.dart';
@@ -79,7 +78,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         },
         child: Consumer<SendUtxoSelectionViewModel>(
           builder: (context, viewModel, child) => Scaffold(
-            appBar: CustomAppBar.buildWithNext(
+            appBar: CoconutAppBar.buildWithNext(
                 backgroundColor: MyColors.black,
                 title: t.select_utxo,
                 context: context,

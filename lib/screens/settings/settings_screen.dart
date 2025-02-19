@@ -7,7 +7,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/button/button_container.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
@@ -42,12 +41,11 @@ class _SettingsScreen extends State<SettingsScreen> {
             Consumer<SettingsViewModel>(builder: (context, viewModel, child) {
           return Scaffold(
               backgroundColor: MyColors.black,
-              appBar: CustomAppBar.build(
-                title: t.settings,
+              appBar: CoconutAppBar.build(
                 context: context,
+                title: t.settings,
                 hasRightIcon: false,
                 isBottom: true,
-                showTestnetLabel: false,
               ),
               body: SafeArea(
                   child: SingleChildScrollView(

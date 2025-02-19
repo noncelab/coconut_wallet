@@ -7,7 +7,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_vi
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
@@ -52,13 +51,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         builder: (_, viewModel, child) {
           return Scaffold(
             backgroundColor: MyColors.black,
-            appBar: CustomAppBar.build(
-                title: t.wallet_info_screen.title(name: viewModel.walletName),
-                context: context,
-                hasRightIcon: false,
-                onBackPressed: () {
-                  Navigator.pop(context);
-                }),
+            appBar: CoconutAppBar.build(
+              context: context,
+              title: t.wallet_info_screen.title(name: viewModel.walletName),
+              hasRightIcon: false,
+            ),
             body: SafeArea(
               child: SingleChildScrollView(
                 child: Stack(

@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -13,7 +14,6 @@ import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
@@ -102,7 +102,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerFloat,
           backgroundColor: MyColors.black,
-          appBar: CustomAppBar.buildWithNext(
+          appBar: CoconutAppBar.buildWithNext(
               title: t.broadcasting_screen.title,
               context: context,
               isActive: viewModel.isInitDone,

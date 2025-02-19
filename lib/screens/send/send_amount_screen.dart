@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -45,7 +44,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
       },
       child: Consumer<SendAmountViewModel>(
         builder: (context, viewModel, child) => Scaffold(
-            appBar: CustomAppBar.buildWithNext(
+            appBar: CoconutAppBar.buildWithNext(
               title: t.send,
               context: context,
               onNextPressed: () => _goNextScreen('/fee-selection'),
