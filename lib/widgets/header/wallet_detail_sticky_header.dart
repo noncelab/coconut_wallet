@@ -26,8 +26,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
     required this.currentUnit,
     required this.balance,
     required this.receiveAddress,
-    // TODO: walletStatus
-    // required this.walletStatus,
     required this.selectedListType,
     required this.selectedFilter,
     required this.onTapReceive,

@@ -920,6 +920,15 @@ class WalletDataManager {
     return realmWalletAddress.isNotEmpty;
   }
 
+  List<WalletAddress> filterChangeAddressesFromList(
+      int walletId, List<String> addresses) {
+    final realmWalletAddresses = _realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND address IN $1 AND isChange == true',
+      [walletId, addresses],
+    );
+    return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
   void addAllTransactions(int walletId, List<TransactionRecord> txList) {
     _checkInitialized();
 
@@ -950,11 +959,6 @@ class WalletDataManager {
       List<WalletAddress> walletAddressList, bool isChange) {
     _checkInitialized();
 
-    final realmWalletBase = _realm.find<RealmWalletBase>(walletItem.id);
-    if (realmWalletBase == null) {
-      throw StateError('[updateWalletAddressList] Wallet not found');
-    }
-
     final realmWalletAddresses = _realm.query<RealmWalletAddress>(
       r'walletId == $0 AND isChange == $1',
       [walletItem.id, isChange],
@@ -972,5 +976,24 @@ class WalletDataManager {
         realmAddress.isUsed = walletAddress.isUsed;
       }
     });
+  }
+
+  String getChangeAddress(int walletId) {
+    final realmWalletBase = getExistingWalletBase(walletId);
+    final changeIndex = realmWalletBase.generatedChangeIndex + 1;
+    final realmWalletAddress = _realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isChange == true AND index == $1',
+      [walletId, changeIndex],
+    );
+
+    return realmWalletAddress.first.address;
+  }
+
+  RealmWalletBase getExistingWalletBase(int walletId) {
+    final realmWalletBase = _realm.find<RealmWalletBase>(walletId);
+    if (realmWalletBase == null) {
+      throw StateError('[getExistingWalletBase] Wallet not found');
+    }
+    return realmWalletBase;
   }
 }

@@ -404,6 +404,12 @@ class WalletProvider extends ChangeNotifier {
     return _walletDataManager.containsAddress(walletId, address);
   }
 
+  List<WalletAddress> filterChangeAddressesFromList(
+      int walletId, List<String> addresses) {
+    return _walletDataManager.filterChangeAddressesFromList(
+        walletId, addresses);
+  }
+
   /// 지갑 주소의 사용여부와 잔액을 업데이트 합니다.
   /// 새로운 트랜잭션 이력이 있는 주소를 기준으로 업데이트 합니다.
   void updateWalletAddressList(
@@ -452,6 +458,10 @@ class WalletProvider extends ChangeNotifier {
     _walletDataManager.updateWalletAddressList(
         walletItem, newChangeBalanceList, true);
     notifyListeners();
+  }
+
+  String getChangeAddress(int walletId) {
+    return _walletDataManager.getChangeAddress(walletId);
   }
 }
 
