@@ -25,14 +25,11 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
 
   SendFeeSelectionViewModel(this._sendInfoProvider, this._walletProvider,
       this._nodeProvider, this._bitcoinPriceKrw, this._isNetworkOn) {
+    var balance = _walletProvider.getWalletBalance(_sendInfoProvider.walletId!);
     _walletListItemBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
-    // TODO: getBalance, getUnconfirmedBalance
-    // _confirmedBalance = _walletListItemBase.walletFeature.getBalance();
-    // _unconfirmedBalance =
-    //     _walletListItemBase.walletFeature.getUnconfirmedBalance();
-    _confirmedBalance = 0;
-    _unconfirmedBalance = 0;
+    _confirmedBalance = balance.confirmed;
+    _unconfirmedBalance = balance.unconfirmed;
     _isMultisigWallet =
         _walletListItemBase.walletType == WalletType.multiSignature;
     _bitcoinPriceKrw = _bitcoinPriceKrw;

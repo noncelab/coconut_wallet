@@ -460,8 +460,12 @@ class WalletProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  String getChangeAddress(int walletId) {
+  WalletAddress getChangeAddress(int walletId) {
     return _walletDataManager.getChangeAddress(walletId);
+  }
+
+  WalletAddress getReceiveAddress(int walletId) {
+    return _walletDataManager.getReceiveAddress(walletId);
   }
 }
 

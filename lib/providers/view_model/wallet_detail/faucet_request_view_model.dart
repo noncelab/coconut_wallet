@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
@@ -17,7 +19,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
   final Faucet _faucetService = Faucet();
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final TextEditingController textController = TextEditingController();
-
+  final WalletProvider _walletProvider;
   late FaucetRecord _faucetRecord;
 
   bool isLoading = true;
@@ -53,7 +55,8 @@ class FaucetRequestViewModel extends ChangeNotifier {
   bool _isErrorInServerStatus = false;
   bool get isErrorInServerStatus => _isErrorInServerStatus;
 
-  FaucetRequestViewModel(WalletListItemBase walletBaseItem) {
+  FaucetRequestViewModel(
+      WalletListItemBase walletBaseItem, this._walletProvider) {
     initReceivingAddress(walletBaseItem);
 
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(walletBaseItem.id);
@@ -65,17 +68,14 @@ class FaucetRequestViewModel extends ChangeNotifier {
   }
 
   void initReceivingAddress(WalletListItemBase walletBaseItem) {
-    // TODO: getReceiveAddress
-    throw UnimplementedError();
-    // Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
-
-    // _walletAddress = receiveAddress.address;
-    // _walletId = walletBaseItem.id;
-    // _walletName = walletBaseItem.name.length > 20
-    //     ? '${walletBaseItem.name.substring(0, 17)}...'
-    //     : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
-    // _walletIndex = receiveAddress.derivationPath.split('/').last;
-    // _walletAddressBook = walletBaseItem.walletBase.addressBook;
+    WalletAddress receiveAddress =
+        _walletProvider.getReceiveAddress(walletBaseItem.id);
+    _walletAddress = receiveAddress.address;
+    _walletId = walletBaseItem.id;
+    _walletName = walletBaseItem.name.length > 20
+        ? '${walletBaseItem.name.substring(0, 17)}...'
+        : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
+    _walletIndex = receiveAddress.derivationPath.split('/').last;
   }
 
   @override
@@ -155,10 +155,8 @@ class FaucetRequestViewModel extends ChangeNotifier {
 
   bool _isValidAddress(String address) {
     try {
-      // TODO: _walletAddressBook.contains(inputText)
-      throw UnimplementedError();
-      // return _walletAddressBook.contains(inputText) &&
-      //     WalletUtility.validateAddress(address);
+      return _walletProvider.containsAddress(_walletId, address) &&
+          WalletUtility.validateAddress(address);
     } catch (_) {
       return false;
     }

@@ -978,7 +978,7 @@ class WalletDataManager {
     });
   }
 
-  String getChangeAddress(int walletId) {
+  WalletAddress getChangeAddress(int walletId) {
     final realmWalletBase = getExistingWalletBase(walletId);
     final changeIndex = realmWalletBase.generatedChangeIndex + 1;
     final realmWalletAddress = _realm.query<RealmWalletAddress>(
@@ -986,7 +986,18 @@ class WalletDataManager {
       [walletId, changeIndex],
     );
 
-    return realmWalletAddress.first.address;
+    return mapRealmToWalletAddress(realmWalletAddress.first);
+  }
+
+  WalletAddress getReceiveAddress(int walletId) {
+    final realmWalletBase = getExistingWalletBase(walletId);
+    final receiveIndex = realmWalletBase.generatedReceiveIndex + 1;
+    final realmWalletAddress = _realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isChange == false AND index == $1',
+      [walletId, receiveIndex],
+    );
+
+    return mapRealmToWalletAddress(realmWalletAddress.first);
   }
 
   RealmWalletBase getExistingWalletBase(int walletId) {

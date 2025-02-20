@@ -136,8 +136,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         await CommonBottomSheets.showBottomSheet_50(
                             context: context,
                             child: FaucetRequestBottomSheet(
-                              // TODO: walletAddressBook
-                              // walletAddressBook: const [],
                               walletData: {
                                 'wallet_id': viewModel.walletId,
                                 'wallet_address': viewModel.walletAddress,
@@ -309,13 +307,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     height: _appBarSize.height,
                     isVisible: _stickyHeaderVisible,
                     currentUnit: _currentUnit,
-                    // TODO: receiveAddress
-                    receiveAddress: WalletAddress('', '', 0, false, 0, 0, 0),
-                    // receiveAddress: viewModel.walletListBaseItem!.walletBase
-                    //     .getReceiveAddress(),
-                    // TODO: walletStatus
-                    // walletStatus: viewModel.getInitializedWalletStatus(),
-                    // walletStatus: null,
+                    receiveAddress:
+                        viewModel.walletProvider!.getReceiveAddress(widget.id),
                     balance: balance,
                     selectedListType: _selectedListType,
                     selectedFilter: viewModel.selectedUtxoOrder.text,

@@ -104,12 +104,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _confirmedBalance = _walletBaseItem.balance ?? 0;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
     _changeAddress =
-        _walletProvider.getChangeAddress(_sendInfoProvider.walletId!);
+        _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address;
     _isMaxMode = _confirmedBalance ==
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
 
-    _transaction = _createTransaction(_isMaxMode, 1, _walletBase);
+    _transaction = _createTransaction(_isMaxMode, 1, _walletBaseItem);
     _syncSelectedUtxosWithTransaction();
 
     _setRecommendedFees().then((bool result) async {
@@ -365,30 +365,31 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   Transaction _createTransaction(
-      bool isMaxMode, int feeRate, WalletBase walletBase) {
+      bool isMaxMode, int feeRate, WalletListItemBase walletListItemBase) {
     if (isMaxMode) {
-      // TODO: forSweep
-      throw UnimplementedError();
-      // return Transaction.forSweep(
-      //     _sendInfoProvider.recipientAddress!, feeRate, walletBase);
+      return Transaction.forSweep(
+          walletListItemBase.utxoList,
+          _sendInfoProvider.recipientAddress!,
+          _sendInfoProvider.feeRate!,
+          walletListItemBase.walletBase);
     }
 
     try {
-      // TODO: forPayment
-      throw UnimplementedError();
-      // return Transaction.forPayment(
-      //     _sendInfoProvider.recipientAddress!,
-      //     UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
-      //     feeRate,
-      //     walletBase);
+      return Transaction.forPayment(
+          walletListItemBase.utxoList,
+          _sendInfoProvider.recipientAddress!,
+          _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
+          UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+          feeRate,
+          walletListItemBase.walletBase);
     } catch (e) {
       if (e.toString().contains('Not enough amount for sending. (Fee')) {
-        // TODO: forSweep
-        throw UnimplementedError();
-        // return Transaction.forSweep(
-        //     _sendInfoProvider.recipientAddress!, feeRate, walletBase);
+        return Transaction.forSweep(
+            walletListItemBase.utxoList,
+            _sendInfoProvider.recipientAddress!,
+            _sendInfoProvider.feeRate!,
+            walletListItemBase.walletBase);
       }
-
       rethrow;
     }
   }
