@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -30,7 +31,7 @@ class CommonBottomSheets {
         return Padding(
           padding: const EdgeInsets.only(bottom: 54),
           child: child,
-        ); // child screen에서 type <T>를 반환하면 반환됩니다.
+        );
       },
       backgroundColor: MyColors.black,
       isScrollControlled: true,
@@ -43,6 +44,32 @@ class CommonBottomSheets {
       ),
       constraints:
           BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+    );
+  }
+
+  static Future<T?> showDraggableBottomSheet<T>(
+      {required BuildContext context, required Widget child}) async {
+    return showModalBottomSheet(
+      context: context,
+      backgroundColor: CoconutColors.gray800,
+      enableDrag: true,
+      useSafeArea: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: true,
+          snap: true,
+          initialChildSize: 1,
+          maxChildSize: 1,
+          minChildSize: 0.9,
+          builder: (_, controller) {
+            return SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              controller: controller,
+              child: child,
+            );
+          },
+        );
+      },
     );
   }
 }
