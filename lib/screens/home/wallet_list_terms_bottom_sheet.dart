@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -177,87 +176,102 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
   void _showBottomSheet(String term) {
     var details = termDetails[term];
 
-    CommonBottomSheets.showDraggableScrollableSheet(
-      useSafeArea: true,
-      isScrollControlled: true,
-      enableDrag: true,
-      backgroundColor: MyColors.grey,
+    showModalBottomSheet(
       context: context,
-      child: details != null
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        term,
-                        style: Styles.h3,
-                      ),
-                      Text(
-                        '${details['en']}',
-                        style: Styles.label,
-                      ),
-                    ],
-                  ),
-                ),
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24)),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 32),
-                    color: MyColors.black,
-                    child: Column(
+      backgroundColor: CoconutColors.gray800,
+      enableDrag: true,
+      useSafeArea: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: true,
+          snap: true,
+          initialChildSize: 1,
+          maxChildSize: 1,
+          minChildSize: 0.9,
+          builder: (_, controller) {
+            return SingleChildScrollView(
+              // physics: const ClampingScrollPhysics(),
+              controller: controller,
+              child: details != null
+                  ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${details['content']}',
-                          style: Styles.label
-                              .merge(const TextStyle(color: MyColors.white)),
-                        ),
-                        const SizedBox(height: 32),
-                        Text(
-                          t.terms_bottom_sheet.synonym,
-                          style: Styles.body2Bold,
-                        ),
-                        const SizedBox(height: 8),
-                        if (details['synonym'] != null) ...[
-                          Wrap(
-                              spacing: 8.0,
-                              runSpacing: 8.0,
-                              children: details['synonym']
-                                  .map<Widget>((text) => Keyword(keyword: text))
-                                  .toList()),
-                          const SizedBox(height: 32),
-                          Text(
-                            t.terms_bottom_sheet.related_terms,
-                            style: Styles.body2Bold,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                term,
+                                style: Styles.h3,
+                              ),
+                              Text(
+                                '${details['en']}',
+                                style: Styles.label,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 8),
-                          if (details['related'] != null) ...[
-                            Wrap(
-                                spacing: 8.0,
-                                runSpacing: 8.0,
-                                children: details['related']
-                                    .map<Widget>(
-                                        (text) => Keyword(keyword: text))
-                                    .toList())
-                          ],
-                          const SizedBox(height: 100),
-                        ],
+                        ),
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(24),
+                              topRight: Radius.circular(24)),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 32),
+                            color: MyColors.black,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${details['content']}',
+                                  style: Styles.label.merge(
+                                      const TextStyle(color: MyColors.white)),
+                                ),
+                                const SizedBox(height: 32),
+                                Text(
+                                  t.terms_bottom_sheet.synonym,
+                                  style: Styles.body2Bold,
+                                ),
+                                const SizedBox(height: 8),
+                                if (details['synonym'] != null) ...[
+                                  Wrap(
+                                      spacing: 8.0,
+                                      runSpacing: 8.0,
+                                      children: details['synonym']
+                                          .map<Widget>(
+                                              (text) => Keyword(keyword: text))
+                                          .toList()),
+                                  const SizedBox(height: 32),
+                                  Text(
+                                    t.terms_bottom_sheet.related_terms,
+                                    style: Styles.body2Bold,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (details['related'] != null) ...[
+                                    Wrap(
+                                        spacing: 8.0,
+                                        runSpacing: 8.0,
+                                        children: details['related']
+                                            .map<Widget>((text) =>
+                                                Keyword(keyword: text))
+                                            .toList())
+                                  ],
+                                  const SizedBox(height: 100),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
+                    )
+                  : Center(
+                      child: Text('No details available for $term'),
                     ),
-                  ),
-                ),
-              ],
-            )
-          : Center(
-              child: Text('No details available for $term'),
-            ),
+            );
+          },
+        );
+      },
     );
   }
 }
