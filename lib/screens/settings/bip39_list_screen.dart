@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class Bip39ListScreen extends StatefulWidget {
@@ -13,10 +12,9 @@ class Bip39ListScreen extends StatefulWidget {
 }
 
 class _Bip39ListScreenState extends State<Bip39ListScreen> {
-  final String _titleText = t.mnemonic_wordlist;
-  final String _hintText = t.text_field.search_mnemonic_word;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   List<Map<String, dynamic>> _filteredItems = [];
   late bool _isTop;
@@ -31,13 +29,11 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     _isTop = true;
 
     _scrollController.addListener(_scrollListener);
-    _searchController.addListener(_filterItems);
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -55,12 +51,6 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         _isFabShown = false;
       });
     }
-
-    // if (_scrollController.position.pixels ==
-    //     _scrollController.position.maxScrollExtent) {
-    // } else if (_scrollController.position.pixels ==
-    //     _scrollController.position.minScrollExtent) {
-    // }
   }
 
   void _scrollToTop() {
@@ -69,21 +59,8 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     );
   }
 
-  void _filterItems() {
-    if (_searchController.text.isNotEmpty) {
-      setState(() {
-        _queryWord();
-      });
-    } else {
-      setState(() {
-        _filteredItems = List.generate(wordList.length,
-            (index) => {'index': index + 1, 'item': wordList[index]});
-      });
-    }
-  }
-
-  void _queryWord() {
-    String query = _searchController.text.toLowerCase();
+  void _queryWord(String text) {
+    String query = text.toLowerCase();
     _filteredItems = List.generate(wordList.length,
             (index) => {'index': index + 1, 'item': wordList[index]})
         .where((element) {
@@ -115,7 +92,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
       child: Scaffold(
         backgroundColor: MyColors.black,
         appBar: CoconutAppBar.build(
-          title: _titleText,
+          title: t.mnemonic_wordlist,
           context: context,
           hasRightIcon: false,
         ),
@@ -132,56 +109,34 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         ),
         body: Column(
           children: [
-            Container(
-              color: MyColors.black,
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Center(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeOut,
-                    decoration: BoxDecoration(
-                      color: MyColors.borderLightgrey,
-                      borderRadius: BorderRadius.circular(12.0),
-                    ),
-                    child: TextField(
-                      keyboardType: TextInputType.text,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
-                      ],
-                      controller: _searchController,
-                      maxLines: 1,
-                      maxLength: 10,
-                      decoration: InputDecoration(
-                        counterText: '',
-                        hintText: _hintText,
-                        hintStyle: Styles.body2.merge(
-                          const TextStyle(
-                            color: MyColors.transparentWhite_50,
-                          ),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.search_rounded,
-                          color: MyColors.transparentWhite_50,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.transparent,
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0.0, horizontal: 16.0),
-                      ),
-                      style: const TextStyle(
-                        decorationThickness: 0,
-                        color: MyColors.white,
-                      ),
-                    ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: CoconutTextField(
+                brightness: Brightness.dark,
+                controller: _searchController,
+                focusNode: _focusNode,
+                placeholderText: t.text_field.search_mnemonic_word,
+                isVisibleBorder: false,
+                backgroundColor: CoconutColors.white.withOpacity(0.15),
+                prefix: const Padding(
+                  padding: EdgeInsets.only(left: 16, right: 8),
+                  child: Icon(
+                    Icons.search_rounded,
+                    color: MyColors.transparentWhite_50,
                   ),
                 ),
+                onChanged: (text) {
+                  if (text.isNotEmpty) {
+                    _queryWord(text);
+                    setState(() {});
+                  } else {
+                    _filteredItems = List.generate(
+                        wordList.length,
+                        (index) =>
+                            {'index': index + 1, 'item': wordList[index]});
+                    setState(() {});
+                  }
+                },
               ),
             ),
             SizedBox(

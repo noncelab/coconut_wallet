@@ -1,6 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 
 class FeeBottomSheet extends StatefulWidget {
@@ -20,7 +19,7 @@ class _FeeBottomSheetState extends State<FeeBottomSheet> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
-  /// [CustomLimitTextField]에서 입력된 메모
+  /// [CoconutTextField]에서 입력된 메모
   int _updateFee = 0;
 
   @override

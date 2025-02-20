@@ -7,7 +7,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
-import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:uuid/uuid.dart';
@@ -71,7 +70,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   /// update type 에서 완료 버튼 활성화 여부
   bool _isUpdateButtonEnabled = false;
 
-  /// [CustomLimitTextField] 에서 변경된 TagName
+  /// [CoconutTextField] 에서 변경된 TagName
   String _updateTagName = '';
 
   /// [CustomTagChipColorButton] 에서 변경된 TagColorIndex

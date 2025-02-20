@@ -1,6 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -24,7 +23,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
 
-  /// [CustomLimitTextField]에서 입력된 메모
+  /// [CoconutTextField]에서 입력된 메모
   String _updateMemo = '';
 
   bool get _isCompleteButtonEnabled {

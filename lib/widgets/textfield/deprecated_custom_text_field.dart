@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/styles.dart';
 
+@Deprecated("")
 class CustomTextField extends StatefulWidget {
   final TextEditingController controller;
   final String placeholder;
