@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart' as coconut;
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
@@ -32,11 +33,19 @@ class _AddressListScreenState extends State<AddressListScreen> {
   static const int kFirstCount = 20;
 
   AddressListViewModel? viewModel;
+  List<bool> _segmentedSelectedValue = [true, false];
   final int _limit = 5;
   int _receivingAddressPage = 0;
   int _changeAddressPage = 0;
   bool _isFirstLoadRunning = true;
   bool _isLoadMoreRunning = false;
+
+  final GlobalKey _depositLabelKey = GlobalKey();
+  final GlobalKey _changeLabelKey = GlobalKey();
+  late RenderBox _depositLabelRenderBox;
+  late RenderBox _changeLabelRenderBox;
+  Offset _depositLabelPosition = Offset.zero;
+  Offset _changeLabelPosition = Offset.zero;
   bool isReceivingSelected = true;
 
   /// 툴팁
@@ -210,15 +219,13 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.addListener(_nextLoad);
-      _depositTooltipIconRenderBox =
-          _depositTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _depositTooltipIconPosition =
-          _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _depositLabelRenderBox =
+          _depositLabelKey.currentContext!.findRenderObject() as RenderBox;
+      _depositLabelPosition = _depositLabelRenderBox.localToGlobal(Offset.zero);
 
-      _changeTooltipIconRenderBox =
-          _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _changeTooltipIconPosition =
-          _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _changeLabelRenderBox =
+          _changeLabelKey.currentContext!.findRenderObject() as RenderBox;
+      _changeLabelPosition = _changeLabelRenderBox.localToGlobal(Offset.zero);
     });
   }
 
@@ -228,62 +235,132 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   Widget toolbarWidget() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 10,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: MyColors.transparentWhite_15,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-                child: TooltipButton(
-              isSelected: isReceivingSelected,
-              text: t.address_list_screen.receiving,
-              isLeft: true,
-              iconKey: _depositTooltipKey,
-              onTap: () {
-                setState(() {
-                  isReceivingSelected = true;
-                });
+    return Stack(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 10,
+          ),
+          child: CoconutSegmentedControl(
+            keys: [_depositLabelKey, _changeLabelKey],
+            labels: [
+              t.address_list_screen.receiving,
+              t.address_list_screen.change
+            ],
+            isSelected: _segmentedSelectedValue,
+            onPressed: (index) {
+              setState(() {
+                _segmentedSelectedValue = List.generate(
+                    _segmentedSelectedValue.length, (i) => i == index);
+                isReceivingSelected = _segmentedSelectedValue[0];
+
                 scrollToTop();
                 _removeTooltip();
-              },
-              onTapDown: (_) {
-                _showTooltip(
-                  context,
-                  true,
-                );
-              },
-            )),
-            Expanded(
-                child: TooltipButton(
-              isSelected: !isReceivingSelected,
-              text: t.address_list_screen.change,
-              isLeft: false,
-              iconKey: _changeTooltipKey,
-              onTap: () {
-                setState(() {
-                  isReceivingSelected = false;
-                });
-                scrollToTop();
-                _removeTooltip();
-              },
-              onTapDown: (_) {
-                _showTooltip(
-                  context,
-                  false,
-                );
-              },
-            )),
-          ],
+              });
+            },
+          ),
         ),
-      ),
+        Positioned(
+          left: _depositLabelPosition.dx + 20,
+          top: 17,
+          child: GestureDetector(
+            onTapDown: (_) => _showTooltip(
+              context,
+              true,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(8.0),
+              child: Icon(
+                key: _depositTooltipKey,
+                Icons.info_outline_rounded,
+                color: isReceivingSelected
+                    ? MyColors.white
+                    : MyColors.transparentWhite_40,
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: _changeLabelPosition.dx + 20,
+          top: 17,
+          child: GestureDetector(
+            onTapDown: (_) => _showTooltip(
+              context,
+              false,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(8.0),
+              child: Icon(
+                key: _changeTooltipKey,
+                Icons.info_outline_rounded,
+                color: isReceivingSelected
+                    ? MyColors.transparentWhite_40
+                    : MyColors.white,
+                size: 16,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
+    // return Container(
+    //   padding: const EdgeInsets.symmetric(
+    //     horizontal: 10,
+    //     vertical: 10,
+    //   ),
+    //   child: Container(
+    //     decoration: BoxDecoration(
+    //       borderRadius: BorderRadius.circular(20),
+    //       color: MyColors.transparentWhite_15,
+    //     ),
+    //     child: Row(
+    //       children: [
+    //         Expanded(
+    //             child: TooltipButton(
+    //           isSelected: isReceivingSelected,
+    //           text: t.address_list_screen.receiving,
+    //           isLeft: true,
+    //           iconKey: _depositTooltipKey,
+    //           onTap: () {
+    //             setState(() {
+    //               isReceivingSelected = true;
+    //             });
+    //             scrollToTop();
+    //             _removeTooltip();
+    //           },
+    //           onTapDown: (_) {
+    //             _showTooltip(
+    //               context,
+    //               true,
+    //             );
+    //           },
+    //         )),
+    //         Expanded(
+    //             child: TooltipButton(
+    //           isSelected: !isReceivingSelected,
+    //           text: t.address_list_screen.change,
+    //           isLeft: false,
+    //           iconKey: _changeTooltipKey,
+    //           onTap: () {
+    //             setState(() {
+    //               isReceivingSelected = false;
+    //             });
+    //             scrollToTop();
+    //             _removeTooltip();
+    //           },
+    //           onTapDown: (_) {
+    //             _showTooltip(
+    //               context,
+    //               false,
+    //             );
+    //           },
+    //         )),
+    //       ],
+    //     ),
+    //   ),
+    // );
   }
 
   Widget tooltipWidget(BuildContext context) {
@@ -298,7 +375,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
               ? _depositTooltipIconPosition.dy +
                   _depositTooltipIconRenderBox.size.height
               : _depositTooltipIconPosition.dy - 70,
-          left: _depositTooltipIconPosition.dx - 30,
+          left: _depositTooltipIconPosition.dx - 31,
           right: MediaQuery.of(context).size.width -
               _depositTooltipIconPosition.dx -
               150,
@@ -339,7 +416,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           right: MediaQuery.of(context).size.width -
               _changeTooltipIconPosition.dx +
               (_changeTooltipIconRenderBox.size.width) -
-              46,
+              43,
           child: GestureDetector(
             onTap: () => _removeTooltip(),
             child: ClipPath(
