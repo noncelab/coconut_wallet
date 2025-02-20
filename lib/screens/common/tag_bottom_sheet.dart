@@ -91,7 +91,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                 ? t.tag_bottom_sheet.title_new_tag
                 : t.tag_bottom_sheet.title_edit_tag,
             context: context,
-            brightness: Brightness.dark,
             isBottom: true,
             isActive: _checkRightButtonActive(),
             nextButtonTitle: t.complete,

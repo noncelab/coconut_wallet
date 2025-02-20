@@ -43,7 +43,6 @@ class _FeeBottomSheetState extends State<FeeBottomSheet> {
         appBar: CoconutAppBar.buildWithNext(
           title: t.fee,
           context: context,
-          brightness: Brightness.dark,
           isBottom: true,
           isActive: _updateFee > 0,
           nextButtonTitle: t.complete,

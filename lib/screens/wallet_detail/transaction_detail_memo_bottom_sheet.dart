@@ -54,7 +54,6 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
         appBar: CoconutAppBar.buildWithNext(
           title: t.tx_memo,
           context: context,
-          brightness: Brightness.dark,
           isBottom: true,
           isActive: _isCompleteButtonEnabled,
           nextButtonTitle: t.complete,
