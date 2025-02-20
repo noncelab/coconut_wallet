@@ -376,9 +376,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return;
     }
 
-    // TODO: FeeSelectionScreen Appbar
     Map<String, dynamic>? feeSelectionResult =
-        await CommonBottomSheets.showBottomSheetWithScreen(
+        await CommonBottomSheets.showCustomBottomSheet(
       context: context,
       child: FeeSelectionScreen(
           feeInfos: _viewModel.feeInfos,

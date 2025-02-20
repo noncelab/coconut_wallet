@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart' as coconut;
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
@@ -13,7 +13,6 @@ import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart'
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class AddressListScreen extends StatefulWidget {
@@ -53,7 +52,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   /// 스크롤
   double topPadding = 0;
-  final bool _isScrollOverTitleHeight = false;
   late ScrollController _controller;
 
   @override
@@ -79,109 +77,84 @@ class _AddressListScreenState extends State<AddressListScreen> {
             child: Stack(
               children: [
                 Scaffold(
-                    extendBodyBehindAppBar: true,
-                    backgroundColor: MyColors.black,
-                    appBar: AppBar(
-                      scrolledUnderElevation: 0,
-                      backgroundColor: _isScrollOverTitleHeight
-                          ? MyColors.transparentBlack_50
-                          : MyColors.black,
-                      toolbarHeight: kToolbarHeight + 30,
-                      leading: IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: SvgPicture.asset('assets/svg/back.svg',
-                              width: 24,
-                              colorFilter: const ColorFilter.mode(
-                                  MyColors.white, BlendMode.srcIn))),
-                      flexibleSpace: _isScrollOverTitleHeight
-                          ? ClipRect(
-                              child: BackdropFilter(
-                                filter:
-                                    ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                child: Container(
-                                  color: MyColors.transparentWhite_06,
-                                ),
-                              ),
-                            )
-                          : null,
-                      title: Text(
-                        t.address_list_screen
-                            .wallet_name(name: viewModel.walletBaseItem!.name),
-                        style: Styles.appbarTitle,
-                      ),
-                      centerTitle: true,
-                      bottom: PreferredSize(
-                        preferredSize: const Size.fromHeight(50.0),
-                        child: toolbarWidget(),
-                      ),
+                  backgroundColor: widget.isFullScreen
+                      ? CoconutColors.black
+                      : Colors.transparent,
+                  appBar: CoconutAppBar.build(
+                    context: context,
+                    title: t.address_list_screen
+                        .wallet_name(name: viewModel.walletBaseItem!.name),
+                    hasRightIcon: false,
+                    isBottom: !widget.isFullScreen,
+                  ),
+                  body: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
                     ),
-                    body: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                      ),
-                      child: _isFirstLoadRunning
-                          ? const Center(child: CircularProgressIndicator())
-                          : Column(
-                              children: [
-                                Expanded(
-                                  child: Stack(
-                                    children: [
-                                      ListView.builder(
-                                        controller: _controller,
-                                        itemCount: addressList!.length,
-                                        itemBuilder: (context, index) =>
-                                            AddressItemCard(
-                                          onPressed: () {
-                                            _removeTooltip();
-                                            CommonBottomSheets
-                                                .showCustomBottomSheet(
-                                                    context: context,
-                                                    child: QrcodeBottomSheet(
-                                                        qrcodeTopWidget: Text(
-                                                          addressList[index]
-                                                              .derivationPath,
-                                                          style: Styles.body2.merge(
-                                                              const TextStyle(
-                                                                  color: MyColors
-                                                                      .transparentWhite_70)),
-                                                        ),
-                                                        qrData:
-                                                            addressList[index]
-                                                                .address,
-                                                        title: t
-                                                            .address_list_screen
-                                                            .address_index(
-                                                                index: index)));
-                                          },
-                                          address: addressList[index].address,
-                                          derivationPath:
-                                              addressList[index].derivationPath,
-                                          isUsed: addressList[index].isUsed,
-                                          balanceInSats:
-                                              addressList[index].amount,
-                                        ),
+                    child: _isFirstLoadRunning
+                        ? const Center(child: CircularProgressIndicator())
+                        : Column(
+                            children: [
+                              toolbarWidget(),
+                              Expanded(
+                                child: Stack(
+                                  children: [
+                                    ListView.builder(
+                                      controller: _controller,
+                                      itemCount: addressList!.length,
+                                      itemBuilder: (context, index) =>
+                                          AddressItemCard(
+                                        onPressed: () {
+                                          _removeTooltip();
+                                          CommonBottomSheets
+                                              .showCustomBottomSheet(
+                                                  context: context,
+                                                  child: QrcodeBottomSheet(
+                                                      qrcodeTopWidget: Text(
+                                                        addressList[index]
+                                                            .derivationPath,
+                                                        style: Styles.body2.merge(
+                                                            const TextStyle(
+                                                                color: MyColors
+                                                                    .transparentWhite_70)),
+                                                      ),
+                                                      qrData: addressList[index]
+                                                          .address,
+                                                      title: t
+                                                          .address_list_screen
+                                                          .address_index(
+                                                              index: index)));
+                                        },
+                                        address: addressList[index].address,
+                                        derivationPath:
+                                            addressList[index].derivationPath,
+                                        isUsed: addressList[index].isUsed,
+                                        balanceInSats:
+                                            addressList[index].amount,
                                       ),
-                                      if (_isLoadMoreRunning)
-                                        Positioned(
-                                          left: 0,
-                                          right: 0,
-                                          bottom: 40,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(30),
-                                            child: const Center(
-                                              child: CircularProgressIndicator(
-                                                  color: MyColors.white),
-                                            ),
+                                    ),
+                                    Visibility(
+                                      visible: _isLoadMoreRunning,
+                                      child: Positioned(
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 40,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(30),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                                color: MyColors.white),
                                           ),
                                         ),
-                                    ],
-                                  ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                    )),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
                 tooltipWidget(context),
               ],
             ),
@@ -230,7 +203,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
   Widget toolbarWidget() {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 10,
         vertical: 10,
       ),
       child: Container(
