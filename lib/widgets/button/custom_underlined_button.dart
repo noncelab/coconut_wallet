@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
+@Deprecated('Use CoconutUnderlinedButton instead')
 class CustomUnderlinedButton extends StatefulWidget {
   final String text;
   final double fontSize;

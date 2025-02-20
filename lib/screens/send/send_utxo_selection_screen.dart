@@ -12,7 +12,6 @@ import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/send_utxo_sticky_header.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -539,18 +538,28 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   const SizedBox(
                     width: 16,
                   ),
-                  CustomUnderlinedButton(
+                  CoconutUnderlinedButton(
+                    brightness: Brightness.dark,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: t.unselect_all,
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Pretendard',
+                    ),
                     onTap: () {
                       _setVisibleUtxoOrderDropdown(false);
                       _deselectAll();
                     },
                   ),
                   SvgPicture.asset('assets/svg/row-divider.svg'),
-                  CustomUnderlinedButton(
+                  CoconutUnderlinedButton(
+                    brightness: Brightness.dark,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: t.select_all,
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Pretendard',
+                    ),
                     onTap: () async {
                       _setVisibleUtxoOrderDropdown(false);
                       _selectAll();

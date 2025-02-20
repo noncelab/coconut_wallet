@@ -1,7 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
 
 class UnderlineButtonItemCard extends StatelessWidget {
@@ -57,15 +56,18 @@ class UnderlineButtonItemCard extends StatelessWidget {
               Expanded(
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: CustomUnderlinedButton(
+                  child: CoconutUnderlinedButton(
+                    brightness: Brightness.dark,
                     text: underlineButtonLabel!,
                     onTap: () {
                       if (onTapUnderlineButton != null) {
                         onTapUnderlineButton!();
                       }
                     },
-                    fontSize: 12,
-                    lineHeight: 18,
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Pretendard',
+                    ),
                   ),
                 ),
               ),

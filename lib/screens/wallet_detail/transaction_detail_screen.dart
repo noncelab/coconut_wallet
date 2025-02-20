@@ -13,7 +13,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -163,13 +162,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             Visibility(
                               visible: viewModel.canSeeMoreInputs,
                               child: Center(
-                                child: CustomUnderlinedButton(
+                                child: CoconutUnderlinedButton(
+                                  brightness: Brightness.dark,
                                   text: t.view_more,
                                   onTap: () {
                                     viewModel.txModel.viewMoreInput();
                                   },
-                                  fontSize: 12,
-                                  lineHeight: 14,
+                                  textStyle: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Pretendard',
+                                  ),
                                 ),
                               ),
                             ),
@@ -220,13 +222,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             Visibility(
                               visible: viewModel.canSeeMoreOutputs,
                               child: Center(
-                                child: CustomUnderlinedButton(
+                                child: CoconutUnderlinedButton(
+                                  brightness: Brightness.dark,
                                   text: t.view_more,
                                   onTap: () {
                                     viewModel.txModel.viewMoreOutput();
                                   },
-                                  fontSize: 12,
-                                  lineHeight: 14,
+                                  textStyle: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'Pretendard',
+                                  ),
                                 ),
                               ),
                             ),

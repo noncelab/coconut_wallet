@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
@@ -6,7 +7,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
 
 class SendUtxoStickyHeader extends StatelessWidget {
@@ -117,15 +117,22 @@ class SendUtxoStickyHeader extends StatelessWidget {
                         )
                       : Styles.body2Bold,
                 ),
-                CustomUnderlinedButton(
+                CoconutUnderlinedButton(
+                  brightness: Brightness.dark,
                   text: '변경',
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Pretendard',
+                    fontWeight: FontWeight.normal,
+                    height: 1,
+                  ),
                   padding: const EdgeInsets.only(
                     left: 8,
                     top: 4,
                     bottom: 8,
                     right: 8,
                   ),
-                  isEnable: recommendedFeeFetchStatus !=
+                  isActive: recommendedFeeFetchStatus !=
                       RecommendedFeeFetchStatus.fetching,
                   onTap: () {
                     onTapFeeButton();

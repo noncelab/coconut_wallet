@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
@@ -182,11 +181,14 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                         Padding(
                                           padding:
                                               const EdgeInsets.only(top: 4),
-                                          child: CustomUnderlinedButton(
+                                          child: CoconutUnderlinedButton(
+                                              brightness: Brightness.dark,
                                               text: t.select_utxo,
-                                              fontSize: 14,
-                                              lineHeight: 21,
-                                              isEnable: viewModel.errorIndex ==
+                                              textStyle: const TextStyle(
+                                                fontSize: 14,
+                                                fontFamily: 'Pretendard',
+                                              ),
+                                              isActive: viewModel.errorIndex ==
                                                       null &&
                                                   viewModel.isNextButtonEnabled,
                                               onTap: () => _goNextScreen(
