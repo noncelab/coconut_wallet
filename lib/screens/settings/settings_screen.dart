@@ -92,8 +92,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                           final bool? result =
                               await CommonBottomSheets.showCustomBottomSheet(
                                   context: context,
-                                  child: const CustomLoadingOverlay(
-                                      child: PinCheckScreen()));
+                                  child: const PinCheckScreen());
                           if (result == true) {
                             await CommonBottomSheets.showCustomBottomSheet(
                                 context: context,

@@ -11,7 +11,6 @@ import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
@@ -245,14 +244,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                         await CommonBottomSheets
                                             .showCustomBottomSheet(
                                           context: context,
-                                          child: CustomLoadingOverlay(
-                                            child: PinCheckScreen(
-                                              onComplete: () async {
-                                                await viewModel.deleteWallet();
-                                                Navigator.popUntil(context,
-                                                    (route) => route.isFirst);
-                                              },
-                                            ),
+                                          child: PinCheckScreen(
+                                            onComplete: () async {
+                                              await viewModel.deleteWallet();
+                                              Navigator.popUntil(context,
+                                                  (route) => route.isFirst);
+                                            },
                                           ),
                                         );
                                       } else {

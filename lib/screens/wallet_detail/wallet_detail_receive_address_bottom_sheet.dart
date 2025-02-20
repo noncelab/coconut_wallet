@@ -58,7 +58,6 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
                       ),
                       GestureDetector(
                         onTap: () {
-                          // TODO: AddressListScreen Appbar
                           CommonBottomSheets.showBottomSheetWithScreen(
                             context: context,
                             child: AddressListScreen(

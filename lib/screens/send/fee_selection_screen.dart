@@ -62,193 +62,189 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _onChangedNetworkStatus(isNetworkOn);
           });
-          return Scaffold(
-              backgroundColor: MyColors.black,
-              appBar: CoconutAppBar.buildWithNext(
-                  title: t.fee,
-                  context: context,
-                  isActive: (isNetworkOn ?? false) &&
-                      _estimatedFee != null &&
-                      _estimatedFee != 0 &&
-                      _estimatedFee! < kMaxFeeLimit,
-                  onBackPressed: () {
-                    Navigator.pop(context);
-                  },
-                  nextButtonTitle: t.complete,
-                  onNextPressed: _onDone,
-                  isBottom: true),
-              body: SafeArea(
-                  child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Fee 선택 현황
-                    Center(
-                        child: Column(children: [
-                      const SizedBox(height: 32),
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            color: MyColors.transparentWhite_06,
-                            border: Border.all(
-                                color: MyColors.transparentWhite_12, width: 1)),
-                        child: Text(
-                            _selectedFeeLevel == null
-                                ? t.input_directly
-                                : _selectedFeeLevel!.text,
-                            style: Styles.caption),
-                      ),
-                      Text(
-                          _estimatedFee != null
-                              ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
+
+          return CoconutBottomSheet(
+            useIntrinsicHeight: true,
+            appBar: CoconutAppBar.buildWithNext(
+                title: t.fee,
+                context: context,
+                isActive: (isNetworkOn ?? false) &&
+                    _estimatedFee != null &&
+                    _estimatedFee != 0 &&
+                    _estimatedFee! < kMaxFeeLimit,
+                onBackPressed: () {
+                  Navigator.pop(context);
+                },
+                nextButtonTitle: t.complete,
+                onNextPressed: _onDone,
+                isBottom: true),
+            body: Column(
+              children: [
+                // Fee 선택 현황
+                Center(
+                    child: Column(children: [
+                  const SizedBox(height: 32),
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: MyColors.transparentWhite_06,
+                        border: Border.all(
+                            color: MyColors.transparentWhite_12, width: 1)),
+                    child: Text(
+                        _selectedFeeLevel == null
+                            ? t.input_directly
+                            : _selectedFeeLevel!.text,
+                        style: Styles.caption),
+                  ),
+                  Text(
+                      _estimatedFee != null
+                          ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
+                          : '',
+                      style: Styles.fee),
+                  Selector<UpbitConnectModel, int?>(
+                    selector: (context, model) => model.bitcoinPriceKrw,
+                    builder: (context, bitcoinPriceKrw, child) {
+                      _bitcoinPriceKrw = bitcoinPriceKrw;
+                      return Text(
+                          fiatValueInKrw != null
+                              ? '${addCommasToIntegerPart(fiatValueInKrw!)} ${CurrencyCode.KRW.code}'
                               : '',
-                          style: Styles.fee),
-                      Selector<UpbitConnectModel, int?>(
-                        selector: (context, model) => model.bitcoinPriceKrw,
-                        builder: (context, bitcoinPriceKrw, child) {
-                          _bitcoinPriceKrw = bitcoinPriceKrw;
-                          return Text(
-                              fiatValueInKrw != null
-                                  ? '${addCommasToIntegerPart(fiatValueInKrw!)} ${CurrencyCode.KRW.code}'
-                                  : '',
-                              style: Styles.balance2);
-                        },
+                          style: Styles.balance2);
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                ])),
+                if (_isNetworkOn == false)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: CoconutLayout.defaultPadding,
+                    ),
+                    child: CoconutToolTip(
+                      backgroundColor: CoconutColors
+                          .colorPalette[CoconutTooltipState.warning.colorIndex]
+                          .withOpacity(
+                        0.18,
                       ),
-                      const SizedBox(height: 32),
-                    ])),
-
-                    if (_isNetworkOn == false)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: CoconutLayout.defaultPadding,
-                        ),
-                        child: CoconutToolTip(
-                          backgroundColor: CoconutColors.colorPalette[
-                                  CoconutTooltipState.warning.colorIndex]
-                              .withOpacity(
-                            0.18,
+                      tooltipType: CoconutTooltipType.fixed,
+                      richText: RichText(
+                        text: TextSpan(
+                          text: ErrorCodes.networkError.message,
+                          style: CoconutTypography.body2_14_Number.setColor(
+                            CoconutColors.white,
                           ),
-                          tooltipType: CoconutTooltipType.fixed,
-                          richText: RichText(
-                            text: TextSpan(
-                              text: ErrorCodes.networkError.message,
-                              style: CoconutTypography.body2_14_Number.setColor(
-                                CoconutColors.white,
-                              ),
-                            ),
-                          ),
-                          showIcon: true,
-                          tooltipState: CoconutTooltipState.warning,
                         ),
                       ),
+                      showIcon: true,
+                      tooltipState: CoconutTooltipState.warning,
+                    ),
+                  ),
 
-                    if (_isNetworkOn == true &&
-                        widget.isRecommendedFeeFetchSuccess == false)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: CoconutLayout.defaultPadding,
-                        ),
-                        child: CoconutToolTip(
-                          backgroundColor: CoconutColors.colorPalette[
-                                  CoconutTooltipState.error.colorIndex]
-                              .withOpacity(
-                            0.18,
+                if (_isNetworkOn == true &&
+                    widget.isRecommendedFeeFetchSuccess == false)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: CoconutLayout.defaultPadding,
+                    ),
+                    child: CoconutToolTip(
+                      backgroundColor: CoconutColors
+                          .colorPalette[CoconutTooltipState.error.colorIndex]
+                          .withOpacity(
+                        0.18,
+                      ),
+                      tooltipType: CoconutTooltipType.fixed,
+                      richText: RichText(
+                        text: TextSpan(
+                          text: t.errors.fee_selection_error
+                              .recommended_fee_unavailable,
+                          style: CoconutTypography.body2_14_Number.setColor(
+                            CoconutColors.white,
                           ),
-                          tooltipType: CoconutTooltipType.fixed,
-                          richText: RichText(
-                            text: TextSpan(
-                              text: t.errors.fee_selection_error
-                                  .recommended_fee_unavailable,
-                              style: CoconutTypography.body2_14_Number.setColor(
-                                CoconutColors.white,
-                              ),
-                            ),
-                          ),
-                          showIcon: true,
-                          tooltipState: CoconutTooltipState.error,
                         ),
                       ),
+                      showIcon: true,
+                      tooltipState: CoconutTooltipState.error,
+                    ),
+                  ),
 
-                    if (_estimatedFee != null && _estimatedFee! >= kMaxFeeLimit)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: CoconutLayout.defaultPadding,
-                        ),
-                        child: CoconutToolTip(
-                          backgroundColor: CoconutColors.colorPalette[
-                                  CoconutTooltipState.warning.colorIndex]
-                              .withOpacity(
-                            0.18,
+                if (_estimatedFee != null && _estimatedFee! >= kMaxFeeLimit)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: CoconutLayout.defaultPadding,
+                    ),
+                    child: CoconutToolTip(
+                      backgroundColor: CoconutColors
+                          .colorPalette[CoconutTooltipState.warning.colorIndex]
+                          .withOpacity(
+                        0.18,
+                      ),
+                      tooltipType: CoconutTooltipType.fixed,
+                      richText: RichText(
+                        text: TextSpan(
+                          text: t.tooltip.recommended_fee2(
+                            bitcoin: UnitUtil.satoshiToBitcoin(kMaxFeeLimit),
                           ),
-                          tooltipType: CoconutTooltipType.fixed,
-                          richText: RichText(
-                            text: TextSpan(
-                              text: t.tooltip.recommended_fee2(
-                                bitcoin:
-                                    UnitUtil.satoshiToBitcoin(kMaxFeeLimit),
-                              ),
-                              style: CoconutTypography.body2_14_Number.setColor(
-                                CoconutColors.white,
-                              ),
-                            ),
+                          style: CoconutTypography.body2_14_Number.setColor(
+                            CoconutColors.white,
                           ),
-                          showIcon: true,
-                          tooltipState: CoconutTooltipState.warning,
                         ),
                       ),
+                      showIcon: true,
+                      tooltipState: CoconutTooltipState.warning,
+                    ),
+                  ),
 
-                    Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
-                        child: Column(
-                          children: [
-                            ...List.generate(
-                                3,
-                                (index) => FeeSelectionItemCard(
-                                    feeInfo: widget.feeInfos[index],
-                                    isSelected: _selectedFeeLevel ==
-                                        widget.feeInfos[index].level,
-                                    bitcoinPriceKrw: _bitcoinPriceKrw,
-                                    onPressed: () {
-                                      setState(() {
-                                        _selectedFeeLevel =
-                                            widget.feeInfos[index].level;
-                                        _estimatedFee =
-                                            widget.feeInfos[index].estimatedFee;
-                                        _customSatsPerVb = null;
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+                    child: Column(
+                      children: [
+                        ...List.generate(
+                            3,
+                            (index) => FeeSelectionItemCard(
+                                feeInfo: widget.feeInfos[index],
+                                isSelected: _selectedFeeLevel ==
+                                    widget.feeInfos[index].level,
+                                bitcoinPriceKrw: _bitcoinPriceKrw,
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedFeeLevel =
+                                        widget.feeInfos[index].level;
+                                    _estimatedFee =
+                                        widget.feeInfos[index].estimatedFee;
+                                    _customSatsPerVb = null;
 
-                                        debugPrint(
-                                            'selectedFeeLevel : ${widget.selectedFeeLevel}');
-                                      });
-                                    })),
-                            CoconutUnderlinedButton(
-                              brightness: Brightness.dark,
-                              padding: Paddings.widgetContainer,
-                              onTap: () {
-                                CommonBottomSheets.showCustomBottomSheet(
-                                  context: context,
-                                  child: FeeBottomSheet(
-                                    fee: _customSatsPerVb,
-                                    onComplete: _onCustomFeeRateInput,
-                                  ),
-                                );
-                              },
-                              text: t.text_field.enter_fee_directly,
-                              textStyle: const TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Pretendard',
+                                    debugPrint(
+                                        'selectedFeeLevel : ${widget.selectedFeeLevel}');
+                                  });
+                                })),
+                        CoconutUnderlinedButton(
+                          brightness: Brightness.dark,
+                          padding: Paddings.widgetContainer,
+                          onTap: () {
+                            CommonBottomSheets.showCustomBottomSheet(
+                              context: context,
+                              child: FeeBottomSheet(
+                                fee: _customSatsPerVb,
+                                onComplete: _onCustomFeeRateInput,
                               ),
-                              defaultColor: _selectedFeeLevel == null
-                                  ? MyColors.white
-                                  : MyColors.transparentWhite_70,
-                            ),
-                          ],
-                        )),
-                  ],
-                ),
-              )));
+                            );
+                          },
+                          text: t.text_field.enter_fee_directly,
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Pretendard',
+                          ),
+                          defaultColor: _selectedFeeLevel == null
+                              ? MyColors.white
+                              : MyColors.transparentWhite_70,
+                        ),
+                      ],
+                    )),
+              ],
+            ),
+          );
         });
   }
 
@@ -291,7 +287,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   }
 
   void _onCustomFeeRateInput(int customSatsPerVb) async {
-    int customSatsPerVb = int.parse(_customFeeController.text);
     if (widget.networkMinimumFeeRate != null &&
         customSatsPerVb < widget.networkMinimumFeeRate!) {
       CustomToast.showToast(
