@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
-import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
@@ -193,11 +192,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
       _controller.addListener(_nextLoad);
       _depositLabelRenderBox =
           _depositLabelKey.currentContext!.findRenderObject() as RenderBox;
-      _depositLabelPosition = _depositLabelRenderBox.localToGlobal(Offset.zero);
-
       _changeLabelRenderBox =
           _changeLabelKey.currentContext!.findRenderObject() as RenderBox;
-      _changeLabelPosition = _changeLabelRenderBox.localToGlobal(Offset.zero);
+
+      setState(() {
+        _depositLabelPosition =
+            _depositLabelRenderBox.localToGlobal(Offset.zero);
+        _changeLabelPosition = _changeLabelRenderBox.localToGlobal(Offset.zero);
+      });
     });
   }
 
@@ -234,7 +236,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           ),
         ),
         Positioned(
-          left: _depositLabelPosition.dx + 20,
+          left: _depositLabelPosition.dx + 10,
           top: 17,
           child: GestureDetector(
             onTapDown: (_) => _showTooltip(
@@ -255,7 +257,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           ),
         ),
         Positioned(
-          left: _changeLabelPosition.dx + 20,
+          left: _changeLabelPosition.dx + 10,
           top: 17,
           child: GestureDetector(
             onTapDown: (_) => _showTooltip(
@@ -277,62 +279,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
         ),
       ],
     );
-    // return Container(
-    //   padding: const EdgeInsets.symmetric(
-    //     horizontal: 10,
-    //     vertical: 10,
-    //   ),
-    //   child: Container(
-    //     decoration: BoxDecoration(
-    //       borderRadius: BorderRadius.circular(20),
-    //       color: MyColors.transparentWhite_15,
-    //     ),
-    //     child: Row(
-    //       children: [
-    //         Expanded(
-    //             child: TooltipButton(
-    //           isSelected: isReceivingSelected,
-    //           text: t.address_list_screen.receiving,
-    //           isLeft: true,
-    //           iconKey: _depositTooltipKey,
-    //           onTap: () {
-    //             setState(() {
-    //               isReceivingSelected = true;
-    //             });
-    //             scrollToTop();
-    //             _removeTooltip();
-    //           },
-    //           onTapDown: (_) {
-    //             _showTooltip(
-    //               context,
-    //               true,
-    //             );
-    //           },
-    //         )),
-    //         Expanded(
-    //             child: TooltipButton(
-    //           isSelected: !isReceivingSelected,
-    //           text: t.address_list_screen.change,
-    //           isLeft: false,
-    //           iconKey: _changeTooltipKey,
-    //           onTap: () {
-    //             setState(() {
-    //               isReceivingSelected = false;
-    //             });
-    //             scrollToTop();
-    //             _removeTooltip();
-    //           },
-    //           onTapDown: (_) {
-    //             _showTooltip(
-    //               context,
-    //               false,
-    //             );
-    //           },
-    //         )),
-    //       ],
-    //     ),
-    //   ),
-    // );
   }
 
   Widget tooltipWidget(BuildContext context) {

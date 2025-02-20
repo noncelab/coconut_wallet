@@ -28,10 +28,7 @@ class CommonBottomSheets {
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 54),
-          child: child,
-        );
+        return child;
       },
       backgroundColor: MyColors.black,
       isScrollControlled: true,

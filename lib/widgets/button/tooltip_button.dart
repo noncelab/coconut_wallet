@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
+@Deprecated(
+    'TooltipButton has been replaced by CoconutSegmentedControl for better UX and consistency. '
+    'Please migrate to CoconutSegmentedControl as this widget will be removed soon.')
 class TooltipButton extends StatefulWidget {
   final bool isSelected;
   final String text;
