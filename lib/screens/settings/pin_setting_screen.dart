@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -178,34 +179,38 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PinInputPad(
-      title: step == 0
-          ? t.pin_setting_screen.new_password
-          : t.pin_setting_screen.enter_again,
-      pin: step == 0 ? pin : pinConfirm,
-      errorMessage: errorMessage,
-      onKeyTap: _onKeyTap,
-      pinShuffleNumbers: _shuffledPinNumbers,
-      onClosePressed: step == 0
-          ? () {
-              Navigator.pop(context); // Pin 설정 취소
+    return CoconutBottomSheet(
+      appBar: CoconutAppBar.build(
+          context: context,
+          title: '',
+          hasRightIcon: false,
+          isBottom: true,
+          isBackButton: step == 1,
+          onBackPressed: () {
+            if (step == 0) {
+              Navigator.pop(context);
+            } else if (step == 1) {
+              pin = '';
+              pinConfirm = '';
+              step = 0;
+              setState(() {});
+            } else {
+              pin = '';
+              pinConfirm = '';
+              errorMessage = '';
+              step = 0;
+              setState(() {});
             }
-          : () {
-              setState(() {
-                pin = '';
-                pinConfirm = '';
-                step = 0;
-              });
-            },
-      onBackPressed: () {
-        setState(() {
-          pin = '';
-          pinConfirm = '';
-          errorMessage = '';
-          step = 0;
-        });
-      },
-      step: step,
+          }),
+      body: PinInputPad(
+        title: step == 0
+            ? t.pin_setting_screen.new_password
+            : t.pin_setting_screen.enter_again,
+        pin: step == 0 ? pin : pinConfirm,
+        errorMessage: errorMessage,
+        onKeyTap: _onKeyTap,
+        pinShuffleNumbers: _shuffledPinNumbers,
+      ),
     );
   }
 }

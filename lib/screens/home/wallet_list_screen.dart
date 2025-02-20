@@ -265,7 +265,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       () => Navigator.pushNamed(context, '/mnemonic-word-list'),
       () => CommonBottomSheets.showCustomBottomSheet(
           context: context, child: const SecuritySelfCheckBottomSheet()),
-      () => CommonBottomSheets.showBottomSheetWithScreen(
+      () => CommonBottomSheets.showCustomBottomSheet(
           context: context, child: const SettingsScreen()),
       () => Navigator.pushNamed(context, '/app-info'),
     ];

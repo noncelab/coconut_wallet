@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
@@ -170,24 +171,30 @@ class _PinCheckScreenState extends State<PinCheckScreen>
 
   @override
   Widget build(BuildContext context) {
-    return PinInputPad(
-      key: _pinInputScreenKey,
-      appBarVisible: widget.appEntrance ? false : true,
-      title: widget.appEntrance ? '' : t.pin_check_screen.text,
-      initOptionVisible: widget.appEntrance ? true : false,
-      pin: pin,
-      errorMessage: errorMessage,
-      onKeyTap: _onKeyTap,
-      pinShuffleNumbers: _shuffledPinNumbers,
-      onClosePressed: () {
-        Navigator.pop(context);
-      },
-      onReset: widget.appEntrance
-          ? () {
-              _showDialog();
-            }
-          : null,
-      step: 0,
+    return CoconutBottomSheet(
+      appBar: CoconutAppBar.build(
+        context: context,
+        title: '',
+        hasRightIcon: false,
+        isBottom: !widget.appEntrance,
+        onBackPressed: () {
+          Navigator.pop(context);
+        },
+      ),
+      body: PinInputPad(
+        key: _pinInputScreenKey,
+        title: widget.appEntrance ? '' : t.pin_check_screen.text,
+        initOptionVisible: widget.appEntrance ? true : false,
+        pin: pin,
+        errorMessage: errorMessage,
+        onKeyTap: _onKeyTap,
+        pinShuffleNumbers: _shuffledPinNumbers,
+        onReset: widget.appEntrance
+            ? () {
+                _showDialog();
+              }
+            : null,
+      ),
     );
   }
 }
