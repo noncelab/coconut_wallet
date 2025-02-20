@@ -151,7 +151,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                 ])))),
                                         // BTC
                                         Text(
-                                          '${viewModel.input.isNotEmpty ? 0 : viewModel.input} ${t.btc}',
+                                          '${viewModel.input.isEmpty ? 0 : viewModel.input} ${t.btc}',
                                           style: TextStyle(
                                             fontFamily: CustomFonts
                                                 .number.getFontFamily,
