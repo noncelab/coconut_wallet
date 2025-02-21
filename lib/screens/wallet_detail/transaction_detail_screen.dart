@@ -139,25 +139,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                               itemCount: viewModel.inputCountToShow,
                               padding: EdgeInsets.zero,
                               itemBuilder: (context, index) {
+                                final address =
+                                    viewModel.getInputAddress(index);
+                                final amount = viewModel.getInputAmount(index);
                                 return Column(
                                   children: [
                                     InputOutputDetailRow(
-                                      address: viewModel.transaction!
-                                          .inputAddressList[index].address,
-                                      balance: viewModel.transaction!
-                                          .inputAddressList[index].amount,
+                                      address: address,
+                                      balance: amount,
                                       balanceMaxWidth:
                                           _balanceWidthSize.width > 0
                                               ? _balanceWidthSize.width
                                               : 100,
                                       rowType: InputOutputRowType.input,
-                                      isCurrentAddress: viewModel.walletProvider
-                                          .containsAddress(
-                                              widget.id,
-                                              viewModel
-                                                  .transaction!
-                                                  .inputAddressList[index]
-                                                  .address),
+                                      isCurrentAddress:
+                                          viewModel.isSameAddress(address),
                                       transactionStatus: status,
                                     ),
                                     const SizedBox(height: 8),
@@ -171,7 +167,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                 child: CustomUnderlinedButton(
                                   text: t.view_more,
                                   onTap: () {
-                                    viewModel.txModel.viewMoreInput();
+                                    viewModel.onTapViewMoreInputs();
                                   },
                                   fontSize: 12,
                                   lineHeight: 14,
@@ -198,13 +194,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                               itemCount: viewModel.outputCountToShow,
                               padding: EdgeInsets.zero,
                               itemBuilder: (context, index) {
+                                final address =
+                                    viewModel.getOutputAddress(index);
+                                final amount = viewModel.getOutputAmount(index);
                                 return Column(
                                   children: [
                                     InputOutputDetailRow(
-                                      address: viewModel.transaction!
-                                          .outputAddressList[index].address,
-                                      balance: viewModel.transaction!
-                                          .outputAddressList[index].amount,
+                                      address: address,
+                                      balance: amount,
                                       balanceMaxWidth:
                                           _balanceWidthSize.width > 0
                                               ? _balanceWidthSize.width
@@ -230,7 +227,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                 child: CustomUnderlinedButton(
                                   text: t.view_more,
                                   onTap: () {
-                                    viewModel.txModel.viewMoreOutput();
+                                    viewModel.onTapViewMoreOutputs();
                                   },
                                   fontSize: 12,
                                   lineHeight: 14,
@@ -283,9 +280,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                   originalMemo:
                                       viewModel.transaction!.memo ?? '',
                                   onComplete: (memo) {
-                                    if (!viewModel.txModel
-                                        .updateTransactionMemo(
-                                            widget.id, widget.txHash, memo)) {
+                                    if (!viewModel
+                                        .updateTransactionMemo(memo)) {
                                       CustomToast.showWarningToast(
                                         context: context,
                                         text: t.toast.memo_update_failed,
@@ -326,6 +322,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   @override
   void dispose() {
+    _viewModel.init();
     _viewModel.showDialogNotifier.removeListener(_showDialogListener);
     _viewModel.showDialogNotifier.removeListener(_loadCompletedListener);
     super.dispose();

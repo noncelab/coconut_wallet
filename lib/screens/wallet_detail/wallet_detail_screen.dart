@@ -201,6 +201,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                   state, balance, isNetworkOn)) {
                                 return;
                               }
+                              // fixme: 직접 호출하지 않도록 수정
                               viewModel.walletProvider
                                   ?.initWallet(targetId: widget.id);
                             } finally {
