@@ -9,6 +9,7 @@ coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
 btc: "BTC"
+sats: "sats"
 testnet: "테스트넷"
 address: "주소"
 fee: "수수료"

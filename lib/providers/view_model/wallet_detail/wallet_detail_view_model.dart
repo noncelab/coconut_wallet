@@ -292,4 +292,9 @@ class WalletDetailViewModel extends ChangeNotifier {
         _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
     _saveFaucetRecordToSharedPrefs();
   }
+
+  // todo: 상태를 반환해주도록 수정되면 좋겠음.
+  Future<void> refreshWallet() async {
+    _walletProvider.initWallet(targetId: _walletId);
+  }
 }
