@@ -36,12 +36,12 @@ class TransactionUtil {
           (tx) => transaction!.outputAddressList, (item) => item.address,
           defaultValue: '');
 
-  static int getOutputAmount(TransactionRecord? transaction, int index) =>
+  static int getInputAmount(TransactionRecord? transaction, int index) =>
       _getTransactionField<int>(transaction, index,
           (tx) => transaction!.inputAddressList, (item) => item.amount,
           defaultValue: 0);
 
-  static int getInputAmount(TransactionRecord? transaction, int index) =>
+  static int getOutputAmount(TransactionRecord? transaction, int index) =>
       _getTransactionField<int>(transaction, index,
           (tx) => transaction!.outputAddressList, (item) => item.amount,
           defaultValue: 0);

@@ -12,7 +12,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
   final Unit currentUnit;
   final int? balance;
   final WalletAddress receiveAddress;
-  final String selectedFilter;
   final Function(int?, String, String) onTapReceive;
   final Function(int?) onTapSend;
   final Function removePopup;
@@ -23,7 +22,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
     required this.currentUnit,
     required this.balance,
     required this.receiveAddress,
-    required this.selectedFilter,
     required this.onTapReceive,
     required this.onTapSend,
     required this.removePopup,

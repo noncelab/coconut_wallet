@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -9,7 +8,6 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -106,7 +104,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       widget.id,
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
-      Provider.of<UtxoTagProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<UpbitConnectModel>(context, listen: false),
     );
@@ -149,10 +146,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       'id': widget.id,
       'isMultisig': viewModel.walletType == WalletType.multiSignature
     });
-
-    if (viewModel.isUpdatedTagList) {
-      viewModel.getUtxoListWithHoldingAddress();
-    }
   }
 
   Widget _buildBody(BuildContext context, WalletDetailViewModel viewModel) {
@@ -294,7 +287,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       // walletStatus: viewModel.getInitializedWalletStatus(),
       // walletStatus: null,
       balance: balance,
-      selectedFilter: viewModel.selectedUtxoOrder.text,
       onTapReceive: (balance, address, path) {
         _onTapReceiveOrSend(balance, state, isNetworkOn,
             address: address, path: path);
@@ -348,11 +340,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             setState(() {
               _stickyHeaderVisible = true;
             });
-            if (_stickyHeaderRenderBox == null &&
-                _viewModel.utxoList.isNotEmpty == true) {
-              _stickyHeaderRenderBox = _stickyHeaderWidgetKey.currentContext
-                  ?.findRenderObject() as RenderBox;
-            }
+            _stickyHeaderRenderBox ??= _stickyHeaderWidgetKey.currentContext
+                ?.findRenderObject() as RenderBox;
           }
         } else {
           if (!_isPullToRefreshing) {
