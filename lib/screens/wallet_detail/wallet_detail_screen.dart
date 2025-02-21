@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -28,6 +29,7 @@ import 'package:coconut_wallet/widgets/selector/wallet_detail_tab.dart';
 import 'package:coconut_wallet/widgets/tooltip/faucet_tooltip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 enum Unit { btc, sats }
@@ -116,76 +118,48 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                 children: [
                   Scaffold(
                     backgroundColor: MyColors.black,
-                    appBar: CustomAppBar.build(
-                      entireWidgetKey: _appBarKey,
-                      faucetIconKey: _faucetIconKey,
-                      backgroundColor: MyColors.black,
-                      title: TextUtils.ellipsisIfLonger(
-                        viewModel.walletListBaseItem!.name,
-                        maxLength: 15,
-                      ),
-                      context: context,
-                      hasRightIcon: true,
-                      onFaucetIconPressed: () async {
-                        _removeFilterDropdown();
-                        viewModel.removeFaucetTooltip();
-                        if (!_checkStateAndShowToast(
-                            state, balance, isNetworkOn)) {
-                          return;
-                        }
-                        await CommonBottomSheets.showBottomSheet_50(
-                            context: context,
-                            child: FaucetRequestBottomSheet(
-                              // TODO: walletAddressBook
-                              // walletAddressBook: const [],
-                              walletData: {
-                                'wallet_id': viewModel.walletId,
-                                'wallet_address': viewModel.walletAddress,
-                                'wallet_name': viewModel.walletName,
-                                'wallet_index': viewModel.receiveAddressIndex,
-                              },
-                              isRequesting: viewModel.isRequesting,
-                              onRequest: (address, requestAmount) {
-                                if (viewModel.isRequesting) return;
+                    appBar: CoconutAppBar.build(
+                        entireWidgetKey: _appBarKey,
+                        faucetIconKey: _faucetIconKey, // CDS에서 제거 필요
+                        title: TextUtils.ellipsisIfLonger(
+                          viewModel.walletListBaseItem!.name,
+                          maxLength: 15,
+                        ),
+                        context: context,
+                        hasRightIcon: true,
+                        onTitlePressed: () async {
+                          await Navigator.pushNamed(context, '/wallet-info',
+                              arguments: {
+                                'id': widget.id,
+                                'isMultisig': viewModel.walletType ==
+                                    WalletType.multiSignature
+                              });
 
-                                viewModel.requestTestBitcoin(
-                                    address, requestAmount, (success, message) {
-                                  if (success) {
-                                    Navigator.pop(context);
-                                    vibrateLight();
-                                    Future.delayed(const Duration(seconds: 1),
-                                        () {
-                                      viewModel.walletProvider?.initWallet(
-                                          targetId: widget.id,
-                                          syncOthers: false);
-                                    });
-                                    CustomToast.showToast(
-                                        context: context, text: message);
-                                  } else {
-                                    vibrateMedium();
-                                    CustomToast.showWarningToast(
-                                        context: context, text: message);
-                                  }
-                                });
+                          if (viewModel.isUpdatedTagList) {
+                            viewModel.getUtxoListWithHoldingAddress();
+                          }
+                        },
+                        actionButtonList: [
+                          IconButton(
+                              onPressed: () {
+                                _onFaucetIconPressed(
+                                    viewModel, state, balance, isNetworkOn);
                               },
-                              walletProvider: viewModel.walletProvider!,
-                              walletItem: viewModel.walletListBaseItem!,
-                            ));
-                      },
-                      onTitlePressed: () async {
-                        await Navigator.pushNamed(
-                            context, '/wallet-info', arguments: {
-                          'id': widget.id,
-                          'isMultisig':
-                              viewModel.walletType == WalletType.multiSignature
-                        });
-
-                        if (viewModel.isUpdatedTagList) {
-                          viewModel.getUtxoListWithHoldingAddress();
-                        }
-                      },
-                      showFaucetIcon: true,
-                    ),
+                              icon: SvgPicture.asset(
+                                'assets/svg/faucet.svg',
+                                width: 18,
+                                height: 18,
+                              )),
+                          IconButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/utxo-list');
+                              },
+                              icon: SvgPicture.asset(
+                                'assets/svg/coins.svg',
+                                width: 18,
+                                height: 18,
+                              ))
+                        ]),
                     body: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       controller: _scrollController,
@@ -375,6 +349,49 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         },
       ),
     );
+  }
+
+  void _onFaucetIconPressed(WalletDetailViewModel viewModel,
+      WalletInitState state, int balance, bool? isNetworkOn) async {
+    _removeFilterDropdown();
+    viewModel.removeFaucetTooltip();
+    if (!_checkStateAndShowToast(state, balance, isNetworkOn)) {
+      return;
+    }
+    await CommonBottomSheets.showBottomSheet_50(
+        context: context,
+        child: FaucetRequestBottomSheet(
+          // TODO: walletAddressBook
+          // walletAddressBook: const [],
+          walletData: {
+            'wallet_id': viewModel.walletId,
+            'wallet_address': viewModel.walletAddress,
+            'wallet_name': viewModel.walletName,
+            'wallet_index': viewModel.receiveAddressIndex,
+          },
+          isRequesting: viewModel.isRequesting,
+          onRequest: (address, requestAmount) {
+            if (viewModel.isRequesting) return;
+
+            viewModel.requestTestBitcoin(address, requestAmount,
+                (success, message) {
+              if (success) {
+                Navigator.pop(context);
+                vibrateLight();
+                Future.delayed(const Duration(seconds: 1), () {
+                  viewModel.walletProvider
+                      ?.initWallet(targetId: widget.id, syncOthers: false);
+                });
+                CustomToast.showToast(context: context, text: message);
+              } else {
+                vibrateMedium();
+                CustomToast.showWarningToast(context: context, text: message);
+              }
+            });
+          },
+          walletProvider: viewModel.walletProvider!,
+          walletItem: viewModel.walletListBaseItem!,
+        ));
   }
 
   @override

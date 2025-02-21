@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/cupertino.dart';
@@ -43,65 +44,65 @@ class WalletDetailTab extends StatelessWidget {
         children: [
           Row(
             children: [
-              CupertinoButton(
-                pressedOpacity: 0.8,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minSize: 0,
-                onPressed: () {
-                  onTapTransaction();
-                },
-                child: Text(
-                  '거래 내역',
-                  style: Styles.h3.merge(
-                    TextStyle(
-                      color: selectedListType == WalletDetailTabType.transaction
-                          ? MyColors.white
-                          : MyColors.transparentWhite_50,
-                    ),
+              // CupertinoButton(
+              // pressedOpacity: 0.8,
+              // padding: const EdgeInsets.symmetric(horizontal: 8),
+              // minSize: 0,
+              // onPressed: () {
+              //   onTapTransaction();
+              // },
+              // child:
+              Text(t.tx_list, style: Styles.h3
+                  // .merge(
+                  //   TextStyle(
+                  //     color: selectedListType == WalletDetailTabType.transaction
+                  //         ? MyColors.white
+                  //         : MyColors.transparentWhite_50,
+                  //   ),
+                  // ),
                   ),
-                ),
-              ),
-              const SizedBox(
-                width: 8,
-              ),
-              CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                pressedOpacity: 0.8,
-                // focusColor: MyColors.white,
-                minSize: 0,
-                onPressed: () {
-                  onTapUtxo();
-                },
-                child: Text.rich(
-                  TextSpan(
-                    text: 'UTXO 목록',
-                    style: Styles.h3.merge(
-                      TextStyle(
-                        color: selectedListType == WalletDetailTabType.utxo
-                            ? MyColors.white
-                            : MyColors.transparentWhite_50,
-                      ),
-                    ),
-                    children: [
-                      if (utxoListLength > 0) ...{
-                        TextSpan(
-                          text: ' ($utxoListLength개)',
-                          style: Styles.caption.merge(
-                            TextStyle(
-                              color:
-                                  selectedListType == WalletDetailTabType.utxo
-                                      ? MyColors.transparentWhite_70
-                                      : MyColors.transparentWhite_50,
-                              fontFamily: 'Pretendard',
-                            ),
-                          ),
-                        ),
-                      }
-                    ],
-                  ),
-                ),
-              ),
-              const Spacer(),
+              // ),
+              // const SizedBox(
+              //   width: 8,
+              // ),
+              // CupertinoButton(
+              //   padding: const EdgeInsets.symmetric(horizontal: 8),
+              //   pressedOpacity: 0.8,
+              //   // focusColor: MyColors.white,
+              //   minSize: 0,
+              //   onPressed: () {
+              //     onTapUtxo();
+              //   },
+              //   child: Text.rich(
+              //     TextSpan(
+              //       text: 'UTXO 목록',
+              //       style: Styles.h3.merge(
+              //         TextStyle(
+              //           color: selectedListType == WalletDetailTabType.utxo
+              //               ? MyColors.white
+              //               : MyColors.transparentWhite_50,
+              //         ),
+              //       ),
+              //       children: [
+              //         if (utxoListLength > 0) ...{
+              //           TextSpan(
+              //             text: ' ($utxoListLength개)',
+              //             style: Styles.caption.merge(
+              //               TextStyle(
+              //                 color:
+              //                     selectedListType == WalletDetailTabType.utxo
+              //                         ? MyColors.transparentWhite_70
+              //                         : MyColors.transparentWhite_50,
+              //                 fontFamily: 'Pretendard',
+              //               ),
+              //             ),
+              //           ),
+              //         }
+              //       ],
+              //     ),
+              //   ),
+              // ),
+              // const Spacer(),
               Visibility(
                 visible:
                     !isPullToRefreshing && state == WalletInitState.processing,
@@ -150,39 +151,39 @@ class WalletDetailTab extends StatelessWidget {
               ),
             ],
           ),
-          if (isUtxoDropdownVisible) ...{
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                CupertinoButton(
-                  onPressed: () {
-                    onTapUtxoDropdown();
-                  },
-                  minSize: 0,
-                  padding: const EdgeInsets.only(left: 8, top: 8),
-                  child: Row(
-                    children: [
-                      Text(
-                        utxoOrderText,
-                        style: Styles.caption2.merge(
-                          const TextStyle(
-                            color: MyColors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 4,
-                      ),
-                      SvgPicture.asset(
-                        'assets/svg/arrow-down.svg',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          }
+          // if (isUtxoDropdownVisible) ...{
+          //   Row(
+          //     mainAxisAlignment: MainAxisAlignment.end,
+          //     children: [
+          //       CupertinoButton(
+          //         onPressed: () {
+          //           onTapUtxoDropdown();
+          //         },
+          //         minSize: 0,
+          //         padding: const EdgeInsets.only(left: 8, top: 8),
+          //         child: Row(
+          //           children: [
+          //             Text(
+          //               utxoOrderText,
+          //               style: Styles.caption2.merge(
+          //                 const TextStyle(
+          //                   color: MyColors.white,
+          //                   fontSize: 12,
+          //                 ),
+          //               ),
+          //             ),
+          //             const SizedBox(
+          //               width: 4,
+          //             ),
+          //             SvgPicture.asset(
+          //               'assets/svg/arrow-down.svg',
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // }
         ],
       ),
     );
