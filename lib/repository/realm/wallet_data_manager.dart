@@ -1007,4 +1007,8 @@ class WalletDataManager {
     }
     return realmWalletBase;
   }
+
+  RealmResults<RealmTransaction> getTransactions(int id) {
+    return _realm.query<RealmTransaction>('walletId == $id');
+  }
 }
