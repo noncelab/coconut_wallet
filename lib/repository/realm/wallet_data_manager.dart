@@ -125,25 +125,20 @@ class WalletDataManager {
             await _cryptography!.decrypt(walletBases[i].descriptor);
       }
 
-      var balance = getTotalBalanceFromDb(walletBases[i].id);
+      var balance = getWalletBalance(walletBases[i].id);
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
         _walletList!.add(mapRealmWalletBaseToSinglesigWalletListItem(
-            walletBases[i], decryptedDescriptor, balance));
+            walletBases[i], decryptedDescriptor, balance.total));
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         _walletList!.add(mapRealmMultisigWalletToMultisigWalletListItem(
             multisigWallets[multisigWalletIndex++],
             decryptedDescriptor,
-            balance));
+            balance.total));
       }
     }
 
     return List.from(_walletList!);
-  }
-
-  int getTotalBalanceFromDb(int walletId) {
-    var balance = _realm.query<RealmWalletBalance>('walletId == $walletId}');
-    return balance.last.total;
   }
 
   Future<SinglesigWalletListItem> addSinglesigWallet(
@@ -626,18 +621,20 @@ class WalletDataManager {
   updateWalletBalance(int walletId, Balance balance) {
     _checkInitialized();
 
-    RealmWalletBase? realmWalletBase = _realm.find<RealmWalletBase>(walletId);
-    RealmWalletBalance? realmWalletBalance =
-        _realm.find<RealmWalletBalance>(walletId);
+    final realmWalletBase = _realm.find<RealmWalletBase>(walletId);
+    final balanceResults =
+        _realm.query<RealmWalletBalance>('walletId == $walletId');
 
     if (realmWalletBase == null) {
       throw StateError('[updateWalletBalance] Wallet not found');
     }
 
-    if (realmWalletBalance == null) {
+    if (balanceResults.isEmpty) {
       _createNewWalletBalance(realmWalletBase, balance);
       return;
     }
+
+    final realmWalletBalance = balanceResults.first;
 
     _realm.write(() {
       realmWalletBase.balance = balance.total;
@@ -674,9 +671,9 @@ class WalletDataManager {
 
   Balance getWalletBalance(int walletId) {
     final realmWalletBalance =
-        _realm.query<RealmWalletBalance>('walletId == $walletId');
+        _realm.query<RealmWalletBalance>('walletId == $walletId').firstOrNull;
 
-    if (realmWalletBalance.isEmpty) {
+    if (realmWalletBalance == null) {
       _createNewWalletBalance(
         _realm.find<RealmWalletBase>(walletId)!,
         Balance(0, 0),
@@ -685,8 +682,8 @@ class WalletDataManager {
     }
 
     return Balance(
-      realmWalletBalance.last.confirmed,
-      realmWalletBalance.last.unconfirmed,
+      realmWalletBalance.confirmed,
+      realmWalletBalance.unconfirmed,
     );
   }
 
@@ -980,7 +977,7 @@ class WalletDataManager {
 
   WalletAddress getChangeAddress(int walletId) {
     final realmWalletBase = getExistingWalletBase(walletId);
-    final changeIndex = realmWalletBase.generatedChangeIndex + 1;
+    final changeIndex = realmWalletBase.usedChangeIndex + 1;
     final realmWalletAddress = _realm.query<RealmWalletAddress>(
       r'walletId == $0 AND isChange == true AND index == $1',
       [walletId, changeIndex],
@@ -991,7 +988,7 @@ class WalletDataManager {
 
   WalletAddress getReceiveAddress(int walletId) {
     final realmWalletBase = getExistingWalletBase(walletId);
-    final receiveIndex = realmWalletBase.generatedReceiveIndex + 1;
+    final receiveIndex = realmWalletBase.usedReceiveIndex + 1;
     final realmWalletAddress = _realm.query<RealmWalletAddress>(
       r'walletId == $0 AND isChange == false AND index == $1',
       [walletId, receiveIndex],
