@@ -534,47 +534,26 @@ class NodeProvider extends ChangeNotifier {
   }
 
   /// 스크립트 상태 변경 이벤트 처리
-  Future<void> _handleScriptStatusChanged(String scriptPubKey, String newStatus,
-      WalletProvider walletProvider) async {
+  Future<void> _handleScriptStatusChanged(
+      String scriptPubKey, String newStatus) async {
     try {
       // 1. 해당 스크립트를 사용하는 지갑 찾기
-      final walletId = await _findWalletIdForScript(scriptPubKey);
-      if (walletId == null) {
-        Logger.error('No wallet found for script: $scriptPubKey');
-        return;
-      }
+      // TODO: 해당 스크립트를 사용하는 지갑 찾기
 
-      // 2. 지갑 정보 가져오기
-      final walletItem = _walletDataManager.walletList
-          ?.firstWhere((wallet) => wallet.id == walletId);
-      if (walletItem == null) {
-        Logger.error('Wallet not found: $walletId');
-        return;
-      }
-
-      // 3. 새로운 트랜잭션 조회
+      // 2. 새로운 트랜잭션 조회
       // TODO: 새로운 트랜잭션 조회
 
-      // 4. 잔액 조회
+      // 3. 잔액 조회
       // TODO: 잔액 조회
 
-      // 5. UTXO 목록 조회
+      // 4. UTXO 목록 조회
       // TODO: UTXO 목록 조회
 
-      // 6. 트랜잭션, UTXO, 잔액 저장
+      // 5. 트랜잭션, UTXO, 잔액 저장
       // TODO: 트랜잭션, UTXO, 잔액 저장
     } catch (e) {
       Logger.error('Failed to handle script status change: $e');
     }
-  }
-
-  /// 스크립트를 사용하는 지갑 ID 찾기
-  Future<int?> _findWalletIdForScript(String scriptPubKey) async {
-    final scriptStatus = _walletDataManager.getScriptStatus(scriptPubKey, -1);
-    if (scriptStatus.isSuccess && scriptStatus.value != null) {
-      return scriptStatus.value!.walletId;
-    }
-    return null;
   }
 
   @override
