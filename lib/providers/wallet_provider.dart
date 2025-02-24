@@ -259,15 +259,17 @@ class WalletProvider extends ChangeNotifier {
     return ResultOfSyncFromVault(result: result, walletId: newItem.id);
   }
 
-  // TODO: 특정 지갑의 정보 갱신
+  // TODO: 특정 지갑의 잔액 갱신
   Future<void> _fetchWalletBalance(WalletListItemBase walletItem) async {
     // await generateWalletAddress(walletItem, -1, false);
     // await generateWalletAddress(walletItem, -1, true);
     //final Balance balance = getWalletBalance(walletItem.id);
     final Balance balance = Balance(Random().nextInt(100000), 0);
     _walletBalance[walletItem.id] = balance;
+
+    // notify
     _balanceStream.add({walletItem.id: balance});
-    //notifyListeners();
+    notifyListeners();
   }
 
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
