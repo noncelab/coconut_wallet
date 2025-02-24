@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/services/network/node_client.dart';
 
-abstract class IsolateManagerBase extends NodeClient {
+abstract class IsolateManagerBase {
   bool get isInitialized;
   Future<void> initialize(
       NodeClientFactory factory, String host, int port, bool ssl);

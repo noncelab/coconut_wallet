@@ -17,6 +17,7 @@ import 'package:coconut_wallet/services/isolate_manager.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
 import 'package:coconut_wallet/services/model/stream/stream_state.dart';
 import 'package:coconut_wallet/services/network/node_client.dart';
@@ -33,11 +34,19 @@ class NodeProvider extends ChangeNotifier {
   Completer<void>? _initCompleter;
   Completer<void>? _syncCompleter;
 
+  // 메인 소켓 관리를 위한 필드
+  late NodeClient _mainClient;
+  late StreamController<(String, String)>
+      _scriptStatusController; // (scriptPubKey, status)
+
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
   bool get isSyncing => _syncCompleter != null;
   String get host => _host;
   int get port => _port;
   bool get ssl => _ssl;
+
+  Stream<(String, String)> get scriptStatusStream =>
+      _scriptStatusController.stream;
 
   NodeProvider(
     this._host,
@@ -53,11 +62,56 @@ class NodeProvider extends ChangeNotifier {
 
   Future<void> _initialize(NodeClientFactory? nodeClientFactory) async {
     try {
+      // IsolateManager 초기화
       final factory = nodeClientFactory ?? ElectrumNodeClientFactory();
       await _isolateManager.initialize(factory, _host, _port, _ssl);
+
+      _mainClient = await factory.create(_host, _port, ssl: _ssl);
+      _scriptStatusController = StreamController<(String, String)>.broadcast();
+
       _initCompleter?.complete();
     } catch (e) {
       _initCompleter?.completeError(e);
+      rethrow;
+    }
+  }
+
+  /// 스크립트 구독
+  /// [scriptPubKey] 구독할 스크립트 공개키
+  /// [walletId] 지갑 ID
+  Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
+    if (!isInitialized) {
+      return Result.failure(ErrorCodes.nodeIsolateError);
+    }
+
+    try {
+      SubscribeWalletResponse subscribeResponse =
+          await _mainClient.subscribeWallet(walletItem);
+
+      if (subscribeResponse.scriptStatuses.isEmpty) {
+        return Result.success(true);
+      }
+
+      // 구독중인 스크립트 메모리 저장
+      walletItem.scriptStatusMap = {
+        for (var scriptStatus in subscribeResponse.scriptStatuses)
+          scriptStatus.scriptPubKey: scriptStatus,
+      };
+
+      // DB에 상태 저장
+      _walletDataManager.batchUpdateScriptStatuses(
+          subscribeResponse, walletItem.id);
+
+      // 스크립트 상태 변경 이벤트 발생
+      notifyListeners();
+      for (var scriptStatus in subscribeResponse.scriptStatuses) {
+        _scriptStatusController
+            .add((scriptStatus.scriptPubKey, scriptStatus.status));
+      }
+
+      return Result.success(true);
+    } catch (e) {
+      return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
     }
   }
 
@@ -479,10 +533,56 @@ class NodeProvider extends ChangeNotifier {
     return utxos;
   }
 
+  /// 스크립트 상태 변경 이벤트 처리
+  Future<void> _handleScriptStatusChanged(String scriptPubKey, String newStatus,
+      WalletProvider walletProvider) async {
+    try {
+      // 1. 해당 스크립트를 사용하는 지갑 찾기
+      final walletId = await _findWalletIdForScript(scriptPubKey);
+      if (walletId == null) {
+        Logger.error('No wallet found for script: $scriptPubKey');
+        return;
+      }
+
+      // 2. 지갑 정보 가져오기
+      final walletItem = _walletDataManager.walletList
+          ?.firstWhere((wallet) => wallet.id == walletId);
+      if (walletItem == null) {
+        Logger.error('Wallet not found: $walletId');
+        return;
+      }
+
+      // 3. 새로운 트랜잭션 조회
+      // TODO: 새로운 트랜잭션 조회
+
+      // 4. 잔액 조회
+      // TODO: 잔액 조회
+
+      // 5. UTXO 목록 조회
+      // TODO: UTXO 목록 조회
+
+      // 6. 트랜잭션, UTXO, 잔액 저장
+      // TODO: 트랜잭션, UTXO, 잔액 저장
+    } catch (e) {
+      Logger.error('Failed to handle script status change: $e');
+    }
+  }
+
+  /// 스크립트를 사용하는 지갑 ID 찾기
+  Future<int?> _findWalletIdForScript(String scriptPubKey) async {
+    final scriptStatus = _walletDataManager.getScriptStatus(scriptPubKey, -1);
+    if (scriptStatus.isSuccess && scriptStatus.value != null) {
+      return scriptStatus.value!.walletId;
+    }
+    return null;
+  }
+
   @override
   void dispose() {
     super.dispose();
     _syncCompleter = null;
+    _mainClient.dispose();
+    _scriptStatusController.close();
     _isolateManager.dispose();
   }
 }

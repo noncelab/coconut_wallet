@@ -1,10 +1,12 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
 
 /// @nodoc
@@ -47,6 +49,11 @@ abstract class NodeClient {
 
   Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
       {int receiveUsedIndex = -1, int changeUsedIndex = -1});
+
+  Future<SubscribeWalletResponse> subscribeWallet(
+      WalletListItemBase walletItem);
+
+  Future<void> unsubscribeScripts(WalletListItemBase walletItem);
 
   void dispose();
 }

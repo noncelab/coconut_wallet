@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/script/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 
 abstract class WalletListItemBase {
@@ -22,6 +23,9 @@ abstract class WalletListItemBase {
 
   late WalletBase walletBase;
   List<UtxoState> utxoList = []; // TODO: DB 추가 후 DB에서 조회하도록 수정
+
+  Map<String, ScriptStatus> scriptStatusMap =
+      {}; // { ScriptPubKey: ScriptStatus }
 
   WalletListItemBase(
       {required this.id,

@@ -3,12 +3,15 @@ import 'dart:math';
 import 'package:async/async.dart' as async;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/script/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/services/network/electrum/electrum_client.dart';
 import 'package:coconut_wallet/services/network/node_client.dart';
 import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
@@ -502,5 +505,91 @@ class ElectrumService extends NodeClient {
 
     return RecommendedFee(
         fastestFee, halfHourFee, hourFee, economyFee, minimumFee);
+  }
+
+  @override
+  Future<SubscribeWalletResponse> subscribeWallet(
+      WalletListItemBase walletItem) async {
+    final receiveFutures = _subscribeWallet(walletItem.walletBase, false);
+    final changeFutures = _subscribeWallet(walletItem.walletBase, true);
+
+    final [receiveResult, changeResult] =
+        await Future.wait([receiveFutures, changeFutures]);
+
+    walletItem.receiveUsedIndex = receiveResult.$2;
+    walletItem.changeUsedIndex = changeResult.$2;
+
+    receiveResult.$1.addAll(changeResult.$1);
+    return SubscribeWalletResponse(
+      scriptStatuses: receiveResult.$1,
+      usedReceiveIndex: receiveResult.$2,
+      usedChangeIndex: changeResult.$2,
+    );
+  }
+
+  Future<(List<ScriptStatus> scriptStatuses, int lastUsedIndex)>
+      _subscribeWallet(WalletBase wallet, bool isChange) async {
+    int currentAddressIndex = 0;
+    int addressScanLimit = gapLimit;
+    int lastUsedIndex = -1;
+    List<ScriptStatus> scriptStatuses = [];
+    DateTime lastUpdatedTime = DateTime.now();
+
+    while (currentAddressIndex < addressScanLimit) {
+      Map<int, String> addressScripts = _prepareAddressScriptsMap(
+        wallet,
+        currentAddressIndex,
+        addressScanLimit,
+        isChange,
+      );
+
+      // 병렬 처리 결과를 저장할 리스트
+      final results = await Future.wait(
+        addressScripts.entries.map((entry) async {
+          final derivationIndex = entry.key;
+          final script = entry.value;
+
+          try {
+            final status = await _client.subscribeScript(script);
+            return (derivationIndex, script, status);
+          } catch (e, stack) {
+            Logger.error(
+                'Script subscription error at index $derivationIndex: $e');
+            Logger.error(stack);
+            return null;
+          }
+        }),
+      );
+
+      // 결과 처리 및 인덱스 갱신
+      for (final result in results) {
+        if (result == null) continue;
+        final (derivationIndex, script, status) = result;
+
+        if (status != null) {
+          lastUsedIndex = max(lastUsedIndex, derivationIndex);
+          scriptStatuses.add(ScriptStatus(
+              scriptPubKey: script,
+              status: status,
+              timestamp: lastUpdatedTime,
+              derivationIndex: derivationIndex,
+              isChange: isChange));
+        }
+      }
+
+      // 사용된 주소가 발견된 경우 스캔 범위 확장
+      if (lastUsedIndex >= currentAddressIndex) {
+        addressScanLimit = lastUsedIndex + gapLimit + 1;
+      }
+      currentAddressIndex += addressScripts.length;
+    }
+
+    return (scriptStatuses, lastUsedIndex);
+  }
+
+  @override
+  Future<void> unsubscribeScripts(WalletListItemBase walletItem) {
+    // TODO: implement unsubscribeScripts
+    throw UnimplementedError();
   }
 }

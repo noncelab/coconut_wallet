@@ -22,9 +22,6 @@ class IsolateManager implements IsolateManagerBase {
   @override
   bool get isInitialized => (_sendPort != null && _isolate != null);
 
-  @override
-  int gapLimit = 20;
-
   IsolateManager() : _receivePort = ReceivePort() {
     _isolateReady = Completer<void>();
   }
@@ -238,27 +235,22 @@ class IsolateManager implements IsolateManagerBase {
     });
   }
 
-  @override
   Future<String> broadcast(String rawTransaction) async {
     return _send<String>(IsolateMessageType.broadcast, [rawTransaction]);
   }
 
-  @override
   Future<int> getNetworkMinimumFeeRate() async {
     return _send<int>(IsolateMessageType.getNetworkMinimumFeeRate, []);
   }
 
-  @override
   Future<BlockTimestamp> getLatestBlock() {
     return _send<BlockTimestamp>(IsolateMessageType.getLatestBlock, []);
   }
 
-  @override
   Future<String> getTransaction(String txHash) async {
     return _send<String>(IsolateMessageType.getTransaction, [txHash]);
   }
 
-  @override
   Future<List<Transaction>> getPreviousTransactions(
       Transaction transaction, List<Transaction> existingTxList) {
     return _send<List<Transaction>>(
@@ -266,12 +258,10 @@ class IsolateManager implements IsolateManagerBase {
         [transaction, existingTxList]);
   }
 
-  @override
   Future<RecommendedFee> getRecommendedFees() {
     return _send<RecommendedFee>(IsolateMessageType.getRecommendedFees, []);
   }
 
-  @override
   Future<
           (
             List<AddressBalance> receiveBalanceList,
@@ -285,14 +275,12 @@ class IsolateManager implements IsolateManagerBase {
         [wallet, receiveUsedIndex, changeUsedIndex]);
   }
 
-  @override
   Stream<BaseStreamState<BlockTimestamp>> fetchBlocksByHeight(
       Set<int> heights) {
     return _sendStream<BaseStreamState<BlockTimestamp>>(
         IsolateMessageType.fetchBlocksByHeight, [heights]);
   }
 
-  @override
   Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
       WalletBase wallet,
       {Set<String>? knownTransactionHashes,
@@ -303,14 +291,12 @@ class IsolateManager implements IsolateManagerBase {
         [wallet, knownTransactionHashes, receiveUsedIndex, changeUsedIndex]);
   }
 
-  @override
   Stream<BaseStreamState<Transaction>> fetchTransactionDetails(
       Set<String> transactionHashes) {
     return _sendStream<BaseStreamState<Transaction>>(
         IsolateMessageType.fetchTransactionDetails, [transactionHashes]);
   }
 
-  @override
   Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
       {int receiveUsedIndex = -1, int changeUsedIndex = -1}) {
     return _sendStream<BaseStreamState<UtxoState>>(
@@ -318,7 +304,6 @@ class IsolateManager implements IsolateManagerBase {
         [wallet, receiveUsedIndex, changeUsedIndex]);
   }
 
-  @override
   void dispose() {
     _isolate?.kill(priority: Isolate.immediate);
     _receivePort.close();

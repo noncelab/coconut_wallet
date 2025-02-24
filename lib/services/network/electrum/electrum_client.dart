@@ -196,7 +196,7 @@ class ElectrumClient {
     return response.result;
   }
 
-  Future<dynamic> subscribeScript(String script) async {
+  Future<String?> subscribeScript(String script) async {
     var reversedScriptHash = _scriptToReversedHash(script);
     var response = await _call(
         _BlockchainScripthashSubscribeReq(reversedScriptHash),
@@ -205,7 +205,7 @@ class ElectrumClient {
     return response.result;
   }
 
-  Future<dynamic> unsubscribeScript(String script) async {
+  Future<bool> unsubscribeScript(String script) async {
     var reversedScriptHash = _scriptToReversedHash(script);
     var response = await _call(
         _BlockchainScripthashUnsubscribeReq(reversedScriptHash),
