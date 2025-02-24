@@ -102,6 +102,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	String apply_item({required Object count}) => '${count}개에 적용';
 	String fee_sats({required Object value}) => ' (${value} sats/vb)';
 	String utxo_count({required Object count}) => '(${count}개)';
+	String total_utxo_count({required Object count}) => '(총 ${count}개)';
 	String get view_app_info => '앱 정보 보기';
 	String get view_tx_details => '거래 자세히 보기';
 	String get view_more => '더보기';
@@ -136,6 +137,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
 	late final TranslationsPinSettingScreenKr pin_setting_screen = TranslationsPinSettingScreenKr.internal(_root);
 	late final TranslationsSettingsScreenKr settings_screen = TranslationsSettingsScreenKr.internal(_root);
 	late final TranslationsAddressListScreenKr address_list_screen = TranslationsAddressListScreenKr.internal(_root);
+	late final TranslationsUtxoListScreenKr utxo_list_screen = TranslationsUtxoListScreenKr.internal(_root);
 	late final TranslationsTransactionDetailScreenKr transaction_detail_screen = TranslationsTransactionDetailScreenKr.internal(_root);
 	late final TranslationsUtxoDetailScreenKr utxo_detail_screen = TranslationsUtxoDetailScreenKr.internal(_root);
 	late final TranslationsUtxoTagScreenKr utxo_tag_screen = TranslationsUtxoTagScreenKr.internal(_root);
@@ -349,6 +351,16 @@ class TranslationsAddressListScreenKr {
 	String address_index({required Object index}) => '주소 - ${index}';
 	String get receiving => '입금';
 	String get change => '잔돈';
+}
+
+// Path: utxo_list_screen
+class TranslationsUtxoListScreenKr {
+	TranslationsUtxoListScreenKr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+	String get total_balance => '총 잔액';
 }
 
 // Path: transaction_detail_screen
@@ -922,6 +934,7 @@ extension on Translations {
 			case 'apply_item': return ({required Object count}) => '${count}개에 적용';
 			case 'fee_sats': return ({required Object value}) => ' (${value} sats/vb)';
 			case 'utxo_count': return ({required Object count}) => '(${count}개)';
+			case 'total_utxo_count': return ({required Object count}) => '(총 ${count}개)';
 			case 'view_app_info': return '앱 정보 보기';
 			case 'view_tx_details': return '거래 자세히 보기';
 			case 'view_more': return '더보기';
@@ -990,6 +1003,7 @@ extension on Translations {
 			case 'address_list_screen.address_index': return ({required Object index}) => '주소 - ${index}';
 			case 'address_list_screen.receiving': return '입금';
 			case 'address_list_screen.change': return '잔돈';
+			case 'utxo_list_screen.total_balance': return '총 잔액';
 			case 'transaction_detail_screen.confirmation': return ({required Object height, required Object count}) => '${height} (${count} 승인)';
 			case 'utxo_detail_screen.pending': return '승인 대기중';
 			case 'utxo_detail_screen.address': return '보유 주소';

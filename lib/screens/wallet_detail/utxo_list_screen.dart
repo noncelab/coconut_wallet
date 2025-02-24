@@ -1,19 +1,300 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/widgets/body/utxo_list_body.dart';
+import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
+import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
+import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class UtxoListScreen extends StatelessWidget {
-  const UtxoListScreen({super.key});
+class UtxoListScreen extends StatefulWidget {
+  final int id;
+
+  const UtxoListScreen({super.key, required this.id});
+
+  @override
+  State<UtxoListScreen> createState() => _UtxoListScreenState();
+}
+
+class _UtxoListScreenState extends State<UtxoListScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  final GlobalKey _appBarKey = GlobalKey();
+  final GlobalKey _headerWidgetKey = GlobalKey();
+  final GlobalKey _stickyHeaderWidgetKey = GlobalKey();
+
+  Size _appBarSize = const Size(0, 0);
+  final double _topPadding = 0;
+
+  final Offset _headerDropdownPosition = Offset.zero;
+  Offset _stickyHeaderDropdownPosition = Offset.zero;
+
+  RenderBox? _stickyHeaderRenderBox;
+  bool _isHeaderDropdownVisible = false;
+  bool _stickyHeaderVisible = false;
+  bool _isStickyHeaderDropdownVisible = false;
+  bool _isPullToRefreshing = false;
+
+  final GlobalKey _utxoSliverListKey = GlobalKey();
+
+  late UtxoListViewModel _viewModel;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CoconutAppBar.build(
-          title: t.utxo, context: context, hasRightIcon: false),
-      body: const Center(
-        child: Text('UTXO LIST SCREEN', style: Styles.body2Bold),
+    return ChangeNotifierProxyProvider3<WalletProvider, ConnectivityProvider,
+        UpbitConnectModel, UtxoListViewModel>(
+      create: (_) {
+        _viewModel = UtxoListViewModel(
+          widget.id,
+          Provider.of<WalletProvider>(_, listen: false),
+          Provider.of<UtxoTagProvider>(_, listen: false),
+          Provider.of<ConnectivityProvider>(_, listen: false),
+          Provider.of<UpbitConnectModel>(_, listen: false),
+        );
+        return _viewModel;
+      },
+      update: (_, walletProvider, connectProvider, upbitModel, viewModel) {
+        _updateFilterDropdownButtonRenderBox();
+        return viewModel!..updateProvider();
+      },
+      child: Consumer<UtxoListViewModel>(
+        builder: (context, viewModel, child) {
+          final state = viewModel.walletInitState;
+          final balance = viewModel.balance;
+          final isNetworkOn = viewModel.isNetworkOn;
+          return PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (didPop, _) {
+              _removeFilterDropdown();
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                _removeFilterDropdown();
+              },
+              child: Stack(
+                children: [
+                  Scaffold(
+                    backgroundColor: MyColors.black,
+                    appBar: CoconutAppBar.build(
+                      entireWidgetKey: _appBarKey,
+                      title: t.utxo_list,
+                      context: context,
+                      backgroundColor: CoconutColors.black,
+                    ),
+                    body: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      controller: _scrollController,
+                      semanticChildCount: viewModel.isUtxoTagListEmpty
+                          ? 1
+                          : viewModel.utxoList.length,
+                      slivers: [
+                        CupertinoSliverRefreshControl(
+                          onRefresh: () async {
+                            _isPullToRefreshing = true;
+                            try {
+                              if (!_checkStateAndShowToast(
+                                  state, balance, isNetworkOn)) {
+                                return;
+                              }
+                            } finally {
+                              _isPullToRefreshing = false;
+                            }
+                          },
+                        ),
+                        SliverToBoxAdapter(
+                          child: UtxoListHeader(
+                            key: _headerWidgetKey,
+                            balance: balance,
+                            btcPriceInKrw: viewModel.bitcoinPriceKrw,
+                            selectedFilter: viewModel.selectedUtxoOrder.text,
+                            onTapDropdown: () {
+                              setState(() {
+                                if (_isHeaderDropdownVisible ||
+                                    _isStickyHeaderDropdownVisible) {
+                                  _isHeaderDropdownVisible = false;
+                                } else {
+                                  _isHeaderDropdownVisible = true;
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                        SliverSafeArea(
+                          minimum: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: UtxoListBody(
+                            utxoSliverListKey: _utxoSliverListKey,
+                            walletId: widget.id,
+                            walletType: viewModel.walletType,
+                            isUtxoListLoadComplete:
+                                viewModel.isUtxoListLoadComplete,
+                            utxoList: viewModel.utxoList,
+                            removePopup: () {
+                              _removeFilterDropdown();
+                            },
+                            popFromUtxoDetail: (resultUtxo) {
+                              if (viewModel.isUpdatedTagList) {
+                                viewModel.updateUtxoTagList(resultUtxo.utxoId,
+                                    viewModel.selectedTagList);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  UtxoListStickyHeader(
+                    widgetKey: _stickyHeaderWidgetKey,
+                    height: _appBarSize.height,
+                    isVisible: _stickyHeaderVisible,
+                    balance: balance,
+                    totalCount: viewModel.utxoList.length,
+                    selectedFilter: viewModel.selectedUtxoOrder.text,
+                    onTapDropdown: () {
+                      setState(() {
+                        _scrollController.jumpTo(_scrollController.offset);
+                        if (_isHeaderDropdownVisible ||
+                            _isStickyHeaderDropdownVisible) {
+                          _isStickyHeaderDropdownVisible = false;
+                        } else {
+                          _isStickyHeaderDropdownVisible = true;
+                        }
+                      });
+                    },
+                    removePopup: () {
+                      _removeFilterDropdown();
+                    },
+                  ),
+                  UtxoFilterDropdown(
+                    isVisible: viewModel.utxoList.isNotEmpty &&
+                            _isHeaderDropdownVisible ||
+                        _isStickyHeaderDropdownVisible,
+                    positionTop: _isHeaderDropdownVisible
+                        ? _headerDropdownPosition.dy +
+                            80 -
+                            _scrollController.offset * 0.01
+                        : _isStickyHeaderDropdownVisible
+                            ? _stickyHeaderDropdownPosition.dy + 92
+                            : 0,
+                    selectedFilter: viewModel.selectedUtxoOrder,
+                    onSelected: (filter) {
+                      setState(() {
+                        _isHeaderDropdownVisible =
+                            _isStickyHeaderDropdownVisible = false;
+                      });
+                      if (_stickyHeaderVisible) {
+                        _scrollController.animateTo(_topPadding + 1,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut);
+                      }
+                      viewModel.updateUtxoFilter(filter);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appBarRenderBox =
+          _appBarKey.currentContext?.findRenderObject() as RenderBox;
+
+      _appBarSize = appBarRenderBox.size;
+
+      _scrollController.addListener(() {
+        if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
+          _removeFilterDropdown();
+        }
+        debugPrint('scroll: ${_scrollController.offset}');
+        if (_scrollController.offset > kToolbarHeight + 20) {
+          if (!_isPullToRefreshing) {
+            setState(() {
+              _stickyHeaderVisible = true;
+              _isHeaderDropdownVisible = false;
+            });
+            if (_stickyHeaderRenderBox == null &&
+                _viewModel.utxoList.isNotEmpty == true) {
+              _stickyHeaderRenderBox = _stickyHeaderWidgetKey.currentContext
+                  ?.findRenderObject() as RenderBox;
+              _stickyHeaderDropdownPosition =
+                  _stickyHeaderRenderBox!.localToGlobal(Offset.zero);
+            }
+          }
+        } else {
+          if (!_isPullToRefreshing) {
+            setState(() {
+              _stickyHeaderVisible = false;
+              _isStickyHeaderDropdownVisible = false;
+            });
+          }
+        }
+      });
+    });
+  }
+
+  bool _checkStateAndShowToast(
+      WalletInitState state, int? balance, bool? isNetworkOn) {
+    if (isNetworkOn != true) {
+      CustomToast.showWarningToast(
+          context: context, text: ErrorCodes.networkError.message);
+      return false;
+    }
+
+    if (state == WalletInitState.processing) {
+      CustomToast.showToast(
+          context: context, text: t.toast.fetching_onchain_data);
+      return false;
+    }
+
+    if (!_isPullToRefreshing) {
+      if (balance == null || state == WalletInitState.error) {
+        CustomToast.showWarningToast(
+            context: context, text: t.toast.wallet_detail_refresh);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  void _removeFilterDropdown() {
+    setState(() {
+      _isHeaderDropdownVisible = false;
+      _isStickyHeaderDropdownVisible = false;
+    });
+  }
+
+  void _updateFilterDropdownButtonRenderBox() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // if (_tabWidgetKey.currentContext?.findRenderObject() != null) {
+      //   _tabWidgetRenderBox =
+      //       _tabWidgetKey.currentContext!.findRenderObject() as RenderBox;
+      //   _headerDropdownPosition =
+      //       _tabWidgetRenderBox.localToGlobal(Offset.zero);
+      // }
+    });
   }
 }

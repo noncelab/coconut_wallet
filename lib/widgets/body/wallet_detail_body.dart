@@ -1,8 +1,8 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -54,7 +54,7 @@ class WalletDetailBody extends StatelessWidget {
                 alignment: Alignment.topCenter,
                 child: Text(
                   t.tx_not_found,
-                  style: Styles.body1,
+                  style: CoconutTypography.body1_16,
                 ),
               ),
             ),

@@ -1,4 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';

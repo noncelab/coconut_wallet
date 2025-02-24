@@ -123,7 +123,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       title: TextUtils.ellipsisIfLonger(viewModel.walletListBaseItem!.name,
           maxLength: 15),
       context: context,
-      hasRightIcon: true,
       onTitlePressed: () => _navigateToWalletInfo(context, viewModel),
       actionButtonList: [
         IconButton(
@@ -133,7 +132,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
         ),
         IconButton(
-          onPressed: () => Navigator.pushNamed(context, '/utxo-list'),
+          onPressed: () => Navigator.pushNamed(context, '/utxo-list',
+              arguments: {'id': widget.id}),
           icon: SvgPicture.asset('assets/svg/coins.svg', width: 18, height: 18),
         ),
       ],

@@ -459,18 +459,25 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      RenderBox utxoTooltipIconRenderBox =
-          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox;
-      _utxoTooltipIconPosition =
-          utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
-      _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
+      final utxoTooltipIconRenderBox =
+          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
 
-      final RenderBox balanceWidthRenderBox =
-          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
+      if (utxoTooltipIconRenderBox != null) {
+        setState(() {
+          _utxoTooltipIconPosition =
+              utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
+          _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
+        });
+      }
 
-      setState(() {
-        _balanceWidthSize = balanceWidthRenderBox.size;
-      });
+      final balanceWidthRenderBox =
+          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox?;
+
+      if (balanceWidthRenderBox != null) {
+        setState(() {
+          _balanceWidthSize = balanceWidthRenderBox.size;
+        });
+      }
     });
   }
 
