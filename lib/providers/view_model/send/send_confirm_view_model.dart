@@ -37,18 +37,17 @@ class SendConfirmViewModel extends ChangeNotifier {
 
     String generatedTx;
     if (_sendInfoProvider.isMaxMode!) {
-      // TODO: generatePsbtWithMaximum
-      // generatedTx = await _walletListItemBase.walletFeature
-      //     .generatePsbtWithMaximum(
-      //         _sendInfoProvider.recipientAddress!, _sendInfoProvider.feeRate!);
-      generatedTx = '';
+      generatedTx = await _walletListItemBase.walletBase.generatePsbtForSweep(
+          _walletListItemBase.utxoList,
+          _sendInfoProvider.recipientAddress!,
+          _sendInfoProvider.feeRate!);
     } else {
-      // TODO: generatePsbt
-      // generatedTx = await _walletListItemBase.walletFeature.generatePsbt(
-      //     _sendInfoProvider.recipientAddress!,
-      //     UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
-      //     _sendInfoProvider.feeRate!);
-      generatedTx = '';
+      generatedTx = await _walletListItemBase.walletBase.generatePsbtForPayment(
+          _walletListItemBase.utxoList,
+          _sendInfoProvider.recipientAddress!,
+          _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
+          UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+          _sendInfoProvider.feeRate!);
     }
 
     // printLongString(">>>>>> psbt 생성");

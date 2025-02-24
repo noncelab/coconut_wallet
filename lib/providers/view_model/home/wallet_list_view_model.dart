@@ -56,9 +56,8 @@ class WalletListViewModel extends ChangeNotifier {
     for (var walletItem in walletItemList) {
       Logger.log('>>>>> walletItem: ${walletItem.name}');
       // 새로운 내역이 있는지 조회
-      final newTxResList =
-          await _transactionProvider.fetchNewTransactionResponses(
-              walletItem, _nodeProvider, _walletProvider);
+      final newTxResList = await _nodeProvider.scanNewTransactionResponses(
+          walletItem, _walletProvider);
 
       // 잔액 조회
       final balanceResult = await _nodeProvider.getBalance(walletItem);
@@ -70,14 +69,13 @@ class WalletListViewModel extends ChangeNotifier {
 
       // 트랜잭션 내역 조회
       if (newTxResList.isNotEmpty) {
-        await _transactionProvider.fetchTransactions(
-            walletItem, newTxResList, _nodeProvider, _walletProvider);
+        await _nodeProvider.saveFetchTransactions(
+            walletItem, newTxResList, _walletProvider);
       }
       notifyListeners();
 
       // Utxo 조회
-      walletItem.utxoList =
-          await _transactionProvider.fetchUtxos(walletItem, _nodeProvider);
+      walletItem.utxoList = await _nodeProvider.fetchUtxos(walletItem);
 
       notifyListeners();
     }

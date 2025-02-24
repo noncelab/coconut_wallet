@@ -95,11 +95,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   }
 
   void updateProvider() {
-    // TODO: addressBook
-    // if (_walletProvider.walletItemList.isNotEmpty && _addressBook == null) {
     if (_walletProvider.walletItemList.isNotEmpty) {
-      // _addressBook =
-      //     _walletProvider.getWalletById(_walletId).walletBase.addressBook;
       _setCurrentBlockHeight();
       _txProvider.initTransaction(_walletId, _txHash);
 

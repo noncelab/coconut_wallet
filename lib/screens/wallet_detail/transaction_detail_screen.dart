@@ -207,13 +207,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                               ? _balanceWidthSize.width
                                               : 100,
                                       rowType: InputOutputRowType.output,
-                                      // TODO: isCurrentAddress
-                                      isCurrentAddress: false,
-                                      // isCurrentAddress: viewModel.addressBook
-                                      //     ?.contains(viewModel
-                                      //         .transaction!
-                                      //         .outputAddressList[index]
-                                      //         .address),
+                                      isCurrentAddress:
+                                          viewModel.isSameAddress(address),
                                       transactionStatus: status,
                                     ),
                                     const SizedBox(height: 8),

@@ -111,6 +111,12 @@ class WalletProvider extends ChangeNotifier {
         await _loadWalletFromLocal();
       }
 
+      // 지갑 로드 시 최소 gapLimit 만큼 주소 생성
+      for (var walletItem in _walletItemList) {
+        generateWalletAddress(walletItem, -1, false);
+        generateWalletAddress(walletItem, -1, true);
+      }
+
       // 네트워크 확인이 완료된 후 다음 과정 진행
       if (_isNetworkOn == null) {
         Logger.log(">>>>> ===================== initWallet 끝 (네트워크 확인 전)");
@@ -404,6 +410,12 @@ class WalletProvider extends ChangeNotifier {
     return _walletDataManager.containsAddress(walletId, address);
   }
 
+  List<WalletAddress> filterChangeAddressesFromList(
+      int walletId, List<String> addresses) {
+    return _walletDataManager.filterChangeAddressesFromList(
+        walletId, addresses);
+  }
+
   /// 지갑 주소의 사용여부와 잔액을 업데이트 합니다.
   /// 새로운 트랜잭션 이력이 있는 주소를 기준으로 업데이트 합니다.
   void updateWalletAddressList(
@@ -452,6 +464,14 @@ class WalletProvider extends ChangeNotifier {
     _walletDataManager.updateWalletAddressList(
         walletItem, newChangeBalanceList, true);
     notifyListeners();
+  }
+
+  WalletAddress getChangeAddress(int walletId) {
+    return _walletDataManager.getChangeAddress(walletId);
+  }
+
+  WalletAddress getReceiveAddress(int walletId) {
+    return _walletDataManager.getReceiveAddress(walletId);
   }
 }
 

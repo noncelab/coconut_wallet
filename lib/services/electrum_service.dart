@@ -97,7 +97,6 @@ class ElectrumService extends NodeClient {
       {Set<String>? knownTransactionHashes,
       int receiveUsedIndex = -1,
       int changeUsedIndex = -1}) async* {
-    // TODO: receiveUsedIndex, changeUsedIndex
     final receiveStream = _fetchTransactions(
       wallet,
       isChange: false,

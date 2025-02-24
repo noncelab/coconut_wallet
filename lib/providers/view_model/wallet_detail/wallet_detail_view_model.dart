@@ -27,8 +27,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   WalletListItemBase? _walletListBaseItem;
-  // TODO: walletFeature
-  // late WalletFeature _walletFeature;
   WalletType _walletType = WalletType.singleSignature;
 
   WalletInitState _prevWalletInitState = WalletInitState.never;
@@ -40,8 +38,6 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   /// Faucet
   final Faucet _faucetService = Faucet();
-  // TODO: addressBook
-  // late AddressBook _walletAddressBook;
   late FaucetRecord _faucetRecord;
 
   String _walletAddress = '';
@@ -63,9 +59,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
 
-    // TODO: walletFeature
-    // _walletFeature = walletBaseItem.walletFeature;
-
     _prevTxCount = walletBaseItem.txCount;
     _prevIsLatestTxBlockHeightZero = walletBaseItem.isLatestTxBlockHeightZero;
     _walletType = walletBaseItem.walletType;
@@ -74,17 +67,13 @@ class WalletDetailViewModel extends ChangeNotifier {
     // _tagProvider.initTagList(_walletId);
 
     // Faucet
-    // TODO: address
-    // Address receiveAddress = walletBaseItem.walletBase.getReceiveAddress();
-    var receiveAddress = WalletAddress('', '', 0, false, 0, 0, 0);
+    var receiveAddress = _walletProvider.getReceiveAddress(_walletId);
     _walletAddress = receiveAddress.address;
     _derivationPath = receiveAddress.derivationPath;
     _walletName = walletBaseItem.name.length > 20
         ? '${walletBaseItem.name.substring(0, 17)}...'
         : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
     _receiveAddressIndex = receiveAddress.derivationPath.split('/').last;
-    // TODO: addressBook
-    // _walletAddressBook = walletBaseItem.walletBase.addressBook;
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetRecord();
     //_getFaucetStatus();
@@ -103,24 +92,11 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   int get walletId => _walletId;
   String get walletAddress => _walletAddress;
-
-  // AddressBook get walletAddressBook => _walletAddressBook;
   WalletInitState get walletInitState => _walletProvider.walletInitState;
-
   WalletListItemBase? get walletListBaseItem => _walletListBaseItem;
   String get walletName => _walletName;
-
   WalletProvider? get walletProvider => _walletProvider;
   WalletType get walletType => _walletType;
-
-  // WalletProvider
-  // WalletStatus? getInitializedWalletStatus() {
-  //   try {
-  //     return _walletFeature.walletStatus;
-  //   } catch (e) {
-  //     return null;
-  //   }
-  // }
   bool? get isNetworkOn => _connectProvider.isNetworkOn;
   int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
 
@@ -172,16 +148,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       // getUtxoListWithHoldingAddress();
     }
     _prevWalletInitState = _walletProvider.walletInitState;
-
-    try {
-      final WalletListItemBase walletListItemBase =
-          _walletProvider.getWalletById(_walletId);
-
-      // TODO: address
-      // _walletAddress =
-      //     walletListItemBase.walletBase.getReceiveAddress().address;
-      _walletAddress = '';
-    } catch (e) {}
+    _walletAddress = _walletProvider.getReceiveAddress(_walletId).address;
 
     notifyListeners();
   }

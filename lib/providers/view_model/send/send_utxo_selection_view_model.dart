@@ -49,6 +49,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;
+  late String _changeAddress;
   late WalletBase _walletBase;
   late bool _isMaxMode;
   late Transaction _transaction;
@@ -95,20 +96,20 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         ? (_walletBaseItem as MultisigWalletListItem).signers.length
         : null;
 
-    // TODO: getAllConfirmedUtxoList
-    _confirmedUtxoList = _getAllConfirmedUtxoList(_walletBaseItem.walletBase);
+    _confirmedUtxoList = _getAllConfirmedUtxoList(_walletBaseItem);
     _sortConfirmedUtxoList(initialUtxoOrder);
     _initUtxoTagMap();
 
     _walletBase = _walletBaseItem.walletBase;
-    // _confirmedBalance = _walletBaseItem.walletFeature.getBalance();
-    _confirmedBalance = 0;
+    _confirmedBalance = _walletBaseItem.balance ?? 0;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
+    _changeAddress =
+        _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address;
     _isMaxMode = _confirmedBalance ==
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
 
-    _transaction = _createTransaction(_isMaxMode, 1, _walletBase);
+    _transaction = _createTransaction(_isMaxMode, 1, _walletBaseItem);
     _syncSelectedUtxosWithTransaction();
 
     _setRecommendedFees().then((bool result) async {
@@ -130,18 +131,31 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       return null;
     }
 
-    // TODO: getChangeAmount
-    // var change = _transaction.getChangeAmount(_walletBase.addressBook);
-    int change = 0;
+    // 트랜잭션 출력 주소 중 change 주소를 모두 조회
+    final changeAddresses = _walletProvider.filterChangeAddressesFromList(
+        _sendInfoProvider.walletId!,
+        _transaction.outputs.map((e) => e.scriptPubKey.getAddress()).toList());
 
-    if (change != 0) return change;
+    int changeAmount;
+
+    if (changeAddresses.isEmpty) {
+      changeAmount = 0;
+    }
+
+    // 가장 마지막 change 주소에 해당하는 금액을 change 금액으로 간주함
+    changeAmount = _transaction.outputs
+        .where((output) => output.getAddress() == changeAddresses.last.address)
+        .first
+        .amount;
+
+    if (changeAmount != 0) return changeAmount;
     if (_estimatedFee == null) return null;
     // utxo가 모자랄 때도 change = 0으로 반환되기 때문에 진짜 잔돈이 0인지 아닌지 확인이 필요
     if (_confirmedBalance < needAmount) {
       return _confirmedBalance - needAmount;
     }
 
-    return _isSelectedUtxoEnough() ? change : null;
+    return _isSelectedUtxoEnough() ? changeAmount : null;
   }
 
   int get confirmedBalance => _confirmedBalance;
@@ -225,10 +239,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   void deselectAllUtxo() {
     _clearUtxoList();
     if (!_isMaxMode) {
-      // TODO: fromUtxoList
-      throw UnimplementedError();
-      // _transaction = Transaction.fromUtxoList([], _recipientAddress,
-      //     'changeAddress', _sendAmount, satsPerVb ?? 1, _walletBase);
+      _transaction = Transaction.fromUtxoList([], _recipientAddress,
+          _changeAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
     }
   }
 
@@ -289,10 +301,13 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     setSelectedUtxoList(List.from(confirmedUtxoList));
 
     if (!isMaxMode) {
-      // TODO: fromUtxoList
-      throw UnimplementedError();
-      // _transaction = Transaction.fromUtxoList(selectedUtxoList,
-      //     _recipientAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
+      _transaction = Transaction.fromUtxoList(
+          selectedUtxoList,
+          _recipientAddress,
+          _changeAddress,
+          _sendAmount,
+          satsPerVb ?? 1,
+          _walletBase);
 
       if (estimatedFee != null && isSelectedUtxoEnough()) {
         setEstimatedFee(estimateFee(satsPerVb ?? 1));
@@ -350,40 +365,37 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   Transaction _createTransaction(
-      bool isMaxMode, int feeRate, WalletBase walletBase) {
+      bool isMaxMode, int feeRate, WalletListItemBase walletListItemBase) {
     if (isMaxMode) {
-      // TODO: forSweep
-      throw UnimplementedError();
-      // return Transaction.forSweep(
-      //     _sendInfoProvider.recipientAddress!, feeRate, walletBase);
+      return Transaction.forSweep(
+          walletListItemBase.utxoList,
+          _sendInfoProvider.recipientAddress!,
+          _sendInfoProvider.feeRate!,
+          walletListItemBase.walletBase);
     }
 
     try {
-      // TODO: forPayment
-      throw UnimplementedError();
-      // return Transaction.forPayment(
-      //     _sendInfoProvider.recipientAddress!,
-      //     UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
-      //     feeRate,
-      //     walletBase);
+      return Transaction.forPayment(
+          walletListItemBase.utxoList,
+          _sendInfoProvider.recipientAddress!,
+          _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
+          UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+          feeRate,
+          walletListItemBase.walletBase);
     } catch (e) {
       if (e.toString().contains('Not enough amount for sending. (Fee')) {
-        // TODO: forSweep
-        throw UnimplementedError();
-        // return Transaction.forSweep(
-        //     _sendInfoProvider.recipientAddress!, feeRate, walletBase);
+        return Transaction.forSweep(
+            walletListItemBase.utxoList,
+            _sendInfoProvider.recipientAddress!,
+            _sendInfoProvider.feeRate!,
+            walletListItemBase.walletBase);
       }
-
       rethrow;
     }
   }
 
-  List<UtxoState> _getAllConfirmedUtxoList(WalletBase wallet) {
-    // TODO: wallet.walletStatus!.utxoList
-    throw UnimplementedError();
-    // return wallet.walletStatus!.utxoList
-    //     .where((utxo) => utxo.blockHeight != 0)
-    //     .toList();
+  List<UtxoState> _getAllConfirmedUtxoList(WalletListItemBase walletItem) {
+    return walletItem.utxoList.where((utxo) => utxo.blockHeight != 0).toList();
   }
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
@@ -492,12 +504,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
           return b.amount.compareTo(a.amount);
         }
 
-        // TODO: a.timestamp.compareTo(b.timestamp);
-        throw UnimplementedError();
+        return a.timestamp.compareTo(b.timestamp);
       });
     } else {
-      // TODO: Utxo.sortUtxo(_confirmedUtxoList, basis);
-      throw UnimplementedError();
+      UtxoState.sortUtxo(_confirmedUtxoList, basis);
     }
   }
 }
