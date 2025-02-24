@@ -12,7 +12,6 @@ class WalletDetailBody extends StatelessWidget {
   final WalletType walletType;
   final Unit currentUnit;
   final List<TransactionRecord> txList;
-  final Function removePopup;
   const WalletDetailBody({
     super.key,
     required this.txSliverListKey,
@@ -20,7 +19,6 @@ class WalletDetailBody extends StatelessWidget {
     required this.walletType,
     required this.currentUnit,
     required this.txList,
-    required this.removePopup,
   });
 
   @override

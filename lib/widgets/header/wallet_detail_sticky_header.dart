@@ -94,7 +94,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
                         width: 35,
                         child: Center(
                           child: Text(
-                            '받기',
+                            t.receive,
                             style: Styles.caption.merge(
                               const TextStyle(
                                   color: MyColors.black,

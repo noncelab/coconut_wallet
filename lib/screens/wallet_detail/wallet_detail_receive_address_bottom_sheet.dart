@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -23,7 +24,7 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
     return Scaffold(
       backgroundColor: MyColors.black,
       appBar: CustomAppBar.build(
-        title: '받기',
+        title: t.receive,
         context: context,
         hasRightIcon: false,
         isBottom: true,

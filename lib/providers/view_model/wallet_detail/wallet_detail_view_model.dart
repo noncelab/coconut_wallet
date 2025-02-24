@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -13,7 +12,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -69,10 +67,11 @@ class WalletDetailViewModel extends ChangeNotifier {
     // Faucet
     var receiveAddress = _walletProvider.getReceiveAddress(_walletId);
     _walletAddress = receiveAddress.address;
-    _derivationPath = receiveAddress.derivationPath;
-    _walletName = walletBaseItem.name.length > 20
-        ? '${walletBaseItem.name.substring(0, 17)}...'
-        : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
+    _derivationPath =
+        receiveAddress.derivationPath; // fixme: 잘못된 derivationPath
+    _walletName = walletBaseItem.name.length > 10
+        ? '${walletBaseItem.name.substring(0, 7)}...'
+        : walletBaseItem.name;
     _receiveAddressIndex = receiveAddress.derivationPath.split('/').last;
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetRecord();

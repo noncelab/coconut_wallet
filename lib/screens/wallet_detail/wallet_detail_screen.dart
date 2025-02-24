@@ -171,7 +171,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             currentUnit: _currentUnit,
             btcPriceInKrw: viewModel.bitcoinPriceKrw,
             onPressedUnitToggle: _toggleUnit,
-            removePopup: _removeFilterDropdown,
             checkPrerequisites: () =>
                 _checkStateAndShowToast(state, balance, isNetworkOn),
           ),
@@ -195,7 +194,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             walletType: viewModel.walletType,
             currentUnit: _currentUnit,
             txList: viewModel.txList,
-            removePopup: _removeFilterDropdown,
           ),
         ),
       ],
@@ -228,7 +226,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   void _onFaucetIconPressed(WalletDetailViewModel viewModel,
       WalletInitState state, int balance, bool? isNetworkOn) async {
-    _removeFilterDropdown();
     viewModel.removeFaucetTooltip();
     if (!_checkStateAndShowToast(state, balance, isNetworkOn)) {
       return;
@@ -295,7 +292,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _onTapReceiveOrSend(balance, state, isNetworkOn);
       },
       removePopup: () {
-        _removeFilterDropdown();
         viewModel.removeFaucetTooltip();
       },
     );
@@ -402,10 +398,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       Navigator.pushNamed(context, '/send-address',
           arguments: {'id': widget.id});
     }
-  }
-
-  void _removeFilterDropdown() {
-    setState(() {});
   }
 
   void _toggleUnit() {
