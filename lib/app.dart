@@ -77,6 +77,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
         ChangeNotifierProvider(create: (_) => UtxoTagProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(
+            create: (_) => NodeProvider(
+                CoconutWalletApp.kElectrumHost,
+                CoconutWalletApp.kElectrumPort,
+                CoconutWalletApp.kElectrumIsSSL,
+                WalletDataManager())),
 
         /// main 에서만 사용하는 모델
         if (_appEntryFlow == AppEntryFlow.main) ...{
@@ -91,7 +97,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       .isNetworkOn,
                   Provider.of<VisibilityProvider>(_, listen: false)
                       .setWalletCount,
-                  Provider.of<AuthProvider>(_, listen: false).isSetPin);
+                  Provider.of<AuthProvider>(_, listen: false).isSetPin,
+                  Provider.of<NodeProvider>(_, listen: false));
             },
             update: (context, connectivityProvider, visiblityProvider,
                 authProvider, walletProvider) {
@@ -110,12 +117,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             },
           ),
         },
-        ChangeNotifierProvider(
-            create: (_) => NodeProvider(
-                CoconutWalletApp.kElectrumHost,
-                CoconutWalletApp.kElectrumPort,
-                CoconutWalletApp.kElectrumIsSSL,
-                WalletDataManager())),
       ],
       child: CupertinoApp(
         localizationsDelegates: const [

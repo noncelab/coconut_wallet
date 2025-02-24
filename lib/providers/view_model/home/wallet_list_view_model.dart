@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -8,6 +11,7 @@ import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
@@ -19,6 +23,8 @@ class WalletListViewModel extends ChangeNotifier {
   late WalletInitState _prevWalletInitState;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _transactionProvider;
+  final Map<int, int> _walletBalance = {};
+  late StreamSubscription<Map<int, Balance>> _balanceSubscription;
 
   WalletListViewModel(this._walletProvider, this._visibilityProvider,
       this._isBalanceHidden, this._nodeProvider, this._transactionProvider) {
@@ -26,6 +32,21 @@ class WalletListViewModel extends ChangeNotifier {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _prevWalletInitState = _walletProvider.walletInitState;
+    // TODO:
+    _balanceSubscription =
+        _walletProvider.balanceStream.stream.listen(_updateBalance);
+  }
+
+  void _updateBalance(Map<int, Balance?> newBalance) {
+    // bool hasChange = false;
+    final balance = newBalance.entries.first.value;
+    if (balance != null) {
+      _walletBalance[newBalance.keys.first] = balance.total;
+    } else {
+      _walletBalance.remove(newBalance.keys.first);
+    }
+
+    notifyListeners();
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
@@ -113,11 +134,18 @@ class WalletListViewModel extends ChangeNotifier {
     vibrateLight();
   }
 
-  Balance getWalletBalance(int id) {
-    return _walletProvider.getWalletBalance(id);
+  int? getWalletBalance(int id) {
+    return _walletBalance[id];
+    //return _walletProvider.getWalletBalance(id);
   }
 
   void onNodeProviderUpdated() {
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _balanceSubscription.cancel();
+    return super.dispose();
   }
 }

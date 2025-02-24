@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:collection';
+import 'dart:math';
+
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -7,6 +11,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
@@ -53,6 +58,9 @@ class WalletProvider extends ChangeNotifier {
   List<WalletListItemBase> _walletItemList = [];
   List<WalletListItemBase> get walletItemList => _walletItemList;
 
+  final Map<int, Balance> _walletBalance = {};
+  Map<int, Balance> get walletBalance => UnmodifiableMapView(_walletBalance);
+
   /// 마지막 업데이트 시간
   int _lastUpdateTime = 0;
   int get lastUpdateTime => _lastUpdateTime;
@@ -61,11 +69,17 @@ class WalletProvider extends ChangeNotifier {
 
   late final WalletDataManager _walletDataManager;
 
-  late final Future<void> Function(int) _setWalletCount;
+  late final Future<void> Function(int) _saveWalletCount;
   late final bool _isSetPin;
 
+  late final NodeProvider _nodeProvider;
+  // TODO:
+  final StreamController<Map<int, Balance>> _balanceStream =
+      StreamController<Map<int, Balance>>();
+  StreamController<Map<int, Balance>> get balanceStream => _balanceStream;
+
   WalletProvider(this._walletDataManager, this._isNetworkOn,
-      this._setWalletCount, this._isSetPin) {
+      this._saveWalletCount, this._isSetPin, this._nodeProvider) {
     initWallet().catchError((_) {
       Logger.error(_);
     });
@@ -113,8 +127,8 @@ class WalletProvider extends ChangeNotifier {
 
       // 지갑 로드 시 최소 gapLimit 만큼 주소 생성
       for (var walletItem in _walletItemList) {
-        generateWalletAddress(walletItem, -1, false);
-        generateWalletAddress(walletItem, -1, true);
+        await generateWalletAddress(walletItem, -1, false);
+        await generateWalletAddress(walletItem, -1, true);
       }
 
       // 네트워크 확인이 완료된 후 다음 과정 진행
@@ -233,20 +247,27 @@ class WalletProvider extends ChangeNotifier {
     _walletItemList = updatedList;
 
     if (result == WalletSyncResult.newWalletAdded) {
-      // TODO: 화면에서
-      // setAnimatedWalletFlags(
-      //     index: _walletItemList.length - 1,
-      //     type: WalletSyncResult.newWalletAdded);
-      //if (!_subStateModel.isNotEmptyWalletList) {
-      _setWalletCount(updatedList.length);
-      //_subStateModel.saveNotEmptyWalletList(true);
-      //}
+      _saveWalletCount(updatedList.length);
     }
 
-    await initWallet(targetId: newItem.id, syncOthers: false);
+    // TODO:
+    _fetchWalletBalance(newItem);
 
-    notifyListeners();
+    //await initWallet(targetId: newItem.id, syncOthers: false);
+
+    // notifyListeners();
     return ResultOfSyncFromVault(result: result, walletId: newItem.id);
+  }
+
+  // TODO: 특정 지갑의 정보 갱신
+  Future<void> _fetchWalletBalance(WalletListItemBase walletItem) async {
+    // await generateWalletAddress(walletItem, -1, false);
+    // await generateWalletAddress(walletItem, -1, true);
+    //final Balance balance = getWalletBalance(walletItem.id);
+    final Balance balance = Balance(Random().nextInt(100000), 0);
+    _walletBalance[walletItem.id] = balance;
+    _balanceStream.add({walletItem.id: balance});
+    //notifyListeners();
   }
 
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
@@ -285,7 +306,7 @@ class WalletProvider extends ChangeNotifier {
     _walletItemList = List.from(_walletDataManager.walletList);
     //_walletItemList = _walletDataManager.walletList;
     _walletDataManager.deleteAllUtxoTag(walletId);
-    _setWalletCount(_walletItemList.length);
+    _saveWalletCount(_walletItemList.length);
     //if (_walletItemList.isEmpty) {
     //_subStateModel.saveNotEmptyWalletList(false);
     //}
@@ -383,9 +404,9 @@ class WalletProvider extends ChangeNotifier {
     return _walletDataManager.getWalletBalance(walletId);
   }
 
-  void generateWalletAddress(
-      WalletListItemBase walletItem, int usedIndex, bool isChange) {
-    _walletDataManager.ensureAddressesExist(
+  Future<void> generateWalletAddress(
+      WalletListItemBase walletItem, int usedIndex, bool isChange) async {
+    await _walletDataManager.ensureAddressesExist(
         walletItemBase: walletItem,
         cursor: usedIndex,
         count: gapLimit,
@@ -472,6 +493,12 @@ class WalletProvider extends ChangeNotifier {
 
   WalletAddress getReceiveAddress(int walletId) {
     return _walletDataManager.getReceiveAddress(walletId);
+  }
+
+  @override
+  void dispose() {
+    _balanceStream.close();
+    super.dispose();
   }
 }
 
