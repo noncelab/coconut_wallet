@@ -113,21 +113,33 @@ class InputOutputDetailRow extends StatelessWidget {
     TransactionStatus? transactionStatus,
     bool isCurrentAddress,
   ) {
-    Color leftItemColor = MyColors.white;
-    Color rightItemColor = MyColors.white;
-    Color svgColor = MyColors.white;
+    Color leftItemColor = MyColors.transparentWhite_40;
+    Color rightItemColor = MyColors.transparentWhite_40;
+    Color svgColor = MyColors.transparentWhite_40;
 
     String svgPath = 'assets/svg/circle-arrow-right.svg';
 
     if (rowType == InputOutputRowType.fee) {
+      // UTXO 화면인 경우
       svgPath = 'assets/svg/circle-pick.svg';
       if (transactionStatus == null) {
-        // UTXO 화면인 경우 색상 변경
-        leftItemColor =
-            rightItemColor = svgColor = MyColors.transparentWhite_40;
+        return RowProperty(
+          leftItemColor: leftItemColor,
+          rightItemColor: rightItemColor,
+          svgColor: svgColor,
+          svgPath: svgPath,
+        );
       }
 
-      /// 수수료인 경우 바로 리턴
+      if (transactionStatus == TransactionStatus.sending ||
+          transactionStatus == TransactionStatus.sent) {
+        leftItemColor = rightItemColor = svgColor = MyColors.primary;
+      } else if (transactionStatus == TransactionStatus.self ||
+          transactionStatus == TransactionStatus.selfsending) {
+        leftItemColor = MyColors.white;
+        rightItemColor = svgColor = MyColors.primary;
+      }
+
       return RowProperty(
         leftItemColor: leftItemColor,
         rightItemColor: rightItemColor,
@@ -142,19 +154,14 @@ class InputOutputDetailRow extends StatelessWidget {
         case TransactionStatus.received:
         case TransactionStatus.receiving:
           if (rowType == InputOutputRowType.input) {
-            /// 인풋
             if (!isCurrentAddress) {
-              /// 현재 주소가 아닌 경우
               leftItemColor =
                   rightItemColor = svgColor = MyColors.transparentWhite_40;
             }
           } else {
-            /// 아웃풋
             if (isCurrentAddress) {
-              /// 현재 주소인 경우
-              rightItemColor = svgColor = MyColors.secondary;
+              leftItemColor = rightItemColor = svgColor = MyColors.secondary;
             } else {
-              /// 현재 주소가 아닌 경우
               leftItemColor =
                   rightItemColor = svgColor = MyColors.transparentWhite_40;
             }
@@ -163,40 +170,37 @@ class InputOutputDetailRow extends StatelessWidget {
         case TransactionStatus.sending:
         case TransactionStatus.sent:
           if (rowType == InputOutputRowType.input) {
-            /// 안풋
-            rightItemColor = svgColor = MyColors.primary;
-          } else if (rowType == InputOutputRowType.output &&
-              !isCurrentAddress) {
-            /// 아웃풋, 현재 주소가 아닌 경우
-            leftItemColor =
-                rightItemColor = svgColor = MyColors.transparentWhite_40;
+            leftItemColor = rightItemColor = svgColor = MyColors.white;
+          } else if (rowType == InputOutputRowType.output) {
+            if (isCurrentAddress) {
+              leftItemColor = rightItemColor = svgColor = MyColors.white;
+            } else {
+              leftItemColor = rightItemColor = svgColor = MyColors.primary;
+            }
+          } else if (rowType == InputOutputRowType.fee) {
+            leftItemColor = rightItemColor = svgColor = MyColors.primary;
           }
           break;
         case TransactionStatus.self:
         case TransactionStatus.selfsending:
           if (rowType == InputOutputRowType.input) {
             if (isCurrentAddress) {
-              rightItemColor = svgColor = MyColors.primary;
-            } else {
-              leftItemColor =
-                  rightItemColor = svgColor = MyColors.transparentWhite_40;
+              leftItemColor = rightItemColor = svgColor = MyColors.white;
             }
+          } else if (rowType == InputOutputRowType.fee) {
+            leftItemColor = MyColors.white;
           } else {
             if (isCurrentAddress) {
+              leftItemColor = MyColors.white;
               rightItemColor = svgColor = MyColors.secondary;
-            } else {
-              leftItemColor =
-                  rightItemColor = svgColor = MyColors.transparentWhite_40;
             }
           }
           break;
       }
     } else {
       /// transactionStatus가 null이면 UTXO 상세 화면
-      if (rowType == InputOutputRowType.input ||
-          (rowType == InputOutputRowType.output && !isCurrentAddress)) {
-        leftItemColor =
-            rightItemColor = svgColor = MyColors.transparentWhite_40;
+      if (rowType == InputOutputRowType.output && isCurrentAddress) {
+        leftItemColor = rightItemColor = svgColor = MyColors.white;
       }
     }
     return RowProperty(
