@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
@@ -80,13 +79,6 @@ class UtxoListViewModel extends ChangeNotifier {
 
     if (_utxoList.isNotEmpty) {
       for (var utxo in _utxoList) {
-        String ownedAddress = _walletListBaseItem!.walletBase.getAddress(
-            DerivationPathUtil.getAccountIndex(
-                _walletType, utxo.derivationPath),
-            isChange: DerivationPathUtil.getChangeElement(
-                    _walletType, utxo.derivationPath) ==
-                1);
-
         final tags =
             _tagProvider.loadSelectedUtxoTagList(_walletId, utxo.utxoId);
 
@@ -120,6 +112,7 @@ class UtxoListViewModel extends ChangeNotifier {
     final findUtxo = utxoList.firstWhere((item) => item.utxoId == utxoId);
     findUtxo.tags?.clear();
     findUtxo.tags?.addAll(utxoTagList);
+    debugPrint('findUtxo.tags: ${findUtxo.tags}');
     notifyListeners();
   }
 

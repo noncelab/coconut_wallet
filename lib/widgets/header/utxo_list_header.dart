@@ -10,6 +10,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class UtxoListHeader extends StatelessWidget {
+  final GlobalKey dropdownGlobalKey;
   final int? balance;
   final int? btcPriceInKrw;
   final String selectedFilter;
@@ -17,6 +18,7 @@ class UtxoListHeader extends StatelessWidget {
 
   const UtxoListHeader({
     super.key,
+    required this.dropdownGlobalKey,
     required this.balance,
     required this.btcPriceInKrw,
     required this.selectedFilter,
@@ -29,90 +31,94 @@ class UtxoListHeader extends StatelessWidget {
       builder: (context, viewModel, child) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.only(
-              left: 35,
-              top: 28,
-            ),
-            width: MediaQuery.sizeOf(context).width,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  t.utxo_list_screen.total_balance,
-                  style: CoconutTypography.body1_16_Bold,
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.only(
+                  left: 35,
+                  top: 28,
                 ),
-                CoconutLayout.spacing_200h,
-                IntrinsicWidth(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          balance != null
-                              ? satoshiToBitcoinString(balance!)
-                              : "잔액 조회 불가",
-                          style: CoconutTypography.heading1_32_NumberBold,
-                        ),
-                      ),
-                      CoconutLayout.spacing_100w,
-                      Text(
-                        t.btc,
-                        style: CoconutTypography.heading3_21_Number,
-                      ),
-                    ],
-                  ),
-                ),
-                CoconutLayout.spacing_100h,
-                if (balance != null && btcPriceInKrw != null)
-                  Text(
-                      '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(balance!, btcPriceInKrw!).toDouble())}',
-                      style: Styles.subLabel.merge(TextStyle(
-                          fontFamily: CustomFonts.number.getFontFamily,
-                          color: MyColors.transparentWhite_70))),
-                CoconutLayout.spacing_400h,
-                Row(
+                width: MediaQuery.sizeOf(context).width,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Container(),
+                    Text(
+                      t.utxo_list_screen.total_balance,
+                      style: CoconutTypography.body1_16_Bold,
                     ),
-                    CupertinoButton(
-                      padding: const EdgeInsets.only(bottom: 13, right: 26),
-                      minSize: 0,
-                      onPressed: () {
-                        onTapDropdown();
-                      },
+                    CoconutLayout.spacing_200h,
+                    IntrinsicWidth(
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(selectedFilter,
-                              style: CoconutTypography.caption_10
-                                  .setColor(CoconutColors.white)),
-                          const SizedBox(
-                            width: 5,
+                          Expanded(
+                            child: Text(
+                              balance != null
+                                  ? satoshiToBitcoinString(balance!)
+                                  : "잔액 조회 불가",
+                              style: CoconutTypography.heading1_32_NumberBold,
+                            ),
                           ),
-                          SvgPicture.asset(
-                            'assets/svg/arrow-down.svg',
+                          CoconutLayout.spacing_100w,
+                          Text(
+                            t.btc,
+                            style: CoconutTypography.heading3_21_Number,
                           ),
                         ],
                       ),
                     ),
+                    CoconutLayout.spacing_100h,
+                    if (balance != null && btcPriceInKrw != null)
+                      Text(
+                          '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(balance!, btcPriceInKrw!).toDouble())}',
+                          style: Styles.subLabel.merge(TextStyle(
+                              fontFamily: CustomFonts.number.getFontFamily,
+                              color: MyColors.transparentWhite_70))),
+                    CoconutLayout.spacing_400h,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(),
+                        ),
+                        CupertinoButton(
+                          key: dropdownGlobalKey,
+                          padding: const EdgeInsets.only(
+                              top: 7, bottom: 7, left: 8, right: 26),
+                          minSize: 0,
+                          onPressed: () {
+                            onTapDropdown();
+                          },
+                          child: Row(
+                            children: [
+                              Text(selectedFilter,
+                                  style: CoconutTypography.caption_10
+                                      .setColor(CoconutColors.white)),
+                              const SizedBox(
+                                width: 5,
+                              ),
+                              SvgPicture.asset(
+                                'assets/svg/arrow-down.svg',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-                Visibility(
-                  visible: !viewModel.isUtxoTagListEmpty,
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 16, bottom: 12),
-                    child: CustomTagHorizontalSelector(
-                      tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                      onSelectedTag: (tagName) {
-                        viewModel.setSelectedUtxoTagName(tagName);
-                      },
-                    ),
-                  ),
+              ),
+              Visibility(
+                visible: !viewModel.isUtxoTagListEmpty,
+                child: CustomTagHorizontalSelector(
+                  tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+                  selectedName: viewModel.selectedUtxoTagName,
+                  onSelectedTag: (tagName) {
+                    viewModel.setSelectedUtxoTagName(tagName);
+                  },
                 ),
-                CoconutLayout.spacing_300h,
-              ],
-            ),
+              ),
+              CoconutLayout.spacing_400h,
+            ],
           )
         ],
       ),

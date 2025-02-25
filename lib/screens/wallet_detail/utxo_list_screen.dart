@@ -30,16 +30,17 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   final ScrollController _scrollController = ScrollController();
 
   final GlobalKey _appBarKey = GlobalKey();
-  final GlobalKey _headerWidgetKey = GlobalKey();
-  final GlobalKey _stickyHeaderWidgetKey = GlobalKey();
+  final GlobalKey _headerDropdownKey = GlobalKey();
+  final GlobalKey _stickyHeaderDropdownKey = GlobalKey();
 
   Size _appBarSize = const Size(0, 0);
-  final double _topPadding = 0;
 
-  final Offset _headerDropdownPosition = Offset.zero;
+  Offset _headerDropdownPosition = Offset.zero;
   Offset _stickyHeaderDropdownPosition = Offset.zero;
 
-  RenderBox? _stickyHeaderRenderBox;
+  Size _headerDropdownSize = Size.zero;
+  Size _stickyHeaderDropdownSize = Size.zero;
+
   bool _isHeaderDropdownVisible = false;
   bool _stickyHeaderVisible = false;
   bool _isStickyHeaderDropdownVisible = false;
@@ -64,7 +65,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         return _viewModel;
       },
       update: (_, walletProvider, connectProvider, upbitModel, viewModel) {
-        _updateFilterDropdownButtonRenderBox();
         return viewModel!..updateProvider();
       },
       child: Consumer<UtxoListViewModel>(
@@ -114,7 +114,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                         ),
                         SliverToBoxAdapter(
                           child: UtxoListHeader(
-                            key: _headerWidgetKey,
+                            dropdownGlobalKey: _headerDropdownKey,
                             balance: balance,
                             btcPriceInKrw: viewModel.bitcoinPriceKrw,
                             selectedFilter: viewModel.selectedUtxoOrder.text,
@@ -154,7 +154,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                     ),
                   ),
                   UtxoListStickyHeader(
-                    widgetKey: _stickyHeaderWidgetKey,
+                    dropdownGlobalKey: _stickyHeaderDropdownKey,
                     height: _appBarSize.height,
                     isVisible: _stickyHeaderVisible,
                     balance: balance,
@@ -181,10 +181,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                         _isStickyHeaderDropdownVisible,
                     positionTop: _isHeaderDropdownVisible
                         ? _headerDropdownPosition.dy +
-                            80 -
-                            _scrollController.offset * 0.01
+                            _headerDropdownSize.height
                         : _isStickyHeaderDropdownVisible
-                            ? _stickyHeaderDropdownPosition.dy + 92
+                            ? _stickyHeaderDropdownPosition.dy +
+                                _stickyHeaderDropdownSize.height
                             : 0,
                     selectedFilter: viewModel.selectedUtxoOrder,
                     onSelected: (filter) {
@@ -193,7 +193,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                             _isStickyHeaderDropdownVisible = false;
                       });
                       if (_stickyHeaderVisible) {
-                        _scrollController.animateTo(_topPadding + 1,
+                        _scrollController.animateTo(kToolbarHeight + 28,
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut);
                       }
@@ -224,35 +224,57 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
       _appBarSize = appBarRenderBox.size;
 
+      _updateHeaderDropdownPosition();
+
       _scrollController.addListener(() {
         if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
           _removeFilterDropdown();
         }
-        debugPrint('scroll: ${_scrollController.offset}');
-        if (_scrollController.offset > kToolbarHeight + 20) {
-          if (!_isPullToRefreshing) {
-            setState(() {
-              _stickyHeaderVisible = true;
-              _isHeaderDropdownVisible = false;
-            });
-            if (_stickyHeaderRenderBox == null &&
-                _viewModel.utxoList.isNotEmpty == true) {
-              _stickyHeaderRenderBox = _stickyHeaderWidgetKey.currentContext
-                  ?.findRenderObject() as RenderBox;
-              _stickyHeaderDropdownPosition =
-                  _stickyHeaderRenderBox!.localToGlobal(Offset.zero);
-            }
-          }
+        if (_scrollController.offset > kToolbarHeight + 27) {
+          _updateStickyHeaderDropdownPosition();
         } else {
-          if (!_isPullToRefreshing) {
-            setState(() {
-              _stickyHeaderVisible = false;
-              _isStickyHeaderDropdownVisible = false;
-            });
-          }
+          _updateHeaderDropdownPosition();
         }
       });
     });
+  }
+
+  void _updateHeaderDropdownPosition() {
+    RenderBox? headerDropdownRenderBox;
+    if (!_isPullToRefreshing) {
+      setState(() {
+        _stickyHeaderVisible = false;
+        _isStickyHeaderDropdownVisible = false;
+      });
+
+      headerDropdownRenderBox =
+          _headerDropdownKey.currentContext?.findRenderObject() as RenderBox;
+      if (_headerDropdownSize == Size.zero) {
+        _headerDropdownSize = headerDropdownRenderBox.size;
+      }
+      _headerDropdownPosition =
+          headerDropdownRenderBox.localToGlobal(Offset.zero);
+    }
+  }
+
+  void _updateStickyHeaderDropdownPosition() {
+    if (!_isPullToRefreshing) {
+      setState(() {
+        _stickyHeaderVisible = true;
+        _isHeaderDropdownVisible = false;
+      });
+      RenderBox? stickyHeaderDropdownRenderBox;
+
+      if (_viewModel.utxoList.isNotEmpty == true) {
+        stickyHeaderDropdownRenderBox = _stickyHeaderDropdownKey.currentContext
+            ?.findRenderObject() as RenderBox;
+        if (_stickyHeaderDropdownSize == Size.zero) {
+          _stickyHeaderDropdownSize = stickyHeaderDropdownRenderBox.size;
+        }
+        _stickyHeaderDropdownPosition =
+            stickyHeaderDropdownRenderBox.localToGlobal(Offset.zero);
+      }
+    }
   }
 
   bool _checkStateAndShowToast(
@@ -284,17 +306,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     setState(() {
       _isHeaderDropdownVisible = false;
       _isStickyHeaderDropdownVisible = false;
-    });
-  }
-
-  void _updateFilterDropdownButtonRenderBox() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // if (_tabWidgetKey.currentContext?.findRenderObject() != null) {
-      //   _tabWidgetRenderBox =
-      //       _tabWidgetKey.currentContext!.findRenderObject() as RenderBox;
-      //   _headerDropdownPosition =
-      //       _tabWidgetRenderBox.localToGlobal(Offset.zero);
-      // }
     });
   }
 }

@@ -1,7 +1,10 @@
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -61,8 +64,29 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       ),
       child: Consumer<UtxoDetailViewModel>(
         builder: (_, viewModel, child) {
-          if (viewModel.transaction == null) return Container();
-          final tx = viewModel.transaction;
+          // if (viewModel.transaction == null) return Container();
+          // final tx = viewModel.transaction;
+          // FIXME: viewModel의 transaction이 null로 나와서 임의 데이터로 생성했습니다.
+          final tx = TransactionRecord(
+              '88b8da7f8027619cc44bc5c26ce730f50028ece6e6b450cf6625b4e50515f28610',
+              DateTime.now(),
+              1,
+              TransactionTypeEnum.received.name,
+              null,
+              2,
+              1,
+              [
+                TransactionAddress(
+                    '88b8da7f8027619cc44bc5c26ce730f50028ece6e6b450cf6625b4e50515f28610',
+                    1)
+              ],
+              [
+                TransactionAddress(
+                    '88b8da7f8027619cc44bc5c26ce730f50028ece6e6b450cf6625b4e50515f28610',
+                    1)
+              ],
+              DateTime.now());
+
           final tags = viewModel.tagList;
           final selectedTags = viewModel.selectedTagList;
           return GestureDetector(
@@ -178,13 +202,15 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       shrinkWrap: true,
                                       physics:
                                           const NeverScrollableScrollPhysics(),
-                                      itemCount: viewModel.utxoInputMaxCount,
+                                      // itemCount: viewModel.utxoInputMaxCount,
+                                      // FIXME: 위 주석으로 사용해야 합니다.
+                                      itemCount: 0,
                                       padding: EdgeInsets.zero,
                                       itemBuilder: (context, index) {
                                         return Column(
                                           children: [
                                             InputOutputDetailRow(
-                                              address: tx!
+                                              address: tx
                                                   .inputAddressList[index]
                                                   .address,
                                               balance: tx
@@ -206,7 +232,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       },
                                     ),
                                     Visibility(
-                                      visible: tx!.inputAddressList.length >
+                                      visible: tx.inputAddressList.length >
                                           viewModel.utxoInputMaxCount,
                                       child: Text(
                                         '...',
@@ -232,7 +258,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                       shrinkWrap: true,
                                       physics:
                                           const NeverScrollableScrollPhysics(),
-                                      itemCount: viewModel.utxoOutputMaxCount,
+                                      // itemCount: viewModel.utxoOutputMaxCount,
+                                      // FIXME: 위 주석으로 사용해야 합니다.
+                                      itemCount: 0,
                                       padding: EdgeInsets.zero,
                                       itemBuilder: (context, index) {
                                         return Column(

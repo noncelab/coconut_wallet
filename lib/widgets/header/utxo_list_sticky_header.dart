@@ -9,7 +9,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class UtxoListStickyHeader extends StatelessWidget {
-  final Key widgetKey;
+  final GlobalKey dropdownGlobalKey;
   final double height;
   final bool isVisible;
   final int? balance;
@@ -18,7 +18,8 @@ class UtxoListStickyHeader extends StatelessWidget {
   final Function onTapDropdown;
   final Function removePopup;
   const UtxoListStickyHeader({
-    required this.widgetKey,
+    super.key,
+    required this.dropdownGlobalKey,
     required this.height,
     required this.isVisible,
     required this.balance,
@@ -26,7 +27,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.selectedFilter,
     required this.onTapDropdown,
     required this.removePopup,
-  }) : super(key: widgetKey);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +111,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                               child: Container(),
                             ),
                             CupertinoButton(
+                              key: dropdownGlobalKey,
                               padding: const EdgeInsets.only(
                                   top: 7, bottom: 7, left: 8, right: 26),
                               minSize: 0,
@@ -136,16 +138,14 @@ class UtxoListStickyHeader extends StatelessWidget {
                       CoconutLayout.spacing_200h,
                       Visibility(
                         visible: !viewModel.isUtxoTagListEmpty,
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 16, bottom: 12),
-                          child: CustomTagHorizontalSelector(
-                            tags: viewModel.utxoTagList
-                                .map((e) => e.name)
-                                .toList(),
-                            onSelectedTag: (tagName) {
-                              viewModel.setSelectedUtxoTagName(tagName);
-                            },
-                          ),
+                        child: CustomTagHorizontalSelector(
+                          tags:
+                              viewModel.utxoTagList.map((e) => e.name).toList(),
+                          selectedName: viewModel.selectedUtxoTagName,
+                          onSelectedTag: (tagName) {
+                            viewModel.setSelectedUtxoTagName(tagName);
+                          },
+                          scrollPhysics: const AlwaysScrollableScrollPhysics(),
                         ),
                       ),
                       CoconutLayout.spacing_300h,

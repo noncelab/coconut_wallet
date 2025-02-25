@@ -165,6 +165,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                               tags: viewModel.utxoTagList
                                   .map((e) => e.name)
                                   .toList(),
+                              selectedName: viewModel.selectedUtxoTagName,
                               onSelectedTag: (tagName) {
                                 viewModel.setSelectedUtxoTagName(tagName);
                                 setState(() {
