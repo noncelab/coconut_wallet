@@ -342,6 +342,10 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
+  Future<Result<bool>> unsubscribeWallet(WalletListItemBase walletItem) async {
+    return _handleResult(_mainClient.unsubscribeWallet(walletItem));
+  }
+
   /// 스크립트 상태 변경 배치 처리
   Future<void> _handleBatchScriptStatusChanged({
     required WalletListItemBase walletItem,

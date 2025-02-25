@@ -58,7 +58,7 @@ abstract class NodeClient {
           scriptStatusController,
       WalletProvider walletProvider);
 
-  Future<void> unsubscribeWallet(WalletListItemBase walletItem);
+  Future<bool> unsubscribeWallet(WalletListItemBase walletItem);
 
   void dispose();
 

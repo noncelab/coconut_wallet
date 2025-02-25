@@ -500,9 +500,32 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Future<void> unsubscribeWallet(WalletListItemBase walletItem) {
-    // TODO: implement unsubscribeScripts
-    throw UnimplementedError();
+  Future<bool> unsubscribeWallet(WalletListItemBase walletItem) async {
+    await Future.wait([
+      _unsubscribeScript(walletItem, false),
+      _unsubscribeScript(walletItem, true)
+    ]);
+    return true;
+  }
+
+  Future<void> _unsubscribeScript(
+      WalletListItemBase walletItem, bool isChange) async {
+    final addressScanLimit = isChange
+        ? walletItem.changeUsedIndex + gapLimit + 1
+        : walletItem.receiveUsedIndex + gapLimit + 1;
+
+    Map<int, String> addresses = _prepareAddressesMap(
+      walletItem.walletBase,
+      0,
+      addressScanLimit,
+      isChange,
+    );
+
+    await Future.wait(addresses.values.map((address) {
+      final script =
+          _getScriptForAddress(walletItem.walletBase.addressType, address);
+      return _client.unsubscribeScript(script);
+    }));
   }
 
   @override
