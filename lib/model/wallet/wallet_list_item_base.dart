@@ -11,7 +11,6 @@ abstract class WalletListItemBase {
   int iconIndex;
   final String descriptor;
   WalletType walletType;
-  int? balance;
   int receiveUsedIndex;
   int changeUsedIndex;
 
@@ -30,7 +29,6 @@ abstract class WalletListItemBase {
       required this.iconIndex,
       required this.descriptor,
       required this.walletType,
-      this.balance,
       this.txCount,
       this.isLatestTxBlockHeightZero = false,
       this.receiveUsedIndex = -1,
@@ -49,6 +47,5 @@ abstract class WalletListItemBase {
   // }
 
   @override
-  String toString() =>
-      'Wallet($id) / type=$walletType / name=$name / balance=$balance';
+  String toString() => 'Wallet($id) / type=$walletType / name=$name';
 }

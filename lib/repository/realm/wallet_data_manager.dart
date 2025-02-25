@@ -124,17 +124,15 @@ class WalletDataManager {
         decryptedDescriptor =
             await _cryptography!.decrypt(walletBases[i].descriptor);
       }
-
-      var balance = getWalletBalance(walletBases[i].id);
+      // TODO: 지갑 목록에서 balance field 제거함, balance 목록은 wallet_provider에서 따로 관리함
+      //var balance = getWalletBalance(walletBases[i].id);
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
         _walletList!.add(mapRealmWalletBaseToSinglesigWalletListItem(
-            walletBases[i], decryptedDescriptor, balance.total));
+            walletBases[i], decryptedDescriptor));
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         _walletList!.add(mapRealmMultisigWalletToMultisigWalletListItem(
-            multisigWallets[multisigWalletIndex++],
-            decryptedDescriptor,
-            balance.total));
+            multisigWallets[multisigWalletIndex++], decryptedDescriptor));
       }
     }
 

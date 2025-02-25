@@ -101,7 +101,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _initUtxoTagMap();
 
     _walletBase = _walletBaseItem.walletBase;
-    _confirmedBalance = _walletBaseItem.balance ?? 0;
+    // TODO:
+    //_confirmedBalance = _walletBaseItem.balance ?? 0;
+    _confirmedBalance = 0;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
     _changeAddress =
         _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address;

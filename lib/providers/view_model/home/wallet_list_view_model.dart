@@ -25,10 +25,12 @@ class WalletListViewModel extends ChangeNotifier {
   late final TransactionProvider _transactionProvider;
   final Map<int, int> _walletBalance = {};
   late StreamSubscription<Map<int, Balance>> _balanceSubscription;
+  bool _isFirstSyncFinished = false;
 
   WalletListViewModel(this._walletProvider, this._visibilityProvider,
       this._isBalanceHidden, this._nodeProvider, this._transactionProvider) {
     _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
+
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _prevWalletInitState = _walletProvider.walletInitState;
@@ -38,23 +40,24 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void _updateBalance(Map<int, Balance?> newBalance) {
-    // bool hasChange = false;
     final balance = newBalance.entries.first.value;
     if (balance != null) {
       _walletBalance[newBalance.keys.first] = balance.total;
+      notifyListeners();
     } else {
       _walletBalance.remove(newBalance.keys.first);
     }
-
-    notifyListeners();
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
+  bool get shouldShowLoadingIndicator =>
+      walletLoadCompleted && !_isFirstSyncFinished;
 
-  bool get isWalletsLoadedFromDb => _walletProvider.isWalletsLoadedFromDb;
+  bool get walletLoadCompleted =>
+      _walletProvider.walletLoadState == WalletLoadState.loadCompleted;
   int get lastUpdateTime => _walletProvider.lastUpdateTime;
   String? get walletInitErrorMessage =>
       _walletProvider.walletInitError?.message;
@@ -102,9 +105,22 @@ class WalletListViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> refreshWallets() async {
+    if (!walletLoadCompleted) return;
+
+    await _walletProvider.syncWalletData();
+  }
+
   void onWalletProviderUpdated(WalletProvider walletProvider) {
+    if (!_isFirstSyncFinished &&
+        walletProvider.walletSyncingState == WalletSyncingState.finished) {
+      _isFirstSyncFinished = true;
+      notifyListeners();
+    }
+
     _walletProvider = walletProvider;
 
+    // TODO:
     if (_prevWalletInitState != walletProvider.walletInitState) {
       if (walletProvider.walletInitState == WalletInitState.finished) {
         _onWalletInitStateFinished();
@@ -135,6 +151,7 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   int? getWalletBalance(int id) {
+    Logger.log('--> _walletBalance[id]');
     return _walletBalance[id];
     //return _walletProvider.getWalletBalance(id);
   }

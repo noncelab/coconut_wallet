@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -21,7 +22,6 @@ import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_terms_shortcut_card.dart';
@@ -30,8 +30,6 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_terms_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
-import 'package:coconut_wallet/widgets/wallet_init_status_indicator.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 
 class WalletListScreen extends StatefulWidget {
   const WalletListScreen({super.key});
@@ -42,8 +40,6 @@ class WalletListScreen extends StatefulWidget {
 
 class _WalletListScreenState extends State<WalletListScreen>
     with TickerProviderStateMixin {
-  // WalletInitState가 finished가 되고 몇 초 후에 일시를 보여줄지 여부
-  bool _isLastUpdateTimeVisible = false;
   bool _isDropdownMenuVisible = false;
 
   DateTime? _lastPressedAt;
@@ -134,35 +130,21 @@ class _WalletListScreenState extends State<WalletListScreen>
                       ),
                       // Pull to refresh, refresh indicator(hide)
                       CupertinoSliverRefreshControl(
-                        onRefresh: () async {
-                          _syncWalletsFromNetwork();
-                        },
-                      ),
-                      // Update Status, update indicator
-                      SliverToBoxAdapter(
-                        child: Selector<WalletListViewModel, WalletInitState>(
-                          selector: (_, selectorModel) =>
-                              selectorModel.walletInitState,
-                          builder: (context, state, child) {
-                            return Visibility(
-                              visible: viewModel.walletItemList.isNotEmpty,
-                              child: WalletInitStatusIndicator(
-                                  state: state,
-                                  onTap: _syncWalletsFromNetwork,
-                                  isLastUpdateTimeVisible:
-                                      state != WalletInitState.processing
-                                          ? _isLastUpdateTimeVisible
-                                          : false,
-                                  lastUpdateTime: viewModel.lastUpdateTime),
-                            );
-                          },
-                        ),
+                        onRefresh: viewModel.refreshWallets,
                       ),
                       // 용어집, 바로 추가하기, loading indicator
                       SliverToBoxAdapter(
                           child: Column(
                         children: [
-                          if (!viewModel.isWalletsLoadedFromDb) ...{
+                          if (viewModel.shouldShowLoadingIndicator) ...{
+                            const Padding(
+                              padding: EdgeInsets.only(top: 40.0),
+                              child: CupertinoActivityIndicator(
+                                color: MyColors.white,
+                              ),
+                            ),
+                          },
+                          if (!viewModel.walletLoadCompleted) ...{
                             const Padding(
                               padding: EdgeInsets.only(top: 40.0),
                               child: CupertinoActivityIndicator(
@@ -310,35 +292,6 @@ class _WalletListScreenState extends State<WalletListScreen>
         });
       }
     });
-  }
-
-  void _syncWalletsFromNetwork() {
-    setState(() {
-      _isLastUpdateTimeVisible = false;
-    });
-
-    if (_viewModel.walletItemList.isNotEmpty) {
-      _viewModel.initWallet().catchError((_, stackTrace) {
-        Logger.log('--> error catch');
-        Logger.error(_);
-        Logger.error(stackTrace);
-      }).whenComplete(() {
-        Logger.log('---> wallet state: ${_viewModel.walletInitState}');
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_viewModel.walletInitState == WalletInitState.error) {
-            CustomToast.showWarningToast(
-                context: context,
-                text: _viewModel.walletInitErrorMessage!,
-                seconds: 7);
-          }
-          if (_viewModel.walletInitState == WalletInitState.finished) {
-            _displayLastUpdateTimeAfterFourSeconds();
-          } else {
-            setState(() => _isLastUpdateTimeVisible = false);
-          }
-        });
-      });
-    }
   }
 
   Future _animateWalletBlink() async {
@@ -572,16 +525,5 @@ class _WalletListScreenState extends State<WalletListScreen>
         }
       }
     });
-  }
-
-  /// WalletInitState.finished 이후 4초 뒤 마지막 업데이트 시간을 보여줌
-  Future _displayLastUpdateTimeAfterFourSeconds() async {
-    if (_isLastUpdateTimeVisible) return;
-    await Future.delayed(const Duration(seconds: 4));
-    if (mounted) {
-      setState(() {
-        _isLastUpdateTimeVisible = true;
-      });
-    }
   }
 }

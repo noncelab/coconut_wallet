@@ -134,7 +134,9 @@ class WalletDetailViewModel extends ChangeNotifier {
   /// Faucet methods
   void showFaucetTooltip() async {
     final faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-    if (_walletListBaseItem!.balance == 0 && faucetHistory.count < 3) {
+    // TODO:balance 제거됨
+    //if (_walletListBaseItem!.balance == 0 && faucetHistory.count < 3) {
+    if (faucetHistory.count < 3) {
       _faucetTooltipVisible = true;
     }
     notifyListeners();
