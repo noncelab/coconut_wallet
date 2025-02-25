@@ -21,15 +21,7 @@ class IsolateConnectorData {
 }
 
 enum IsolateMessageType {
-  broadcast,
-  getNetworkMinimumFeeRate,
-  getLatestBlock,
-  getTransaction,
   getBalance,
-  getRecommendedFees,
-  fetchBlocksByHeight,
-  fetchTransactions,
-  fetchTransactionDetails,
-  fetchUtxos,
-  fetchPreviousTransactions,
+  fetchTransactionRecords,
+  getUtxoStates,
 }

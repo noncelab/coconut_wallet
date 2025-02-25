@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:async/async.dart' as async;
@@ -5,7 +6,9 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/script/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -95,128 +98,26 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
-      WalletBase wallet,
-      {Set<String>? knownTransactionHashes,
-      int receiveUsedIndex = -1,
-      int changeUsedIndex = -1}) async* {
-    final receiveStream = _fetchTransactions(
-      wallet,
-      isChange: false,
-      knownTransactionHashes: knownTransactionHashes,
-    );
+  Future<Iterable<FetchTransactionResponse>> getFetchTransactionResponses(
+      ScriptStatus scriptStatus, Set<String> knownTransactionHashes) async {
+    final historyList = await _client.getHistory(scriptStatus.scriptPubKey);
 
-    final changeStream = _fetchTransactions(
-      wallet,
-      isChange: true,
-      knownTransactionHashes: knownTransactionHashes,
-    );
-
-    await for (final state
-        in async.StreamGroup.merge([receiveStream, changeStream])) {
-      yield state;
-      if (state.hasError) return;
-    }
-  }
-
-  Stream<BaseStreamState<FetchTransactionResponse>> _fetchTransactions(
-      WalletBase wallet,
-      {Set<String>? knownTransactionHashes,
-      required bool isChange}) async* {
-    int addressScanLimit = gapLimit;
-    int currentAddressIndex = 0;
-    int lastUsedIndex = -1; // 마지막으로 사용된 인덱스 추적
-    Set<String> processedTxHashes = knownTransactionHashes ?? {};
-
-    while (currentAddressIndex < addressScanLimit) {
-      Map<int, String> addressScripts = _prepareAddressScriptsMap(
-        wallet,
-        currentAddressIndex,
-        addressScanLimit,
-        isChange,
-      );
-
-      Iterable<Stream<BaseStreamState<FetchTransactionResponse>>> streams =
-          addressScripts.entries.map((entry) async* {
-        final derivationIndex = entry.key;
-        final script = entry.value;
-
-        try {
-          final historyList = await _client.getHistory(script);
-
-          if (historyList.isEmpty) {
-            return;
-          }
-
-          // 트랜잭션이 있는 경우 lastUsedIndex 업데이트
-          lastUsedIndex = max(lastUsedIndex, derivationIndex);
-          addressScanLimit = derivationIndex + gapLimit + 1;
-
-          var filteredHistoryList = historyList.where((history) {
-            if (processedTxHashes.contains(history.txHash)) return false;
-            processedTxHashes.add(history.txHash);
-            return true;
-          });
-
-          for (var history in filteredHistoryList) {
-            yield BaseStreamState<FetchTransactionResponse>.success(
-                'fetchTransactions',
-                FetchTransactionResponse(
-                  transactionHash: history.txHash,
-                  height: history.height,
-                  addressIndex: derivationIndex,
-                  isChange: isChange,
-                ));
-          }
-        } catch (e, stack) {
-          yield BaseStreamState<FetchTransactionResponse>.error(
-              'fetchTransactions', e.toString(), stack);
-        }
-      });
-
-      yield* async.StreamGroup.merge(streams);
-
-      currentAddressIndex += addressScripts.length;
-      if (currentAddressIndex >= addressScanLimit) break;
+    if (historyList.isEmpty) {
+      return [];
     }
 
-    // 스캔 완료 후 lastUsedIndex를 포함하는 완료 상태 전달
-    yield BaseStreamState<FetchTransactionResponse>.success(
-        'fetchTransactions',
-        FetchTransactionResponse(
-          transactionHash: '', // 완료 상태를 나타내는 빈 해시
-          height: -1, // 완료 상태를 나타내는 특수값
-          addressIndex: lastUsedIndex, // 마지막으로 사용된 인덱스
-          isChange: isChange,
-        ));
-  }
-
-  @override
-  Stream<BaseStreamState<BlockTimestamp>> fetchBlocksByHeight(
-      Set<int> heights) async* {
-    // 모든 주소의 히스토리를 병렬로 조회
-    final streams = heights.map((height) async* {
-      try {
-        final header = await _client.getBlockHeader(height);
-        var blockHeader = BlockHeader.parse(height, header);
-
-        yield BaseStreamState<BlockTimestamp>.success(
-          'fetchBlocksByHeight',
-          BlockTimestamp(
-              height,
-              DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
-                  isUtc: true)),
-        );
-      } catch (e, stack) {
-        yield BaseStreamState<BlockTimestamp>.error(
-            'fetchBlocksByHeight', e.toString(), stack);
-      }
+    final filteredHistoryList = historyList.where((history) {
+      if (knownTransactionHashes.contains(history.txHash)) return false;
+      knownTransactionHashes.add(history.txHash);
+      return true;
     });
 
-    await for (final state in async.StreamGroup.merge(streams)) {
-      yield state;
-      if (state.hasError) return;
-    }
+    return filteredHistoryList.map((history) => FetchTransactionResponse(
+          transactionHash: history.txHash,
+          height: history.height,
+          addressIndex: scriptStatus.index,
+          isChange: scriptStatus.isChange,
+        ));
   }
 
   @override
@@ -258,11 +159,12 @@ class ElectrumService extends NodeClient {
   Iterable<Future<AddressBalance>> _getBalance(
       WalletBase wallet, int scanLimit, bool isChange) {
     if (scanLimit == 0) return [];
-    Map<int, String> scripts =
-        _prepareAddressScriptsMap(wallet, 0, scanLimit, isChange);
+    Map<int, String> addresses =
+        _prepareAddressesMap(wallet, 0, scanLimit, isChange);
 
-    return scripts.entries.map((entry) async {
-      var balanceRes = await _client.getBalance(entry.value);
+    return addresses.entries.map((entry) async {
+      final script = _getScriptForAddress(wallet.addressType, entry.value);
+      var balanceRes = await _client.getBalance(script);
       return AddressBalance(
           balanceRes.confirmed, balanceRes.unconfirmed, entry.key);
     });
@@ -328,7 +230,7 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Stream<BaseStreamState<Transaction>> fetchTransactionDetails(
+  Stream<BaseStreamState<Transaction>> fetchTransactions(
       Set<String> transactionHashes) async* {
     Iterable<Stream<BaseStreamState<Transaction>>> streams =
         transactionHashes.map((transactionHash) async* {
@@ -348,56 +250,7 @@ class ElectrumService extends NodeClient {
     }
   }
 
-  @override
-  Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
-      {int receiveUsedIndex = -1, int changeUsedIndex = -1}) async* {
-    final receiveStream =
-        _fetchUtxos(wallet, receiveUsedIndex + gapLimit, false);
-    final changeStream = _fetchUtxos(wallet, changeUsedIndex + gapLimit, true);
-
-    await for (final state
-        in async.StreamGroup.merge([receiveStream, changeStream])) {
-      yield state;
-      if (state.hasError) return;
-    }
-  }
-
-  Stream<BaseStreamState<UtxoState>> _fetchUtxos(
-      WalletBase wallet, int scanLimit, bool isChange) async* {
-    if (scanLimit == 0) return;
-    Map<int, String> scripts =
-        _prepareAddressScriptsMap(wallet, 0, scanLimit, isChange);
-
-    Iterable<Stream<BaseStreamState<UtxoState>>> streams =
-        scripts.entries.map((entry) async* {
-      try {
-        var utxos = await _client.getUnspentList(entry.value);
-        if (utxos.isEmpty) return;
-        for (var utxo in utxos) {
-          String derivationPath =
-              '${wallet.derivationPath}/${isChange ? 1 : 0}/${entry.key}';
-
-          /// Utxo 타임스탬프 추가는 updateTimestampFromBlocks에서 처리
-          yield BaseStreamState<UtxoState>.success(
-              'fetchUtxos',
-              UtxoState(
-                  transactionHash: utxo.txHash,
-                  index: utxo.txPos,
-                  amount: utxo.value,
-                  derivationPath: derivationPath,
-                  blockHeight: utxo.height,
-                  to: wallet.getAddress(entry.key, isChange: isChange)));
-        }
-      } catch (e, stack) {
-        yield BaseStreamState<UtxoState>.error(
-            'fetchUtxos', e.toString(), stack);
-      }
-    });
-
-    yield* async.StreamGroup.merge(streams);
-  }
-
-  Map<int, String> _prepareAddressScriptsMap(
+  Map<int, String> _prepareAddressesMap(
     WalletBase wallet,
     int startIndex,
     int endIndex,
@@ -410,8 +263,7 @@ class ElectrumService extends NodeClient {
           derivationIndex < endIndex;
           derivationIndex++) {
         String address = wallet.getAddress(derivationIndex, isChange: isChange);
-        String script = _getScriptForAddress(wallet, address);
-        scripts[derivationIndex] = script.substring(2);
+        scripts[derivationIndex] = address;
       }
       return scripts;
     } catch (e) {
@@ -419,13 +271,13 @@ class ElectrumService extends NodeClient {
     }
   }
 
-  String _getScriptForAddress(WalletBase wallet, String address) {
-    if (wallet.addressType == AddressType.p2wpkh) {
-      return ScriptPublicKey.p2wpkh(address).serialize();
-    } else if (wallet.addressType == AddressType.p2wsh) {
-      return ScriptPublicKey.p2wsh(address).serialize();
+  String _getScriptForAddress(AddressType addressType, String address) {
+    if (addressType == AddressType.p2wpkh) {
+      return ScriptPublicKey.p2wpkh(address).serialize().substring(2);
+    } else if (addressType == AddressType.p2wsh) {
+      return ScriptPublicKey.p2wsh(address).serialize().substring(2);
     }
-    throw 'Unsupported address type: ${wallet.addressType.scriptType}';
+    throw 'Unsupported address type: $addressType';
   }
 
   /// blockchain.estimatefee가 반환하는 BTC/kB 단위를 sat/vB 단위로 변환합니다.
@@ -509,26 +361,47 @@ class ElectrumService extends NodeClient {
 
   @override
   Future<SubscribeWalletResponse> subscribeWallet(
-      WalletListItemBase walletItem) async {
-    final receiveFutures = _subscribeWallet(walletItem.walletBase, false);
-    final changeFutures = _subscribeWallet(walletItem.walletBase, true);
+      WalletListItemBase walletItem,
+      StreamController<
+              ({
+                WalletListItemBase walletItem,
+                ScriptStatus scriptStatus,
+                WalletProvider walletProvider
+              })>
+          scriptStatusController,
+      WalletProvider walletProvider) async {
+    final receiveFutures = _subscribeWallet(
+        walletItem, false, scriptStatusController, walletProvider);
+    final changeFutures = _subscribeWallet(
+        walletItem, true, scriptStatusController, walletProvider);
 
     final [receiveResult, changeResult] =
         await Future.wait([receiveFutures, changeFutures]);
 
-    walletItem.receiveUsedIndex = receiveResult.$2;
-    walletItem.changeUsedIndex = changeResult.$2;
+    walletItem.receiveUsedIndex = receiveResult.lastUsedIndex;
+    walletItem.changeUsedIndex = changeResult.lastUsedIndex;
 
-    receiveResult.$1.addAll(changeResult.$1);
+    receiveResult.scriptStatuses.addAll(changeResult.scriptStatuses);
+
     return SubscribeWalletResponse(
-      scriptStatuses: receiveResult.$1,
-      usedReceiveIndex: receiveResult.$2,
-      usedChangeIndex: changeResult.$2,
+      scriptStatuses: receiveResult.scriptStatuses,
+      usedReceiveIndex: receiveResult.lastUsedIndex,
+      usedChangeIndex: changeResult.lastUsedIndex,
     );
   }
 
-  Future<(List<ScriptStatus> scriptStatuses, int lastUsedIndex)>
-      _subscribeWallet(WalletBase wallet, bool isChange) async {
+  Future<({List<ScriptStatus> scriptStatuses, int lastUsedIndex})>
+      _subscribeWallet(
+          WalletListItemBase walletItem,
+          bool isChange,
+          StreamController<
+                  ({
+                    WalletListItemBase walletItem,
+                    ScriptStatus scriptStatus,
+                    WalletProvider walletProvider
+                  })>
+              scriptStatusController,
+          WalletProvider walletProvider) async {
     int currentAddressIndex = 0;
     int addressScanLimit = gapLimit;
     int lastUsedIndex = -1;
@@ -536,8 +409,8 @@ class ElectrumService extends NodeClient {
     DateTime lastUpdatedTime = DateTime.now();
 
     while (currentAddressIndex < addressScanLimit) {
-      Map<int, String> addressScripts = _prepareAddressScriptsMap(
-        wallet,
+      Map<int, String> addresses = _prepareAddressesMap(
+        walletItem.walletBase,
         currentAddressIndex,
         addressScanLimit,
         isChange,
@@ -545,51 +418,136 @@ class ElectrumService extends NodeClient {
 
       // 병렬 처리 결과를 저장할 리스트
       final results = await Future.wait(
-        addressScripts.entries.map((entry) async {
+        addresses.entries.map((entry) async {
           final derivationIndex = entry.key;
-          final script = entry.value;
+          final address = entry.value;
+          final script =
+              _getScriptForAddress(walletItem.walletBase.addressType, address);
 
           try {
-            final status = await _client.subscribeScript(script);
-            return (derivationIndex, script, status);
-          } catch (e, stack) {
+            final derivationPath =
+                '${walletItem.walletBase.derivationPath}/${isChange ? 1 : 0}/$derivationIndex';
+            final status = await _client.subscribeScript(script,
+                onUpdate: (scriptPubkey, status) {
+              final path = derivationPath;
+              final now = DateTime.now();
+              scriptStatusController.add((
+                walletItem: walletItem,
+                scriptStatus: ScriptStatus(
+                  scriptPubKey: scriptPubkey,
+                  status: status,
+                  timestamp: now,
+                  derivationPath: path,
+                  address: address,
+                  index: derivationIndex,
+                  isChange: isChange,
+                ),
+                walletProvider: walletProvider,
+              ));
+            });
+
+            if (status == null) {
+              return null;
+            }
+
+            return (
+              derivationIndex: derivationIndex,
+              derivationPath: derivationPath,
+              address: address,
+              script: script,
+              status: status,
+            );
+          } catch (e) {
             Logger.error(
                 'Script subscription error at index $derivationIndex: $e');
-            Logger.error(stack);
             return null;
           }
         }),
       );
 
-      // 결과 처리 및 인덱스 갱신
-      for (final result in results) {
-        if (result == null) continue;
-        final (derivationIndex, script, status) = result;
+      results
+          .whereType<
+              ({
+                int derivationIndex,
+                String script,
+                String status,
+                String derivationPath,
+                String address,
+              })>()
+          .forEach((result) {
+        final (:derivationIndex, :script, :status, :derivationPath, :address) =
+            result;
 
-        if (status != null) {
-          lastUsedIndex = max(lastUsedIndex, derivationIndex);
-          scriptStatuses.add(ScriptStatus(
-              scriptPubKey: script,
-              status: status,
-              timestamp: lastUpdatedTime,
-              derivationIndex: derivationIndex,
-              isChange: isChange));
-        }
-      }
+        lastUsedIndex = max(lastUsedIndex, derivationIndex);
+        scriptStatuses.add(ScriptStatus(
+            scriptPubKey: script,
+            status: status,
+            timestamp: lastUpdatedTime,
+            derivationPath: derivationPath,
+            address: address,
+            index: derivationIndex,
+            isChange: isChange));
+      });
 
       // 사용된 주소가 발견된 경우 스캔 범위 확장
       if (lastUsedIndex >= currentAddressIndex) {
         addressScanLimit = lastUsedIndex + gapLimit + 1;
       }
-      currentAddressIndex += addressScripts.length;
+      currentAddressIndex += addresses.length;
     }
 
-    return (scriptStatuses, lastUsedIndex);
+    return (scriptStatuses: scriptStatuses, lastUsedIndex: lastUsedIndex);
   }
 
   @override
-  Future<void> unsubscribeScripts(WalletListItemBase walletItem) {
+  Future<void> unsubscribeWallet(WalletListItemBase walletItem) {
     // TODO: implement unsubscribeScripts
     throw UnimplementedError();
+  }
+
+  @override
+  Future<List<UtxoState>> getUtxoStateList(ScriptStatus scriptStatus) async {
+    final utxos = await _client.getUnspentList(scriptStatus.scriptPubKey);
+    return utxos
+        .map((e) => UtxoState(
+              transactionHash: e.txHash,
+              index: e.txPos,
+              amount: e.value,
+              derivationPath: scriptStatus.derivationPath,
+              blockHeight: e.height,
+              to: scriptStatus.address,
+            ))
+        .toList();
+  }
+
+  @override
+  Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
+    final futures = heights.map((height) async {
+      try {
+        final header = await _client.getBlockHeader(height);
+        final blockHeader = BlockHeader.parse(height, header);
+        return MapEntry(
+          height,
+          BlockTimestamp(
+            height,
+            DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
+                isUtc: true),
+          ),
+        );
+      } catch (e) {
+        Logger.error('Error fetching block header for height $height: $e');
+        return null;
+      }
+    });
+
+    final results = await Future.wait(futures);
+    return Map.fromEntries(results.whereType<MapEntry<int, BlockTimestamp>>());
+  }
+
+  @override
+  Future<Balance> getAddressBalance(String script) {
+    return _client
+        .getBalance(script)
+        .then((value) => Balance(value.confirmed, value.unconfirmed));
   }
 }

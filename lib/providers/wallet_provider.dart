@@ -222,11 +222,8 @@ class WalletProvider extends ChangeNotifier {
       newItem = await _walletDataManager.addSinglesigWallet(watchOnlyWallet);
     }
 
-    // 지갑 추가 시 최소 gapLimit 만큼 주소 생성
-    for (var walletItem in _walletItemList) {
-      generateWalletAddress(walletItem, -1, false);
-      generateWalletAddress(walletItem, -1, true);
-    }
+    generateWalletAddress(newItem, -1, false);
+    generateWalletAddress(newItem, -1, true);
 
     //final newItem = await _createNewWallet(walletSync, isMultisig);
     List<WalletListItemBase> updatedList = List.from(_walletItemList);

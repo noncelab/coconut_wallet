@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:convert/convert.dart';
 
 part '../../model/request/electrum_request_types.dart';
@@ -51,7 +52,7 @@ class ElectrumClient {
       'method': request.method,
       'params': request.params
     };
-    // Logger.log('[${DateTime.now()}] - $jsonRpcRequest');
+    // Logger.log('[${DateTime.now()}]REQ - $jsonRpcRequest');
     await _socketManager.send(json.encode(jsonRpcRequest));
 
     final completer = Completer<Map>();
@@ -62,7 +63,7 @@ class ElectrumClient {
     if (res['error'] != null) {
       throw res['error'];
     }
-    // Logger.log('[${DateTime.now()}] - $res');
+    // Logger.log('[${DateTime.now()}]RES - $res');
     return fromJson(res['result'], id: requestId);
   }
 
@@ -196,11 +197,14 @@ class ElectrumClient {
     return response.result;
   }
 
-  Future<String?> subscribeScript(String script) async {
+  Future<String?> subscribeScript(String script,
+      {required Function(String, String) onUpdate}) async {
     var reversedScriptHash = _scriptToReversedHash(script);
     var response = await _call(
         _BlockchainScripthashSubscribeReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(result: json));
+
+    _socketManager.setSubscriptionCallback(script, onUpdate);
 
     return response.result;
   }
@@ -210,6 +214,8 @@ class ElectrumClient {
     var response = await _call(
         _BlockchainScripthashUnsubscribeReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(result: json));
+
+    _socketManager.removeSubscriptionCallback(script);
 
     return response.result;
   }
