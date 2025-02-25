@@ -65,21 +65,21 @@ class WalletUpdateInfo {
 
 /// NodeProvider 상태 정보를 담는 클래스
 class NodeProviderState {
-  final MainClientState state;
+  final MainClientState connectionState;
   final Map<int, WalletUpdateInfo> updatedWallets;
 
   const NodeProviderState({
-    required this.state,
+    required this.connectionState,
     required this.updatedWallets,
   });
 
   NodeProviderState copyWith({
-    MainClientState? state,
-    Map<int, WalletUpdateInfo>? updatedWallets,
+    MainClientState? newConnectionState,
+    Map<int, WalletUpdateInfo>? newUpdatedWallets,
   }) {
     return NodeProviderState(
-      state: state ?? this.state,
-      updatedWallets: updatedWallets ?? this.updatedWallets,
+      connectionState: newConnectionState ?? connectionState,
+      updatedWallets: newUpdatedWallets ?? updatedWallets,
     );
   }
 }
@@ -94,7 +94,7 @@ class NodeProvider extends ChangeNotifier {
   Completer<void>? _syncCompleter;
 
   NodeProviderState _state = const NodeProviderState(
-    state: MainClientState.waiting,
+    connectionState: MainClientState.waiting,
     updatedWallets: {},
   );
 
@@ -112,7 +112,6 @@ class NodeProvider extends ChangeNotifier {
       })> _scriptStatusController;
 
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
-  bool get isSyncing => _syncCompleter != null;
   String get host => _host;
   int get port => _port;
   bool get ssl => _ssl;
@@ -158,8 +157,12 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void _setState(
-      {MainClientState? state, Map<int, WalletUpdateInfo>? updatedWallets}) {
-    _state = _state.copyWith(state: state, updatedWallets: updatedWallets);
+      {MainClientState? newConnectionState,
+      Map<int, WalletUpdateInfo>? newUpdatedWallets}) {
+    _state = _state.copyWith(
+      newConnectionState: newConnectionState,
+      newUpdatedWallets: newUpdatedWallets,
+    );
     notifyListeners();
   }
 
@@ -189,8 +192,8 @@ class NodeProvider extends ChangeNotifier {
 
     // mainClient 상태 업데이트
     _setState(
-      state: MainClientState.syncing,
-      updatedWallets: {
+      newConnectionState: MainClientState.syncing,
+      newUpdatedWallets: {
         ..._state.updatedWallets,
         walletId: walletUpdateInfo,
       },
@@ -220,10 +223,12 @@ class NodeProvider extends ChangeNotifier {
         break;
     }
 
-    _setState(updatedWallets: {
-      ..._state.updatedWallets,
-      walletId: walletUpdateInfo,
-    });
+    _setState(
+      newUpdatedWallets: {
+        ..._state.updatedWallets,
+        walletId: walletUpdateInfo,
+      },
+    );
   }
 
   /// 지갑의 특정 업데이트 타입을 제거합니다.
@@ -244,10 +249,12 @@ class NodeProvider extends ChangeNotifier {
     }
 
     // notifyListeners 호출 없이 상태만 업데이트
-    _setState(updatedWallets: {
-      ..._state.updatedWallets,
-      walletId: existingInfo,
-    });
+    _setState(
+      newUpdatedWallets: {
+        ..._state.updatedWallets,
+        walletId: existingInfo,
+      },
+    );
   }
 
   Future<Result<T>> _handleResult<T>(Future<T> future) async {
@@ -287,7 +294,7 @@ class NodeProvider extends ChangeNotifier {
       await _fetchScriptUtxo(params.walletItem, params.scriptStatus);
 
       // 동기화 완료 state 업데이트
-      _setState(state: MainClientState.waiting);
+      _setState(newConnectionState: MainClientState.waiting);
     } catch (e) {
       Logger.error('Failed to handle script status change: $e');
     }
@@ -376,10 +383,10 @@ class NodeProvider extends ChangeNotifier {
       _addWalletCompletedState(walletItem.id, UpdateType.utxo);
 
       // 동기화 완료 state 업데이트
-      _setState(state: MainClientState.waiting);
+      _setState(newConnectionState: MainClientState.waiting);
     } catch (e) {
       Logger.error('Failed to handle batch script status change: $e');
-      _setState(state: MainClientState.waiting);
+      _setState(newConnectionState: MainClientState.waiting);
     }
   }
 
