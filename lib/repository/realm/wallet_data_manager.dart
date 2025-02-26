@@ -6,6 +6,7 @@ import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
@@ -290,7 +291,7 @@ class WalletDataManager {
   }
 
   /// walletId 로 태그 목록 조회
-  Result<List<UtxoTag>> loadUtxoTagList(int walletId) {
+  Result<List<UtxoTag>> fetchUtxoTags(int walletId) {
     _utxoTagList = [];
     final tags = _realm
         .query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
@@ -331,8 +332,8 @@ class WalletDataManager {
     );
   }
 
-  /// walletId 로 조회된 태그 목록에서 txHashIndex 를 포함하고 있는 태그 목록 조회
-  Result<List<UtxoTag>> loadUtxoTagListByUtxoId(int walletId, String utxoId) {
+  /// walletId 로 조회된 태그 목록에서 utxoId($txHash$Index)를 포함하고 있는 태그 목록 조회
+  Result<List<UtxoTag>> getUtxoTagsByTxHash(int walletId, String utxoId) {
     return _handleRealm<List<UtxoTag>>(() {
       _utxoTagList = [];
 

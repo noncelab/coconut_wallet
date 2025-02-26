@@ -35,7 +35,7 @@ class UtxoTagScreen extends StatelessWidget {
                   isScrollControlled: true,
                   builder: (context) => TagBottomSheet(
                     type: TagBottomSheetType.create,
-                    utxoTags: model.tagList,
+                    utxoTags: model.utxoTags,
                     onUpdated: (utxoTag) {
                       if (!model.addUtxoTag(id, utxoTag)) {
                         CustomToast.showWarningToast(
@@ -56,7 +56,7 @@ class UtxoTagScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
-                  if (model.tagList.isEmpty == true) ...{
+                  if (model.utxoTags.isEmpty == true) ...{
                     const SizedBox(height: 56),
                     Text(
                       t.utxo_tag_screen.no_such_tag,
@@ -84,7 +84,7 @@ class UtxoTagScreen extends StatelessWidget {
                               isScrollControlled: true,
                               builder: (context) => TagBottomSheet(
                                 type: TagBottomSheetType.update,
-                                utxoTags: model.tagList,
+                                utxoTags: model.utxoTags,
                                 updateUtxoTag: model.selectedUtxoTag,
                                 onUpdated: (utxoTag) {
                                   if (!model.updateUtxoTag(id, utxoTag)) {
@@ -143,9 +143,9 @@ class UtxoTagScreen extends StatelessWidget {
                   },
                   Expanded(
                     child: CustomTagVerticalSelector(
-                      tags: model.tagList,
+                      tags: model.utxoTags,
                       externalUpdatedTagName: model.updatedTagName,
-                      onSelectedTag: model.setSelectedUtxoTag,
+                      onSelectedTag: model.selectUtxoTag,
                     ),
                   ),
                 ],

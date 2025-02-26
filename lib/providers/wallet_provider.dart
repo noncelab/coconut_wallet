@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
@@ -472,6 +473,12 @@ class WalletProvider extends ChangeNotifier {
 
   WalletAddress getReceiveAddress(int walletId) {
     return _walletDataManager.getReceiveAddress(walletId);
+  }
+
+  // TODO: not implemented yet
+  List<UtxoState> getWalletUtxoList(int walletId) {
+    return [];
+    // return _walletDataManager.getWalletUtxoList(walletId);
   }
 }
 

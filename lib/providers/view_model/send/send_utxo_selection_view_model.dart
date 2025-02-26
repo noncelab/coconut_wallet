@@ -186,7 +186,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get estimatedFee => _estimatedFee;
   bool get isMaxMode => _isMaxMode;
-  bool get isUtxoTagListEmpty => _tagProvider.tagList.isEmpty;
+  bool get isUtxoTagListEmpty => _tagProvider.utxoTags.isEmpty;
   int get needAmount => _sendAmount + (_estimatedFee ?? 0);
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus =>
       _recommendedFeeFetchStatus;
@@ -212,7 +212,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   int get sendAmount => _sendAmount;
 
-  List<UtxoTag> get utxoTagList => _tagProvider.tagList;
+  List<UtxoTag> get utxoTagList => _tagProvider.utxoTags;
 
   Map<String, List<UtxoTag>> get utxoTagMap => _utxoTagMap;
 
@@ -412,7 +412,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _initUtxoTagMap() {
     for (var (element) in _confirmedUtxoList) {
-      final tags = _tagProvider.loadSelectedUtxoTagList(
+      final tags = _tagProvider.fetchUtxoTagsByUtxoId(
           _sendInfoProvider.walletId!, element.utxoId);
       _utxoTagMap[element.utxoId] = tags;
     }

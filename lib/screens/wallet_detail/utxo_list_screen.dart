@@ -52,8 +52,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<WalletProvider, ConnectivityProvider,
-        UpbitConnectModel, UtxoListViewModel>(
+    return ChangeNotifierProxyProvider4<WalletProvider, UtxoTagProvider,
+        ConnectivityProvider, UpbitConnectModel, UtxoListViewModel>(
       create: (_) {
         _viewModel = UtxoListViewModel(
           widget.id,
@@ -64,7 +64,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         );
         return _viewModel;
       },
-      update: (_, walletProvider, connectProvider, upbitModel, viewModel) {
+      update: (_, walletProvider, utxoTagProvider, connectProvider, upbitModel,
+          viewModel) {
         return viewModel!..updateProvider();
       },
       child: Consumer<UtxoListViewModel>(
@@ -87,6 +88,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   Scaffold(
                     backgroundColor: MyColors.black,
                     appBar: CoconutAppBar.build(
+                      hasRightIcon: false,
                       entireWidgetKey: _appBarKey,
                       title: t.utxo_list,
                       context: context,
@@ -176,8 +178,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                     },
                   ),
                   UtxoFilterDropdown(
-                    isVisible: viewModel.utxoList.isNotEmpty &&
-                            _isHeaderDropdownVisible ||
+                    isVisible: _isHeaderDropdownVisible ||
                         _isStickyHeaderDropdownVisible,
                     positionTop: _isHeaderDropdownVisible
                         ? _headerDropdownPosition.dy +

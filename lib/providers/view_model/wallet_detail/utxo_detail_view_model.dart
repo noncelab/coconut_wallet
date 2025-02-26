@@ -11,7 +11,8 @@ class UtxoDetailViewModel extends ChangeNotifier {
   static const int kInputMaxCount = 3;
   static const int kOutputMaxCount = 2;
 
-  final int _walletId;
+  late final int _walletId;
+  late final String _utxoId;
   final UtxoState _utxo;
 
   final UtxoTagProvider _tagProvider;
@@ -26,9 +27,15 @@ class UtxoDetailViewModel extends ChangeNotifier {
   int get utxoInputMaxCount => _utxoInputMaxCount;
   int get utxoOutputMaxCount => _utxoOutputMaxCount;
 
+  List<UtxoTag> get utxoTagsForSelectedUtxo =>
+      _tagProvider.setUtxoTagsForSelectedUtxo(_walletId, _utxoId);
+
   UtxoDetailViewModel(
       this._walletId, this._utxo, this._tagProvider, this._txProvider) {
-    _tagProvider.initTagList(_walletId, utxoId: _utxo.utxoId);
+    _utxoId = _utxo.utxoId;
+
+    _tagProvider.fetchUtxoTagsByWalletId(_walletId);
+    // _tagProvider.setUtxoTagsForSelectedUtxo(_walletId, _utxo.utxoId);
     _transaction = _txProvider.getTransaction(_walletId, _utxo.transactionHash,
         utxoTo: _utxo.to);
     // _txProvider.initTransaction(_walletId, _utxo.transactionHash,
@@ -42,8 +49,8 @@ class UtxoDetailViewModel extends ChangeNotifier {
   }
 
   UtxoTagProvider? get tagProvider => _tagProvider;
-  List<UtxoTag> get selectedTagList => _tagProvider.selectedTagList;
-  List<UtxoTag> get tagList => _tagProvider.tagList;
+  List<UtxoTag> get selectedTagList => _tagProvider.utxoTagsForSelectedUtxo;
+  List<UtxoTag> get tagList => _tagProvider.utxoTags;
 
   TransactionRecord? get transaction => _txProvider.transaction;
 
