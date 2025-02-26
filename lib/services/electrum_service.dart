@@ -446,10 +446,6 @@ class ElectrumService extends NodeClient {
               ));
             });
 
-            if (status == null) {
-              return null;
-            }
-
             return (
               derivationIndex: derivationIndex,
               derivationPath: derivationPath,
@@ -470,7 +466,7 @@ class ElectrumService extends NodeClient {
               ({
                 int derivationIndex,
                 String script,
-                String status,
+                String? status,
                 String derivationPath,
                 String address,
               })>()
@@ -478,7 +474,9 @@ class ElectrumService extends NodeClient {
         final (:derivationIndex, :script, :status, :derivationPath, :address) =
             result;
 
-        lastUsedIndex = max(lastUsedIndex, derivationIndex);
+        if (status != null) {
+          lastUsedIndex = max(lastUsedIndex, derivationIndex);
+        }
         scriptStatuses.add(ScriptStatus(
             scriptPubKey: script,
             status: status,

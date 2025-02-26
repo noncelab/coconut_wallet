@@ -32,6 +32,7 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -836,6 +837,7 @@ class WalletDataManager {
     try {
       return Result.success(operation());
     } catch (e) {
+      Logger.error('Realm operation failed: $e');
       return _handleError<T>(e);
     }
   }
@@ -1094,8 +1096,8 @@ class WalletDataManager {
         for (final update in subscribeResponse.scriptStatuses) {
           final existingStatus = existingStatusMap[update.scriptPubKey];
 
-          if (existingStatus != null) {
-            existingStatus.status = update.status;
+          if (existingStatus != null && update.status != null) {
+            existingStatus.status = update.status!;
             existingStatus.timestamp = now;
             updatedStatuses.add(update);
           }
@@ -1127,10 +1129,11 @@ class WalletDataManager {
     for (final update in updates) {
       final existingStatus = existingStatusMap[update.scriptPubKey];
 
-      if (existingStatus == null) {
+      // 기존 상태가 없고 업데이트된 상태가 있는 경우 새로 생성
+      if (existingStatus == null && update.status != null) {
         newStatuses.add(RealmScriptStatus(
           update.scriptPubKey,
-          update.status,
+          update.status!,
           walletId,
           now,
         ));
@@ -1147,9 +1150,8 @@ class WalletDataManager {
     required int walletId,
     required Iterable<String> scriptPubKeys,
   }) {
-    // 쿼리 최적화: DISTINCT 추가하여 중복 제거
     final scriptResults = _realm.query<RealmScriptStatus>(
-      r'DISTINCT(scriptPubKey) AND walletId == $0 AND scriptPubKey IN $1',
+      r'walletId == $0 AND scriptPubKey IN $1',
       [walletId, scriptPubKeys],
     );
 
@@ -1178,14 +1180,17 @@ class WalletDataManager {
       [walletId],
     ).firstOrNull;
 
+    if (realmWalletBalance == null) {
+      throw StateError('[updateAddressBalance] Wallet balance not found');
+    }
+
     final realmWalletAddress = _realm.query<RealmWalletAddress>(
       r'walletId == $0 AND index == $1 AND isChange == $2',
       [walletId, index, isChange],
     ).firstOrNull;
 
-    if (realmWalletBalance == null || realmWalletAddress == null) {
-      throw StateError(
-          '[updateAddressBalance] Wallet balance or address not found');
+    if (realmWalletAddress == null) {
+      throw StateError('[updateAddressBalance] Wallet address not found');
     }
 
     final confirmedDiff = balance.confirmed - realmWalletAddress.confirmed;

@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/script/script_status.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -341,7 +342,8 @@ class NodeProvider extends ChangeNotifier {
         return Result.success(true);
       }
 
-      Logger.error('SubscribeWallet: ${walletItem.name} - failed');
+      Logger.error(
+          'SubscribeWallet: ${walletItem.name} - failed\n ${batchUpdateResult.error.toString()}');
       return Result.failure(batchUpdateResult.error);
     } catch (e) {
       Logger.error('SubscribeWallet: ${walletItem.name} - failed');
@@ -350,7 +352,11 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> unsubscribeWallet(WalletListItemBase walletItem) async {
-    return _handleResult(_mainClient.unsubscribeWallet(walletItem));
+    return _handleResult(() async {
+      await _mainClient.unsubscribeWallet(walletItem);
+      walletItem.scriptStatusMap.clear();
+      return true;
+    }());
   }
 
   /// 스크립트 상태 변경 배치 처리
@@ -397,6 +403,13 @@ class NodeProvider extends ChangeNotifier {
 
     final addressBalance =
         await _mainClient.getAddressBalance(scriptStatus.scriptPubKey);
+
+    _walletDataManager.ensureAddressesExist(
+      walletItemBase: walletItem,
+      cursor: scriptStatus.index,
+      count: 1,
+      isChange: scriptStatus.isChange,
+    );
 
     _walletDataManager.updateAddressBalance(
         walletId: walletItem.id,
@@ -454,6 +467,11 @@ class NodeProvider extends ChangeNotifier {
 
     // UTXO 목록 조회
     final utxos = await _mainClient.getUtxoStateList(scriptStatus);
+
+    final blockTimestampMap = await _mainClient
+        .getBlocksByHeight(utxos.map((utxo) => utxo.blockHeight).toSet());
+
+    UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
 
     _walletDataManager.addAllUtxos(walletItem.id, utxos);
 
