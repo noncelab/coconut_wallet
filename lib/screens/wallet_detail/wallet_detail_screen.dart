@@ -123,7 +123,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       title: TextUtils.ellipsisIfLonger(viewModel.walletListBaseItem!.name,
           maxLength: 15),
       context: context,
-      hasRightIcon: true,
       onTitlePressed: () => _navigateToWalletInfo(context, viewModel),
       actionButtonList: [
         IconButton(

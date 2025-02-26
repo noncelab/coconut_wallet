@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -136,23 +137,13 @@ class _WalletListScreenState extends State<WalletListScreen>
                       SliverToBoxAdapter(
                           child: Column(
                         children: [
-                          if (viewModel.shouldShowLoadingIndicator) ...{
-                            const Padding(
-                              padding: EdgeInsets.only(top: 40.0),
-                              child: CupertinoActivityIndicator(
-                                color: MyColors.white,
-                              ),
-                            ),
-                          },
-                          if (!viewModel.walletLoadCompleted) ...{
-                            const Padding(
-                              padding: EdgeInsets.only(top: 40.0),
-                              child: CupertinoActivityIndicator(
-                                color: MyColors.white,
-                                radius: 20,
-                              ),
-                            ),
-                          } else ...{
+                          // 앱에 첫 진입 시 뜨는 상단 loading indicator
+                          _topLoadingIndicatorWidget(
+                              viewModel.shouldShowLoadingIndicator ||
+                                  !viewModel.walletLoadCompleted),
+
+                          if (!viewModel.shouldShowLoadingIndicator &&
+                              viewModel.walletLoadCompleted) ...{
                             if (viewModel.isTermsShortcutVisible)
                               WalletListTermsShortcutCard(
                                 onTap: () {
@@ -223,6 +214,21 @@ class _WalletListScreenState extends State<WalletListScreen>
               ),
             ));
       }),
+    );
+  }
+
+  Widget _topLoadingIndicatorWidget(bool isLoading) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      child: Container(
+        height: isLoading ? null : 0,
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: const CupertinoActivityIndicator(
+          color: MyColors.white,
+          radius: 14,
+        ),
+      ),
     );
   }
 
@@ -367,34 +373,33 @@ class _WalletListScreenState extends State<WalletListScreen>
         //     return SlideTransition(
         //         position: _slideAnimation!, child: walletItemCard);
         //   }
-
         //   break;
         // case WalletSyncResult.existingWalletUpdated:
-        //   if (viewModel.walletItemList[index].id ==
-        //       _resultOfSyncFromVault?.walletId!) {
-        //     Logger.log('existingWalletUpdated');
-        //     _initializeBlinkAnimationController();
-        //     return Stack(
-        //       children: [
-        //         walletItemCard,
-        //         IgnorePointer(
-        //           child: AnimatedBuilder(
-        //             animation: _blinkAnimation!,
-        //             builder: (context, child) {
-        //               return Container(
-        //                 decoration: BoxDecoration(
-        //                     color: _blinkAnimation!.value,
-        //                     borderRadius: BorderRadius.circular(28)),
-        //                 width: itemCardWidth,
-        //                 height: itemCardHeight,
-        //               );
-        //             },
-        //           ),
-        //         )
-        //       ],
-        //     );
-        //   }
-        //   break;
+        // if (viewModel.walletItemList[index].id ==
+        //     _resultOfSyncFromVault?.walletId!) {
+        //   Logger.log('existingWalletUpdated');
+        //   _initializeBlinkAnimationController();
+        //   return Stack(
+        //     children: [
+        //       walletItemCard,
+        //       IgnorePointer(
+        //         child: AnimatedBuilder(
+        //           animation: _blinkAnimation!,
+        //           builder: (context, child) {
+        //             return Container(
+        //               decoration: BoxDecoration(
+        //                   color: _blinkAnimation!.value,
+        //                   borderRadius: BorderRadius.circular(28)),
+        //               width: itemCardWidth,
+        //               height: itemCardHeight,
+        //             );
+        //           },
+        //         ),
+        //       )
+        //     ],
+        //   );
+        // }
+        // break;
         default:
           return walletItemCard;
       }

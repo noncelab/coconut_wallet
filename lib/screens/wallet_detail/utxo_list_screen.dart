@@ -10,7 +10,9 @@ class UtxoListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CoconutAppBar.build(
-          title: t.utxo, context: context, hasRightIcon: false),
+        title: t.utxo,
+        context: context,
+      ),
       body: const Center(
         child: Text('UTXO LIST SCREEN', style: Styles.body2Bold),
       ),
