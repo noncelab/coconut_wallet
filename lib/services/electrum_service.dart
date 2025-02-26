@@ -138,7 +138,7 @@ class ElectrumService extends NodeClient {
 
     final [receive, change] = await Future.wait([
       Future.wait(receiveBalanceFutures),
-      Future.wait(changeBalanceFutures)
+      Future.wait(changeBalanceFutures),
     ]);
 
     int confirmed = 0;
@@ -157,7 +157,7 @@ class ElectrumService extends NodeClient {
     return (receive, change, Balance(confirmed, unconfirmed));
   }
 
-  Iterable<Future<AddressBalance>> _getBalance(
+  List<Future<AddressBalance>> _getBalance(
       WalletBase wallet, int scanLimit, bool isChange) {
     if (scanLimit == 0) return [];
     Map<int, String> addresses =
@@ -168,7 +168,7 @@ class ElectrumService extends NodeClient {
       var balanceRes = await _client.getBalance(script);
       return AddressBalance(
           balanceRes.confirmed, balanceRes.unconfirmed, entry.key);
-    });
+    }).toList();
   }
 
   @override
@@ -233,7 +233,7 @@ class ElectrumService extends NodeClient {
   @override
   Stream<BaseStreamState<Transaction>> fetchTransactions(
       Set<String> transactionHashes) async* {
-    Iterable<Stream<BaseStreamState<Transaction>>> streams =
+    List<Stream<BaseStreamState<Transaction>>> streams =
         transactionHashes.map((transactionHash) async* {
       try {
         var transaction = await _client.getTransaction(transactionHash);
@@ -243,7 +243,7 @@ class ElectrumService extends NodeClient {
         yield BaseStreamState<Transaction>.error(
             'fetchTransactionDetails', e.toString(), stack);
       }
-    });
+    }).toList();
 
     await for (final state in async.StreamGroup.merge(streams)) {
       yield state;

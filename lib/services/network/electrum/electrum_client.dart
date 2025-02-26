@@ -198,7 +198,7 @@ class ElectrumClient {
   }
 
   Future<String?> subscribeScript(String script,
-      {required Function(String, String) onUpdate}) async {
+      {required Function(String, String?) onUpdate}) async {
     var reversedScriptHash = _scriptToReversedHash(script);
     var response = await _call(
         _BlockchainScripthashSubscribeReq(reversedScriptHash),

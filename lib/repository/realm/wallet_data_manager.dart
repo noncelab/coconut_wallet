@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
@@ -1069,14 +1070,14 @@ class WalletDataManager {
   /// 여러 스크립트 상태 일괄 업데이트
   /// [subscribeResponse] 구독 응답
   /// [walletId] 지갑 ID
-  Result<List<ScriptStatus>> batchUpdateScriptStatuses(
+  Result<void> batchUpdateScriptStatuses(
     List<ScriptStatus> scriptStatuses,
     int walletId,
   ) {
     return _handleRealm(() {
       final existingStatusMap = _getExistingScriptStatusMap(
         walletId: walletId,
-        scriptPubKeys: scriptStatuses.map((e) => e.scriptPubKey),
+        scriptPubKeys: scriptStatuses.map((e) => e.scriptPubKey).toList(),
       );
 
       final now = DateTime.now();
@@ -1089,6 +1090,10 @@ class WalletDataManager {
         now: now,
         updatedStatuses: updatedStatuses,
       );
+
+      if (newStatuses.isEmpty && updatedStatuses.isEmpty) {
+        return;
+      }
 
       _realm.write(() {
         // 기존 상태 업데이트
@@ -1105,8 +1110,6 @@ class WalletDataManager {
         // 새로운 상태 일괄 추가
         _realm.addAll<RealmScriptStatus>(newStatuses);
       });
-
-      return updatedStatuses;
     });
   }
 
@@ -1143,7 +1146,7 @@ class WalletDataManager {
   /// 기존 스크립트 상태 맵 가져오기
   Map<String, RealmScriptStatus> _getExistingScriptStatusMap({
     required int walletId,
-    required Iterable<String> scriptPubKeys,
+    required List<String> scriptPubKeys,
   }) {
     final scriptResults = _realm.query<RealmScriptStatus>(
       r'walletId == $0 AND scriptPubKey IN $1',
@@ -1253,9 +1256,29 @@ class WalletDataManager {
     return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
   }
 
-  void updateWalletUsedIndex(
-      int walletId, int usedReceiveIndex, int usedChangeIndex) {
-    final realmWalletBase = _getWalletBase(walletId);
+  void updateWalletUsedIndex(WalletListItemBase walletItem,
+      int usedReceiveIndex, int usedChangeIndex) {
+    final realmWalletBase = _getWalletBase(walletItem.id);
+
+    int receiveCursor =
+        max(usedReceiveIndex, realmWalletBase.usedReceiveIndex) + 1;
+    int changeCursor =
+        max(usedChangeIndex, realmWalletBase.usedChangeIndex) + 1;
+
+    // 필요한 경우에만 새 주소 생성
+    ensureAddressesExist(
+      walletItemBase: walletItem,
+      cursor: receiveCursor,
+      count: 1,
+      isChange: false,
+    );
+
+    ensureAddressesExist(
+      walletItemBase: walletItem,
+      cursor: changeCursor,
+      count: 1,
+      isChange: true,
+    );
 
     // 지갑 인덱스 업데이트
     _realm.write(() {

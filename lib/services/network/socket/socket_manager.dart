@@ -32,7 +32,7 @@ class SocketManager {
 
   /// Response
   final Map<int, Completer<dynamic>> _completerMap = {};
-  final Map<String, Function(String, String)> _scriptSubscribeCallbacks =
+  final Map<String, Function(String, String?)> _scriptSubscribeCallbacks =
       {}; // ScriptPubKey -> Callback
 
   /// On Reconnect callback
@@ -56,7 +56,7 @@ class SocketManager {
   }
 
   setSubscriptionCallback(
-      String scriptReverseHash, Function(String, String) callback) {
+      String scriptReverseHash, Function(String, String?) callback) {
     _scriptSubscribeCallbacks[scriptReverseHash] = callback;
   }
 

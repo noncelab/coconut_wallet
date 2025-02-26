@@ -343,33 +343,29 @@ class NodeProvider extends ChangeNotifier {
       // 메모리 상태 업데이트
       walletItem.scriptStatusMap = newScriptStatuses;
 
-      // 변경된 상태만 DB에 저장
-      final batchUpdateResult = changedScriptStatuses.isEmpty
-          ? Result.success(true)
-          : _walletDataManager.batchUpdateScriptStatuses(
-              changedScriptStatuses, walletItem.id);
-
-      // 지갑 인덱스 업데이트
-      _walletDataManager.updateWalletUsedIndex(
-          walletItem.id,
-          subscribeResponse.usedReceiveIndex,
-          subscribeResponse.usedChangeIndex);
-
-      if (batchUpdateResult.isSuccess) {
-        // 배치 업데이트 처리
-        await _handleBatchScriptStatusChanged(
-          walletItem: walletItem,
-          scriptStatuses: changedScriptStatuses,
-          walletProvider: walletProvider,
-        );
-
-        Logger.log('SubscribeWallet: ${walletItem.name} - finished');
+      if (changedScriptStatuses.isEmpty) {
         return Result.success(true);
       }
 
-      Logger.error(
-          'SubscribeWallet: ${walletItem.name} - failed\n ${batchUpdateResult.error.toString()}');
-      return Result.failure(batchUpdateResult.error);
+      // 지갑 인덱스 업데이트
+      _walletDataManager.updateWalletUsedIndex(
+          walletItem,
+          subscribeResponse.usedReceiveIndex,
+          subscribeResponse.usedChangeIndex);
+
+      // 배치 업데이트 처리
+      await _handleBatchScriptStatusChanged(
+        walletItem: walletItem,
+        scriptStatuses: changedScriptStatuses,
+        walletProvider: walletProvider,
+      );
+
+      // 변경된 상태만 DB에 저장
+      _walletDataManager.batchUpdateScriptStatuses(
+          changedScriptStatuses, walletItem.id);
+
+      Logger.log('SubscribeWallet: ${walletItem.name} - finished');
+      return Result.success(true);
     } catch (e) {
       Logger.error('SubscribeWallet: ${walletItem.name} - failed');
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
@@ -429,13 +425,6 @@ class NodeProvider extends ChangeNotifier {
 
     final addressBalance =
         await _mainClient.getAddressBalance(scriptStatus.scriptPubKey);
-
-    _walletDataManager.ensureAddressesExist(
-      walletItemBase: walletItem,
-      cursor: scriptStatus.index,
-      count: 1,
-      isChange: scriptStatus.isChange,
-    );
 
     _walletDataManager.updateAddressBalance(
         walletId: walletItem.id,
