@@ -238,8 +238,6 @@ class ElectrumService extends NodeClient {
         transactionHashes.map((transactionHash) async* {
       try {
         var transaction = await _client.getTransaction(transactionHash);
-        Logger.log(
-            'fetchTransactions: $transactionHash - ${transaction.substring(0, 10)}');
         yield BaseStreamState<Transaction>.success(
             'fetchTransactionDetails', Transaction.parse(transaction));
       } catch (e, stack) {
