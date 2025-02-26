@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
@@ -6,6 +7,7 @@ import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/script/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -20,7 +22,7 @@ import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
-import 'package:coconut_wallet/repository/realm/converter/utxo_tag.dart';
+import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/migration/migrator_ver2_1_0.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
@@ -29,7 +31,10 @@ import 'package:coconut_wallet/repository/secure_storage/secure_storage_reposito
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
+import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:realm/realm.dart';
 
@@ -70,6 +75,9 @@ class WalletDataManager {
         RealmUtxoTag.schema,
         RealmWalletAddress.schema,
         RealmWalletBalance.schema,
+        RealmScriptStatus.schema,
+        RealmBlockTimestamp.schema,
+        RealmUtxo.schema,
       ],
       schemaVersion: 1,
       migrationCallback: (migration, oldVersion) {},
@@ -268,7 +276,9 @@ class WalletDataManager {
         _realm.query<RealmWalletBalance>('walletId == $walletId');
     final walletAddress =
         _realm.query<RealmWalletAddress>('walletId == $walletId');
-    // TODO: utxos
+    final utxos = _realm.query<RealmUtxo>('walletId == $walletId');
+    final scriptStatuses =
+        _realm.query<RealmScriptStatus>('walletId == $walletId');
 
     final realmMultisigWalletResults =
         walletBase.walletType == WalletType.multiSignature.name
@@ -284,6 +294,8 @@ class WalletDataManager {
       }
       _realm.deleteMany(walletBalance);
       _realm.deleteMany(walletAddress);
+      _realm.deleteMany(utxos);
+      _realm.deleteMany(scriptStatuses);
     });
 
     final index = _walletList!.indexWhere((item) => item.id == walletId);
@@ -502,13 +514,13 @@ class WalletDataManager {
     _sharedPrefs.setInt(nextIdField, value);
   }
 
-  List<TransactionRecord>? getTxList(int id) {
+  List<TransactionRecord> getTransactionRecordList(int walletId) {
     _checkInitialized();
 
-    final transactions =
-        _realm.query<RealmTransaction>('walletId == $id SORT(timestamp DESC)');
+    final transactions = _realm
+        .query<RealmTransaction>('walletId == $walletId SORT(timestamp DESC)');
 
-    if (transactions.isEmpty) return null;
+    if (transactions.isEmpty) return [];
     List<TransactionRecord> result = [];
 
     final unconfirmed =
@@ -781,7 +793,7 @@ class WalletDataManager {
         .toList();
 
     _realm.write(() {
-      _realm.addAll(realmAddresses);
+      _realm.addAll<RealmWalletAddress>(realmAddresses);
 
       // 생성된 주소 인덱스 업데이트
       if (isChange) {
@@ -825,6 +837,7 @@ class WalletDataManager {
     try {
       return Result.success(operation());
     } catch (e) {
+      Logger.error('Realm operation failed: $e');
       return _handleError<T>(e);
     }
   }
@@ -946,8 +959,9 @@ class WalletDataManager {
               now,
             ))
         .toList();
+
     _realm.write(() {
-      _realm.addAll(realmTxs);
+      _realm.addAll<RealmTransaction>(realmTxs);
     });
     saveLastId(_realm, (RealmTransaction).toString(), lastId);
   }
@@ -993,9 +1007,9 @@ class WalletDataManager {
     final realmWalletAddress = _realm.query<RealmWalletAddress>(
       r'walletId == $0 AND isChange == false AND index == $1',
       [walletId, receiveIndex],
-    );
+    ).first;
 
-    return mapRealmToWalletAddress(realmWalletAddress.first);
+    return mapRealmToWalletAddress(realmWalletAddress);
   }
 
   RealmWalletBase getExistingWalletBase(int walletId) {
@@ -1006,7 +1020,242 @@ class WalletDataManager {
     return realmWalletBase;
   }
 
-  RealmResults<RealmTransaction> getTransactions(int id) {
-    return _realm.query<RealmTransaction>('walletId == $id');
+  RealmResults<RealmTransaction> getTransactions(int walletId) {
+    return _realm.query<RealmTransaction>('walletId == $walletId');
+  }
+
+  /// 스크립트 상태 업데이트 또는 생성
+  /// [scriptPubKey] 스크립트 공개키
+  /// [status] 새로운 상태 해시
+  /// [walletId] 지갑 ID
+  Result<RealmScriptStatus> updateScriptStatus(
+    String scriptPubKey,
+    String status,
+    int walletId,
+  ) {
+    return _handleRealm(() {
+      final now = DateTime.now();
+      final existingStatus = _realm.find<RealmScriptStatus>(scriptPubKey);
+
+      if (existingStatus != null) {
+        _realm.write(() {
+          existingStatus.status = status;
+          existingStatus.timestamp = now;
+        });
+        return existingStatus;
+      } else {
+        final newStatus =
+            RealmScriptStatus(scriptPubKey, status, walletId, now);
+        _realm.write(() {
+          _realm.add(newStatus);
+        });
+        return newStatus;
+      }
+    });
+  }
+
+  /// 지갑의 모든 스크립트 상태 조회
+  /// [walletId] 지갑 ID
+  Result<List<RealmScriptStatus>> getAllScriptStatuses(int walletId) {
+    return _handleRealm(() {
+      final scriptStatuses = _realm.query<RealmScriptStatus>(
+        r'walletId == $0 SORT(timestamp DESC)',
+        [walletId],
+      );
+      return scriptStatuses.toList();
+    });
+  }
+
+  /// 여러 스크립트 상태 일괄 업데이트
+  /// [subscribeResponse] 구독 응답
+  /// [walletId] 지갑 ID
+  Result<List<ScriptStatus>> batchUpdateScriptStatuses(
+    SubscribeWalletResponse subscribeResponse,
+    int walletId,
+  ) {
+    return _handleRealm(() {
+      final realmWalletBase = _getWalletBase(walletId);
+      final existingStatusMap = _getExistingScriptStatusMap(
+        walletId: walletId,
+        scriptPubKeys:
+            subscribeResponse.scriptStatuses.map((e) => e.scriptPubKey),
+      );
+
+      final now = DateTime.now();
+      // 추가/변경된 스크립트 상태 전체
+      final updatedStatuses = <ScriptStatus>[];
+      final newStatuses = _prepareToAddScriptStatusList(
+        updates: subscribeResponse.scriptStatuses,
+        existingStatusMap: existingStatusMap,
+        walletId: walletId,
+        now: now,
+        updatedStatuses: updatedStatuses,
+      );
+
+      _realm.write(() {
+        // 기존 상태 업데이트
+        for (final update in subscribeResponse.scriptStatuses) {
+          final existingStatus = existingStatusMap[update.scriptPubKey];
+
+          if (existingStatus != null && update.status != null) {
+            existingStatus.status = update.status!;
+            existingStatus.timestamp = now;
+            updatedStatuses.add(update);
+          }
+        }
+
+        // 새로운 상태 일괄 추가
+        _realm.addAll<RealmScriptStatus>(newStatuses);
+
+        // 지갑 인덱스 업데이트
+        realmWalletBase.usedReceiveIndex = subscribeResponse.usedReceiveIndex;
+        realmWalletBase.usedChangeIndex = subscribeResponse.usedChangeIndex;
+      });
+
+      return updatedStatuses;
+    });
+  }
+
+  /// 스크립트 상태 업데이트 준비
+  /// 업데이트가 필요한 상태와 새로 생성할 상태를 분리하여 반환
+  List<RealmScriptStatus> _prepareToAddScriptStatusList({
+    required List<ScriptStatus> updates,
+    required Map<String, RealmScriptStatus> existingStatusMap,
+    required int walletId,
+    required DateTime now,
+    required List<ScriptStatus> updatedStatuses,
+  }) {
+    final newStatuses = <RealmScriptStatus>[];
+
+    for (final update in updates) {
+      final existingStatus = existingStatusMap[update.scriptPubKey];
+
+      // 기존 상태가 없고 업데이트된 상태가 있는 경우 새로 생성
+      if (existingStatus == null && update.status != null) {
+        newStatuses.add(RealmScriptStatus(
+          update.scriptPubKey,
+          update.status!,
+          walletId,
+          now,
+        ));
+
+        updatedStatuses.add(update);
+      }
+    }
+
+    return newStatuses;
+  }
+
+  /// 기존 스크립트 상태 맵 가져오기
+  Map<String, RealmScriptStatus> _getExistingScriptStatusMap({
+    required int walletId,
+    required Iterable<String> scriptPubKeys,
+  }) {
+    final scriptResults = _realm.query<RealmScriptStatus>(
+      r'walletId == $0 AND scriptPubKey IN $1',
+      [walletId, scriptPubKeys],
+    );
+
+    return {
+      for (final status in scriptResults) status.scriptPubKey: status,
+    };
+  }
+
+  /// 지갑 베이스 가져오기
+  RealmWalletBase _getWalletBase(int walletId) {
+    // 쿼리 최적화: LIMIT 1 추가
+    final realmWalletBase = _realm.find<RealmWalletBase>(walletId);
+    if (realmWalletBase == null) {
+      throw StateError('[batchUpdateScriptStatuses] Wallet not found');
+    }
+    return realmWalletBase;
+  }
+
+  void updateAddressBalance(
+      {required int walletId,
+      required int index,
+      required bool isChange,
+      required Balance balance}) {
+    final realmWalletBalance = _realm.query<RealmWalletBalance>(
+      r'walletId == $0',
+      [walletId],
+    ).firstOrNull;
+
+    if (realmWalletBalance == null) {
+      throw StateError('[updateAddressBalance] Wallet balance not found');
+    }
+
+    final realmWalletAddress = _realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND index == $1 AND isChange == $2',
+      [walletId, index, isChange],
+    ).firstOrNull;
+
+    if (realmWalletAddress == null) {
+      throw StateError('[updateAddressBalance] Wallet address not found');
+    }
+
+    final confirmedDiff = balance.confirmed - realmWalletAddress.confirmed;
+    final unconfirmedDiff =
+        balance.unconfirmed - realmWalletAddress.unconfirmed;
+
+    if (realmWalletBalance.confirmed + confirmedDiff < 0 ||
+        realmWalletBalance.unconfirmed + unconfirmedDiff < 0) {
+      throw StateError('[updateAddressBalance] Balance cannot be negative');
+    }
+
+    _realm.write(() {
+      // 지갑 주소 잔액 업데이트
+      realmWalletAddress.confirmed = balance.confirmed;
+      realmWalletAddress.unconfirmed = balance.unconfirmed;
+      realmWalletAddress.total = balance.total;
+
+      // 지갑 전체 잔액 업데이트
+      realmWalletBalance.confirmed += confirmedDiff;
+      realmWalletBalance.unconfirmed += unconfirmedDiff;
+      realmWalletBalance.total += confirmedDiff + unconfirmedDiff;
+    });
+  }
+
+  void addAllUtxos(int walletId, List<UtxoState> utxos) {
+    _checkInitialized();
+
+    final existingUtxos = _realm.query<RealmUtxo>(
+      r'walletId == $0',
+      [walletId],
+    );
+
+    final existingUtxoMap = Map<String, RealmUtxo>.fromEntries(
+      existingUtxos.map((e) => MapEntry(e.id, e)),
+    );
+
+    final newUtxos = utxos
+        .where((utxo) => !existingUtxoMap
+            .containsKey(makeUtxoId(utxo.transactionHash, utxo.index)))
+        .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
+        .toList();
+
+    final toUpdateUtxos = utxos
+        .where((utxo) => existingUtxoMap
+            .containsKey(makeUtxoId(utxo.transactionHash, utxo.index)))
+        .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
+        .toList();
+
+    _realm.write(() {
+      for (final utxo in toUpdateUtxos) {
+        final existingUtxo = existingUtxoMap[utxo.id];
+        if (existingUtxo != null) {
+          existingUtxo.timestamp = utxo.timestamp;
+        }
+      }
+      _realm.addAll<RealmUtxo>(newUtxos);
+    });
+  }
+
+  List<UtxoState> getUtxoStateList(int walletId) {
+    final realmUtxos = _realm.query<RealmUtxo>(
+      r'walletId == $0',
+      [walletId],
+    );
+    return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
   }
 }

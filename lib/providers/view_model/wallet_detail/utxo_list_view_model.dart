@@ -70,11 +70,7 @@ class UtxoListViewModel extends ChangeNotifier {
   }
 
   Future<void> _getUtxoListWithHoldingAddress() async {
-    // 더이상 _walletListBaseItem.utxoList를 사용하지 않음.
-    // wallet provider를 통해 utxo List를 가져오도록 수정
-    // _utxoList = _walletListBaseItem.utxoList;
-    _utxoList = _walletProvider.getWalletUtxoList(_walletId);
-    debugPrint('_utxoList ${_utxoList.length}');
+    _utxoList = _walletProvider.getUtxoList(_walletId);
 
     if (_utxoList.isNotEmpty) {
       for (var utxo in _utxoList) {
@@ -84,8 +80,6 @@ class UtxoListViewModel extends ChangeNotifier {
 
         debugPrint('tags $tags');
       }
-    } else {
-      debugPrint('utxoList is empty');
     }
     _isUtxoListLoadComplete = true;
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);

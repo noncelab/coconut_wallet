@@ -112,12 +112,6 @@ class WalletProvider extends ChangeNotifier {
         await _loadWalletFromLocal();
       }
 
-      // 지갑 로드 시 최소 gapLimit 만큼 주소 생성
-      for (var walletItem in _walletItemList) {
-        generateWalletAddress(walletItem, -1, false);
-        generateWalletAddress(walletItem, -1, true);
-      }
-
       // 네트워크 확인이 완료된 후 다음 과정 진행
       if (_isNetworkOn == null) {
         Logger.log(">>>>> ===================== initWallet 끝 (네트워크 확인 전)");
@@ -228,6 +222,10 @@ class WalletProvider extends ChangeNotifier {
     } else {
       newItem = await _walletDataManager.addSinglesigWallet(watchOnlyWallet);
     }
+
+    generateWalletAddress(newItem, -1, false);
+    generateWalletAddress(newItem, -1, true);
+
     //final newItem = await _createNewWallet(walletSync, isMultisig);
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
     updatedList.add(newItem);
@@ -356,10 +354,6 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  List<TransactionRecord>? getTxList(int walletId) {
-    return _walletDataManager.getTxList(walletId);
-  }
-
   /// 네트워크가 꺼지면 네트워크를 해제함.
   void setIsNetworkOn(bool? isNetworkOn) {
     if (_isNetworkOn == isNetworkOn) return;
@@ -475,10 +469,12 @@ class WalletProvider extends ChangeNotifier {
     return _walletDataManager.getReceiveAddress(walletId);
   }
 
-  // TODO: not implemented yet
-  List<UtxoState> getWalletUtxoList(int walletId) {
-    return [];
-    // return _walletDataManager.getWalletUtxoList(walletId);
+  List<UtxoState> getUtxoList(int walletId) {
+    return _walletDataManager.getUtxoStateList(walletId);
+  }
+
+  List<TransactionRecord> getTransactionRecordList(int walletId) {
+    return _walletDataManager.getTransactionRecordList(walletId);
   }
 }
 

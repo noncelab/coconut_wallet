@@ -88,7 +88,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   Scaffold(
                     backgroundColor: MyColors.black,
                     appBar: CoconutAppBar.build(
-                      hasRightIcon: false,
                       entireWidgetKey: _appBarKey,
                       title: t.utxo_list,
                       context: context,

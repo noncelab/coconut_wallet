@@ -124,7 +124,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           maxLength: 15),
       context: context,
       onTitlePressed: () => _navigateToWalletInfo(context, viewModel),
-      hasRightIcon: true,
       actionButtonList: [
         IconButton(
           onPressed: () =>
