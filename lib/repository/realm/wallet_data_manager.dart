@@ -1301,4 +1301,31 @@ class WalletDataManager {
         status.scriptPubKey: mapRealmToUnaddressedScriptStatus(status),
     };
   }
+
+  UtxoState? getUtxoState(int walletId, String utxoId) {
+    final realmUtxo = _realm.query<RealmUtxo>(
+      r'walletId == $0 AND id == $1',
+      [walletId, utxoId],
+    ).firstOrNull;
+
+    if (realmUtxo == null) {
+      return null;
+    }
+
+    return mapRealmToUtxoState(realmUtxo);
+  }
+
+  TransactionRecord? getTransactionRecord(
+      int walletId, String transactionHash) {
+    final realmTransaction = _realm.query<RealmTransaction>(
+      r'walletId == $0 AND transactionHash == $1',
+      [walletId, transactionHash],
+    ).firstOrNull;
+
+    if (realmTransaction == null) {
+      return null;
+    }
+
+    return mapRealmTransactionToTransaction(realmTransaction);
+  }
 }
