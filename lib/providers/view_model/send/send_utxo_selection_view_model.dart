@@ -411,7 +411,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _initUtxoTagMap() {
     for (var (element) in _confirmedUtxoList) {
-      final tags = _tagProvider.fetchUtxoTagsByUtxoId(
+      final tags = _tagProvider.getUtxoTagsByUtxoId(
           _sendInfoProvider.walletId!, element.utxoId);
       _utxoTagMap[element.utxoId] = tags;
     }

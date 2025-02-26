@@ -22,7 +22,6 @@ import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -65,180 +64,17 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       ),
       child: Consumer<UtxoDetailViewModel>(
         builder: (_, viewModel, child) {
-          // if (viewModel.transaction == null) return Container();
-          // final tx = viewModel.transaction;
-          final tx = _getTransaction(viewModel);
-          final tags = viewModel.tagList;
-          final selectedTags = viewModel.selectedTagList;
+          // FIXME: tx should be not null
+          final tx = viewModel.transaction ?? _getTransaction(viewModel);
+          final allTags = viewModel.utxoTagList;
+          final tagsApplied = viewModel.selectedUtxoTagList;
 
           return GestureDetector(
             onTap: _removeUtxoTooltip,
             child: Stack(
               children: [
-                Scaffold(
-                  backgroundColor: MyColors.black,
-                  appBar: _buildAppBar(context),
-                  body: SafeArea(
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 20,
-                        ),
-                        child: Column(
-                          children: [
-                            // FIXME: 트잭의 timestamp로 대체해야 함.
-                            _buildDateTime(
-                                viewModel.dateString ?? ['--.--.--', '--:--']),
-                            const SizedBox(
-                              height: 24,
-                            ),
-                            _buildAmount(),
-                            const SizedBox(
-                              height: 8,
-                            ),
-                            _buildPrice(),
-                            const SizedBox(height: 12),
-                            _buildTransactionSection(viewModel, tx),
-                            // Container(
-                            //   padding: const EdgeInsets.symmetric(
-                            //       horizontal: 20, vertical: 16),
-                            //   width: double.infinity,
-                            //   decoration: BoxDecoration(
-                            //       borderRadius: BorderRadius.circular(20),
-                            //       color: MyColors.transparentWhite_12),
-                            //   child: Column(
-                            //       mainAxisSize: MainAxisSize.min,
-                            //       children: [
-                            //         ListView.builder(
-                            //           shrinkWrap: true,
-                            //           physics:
-                            //               const NeverScrollableScrollPhysics(),
-                            //           // itemCount: viewModel.utxoInputMaxCount,
-                            //           // FIXME: 위 주석으로 사용해야 합니다.
-                            //           itemCount: 0,
-                            //           padding: EdgeInsets.zero,
-                            //           itemBuilder: (context, index) {
-                            //             return Column(
-                            //               children: [
-                            //                 InputOutputDetailRow(
-                            //                   address: tx
-                            //                       .inputAddressList[index]
-                            //                       .address,
-                            //                   balance: tx
-                            //                       .inputAddressList[index]
-                            //                       .amount,
-                            //                   balanceMaxWidth:
-                            //                       _balanceWidthSize.width > 0
-                            //                           ? _balanceWidthSize.width
-                            //                           : 100,
-                            //                   rowType: InputOutputRowType.input,
-                            //                   isCurrentAddress: tx
-                            //                           .inputAddressList[index]
-                            //                           .address ==
-                            //                       widget.utxo.to,
-                            //                 ),
-                            //                 const SizedBox(height: 8),
-                            //               ],
-                            //             );
-                            //           },
-                            //         ),
-                            //         Visibility(
-                            //           visible: tx.inputAddressList.length >
-                            //               viewModel.utxoInputMaxCount,
-                            //           child: Text(
-                            //             '...',
-                            //             style: Styles.caption.merge(
-                            //                 const TextStyle(
-                            //                     color: MyColors
-                            //                         .transparentWhite_40,
-                            //                     height: 8 / 12)),
-                            //           ),
-                            //         ),
-                            //         const SizedBox(height: 8),
-                            //         InputOutputDetailRow(
-                            //           address: t.fee,
-                            //           balance: 142,
-                            //           balanceMaxWidth:
-                            //               _balanceWidthSize.width > 0
-                            //                   ? _balanceWidthSize.width
-                            //                   : 100,
-                            //           rowType: InputOutputRowType.fee,
-                            //         ),
-                            //         const SizedBox(height: 8),
-                            //         ListView.builder(
-                            //           shrinkWrap: true,
-                            //           physics:
-                            //               const NeverScrollableScrollPhysics(),
-                            //           // itemCount: viewModel.utxoOutputMaxCount,
-                            //           // FIXME: 위 주석으로 사용해야 합니다.
-                            //           itemCount: 0,
-                            //           padding: EdgeInsets.zero,
-                            //           itemBuilder: (context, index) {
-                            //             return Column(
-                            //               children: [
-                            //                 InputOutputDetailRow(
-                            //                   address: tx
-                            //                       .outputAddressList[index]
-                            //                       .address,
-                            //                   balance: tx
-                            //                       .outputAddressList[index]
-                            //                       .amount,
-                            //                   balanceMaxWidth:
-                            //                       _balanceWidthSize.width > 0
-                            //                           ? _balanceWidthSize.width
-                            //                           : 100,
-                            //                   rowType:
-                            //                       InputOutputRowType.output,
-                            //                   isCurrentAddress: tx
-                            //                           .outputAddressList[index]
-                            //                           .address ==
-                            //                       widget.utxo.to,
-                            //                 ),
-                            //                 const SizedBox(height: 8),
-                            //               ],
-                            //             );
-                            //           },
-                            //         ),
-                            //         Visibility(
-                            //           visible: tx.outputAddressList.length >
-                            //               viewModel.utxoOutputMaxCount,
-                            //           child: Text(
-                            //             '...',
-                            //             style: Styles.caption.merge(
-                            //                 const TextStyle(
-                            //                     color: MyColors
-                            //                         .transparentWhite_40,
-                            //                     height: 8 / 12)),
-                            //           ),
-                            //         ),
-                            //       ]),
-                            // ),
-                            const SizedBox(height: 24),
-                            _buildAddress(),
-                            _buildTxMemo(
-                              tx.memo,
-                            ),
-                            _buildTagSection(
-                              context,
-                              tags,
-                              selectedTags,
-                              viewModel,
-                            ),
-                            _buildTxId(),
-                            _buildBlockHeight(),
-                            const SizedBox(
-                              height: 40,
-                            ),
-                            _buildBalanceWidthCheck(),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                _isUtxoTooltipVisible ? _buildTooltip(context) : Container(),
+                _buildScaffold(context, viewModel, tx, allTags, tagsApplied),
+                if (_isUtxoTooltipVisible) _buildTooltip(context),
               ],
             ),
           );
@@ -262,13 +98,66 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         utxoTags: tags,
         selectedUtxoTagNames: selectedTags.map((e) => e.name).toList(),
         onSelected: (selectedNames, addTags) {
-          viewModel.tagProvider?.updateUtxoTagList(
-            walletId: widget.id,
-            utxoId: widget.utxo.utxoId,
-            selectedNames: selectedNames,
-            addTags: addTags,
-          );
+          debugPrint('onSelected $addTags');
+          viewModel.updateUtxoTags(widget.utxo.utxoId, selectedNames, addTags);
         },
+        onUpdated: (tags) {
+          debugPrint('onUpdated 이게 호출되는건 언제???');
+        },
+      ),
+    );
+  }
+
+  Widget _buildScaffold(
+    BuildContext context,
+    UtxoDetailViewModel viewModel,
+    TransactionRecord tx,
+    List<UtxoTag> tags,
+    List<UtxoTag> selectedTags,
+  ) {
+    return Scaffold(
+      backgroundColor: MyColors.black,
+      appBar: _buildAppBar(context),
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 20,
+          ),
+          child: Column(
+            children: [
+              _buildDateTime(viewModel.dateString),
+              const SizedBox(
+                height: 24,
+              ),
+              _buildAmount(),
+              const SizedBox(
+                height: 8,
+              ),
+              _buildPrice(),
+              const SizedBox(height: 12),
+              _buildTransactionSection(viewModel, tx),
+              const SizedBox(height: 24),
+              _buildAddress(),
+              _buildTxMemo(
+                tx.memo,
+              ),
+              _buildTagSection(
+                context,
+                tags,
+                selectedTags,
+                viewModel,
+              ),
+              _buildTxId(),
+              _buildBlockHeight(),
+              const SizedBox(
+                height: 40,
+              ),
+              _buildBalanceWidthCheck(),
+            ],
+          ),
+        ),
       ),
     );
   }

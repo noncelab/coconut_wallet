@@ -303,7 +303,7 @@ class WalletDataManager {
   }
 
   /// walletId 로 태그 목록 조회
-  Result<List<UtxoTag>> fetchUtxoTags(int walletId) {
+  Result<List<UtxoTag>> getUtxoTags(int walletId) {
     _utxoTagList = [];
     final tags = _realm
         .query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
@@ -431,16 +431,16 @@ class WalletDataManager {
   /// utxoIdList 변경
   /// - [walletId] 목록 검색
   /// - [utxoId] Utxo Id
-  /// - [addTags] 추가할 UtxoTag 목록
-  /// - [selectedNames] 선택된 태그명 목록
+  /// - [newUtxoTags] 추가할 UtxoTag 목록
+  /// - [selectedTagNames] 선택된 태그명 목록
   Result<bool> updateUtxoTagList(int walletId, String utxoId,
-      List<UtxoTag> addTags, List<String> selectedNames) {
+      List<UtxoTag> newUtxoTags, List<String> selectedTagNames) {
     return _handleRealm<bool>(
       () {
         _realm.write(() {
           // 새로운 태그 추가
           final now = DateTime.now();
-          for (var utxoTag in addTags) {
+          for (var utxoTag in newUtxoTags) {
             final tag = RealmUtxoTag(
               utxoTag.id,
               walletId,
@@ -454,8 +454,10 @@ class WalletDataManager {
           // 태그 적용
           final tags = _realm.query<RealmUtxoTag>("walletId == '$walletId'");
           for (var tag in tags) {
-            if (selectedNames.contains(tag.name)) {
+            if (selectedTagNames.contains(tag.name)) {
+              // 태그 이름이 선택된 경우
               if (!tag.utxoIdList.contains(utxoId)) {
+                // 해당 태그의 utxoIdList에 utxoId가 없는 경우
                 tag.utxoIdList.add(utxoId);
               }
             } else {

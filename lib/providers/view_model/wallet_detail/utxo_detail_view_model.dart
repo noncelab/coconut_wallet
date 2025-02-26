@@ -13,12 +13,16 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
   late final int _walletId;
   late final String _utxoId;
-  final UtxoState _utxo;
+  late final UtxoState _utxo;
+  late final UtxoTagProvider _tagProvider;
+  late final TransactionProvider _txProvider;
 
-  final UtxoTagProvider _tagProvider;
-  final TransactionProvider _txProvider;
+  List<UtxoTag> _utxoTagList = [];
+  List<UtxoTag> get utxoTagList => _utxoTagList;
+  List<UtxoTag> _selectedUtxoTagList = [];
+  List<UtxoTag> get selectedUtxoTagList => _selectedUtxoTagList;
 
-  late final List<String>? _dateString;
+  late final List<String> _dateString;
   late final TransactionRecord? _transaction;
 
   int _utxoInputMaxCount = 0;
@@ -27,15 +31,13 @@ class UtxoDetailViewModel extends ChangeNotifier {
   int get utxoInputMaxCount => _utxoInputMaxCount;
   int get utxoOutputMaxCount => _utxoOutputMaxCount;
 
-  List<UtxoTag> get utxoTagsForSelectedUtxo =>
-      _tagProvider.setUtxoTagsForSelectedUtxo(_walletId, _utxoId);
-
   UtxoDetailViewModel(
       this._walletId, this._utxo, this._tagProvider, this._txProvider) {
     _utxoId = _utxo.utxoId;
+    _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
+    _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
 
-    _tagProvider.fetchUtxoTagsByWalletId(_walletId);
-    // _tagProvider.setUtxoTagsForSelectedUtxo(_walletId, _utxo.utxoId);
+    // fixme: wallet provider로부터 tx를 가져오는 것으로 변경
     _transaction = _txProvider.getTransaction(_walletId, _utxo.transactionHash,
         utxoTo: _utxo.to);
     // _txProvider.initTransaction(_walletId, _utxo.transactionHash,
@@ -43,18 +45,16 @@ class UtxoDetailViewModel extends ChangeNotifier {
     final blockHeight = _txProvider.transaction?.blockHeight;
     _dateString = (blockHeight != null && blockHeight > 0)
         ? DateTimeUtil.formatTimeStamp(_utxo.timestamp)
-        : null;
+        : ['--.--.--', '--:--'];
 
     _initUtxoInOutputList();
   }
 
   UtxoTagProvider? get tagProvider => _tagProvider;
-  List<UtxoTag> get selectedTagList => _tagProvider.utxoTagsForSelectedUtxo;
-  List<UtxoTag> get tagList => _tagProvider.utxoTags;
 
   TransactionRecord? get transaction => _txProvider.transaction;
 
-  List<String>? get dateString => _dateString;
+  List<String> get dateString => _dateString;
 
   void _initUtxoInOutputList() {
     if (_transaction == null) return;
@@ -85,4 +85,17 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
   int getOutputAmount(int index) =>
       TransactionUtil.getOutputAmount(_transaction, index);
+
+  void updateUtxoTags(
+      String utxoId, List<String> selectedTagNames, List<UtxoTag> newTags) {
+    _tagProvider.updateUtxoTagList(
+        walletId: _walletId,
+        utxoId: utxoId,
+        newTags: newTags,
+        selectedTagNames: selectedTagNames);
+
+    _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
+    _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxoId);
+    notifyListeners();
+  }
 }
