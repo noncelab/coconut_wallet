@@ -20,6 +20,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
+import 'package:coconut_wallet/repository/realm/converter/script_status.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
@@ -31,7 +32,6 @@ import 'package:coconut_wallet/repository/secure_storage/secure_storage_reposito
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
-import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -1070,22 +1070,20 @@ class WalletDataManager {
   /// [subscribeResponse] 구독 응답
   /// [walletId] 지갑 ID
   Result<List<ScriptStatus>> batchUpdateScriptStatuses(
-    SubscribeWalletResponse subscribeResponse,
+    List<ScriptStatus> scriptStatuses,
     int walletId,
   ) {
     return _handleRealm(() {
-      final realmWalletBase = _getWalletBase(walletId);
       final existingStatusMap = _getExistingScriptStatusMap(
         walletId: walletId,
-        scriptPubKeys:
-            subscribeResponse.scriptStatuses.map((e) => e.scriptPubKey),
+        scriptPubKeys: scriptStatuses.map((e) => e.scriptPubKey),
       );
 
       final now = DateTime.now();
       // 추가/변경된 스크립트 상태 전체
       final updatedStatuses = <ScriptStatus>[];
       final newStatuses = _prepareToAddScriptStatusList(
-        updates: subscribeResponse.scriptStatuses,
+        updates: scriptStatuses,
         existingStatusMap: existingStatusMap,
         walletId: walletId,
         now: now,
@@ -1094,7 +1092,7 @@ class WalletDataManager {
 
       _realm.write(() {
         // 기존 상태 업데이트
-        for (final update in subscribeResponse.scriptStatuses) {
+        for (final update in scriptStatuses) {
           final existingStatus = existingStatusMap[update.scriptPubKey];
 
           if (existingStatus != null && update.status != null) {
@@ -1106,10 +1104,6 @@ class WalletDataManager {
 
         // 새로운 상태 일괄 추가
         _realm.addAll<RealmScriptStatus>(newStatuses);
-
-        // 지갑 인덱스 업데이트
-        realmWalletBase.usedReceiveIndex = subscribeResponse.usedReceiveIndex;
-        realmWalletBase.usedChangeIndex = subscribeResponse.usedChangeIndex;
       });
 
       return updatedStatuses;
@@ -1257,5 +1251,31 @@ class WalletDataManager {
       [walletId],
     );
     return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
+  }
+
+  void updateWalletUsedIndex(
+      int walletId, int usedReceiveIndex, int usedChangeIndex) {
+    final realmWalletBase = _getWalletBase(walletId);
+
+    // 지갑 인덱스 업데이트
+    _realm.write(() {
+      if (usedReceiveIndex > realmWalletBase.usedReceiveIndex) {
+        realmWalletBase.usedReceiveIndex = usedReceiveIndex;
+      }
+      if (usedChangeIndex > realmWalletBase.usedChangeIndex) {
+        realmWalletBase.usedChangeIndex = usedChangeIndex;
+      }
+    });
+  }
+
+  Map<String, UnaddressedScriptStatus> getScriptStatuseMap(int walletId) {
+    final scriptStatuses = _realm.query<RealmScriptStatus>(
+      r'walletId == $0',
+      [walletId],
+    );
+    return {
+      for (final status in scriptStatuses)
+        status.scriptPubKey: mapRealmToUnaddressedScriptStatus(status),
+    };
   }
 }

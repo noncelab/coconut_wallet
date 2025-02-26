@@ -282,14 +282,16 @@ class NodeProvider extends ChangeNotifier {
         WalletProvider walletProvider,
       }) params) async {
     try {
+      final now = DateTime.now();
       Logger.log(
           'HandleScriptStatusChanged: ${params.walletItem.name} - ${params.scriptStatus.derivationPath}');
       // Balance 동기화
       await _fetchScriptBalance(params.walletItem, params.scriptStatus);
 
-      // Transaction 동기화
+      // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
       await _fetchScriptTransaction(
-          params.walletItem, params.scriptStatus, params.walletProvider);
+          params.walletItem, params.scriptStatus, params.walletProvider,
+          now: now);
 
       // UTXO 동기화
       await _fetchScriptUtxo(params.walletItem, params.scriptStatus);
@@ -311,6 +313,10 @@ class NodeProvider extends ChangeNotifier {
     }
 
     try {
+      // DB에 있는 스크립트 로드
+      walletItem.scriptStatusMap =
+          _walletDataManager.getScriptStatuseMap(walletItem.id);
+
       SubscribeWalletResponse subscribeResponse = await _mainClient
           .subscribeWallet(walletItem, _scriptStatusController, walletProvider);
 
@@ -318,23 +324,42 @@ class NodeProvider extends ChangeNotifier {
         return Result.success(true);
       }
 
-      // 구독중인 스크립트 메모리 저장
-      walletItem.scriptStatusMap = {
+      // 구독중인 스크립트 메모리 저장;
+      final newScriptStatuses = {
         for (var scriptStatus in subscribeResponse.scriptStatuses)
           scriptStatus.scriptPubKey: scriptStatus,
       };
+      // 변경된 스크립트 상태만 필터링
+      final changedScriptStatuses =
+          subscribeResponse.scriptStatuses.where((newStatus) {
+        final existingStatus =
+            walletItem.scriptStatusMap[newStatus.scriptPubKey];
+        return existingStatus?.status != newStatus.status;
+      }).toList();
 
-      // DB에 상태 저장
-      final batchUpdateResult = _walletDataManager.batchUpdateScriptStatuses(
-          subscribeResponse, walletItem.id);
+      Logger.log(
+          'SubscribeWallet: ${walletItem.name} - changedScriptStatuses: ${changedScriptStatuses.length}');
+
+      // 메모리 상태 업데이트
+      walletItem.scriptStatusMap = newScriptStatuses;
+
+      // 변경된 상태만 DB에 저장
+      final batchUpdateResult = changedScriptStatuses.isEmpty
+          ? Result.success(true)
+          : _walletDataManager.batchUpdateScriptStatuses(
+              changedScriptStatuses, walletItem.id);
+
+      // 지갑 인덱스 업데이트
+      _walletDataManager.updateWalletUsedIndex(
+          walletItem.id,
+          subscribeResponse.usedReceiveIndex,
+          subscribeResponse.usedChangeIndex);
 
       if (batchUpdateResult.isSuccess) {
-        notifyListeners();
-
         // 배치 업데이트 처리
         await _handleBatchScriptStatusChanged(
           walletItem: walletItem,
-          scriptStatuses: subscribeResponse.scriptStatuses,
+          scriptStatuses: changedScriptStatuses,
           walletProvider: walletProvider,
         );
 
@@ -355,6 +380,7 @@ class NodeProvider extends ChangeNotifier {
     return _handleResult(() async {
       await _mainClient.unsubscribeWallet(walletItem);
       walletItem.scriptStatusMap.clear();
+      Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
       return true;
     }());
   }
@@ -422,13 +448,15 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> _fetchScriptTransaction(WalletListItemBase walletItem,
-      ScriptStatus scriptStatus, WalletProvider walletProvider) async {
+      ScriptStatus scriptStatus, WalletProvider walletProvider,
+      {DateTime? now}) async {
     // Transaction 동기화 시작 state 업데이트
     _addWalletSyncState(walletItem.id, UpdateType.transaction);
 
     // 새로운 트랜잭션 조회
     final knownTransactionHashes = _walletDataManager
         .getTransactions(walletItem.id)
+        .where((tx) => tx.blockHeight != null && tx.blockHeight! > 0)
         .map((tx) => tx.transactionHash)
         .toSet();
 
@@ -456,7 +484,8 @@ class NodeProvider extends ChangeNotifier {
         .toList();
 
     final txRecords = await _createTransactionRecords(
-        walletItem, txs, txBlockHeightMap, blockTimestampMap, walletProvider);
+        walletItem, txs, txBlockHeightMap, blockTimestampMap, walletProvider,
+        now: now);
 
     _walletDataManager.addAllTransactions(walletItem.id, txRecords);
 
@@ -491,11 +520,12 @@ class NodeProvider extends ChangeNotifier {
       Map<int, BlockTimestamp> blockTimestampMap,
       WalletProvider walletProvider,
       {NodeClient? nodeClient,
-      List<Transaction> previousTxs = const []}) async {
+      List<Transaction> previousTxs = const [],
+      DateTime? now}) async {
     return Future.wait(txs.map((tx) async {
       return _createTransactionRecord(walletItemBase, tx, txBlockHeightMap,
           blockTimestampMap, walletProvider,
-          nodeClient: nodeClient, previousTxs: previousTxs);
+          nodeClient: nodeClient, previousTxs: previousTxs, now: now);
     }));
   }
 
@@ -507,7 +537,10 @@ class NodeProvider extends ChangeNotifier {
       Map<int, BlockTimestamp> blockTimestampMap,
       WalletProvider walletProvider,
       {NodeClient? nodeClient,
-      List<Transaction> previousTxs = const []}) async {
+      List<Transaction> previousTxs = const [],
+      DateTime? now}) async {
+    now ??= DateTime.now();
+
     final previousTxsResult =
         await _getPreviousTransactions(tx, previousTxs, nodeClient: nodeClient);
 
@@ -521,7 +554,8 @@ class NodeProvider extends ChangeNotifier {
     return TransactionRecord.fromTransactions(
       transactionHash: tx.transactionHash,
       timestamp:
-          blockTimestampMap[txBlockHeightMap[tx.transactionHash]!]!.timestamp,
+          blockTimestampMap[txBlockHeightMap[tx.transactionHash]]?.timestamp ??
+              now,
       blockHeight: txBlockHeightMap[tx.transactionHash]!,
       inputAddressList: txDetails.inputAddressList,
       outputAddressList: txDetails.outputAddressList,

@@ -204,7 +204,7 @@ class ElectrumClient {
         _BlockchainScripthashSubscribeReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(result: json));
 
-    _socketManager.setSubscriptionCallback(script, onUpdate);
+    _socketManager.setSubscriptionCallback(reversedScriptHash, onUpdate);
 
     return response.result;
   }
@@ -215,7 +215,7 @@ class ElectrumClient {
         _BlockchainScripthashUnsubscribeReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(result: json));
 
-    _socketManager.removeSubscriptionCallback(script);
+    _socketManager.removeSubscriptionCallback(reversedScriptHash);
 
     return response.result;
   }
