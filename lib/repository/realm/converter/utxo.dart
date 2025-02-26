@@ -26,3 +26,18 @@ RealmUtxo mapUtxoToRealmUtxo(int walletId, UtxoState utxo) {
     utxo.blockHeight,
   );
 }
+
+UtxoState mapRealmToUtxoState(RealmUtxo utxo) {
+  final utxoState = UtxoState(
+    transactionHash: utxo.transactionHash,
+    index: utxo.index,
+    derivationPath: utxo.derivationPath,
+    blockHeight: utxo.blockHeight,
+    amount: utxo.amount,
+    to: utxo.address,
+  );
+
+  utxoState.updateTimestamp(utxo.timestamp);
+
+  return utxoState;
+}

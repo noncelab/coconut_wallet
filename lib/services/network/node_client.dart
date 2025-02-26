@@ -41,7 +41,7 @@ abstract class NodeClient {
 
   Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights);
 
-  Future<Iterable<FetchTransactionResponse>> getFetchTransactionResponses(
+  Future<List<FetchTransactionResponse>> getFetchTransactionResponses(
       ScriptStatus scriptStatus, Set<String> knownTransactionHashes);
 
   Stream<BaseStreamState<Transaction>> fetchTransactions(

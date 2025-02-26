@@ -122,7 +122,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   void getUtxoListWithHoldingAddress() {
     if (_walletListBaseItem == null) return;
 
-    _utxoList = _walletListBaseItem!.utxoList;
+    _utxoList = _walletProvider.getUtxoList(walletId);
 
     if (_utxoList.isNotEmpty) {
       for (var utxo in _utxoList) {

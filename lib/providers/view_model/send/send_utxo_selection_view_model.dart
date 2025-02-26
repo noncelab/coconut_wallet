@@ -366,17 +366,15 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   Transaction _createTransaction(
       bool isMaxMode, int feeRate, WalletListItemBase walletListItemBase) {
+    final utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
     if (isMaxMode) {
-      return Transaction.forSweep(
-          walletListItemBase.utxoList,
-          _sendInfoProvider.recipientAddress!,
-          _sendInfoProvider.feeRate!,
-          walletListItemBase.walletBase);
+      return Transaction.forSweep(utxoList, _sendInfoProvider.recipientAddress!,
+          _sendInfoProvider.feeRate!, walletListItemBase.walletBase);
     }
 
     try {
       return Transaction.forPayment(
-          walletListItemBase.utxoList,
+          utxoList,
           _sendInfoProvider.recipientAddress!,
           _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
           UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
@@ -385,7 +383,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     } catch (e) {
       if (e.toString().contains('Not enough amount for sending. (Fee')) {
         return Transaction.forSweep(
-            walletListItemBase.utxoList,
+            utxoList,
             _sendInfoProvider.recipientAddress!,
             _sendInfoProvider.feeRate!,
             walletListItemBase.walletBase);
@@ -395,7 +393,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   List<UtxoState> _getAllConfirmedUtxoList(WalletListItemBase walletItem) {
-    return walletItem.utxoList.where((utxo) => utxo.blockHeight != 0).toList();
+    final utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
+    return utxoList.where((utxo) => utxo.blockHeight != 0).toList();
   }
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {

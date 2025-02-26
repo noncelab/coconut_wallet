@@ -98,7 +98,7 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Future<Iterable<FetchTransactionResponse>> getFetchTransactionResponses(
+  Future<List<FetchTransactionResponse>> getFetchTransactionResponses(
       ScriptStatus scriptStatus, Set<String> knownTransactionHashes) async {
     final historyList = await _client.getHistory(scriptStatus.scriptPubKey);
 
@@ -112,12 +112,14 @@ class ElectrumService extends NodeClient {
       return true;
     });
 
-    return filteredHistoryList.map((history) => FetchTransactionResponse(
-          transactionHash: history.txHash,
-          height: history.height,
-          addressIndex: scriptStatus.index,
-          isChange: scriptStatus.isChange,
-        ));
+    return filteredHistoryList
+        .map((history) => FetchTransactionResponse(
+              transactionHash: history.txHash,
+              height: history.height,
+              addressIndex: scriptStatus.index,
+              isChange: scriptStatus.isChange,
+            ))
+        .toList();
   }
 
   @override
@@ -236,6 +238,8 @@ class ElectrumService extends NodeClient {
         transactionHashes.map((transactionHash) async* {
       try {
         var transaction = await _client.getTransaction(transactionHash);
+        Logger.log(
+            'fetchTransactions: $transactionHash - ${transaction.substring(0, 10)}');
         yield BaseStreamState<Transaction>.success(
             'fetchTransactionDetails', Transaction.parse(transaction));
       } catch (e, stack) {

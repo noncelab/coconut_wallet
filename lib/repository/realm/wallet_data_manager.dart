@@ -514,13 +514,13 @@ class WalletDataManager {
     _sharedPrefs.setInt(nextIdField, value);
   }
 
-  List<TransactionRecord>? getTxList(int id) {
+  List<TransactionRecord> getTransactionRecordList(int walletId) {
     _checkInitialized();
 
-    final transactions =
-        _realm.query<RealmTransaction>('walletId == $id SORT(timestamp DESC)');
+    final transactions = _realm
+        .query<RealmTransaction>('walletId == $walletId SORT(timestamp DESC)');
 
-    if (transactions.isEmpty) return null;
+    if (transactions.isEmpty) return [];
     List<TransactionRecord> result = [];
 
     final unconfirmed =
@@ -959,6 +959,7 @@ class WalletDataManager {
               now,
             ))
         .toList();
+
     _realm.write(() {
       _realm.addAll<RealmTransaction>(realmTxs);
     });
@@ -1248,5 +1249,13 @@ class WalletDataManager {
       }
       _realm.addAll<RealmUtxo>(newUtxos);
     });
+  }
+
+  List<UtxoState> getUtxoStateList(int walletId) {
+    final realmUtxos = _realm.query<RealmUtxo>(
+      r'walletId == $0',
+      [walletId],
+    );
+    return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
   }
 }

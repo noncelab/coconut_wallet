@@ -435,6 +435,10 @@ class NodeProvider extends ChangeNotifier {
     final txFetchResults = await _mainClient.getFetchTransactionResponses(
         scriptStatus, knownTransactionHashes);
 
+    if (txFetchResults.isEmpty) {
+      return;
+    }
+
     final txBlockHeightMap = Map<String, int>.fromEntries(
         txFetchResults.map((tx) => MapEntry(tx.transactionHash, tx.height)));
 

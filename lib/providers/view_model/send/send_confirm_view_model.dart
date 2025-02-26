@@ -36,14 +36,15 @@ class SendConfirmViewModel extends ChangeNotifier {
     }
 
     String generatedTx;
+    var utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
     if (_sendInfoProvider.isMaxMode!) {
       generatedTx = await _walletListItemBase.walletBase.generatePsbtForSweep(
-          _walletListItemBase.utxoList,
+          utxoList,
           _sendInfoProvider.recipientAddress!,
           _sendInfoProvider.feeRate!);
     } else {
       generatedTx = await _walletListItemBase.walletBase.generatePsbtForPayment(
-          _walletListItemBase.utxoList,
+          utxoList,
           _sendInfoProvider.recipientAddress!,
           _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
           UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),

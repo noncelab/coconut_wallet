@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
@@ -353,10 +354,6 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  List<TransactionRecord>? getTxList(int walletId) {
-    return _walletDataManager.getTxList(walletId);
-  }
-
   /// 네트워크가 꺼지면 네트워크를 해제함.
   void setIsNetworkOn(bool? isNetworkOn) {
     if (_isNetworkOn == isNetworkOn) return;
@@ -470,6 +467,14 @@ class WalletProvider extends ChangeNotifier {
 
   WalletAddress getReceiveAddress(int walletId) {
     return _walletDataManager.getReceiveAddress(walletId);
+  }
+
+  List<UtxoState> getUtxoList(int walletId) {
+    return _walletDataManager.getUtxoStateList(walletId);
+  }
+
+  List<TransactionRecord> getTransactionRecordList(int walletId) {
+    return _walletDataManager.getTransactionRecordList(walletId);
   }
 }
 
