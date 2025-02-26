@@ -366,52 +366,53 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                               ),
                             ),
                             onChanged: (text) {
+                              String updatedText = text;
+
                               if (Platform.isIOS) {
                                 if (text.startsWith(' ')) {
-                                  text = text.trim();
+                                  updatedText = text.trimLeft();
                                 }
-
                                 if (text.contains('#')) {
-                                  text = text.replaceAll('#', '');
+                                  updatedText = updatedText.replaceAll('#', '');
                                 }
-
-                                if (text.endsWith(' ')) {
-                                  _updateTagName = text.trimRight();
-                                  _isSelectButtonEnabled = false;
-                                } else {
-                                  _updateTagName = text;
-                                }
-
-                                _controller.text = text;
                               } else {
                                 if (text.startsWith(' ')) {
-                                  _updateTagName = '';
-                                  _controller.text = _updateTagName;
+                                  updatedText = '';
                                 } else if (text.contains('#')) {
-                                  _updateTagName = text.replaceAll('#', '');
-                                  _controller.text = _updateTagName;
-                                } else if (text.runes.length > 30) {
-                                  _updateTagName =
-                                      String.fromCharCodes(text.runes.take(30));
-                                  _controller.text = _updateTagName;
-                                } else {
-                                  _updateTagName = text;
-                                }
-
-                                if (_updateTagName.endsWith(' ')) {
-                                  _updateTagName = _updateTagName.trimRight();
-                                  _isSelectButtonEnabled = false;
+                                  updatedText = updatedText.replaceAll('#', '');
                                 }
                               }
+
+                              // 글자 수 제한
+                              if (updatedText.runes.length > 30) {
+                                updatedText = String.fromCharCodes(
+                                    updatedText.runes.take(30));
+                              }
+
+                              if (updatedText.endsWith(' ')) {
+                                updatedText = updatedText.trimRight();
+                              }
+
+                              // TextEditingController의 값을 안전하게 업데이트
+                              if (_controller.text != updatedText) {
+                                _controller.value = TextEditingValue(
+                                  text: updatedText,
+                                  selection: TextSelection.collapsed(
+                                      offset: updatedText.length),
+                                );
+                              }
+
+                              setState(() {
+                                _updateTagName = updatedText;
+                              });
 
                               if (_type == TagBottomSheetType.update) {
                                 _checkUpdateButtonEnabled();
                               }
-                              setState(() {});
                             },
                             onClear: () {
                               setState(() {
-                                _controller.text = '';
+                                _controller.clear();
                                 _updateTagName = '';
                               });
                             },
