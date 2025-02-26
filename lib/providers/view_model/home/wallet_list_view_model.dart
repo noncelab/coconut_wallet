@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
@@ -23,12 +24,19 @@ class WalletListViewModel extends ChangeNotifier {
   late WalletInitState _prevWalletInitState;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _transactionProvider;
+  late final ConnectivityProvider _connectivityProvider;
   final Map<int, int> _walletBalance = {};
   late StreamSubscription<Map<int, Balance>> _balanceSubscription;
   bool _isFirstSyncFinished = false;
 
-  WalletListViewModel(this._walletProvider, this._visibilityProvider,
-      this._isBalanceHidden, this._nodeProvider, this._transactionProvider) {
+  WalletListViewModel(
+    this._walletProvider,
+    this._visibilityProvider,
+    this._isBalanceHidden,
+    this._nodeProvider,
+    this._transactionProvider,
+    this._connectivityProvider,
+  ) {
     _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
 
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
@@ -63,6 +71,7 @@ class WalletListViewModel extends ChangeNotifier {
       _walletProvider.walletInitError?.message;
   WalletInitState get walletInitState => _walletProvider.walletInitState;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
+  bool? get isNetworkOn => _connectivityProvider.isNetworkOn;
 
   void hideTermsShortcut() {
     _isTermsShortcutVisible = false;

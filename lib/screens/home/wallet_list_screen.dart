@@ -1,16 +1,20 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -69,14 +73,20 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider4<WalletProvider, PreferenceProvider,
-        VisibilityProvider, NodeProvider, WalletListViewModel>(
+    return ChangeNotifierProxyProvider5<
+        WalletProvider,
+        PreferenceProvider,
+        VisibilityProvider,
+        NodeProvider,
+        ConnectivityProvider,
+        WalletListViewModel>(
       create: (_) => _viewModel,
       update: (BuildContext context,
           WalletProvider walletProvider,
           PreferenceProvider preferenceProvider,
           VisibilityProvider visibilityProvider,
           NodeProvider nodeProvider,
+          ConnectivityProvider connectivityProvider,
           WalletListViewModel? previous) {
         if (previous!.isBalanceHidden != preferenceProvider.isBalanceHidden) {
           previous.setIsBalanceHidden(preferenceProvider.isBalanceHidden);
@@ -119,15 +129,84 @@ class _WalletListScreenState extends State<WalletListScreen>
                     semanticChildCount: viewModel.walletItemList.length,
                     slivers: <Widget>[
                       // Appbar
-                      FrostedAppBar(
-                        onTapSeeMore: () {
-                          setState(() {
-                            _isDropdownMenuVisible = true;
-                          });
-                        },
-                        onTapAddScanner: () async {
-                          _onAddScannerPressed();
-                        },
+                      CoconutAppBar.buildHomeAppbar(
+                        context: context,
+                        leadingSvgAsset: SvgPicture.asset(
+                            'assets/svg/coconut.svg',
+                            color: MyColors.white,
+                            width: 24),
+                        appTitle: t.wallet,
+                        actionButtonList: [
+                          Container(
+                            height: 40,
+                            width: 40,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: IconButton(
+                              icon: SvgPicture.asset(
+                                'assets/svg/book.svg',
+                                width: 18,
+                                height: 18,
+                                colorFilter: const ColorFilter.mode(
+                                    MyColors.white, BlendMode.srcIn),
+                              ),
+                              onPressed: () {
+                                CustomDialogs.showCustomAlertDialog(
+                                  context,
+                                  title: '도움이 필요하신가요?',
+                                  message: '튜토리얼 사이트로\n안내해 드릴게요',
+                                  onConfirm: () async {
+                                    launchURL(
+                                      'https://noncelab.gitbook.io/coconut.onl',
+                                      defaultMode: false,
+                                    );
+                                    Navigator.of(context).pop();
+                                  },
+                                  onCancel: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  confirmButtonText: '튜토리얼 보기',
+                                  confirmButtonColor: MyColors.cyanblue,
+                                  cancelButtonText: '닫기',
+                                );
+                              },
+                              color: MyColors.white,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 40,
+                            width: 40,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.add_rounded,
+                              ),
+                              onPressed: () {
+                                _onAddScannerPressed();
+                              },
+                              color: MyColors.white,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 40,
+                            width: 40,
+                            child: IconButton(
+                              icon:
+                                  const Icon(CupertinoIcons.ellipsis, size: 18),
+                              onPressed: () {
+                                setState(() {
+                                  _isDropdownMenuVisible = true;
+                                });
+                              },
+                              color: MyColors.white,
+                            ),
+                          ),
+                        ],
+                        bottomWidget: PreferredSize(
+                          preferredSize: const Size.fromHeight(30),
+                          child: _topNetworkAlertWidget(
+                              viewModel.isNetworkOn ?? true),
+                        ),
                       ),
                       // Pull to refresh, refresh indicator(hide)
                       CupertinoSliverRefreshControl(
@@ -138,9 +217,12 @@ class _WalletListScreenState extends State<WalletListScreen>
                           child: Column(
                         children: [
                           // 앱에 첫 진입 시 뜨는 상단 loading indicator
-                          _topLoadingIndicatorWidget(
-                              viewModel.shouldShowLoadingIndicator ||
-                                  !viewModel.walletLoadCompleted),
+                          if (viewModel.isNetworkOn != null &&
+                              viewModel.isNetworkOn!) ...{
+                            _topLoadingIndicatorWidget(
+                                viewModel.shouldShowLoadingIndicator ||
+                                    !viewModel.walletLoadCompleted),
+                          },
 
                           if (!viewModel.shouldShowLoadingIndicator &&
                               viewModel.walletLoadCompleted) ...{
@@ -217,6 +299,36 @@ class _WalletListScreenState extends State<WalletListScreen>
     );
   }
 
+  Widget _topNetworkAlertWidget(bool isNetworkOn) {
+    return AnimatedContainer(
+      width: MediaQuery.sizeOf(context).width,
+      height: isNetworkOn ? 0 : 30,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+      alignment: Alignment.topCenter,
+      decoration: const BoxDecoration(color: CoconutColors.hotPink),
+      constraints: BoxConstraints(
+        maxHeight: isNetworkOn ? 0 : 50,
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: SizedBox(
+        height: 30,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SvgPicture.asset('assets/svg/triangle-warning.svg'),
+            CoconutLayout.spacing_100w,
+            Text(
+              t.errors.network_not_found,
+              style: CoconutTypography.body3_12,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _topLoadingIndicatorWidget(bool isLoading) {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
@@ -249,6 +361,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       Provider.of<PreferenceProvider>(context, listen: false).isBalanceHidden,
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
+      Provider.of<ConnectivityProvider>(context, listen: false),
     );
 
     _scrollController = ScrollController();
