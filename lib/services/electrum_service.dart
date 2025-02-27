@@ -4,7 +4,8 @@ import 'dart:math';
 import 'package:async/async.dart' as async;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/model/script/script_status.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -363,13 +364,7 @@ class ElectrumService extends NodeClient {
   @override
   Future<SubscribeWalletResponse> subscribeWallet(
       WalletListItemBase walletItem,
-      StreamController<
-              ({
-                WalletListItemBase walletItem,
-                ScriptStatus scriptStatus,
-                WalletProvider walletProvider
-              })>
-          scriptStatusController,
+      StreamController<SubscribeScriptStreamDto> scriptStatusController,
       WalletProvider walletProvider) async {
     final receiveFutures = _subscribeWallet(
         walletItem, false, scriptStatusController, walletProvider);
@@ -395,13 +390,7 @@ class ElectrumService extends NodeClient {
       _subscribeWallet(
           WalletListItemBase walletItem,
           bool isChange,
-          StreamController<
-                  ({
-                    WalletListItemBase walletItem,
-                    ScriptStatus scriptStatus,
-                    WalletProvider walletProvider
-                  })>
-              scriptStatusController,
+          StreamController<SubscribeScriptStreamDto> scriptStatusController,
           WalletProvider walletProvider) async {
     int currentAddressIndex = 0;
     int addressScanLimit = gapLimit;

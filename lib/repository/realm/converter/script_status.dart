@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/model/script/script_status.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
 UnaddressedScriptStatus mapRealmToUnaddressedScriptStatus(

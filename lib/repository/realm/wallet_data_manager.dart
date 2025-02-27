@@ -8,7 +8,7 @@ import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/model/script/script_status.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
