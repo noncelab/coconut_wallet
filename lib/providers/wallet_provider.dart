@@ -24,7 +24,8 @@ enum WalletLoadState {
   loadCompleted,
 }
 
-enum WalletSyncingState { never, syncing, finished }
+/// failed: 네트워크가 꺼져있을 때
+enum WalletSyncingState { never, syncing, completed, failed }
 
 /// Represents the initialization state of a wallet. 처음 초기화 때만 사용하지 않고 refresh 할 때도 사용합니다.
 enum WalletInitState {
@@ -130,20 +131,31 @@ class WalletProvider extends ChangeNotifier {
 
   Future<void> syncWalletData() async {
     assert(_walletLoadState == WalletLoadState.loadCompleted);
-    if (_isNetworkOn != true) {
-      Logger.log('--> 네트워크 꺼져있어서 sync 못함');
+    if (_walletSyncingState == WalletSyncingState.syncing) {
       return;
     }
-    if (_walletSyncingState == WalletSyncingState.syncing) {
+    if (_isNetworkOn == null) {
+      Logger.log('--> 네트워크 상태 확인 중이어서 sync 못함');
+      return;
+    }
+    if (_isNetworkOn == false) {
+      Logger.log('--> 네트워크가 꺼져있어서 sync 실패');
+      _walletSyncingState = WalletSyncingState.failed;
       return;
     }
     _walletSyncingState = WalletSyncingState.syncing;
     notifyListeners();
-    await Future.delayed(const Duration(seconds: 2));
-    await _updateBalances();
-    // TODO: syncFromNetwork other data.
-    _walletSyncingState = WalletSyncingState.finished;
-    notifyListeners();
+    try {
+      //await Future.delayed(const Duration(seconds: ));
+      await _updateBalances();
+      // TODO: syncFromNetwork other data.
+      _walletSyncingState = WalletSyncingState.completed;
+    } catch (e) {
+      Logger.error(e);
+      _walletSyncingState = WalletSyncingState.failed;
+    } finally {
+      notifyListeners();
+    }
   }
 
   Future<void> _setLastUpdateTime() async {
@@ -408,15 +420,14 @@ class WalletProvider extends ChangeNotifier {
   /// 따라서 네트워크 상태가 null -> true로 변경 되었을 때 지갑 동기화를 해줍니다.
   void setIsNetworkOn(bool? isNetworkOn) {
     if (_isNetworkOn == isNetworkOn) return;
-
-    if (_isNetworkOn == null && isNetworkOn == true) {
+    // 네트워크 상태가 확인됨
+    if (_isNetworkOn == null && isNetworkOn != null) {
       _isNetworkOn = isNetworkOn;
       syncWalletData();
       return;
     }
 
     _isNetworkOn = isNetworkOn;
-
     // if (isNetworkOn == false) {
     //   handleNetworkDisconnected();
     //   notifyListeners();

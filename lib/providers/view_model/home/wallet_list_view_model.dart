@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
@@ -12,7 +11,6 @@ import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
@@ -28,6 +26,7 @@ class WalletListViewModel extends ChangeNotifier {
   final Map<int, int> _walletBalance = {};
   late StreamSubscription<Map<int, Balance>> _balanceSubscription;
   bool _isFirstSyncFinished = false;
+  late bool? _isNetworkOn;
 
   WalletListViewModel(
     this._walletProvider,
@@ -45,6 +44,8 @@ class WalletListViewModel extends ChangeNotifier {
     // TODO:
     _balanceSubscription =
         _walletProvider.balanceStream.stream.listen(_updateBalance);
+
+    _isNetworkOn = _connectivityProvider.isNetworkOn;
   }
 
   void _updateBalance(Map<int, Balance?> newBalance) {
@@ -61,17 +62,13 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
-  bool get shouldShowLoadingIndicator =>
-      walletLoadCompleted && !_isFirstSyncFinished;
-
-  bool get walletLoadCompleted =>
-      _walletProvider.walletLoadState == WalletLoadState.loadCompleted;
+  bool get shouldShowLoadingIndicator => !_isFirstSyncFinished;
   int get lastUpdateTime => _walletProvider.lastUpdateTime;
   String? get walletInitErrorMessage =>
       _walletProvider.walletInitError?.message;
   WalletInitState get walletInitState => _walletProvider.walletInitState;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
-  bool? get isNetworkOn => _connectivityProvider.isNetworkOn;
+  bool? get isNetworkOn => _isNetworkOn;
 
   void hideTermsShortcut() {
     _isTermsShortcutVisible = false;
@@ -115,14 +112,16 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshWallets() async {
-    if (!walletLoadCompleted) return;
+    if (_walletProvider.walletLoadState != WalletLoadState.loadCompleted)
+      return;
 
     await _walletProvider.syncWalletData();
   }
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
     if (!_isFirstSyncFinished &&
-        walletProvider.walletSyncingState == WalletSyncingState.finished) {
+        (walletProvider.walletSyncingState == WalletSyncingState.completed ||
+            walletProvider.walletSyncingState == WalletSyncingState.failed)) {
       _isFirstSyncFinished = true;
       notifyListeners();
     }
@@ -166,6 +165,11 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void onNodeProviderUpdated() {
+    notifyListeners();
+  }
+
+  void updateIsNetworkOn(bool? isNetworkOn) {
+    _isNetworkOn = isNetworkOn;
     notifyListeners();
   }
 

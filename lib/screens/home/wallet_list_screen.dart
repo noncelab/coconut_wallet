@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/cupertino.dart';
@@ -73,28 +74,25 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider5<
-        WalletProvider,
-        PreferenceProvider,
-        VisibilityProvider,
-        NodeProvider,
-        ConnectivityProvider,
-        WalletListViewModel>(
+    return ChangeNotifierProxyProvider4<WalletProvider, PreferenceProvider,
+        VisibilityProvider, ConnectivityProvider, WalletListViewModel>(
       create: (_) => _viewModel,
       update: (BuildContext context,
           WalletProvider walletProvider,
           PreferenceProvider preferenceProvider,
           VisibilityProvider visibilityProvider,
-          NodeProvider nodeProvider,
           ConnectivityProvider connectivityProvider,
           WalletListViewModel? previous) {
         if (previous!.isBalanceHidden != preferenceProvider.isBalanceHidden) {
           previous.setIsBalanceHidden(preferenceProvider.isBalanceHidden);
         }
 
-        return previous
-          ..onWalletProviderUpdated(walletProvider)
-          ..onNodeProviderUpdated();
+        if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
+          previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
+        }
+
+        // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
+        return previous..onWalletProviderUpdated(walletProvider);
       },
       child:
           Consumer<WalletListViewModel>(builder: (context, viewModel, child) {
@@ -209,23 +207,19 @@ class _WalletListScreenState extends State<WalletListScreen>
                         ),
                       ),
                       // Pull to refresh, refresh indicator(hide)
-                      CupertinoSliverRefreshControl(
-                        onRefresh: viewModel.refreshWallets,
-                      ),
+                      if (!viewModel.shouldShowLoadingIndicator) ...{
+                        CupertinoSliverRefreshControl(
+                          onRefresh: viewModel.refreshWallets,
+                        )
+                      },
                       // 용어집, 바로 추가하기, loading indicator
                       SliverToBoxAdapter(
                           child: Column(
                         children: [
-                          // 앱에 첫 진입 시 뜨는 상단 loading indicator
-                          if (viewModel.isNetworkOn != null &&
-                              viewModel.isNetworkOn!) ...{
-                            _topLoadingIndicatorWidget(
-                                viewModel.shouldShowLoadingIndicator ||
-                                    !viewModel.walletLoadCompleted),
+                          if (viewModel.shouldShowLoadingIndicator) ...{
+                            _topLoadingIndicatorWidget()
                           },
-
-                          if (!viewModel.shouldShowLoadingIndicator &&
-                              viewModel.walletLoadCompleted) ...{
+                          if (!viewModel.shouldShowLoadingIndicator) ...{
                             if (viewModel.isTermsShortcutVisible)
                               WalletListTermsShortcutCard(
                                 onTap: () {
@@ -329,12 +323,12 @@ class _WalletListScreenState extends State<WalletListScreen>
     );
   }
 
-  Widget _topLoadingIndicatorWidget(bool isLoading) {
+  Widget _topLoadingIndicatorWidget() {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
       child: Container(
-        height: isLoading ? null : 0,
+        height: null,
         padding: const EdgeInsets.symmetric(vertical: 16.0),
         child: const CupertinoActivityIndicator(
           color: MyColors.white,
