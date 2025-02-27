@@ -75,9 +75,10 @@ dependencies:
       url: https://github.com/noncelab/coconut_lib.git
       ref: develop
   coconut_design_system:
-    git:
-      url: https://github.com/noncelab/coconut_design_system.git
-      ref: main
+    path: ../design_system/coconut_design_system
+    # git:
+    #   url: https://github.com/noncelab/coconut_design_system.git
+    #   ref: main
   realm: ^20.0.0
   cryptography: ^2.7.0
   slang: ^4.4.1

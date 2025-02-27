@@ -121,195 +121,205 @@ class _WalletListScreenState extends State<WalletListScreen>
             },
             child: Scaffold(
               backgroundColor: MyColors.black,
-              body: Stack(
-                children: [
-                  CustomScrollView(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    semanticChildCount: viewModel.walletItemList.length,
-                    slivers: <Widget>[
-                      // Appbar
-                      CoconutAppBar.buildHomeAppbar(
-                        context: context,
-                        leadingSvgAsset: SvgPicture.asset(
-                            'assets/svg/coconut.svg',
-                            color: MyColors.white,
-                            width: 24),
-                        appTitle: t.wallet,
-                        actionButtonList: [
-                          Container(
-                            height: 40,
-                            width: 40,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: IconButton(
-                              icon: SvgPicture.asset(
-                                'assets/svg/book.svg',
-                                width: 18,
-                                height: 18,
-                                colorFilter: const ColorFilter.mode(
-                                    MyColors.white, BlendMode.srcIn),
+              extendBodyBehindAppBar: true,
+              body: SafeArea(
+                top: false,
+                child: Stack(
+                  children: [
+                    CustomScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      semanticChildCount: viewModel.walletItemList.length,
+                      slivers: <Widget>[
+                        // Appbar
+                        CoconutAppBar.buildHomeAppbar(
+                          context: context,
+                          leadingSvgAsset: SvgPicture.asset(
+                              'assets/svg/coconut.svg',
+                              color: MyColors.white,
+                              width: 24),
+                          appTitle: t.wallet,
+                          actionButtonList: [
+                            Container(
+                              height: 40,
+                              width: 40,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
                               ),
-                              onPressed: () {
-                                CustomDialogs.showCustomAlertDialog(
-                                  context,
-                                  title: '도움이 필요하신가요?',
-                                  message: '튜토리얼 사이트로\n안내해 드릴게요',
-                                  onConfirm: () async {
-                                    launchURL(
-                                      'https://noncelab.gitbook.io/coconut.onl',
-                                      defaultMode: false,
-                                    );
-                                    Navigator.of(context).pop();
-                                  },
-                                  onCancel: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  confirmButtonText: '튜토리얼 보기',
-                                  confirmButtonColor: MyColors.cyanblue,
-                                  cancelButtonText: '닫기',
-                                );
-                              },
-                              color: MyColors.white,
-                            ),
-                          ),
-                          SizedBox(
-                            height: 40,
-                            width: 40,
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.add_rounded,
-                              ),
-                              onPressed: () {
-                                _onAddScannerPressed();
-                              },
-                              color: MyColors.white,
-                            ),
-                          ),
-                          SizedBox(
-                            height: 40,
-                            width: 40,
-                            child: IconButton(
-                              icon:
-                                  const Icon(CupertinoIcons.ellipsis, size: 18),
-                              onPressed: () {
-                                setState(() {
-                                  _isDropdownMenuVisible = true;
-                                });
-                              },
-                              color: MyColors.white,
-                            ),
-                          ),
-                        ],
-                        bottomWidget: PreferredSize(
-                          preferredSize: const Size.fromHeight(30),
-                          child: _topNetworkAlertWidget(
-                              viewModel.isNetworkOn ?? true),
-                        ),
-                      ),
-                      // Pull to refresh, refresh indicator(hide)
-                      CupertinoSliverRefreshControl(
-                        onRefresh: viewModel.refreshWallets,
-                      ),
-                      // 용어집, 바로 추가하기, loading indicator
-                      SliverToBoxAdapter(
-                          child: Column(
-                        children: [
-                          // 앱에 첫 진입 시 뜨는 상단 loading indicator
-                          if (viewModel.isNetworkOn != null &&
-                              viewModel.isNetworkOn!) ...{
-                            _topLoadingIndicatorWidget(
-                                viewModel.shouldShowLoadingIndicator ||
-                                    !viewModel.walletLoadCompleted),
-                          },
-
-                          if (!viewModel.shouldShowLoadingIndicator &&
-                              viewModel.walletLoadCompleted) ...{
-                            if (viewModel.isTermsShortcutVisible)
-                              WalletListTermsShortcutCard(
-                                onTap: () {
-                                  CommonBottomSheets.showBottomSheet_90(
-                                      context: context,
-                                      child: const TermsBottomSheet());
+                              child: IconButton(
+                                icon: SvgPicture.asset(
+                                  'assets/svg/book.svg',
+                                  width: 18,
+                                  height: 18,
+                                  colorFilter: const ColorFilter.mode(
+                                      MyColors.white, BlendMode.srcIn),
+                                ),
+                                onPressed: () {
+                                  CustomDialogs.showCustomAlertDialog(
+                                    context,
+                                    title: '도움이 필요하신가요?',
+                                    message: '튜토리얼 사이트로\n안내해 드릴게요',
+                                    onConfirm: () async {
+                                      launchURL(
+                                        'https://noncelab.gitbook.io/coconut.onl',
+                                        defaultMode: false,
+                                      );
+                                      Navigator.of(context).pop();
+                                    },
+                                    onCancel: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    confirmButtonText: '튜토리얼 보기',
+                                    confirmButtonColor: MyColors.cyanblue,
+                                    cancelButtonText: '닫기',
+                                  );
                                 },
-                                onCloseTap: viewModel.hideTermsShortcut,
+                                color: MyColors.white,
                               ),
-                            if (viewModel.walletItemList.isEmpty)
-                              WalletListAddGuideCard(
-                                  onPressed: _onAddScannerPressed)
-                          },
-                        ],
-                      )),
-                      // 지갑 목록
-                      SliverSafeArea(
-                        top: false,
-                        minimum: const EdgeInsets.symmetric(horizontal: 8),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                              childCount: viewModel.walletItemList.length,
-                              (ctx, index) {
-                            return _getWalletRowItem(index, viewModel);
-                          }),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Visibility(
-                    visible: _isDropdownMenuVisible,
-                    child: Stack(
-                      children: [
-                        GestureDetector(
-                          onTapDown: (details) {
-                            setState(() {
-                              _isDropdownMenuVisible = false;
-                            });
-                          },
-                          child: Container(
-                            width: double.maxFinite,
-                            height: double.maxFinite,
-                            color: Colors.transparent,
+                            ),
+                            SizedBox(
+                              height: 40,
+                              width: 40,
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.add_rounded,
+                                ),
+                                onPressed: () {
+                                  _onAddScannerPressed();
+                                },
+                                color: MyColors.white,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 40,
+                              width: 40,
+                              child: IconButton(
+                                icon: const Icon(CupertinoIcons.ellipsis,
+                                    size: 18),
+                                onPressed: () {
+                                  setState(() {
+                                    _isDropdownMenuVisible = true;
+                                  });
+                                },
+                                color: MyColors.white,
+                              ),
+                            ),
+                          ],
+                          bottomWidget: PreferredSize(
+                            preferredSize:
+                                Size.fromHeight(Platform.isAndroid ? 20 : 20),
+                            child: _topNetworkAlertWidget(
+                                viewModel.isNetworkOn == false ? 30 : 0),
                           ),
+                          appBarInnerMargin: viewModel.isNetworkOn == false
+                              ? const EdgeInsets.symmetric(
+                                  vertical: 30,
+                                )
+                              : const EdgeInsets.only(
+                                  top: 30,
+                                ),
                         ),
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: CustomDropdown(
-                            margin: EdgeInsets.only(
-                                top: (84 + MediaQuery.of(context).padding.top) -
-                                    (MediaQuery.of(context).padding.top / 2),
-                                right: 20),
-                            backgroundColor: MyColors.grey,
-                            buttons: _dropdownButtons,
-                            dividerIndex: 3,
-                            onTapButton: (index) {
-                              setState(() {
-                                _isDropdownMenuVisible = false;
-                              });
-                              _dropdownActions[index].call();
+                        // Pull to refresh, refresh indicator(hide)
+                        CupertinoSliverRefreshControl(
+                          onRefresh: viewModel.refreshWallets,
+                        ),
+                        // 용어집, 바로 추가하기, loading indicator
+                        SliverToBoxAdapter(
+                            child: Column(
+                          children: [
+                            // 앱에 첫 진입 시 뜨는 상단 loading indicator
+                            if (viewModel.isNetworkOn != null &&
+                                viewModel.isNetworkOn!) ...{
+                              _topLoadingIndicatorWidget(
+                                  viewModel.shouldShowLoadingIndicator ||
+                                      !viewModel.walletLoadCompleted),
                             },
+
+                            if (!viewModel.shouldShowLoadingIndicator &&
+                                viewModel.walletLoadCompleted) ...{
+                              if (viewModel.isTermsShortcutVisible)
+                                WalletListTermsShortcutCard(
+                                  onTap: () {
+                                    CommonBottomSheets.showBottomSheet_90(
+                                        context: context,
+                                        child: const TermsBottomSheet());
+                                  },
+                                  onCloseTap: viewModel.hideTermsShortcut,
+                                ),
+                              if (viewModel.walletItemList.isEmpty)
+                                WalletListAddGuideCard(
+                                    onPressed: _onAddScannerPressed)
+                            },
+                          ],
+                        )),
+                        // 지갑 목록
+                        SliverSafeArea(
+                          top: false,
+                          minimum: const EdgeInsets.symmetric(horizontal: 8),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                                childCount: viewModel.walletItemList.length,
+                                (ctx, index) {
+                              return _getWalletRowItem(index, viewModel);
+                            }),
                           ),
                         ),
                       ],
                     ),
-                  )
-                ],
+                    Visibility(
+                      visible: _isDropdownMenuVisible,
+                      child: Stack(
+                        children: [
+                          GestureDetector(
+                            onTapDown: (details) {
+                              setState(() {
+                                _isDropdownMenuVisible = false;
+                              });
+                            },
+                            child: Container(
+                              width: double.maxFinite,
+                              height: double.maxFinite,
+                              color: Colors.transparent,
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.topRight,
+                            child: CustomDropdown(
+                              margin: EdgeInsets.only(
+                                  top: (84 +
+                                          MediaQuery.of(context).padding.top) -
+                                      (MediaQuery.of(context).padding.top / 2),
+                                  right: 20),
+                              backgroundColor: MyColors.grey,
+                              buttons: _dropdownButtons,
+                              dividerIndex: 3,
+                              onTapButton: (index) {
+                                setState(() {
+                                  _isDropdownMenuVisible = false;
+                                });
+                                _dropdownActions[index].call();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
               ),
             ));
       }),
     );
   }
 
-  Widget _topNetworkAlertWidget(bool isNetworkOn) {
+  Widget _topNetworkAlertWidget(double height) {
     return AnimatedContainer(
       width: MediaQuery.sizeOf(context).width,
-      height: isNetworkOn ? 0 : 30,
+      height: height,
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeOut,
       alignment: Alignment.topCenter,
       decoration: const BoxDecoration(color: CoconutColors.hotPink),
-      constraints: BoxConstraints(
-        maxHeight: isNetworkOn ? 0 : 50,
-      ),
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: SizedBox(
         height: 30,
