@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
@@ -81,11 +82,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         },
         child: Consumer<SendUtxoSelectionViewModel>(
           builder: (context, viewModel, child) => Scaffold(
-            appBar: CustomAppBar.buildWithNext(
-                backgroundColor: MyColors.black,
+            appBar: CoconutAppBar.buildWithNext(
+                backgroundColor: CoconutColors.black,
                 title: t.select_utxo,
                 context: context,
                 nextButtonTitle: t.complete,
+                usePrimaryActiveColor: true,
                 isActive: viewModel.estimatedFee != null &&
                     viewModel.estimatedFee != 0 &&
                     viewModel.errorState == null,
@@ -99,178 +101,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     controller: _scrollController,
                     child: Column(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.only(
-                            left: 16,
-                            right: 16,
-                            top: 10,
-                            bottom: 10,
-                          ),
-                          alignment: Alignment.center,
-                          color: MyColors.black,
-                          child: Column(
-                            children: [
-                              Container(
-                                  key: _headerTopContainerKey,
-                                  width: MediaQuery.sizeOf(context).width,
-                                  decoration: BoxDecoration(
-                                    color: MyColors.transparentWhite_10,
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  padding: const EdgeInsets.only(
-                                    left: 24,
-                                    right: 24,
-                                    top: 24,
-                                    bottom: 20,
-                                  ),
-                                  child: SendUtxoStickyHeader(
-                                    errorState: viewModel.errorState,
-                                    recommendedFeeFetchStatus:
-                                        viewModel.recommendedFeeFetchStatus,
-                                    selectedLevel: viewModel.selectedLevel,
-                                    onTapFeeButton: () =>
-                                        _onTapFeeChangeButton(),
-                                    isMaxMode: viewModel.isMaxMode,
-                                    customFeeSelected:
-                                        viewModel.customFeeSelected,
-                                    sendAmount: viewModel.sendAmount,
-                                    bitcoinPriceKrw: viewModel.bitcoinPriceKrw,
-                                    estimatedFee: viewModel.estimatedFee,
-                                    satsPerVb: viewModel.satsPerVb,
-                                    change: viewModel.change,
-                                  )),
-                              _totalUtxoAmountWidget(
-                                Text(
-                                  key: _orderDropdownButtonKey,
-                                  _selectedUtxoOrder.text,
-                                  style: Styles.caption2.merge(
-                                    const TextStyle(
-                                      color: MyColors.white,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                viewModel.errorState,
-                                viewModel.selectedUtxoList.length,
-                                viewModel.selectedUtxoAmountSum,
-                              ),
-                            ],
-                          ),
+                        _buildSendInfoHeader(
+                          viewModel,
                         ),
-                        Visibility(
-                          visible: !viewModel.isUtxoTagListEmpty,
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 16, bottom: 12),
-                            child: CustomTagHorizontalSelector(
-                              tags: viewModel.utxoTagList
-                                  .map((e) => e.name)
-                                  .toList(),
-                              selectedName: viewModel.selectedUtxoTagName,
-                              onSelectedTag: (tagName) {
-                                viewModel.setSelectedUtxoTagName(tagName);
-                                setState(() {
-                                  _isStickyHeaderVisible = false;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                        ListView.separated(
-                            physics: const NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.only(
-                                top: 0, bottom: 30, left: 16, right: 16),
-                            itemCount: viewModel.confirmedUtxoList.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 0),
-                            itemBuilder: (context, index) {
-                              final utxo = viewModel.confirmedUtxoList[index];
-                              final utxoHasSelectedTag = viewModel
-                                          .selectedUtxoTagName ==
-                                      allLabelName ||
-                                  viewModel.utxoTagMap[utxo.utxoId]?.any((e) =>
-                                          e.name ==
-                                          viewModel.selectedUtxoTagName) ==
-                                      true;
-
-                              if (utxoHasSelectedTag) {
-                                if (viewModel.selectedUtxoTagName !=
-                                        allLabelName &&
-                                    !utxoHasSelectedTag) {
-                                  return const SizedBox();
-                                }
-
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  child: SelectableUtxoItemCard(
-                                    key: ValueKey(utxo.transactionHash),
-                                    utxo: utxo,
-                                    isSelected: viewModel.selectedUtxoList
-                                        .contains(utxo),
-                                    utxoTags: viewModel.utxoTagMap[utxo.utxoId],
-                                    onSelected: _toggleSelection,
-                                  ),
-                                );
-                              } else {
-                                return const SizedBox();
-                              }
-                            }),
+                        _buildUtxoTagList(viewModel),
+                        _buildUtxoList(viewModel),
                       ],
                     ),
                   ),
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: IgnorePointer(
-                      ignoring: !_isStickyHeaderVisible,
-                      child: Opacity(
-                        opacity: _isStickyHeaderVisible ? 1 : 0,
-                        child: Container(
-                          color: MyColors.black,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                          ),
-                          child: _totalUtxoAmountWidget(
-                            Text(
-                              key: _scrolledOrderDropdownButtonKey,
-                              _selectedUtxoOrder.text,
-                              style: Styles.caption2.merge(
-                                const TextStyle(
-                                  color: MyColors.white,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            viewModel.errorState,
-                            viewModel.selectedUtxoList.length,
-                            viewModel.selectedUtxoAmountSum,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_isOrderDropdownVisible &&
-                      viewModel.confirmedUtxoList.isNotEmpty) ...{
-                    Positioned(
-                      top: _orderDropdownButtonPosition.dy -
-                          _scrollController.offset -
-                          MediaQuery.of(context).padding.top -
-                          20,
-                      left: 16,
-                      child: _utxoOrderDropdownWidget(),
-                    ),
-                  },
-                  if (_isScrolledOrderDropdownVisible &&
-                      viewModel.confirmedUtxoList.isNotEmpty) ...{
-                    Positioned(
-                      top: _scrolledOrderDropdownButtonPosition.dy -
-                          MediaQuery.of(context).padding.top -
-                          65,
-                      left: 16,
-                      child: _utxoOrderDropdownWidget(),
-                    ),
-                  }
+                  _buildStickyHeader(viewModel),
+                  _buildUtxoOrderDropdown(viewModel),
                 ],
               ),
             ),
@@ -368,12 +208,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         message: t.alert.tag_apply.description,
         onConfirm: () {
           Navigator.of(context).pop();
-          _viewModel.saveUsedUtxoIdsWhenTagged(isTagsMoveAllowed: true);
+          _viewModel.cacheSpentUtxoIdsWithTag(isTagsMoveAllowed: true);
           _moveToSendConfirm();
         },
         onCancel: () {
           Navigator.of(context).pop();
-          _viewModel.saveUsedUtxoIdsWhenTagged(isTagsMoveAllowed: false);
+          _viewModel.cacheSpentUtxoIdsWithTag(isTagsMoveAllowed: false);
           _moveToSendConfirm();
         },
         confirmButtonText: t.alert.tag_apply.btn_apply,
@@ -431,7 +271,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _viewModel.toggleUtxoSelection(utxo);
   }
 
-  Widget _totalUtxoAmountWidget(Widget textKeyWidget, ErrorState? errorState,
+  Widget _buildTotalUtxoAmount(Widget textKeyWidget, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
     return Column(
       children: [
@@ -608,8 +448,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     );
   }
 
-  /// 필터 드롭다운 위젯
-  Widget _utxoOrderDropdownWidget() {
+  Widget _utxoOrderDropdownMenu() {
     return Material(
       borderRadius: BorderRadius.circular(16),
       child: CustomDropdown(
@@ -631,6 +470,180 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           }
         },
         selectedButton: _selectedUtxoOrder.text,
+      ),
+    );
+  }
+
+  Widget _buildStickyHeader(SendUtxoSelectionViewModel viewModel) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        ignoring: !_isStickyHeaderVisible,
+        child: Opacity(
+          opacity: _isStickyHeaderVisible ? 1 : 0,
+          child: Container(
+            color: MyColors.black,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+            ),
+            child: _buildTotalUtxoAmount(
+              Text(
+                key: _scrolledOrderDropdownButtonKey,
+                _selectedUtxoOrder.text,
+                style: Styles.caption2.merge(
+                  const TextStyle(
+                    color: MyColors.white,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              viewModel.errorState,
+              viewModel.selectedUtxoList.length,
+              viewModel.selectedUtxoAmountSum,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUtxoOrderDropdown(SendUtxoSelectionViewModel viewModel) {
+    if (_isOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
+      return Positioned(
+        top: _orderDropdownButtonPosition.dy -
+            _scrollController.offset -
+            MediaQuery.of(context).padding.top -
+            20,
+        left: 16,
+        child: _utxoOrderDropdownMenu(),
+      );
+    }
+
+    if (_isScrolledOrderDropdownVisible &&
+        viewModel.confirmedUtxoList.isNotEmpty) {
+      return Positioned(
+        top: _scrolledOrderDropdownButtonPosition.dy -
+            MediaQuery.of(context).padding.top -
+            65,
+        left: 16,
+        child: _utxoOrderDropdownMenu(),
+      );
+    }
+    return Container();
+  }
+
+  Widget _buildUtxoTagList(SendUtxoSelectionViewModel viewModel) {
+    return Visibility(
+      visible: !viewModel.isUtxoTagListEmpty,
+      child: Container(
+        margin: const EdgeInsets.only(left: 4, bottom: 12),
+        child: CustomTagHorizontalSelector(
+          tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+          selectedName: viewModel.selectedUtxoTagName,
+          onSelectedTag: (tagName) {
+            viewModel.setSelectedUtxoTagName(tagName);
+            setState(() {
+              _isStickyHeaderVisible = false;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUtxoList(SendUtxoSelectionViewModel viewModel) {
+    return ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        padding: const EdgeInsets.only(top: 0, bottom: 30, left: 16, right: 16),
+        itemCount: viewModel.confirmedUtxoList.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 0),
+        itemBuilder: (context, index) {
+          final utxo = viewModel.confirmedUtxoList[index];
+          final utxoHasSelectedTag = viewModel.selectedUtxoTagName ==
+                  allLabelName ||
+              viewModel.utxoTagMap[utxo.utxoId]
+                      ?.any((e) => e.name == viewModel.selectedUtxoTagName) ==
+                  true;
+
+          if (utxoHasSelectedTag) {
+            if (viewModel.selectedUtxoTagName != allLabelName &&
+                !utxoHasSelectedTag) {
+              return const SizedBox();
+            }
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: SelectableUtxoItemCard(
+                key: ValueKey(utxo.transactionHash),
+                utxo: utxo,
+                isSelected: viewModel.selectedUtxoList.contains(utxo),
+                utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+                onSelected: _toggleSelection,
+              ),
+            );
+          } else {
+            return const SizedBox();
+          }
+        });
+  }
+
+  Widget _buildSendInfoHeader(SendUtxoSelectionViewModel viewModel) {
+    return Container(
+      padding: const EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: 12,
+      ),
+      alignment: Alignment.center,
+      color: CoconutColors.black,
+      child: Column(
+        children: [
+          Container(
+              key: _headerTopContainerKey,
+              width: MediaQuery.sizeOf(context).width,
+              decoration: BoxDecoration(
+                color: MyColors.transparentWhite_10,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              padding: const EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: 20,
+              ),
+              child: SendUtxoStickyHeader(
+                errorState: viewModel.errorState,
+                recommendedFeeFetchStatus: viewModel.recommendedFeeFetchStatus,
+                selectedLevel: viewModel.selectedLevel,
+                onTapFeeButton: () => _onTapFeeChangeButton(),
+                isMaxMode: viewModel.isMaxMode,
+                customFeeSelected: viewModel.customFeeSelected,
+                sendAmount: viewModel.sendAmount,
+                bitcoinPriceKrw: viewModel.bitcoinPriceKrw,
+                estimatedFee: viewModel.estimatedFee,
+                satsPerVb: viewModel.satsPerVb,
+                change: viewModel.change,
+              )),
+          _buildTotalUtxoAmount(
+            Text(
+              key: _orderDropdownButtonKey,
+              _selectedUtxoOrder.text,
+              style: Styles.caption2.merge(
+                const TextStyle(
+                  color: MyColors.white,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            viewModel.errorState,
+            viewModel.selectedUtxoList.length,
+            viewModel.selectedUtxoAmountSum,
+          ),
+        ],
       ),
     );
   }

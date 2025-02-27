@@ -46,7 +46,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     if (model.utxoTagList.isEmpty) _buildEmptyView(context),
-                    _buildEditButton(context, model),
+                    _buildEditButtons(context, model),
                     Expanded(
                       child: CustomTagVerticalSelector(
                         key: ValueKey(
@@ -85,7 +85,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEditButton(BuildContext context, UtxoTagCrudViewModel model) {
+  Widget _buildEditButtons(BuildContext context, UtxoTagCrudViewModel model) {
     debugPrint('${model.selectedUtxoTag == null}');
     if (model.selectedUtxoTag == null) return CoconutLayout.spacing_600h;
     return Column(children: [
@@ -100,7 +100,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
             },
             padding: const EdgeInsets.all(0),
           ),
-          CoconutLayout.spacing_300h,
+          CoconutLayout.spacing_300w,
           CustomUnderlinedButton(
             text: t.delete,
             onTap: () {

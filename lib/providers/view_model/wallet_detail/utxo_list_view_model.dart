@@ -47,7 +47,6 @@ class UtxoListViewModel extends ChangeNotifier {
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
 
   bool get isUtxoTagListEmpty => utxoTagList.isEmpty;
-  List<UtxoTag> get selectedTagList => _tagProvider.utxoTagsForSelectedUtxo;
 
   UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
   String get selectedUtxoTagName => _selectedUtxoTagName;
