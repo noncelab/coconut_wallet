@@ -149,17 +149,7 @@ class WalletListViewModel extends ChangeNotifier {
     await AppReviewService.increaseAppRunningCountIfRejected();
   }
 
-  // TODO: sync가 처음
-  // void _onWalletInitStateError() {
-  //   vibrateLightDouble();
-  // }
-
-  // void _onWalletInitStateFinished() {
-  //   vibrateLight();
-  // }
-
   int? getWalletBalance(int id) {
-    Logger.log('--> _walletBalance[id]');
     return _walletBalance[id];
     //return _walletProvider.getWalletBalance(id);
   }

@@ -146,7 +146,7 @@ class WalletProvider extends ChangeNotifier {
     _walletSyncingState = WalletSyncingState.syncing;
     notifyListeners();
     try {
-      //await Future.delayed(const Duration(seconds: ));
+      await Future.delayed(const Duration(seconds: 2));
       await _updateBalances();
       // TODO: syncFromNetwork other data.
       _walletSyncingState = WalletSyncingState.completed;
@@ -332,7 +332,6 @@ class WalletProvider extends ChangeNotifier {
     final Balance balance = Balance(Random().nextInt(100000), 0);
     _walletBalance[walletId] = balance;
 
-    Logger.log('--> _fetchWalletBalance');
     // notify
     _balanceStream.add({walletId: balance});
     // TODO: 이미 balanceStream을 제공하므로 notifyListeners 불필요할 수 있음.
