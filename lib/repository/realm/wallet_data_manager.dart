@@ -1212,7 +1212,8 @@ class WalletDataManager {
     ).firstOrNull;
 
     if (realmWalletBalance == null) {
-      throw StateError('[updateAddressBalance] Wallet balance not found');
+      throw StateError(
+          '[updateAddressBalance] Wallet balance not found, walletId: $walletId');
     }
 
     final realmWalletAddress = _realm.query<RealmWalletAddress>(
@@ -1221,7 +1222,8 @@ class WalletDataManager {
     ).firstOrNull;
 
     if (realmWalletAddress == null) {
-      throw StateError('[updateAddressBalance] Wallet address not found');
+      throw StateError(
+          '[updateAddressBalance] Wallet address not found, walletId: $walletId, index: $index, isChange: $isChange');
     }
 
     final confirmedDiff = balance.confirmed - realmWalletAddress.confirmed;

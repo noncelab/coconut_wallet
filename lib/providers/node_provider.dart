@@ -232,11 +232,42 @@ class NodeProvider extends ChangeNotifier {
       // UTXO 동기화
       await _fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
 
+      // 새 스크립트 구독 여부 확인 및 처리
+      if (_needSubscriptionUpdate(
+        dto.walletItem,
+        oldReceiveUsedIndex,
+        oldChangeUsedIndex,
+        dto.walletProvider,
+      )) {
+        final subResult =
+            await subscribeWallet(dto.walletItem, dto.walletProvider);
+
+        if (subResult.isSuccess) {
+          Logger.log(
+              'Successfully extended script subscription for ${dto.walletItem.name}');
+        } else {
+          Logger.error(
+              'Failed to extend script subscription: ${subResult.error}');
+        }
+      }
+
       // 동기화 완료 state 업데이트
       _setState(newConnectionState: MainClientState.waiting);
     } catch (e) {
       Logger.error('Failed to handle script status change: $e');
     }
+  }
+
+  /// 필요한 경우 추가 스크립트를 구독합니다.
+  bool _needSubscriptionUpdate(
+    WalletListItemBase walletItem,
+    int oldReceiveUsedIndex,
+    int oldChangeUsedIndex,
+    WalletProvider walletProvider,
+  ) {
+    // receive 또는 change 인덱스가 증가한 경우 추가 구독이 필요
+    return walletItem.receiveUsedIndex > oldReceiveUsedIndex ||
+        walletItem.changeUsedIndex > oldChangeUsedIndex;
   }
 
   /// 스크립트 구독
@@ -253,6 +284,7 @@ class NodeProvider extends ChangeNotifier {
           .subscribeWallet(walletItem, _scriptStatusController, walletProvider);
 
       if (subscribeResponse.scriptStatuses.isEmpty) {
+        Logger.log('SubscribeWallet: ${walletItem.name} - no script statuses');
         return Result.success(true);
       }
 
@@ -277,7 +309,8 @@ class NodeProvider extends ChangeNotifier {
       _walletDataManager.batchUpdateScriptStatuses(
           changedScriptStatuses, walletItem.id);
 
-      Logger.log('SubscribeWallet: ${walletItem.name} - finished');
+      Logger.log(
+          'SubscribeWallet: ${walletItem.name} - finished / subscribedScriptMap.length: ${walletItem.subscribedScriptMap.length}');
       return Result.success(true);
     } catch (e) {
       Logger.error('SubscribeWallet: ${walletItem.name} - failed');
