@@ -1,7 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/script/script_status.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 
 abstract class WalletListItemBase {
   static const String walletTypeField = 'walletType';
@@ -23,7 +22,7 @@ abstract class WalletListItemBase {
 
   late WalletBase walletBase;
 
-  Map<String, ScriptStatus> scriptStatusMap =
+  Map<String, UnaddressedScriptStatus> scriptStatusMap =
       {}; // { ScriptPubKey: ScriptStatus }
 
   WalletListItemBase(

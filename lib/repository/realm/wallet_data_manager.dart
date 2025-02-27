@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
@@ -20,6 +21,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
+import 'package:coconut_wallet/repository/realm/converter/script_status.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
@@ -31,7 +33,6 @@ import 'package:coconut_wallet/repository/secure_storage/secure_storage_reposito
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
-import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -950,22 +951,55 @@ class WalletDataManager {
       throw StateError('[addAllTransactions] Wallet not found');
     }
 
+    // 기존 트랜잭션 정보 맵 조회
+    final existingTxs = _realm.query<RealmTransaction>('walletId == $walletId');
+    final existingTxMap = {for (var tx in existingTxs) tx.transactionHash: tx};
+
     final now = DateTime.now();
     int lastId = getLastId(_realm, (RealmTransaction).toString());
 
-    final realmTxs = txList
-        .map((tx) => mapTransactionToRealmTransaction(
-              tx,
-              walletId,
-              ++lastId,
-              now,
-            ))
-        .toList();
+    // 새 트랜잭션과 업데이트할 트랜잭션을 분리
+    List<RealmTransaction> newTxsToAdd = [];
+    List<MapEntry<RealmTransaction, TransactionRecord>> txsToUpdate = [];
+
+    for (var tx in txList) {
+      final existingTx = existingTxMap[tx.transactionHash];
+
+      // 기존 트랜잭션이 없거나, 모든 경우에 중복 저장 방지
+      if (existingTx == null) {
+        // 완전 새로운 트랜잭션 - 추가
+        newTxsToAdd.add(mapTransactionToRealmTransaction(
+          tx,
+          walletId,
+          ++lastId,
+          now,
+        ));
+      } else if (existingTx.blockHeight == 0 && (tx.blockHeight ?? 0) > 0) {
+        // 미확인 -> 확인 상태로 변경된 트랜잭션 - 업데이트
+        txsToUpdate.add(MapEntry(existingTx, tx));
+      }
+      // 이미 확인된 트랜잭션이거나 여전히 미확인 상태인 트랜잭션은 무시
+    }
 
     _realm.write(() {
-      _realm.addAll<RealmTransaction>(realmTxs);
+      // 새 트랜잭션 추가
+      if (newTxsToAdd.isNotEmpty) {
+        _realm.addAll<RealmTransaction>(newTxsToAdd);
+      }
+
+      // 기존 미확인 트랜잭션 업데이트
+      for (var entry in txsToUpdate) {
+        final existingTx = entry.key;
+        final newTx = entry.value;
+
+        existingTx.blockHeight = newTx.blockHeight;
+        existingTx.timestamp = newTx.timestamp;
+      }
     });
-    saveLastId(_realm, (RealmTransaction).toString(), lastId);
+
+    if (newTxsToAdd.isNotEmpty) {
+      saveLastId(_realm, (RealmTransaction).toString(), lastId);
+    }
   }
 
   // 잔액과 사용여부만 갱신합니다.
@@ -1071,32 +1105,34 @@ class WalletDataManager {
   /// 여러 스크립트 상태 일괄 업데이트
   /// [subscribeResponse] 구독 응답
   /// [walletId] 지갑 ID
-  Result<List<ScriptStatus>> batchUpdateScriptStatuses(
-    SubscribeWalletResponse subscribeResponse,
+  Result<void> batchUpdateScriptStatuses(
+    List<ScriptStatus> scriptStatuses,
     int walletId,
   ) {
     return _handleRealm(() {
-      final realmWalletBase = _getWalletBase(walletId);
       final existingStatusMap = _getExistingScriptStatusMap(
         walletId: walletId,
-        scriptPubKeys:
-            subscribeResponse.scriptStatuses.map((e) => e.scriptPubKey),
+        scriptPubKeys: scriptStatuses.map((e) => e.scriptPubKey).toList(),
       );
 
       final now = DateTime.now();
       // 추가/변경된 스크립트 상태 전체
       final updatedStatuses = <ScriptStatus>[];
       final newStatuses = _prepareToAddScriptStatusList(
-        updates: subscribeResponse.scriptStatuses,
+        updates: scriptStatuses,
         existingStatusMap: existingStatusMap,
         walletId: walletId,
         now: now,
         updatedStatuses: updatedStatuses,
       );
 
+      if (newStatuses.isEmpty && updatedStatuses.isEmpty) {
+        return;
+      }
+
       _realm.write(() {
         // 기존 상태 업데이트
-        for (final update in subscribeResponse.scriptStatuses) {
+        for (final update in scriptStatuses) {
           final existingStatus = existingStatusMap[update.scriptPubKey];
 
           if (existingStatus != null && update.status != null) {
@@ -1108,13 +1144,7 @@ class WalletDataManager {
 
         // 새로운 상태 일괄 추가
         _realm.addAll<RealmScriptStatus>(newStatuses);
-
-        // 지갑 인덱스 업데이트
-        realmWalletBase.usedReceiveIndex = subscribeResponse.usedReceiveIndex;
-        realmWalletBase.usedChangeIndex = subscribeResponse.usedChangeIndex;
       });
-
-      return updatedStatuses;
     });
   }
 
@@ -1151,7 +1181,7 @@ class WalletDataManager {
   /// 기존 스크립트 상태 맵 가져오기
   Map<String, RealmScriptStatus> _getExistingScriptStatusMap({
     required int walletId,
-    required Iterable<String> scriptPubKeys,
+    required List<String> scriptPubKeys,
   }) {
     final scriptResults = _realm.query<RealmScriptStatus>(
       r'walletId == $0 AND scriptPubKey IN $1',
@@ -1200,8 +1230,12 @@ class WalletDataManager {
     final unconfirmedDiff =
         balance.unconfirmed - realmWalletAddress.unconfirmed;
 
-    if (realmWalletBalance.confirmed + confirmedDiff < 0 ||
-        realmWalletBalance.unconfirmed + unconfirmedDiff < 0) {
+    // 새로운 밸런스 값이 마이너스인 경우 오류
+    if (realmWalletBalance.confirmed +
+            realmWalletBalance.unconfirmed +
+            confirmedDiff +
+            unconfirmedDiff <
+        0) {
       throw StateError('[updateAddressBalance] Balance cannot be negative');
     }
 
@@ -1259,5 +1293,81 @@ class WalletDataManager {
       [walletId],
     );
     return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
+  }
+
+  void updateWalletUsedIndex(WalletListItemBase walletItem,
+      int usedReceiveIndex, int usedChangeIndex) {
+    final realmWalletBase = _getWalletBase(walletItem.id);
+
+    int receiveCursor =
+        max(usedReceiveIndex, realmWalletBase.usedReceiveIndex) + 1;
+    int changeCursor =
+        max(usedChangeIndex, realmWalletBase.usedChangeIndex) + 1;
+
+    walletItem.receiveUsedIndex = receiveCursor - 1;
+    walletItem.changeUsedIndex = changeCursor - 1;
+
+    // 필요한 경우에만 새 주소 생성
+    ensureAddressesExist(
+      walletItemBase: walletItem,
+      cursor: receiveCursor,
+      count: 1,
+      isChange: false,
+    );
+
+    ensureAddressesExist(
+      walletItemBase: walletItem,
+      cursor: changeCursor,
+      count: 1,
+      isChange: true,
+    );
+
+    // 지갑 인덱스 업데이트
+    _realm.write(() {
+      if (usedReceiveIndex > realmWalletBase.usedReceiveIndex) {
+        realmWalletBase.usedReceiveIndex = usedReceiveIndex;
+      }
+      if (usedChangeIndex > realmWalletBase.usedChangeIndex) {
+        realmWalletBase.usedChangeIndex = usedChangeIndex;
+      }
+    });
+  }
+
+  Map<String, UnaddressedScriptStatus> getScriptStatuseMap(int walletId) {
+    final scriptStatuses = _realm.query<RealmScriptStatus>(
+      r'walletId == $0',
+      [walletId],
+    );
+    return {
+      for (final status in scriptStatuses)
+        status.scriptPubKey: mapRealmToUnaddressedScriptStatus(status),
+    };
+  }
+
+  UtxoState? getUtxoState(int walletId, String utxoId) {
+    final realmUtxo = _realm.query<RealmUtxo>(
+      r'walletId == $0 AND id == $1',
+      [walletId, utxoId],
+    ).firstOrNull;
+
+    if (realmUtxo == null) {
+      return null;
+    }
+
+    return mapRealmToUtxoState(realmUtxo);
+  }
+
+  TransactionRecord? getTransactionRecord(
+      int walletId, String transactionHash) {
+    final realmTransaction = _realm.query<RealmTransaction>(
+      r'walletId == $0 AND transactionHash == $1',
+      [walletId, transactionHash],
+    ).firstOrNull;
+
+    if (realmTransaction == null) {
+      return null;
+    }
+
+    return mapRealmTransactionToTransaction(realmTransaction);
   }
 }

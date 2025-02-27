@@ -282,14 +282,27 @@ class NodeProvider extends ChangeNotifier {
         WalletProvider walletProvider,
       }) params) async {
     try {
+      final now = DateTime.now();
       Logger.log(
           'HandleScriptStatusChanged: ${params.walletItem.name} - ${params.scriptStatus.derivationPath}');
+
+      // 지갑 인덱스 업데이트
+      int receiveUsedIndex = params.scriptStatus.isChange
+          ? params.walletItem.receiveUsedIndex
+          : params.scriptStatus.index;
+      int changeUsedIndex = params.scriptStatus.isChange
+          ? params.scriptStatus.index
+          : params.walletItem.changeUsedIndex;
+      _walletDataManager.updateWalletUsedIndex(
+          params.walletItem, receiveUsedIndex, changeUsedIndex);
+
       // Balance 동기화
       await _fetchScriptBalance(params.walletItem, params.scriptStatus);
 
-      // Transaction 동기화
+      // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
       await _fetchScriptTransaction(
-          params.walletItem, params.scriptStatus, params.walletProvider);
+          params.walletItem, params.scriptStatus, params.walletProvider,
+          now: now);
 
       // UTXO 동기화
       await _fetchScriptUtxo(params.walletItem, params.scriptStatus);
@@ -311,6 +324,10 @@ class NodeProvider extends ChangeNotifier {
     }
 
     try {
+      // DB에 있는 스크립트 로드
+      walletItem.scriptStatusMap =
+          _walletDataManager.getScriptStatuseMap(walletItem.id);
+
       SubscribeWalletResponse subscribeResponse = await _mainClient
           .subscribeWallet(walletItem, _scriptStatusController, walletProvider);
 
@@ -318,33 +335,48 @@ class NodeProvider extends ChangeNotifier {
         return Result.success(true);
       }
 
-      // 구독중인 스크립트 메모리 저장
-      walletItem.scriptStatusMap = {
+      // 구독중인 스크립트 메모리 저장;
+      final newScriptStatuses = {
         for (var scriptStatus in subscribeResponse.scriptStatuses)
           scriptStatus.scriptPubKey: scriptStatus,
       };
+      // 변경된 스크립트 상태만 필터링
+      final changedScriptStatuses =
+          subscribeResponse.scriptStatuses.where((newStatus) {
+        final existingStatus =
+            walletItem.scriptStatusMap[newStatus.scriptPubKey];
+        return existingStatus?.status != newStatus.status;
+      }).toList();
 
-      // DB에 상태 저장
-      final batchUpdateResult = _walletDataManager.batchUpdateScriptStatuses(
-          subscribeResponse, walletItem.id);
+      Logger.log(
+          'SubscribeWallet: ${walletItem.name} - changedScriptStatuses: ${changedScriptStatuses.length}');
 
-      if (batchUpdateResult.isSuccess) {
-        notifyListeners();
+      // 메모리 상태 업데이트
+      walletItem.scriptStatusMap = newScriptStatuses;
 
-        // 배치 업데이트 처리
-        await _handleBatchScriptStatusChanged(
-          walletItem: walletItem,
-          scriptStatuses: subscribeResponse.scriptStatuses,
-          walletProvider: walletProvider,
-        );
-
-        Logger.log('SubscribeWallet: ${walletItem.name} - finished');
+      if (changedScriptStatuses.isEmpty) {
         return Result.success(true);
       }
 
-      Logger.error(
-          'SubscribeWallet: ${walletItem.name} - failed\n ${batchUpdateResult.error.toString()}');
-      return Result.failure(batchUpdateResult.error);
+      // 지갑 인덱스 업데이트
+      _walletDataManager.updateWalletUsedIndex(
+          walletItem,
+          subscribeResponse.usedReceiveIndex,
+          subscribeResponse.usedChangeIndex);
+
+      // 배치 업데이트 처리
+      await _handleBatchScriptStatusChanged(
+        walletItem: walletItem,
+        scriptStatuses: changedScriptStatuses,
+        walletProvider: walletProvider,
+      );
+
+      // 변경된 상태만 DB에 저장
+      _walletDataManager.batchUpdateScriptStatuses(
+          changedScriptStatuses, walletItem.id);
+
+      Logger.log('SubscribeWallet: ${walletItem.name} - finished');
+      return Result.success(true);
     } catch (e) {
       Logger.error('SubscribeWallet: ${walletItem.name} - failed');
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
@@ -355,6 +387,7 @@ class NodeProvider extends ChangeNotifier {
     return _handleResult(() async {
       await _mainClient.unsubscribeWallet(walletItem);
       walletItem.scriptStatusMap.clear();
+      Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
       return true;
     }());
   }
@@ -404,13 +437,6 @@ class NodeProvider extends ChangeNotifier {
     final addressBalance =
         await _mainClient.getAddressBalance(scriptStatus.scriptPubKey);
 
-    _walletDataManager.ensureAddressesExist(
-      walletItemBase: walletItem,
-      cursor: scriptStatus.index,
-      count: 1,
-      isChange: scriptStatus.isChange,
-    );
-
     _walletDataManager.updateAddressBalance(
         walletId: walletItem.id,
         index: scriptStatus.index,
@@ -422,13 +448,15 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> _fetchScriptTransaction(WalletListItemBase walletItem,
-      ScriptStatus scriptStatus, WalletProvider walletProvider) async {
+      ScriptStatus scriptStatus, WalletProvider walletProvider,
+      {DateTime? now}) async {
     // Transaction 동기화 시작 state 업데이트
     _addWalletSyncState(walletItem.id, UpdateType.transaction);
 
     // 새로운 트랜잭션 조회
     final knownTransactionHashes = _walletDataManager
         .getTransactions(walletItem.id)
+        .where((tx) => tx.blockHeight != null && tx.blockHeight! > 0)
         .map((tx) => tx.transactionHash)
         .toSet();
 
@@ -439,11 +467,13 @@ class NodeProvider extends ChangeNotifier {
       return;
     }
 
-    final txBlockHeightMap = Map<String, int>.fromEntries(
-        txFetchResults.map((tx) => MapEntry(tx.transactionHash, tx.height)));
+    final txBlockHeightMap = Map<String, int>.fromEntries(txFetchResults
+        .where((tx) => tx.height > 0)
+        .map((tx) => MapEntry(tx.transactionHash, tx.height)));
 
-    final blockTimestampMap =
-        await _mainClient.getBlocksByHeight(txBlockHeightMap.values.toSet());
+    final blockTimestampMap = txBlockHeightMap.isEmpty
+        ? <int, BlockTimestamp>{}
+        : await _mainClient.getBlocksByHeight(txBlockHeightMap.values.toSet());
 
     final transactionFuture = await _mainClient
         .fetchTransactions(
@@ -456,7 +486,8 @@ class NodeProvider extends ChangeNotifier {
         .toList();
 
     final txRecords = await _createTransactionRecords(
-        walletItem, txs, txBlockHeightMap, blockTimestampMap, walletProvider);
+        walletItem, txs, txBlockHeightMap, blockTimestampMap, walletProvider,
+        now: now);
 
     _walletDataManager.addAllTransactions(walletItem.id, txRecords);
 
@@ -491,11 +522,12 @@ class NodeProvider extends ChangeNotifier {
       Map<int, BlockTimestamp> blockTimestampMap,
       WalletProvider walletProvider,
       {NodeClient? nodeClient,
-      List<Transaction> previousTxs = const []}) async {
+      List<Transaction> previousTxs = const [],
+      DateTime? now}) async {
     return Future.wait(txs.map((tx) async {
       return _createTransactionRecord(walletItemBase, tx, txBlockHeightMap,
           blockTimestampMap, walletProvider,
-          nodeClient: nodeClient, previousTxs: previousTxs);
+          nodeClient: nodeClient, previousTxs: previousTxs, now: now);
     }));
   }
 
@@ -507,22 +539,24 @@ class NodeProvider extends ChangeNotifier {
       Map<int, BlockTimestamp> blockTimestampMap,
       WalletProvider walletProvider,
       {NodeClient? nodeClient,
-      List<Transaction> previousTxs = const []}) async {
+      List<Transaction> previousTxs = const [],
+      DateTime? now}) async {
+    now ??= DateTime.now();
+
     final previousTxsResult =
         await _getPreviousTransactions(tx, previousTxs, nodeClient: nodeClient);
 
     if (previousTxsResult.isFailure) {
       throw ErrorCodes.fetchTransactionsError;
     }
-
+    int blockHeight = txBlockHeightMap[tx.transactionHash] ?? 0;
     final txDetails = _processTransactionDetails(
         tx, previousTxsResult.value, walletItemBase, walletProvider);
 
     return TransactionRecord.fromTransactions(
       transactionHash: tx.transactionHash,
-      timestamp:
-          blockTimestampMap[txBlockHeightMap[tx.transactionHash]!]!.timestamp,
-      blockHeight: txBlockHeightMap[tx.transactionHash]!,
+      timestamp: blockTimestampMap[blockHeight]?.timestamp ?? now,
+      blockHeight: blockHeight,
       inputAddressList: txDetails.inputAddressList,
       outputAddressList: txDetails.outputAddressList,
       transactionType: txDetails.txType.name,

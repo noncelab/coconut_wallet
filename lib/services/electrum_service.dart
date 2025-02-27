@@ -6,7 +6,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/script/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
@@ -139,7 +138,7 @@ class ElectrumService extends NodeClient {
 
     final [receive, change] = await Future.wait([
       Future.wait(receiveBalanceFutures),
-      Future.wait(changeBalanceFutures)
+      Future.wait(changeBalanceFutures),
     ]);
 
     int confirmed = 0;
@@ -158,7 +157,7 @@ class ElectrumService extends NodeClient {
     return (receive, change, Balance(confirmed, unconfirmed));
   }
 
-  Iterable<Future<AddressBalance>> _getBalance(
+  List<Future<AddressBalance>> _getBalance(
       WalletBase wallet, int scanLimit, bool isChange) {
     if (scanLimit == 0) return [];
     Map<int, String> addresses =
@@ -169,7 +168,7 @@ class ElectrumService extends NodeClient {
       var balanceRes = await _client.getBalance(script);
       return AddressBalance(
           balanceRes.confirmed, balanceRes.unconfirmed, entry.key);
-    });
+    }).toList();
   }
 
   @override
@@ -234,19 +233,17 @@ class ElectrumService extends NodeClient {
   @override
   Stream<BaseStreamState<Transaction>> fetchTransactions(
       Set<String> transactionHashes) async* {
-    Iterable<Stream<BaseStreamState<Transaction>>> streams =
+    List<Stream<BaseStreamState<Transaction>>> streams =
         transactionHashes.map((transactionHash) async* {
       try {
         var transaction = await _client.getTransaction(transactionHash);
-        Logger.log(
-            'fetchTransactions: $transactionHash - ${transaction.substring(0, 10)}');
         yield BaseStreamState<Transaction>.success(
             'fetchTransactionDetails', Transaction.parse(transaction));
       } catch (e, stack) {
         yield BaseStreamState<Transaction>.error(
             'fetchTransactionDetails', e.toString(), stack);
       }
-    });
+    }).toList();
 
     await for (final state in async.StreamGroup.merge(streams)) {
       yield state;
@@ -432,13 +429,13 @@ class ElectrumService extends NodeClient {
             final derivationPath =
                 '${walletItem.walletBase.derivationPath}/${isChange ? 1 : 0}/$derivationIndex';
             final status = await _client.subscribeScript(script,
-                onUpdate: (scriptPubkey, status) {
+                onUpdate: (reversedScriptHash, status) {
               final path = derivationPath;
               final now = DateTime.now();
               scriptStatusController.add((
                 walletItem: walletItem,
                 scriptStatus: ScriptStatus(
-                  scriptPubKey: scriptPubkey,
+                  scriptPubKey: script,
                   status: status,
                   timestamp: now,
                   derivationPath: path,

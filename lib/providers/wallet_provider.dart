@@ -476,6 +476,15 @@ class WalletProvider extends ChangeNotifier {
   List<TransactionRecord> getTransactionRecordList(int walletId) {
     return _walletDataManager.getTransactionRecordList(walletId);
   }
+
+  UtxoState? getUtxoState(int walletId, String utxoId) {
+    return _walletDataManager.getUtxoState(walletId, utxoId);
+  }
+
+  TransactionRecord? getTransactionRecord(
+      int walletId, String transactionHash) {
+    return _walletDataManager.getTransactionRecord(walletId, transactionHash);
+  }
 }
 
 class ResultOfSyncFromVault {

@@ -198,13 +198,13 @@ class ElectrumClient {
   }
 
   Future<String?> subscribeScript(String script,
-      {required Function(String, String) onUpdate}) async {
+      {required Function(String, String?) onUpdate}) async {
     var reversedScriptHash = _scriptToReversedHash(script);
     var response = await _call(
         _BlockchainScripthashSubscribeReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(result: json));
 
-    _socketManager.setSubscriptionCallback(script, onUpdate);
+    _socketManager.setSubscriptionCallback(reversedScriptHash, onUpdate);
 
     return response.result;
   }
@@ -215,7 +215,7 @@ class ElectrumClient {
         _BlockchainScripthashUnsubscribeReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(result: json));
 
-    _socketManager.removeSubscriptionCallback(script);
+    _socketManager.removeSubscriptionCallback(reversedScriptHash);
 
     return response.result;
   }
