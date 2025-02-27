@@ -155,8 +155,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   onPressed: () {
                                     CustomDialogs.showCustomAlertDialog(
                                       context,
-                                      title: '도움이 필요하신가요?',
-                                      message: '튜토리얼 사이트로\n안내해 드릴게요',
+                                      title: t.alert.tutorial.title,
+                                      message: t.alert.tutorial.description,
                                       onConfirm: () async {
                                         launchURL(
                                           'https://noncelab.gitbook.io/coconut.onl',
@@ -167,9 +167,10 @@ class _WalletListScreenState extends State<WalletListScreen>
                                       onCancel: () {
                                         Navigator.of(context).pop();
                                       },
-                                      confirmButtonText: '튜토리얼 보기',
+                                      confirmButtonText:
+                                          t.alert.tutorial.btn_view,
                                       confirmButtonColor: MyColors.cyanblue,
-                                      cancelButtonText: '닫기',
+                                      cancelButtonText: t.close,
                                     );
                                   },
                                   color: MyColors.white,
