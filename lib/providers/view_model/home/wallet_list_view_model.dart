@@ -19,6 +19,7 @@ class WalletListViewModel extends ChangeNotifier {
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
+  late WalletSyncingState _walletSyncingState;
   late WalletInitState _prevWalletInitState;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _transactionProvider;
@@ -40,7 +41,7 @@ class WalletListViewModel extends ChangeNotifier {
 
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
-    _prevWalletInitState = _walletProvider.walletInitState;
+    _walletSyncingState = _walletProvider.walletSyncingState;
     // TODO:
     _balanceSubscription =
         _walletProvider.balanceStream.stream.listen(_updateBalance);
@@ -123,22 +124,20 @@ class WalletListViewModel extends ChangeNotifier {
         (walletProvider.walletSyncingState == WalletSyncingState.completed ||
             walletProvider.walletSyncingState == WalletSyncingState.failed)) {
       _isFirstSyncFinished = true;
-      notifyListeners();
     }
 
     _walletProvider = walletProvider;
-
-    // TODO:
-    if (_prevWalletInitState != walletProvider.walletInitState) {
-      if (walletProvider.walletInitState == WalletInitState.finished) {
-        _onWalletInitStateFinished();
-      } else if (walletProvider.walletInitState == WalletInitState.error) {
-        _onWalletInitStateError();
-      }
-      _prevWalletInitState = walletProvider.walletInitState;
-    }
-
     notifyListeners();
+
+    if (_walletSyncingState != walletProvider.walletSyncingState) {
+      if (walletProvider.walletSyncingState == WalletSyncingState.completed) {
+        vibrateLight();
+      } else if (walletProvider.walletSyncingState ==
+          WalletSyncingState.failed) {
+        vibrateLightDouble();
+      }
+      _walletSyncingState = walletProvider.walletSyncingState;
+    }
   }
 
   void setIsBalanceHidden(bool value) {
@@ -150,13 +149,14 @@ class WalletListViewModel extends ChangeNotifier {
     await AppReviewService.increaseAppRunningCountIfRejected();
   }
 
-  void _onWalletInitStateError() {
-    vibrateLightDouble();
-  }
+  // TODO: sync가 처음
+  // void _onWalletInitStateError() {
+  //   vibrateLightDouble();
+  // }
 
-  void _onWalletInitStateFinished() {
-    vibrateLight();
-  }
+  // void _onWalletInitStateFinished() {
+  //   vibrateLight();
+  // }
 
   int? getWalletBalance(int id) {
     Logger.log('--> _walletBalance[id]');
