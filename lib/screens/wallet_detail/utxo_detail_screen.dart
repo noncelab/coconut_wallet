@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -13,7 +14,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_vi
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
@@ -25,7 +25,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const _divider = Divider(color: MyColors.transparentWhite_15);
+const _divider = Divider(color: CoconutColors.gray800);
 
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
@@ -91,7 +91,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       isScrollControlled: true,
       builder: (context) => TagBottomSheet(
         type: TagBottomSheetType.select,
@@ -116,7 +116,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     List<UtxoTag> selectedTags,
   ) {
     return Scaffold(
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -128,17 +128,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           child: Column(
             children: [
               _buildDateTime(viewModel.dateString),
-              const SizedBox(
-                height: 24,
-              ),
+              CoconutLayout.spacing_600h,
               _buildAmount(),
-              const SizedBox(
-                height: 8,
-              ),
+              CoconutLayout.spacing_200h,
               _buildPrice(),
+              CoconutLayout.spacing_200h,
               const SizedBox(height: 12),
-              _buildTransactionSection(viewModel, tx),
-              const SizedBox(height: 24),
+              _buildTxInputOutputSection(viewModel, tx),
+              CoconutLayout.spacing_200h,
               _buildAddress(),
               _buildTxMemo(
                 tx.memo,
@@ -151,9 +148,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               ),
               _buildTxId(),
               _buildBlockHeight(),
-              const SizedBox(
-                height: 40,
-              ),
+              CoconutLayout.spacing_1000h,
               _buildBalanceWidthCheck(),
             ],
           ),
@@ -163,30 +158,30 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return CustomAppBar.build(
+    return CoconutAppBar.build(
       title: t.utxo,
       context: context,
-      showTestnetLabel: false,
-      hasRightIcon: true,
       onBackPressed: () {
         Navigator.pop(context);
       },
-      rightIconButton: IconButton(
-        key: _utxoTooltipIconKey,
-        icon: SvgPicture.asset('assets/svg/question-mark.svg'),
-        onPressed: _toggleUtxoTooltip,
-      ),
+      actionButtonList: [
+        IconButton(
+          key: _utxoTooltipIconKey,
+          icon: SvgPicture.asset('assets/svg/question-mark.svg'),
+          onPressed: _toggleUtxoTooltip,
+        )
+      ],
     );
   }
 
-  Widget _buildTransactionSection(
+  Widget _buildTxInputOutputSection(
       UtxoDetailViewModel viewModel, TransactionRecord tx) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: MyColors.transparentWhite_12,
+        color: CoconutColors.gray800,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -242,7 +237,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildTooltip(BuildContext context) {
     return Positioned(
       top: _utxoTooltipIconPosition.dy + _utxoTooltipIconSize.height - 10,
-      right: 5,
+      right: 18,
       child: GestureDetector(
         onTap: _removeUtxoTooltip,
         child: ClipPath(
@@ -250,20 +245,15 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           child: Container(
             width: MediaQuery.sizeOf(context).width * 0.68,
             padding: const EdgeInsets.only(
-              top: 25,
-              left: 18,
-              right: 18,
-              bottom: 10,
+              top: 28,
+              left: 16,
+              right: 16,
+              bottom: 12,
             ),
-            color: MyColors.white,
-            child: Text(
-              t.tooltip.utxo,
-              style: Styles.caption.merge(TextStyle(
-                height: 1.3,
-                fontFamily: CustomFonts.text.getFontFamily,
-                color: MyColors.darkgrey,
-              )),
-            ),
+            color: CoconutColors.white,
+            child: Text(t.tooltip.utxo,
+                style: CoconutTypography.body3_12
+                    .copyWith(color: CoconutColors.gray900, height: 1.3)),
           ),
         ),
       ),
@@ -327,22 +317,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     return Text(
       key: _balanceWidthKey,
       '0.0000 0000',
-      style: Styles.body2Number.merge(
-        const TextStyle(
-            color: Colors.transparent, fontSize: 14, height: 16 / 14),
-      ),
+      style: CoconutTypography.body2_14_Number
+          .copyWith(color: Colors.transparent, height: 16 / 14),
     );
   }
 
   Widget _buildDateTime(List<String> timeString) {
     return HighlightedInfoArea(
-      textList: timeString,
-      textStyle: Styles.body2Number.merge(
-        const TextStyle(
-          color: MyColors.white,
-        ),
-      ),
-    );
+        textList: timeString, textStyle: CoconutTypography.body2_14_Number);
   }
 
   Widget _buildAmount() {
@@ -350,10 +332,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         child: RichText(
             text: TextSpan(
                 text: satoshiToBitcoinString(widget.utxo.amount),
-                style: Styles.h1Number
-                    .merge(const TextStyle(fontSize: 24, height: 1)),
+                style: CoconutTypography.heading3_21_NumberBold,
                 children: <TextSpan>[
-          TextSpan(text: " ${t.btc}", style: Styles.body2Number)
+          TextSpan(text: " ${t.btc}", style: CoconutTypography.body2_14_Number)
         ])));
   }
 
@@ -366,7 +347,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           bitcoinPriceKrw != null
               ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
               : '',
-          style: Styles.balance2,
+          style: CoconutTypography.body2_14_Number
+              .copyWith(color: CoconutColors.gray500),
         );
       },
     ));
@@ -392,10 +374,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                 const SizedBox(height: 2),
                 Text(
                   widget.utxo.derivationPath,
-                  style: Styles.caption.merge(const TextStyle(
-                      color: MyColors.white,
-                      height: 18 / 12,
-                      fontFamily: 'Pretendard')),
+                  style: CoconutTypography.body2_14
+                      .copyWith(color: CoconutColors.gray500),
                 )
               ],
             )),
@@ -411,7 +391,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           label: t.tx_memo,
           child: Text(
             memo?.isNotEmpty == true ? memo! : '-',
-            style: Styles.body2Number.merge(const TextStyle(height: 22 / 14)),
+            style: CoconutTypography.body2_14_Number,
           ),
         ),
         _divider
@@ -433,7 +413,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           },
           child: Text(
             widget.utxo.transactionHash,
-            style: Styles.body2Number.merge(const TextStyle(height: 22 / 14)),
+            style: CoconutTypography.body2_14_Number,
           ),
         ),
         _divider,
@@ -449,7 +429,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
         child: Text(
           widget.utxo.blockHeight.toString(),
-          style: Styles.body2Number.merge(const TextStyle(height: 22 / 14)),
+          style: CoconutTypography.body2_14_Number,
         ));
   }
 
@@ -466,12 +446,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (selectedTags.isEmpty) ...{
-                Text(
-                  '-',
-                  style: Styles.body2Number.merge(
-                    const TextStyle(height: 22 / 14),
-                  ),
-                ),
+                Text('-', style: CoconutTypography.body2_14_Number)
               } else ...{
                 Wrap(
                   spacing: 4,

@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 
 class CustomUnderlinedButton extends StatefulWidget {
@@ -66,25 +66,24 @@ class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
               bottom: BorderSide(
                   color: widget.isEnable
                       ? _isPressing
-                          ? widget.pressingColor ?? MyColors.transparentWhite_40
-                          : widget.defaultColor ?? MyColors.white
-                      : MyColors.transparentWhite_20,
+                          ? widget.pressingColor ?? CoconutColors.gray500
+                          : widget.defaultColor ?? CoconutColors.white
+                      : CoconutColors.white.withOpacity(0.2),
                   width: 0.5),
             ),
           ),
           child: Text(
             widget.text,
-            style: TextStyle(
-              // decoration: TextDecoration.underline, // 밑줄 설정
-              fontSize: widget.fontSize,
-              height: (widget.lineHeight ?? widget.fontSize) / widget.fontSize,
-              fontFamily: 'Pretendard',
-              color: widget.isEnable
-                  ? _isPressing
-                      ? widget.pressingColor ?? MyColors.transparentWhite_40
-                      : widget.defaultColor ?? MyColors.white
-                  : MyColors.transparentWhite_20,
-            ),
+            style: CoconutTypography.body3_12.copyWith(
+                // decoration: TextDecoration.underline, // 밑줄 설정
+                fontSize: widget.fontSize,
+                height:
+                    (widget.lineHeight ?? widget.fontSize) / widget.fontSize,
+                color: widget.isEnable
+                    ? _isPressing
+                        ? widget.pressingColor ?? CoconutColors.gray500
+                        : widget.defaultColor ?? CoconutColors.white
+                    : CoconutColors.white.withOpacity(0.2)),
           ),
         ),
       ),

@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/cupertino.dart';
@@ -29,15 +29,9 @@ class UnderlineButtonItemCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(children: [
-            Text(
-              label,
-              style: Styles.body2.merge(
-                const TextStyle(
-                  color: MyColors.transparentWhite_70,
-                  height: 21 / 14,
-                ),
-              ),
-            ),
+            Text(label,
+                style: CoconutTypography.body2_14
+                    .copyWith(color: CoconutColors.gray500)),
             const SizedBox(width: 6),
             if (isChangeTagVisible) const CustomChip(text: '잔돈'),
             if (underlineButtonLabel != null)

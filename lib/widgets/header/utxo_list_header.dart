@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
@@ -65,7 +64,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                           child: Text(
                             widget.balance != null
                                 ? satoshiToBitcoinString(widget.balance!)
-                                : "잔액 조회 불가",
+                                : t.fetch_balance_failed,
                             style: CoconutTypography.heading1_32_NumberBold,
                           ),
                         ),
@@ -81,9 +80,8 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                   if (widget.balance != null && widget.btcPriceInKrw != null)
                     Text(
                         '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.balance!, widget.btcPriceInKrw!).toDouble())}',
-                        style: Styles.subLabel.merge(TextStyle(
-                            fontFamily: CustomFonts.number.getFontFamily,
-                            color: MyColors.transparentWhite_70))),
+                        style: CoconutTypography.body1_16_Number
+                            .setColor(CoconutColors.gray500)),
                   CoconutLayout.spacing_400h,
                   Row(
                     children: [
@@ -101,11 +99,9 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                         child: Row(
                           children: [
                             Text(widget.selectedFilter,
-                                style: CoconutTypography.caption_10
+                                style: CoconutTypography.body3_12
                                     .setColor(CoconutColors.white)),
-                            const SizedBox(
-                              width: 5,
-                            ),
+                            CoconutLayout.spacing_200w,
                             SvgPicture.asset(
                               'assets/svg/arrow-down.svg',
                             ),

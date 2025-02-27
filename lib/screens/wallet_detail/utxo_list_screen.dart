@@ -7,7 +7,6 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/body/utxo_list_body.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
@@ -112,7 +111,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               child: Stack(
                 children: [
                   Scaffold(
-                    backgroundColor: MyColors.black,
+                    backgroundColor: CoconutColors.black,
                     appBar: CoconutAppBar.build(
                       entireWidgetKey: _appBarKey,
                       title: t.utxo_list,

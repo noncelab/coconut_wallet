@@ -1,5 +1,5 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
@@ -31,12 +31,10 @@ class InputOutputDetailRow extends StatelessWidget {
       children: [
         Text(
           TextUtils.truncate(address, 19, 11, 8),
-          style: Styles.body2Number.merge(
-            TextStyle(
-              color: rowProperty.leftItemColor,
-              fontSize: 14,
-              height: 16 / 14,
-            ),
+          style: CoconutTypography.body2_14_Number.copyWith(
+            color: rowProperty.leftItemColor,
+            fontSize: 14,
+            height: 16 / 14,
           ),
           maxLines: 1,
         ),
@@ -61,12 +59,9 @@ class InputOutputDetailRow extends StatelessWidget {
                   child: Text(
                     textAlign: TextAlign.end,
                     satoshiToBitcoinString(balance).normalizeTo11Characters(),
-                    style: Styles.body2Number.merge(
-                      TextStyle(
-                        color: rowProperty.rightItemColor,
-                        fontSize: 14,
-                        height: 16 / 14,
-                      ),
+                    style: CoconutTypography.body2_14_Number.copyWith(
+                      color: rowProperty.rightItemColor,
+                      height: 16 / 14,
                     ),
                   ),
                 ),
@@ -82,12 +77,9 @@ class InputOutputDetailRow extends StatelessWidget {
                   width: balanceMaxWidth,
                   child: Text(
                     satoshiToBitcoinString(balance).normalizeTo11Characters(),
-                    style: Styles.body2Number.merge(
-                      TextStyle(
-                        color: rowProperty.rightItemColor,
-                        fontSize: 14,
-                        height: 16 / 14,
-                      ),
+                    style: CoconutTypography.body2_14_Number.copyWith(
+                      color: rowProperty.rightItemColor,
+                      height: 16 / 14,
                     ),
                   ),
                 ),
@@ -113,9 +105,9 @@ class InputOutputDetailRow extends StatelessWidget {
     TransactionStatus? transactionStatus,
     bool isCurrentAddress,
   ) {
-    Color leftItemColor = MyColors.transparentWhite_40;
-    Color rightItemColor = MyColors.transparentWhite_40;
-    Color svgColor = MyColors.transparentWhite_40;
+    Color leftItemColor = CoconutColors.gray500;
+    Color rightItemColor = CoconutColors.gray500;
+    Color svgColor = CoconutColors.gray500;
 
     String svgPath = 'assets/svg/circle-arrow-right.svg';
 
@@ -133,11 +125,11 @@ class InputOutputDetailRow extends StatelessWidget {
 
       if (transactionStatus == TransactionStatus.sending ||
           transactionStatus == TransactionStatus.sent) {
-        leftItemColor = rightItemColor = svgColor = MyColors.primary;
+        leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
       } else if (transactionStatus == TransactionStatus.self ||
           transactionStatus == TransactionStatus.selfsending) {
-        leftItemColor = MyColors.white;
-        rightItemColor = svgColor = MyColors.primary;
+        leftItemColor = CoconutColors.white;
+        rightItemColor = svgColor = CoconutColors.primary;
       }
 
       return RowProperty(
@@ -155,44 +147,42 @@ class InputOutputDetailRow extends StatelessWidget {
         case TransactionStatus.receiving:
           if (rowType == InputOutputRowType.input) {
             if (!isCurrentAddress) {
-              leftItemColor =
-                  rightItemColor = svgColor = MyColors.transparentWhite_40;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.gray500;
             }
           } else {
             if (isCurrentAddress) {
-              leftItemColor = rightItemColor = svgColor = MyColors.secondary;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.cyan;
             } else {
-              leftItemColor =
-                  rightItemColor = svgColor = MyColors.transparentWhite_40;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.gray500;
             }
           }
           break;
         case TransactionStatus.sending:
         case TransactionStatus.sent:
           if (rowType == InputOutputRowType.input) {
-            leftItemColor = rightItemColor = svgColor = MyColors.white;
+            leftItemColor = rightItemColor = svgColor = CoconutColors.white;
           } else if (rowType == InputOutputRowType.output) {
             if (isCurrentAddress) {
-              leftItemColor = rightItemColor = svgColor = MyColors.white;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.white;
             } else {
-              leftItemColor = rightItemColor = svgColor = MyColors.primary;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
             }
           } else if (rowType == InputOutputRowType.fee) {
-            leftItemColor = rightItemColor = svgColor = MyColors.primary;
+            leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
           }
           break;
         case TransactionStatus.self:
         case TransactionStatus.selfsending:
           if (rowType == InputOutputRowType.input) {
             if (isCurrentAddress) {
-              leftItemColor = rightItemColor = svgColor = MyColors.white;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.white;
             }
           } else if (rowType == InputOutputRowType.fee) {
-            leftItemColor = MyColors.white;
+            leftItemColor = CoconutColors.white;
           } else {
             if (isCurrentAddress) {
-              leftItemColor = MyColors.white;
-              rightItemColor = svgColor = MyColors.secondary;
+              leftItemColor = CoconutColors.white;
+              rightItemColor = svgColor = CoconutColors.cyan;
             }
           }
           break;
@@ -200,7 +190,7 @@ class InputOutputDetailRow extends StatelessWidget {
     } else {
       /// transactionStatus가 null이면 UTXO 상세 화면
       if (rowType == InputOutputRowType.output && isCurrentAddress) {
-        leftItemColor = rightItemColor = svgColor = MyColors.white;
+        leftItemColor = rightItemColor = svgColor = CoconutColors.white;
       }
     }
     return RowProperty(
