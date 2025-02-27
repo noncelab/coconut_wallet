@@ -26,7 +26,6 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
-import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_terms_shortcut_card.dart';
@@ -45,6 +44,7 @@ class WalletListScreen extends StatefulWidget {
 
 class _WalletListScreenState extends State<WalletListScreen>
     with TickerProviderStateMixin {
+  final kTargetHeight = 30.0;
   bool _isDropdownMenuVisible = false;
 
   DateTime? _lastPressedAt;
@@ -206,10 +206,11 @@ class _WalletListScreenState extends State<WalletListScreen>
                             ),
                           ],
                           bottomWidget: PreferredSize(
-                            preferredSize:
-                                Size.fromHeight(Platform.isAndroid ? 20 : 20),
+                            preferredSize: const Size.fromHeight(20),
                             child: _topNetworkAlertWidget(
-                                viewModel.isNetworkOn == false ? 30 : 0),
+                                isNetworkOn: viewModel.isNetworkOn !=
+                                        null && // null일때 보이면 안됨
+                                    viewModel.isNetworkOn == true),
                           ),
                           appBarInnerMargin: viewModel.isNetworkOn == false
                               ? const EdgeInsets.symmetric(
@@ -312,29 +313,41 @@ class _WalletListScreenState extends State<WalletListScreen>
     );
   }
 
-  Widget _topNetworkAlertWidget(double height) {
-    return AnimatedContainer(
-      width: MediaQuery.sizeOf(context).width,
-      height: height,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOut,
-      alignment: Alignment.topCenter,
-      decoration: const BoxDecoration(color: CoconutColors.hotPink),
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+  PreferredSize _topNetworkAlertWidget({required bool isNetworkOn}) {
+    double targetHeight = isNetworkOn ? 0 : kTargetHeight;
+
+    return PreferredSize(
+      preferredSize: Size.fromHeight(kTargetHeight),
       child: SizedBox(
-        height: 30,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SvgPicture.asset('assets/svg/triangle-warning.svg'),
-            CoconutLayout.spacing_100w,
-            Text(
-              t.errors.network_not_found,
-              style: CoconutTypography.body3_12,
+        height: kTargetHeight,
+        width: double.infinity,
+        child: Stack(children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOut,
+              height: targetHeight,
+              child: Container(
+                color: CoconutColors.hotPink,
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset('assets/svg/triangle-warning.svg'),
+                    CoconutLayout.spacing_100w,
+                    Text(
+                      t.errors.network_not_found,
+                      style: CoconutTypography.body3_12,
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }
