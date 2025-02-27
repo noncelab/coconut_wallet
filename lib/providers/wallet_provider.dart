@@ -415,10 +415,6 @@ class WalletProvider extends ChangeNotifier {
   //   notifyListeners();
   // }
 
-  List<TransactionRecord>? getTxList(int walletId) {
-    return _walletDataManager.getTxList(walletId);
-  }
-
   /// WalletProvider 생성자에서 isNetworkOn은 null로 초기화 됩니다.
   /// 아직 앱 내에서 네트워크 상태가 확인이 안된 채로 지갑 동기화 함수가 호출됩니다.
   /// 따라서 네트워크 상태가 null -> true로 변경 되었을 때 지갑 동기화를 해줍니다.
