@@ -8,6 +8,7 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
+wallet: "Wallet"
 btc: "BTC"
 sats: "sats"
 testnet: "테스트넷"
@@ -260,6 +261,7 @@ errors:
   realm_exception: "Realm 작업 중 오류가 발생했습니다."
   node_unknown: "노드 연결 중 알 수 없는 오류가 발생했습니다."
   network_connect: "네트워크 연결이 없습니다."
+  network_not_found: "네트워크가 연결되어 있지 않아요!"
   insufficient_balance: "잔액이 부족해요."
   fee_selection_error:
     insufficient_balance: "잔액이 부족하여 수수료를 낼 수 없어요"

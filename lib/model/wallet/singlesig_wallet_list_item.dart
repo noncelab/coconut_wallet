@@ -9,7 +9,6 @@ class SinglesigWalletListItem extends WalletListItemBase {
       required super.colorIndex,
       required super.iconIndex,
       required super.descriptor,
-      super.balance,
       super.txCount,
       super.isLatestTxBlockHeightZero,
       super.receiveUsedIndex,
