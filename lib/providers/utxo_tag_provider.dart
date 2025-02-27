@@ -30,8 +30,6 @@ class UtxoTagProvider extends ChangeNotifier {
   List<String> get previousUtxoIds => _usedUtxoIds;
   bool get isTagsMoveAllowed => _isTagsMoveAllowed; // ??
 
-  bool isLoading = false;
-
   UtxoTagProvider() {
     _utxoTags = [];
   }
@@ -65,45 +63,44 @@ class UtxoTagProvider extends ChangeNotifier {
   }
 
   // 선택된 utxo를 제거하고, wallet Id에 해당하는 utxoTag 목록을 갱신
-  bool deleteUtxoTag(int walletId) {
-    if (_selectedUtxoTag != null) {
-      final result = _walletDataManager.deleteUtxoTag(_selectedUtxoTag!.id);
-      if (result.isSuccess) {
-        _utxoTags = getUtxoTagList(walletId);
-        _selectedUtxoTag = null;
-        _isUpdatedTagList = true;
-        notifyListeners();
-        return true;
-      } else {
-        Logger.log('---------------------------------------------------------');
-        Logger.log('deleteUtxoTag(utxoTag: $_selectedUtxoTag)');
-        Logger.log(result.error);
-      }
+  bool deleteUtxoTag(int walletId, UtxoTag utxoTag) {
+    final result = _walletDataManager.deleteUtxoTag(utxoTag.id);
+    if (result.isSuccess) {
+      _utxoTags = getUtxoTagList(walletId);
+      _selectedUtxoTag = null;
+      _isUpdatedTagList = true;
+      notifyListeners();
+      return true;
+    } else {
+      Logger.log('---------------------------------------------------------');
+      Logger.log('deleteUtxoTag(utxoTag: $_selectedUtxoTag)');
+      Logger.log(result.error);
     }
+
     return false;
   }
 
-  bool updateUtxoTag(int walletId, UtxoTag utxoTag) {
-    if (_selectedUtxoTag?.name.isNotEmpty == true) {
-      final result = _walletDataManager.updateUtxoTag(
-          utxoTag.id, utxoTag.name, utxoTag.colorIndex);
-      if (result.isSuccess) {
-        _utxoTags = getUtxoTagList(walletId);
-        _updatedTagName = utxoTag.name;
-        _selectedUtxoTag = _selectedUtxoTag?.copyWith(
-          name: utxoTag.name,
-          colorIndex: utxoTag.colorIndex,
-          utxoIdList: utxoTag.utxoIdList ?? [],
-        );
-        _isUpdatedTagList = true;
-        notifyListeners();
-        return true;
-      } else {
-        Logger.log('---------------------------------------------------------');
-        Logger.log('updateUtxoTag(utxoTag: $utxoTag)');
-        Logger.log(result.error);
-      }
+  bool updateUtxoTag(int walletId, UtxoTag utxoedTag) {
+    // if (_selectedUtxoTag?.name.isNotEmpty == true) {
+    final result = _walletDataManager.updateUtxoTag(
+        utxoedTag.id, utxoedTag.name, utxoedTag.colorIndex);
+    if (result.isSuccess) {
+      // _utxoTags = getUtxoTagList(walletId);
+      // _updatedTagName = utxoedTag.name;
+      // _selectedUtxoTag = _selectedUtxoTag?.copyWith(
+      //   name: utxoedTag.name,
+      //   colorIndex: utxoedTag.colorIndex,
+      //   utxoIdList: utxoedTag.utxoIdList ?? [],
+      // );
+      _isUpdatedTagList = true;
+      notifyListeners();
+      return true;
+    } else {
+      Logger.log('---------------------------------------------------------');
+      Logger.log('updateUtxoTag(utxoTag: $utxoedTag)');
+      Logger.log(result.error);
     }
+    // }
     return false;
   }
 

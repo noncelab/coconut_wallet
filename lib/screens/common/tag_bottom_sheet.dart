@@ -376,6 +376,8 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
         break;
       case TagBottomSheetType.create:
         _handleCreateTag();
+        widget.onUpdated?.call(_createdUtxoTags.first);
+        Navigator.pop(context);
         break;
       case TagBottomSheetType.update:
         _handleUpdateTag();
@@ -401,39 +403,16 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
       }
     });
 
-    // if (_callContext == TagBottomSheetType.select) {
-    //   debugPrint('select');
-    //   widget.onSelected?.call(_selectedUtxoTagNames, _createdUtxoTags);
-    // } else {
-    //   debugPrint('???? $_bottomSheetViewType : $createdUtxoTag');
-    //   widget.onUpdated?.call(createdUtxoTag);
-    // }
     _resetTagCreation();
-    // widget.onUpdated?.call(createdUtxoTag);
-    // Navigator.pop(context);
   }
 
   void _handleUpdateTag() {
     if (widget.updateUtxoTag != null) {
-      int tagIndex = _utxoTags.indexOf(widget.updateUtxoTag!);
-      _utxoTags[tagIndex] = _utxoTags[tagIndex]
-          .copyWith(name: _updateTagName, colorIndex: _updateTagColorIndex);
-
-      final updateUtxoTag = _updateUtxoTag?.copyWith(
+      final updateUtxoTag = widget.updateUtxoTag?.copyWith(
         name: _updateTagName,
         colorIndex: _updateTagColorIndex,
       );
-
-      // final updatedTag = _utxoTags[tagIndex].copyWith(
-      //   name: _updateTagName,
-      //   colorIndex: _updateTagColorIndex,
-      // );
-
-      // setState(() {
-      //   _utxoTags[tagIndex] = updatedTag;
-      // });
-
-      // widget.onUpdated?.call(updateUtxoTag!);
+      widget.onUpdated?.call(updateUtxoTag!);
       Navigator.pop(context);
     }
   }
