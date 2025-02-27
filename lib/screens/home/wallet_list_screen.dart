@@ -207,7 +207,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                             bottomWidget: PreferredSize(
                               preferredSize: const Size.fromHeight(20),
                               child: _topNetworkAlertWidget(
-                                  isNetworkOn: viewModel.isNetworkOn != null &&
+                                  isNetworkOn: viewModel.isNetworkOn == null ||
                                       viewModel.isNetworkOn == true),
                             ),
                             appBarInnerMargin: viewModel.isNetworkOn == false
