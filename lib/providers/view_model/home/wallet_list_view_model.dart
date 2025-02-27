@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
@@ -12,7 +11,6 @@ import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
@@ -21,6 +19,7 @@ class WalletListViewModel extends ChangeNotifier {
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
+  late WalletSyncingState _walletSyncingState;
   late WalletInitState _prevWalletInitState;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _transactionProvider;
@@ -28,6 +27,7 @@ class WalletListViewModel extends ChangeNotifier {
   final Map<int, int> _walletBalance = {};
   late StreamSubscription<Map<int, Balance>> _balanceSubscription;
   bool _isFirstSyncFinished = false;
+  late bool? _isNetworkOn;
 
   WalletListViewModel(
     this._walletProvider,
@@ -41,10 +41,12 @@ class WalletListViewModel extends ChangeNotifier {
 
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
-    _prevWalletInitState = _walletProvider.walletInitState;
+    _walletSyncingState = _walletProvider.walletSyncingState;
     // TODO:
     _balanceSubscription =
         _walletProvider.balanceStream.stream.listen(_updateBalance);
+
+    _isNetworkOn = _connectivityProvider.isNetworkOn;
   }
 
   void _updateBalance(Map<int, Balance?> newBalance) {
@@ -61,17 +63,13 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
-  bool get shouldShowLoadingIndicator =>
-      walletLoadCompleted && !_isFirstSyncFinished;
-
-  bool get walletLoadCompleted =>
-      _walletProvider.walletLoadState == WalletLoadState.loadCompleted;
+  bool get shouldShowLoadingIndicator => !_isFirstSyncFinished;
   int get lastUpdateTime => _walletProvider.lastUpdateTime;
   String? get walletInitErrorMessage =>
       _walletProvider.walletInitError?.message;
   WalletInitState get walletInitState => _walletProvider.walletInitState;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
-  bool? get isNetworkOn => _connectivityProvider.isNetworkOn;
+  bool? get isNetworkOn => _isNetworkOn;
 
   void hideTermsShortcut() {
     _isTermsShortcutVisible = false;
@@ -115,31 +113,31 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshWallets() async {
-    if (!walletLoadCompleted) return;
+    if (_walletProvider.walletLoadState != WalletLoadState.loadCompleted)
+      return;
 
     await _walletProvider.syncWalletData();
   }
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
     if (!_isFirstSyncFinished &&
-        walletProvider.walletSyncingState == WalletSyncingState.finished) {
+        (walletProvider.walletSyncingState == WalletSyncingState.completed ||
+            walletProvider.walletSyncingState == WalletSyncingState.failed)) {
       _isFirstSyncFinished = true;
-      notifyListeners();
     }
 
     _walletProvider = walletProvider;
-
-    // TODO:
-    if (_prevWalletInitState != walletProvider.walletInitState) {
-      if (walletProvider.walletInitState == WalletInitState.finished) {
-        _onWalletInitStateFinished();
-      } else if (walletProvider.walletInitState == WalletInitState.error) {
-        _onWalletInitStateError();
-      }
-      _prevWalletInitState = walletProvider.walletInitState;
-    }
-
     notifyListeners();
+
+    if (_walletSyncingState != walletProvider.walletSyncingState) {
+      if (walletProvider.walletSyncingState == WalletSyncingState.completed) {
+        vibrateLight();
+      } else if (walletProvider.walletSyncingState ==
+          WalletSyncingState.failed) {
+        vibrateLightDouble();
+      }
+      _walletSyncingState = walletProvider.walletSyncingState;
+    }
   }
 
   void setIsBalanceHidden(bool value) {
@@ -151,21 +149,17 @@ class WalletListViewModel extends ChangeNotifier {
     await AppReviewService.increaseAppRunningCountIfRejected();
   }
 
-  void _onWalletInitStateError() {
-    vibrateLightDouble();
-  }
-
-  void _onWalletInitStateFinished() {
-    vibrateLight();
-  }
-
   int? getWalletBalance(int id) {
-    Logger.log('--> _walletBalance[id]');
     return _walletBalance[id];
     //return _walletProvider.getWalletBalance(id);
   }
 
   void onNodeProviderUpdated() {
+    notifyListeners();
+  }
+
+  void updateIsNetworkOn(bool? isNetworkOn) {
+    _isNetworkOn = isNetworkOn;
     notifyListeners();
   }
 

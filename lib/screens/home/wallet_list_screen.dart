@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/cupertino.dart';
@@ -73,28 +74,25 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider5<
-        WalletProvider,
-        PreferenceProvider,
-        VisibilityProvider,
-        NodeProvider,
-        ConnectivityProvider,
-        WalletListViewModel>(
+    return ChangeNotifierProxyProvider4<WalletProvider, PreferenceProvider,
+        VisibilityProvider, ConnectivityProvider, WalletListViewModel>(
       create: (_) => _viewModel,
       update: (BuildContext context,
           WalletProvider walletProvider,
           PreferenceProvider preferenceProvider,
           VisibilityProvider visibilityProvider,
-          NodeProvider nodeProvider,
           ConnectivityProvider connectivityProvider,
           WalletListViewModel? previous) {
         if (previous!.isBalanceHidden != preferenceProvider.isBalanceHidden) {
           previous.setIsBalanceHidden(preferenceProvider.isBalanceHidden);
         }
 
-        return previous
-          ..onWalletProviderUpdated(walletProvider)
-          ..onNodeProviderUpdated();
+        if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
+          previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
+        }
+
+        // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
+        return previous..onWalletProviderUpdated(walletProvider);
       },
       child:
           Consumer<WalletListViewModel>(builder: (context, viewModel, child) {
@@ -154,25 +152,83 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   colorFilter: const ColorFilter.mode(
                                       MyColors.white, BlendMode.srcIn),
                                 ),
-                                onPressed: () {
-                                  CustomDialogs.showCustomAlertDialog(
-                                    context,
-                                    title: '도움이 필요하신가요?',
-                                    message: '튜토리얼 사이트로\n안내해 드릴게요',
-                                    onConfirm: () async {
-                                      launchURL(
-                                        'https://noncelab.gitbook.io/coconut.onl',
-                                        defaultMode: false,
-                                      );
-                                      Navigator.of(context).pop();
-                                    },
-                                    onCancel: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    confirmButtonText: '튜토리얼 보기',
-                                    confirmButtonColor: MyColors.cyanblue,
-                                    cancelButtonText: '닫기',
-                                  );
+                              onPressed: () {
+                                CustomDialogs.showCustomAlertDialog(
+                                  context,
+                                  title: '도움이 필요하신가요?',
+                                  message: '튜토리얼 사이트로\n안내해 드릴게요',
+                                  onConfirm: () async {
+                                    launchURL(
+                                      'https://noncelab.gitbook.io/coconut.onl',
+                                      defaultMode: false,
+                                    );
+                                    Navigator.of(context).pop();
+                                  },
+                                  onCancel: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  confirmButtonText: '튜토리얼 보기',
+                                  confirmButtonColor: MyColors.cyanblue,
+                                  cancelButtonText: '닫기',
+                                );
+                              },
+                              color: MyColors.white,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 40,
+                            width: 40,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.add_rounded,
+                              ),
+                              onPressed: () {
+                                _onAddScannerPressed();
+                              },
+                              color: MyColors.white,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 40,
+                            width: 40,
+                            child: IconButton(
+                              icon:
+                                  const Icon(CupertinoIcons.ellipsis, size: 18),
+                              onPressed: () {
+                                setState(() {
+                                  _isDropdownMenuVisible = true;
+                                });
+                              },
+                              color: MyColors.white,
+                            ),
+                          ),
+                        ],
+                        bottomWidget: PreferredSize(
+                          preferredSize: const Size.fromHeight(30),
+                          child: _topNetworkAlertWidget(
+                              isNetworkOn: viewModel.isNetworkOn != null && viewModel.isNetworkOn == true),
+                        ),
+                      ),
+                      // Pull to refresh, refresh indicator(hide)
+                      if (!viewModel.shouldShowLoadingIndicator) ...{
+                        CupertinoSliverRefreshControl(
+                          onRefresh: viewModel.refreshWallets,
+                        )
+                      },
+                      // 용어집, 바로 추가하기, loading indicator
+                      SliverToBoxAdapter(
+                          child: Column(
+                        children: [
+                          if (viewModel.shouldShowLoadingIndicator) ...{
+                            _topLoadingIndicatorWidget()
+                          },
+                          if (!viewModel.shouldShowLoadingIndicator) ...{
+                            if (viewModel.isTermsShortcutVisible)
+                              WalletListTermsShortcutCard(
+                                onTap: () {
+                                  CommonBottomSheets.showBottomSheet_90(
+                                      context: context,
+                                      child: const TermsBottomSheet());
                                 },
                                 color: MyColors.white,
                               ),
@@ -265,8 +321,6 @@ class _WalletListScreenState extends State<WalletListScreen>
                             }),
                           ),
                         ),
-                      ],
-                    ),
                     Visibility(
                       visible: _isDropdownMenuVisible,
                       child: Stack(
@@ -308,8 +362,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                   ],
                 ),
               ),
-            ));
-      }),
+            ),);
+      },),
     );
   }
 
@@ -352,12 +406,12 @@ class _WalletListScreenState extends State<WalletListScreen>
     );
   }
 
-  Widget _topLoadingIndicatorWidget(bool isLoading) {
+  Widget _topLoadingIndicatorWidget() {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
       child: Container(
-        height: isLoading ? null : 0,
+        height: null,
         padding: const EdgeInsets.symmetric(vertical: 16.0),
         child: const CupertinoActivityIndicator(
           color: MyColors.white,
