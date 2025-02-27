@@ -285,6 +285,17 @@ class NodeProvider extends ChangeNotifier {
       final now = DateTime.now();
       Logger.log(
           'HandleScriptStatusChanged: ${params.walletItem.name} - ${params.scriptStatus.derivationPath}');
+
+      // 지갑 인덱스 업데이트
+      int receiveUsedIndex = params.scriptStatus.isChange
+          ? params.walletItem.receiveUsedIndex
+          : params.scriptStatus.index;
+      int changeUsedIndex = params.scriptStatus.isChange
+          ? params.scriptStatus.index
+          : params.walletItem.changeUsedIndex;
+      _walletDataManager.updateWalletUsedIndex(
+          params.walletItem, receiveUsedIndex, changeUsedIndex);
+
       // Balance 동기화
       await _fetchScriptBalance(params.walletItem, params.scriptStatus);
 
@@ -456,11 +467,13 @@ class NodeProvider extends ChangeNotifier {
       return;
     }
 
-    final txBlockHeightMap = Map<String, int>.fromEntries(
-        txFetchResults.map((tx) => MapEntry(tx.transactionHash, tx.height)));
+    final txBlockHeightMap = Map<String, int>.fromEntries(txFetchResults
+        .where((tx) => tx.height > 0)
+        .map((tx) => MapEntry(tx.transactionHash, tx.height)));
 
-    final blockTimestampMap =
-        await _mainClient.getBlocksByHeight(txBlockHeightMap.values.toSet());
+    final blockTimestampMap = txBlockHeightMap.isEmpty
+        ? <int, BlockTimestamp>{}
+        : await _mainClient.getBlocksByHeight(txBlockHeightMap.values.toSet());
 
     final transactionFuture = await _mainClient
         .fetchTransactions(
@@ -536,16 +549,14 @@ class NodeProvider extends ChangeNotifier {
     if (previousTxsResult.isFailure) {
       throw ErrorCodes.fetchTransactionsError;
     }
-
+    int blockHeight = txBlockHeightMap[tx.transactionHash] ?? 0;
     final txDetails = _processTransactionDetails(
         tx, previousTxsResult.value, walletItemBase, walletProvider);
 
     return TransactionRecord.fromTransactions(
       transactionHash: tx.transactionHash,
-      timestamp:
-          blockTimestampMap[txBlockHeightMap[tx.transactionHash]]?.timestamp ??
-              now,
-      blockHeight: txBlockHeightMap[tx.transactionHash]!,
+      timestamp: blockTimestampMap[blockHeight]?.timestamp ?? now,
+      blockHeight: blockHeight,
       inputAddressList: txDetails.inputAddressList,
       outputAddressList: txDetails.outputAddressList,
       transactionType: txDetails.txType.name,

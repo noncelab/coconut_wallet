@@ -429,13 +429,13 @@ class ElectrumService extends NodeClient {
             final derivationPath =
                 '${walletItem.walletBase.derivationPath}/${isChange ? 1 : 0}/$derivationIndex';
             final status = await _client.subscribeScript(script,
-                onUpdate: (scriptPubkey, status) {
+                onUpdate: (reversedScriptHash, status) {
               final path = derivationPath;
               final now = DateTime.now();
               scriptStatusController.add((
                 walletItem: walletItem,
                 scriptStatus: ScriptStatus(
-                  scriptPubKey: scriptPubkey,
+                  scriptPubKey: script,
                   status: status,
                   timestamp: now,
                   derivationPath: path,
