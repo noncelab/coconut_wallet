@@ -154,6 +154,8 @@ class NodeProvider extends ChangeNotifier {
     } catch (e) {
       _initCompleter?.completeError(e);
       rethrow;
+    } finally {
+      notifyListeners();
     }
   }
 
