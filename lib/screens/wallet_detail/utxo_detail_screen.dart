@@ -93,7 +93,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       backgroundColor: CoconutColors.black,
       isScrollControlled: true,
       builder: (context) => TagBottomSheet(
-        type: TagBottomSheetType.select,
+        type: TagBottomSheetType.attach,
         utxoTags: tags,
         selectedUtxoTagNames: selectedTags.map((e) => e.name).toList(),
         onSelected: (selectedNames, addTags) {

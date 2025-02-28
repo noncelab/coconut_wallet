@@ -15,10 +15,10 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 /// [TagBottomSheetType]
-/// - [select] : 태그 목록 선택 변경 및 새 태그 생성
+/// - [attach] : 태그 목록 선택 변경 및 새 태그 생성
 /// - [create] : 새 태그 생성
 /// - [update] : 선택된 태그 수정
-enum TagBottomSheetType { select, create, update }
+enum TagBottomSheetType { attach, create, update }
 
 // Usage:
 // utxo_detail_screen.dart
@@ -111,7 +111,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
 
   void _resetTagCreation() {
     setState(() {
-      _bottomSheetViewType = TagBottomSheetType.select;
+      _bottomSheetViewType = TagBottomSheetType.attach;
       _controller.text = '';
       _updateTagName = '';
       _updateTagColorIndex = 0;
@@ -137,7 +137,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                   _updateTagName.isNotEmpty &&
                   !_utxoTags.any((tag) => tag.name == _updateTagName) &&
                   !_controller.text.endsWith(' ')
-              : _bottomSheetViewType == TagBottomSheetType.select
+              : _bottomSheetViewType == TagBottomSheetType.attach
                   ? _isSelectButtonEnabled
                   : _isUpdateButtonEnabled,
           onBackPressed: () {
@@ -166,7 +166,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 24),
-                _bottomSheetViewType == TagBottomSheetType.select
+                _bottomSheetViewType == TagBottomSheetType.attach
                     ? _buildTagSelectionView()
                     : _buildTagCreationView(),
               ],
@@ -364,12 +364,12 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
 
   void _handleButtonPressed() {
     switch (_callContext) {
-      case TagBottomSheetType.select:
+      case TagBottomSheetType.attach:
         if (_bottomSheetViewType == TagBottomSheetType.create) {
           _handleCreateTag();
-          _bottomSheetViewType = TagBottomSheetType.select;
+          _bottomSheetViewType = TagBottomSheetType.attach;
           _isSelectButtonEnabled = true;
-        } else if (_bottomSheetViewType == TagBottomSheetType.select) {
+        } else if (_bottomSheetViewType == TagBottomSheetType.attach) {
           widget.onSelected?.call(_selectedUtxoTagNames, _createdUtxoTags);
           Navigator.pop(context);
         }

@@ -27,7 +27,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: TagBottomSheet(
-          type: TagBottomSheetType.select,
+          type: TagBottomSheetType.attach,
           utxoTags: mockTags,
           selectedUtxoTagNames: mockSelectedTags,
           onSelected: (utxoTagNames, createdUtxoTags) {
