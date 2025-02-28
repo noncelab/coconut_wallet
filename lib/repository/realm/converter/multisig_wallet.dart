@@ -3,9 +3,7 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
 MultisigWalletListItem mapRealmMultisigWalletToMultisigWalletListItem(
-    RealmMultisigWallet realmMultisigWallet,
-    String? decryptedDescriptor,
-    int balance) {
+    RealmMultisigWallet realmMultisigWallet, String? decryptedDescriptor) {
   return MultisigWalletListItem(
       id: realmMultisigWallet.id,
       name: realmMultisigWallet.walletBase!.name,
@@ -16,7 +14,6 @@ MultisigWalletListItem mapRealmMultisigWalletToMultisigWalletListItem(
       signers: MultisigSigner.fromJsonList(
           realmMultisigWallet.signersInJsonSerialization),
       requiredSignatureCount: realmMultisigWallet.requiredSignatureCount,
-      balance: balance,
       txCount: realmMultisigWallet.walletBase!.txCount,
       isLatestTxBlockHeightZero:
           realmMultisigWallet.walletBase!.isLatestTxBlockHeightZero,

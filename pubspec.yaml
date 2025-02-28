@@ -218,6 +218,7 @@ flutter:
     - assets/svg/row-divider.svg
     - assets/svg/check.svg
     - assets/svg/coins.svg
+    - assets/svg/triangle-warning.svg
 
 
   fonts:

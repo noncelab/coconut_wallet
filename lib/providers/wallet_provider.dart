@@ -1,3 +1,8 @@
+import 'dart:async';
+import 'dart:collection';
+import 'dart:math';
+
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -8,11 +13,21 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
+import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
+
+enum WalletLoadState {
+  never,
+  loadingFromDB,
+  loadCompleted,
+}
+
+/// failed: 네트워크가 꺼져있을 때
+enum WalletSyncingState { never, syncing, completed, failed }
 
 /// Represents the initialization state of a wallet. 처음 초기화 때만 사용하지 않고 refresh 할 때도 사용합니다.
 enum WalletInitState {
@@ -28,9 +43,6 @@ enum WalletInitState {
   /// An error occurred during wallet initialization.
   error,
 
-  /// waiting for device's network state value.
-  networkWaiting,
-
   /// Update impossible (node connection finally failed)
   impossible,
 }
@@ -38,9 +50,11 @@ enum WalletInitState {
 class WalletProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
-  // 잔액 갱신 전 local db에서 지갑 목록 조회를 끝냈는지 여부
-  bool _isWalletsLoadedFromDb = false;
-  bool get isWalletsLoadedFromDb => _isWalletsLoadedFromDb;
+  WalletLoadState _walletLoadState = WalletLoadState.never;
+  WalletLoadState get walletLoadState => _walletLoadState;
+
+  WalletSyncingState _walletSyncingState = WalletSyncingState.never;
+  WalletSyncingState get walletSyncingState => _walletSyncingState;
 
   // init 결과를 알리는 Toast는 "wallet_list_screen"에서 호출합니다.
   WalletInitState _walletInitState = WalletInitState.never;
@@ -54,6 +68,9 @@ class WalletProvider extends ChangeNotifier {
   List<WalletListItemBase> _walletItemList = [];
   List<WalletListItemBase> get walletItemList => _walletItemList;
 
+  final Map<int, Balance> _walletBalance = {};
+  Map<int, Balance> get walletBalance => UnmodifiableMapView(_walletBalance);
+
   /// 마지막 업데이트 시간
   int _lastUpdateTime = 0;
   int get lastUpdateTime => _lastUpdateTime;
@@ -62,16 +79,119 @@ class WalletProvider extends ChangeNotifier {
 
   late final WalletDataManager _walletDataManager;
 
-  late final Future<void> Function(int) _setWalletCount;
+  late final Future<void> Function(int) _saveWalletCount;
   late final bool _isSetPin;
 
+  late final NodeProvider _nodeProvider;
+  late bool _isNodeProviderInitialized;
+  // TODO:
+  final StreamController<Map<int, Balance>> _balanceStream =
+      StreamController<Map<int, Balance>>();
+  StreamController<Map<int, Balance>> get balanceStream => _balanceStream;
+
   WalletProvider(this._walletDataManager, this._isNetworkOn,
-      this._setWalletCount, this._isSetPin) {
-    initWallet().catchError((_) {
-      Logger.error(_);
+      this._saveWalletCount, this._isSetPin, this._nodeProvider) {
+    _nodeProvider.addListener(_onNodeProviderStateUpdated);
+    _isNodeProviderInitialized = _nodeProvider.isInitialized;
+    _loadWalletListFromDB().then((_) {
+      _syncWalletData();
     });
-    _lastUpdateTime =
-        _sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
+
+    // initWallet().catchError((_) {
+    //   Logger.error(_);
+    // });
+    // _lastUpdateTime =
+    //     _sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
+  }
+
+  void _onNodeProviderStateUpdated() {
+    Logger.log('--> [_onNodeProviderStateUpdated()]');
+    if (!_isNodeProviderInitialized && _nodeProvider.isInitialized) {
+      Logger.log(
+          '--> _nodeProvider.isInitialized: ${_nodeProvider.isInitialized}');
+      _isNodeProviderInitialized = true;
+      _syncWalletData();
+    }
+
+    Logger.log('--> connectionState: ${_nodeProvider.state.connectionState}');
+
+    if (_nodeProvider.state.updatedWallets.isNotEmpty) {
+      for (var key in _nodeProvider.state.updatedWallets.keys) {
+        Logger.log(
+            '--> $key ${_nodeProvider.state.updatedWallets[key]!.balance}');
+        if (_nodeProvider.state.updatedWallets[key]!.balance ==
+            UpdateTypeState.completed) {
+          fetchWalletBalance(key);
+        }
+      }
+    }
+    Logger.log('\n');
+  }
+
+  Future<void> _loadWalletListFromDB() async {
+    // 두 번 이상 호출 될 필요 없는 함수
+    assert(_walletLoadState == WalletLoadState.never);
+
+    _walletLoadState = WalletLoadState.loadingFromDB;
+
+    try {
+      Logger.log(
+          '--> _walletDataManager.isInitialized: ${_walletDataManager.isInitialized}');
+      if (!_walletDataManager.isInitialized) {
+        await _walletDataManager.init(_isSetPin);
+      }
+      _walletItemList = await _walletDataManager.loadWalletsFromDB();
+      _walletLoadState = WalletLoadState.loadCompleted;
+    } catch (e) {
+      // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
+      // 앱 삭제 후 재설치 했는데 위 에러가 발생하는 경우가 있습니다.
+      // unhandle
+      rethrow;
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> _syncWalletData() async {
+    if (_walletLoadState != WalletLoadState.loadCompleted ||
+        !_isNodeProviderInitialized) {
+      Logger.log('--> walletLoad, nodeProvider 준비 안됨');
+      return;
+    }
+
+    if (_walletSyncingState == WalletSyncingState.syncing) {
+      return;
+    }
+    if (_isNetworkOn == null) {
+      Logger.log('--> 네트워크 상태 확인 중이어서 sync 못함');
+      return;
+    }
+    if (_isNetworkOn == false) {
+      Logger.log('--> 네트워크가 꺼져있어서 sync 실패');
+      _walletSyncingState = WalletSyncingState.failed;
+      return;
+    }
+    _walletSyncingState = WalletSyncingState.syncing;
+    notifyListeners();
+    try {
+      for (var wallet in _walletItemList) {
+        await _nodeProvider.subscribeWallet(wallet, this);
+      }
+
+      for (var wallet in _walletItemList) {
+        fetchWalletBalance(wallet.id);
+      }
+
+      // await Future.delayed(const Duration(seconds: 2));
+      //await _updateBalances();
+      // TODO: syncFromNetwork other data.
+      _walletSyncingState = WalletSyncingState.completed;
+    } catch (e) {
+      Logger.error(e);
+      _walletSyncingState = WalletSyncingState.failed;
+    } finally {
+      notifyListeners();
+    }
   }
 
   Future<void> _setLastUpdateTime() async {
@@ -84,7 +204,7 @@ class WalletProvider extends ChangeNotifier {
   /// 네트워크가 끊겼을 때 처리할 로직
   void handleNetworkDisconnected() {
     if (_walletInitState == WalletInitState.finished) return;
-    setWalletInitState(WalletInitState.error, error: ErrorCodes.networkError);
+    //setWalletInitState(WalletInitState.error, error: ErrorCodes.networkError);
   }
 
   /// 지갑 목록 화면에서 '마지막 업데이트' 일시를 보여주기 위해,
@@ -94,65 +214,71 @@ class WalletProvider extends ChangeNotifier {
     assert(targetId == null || exceptionalId == null,
         'targetId and exceptionalId cannot be used at the same time');
 
-    if (_walletInitState == WalletInitState.processing &&
-        exceptionalId == null) {
-      Logger.log(">>>>> !!!!!!!!!!!!!!!!!!! initWallet 중복 실행 방지");
-      return;
-    }
-    bool isFirstInit = _walletInitState == WalletInitState.never;
-    setWalletInitState(WalletInitState.processing);
+    // if (_walletInitState == WalletProviderState.processing &&
+    //     exceptionalId == null) {
+    //   Logger.log(">>>>> !!!!!!!!!!!!!!!!!!! initWallet 중복 실행 방지");
+    //   return;
+    // }
+    // bool isFirstInit = _walletInitState == WalletProviderState.never;
+    // setWalletInitState(WalletProviderState.processing);
 
-    try {
-      Logger.log(">>>>> ===================== initWallet 시작 $_walletInitError");
-      // 처음 앱을 실행했거나, storageReadError가 발생한 경우 재시도
-      if (isFirstInit ||
-          (_walletInitError != null &&
-              _walletInitError!.code == ErrorCodes.storageReadError.code)) {
-        Logger.log(">>>>> 1. _loadWalletFromLocal");
-        await _loadWalletFromLocal();
-      }
+    // try {
+    //   Logger.log(">>>>> ===================== initWallet 시작 $_walletInitError");
+    //   // 처음 앱을 실행했거나, storageReadError가 발생한 경우 재시도
+    //   if (isFirstInit ||
+    //       (_walletInitError != null &&
+    //           _walletInitError!.code == ErrorCodes.storageReadError.code)) {
+    //     Logger.log(">>>>> 1. _loadWalletFromLocal");
+    //     await _loadWalletFromLocal();
+    //   }
 
-      // 네트워크 확인이 완료된 후 다음 과정 진행
-      if (_isNetworkOn == null) {
-        Logger.log(">>>>> ===================== initWallet 끝 (네트워크 확인 전)");
-        setWalletInitState(WalletInitState.networkWaiting);
-        return;
-      }
+    //   // 지갑 로드 시 최소 gapLimit 만큼 주소 생성
+    //   for (var walletItem in _walletItemList) {
+    //     await generateWalletAddress(walletItem, -1, false);
+    //     await generateWalletAddress(walletItem, -1, true);
+    //   }
 
-      if (_isNetworkOn == false) {
-        setWalletInitState(WalletInitState.error,
-            error: ErrorCodes.networkError);
-        return;
-      }
+    //   // 네트워크 확인이 완료된 후 다음 과정 진행
+    //   if (_isNetworkOn == null) {
+    //     Logger.log(">>>>> ===================== initWallet 끝 (네트워크 확인 전)");
+    //     setWalletInitState(WalletProviderState.networkWaiting);
+    //     return;
+    //   }
 
-      if (_isNetworkOn == true) {
-        // 1개만 업데이트 (하지만 나머지 지갑들도 업데이트 함)
-        if (targetId != null) {
-          Logger.log(">>>>> 3. _fetchWalletLatestInfo id: $targetId");
-          // 나머지 지갑들도 업데이트
-          if (syncOthers) {
-            initWallet(exceptionalId: targetId);
-          } else {
-            setWalletInitState(WalletInitState.finished);
-          }
-          return;
-        }
+    //   if (_isNetworkOn == false) {
+    //     setWalletInitState(WalletProviderState.error,
+    //         error: ErrorCodes.networkError);
+    //     return;
+    //   }
 
-        Logger.log(
-            ">>>>> 3. _fetchWalletLatestInfo (exceptionalId: $exceptionalId)");
-      }
+    //   if (_isNetworkOn == true) {
+    //     // 1개만 업데이트 (하지만 나머지 지갑들도 업데이트 함)
+    //     if (targetId != null) {
+    //       Logger.log(">>>>> 3. _fetchWalletLatestInfo id: $targetId");
+    //       // 나머지 지갑들도 업데이트
+    //       if (syncOthers) {
+    //         initWallet(exceptionalId: targetId);
+    //       } else {
+    //         setWalletInitState(WalletProviderState.finished);
+    //       }
+    //       return;
+    //     }
 
-      setWalletInitState(WalletInitState.finished);
-      // notifyListeners(); ^ setWalletInitState 안에서 실행되어서 주석처리 했습니다.
-      _setLastUpdateTime();
+    //     Logger.log(
+    //         ">>>>> 3. _fetchWalletLatestInfo (exceptionalId: $exceptionalId)");
+    //   }
 
-      Logger.log(">>>>> ===================== initWallet 정상 끝");
-    } catch (e) {
-      Logger.log(
-          ">>>>> ===================== initWallet catch!! notifyListeners() ${e.toString()}");
-      notifyListeners();
-      rethrow; // TODO: check
-    }
+    //   setWalletInitState(WalletProviderState.finished);
+    //   // notifyListeners(); ^ setWalletInitState 안에서 실행되어서 주석처리 했습니다.
+    //   _setLastUpdateTime();
+
+    //   Logger.log(">>>>> ===================== initWallet 정상 끝");
+    // } catch (e) {
+    //   Logger.log(
+    //       ">>>>> ===================== initWallet catch!! notifyListeners() ${e.toString()}");
+    //   notifyListeners();
+    //   rethrow; // TODO: check
+    // }
   }
 
   WalletListItemBase getWalletById(int id) {
@@ -170,10 +296,10 @@ class WalletProvider extends ChangeNotifier {
   Future<ResultOfSyncFromVault> syncFromVault(
       WatchOnlyWallet watchOnlyWallet) async {
     // _walletList 동시 변경 방지를 위해 상태 확인 후 sync 진행하기
-    while (_walletInitState == WalletInitState.never ||
-        _walletInitState == WalletInitState.processing) {
-      await Future.delayed(const Duration(seconds: 2));
-    }
+    // while (_walletInitState == WalletInitState.never ||
+    //     _walletInitState == WalletInitState.processing) {
+    //   await Future.delayed(const Duration(seconds: 2));
+    // }
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
     final index = _walletItemList.indexWhere(
@@ -186,16 +312,9 @@ class WalletProvider extends ChangeNotifier {
       result = WalletSyncResult.existingWalletNoUpdate;
 
       // case 2: 변경 사항 체크하며 업데이트
-      if (_hasChanged(_walletItemList[index], watchOnlyWallet)) {
-        try {
-          _walletDataManager.updateWalletUI(
-              _walletItemList[index].id, watchOnlyWallet);
-        } catch (e) {
-          setWalletInitState(WalletInitState.error,
-              error: ErrorCodes.withMessage(
-                  ErrorCodes.storageWriteError, e.toString()));
-          rethrow;
-        }
+      if (_hasChangedOfUI(_walletItemList[index], watchOnlyWallet)) {
+        _walletDataManager.updateWalletUI(
+            _walletItemList[index].id, watchOnlyWallet);
 
         _walletItemList[index] = _walletDataManager.walletList[index];
         List<WalletListItemBase> updatedList = List.from(_walletItemList);
@@ -223,8 +342,9 @@ class WalletProvider extends ChangeNotifier {
       newItem = await _walletDataManager.addSinglesigWallet(watchOnlyWallet);
     }
 
-    generateWalletAddress(newItem, -1, false);
-    generateWalletAddress(newItem, -1, true);
+    await _nodeProvider.subscribeWallet(newItem, this);
+    //await generateWalletAddress(newItem, -1, false);
+    //await generateWalletAddress(newItem, -1, true);
 
     //final newItem = await _createNewWallet(walletSync, isMultisig);
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
@@ -232,24 +352,31 @@ class WalletProvider extends ChangeNotifier {
     _walletItemList = updatedList;
 
     if (result == WalletSyncResult.newWalletAdded) {
-      // TODO: 화면에서
-      // setAnimatedWalletFlags(
-      //     index: _walletItemList.length - 1,
-      //     type: WalletSyncResult.newWalletAdded);
-      //if (!_subStateModel.isNotEmptyWalletList) {
-      _setWalletCount(updatedList.length);
-      //_subStateModel.saveNotEmptyWalletList(true);
-      //}
+      _saveWalletCount(updatedList.length);
     }
 
-    await initWallet(targetId: newItem.id, syncOthers: false);
+    // TODO:
+    // fetchWalletBalance(newItem.id);
 
-    notifyListeners();
+    //await initWallet(targetId: newItem.id, syncOthers: false);
+
+    // notifyListeners();
     return ResultOfSyncFromVault(result: result, walletId: newItem.id);
   }
 
+  // TODO: 특정 지갑의 잔액 갱신
+  Future<void> fetchWalletBalance(int walletId) async {
+    final Balance balance = getWalletBalance(walletId);
+    _walletBalance[walletId] = balance;
+
+    // notify
+    _balanceStream.add({walletId: balance});
+    // TODO: 이미 balanceStream을 제공하므로 notifyListeners 불필요할 수 있음.
+    // notifyListeners();
+  }
+
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
-  bool _hasChanged(
+  bool _hasChangedOfUI(
       WalletListItemBase existingWallet, WatchOnlyWallet watchOnlyWallet) {
     bool hasChanged = false;
 
@@ -284,7 +411,7 @@ class WalletProvider extends ChangeNotifier {
     _walletItemList = List.from(_walletDataManager.walletList);
     //_walletItemList = _walletDataManager.walletList;
     _walletDataManager.deleteAllUtxoTag(walletId);
-    _setWalletCount(_walletItemList.length);
+    _saveWalletCount(_walletItemList.length);
     //if (_walletItemList.isEmpty) {
     //_subStateModel.saveNotEmptyWalletList(false);
     //}
@@ -292,95 +419,59 @@ class WalletProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setWalletInitState(WalletInitState state, {AppError? error}) {
-    assert(state != WalletInitState.never);
-    if (state == WalletInitState.error) {
-      assert(error != null,
-          'error must not be null when walletInitState is error');
-      _walletInitError = error;
-    }
+  // void setWalletInitState(WalletInitState state, {AppError? error}) {
+  //   assert(state != WalletInitState.never);
+  //   if (state == WalletInitState.error) {
+  //     assert(error != null,
+  //         'error must not be null when walletInitState is error');
+  //     _walletInitError = error;
+  //   }
 
-    if (_walletInitState == state) {
-      return;
-    }
+  //   if (_walletInitState == state) {
+  //     return;
+  //   }
 
-    if (state == WalletInitState.finished) {
-      assert(
-          error == null, 'error must be null when walletInitState is finished');
-      _walletInitError = null;
-    }
-    _walletInitState = state;
+  //   if (state == WalletInitState.finished) {
+  //     assert(
+  //         error == null, 'error must be null when walletInitState is finished');
+  //     _walletInitError = null;
+  //   }
+  //   _walletInitState = state;
 
-    // 상태 변화에 따른 UI 변경 때문에 호출하게 됨.
-    notifyListeners();
-  }
+  //   // 상태 변화에 따른 UI 변경 때문에 호출하게 됨.
+  //   notifyListeners();
+  // }
 
-  // secure storage에 저장된 지갑 목록을 불러옵니다.
-  Future<void> _loadWalletFromLocal() async {
-    List<WalletListItemBase> wallets;
-    try {
-      Logger.log(
-          '--> _walletDataManager.isInitialized: ${_walletDataManager.isInitialized}');
-      if (!_walletDataManager.isInitialized) {
-        await _walletDataManager.init(_isSetPin);
-      }
-      wallets = await _walletDataManager.loadWalletsFromDB();
-    } catch (e) {
-      // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
-      // 앱 삭제 후 재설치 했는데 위 에러가 발생하는 경우가 있습니다.
-      setWalletInitState(WalletInitState.error,
-          error: ErrorCodes.withMessage(
-              ErrorCodes.storageReadError, e.toString()));
-      _onFinallyLoadingWalletsFromDb();
-      return;
-    }
-
-    if (wallets.isEmpty) {
-      _onFinallyLoadingWalletsFromDb();
-      return;
-    }
-
-    _walletItemList = wallets;
-    //_animatedWalletFlags = List.filled(_walletItemList.length, null);
-    //_subStateModel.saveNotEmptyWalletList(_walletItemList.isNotEmpty);
-    // for wallet_list_screen
-    _onFinallyLoadingWalletsFromDb();
-  }
-
-  void _onFinallyLoadingWalletsFromDb() {
-    if (!_isWalletsLoadedFromDb) {
-      _isWalletsLoadedFromDb = true;
-      notifyListeners();
-    }
-  }
-
-  /// 네트워크가 꺼지면 네트워크를 해제함.
+  /// WalletProvider 생성자에서 isNetworkOn은 null로 초기화 됩니다.
+  /// 아직 앱 내에서 네트워크 상태가 확인이 안된 채로 지갑 동기화 함수가 호출됩니다.
+  /// 따라서 네트워크 상태가 null -> true로 변경 되었을 때 지갑 동기화를 해줍니다.
   void setIsNetworkOn(bool? isNetworkOn) {
     if (_isNetworkOn == isNetworkOn) return;
-
-    if (_isNetworkOn == null && isNetworkOn == true) {
+    // 네트워크 상태가 확인됨
+    if (_isNetworkOn == null && isNetworkOn != null) {
       _isNetworkOn = isNetworkOn;
-      initWallet().catchError((_) {
-        Logger.error(_);
-      });
+      _syncWalletData();
       return;
     }
 
     _isNetworkOn = isNetworkOn;
-
-    if (isNetworkOn == false) {
-      handleNetworkDisconnected();
-      notifyListeners();
-    }
+    // if (isNetworkOn == false) {
+    //   handleNetworkDisconnected();
+    //   notifyListeners();
+    // }
   }
 
   Balance getWalletBalance(int walletId) {
-    return _walletDataManager.getWalletBalance(walletId);
+    final realmBalance = _walletDataManager.getWalletBalance(walletId);
+    return Balance(
+      realmBalance.confirmed,
+      realmBalance.unconfirmed,
+    );
   }
 
-  void generateWalletAddress(
-      WalletListItemBase walletItem, int usedIndex, bool isChange) {
-    _walletDataManager.ensureAddressesExist(
+  Future<void> generateWalletAddress(
+      WalletListItemBase walletItem, int usedIndex, bool isChange) async {
+    await _walletDataManager.ensureAddressesExist(
         walletItemBase: walletItem,
         cursor: usedIndex,
         count: gapLimit,
@@ -484,6 +575,13 @@ class WalletProvider extends ChangeNotifier {
   TransactionRecord? getTransactionRecord(
       int walletId, String transactionHash) {
     return _walletDataManager.getTransactionRecord(walletId, transactionHash);
+  }
+
+  @override
+  void dispose() {
+    _nodeProvider.removeListener(_onNodeProviderStateUpdated);
+    _balanceStream.close();
+    super.dispose();
   }
 }
 

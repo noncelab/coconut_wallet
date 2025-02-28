@@ -1,14 +1,21 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -21,7 +28,6 @@ import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/widgets/appbar/frosted_appbar.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_terms_shortcut_card.dart';
@@ -30,8 +36,6 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_terms_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
-import 'package:coconut_wallet/widgets/wallet_init_status_indicator.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 
 class WalletListScreen extends StatefulWidget {
   const WalletListScreen({super.key});
@@ -42,8 +46,6 @@ class WalletListScreen extends StatefulWidget {
 
 class _WalletListScreenState extends State<WalletListScreen>
     with TickerProviderStateMixin {
-  // WalletInitState가 finished가 되고 몇 초 후에 일시를 보여줄지 여부
-  bool _isLastUpdateTimeVisible = false;
   bool _isDropdownMenuVisible = false;
 
   DateTime? _lastPressedAt;
@@ -73,21 +75,24 @@ class _WalletListScreenState extends State<WalletListScreen>
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider4<WalletProvider, PreferenceProvider,
-        VisibilityProvider, NodeProvider, WalletListViewModel>(
+        VisibilityProvider, ConnectivityProvider, WalletListViewModel>(
       create: (_) => _viewModel,
       update: (BuildContext context,
           WalletProvider walletProvider,
           PreferenceProvider preferenceProvider,
           VisibilityProvider visibilityProvider,
-          NodeProvider nodeProvider,
+          ConnectivityProvider connectivityProvider,
           WalletListViewModel? previous) {
         if (previous!.isBalanceHidden != preferenceProvider.isBalanceHidden) {
           previous.setIsBalanceHidden(preferenceProvider.isBalanceHidden);
         }
 
-        return previous
-          ..onWalletProviderUpdated(walletProvider)
-          ..onNodeProviderUpdated();
+        if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
+          previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
+        }
+
+        // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
+        return previous..onWalletProviderUpdated(walletProvider);
       },
       child:
           Consumer<WalletListViewModel>(builder: (context, viewModel, child) {
@@ -122,55 +127,99 @@ class _WalletListScreenState extends State<WalletListScreen>
                     semanticChildCount: viewModel.walletItemList.length,
                     slivers: <Widget>[
                       // Appbar
-                      FrostedAppBar(
-                        onTapSeeMore: () {
-                          setState(() {
-                            _isDropdownMenuVisible = true;
-                          });
-                        },
-                        onTapAddScanner: () async {
-                          _onAddScannerPressed();
-                        },
-                      ),
-                      // Pull to refresh, refresh indicator(hide)
-                      CupertinoSliverRefreshControl(
-                        onRefresh: () async {
-                          _syncWalletsFromNetwork();
-                        },
-                      ),
-                      // Update Status, update indicator
-                      SliverToBoxAdapter(
-                        child: Selector<WalletListViewModel, WalletInitState>(
-                          selector: (_, selectorModel) =>
-                              selectorModel.walletInitState,
-                          builder: (context, state, child) {
-                            return Visibility(
-                              visible: viewModel.walletItemList.isNotEmpty,
-                              child: WalletInitStatusIndicator(
-                                  state: state,
-                                  onTap: _syncWalletsFromNetwork,
-                                  isLastUpdateTimeVisible:
-                                      state != WalletInitState.processing
-                                          ? _isLastUpdateTimeVisible
-                                          : false,
-                                  lastUpdateTime: viewModel.lastUpdateTime),
-                            );
-                          },
+                      CoconutAppBar.buildHomeAppbar(
+                        context: context,
+                        leadingSvgAsset: SvgPicture.asset(
+                            'assets/svg/coconut.svg',
+                            color: MyColors.white,
+                            width: 24),
+                        appTitle: t.wallet,
+                        actionButtonList: [
+                          Container(
+                            height: 40,
+                            width: 40,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: IconButton(
+                              icon: SvgPicture.asset(
+                                'assets/svg/book.svg',
+                                width: 18,
+                                height: 18,
+                                colorFilter: const ColorFilter.mode(
+                                    MyColors.white, BlendMode.srcIn),
+                              ),
+                              onPressed: () {
+                                CustomDialogs.showCustomAlertDialog(
+                                  context,
+                                  title: '도움이 필요하신가요?',
+                                  message: '튜토리얼 사이트로\n안내해 드릴게요',
+                                  onConfirm: () async {
+                                    launchURL(
+                                      'https://noncelab.gitbook.io/coconut.onl',
+                                      defaultMode: false,
+                                    );
+                                    Navigator.of(context).pop();
+                                  },
+                                  onCancel: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  confirmButtonText: '튜토리얼 보기',
+                                  confirmButtonColor: MyColors.cyanblue,
+                                  cancelButtonText: '닫기',
+                                );
+                              },
+                              color: MyColors.white,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 40,
+                            width: 40,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.add_rounded,
+                              ),
+                              onPressed: () {
+                                _onAddScannerPressed();
+                              },
+                              color: MyColors.white,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 40,
+                            width: 40,
+                            child: IconButton(
+                              icon:
+                                  const Icon(CupertinoIcons.ellipsis, size: 18),
+                              onPressed: () {
+                                setState(() {
+                                  _isDropdownMenuVisible = true;
+                                });
+                              },
+                              color: MyColors.white,
+                            ),
+                          ),
+                        ],
+                        bottomWidget: PreferredSize(
+                          preferredSize: const Size.fromHeight(30),
+                          child: _topNetworkAlertWidget(
+                              viewModel.isNetworkOn ?? true),
                         ),
                       ),
+                      // Pull to refresh, refresh indicator(hide)
+                      if (!viewModel.shouldShowLoadingIndicator) ...{
+                        CupertinoSliverRefreshControl(
+                          onRefresh: viewModel.refreshWallets,
+                        )
+                      },
                       // 용어집, 바로 추가하기, loading indicator
                       SliverToBoxAdapter(
                           child: Column(
                         children: [
-                          if (!viewModel.isWalletsLoadedFromDb) ...{
-                            const Padding(
-                              padding: EdgeInsets.only(top: 40.0),
-                              child: CupertinoActivityIndicator(
-                                color: MyColors.white,
-                                radius: 20,
-                              ),
-                            ),
-                          } else ...{
+                          if (viewModel.shouldShowLoadingIndicator) ...{
+                            _topLoadingIndicatorWidget()
+                          },
+                          if (!viewModel.shouldShowLoadingIndicator) ...{
                             if (viewModel.isTermsShortcutVisible)
                               WalletListTermsShortcutCard(
                                 onTap: () {
@@ -244,6 +293,51 @@ class _WalletListScreenState extends State<WalletListScreen>
     );
   }
 
+  Widget _topNetworkAlertWidget(bool isNetworkOn) {
+    return AnimatedContainer(
+      width: MediaQuery.sizeOf(context).width,
+      height: isNetworkOn ? 0 : 30,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+      alignment: Alignment.topCenter,
+      decoration: const BoxDecoration(color: CoconutColors.hotPink),
+      constraints: BoxConstraints(
+        maxHeight: isNetworkOn ? 0 : 50,
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: SizedBox(
+        height: 30,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SvgPicture.asset('assets/svg/triangle-warning.svg'),
+            CoconutLayout.spacing_100w,
+            Text(
+              t.errors.network_not_found,
+              style: CoconutTypography.body3_12,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _topLoadingIndicatorWidget() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      child: Container(
+        height: null,
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: const CupertinoActivityIndicator(
+          color: MyColors.white,
+          radius: 14,
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -261,6 +355,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       Provider.of<PreferenceProvider>(context, listen: false).isBalanceHidden,
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
+      Provider.of<ConnectivityProvider>(context, listen: false),
     );
 
     _scrollController = ScrollController();
@@ -312,35 +407,6 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
   }
 
-  void _syncWalletsFromNetwork() {
-    setState(() {
-      _isLastUpdateTimeVisible = false;
-    });
-
-    if (_viewModel.walletItemList.isNotEmpty) {
-      _viewModel.initWallet().catchError((_, stackTrace) {
-        Logger.log('--> error catch');
-        Logger.error(_);
-        Logger.error(stackTrace);
-      }).whenComplete(() {
-        Logger.log('---> wallet state: ${_viewModel.walletInitState}');
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_viewModel.walletInitState == WalletInitState.error) {
-            CustomToast.showWarningToast(
-                context: context,
-                text: _viewModel.walletInitErrorMessage!,
-                seconds: 7);
-          }
-          if (_viewModel.walletInitState == WalletInitState.finished) {
-            _displayLastUpdateTimeAfterFourSeconds();
-          } else {
-            setState(() => _isLastUpdateTimeVisible = false);
-          }
-        });
-      });
-    }
-  }
-
   Future _animateWalletBlink() async {
     /// 변경사항이 업데이트된 경우 해당 카드에 깜빡임 효과를 부여합니다.
     final int walletId = _resultOfSyncFromVault!.walletId!;
@@ -386,7 +452,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         colorIndex: colorIndex,
       ) = viewModel.walletItemList[index];
       final base = viewModel.walletItemList[index];
-      final balance = viewModel.getWalletBalance(id);
+      final int? balance = viewModel.getWalletBalance(id);
 
       List<MultisigSigner>? signers;
       if (base.walletType == WalletType.multiSignature) {
@@ -397,7 +463,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         key: _itemKeys[index],
         id: id,
         name: name,
-        balance: balance.total,
+        balance: balance,
         iconIndex: iconIndex,
         colorIndex: colorIndex,
         isLastItem: index == viewModel.walletItemList.length - 1,
@@ -406,42 +472,41 @@ class _WalletListScreenState extends State<WalletListScreen>
       );
 
       switch (_resultOfSyncFromVault?.result) {
-        case WalletSyncResult.newWalletAdded:
-          if (index == viewModel.walletItemList.length - 1) {
-            // todo: balance 업데이트 함수 호출 필요
-            Logger.log('newWalletAdded');
-            _initializeLeftSlideAnimationController();
-            return SlideTransition(
-                position: _slideAnimation!, child: walletItemCard);
-          }
-
-          break;
-        case WalletSyncResult.existingWalletUpdated:
-          if (viewModel.walletItemList[index].id ==
-              _resultOfSyncFromVault?.walletId!) {
-            Logger.log('existingWalletUpdated');
-            _initializeBlinkAnimationController();
-            return Stack(
-              children: [
-                walletItemCard,
-                IgnorePointer(
-                  child: AnimatedBuilder(
-                    animation: _blinkAnimation!,
-                    builder: (context, child) {
-                      return Container(
-                        decoration: BoxDecoration(
-                            color: _blinkAnimation!.value,
-                            borderRadius: BorderRadius.circular(28)),
-                        width: itemCardWidth,
-                        height: itemCardHeight,
-                      );
-                    },
-                  ),
-                )
-              ],
-            );
-          }
-          break;
+        // case WalletSyncResult.newWalletAdded:
+        //   if (index == viewModel.walletItemList.length - 1) {
+        //     // todo: balance 업데이트 함수 호출 필요
+        //     Logger.log('newWalletAdded');
+        //     _initializeLeftSlideAnimationController();
+        //     return SlideTransition(
+        //         position: _slideAnimation!, child: walletItemCard);
+        //   }
+        //   break;
+        // case WalletSyncResult.existingWalletUpdated:
+        // if (viewModel.walletItemList[index].id ==
+        //     _resultOfSyncFromVault?.walletId!) {
+        //   Logger.log('existingWalletUpdated');
+        //   _initializeBlinkAnimationController();
+        //   return Stack(
+        //     children: [
+        //       walletItemCard,
+        //       IgnorePointer(
+        //         child: AnimatedBuilder(
+        //           animation: _blinkAnimation!,
+        //           builder: (context, child) {
+        //             return Container(
+        //               decoration: BoxDecoration(
+        //                   color: _blinkAnimation!.value,
+        //                   borderRadius: BorderRadius.circular(28)),
+        //               width: itemCardWidth,
+        //               height: itemCardHeight,
+        //             );
+        //           },
+        //         ),
+        //       )
+        //     ],
+        //   );
+        // }
+        // break;
         default:
           return walletItemCard;
       }
@@ -510,15 +575,15 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
 
     if (_resultOfSyncFromVault == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_resultOfSyncFromVault!.result == WalletSyncResult.newWalletAdded) {
-        await _animateWalletSlideLeft();
-      } else {
-        await _animateWalletBlink();
-      }
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   if (_resultOfSyncFromVault!.result == WalletSyncResult.newWalletAdded) {
+    //     await _animateWalletSlideLeft();
+    //   } else {
+    //     await _animateWalletBlink();
+    //   }
 
-      _resultOfSyncFromVault = null;
-    });
+    //   _resultOfSyncFromVault = null;
+    // });
   }
 
   void _scrollToBottom() async {
@@ -572,16 +637,5 @@ class _WalletListScreenState extends State<WalletListScreen>
         }
       }
     });
-  }
-
-  /// WalletInitState.finished 이후 4초 뒤 마지막 업데이트 시간을 보여줌
-  Future _displayLastUpdateTimeAfterFourSeconds() async {
-    if (_isLastUpdateTimeVisible) return;
-    await Future.delayed(const Duration(seconds: 4));
-    if (mounted) {
-      setState(() {
-        _isLastUpdateTimeVisible = true;
-      });
-    }
   }
 }
