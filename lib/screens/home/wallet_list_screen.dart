@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
@@ -9,9 +10,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,7 +18,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
@@ -34,7 +32,6 @@ import 'package:coconut_wallet/screens/home/wallet_list_onboarding_bottom_sheet.
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_terms_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 
 class WalletListScreen extends StatefulWidget {
   const WalletListScreen({super.key});
@@ -108,7 +105,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                         const Duration(seconds: 3)) {
                   _lastPressedAt = now;
                   Fluttertoast.showToast(
-                    backgroundColor: MyColors.grey,
+                    backgroundColor: CoconutColors.gray800,
                     msg: t.toast.back_exit,
                     toastLength: Toast.LENGTH_SHORT,
                   );
@@ -118,7 +115,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               }
             },
             child: Scaffold(
-              backgroundColor: MyColors.black,
+              backgroundColor: CoconutColors.black,
               extendBodyBehindAppBar: true,
               body: SafeArea(
                 top: false,
@@ -134,7 +131,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                             context: context,
                             leadingSvgAsset: SvgPicture.asset(
                                 'assets/svg/coconut.svg',
-                                color: MyColors.white,
+                                color: CoconutColors.white,
                                 width: 24),
                             appTitle: t.wallet,
                             actionButtonList: [
@@ -150,30 +147,35 @@ class _WalletListScreenState extends State<WalletListScreen>
                                     width: 18,
                                     height: 18,
                                     colorFilter: const ColorFilter.mode(
-                                        MyColors.white, BlendMode.srcIn),
+                                        CoconutColors.white, BlendMode.srcIn),
                                   ),
                                   onPressed: () {
-                                    CustomDialogs.showCustomAlertDialog(
-                                      context,
-                                      title: t.alert.tutorial.title,
-                                      message: t.alert.tutorial.description,
-                                      onConfirm: () async {
-                                        launchURL(
-                                          'https://noncelab.gitbook.io/coconut.onl',
-                                          defaultMode: false,
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return CoconutPopup(
+                                          title: t.alert.tutorial.title,
+                                          description:
+                                              t.alert.tutorial.description,
+                                          onTapRight: () async {
+                                            launchURL(
+                                              TUTORIAL_URL,
+                                              defaultMode: false,
+                                            );
+                                            Navigator.of(context).pop();
+                                          },
+                                          onTapLeft: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                          rightButtonText:
+                                              t.alert.tutorial.btn_view,
+                                          rightButtonColor: CoconutColors.cyan,
+                                          leftButtonText: t.close,
                                         );
-                                        Navigator.of(context).pop();
                                       },
-                                      onCancel: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                      confirmButtonText:
-                                          t.alert.tutorial.btn_view,
-                                      confirmButtonColor: MyColors.cyanblue,
-                                      cancelButtonText: t.close,
                                     );
                                   },
-                                  color: MyColors.white,
+                                  color: CoconutColors.white,
                                 ),
                               ),
                               SizedBox(
@@ -186,7 +188,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   onPressed: () {
                                     _onAddScannerPressed();
                                   },
-                                  color: MyColors.white,
+                                  color: CoconutColors.white,
                                 ),
                               ),
                               SizedBox(
@@ -200,7 +202,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                       _isDropdownMenuVisible = true;
                                     });
                                   },
-                                  color: MyColors.white,
+                                  color: CoconutColors.white,
                                 ),
                               ),
                             ],
@@ -279,21 +281,25 @@ class _WalletListScreenState extends State<WalletListScreen>
                           ),
                           Align(
                             alignment: Alignment.topRight,
-                            child: CustomDropdown(
+                            child: Container(
                               margin: EdgeInsets.only(
-                                  top: (84 +
-                                          MediaQuery.of(context).padding.top) -
-                                      (MediaQuery.of(context).padding.top / 2),
+                                  top:
+                                      (84 + MediaQuery.of(context).padding.top),
                                   right: 20),
-                              backgroundColor: MyColors.grey,
-                              buttons: _dropdownButtons,
-                              dividerIndex: 3,
-                              onTapButton: (index) {
-                                setState(() {
-                                  _isDropdownMenuVisible = false;
-                                });
-                                _dropdownActions[index].call();
-                              },
+                              color: CoconutColors.gray900,
+                              child: CoconutPulldownMenu(
+                                shadowColor: CoconutColors.gray800,
+                                dividerColor: CoconutColors.gray800,
+                                dividerPointColor: CoconutColors.gray700,
+                                buttons: _dropdownButtons,
+                                dividerIndex: 3,
+                                onTap: ((index) {
+                                  setState(() {
+                                    _isDropdownMenuVisible = false;
+                                  });
+                                  _dropdownActions[index].call();
+                                }),
+                              ),
                             ),
                           ),
                         ],
@@ -356,7 +362,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         height: null,
         padding: const EdgeInsets.symmetric(vertical: 16.0),
         child: const CupertinoActivityIndicator(
-          color: MyColors.white,
+          color: CoconutColors.white,
           radius: 14,
         ),
       ),
@@ -403,7 +409,7 @@ class _WalletListScreenState extends State<WalletListScreen>
             context: context,
             child: const OnboardingBottomSheet(),
             enableDrag: false,
-            backgroundColor: MyColors.nero,
+            backgroundColor: CoconutColors.gray900,
             isDismissible: false,
             isScrollControlled: true,
             useSafeArea: false,
@@ -418,7 +424,7 @@ class _WalletListScreenState extends State<WalletListScreen>
             context: context,
             child: const UserExperienceSurveyBottomSheet(),
             enableDrag: false,
-            backgroundColor: MyColors.nero,
+            backgroundColor: CoconutColors.gray900,
             isDismissible: false,
             isScrollControlled: true,
             useSafeArea: false,
@@ -554,13 +560,13 @@ class _WalletListScreenState extends State<WalletListScreen>
         TweenSequenceItem(
           tween: ColorTween(
             begin: Colors.transparent,
-            end: MyColors.transparentWhite_20,
+            end: CoconutColors.white.withOpacity(0.2),
           ),
           weight: 50,
         ),
         TweenSequenceItem(
           tween: ColorTween(
-            begin: MyColors.transparentWhite_20,
+            begin: CoconutColors.white.withOpacity(0.2),
             end: Colors.transparent,
           ),
           weight: 50,
