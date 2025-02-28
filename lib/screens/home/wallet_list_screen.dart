@@ -606,15 +606,15 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
 
     if (_resultOfSyncFromVault == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_resultOfSyncFromVault!.result == WalletSyncResult.newWalletAdded) {
-        await _animateWalletSlideLeft();
-      } else {
-        await _animateWalletBlink();
-      }
+    // WidgetsBinding.instance.addPostFrameCallback((_) async {
+    //   if (_resultOfSyncFromVault!.result == WalletSyncResult.newWalletAdded) {
+    //     await _animateWalletSlideLeft();
+    //   } else {
+    //     await _animateWalletBlink();
+    //   }
 
-      _resultOfSyncFromVault = null;
-    });
+    //   _resultOfSyncFromVault = null;
+    // });
   }
 
   void _scrollToBottom() async {

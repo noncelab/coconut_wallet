@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/model/script/script_status.dart';
+import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -19,71 +22,6 @@ import 'package:coconut_wallet/services/network/node_client.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
-
-/// 갱신된 데이터 종류
-enum UpdateType { balance, utxo, transaction }
-
-/// 갱신된 데이터의 상태
-enum UpdateTypeState { syncing, completed }
-
-/// 메인 소켓의 상태, 지갑 중 어느 하나라도 동기화 중이면 syncing, 모두 동기화 완료면 waiting로 변경
-enum MainClientState { waiting, syncing, disconnected }
-
-/// 갱신된 데이터 정보를 담는 클래스
-class WalletUpdateInfo {
-  final int walletId;
-  UpdateTypeState balance;
-  UpdateTypeState utxo;
-  UpdateTypeState transaction;
-
-  WalletUpdateInfo(this.walletId,
-      {this.balance = UpdateTypeState.completed,
-      this.transaction = UpdateTypeState.completed,
-      this.utxo = UpdateTypeState.completed});
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is WalletUpdateInfo &&
-          walletId == other.walletId &&
-          balance == other.balance &&
-          utxo == other.utxo &&
-          transaction == other.transaction;
-
-  @override
-  int get hashCode => Object.hash(walletId, balance, utxo, transaction);
-
-  factory WalletUpdateInfo.fromExisting(WalletUpdateInfo existingInfo,
-      {UpdateTypeState? balance,
-      UpdateTypeState? transaction,
-      UpdateTypeState? utxo}) {
-    return WalletUpdateInfo(existingInfo.walletId,
-        balance: balance ?? existingInfo.balance,
-        transaction: transaction ?? existingInfo.transaction,
-        utxo: utxo ?? existingInfo.utxo);
-  }
-}
-
-/// NodeProvider 상태 정보를 담는 클래스
-class NodeProviderState {
-  final MainClientState connectionState;
-  final Map<int, WalletUpdateInfo> updatedWallets;
-
-  const NodeProviderState({
-    required this.connectionState,
-    required this.updatedWallets,
-  });
-
-  NodeProviderState copyWith({
-    MainClientState? newConnectionState,
-    Map<int, WalletUpdateInfo>? newUpdatedWallets,
-  }) {
-    return NodeProviderState(
-      connectionState: newConnectionState ?? connectionState,
-      updatedWallets: newUpdatedWallets ?? updatedWallets,
-    );
-  }
-}
 
 class NodeProvider extends ChangeNotifier {
   final IsolateManager _isolateManager;
@@ -105,24 +43,15 @@ class NodeProvider extends ChangeNotifier {
   late NodeClient _mainClient;
 
   // 구독중인 스크립트 상태 변경을 인지하는 컨트롤러
-  late StreamController<
-      ({
-        WalletListItemBase walletItem,
-        ScriptStatus scriptStatus,
-        WalletProvider walletProvider,
-      })> _scriptStatusController;
+  late StreamController<SubscribeScriptStreamDto> _scriptStatusController;
 
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
   String get host => _host;
   int get port => _port;
   bool get ssl => _ssl;
 
-  Stream<
-      ({
-        WalletListItemBase walletItem,
-        ScriptStatus scriptStatus,
-        WalletProvider walletProvider,
-      })> get scriptStatusStream => _scriptStatusController.stream;
+  Stream<SubscribeScriptStreamDto> get scriptStatusStream =>
+      _scriptStatusController.stream;
 
   NodeProvider(
     this._host,
@@ -143,17 +72,15 @@ class NodeProvider extends ChangeNotifier {
       await _isolateManager.initialize(factory, _host, _port, _ssl);
 
       _mainClient = await factory.create(_host, _port, ssl: _ssl);
-      _scriptStatusController = StreamController<
-          ({
-            WalletListItemBase walletItem,
-            ScriptStatus scriptStatus,
-            WalletProvider walletProvider,
-          })>.broadcast();
+      _scriptStatusController =
+          StreamController<SubscribeScriptStreamDto>.broadcast();
       _scriptStatusController.stream.listen(_handleScriptStatusChanged);
       _initCompleter?.complete();
     } catch (e) {
       _initCompleter?.completeError(e);
       rethrow;
+    } finally {
+      notifyListeners();
     }
   }
 
@@ -275,43 +202,74 @@ class NodeProvider extends ChangeNotifier {
   }
 
   /// 스크립트 상태 변경 이벤트 처리
-  Future<void> _handleScriptStatusChanged(
-      ({
-        WalletListItemBase walletItem,
-        ScriptStatus scriptStatus,
-        WalletProvider walletProvider,
-      }) params) async {
+  Future<void> _handleScriptStatusChanged(SubscribeScriptStreamDto dto) async {
     try {
       final now = DateTime.now();
       Logger.log(
-          'HandleScriptStatusChanged: ${params.walletItem.name} - ${params.scriptStatus.derivationPath}');
+          'HandleScriptStatusChanged: ${dto.walletItem.name} - ${dto.scriptStatus.derivationPath}');
+
+      // 기존 인덱스 저장 (변경 전)
+      final oldReceiveUsedIndex = dto.walletItem.receiveUsedIndex;
+      final oldChangeUsedIndex = dto.walletItem.changeUsedIndex;
 
       // 지갑 인덱스 업데이트
-      int receiveUsedIndex = params.scriptStatus.isChange
-          ? params.walletItem.receiveUsedIndex
-          : params.scriptStatus.index;
-      int changeUsedIndex = params.scriptStatus.isChange
-          ? params.scriptStatus.index
-          : params.walletItem.changeUsedIndex;
+      int receiveUsedIndex = dto.scriptStatus.isChange
+          ? dto.walletItem.receiveUsedIndex
+          : dto.scriptStatus.index;
+      int changeUsedIndex = dto.scriptStatus.isChange
+          ? dto.scriptStatus.index
+          : dto.walletItem.changeUsedIndex;
       _walletDataManager.updateWalletUsedIndex(
-          params.walletItem, receiveUsedIndex, changeUsedIndex);
+          dto.walletItem, receiveUsedIndex, changeUsedIndex);
 
       // Balance 동기화
-      await _fetchScriptBalance(params.walletItem, params.scriptStatus);
+
+      await _fetchScriptBalance(dto.walletItem, dto.scriptStatus);
 
       // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
       await _fetchScriptTransaction(
-          params.walletItem, params.scriptStatus, params.walletProvider,
+          dto.walletItem, dto.scriptStatus, dto.walletProvider,
           now: now);
 
       // UTXO 동기화
-      await _fetchScriptUtxo(params.walletItem, params.scriptStatus);
+      await _fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
+
+      // 새 스크립트 구독 여부 확인 및 처리
+      if (_needSubscriptionUpdate(
+        dto.walletItem,
+        oldReceiveUsedIndex,
+        oldChangeUsedIndex,
+        dto.walletProvider,
+      )) {
+        final subResult =
+            await subscribeWallet(dto.walletItem, dto.walletProvider);
+
+        if (subResult.isSuccess) {
+          Logger.log(
+              'Successfully extended script subscription for ${dto.walletItem.name}');
+        } else {
+          Logger.error(
+              'Failed to extend script subscription: ${subResult.error}');
+        }
+      }
 
       // 동기화 완료 state 업데이트
       _setState(newConnectionState: MainClientState.waiting);
     } catch (e) {
       Logger.error('Failed to handle script status change: $e');
     }
+  }
+
+  /// 필요한 경우 추가 스크립트를 구독합니다.
+  bool _needSubscriptionUpdate(
+    WalletListItemBase walletItem,
+    int oldReceiveUsedIndex,
+    int oldChangeUsedIndex,
+    WalletProvider walletProvider,
+  ) {
+    // receive 또는 change 인덱스가 증가한 경우 추가 구독이 필요
+    return walletItem.receiveUsedIndex > oldReceiveUsedIndex ||
+        walletItem.changeUsedIndex > oldChangeUsedIndex;
   }
 
   /// 스크립트 구독
@@ -324,39 +282,17 @@ class NodeProvider extends ChangeNotifier {
     }
 
     try {
-      // DB에 있는 스크립트 로드
-      walletItem.scriptStatusMap =
-          _walletDataManager.getScriptStatuseMap(walletItem.id);
-
       SubscribeWalletResponse subscribeResponse = await _mainClient
           .subscribeWallet(walletItem, _scriptStatusController, walletProvider);
 
       if (subscribeResponse.scriptStatuses.isEmpty) {
+        Logger.log('SubscribeWallet: ${walletItem.name} - no script statuses');
         return Result.success(true);
       }
 
-      // 구독중인 스크립트 메모리 저장;
-      final newScriptStatuses = {
-        for (var scriptStatus in subscribeResponse.scriptStatuses)
-          scriptStatus.scriptPubKey: scriptStatus,
-      };
-      // 변경된 스크립트 상태만 필터링
-      final changedScriptStatuses =
-          subscribeResponse.scriptStatuses.where((newStatus) {
-        final existingStatus =
-            walletItem.scriptStatusMap[newStatus.scriptPubKey];
-        return existingStatus?.status != newStatus.status;
-      }).toList();
-
-      Logger.log(
-          'SubscribeWallet: ${walletItem.name} - changedScriptStatuses: ${changedScriptStatuses.length}');
-
-      // 메모리 상태 업데이트
-      walletItem.scriptStatusMap = newScriptStatuses;
-
-      if (changedScriptStatuses.isEmpty) {
-        return Result.success(true);
-      }
+      final changedScriptStatuses = subscribeResponse.scriptStatuses
+          .where((status) => status.status != null)
+          .toList();
 
       // 지갑 인덱스 업데이트
       _walletDataManager.updateWalletUsedIndex(
@@ -375,7 +311,8 @@ class NodeProvider extends ChangeNotifier {
       _walletDataManager.batchUpdateScriptStatuses(
           changedScriptStatuses, walletItem.id);
 
-      Logger.log('SubscribeWallet: ${walletItem.name} - finished');
+      Logger.log(
+          'SubscribeWallet: ${walletItem.name} - finished / subscribedScriptMap.length: ${walletItem.subscribedScriptMap.length}');
       return Result.success(true);
     } catch (e) {
       Logger.error('SubscribeWallet: ${walletItem.name} - failed');
@@ -386,7 +323,7 @@ class NodeProvider extends ChangeNotifier {
   Future<Result<bool>> unsubscribeWallet(WalletListItemBase walletItem) async {
     return _handleResult(() async {
       await _mainClient.unsubscribeWallet(walletItem);
-      walletItem.scriptStatusMap.clear();
+      walletItem.subscribedScriptMap.clear();
       Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
       return true;
     }());

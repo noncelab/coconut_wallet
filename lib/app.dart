@@ -103,6 +103,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             update: (context, connectivityProvider, visiblityProvider,
                 authProvider, walletProvider) {
               try {
+                // TODO: 바뀌었을 때만 호출되도록. walletProvider 내부에서 addLitsener()
                 walletProvider!
                     .setIsNetworkOn(connectivityProvider.isNetworkOn);
 

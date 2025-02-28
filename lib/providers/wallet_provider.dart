@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:math';
 
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -82,6 +83,7 @@ class WalletProvider extends ChangeNotifier {
   late final bool _isSetPin;
 
   late final NodeProvider _nodeProvider;
+  late bool _isNodeProviderInitialized;
   // TODO:
   final StreamController<Map<int, Balance>> _balanceStream =
       StreamController<Map<int, Balance>>();
@@ -89,8 +91,10 @@ class WalletProvider extends ChangeNotifier {
 
   WalletProvider(this._walletDataManager, this._isNetworkOn,
       this._saveWalletCount, this._isSetPin, this._nodeProvider) {
+    _nodeProvider.addListener(_onNodeProviderStateUpdated);
+    _isNodeProviderInitialized = _nodeProvider.isInitialized;
     _loadWalletListFromDB().then((_) {
-      syncWalletData();
+      _syncWalletData();
     });
 
     // initWallet().catchError((_) {
@@ -98,6 +102,30 @@ class WalletProvider extends ChangeNotifier {
     // });
     // _lastUpdateTime =
     //     _sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
+  }
+
+  void _onNodeProviderStateUpdated() {
+    Logger.log('--> [_onNodeProviderStateUpdated()]');
+    if (!_isNodeProviderInitialized && _nodeProvider.isInitialized) {
+      Logger.log(
+          '--> _nodeProvider.isInitialized: ${_nodeProvider.isInitialized}');
+      _isNodeProviderInitialized = true;
+      _syncWalletData();
+    }
+
+    Logger.log('--> connectionState: ${_nodeProvider.state.connectionState}');
+
+    if (_nodeProvider.state.updatedWallets.isNotEmpty) {
+      for (var key in _nodeProvider.state.updatedWallets.keys) {
+        Logger.log(
+            '--> $key ${_nodeProvider.state.updatedWallets[key]!.balance}');
+        if (_nodeProvider.state.updatedWallets[key]!.balance ==
+            UpdateTypeState.completed) {
+          fetchWalletBalance(key);
+        }
+      }
+    }
+    Logger.log('\n');
   }
 
   Future<void> _loadWalletListFromDB() async {
@@ -124,14 +152,13 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _updateBalances() async {
-    for (var wallet in _walletItemList) {
-      await _fetchWalletBalance(wallet.id);
+  Future<void> _syncWalletData() async {
+    if (_walletLoadState != WalletLoadState.loadCompleted ||
+        !_isNodeProviderInitialized) {
+      Logger.log('--> walletLoad, nodeProvider 준비 안됨');
+      return;
     }
-  }
 
-  Future<void> syncWalletData() async {
-    assert(_walletLoadState == WalletLoadState.loadCompleted);
     if (_walletSyncingState == WalletSyncingState.syncing) {
       return;
     }
@@ -147,8 +174,16 @@ class WalletProvider extends ChangeNotifier {
     _walletSyncingState = WalletSyncingState.syncing;
     notifyListeners();
     try {
-      await Future.delayed(const Duration(seconds: 2));
-      await _updateBalances();
+      for (var wallet in _walletItemList) {
+        await _nodeProvider.subscribeWallet(wallet, this);
+      }
+
+      for (var wallet in _walletItemList) {
+        fetchWalletBalance(wallet.id);
+      }
+
+      // await Future.delayed(const Duration(seconds: 2));
+      //await _updateBalances();
       // TODO: syncFromNetwork other data.
       _walletSyncingState = WalletSyncingState.completed;
     } catch (e) {
@@ -277,7 +312,7 @@ class WalletProvider extends ChangeNotifier {
       result = WalletSyncResult.existingWalletNoUpdate;
 
       // case 2: 변경 사항 체크하며 업데이트
-      if (_hasChanged(_walletItemList[index], watchOnlyWallet)) {
+      if (_hasChangedOfUI(_walletItemList[index], watchOnlyWallet)) {
         _walletDataManager.updateWalletUI(
             _walletItemList[index].id, watchOnlyWallet);
 
@@ -307,8 +342,9 @@ class WalletProvider extends ChangeNotifier {
       newItem = await _walletDataManager.addSinglesigWallet(watchOnlyWallet);
     }
 
-    generateWalletAddress(newItem, -1, false);
-    generateWalletAddress(newItem, -1, true);
+    await _nodeProvider.subscribeWallet(newItem, this);
+    //await generateWalletAddress(newItem, -1, false);
+    //await generateWalletAddress(newItem, -1, true);
 
     //final newItem = await _createNewWallet(walletSync, isMultisig);
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
@@ -320,8 +356,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // TODO:
-    _fetchWalletBalance(newItem.id);
-    _fetchTransactions(newItem.id);
+    // fetchWalletBalance(newItem.id);
 
     //await initWallet(targetId: newItem.id, syncOthers: false);
 
@@ -330,11 +365,8 @@ class WalletProvider extends ChangeNotifier {
   }
 
   // TODO: 특정 지갑의 잔액 갱신
-  Future<void> _fetchWalletBalance(int walletId) async {
-    // await generateWalletAddress(walletItem, -1, false);
-    // await generateWalletAddress(walletItem, -1, true);
-    //final Balance balance = getWalletBalance(walletItem.id);
-    final Balance balance = Balance(Random().nextInt(100000), 0);
+  Future<void> fetchWalletBalance(int walletId) async {
+    final Balance balance = getWalletBalance(walletId);
     _walletBalance[walletId] = balance;
 
     // notify
@@ -343,13 +375,8 @@ class WalletProvider extends ChangeNotifier {
     // notifyListeners();
   }
 
-  /// TODO: 특정 지갑의 트랜잭션 목록 업데이트 요청
-  Future<void> _fetchTransactions(int walletId) async {
-    // TODO: implements
-  }
-
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
-  bool _hasChanged(
+  bool _hasChangedOfUI(
       WalletListItemBase existingWallet, WatchOnlyWallet watchOnlyWallet) {
     bool hasChanged = false;
 
@@ -415,10 +442,6 @@ class WalletProvider extends ChangeNotifier {
   //   notifyListeners();
   // }
 
-  List<TransactionRecord>? getTxList(int walletId) {
-    return _walletDataManager.getTxList(walletId);
-  }
-
   /// WalletProvider 생성자에서 isNetworkOn은 null로 초기화 됩니다.
   /// 아직 앱 내에서 네트워크 상태가 확인이 안된 채로 지갑 동기화 함수가 호출됩니다.
   /// 따라서 네트워크 상태가 null -> true로 변경 되었을 때 지갑 동기화를 해줍니다.
@@ -427,7 +450,7 @@ class WalletProvider extends ChangeNotifier {
     // 네트워크 상태가 확인됨
     if (_isNetworkOn == null && isNetworkOn != null) {
       _isNetworkOn = isNetworkOn;
-      syncWalletData();
+      _syncWalletData();
       return;
     }
 
@@ -439,7 +462,11 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Balance getWalletBalance(int walletId) {
-    return _walletDataManager.getWalletBalance(walletId);
+    final realmBalance = _walletDataManager.getWalletBalance(walletId);
+    return Balance(
+      realmBalance.confirmed,
+      realmBalance.unconfirmed,
+    );
   }
 
   Future<void> generateWalletAddress(
@@ -552,6 +579,7 @@ class WalletProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _nodeProvider.removeListener(_onNodeProviderStateUpdated);
     _balanceStream.close();
     super.dispose();
   }
