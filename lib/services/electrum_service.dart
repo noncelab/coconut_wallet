@@ -490,18 +490,14 @@ class ElectrumService extends NodeClient {
       final (:scriptStatus, :isSubscribed) = result;
 
       if (scriptStatus.status != null) {
-        Logger.log(
-            'Found used address: index=${scriptStatus.index}, isChange=$isChange');
         maxUsedIndex = max(maxUsedIndex, scriptStatus.index);
 
-        // 즉시 walletItem의 인덱스 업데이트 (중요)
+        // 즉시 walletItem의 인덱스 업데이트
         if (isChange && scriptStatus.index > walletItem.changeUsedIndex) {
           walletItem.changeUsedIndex = scriptStatus.index;
-          Logger.log('Updated change index to ${scriptStatus.index}');
         } else if (!isChange &&
             scriptStatus.index > walletItem.receiveUsedIndex) {
           walletItem.receiveUsedIndex = scriptStatus.index;
-          Logger.log('Updated receive index to ${scriptStatus.index}');
         }
       }
 

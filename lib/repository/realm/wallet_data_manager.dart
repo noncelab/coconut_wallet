@@ -630,7 +630,7 @@ class WalletDataManager {
     _cryptography = null;
   }
 
-  updateWalletBalance(int walletId, Balance balance) {
+  RealmWalletBalance updateWalletBalance(int walletId, Balance balance) {
     _checkInitialized();
 
     final realmWalletBase = _realm.find<RealmWalletBase>(walletId);
@@ -642,8 +642,7 @@ class WalletDataManager {
     }
 
     if (balanceResults.isEmpty) {
-      _createNewWalletBalance(realmWalletBase, balance);
-      return;
+      return _createNewWalletBalance(realmWalletBase, balance);
     }
 
     final realmWalletBalance = balanceResults.first;
@@ -654,9 +653,11 @@ class WalletDataManager {
       realmWalletBalance.confirmed = balance.confirmed;
       realmWalletBalance.unconfirmed = balance.unconfirmed;
     });
+
+    return realmWalletBalance;
   }
 
-  void _createNewWalletBalance(
+  RealmWalletBalance _createNewWalletBalance(
       RealmWalletBase realmWalletBase, Balance walletBalance) {
     int walletBalanceLastId =
         getLastId(_realm, (RealmWalletBalance).toString());
@@ -670,10 +671,11 @@ class WalletDataManager {
     );
 
     _realm.write(() {
-      realmWalletBase.balance = walletBalance.total;
       _realm.add(realmWalletBalance);
     });
     saveLastId(_realm, (RealmWalletBalance).toString(), walletBalanceLastId);
+
+    return realmWalletBalance;
   }
 
   // not used
@@ -681,22 +683,18 @@ class WalletDataManager {
     _realm.close();
   }
 
-  Balance getWalletBalance(int walletId) {
+  RealmWalletBalance getWalletBalance(int walletId) {
     final realmWalletBalance =
         _realm.query<RealmWalletBalance>('walletId == $walletId').firstOrNull;
 
     if (realmWalletBalance == null) {
-      _createNewWalletBalance(
+      return _createNewWalletBalance(
         _realm.find<RealmWalletBase>(walletId)!,
         Balance(0, 0),
       );
-      return Balance(0, 0);
     }
 
-    return Balance(
-      realmWalletBalance.confirmed,
-      realmWalletBalance.unconfirmed,
-    );
+    return realmWalletBalance;
   }
 
   List<WalletAddress> getWalletAddressList(
@@ -1204,16 +1202,7 @@ class WalletDataManager {
       required int index,
       required bool isChange,
       required Balance balance}) {
-    final realmWalletBalance = _realm.query<RealmWalletBalance>(
-      r'walletId == $0',
-      [walletId],
-    ).firstOrNull;
-
-    if (realmWalletBalance == null) {
-      throw StateError(
-          '[updateAddressBalance] Wallet balance not found, walletId: $walletId');
-    }
-
+    final realmWalletBalance = getWalletBalance(walletId);
     final realmWalletAddress = _realm.query<RealmWalletAddress>(
       r'walletId == $0 AND index == $1 AND isChange == $2',
       [walletId, index, isChange],

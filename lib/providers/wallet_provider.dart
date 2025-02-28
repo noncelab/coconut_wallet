@@ -366,7 +366,7 @@ class WalletProvider extends ChangeNotifier {
 
   // TODO: 특정 지갑의 잔액 갱신
   Future<void> fetchWalletBalance(int walletId) async {
-    final Balance balance = _walletDataManager.getWalletBalance(walletId);
+    final Balance balance = getWalletBalance(walletId);
     _walletBalance[walletId] = balance;
 
     // notify
@@ -462,7 +462,11 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Balance getWalletBalance(int walletId) {
-    return _walletDataManager.getWalletBalance(walletId);
+    final realmBalance = _walletDataManager.getWalletBalance(walletId);
+    return Balance(
+      realmBalance.confirmed,
+      realmBalance.unconfirmed,
+    );
   }
 
   Future<void> generateWalletAddress(
