@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -139,10 +140,20 @@ class UtxoItemCard extends StatelessWidget {
                 children: List.generate(
                   utxo.tags?.length ?? 0,
                   (index) => IntrinsicWidth(
-                    child: CustomTagChip(
-                      tag: utxo.tags?[index].name ?? '',
-                      colorIndex: utxo.tags?[index].colorIndex ?? 0,
-                      type: CustomTagChipType.fix,
+                    child: CoconutChip(
+                      minWidth: 40,
+                      color: CoconutColors.backgroundColorPaletteDark[
+                          utxo.tags?[index].colorIndex ?? 0],
+                      borderColor: CoconutColors
+                          .colorPalette[utxo.tags?[index].colorIndex ?? 0],
+                      child: Text(
+                        '#${utxo.tags?[index].name ?? ''}',
+                        style: CoconutTypography.body3_12.setColor(
+                          CoconutColors
+                              .colorPalette[utxo.tags?[index].colorIndex ?? 0],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                 ),

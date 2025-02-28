@@ -195,36 +195,58 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                 runSpacing: 8,
                 children: List.generate(
                   _utxoTags.length,
-                  (index) => IntrinsicWidth(
-                    child: GestureDetector(
-                      onTap: () {
-                        final tag = _utxoTags[index].name;
-                        setState(() {
-                          if (_selectedUtxoTagNames.contains(tag)) {
-                            _selectedUtxoTagNames.remove(tag);
-                          } else {
-                            if (_selectedUtxoTagNames.length == 5) {
-                              CustomToast.showToast(
-                                  context: context,
-                                  text: t.tag_bottom_sheet.max_tag_count,
-                                  seconds: 2);
-                              return;
+                  (index) {
+                    bool isSelected =
+                        _selectedUtxoTagNames.contains(_utxoTags[index].name);
+                    return IntrinsicWidth(
+                      child: GestureDetector(
+                        onTap: () {
+                          final tag = _utxoTags[index].name;
+                          setState(() {
+                            if (_selectedUtxoTagNames.contains(tag)) {
+                              _selectedUtxoTagNames.remove(tag);
+                            } else {
+                              if (_selectedUtxoTagNames.length == 5) {
+                                CustomToast.showToast(
+                                    context: context,
+                                    text: t.tag_bottom_sheet.max_tag_count,
+                                    seconds: 2);
+                                return;
+                              }
+                              _selectedUtxoTagNames.add(tag);
                             }
-                            _selectedUtxoTagNames.add(tag);
-                          }
-                          _checkSelectButtonEnabled();
-                        });
-                      },
-                      child: CustomTagChip(
-                        tag: _utxoTags[index].name,
-                        colorIndex: _utxoTags[index].colorIndex,
-                        type: _selectedUtxoTagNames
-                                .contains(_utxoTags[index].name)
-                            ? CustomTagChipType.select
-                            : CustomTagChipType.disable,
+                            _checkSelectButtonEnabled();
+                          });
+                        },
+                        child: CoconutChip(
+                          minWidth: 40,
+                          color: isSelected
+                              ? CoconutColors.backgroundColorPaletteDark[
+                                      _utxoTags[index].colorIndex]
+                                  .withOpacity(0.35)
+                              : CoconutColors.backgroundColorPaletteDark[
+                                      _utxoTags[index].colorIndex]
+                                  .withOpacity(0.18),
+                          borderColor: CoconutColors
+                              .colorPalette[_utxoTags[index].colorIndex],
+                          borderWidth: isSelected ? 1 : 0.5,
+                          child: Text(
+                            '#${_utxoTags[index].name}',
+                            style: isSelected
+                                ? CoconutTypography.body3_12_Bold.setColor(
+                                    CoconutColors.colorPalette[
+                                        _utxoTags[index].colorIndex],
+                                  )
+                                : CoconutTypography.body3_12.setColor(
+                                    CoconutColors.colorPalette[
+                                        _utxoTags[index].colorIndex],
+                                  ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),

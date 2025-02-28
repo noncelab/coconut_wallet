@@ -473,10 +473,20 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                   children: List.generate(
                     selectedTags.length,
                     (index) => IntrinsicWidth(
-                      child: CustomTagChip(
-                        tag: selectedTags[index].name,
-                        colorIndex: selectedTags[index].colorIndex,
-                        type: CustomTagChipType.fix,
+                      child: CoconutChip(
+                        minWidth: 40,
+                        color: CoconutColors.backgroundColorPaletteDark[
+                            selectedTags[index].colorIndex],
+                        borderColor: CoconutColors
+                            .colorPalette[selectedTags[index].colorIndex],
+                        child: Text(
+                          '#${selectedTags[index].name}',
+                          style: CoconutTypography.body3_12.setColor(
+                            CoconutColors
+                                .colorPalette[selectedTags[index].colorIndex],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
                   ),
