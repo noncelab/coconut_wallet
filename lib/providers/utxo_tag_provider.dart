@@ -17,7 +17,7 @@ class UtxoTagProvider extends ChangeNotifier {
   bool addUtxoTag(int walletId, UtxoTag utxoTag) {
     final newUtxoTag = utxoTag.copyWith(walletId: walletId);
     final id = const Uuid().v4();
-    final result = _walletDataManager.addUtxoTag(
+    final result = _walletDataManager.createUtxoTag(
         id, newUtxoTag.walletId, newUtxoTag.name, newUtxoTag.colorIndex);
     if (result.isSuccess) {
       _isUpdatedTagList = true;
@@ -126,8 +126,9 @@ class UtxoTagProvider extends ChangeNotifier {
     required List<UtxoTag> newTags,
     required List<String> selectedTagNames,
   }) async {
-    final updateUtxoTagListResult = _walletDataManager.updateUtxoTagList(
-        walletId, utxoId, newTags, selectedTagNames);
+    final updateUtxoTagListResult =
+        _walletDataManager.createTagAndUpdateTagsOfUtxo(
+            walletId, utxoId, newTags, selectedTagNames);
 
     if (updateUtxoTagListResult.isFailure) {
       Logger.log('-----------------------------------------------------------');

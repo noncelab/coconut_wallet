@@ -365,7 +365,7 @@ class WalletDataManager {
   }
 
   /// 태그 추가
-  Result<UtxoTag> addUtxoTag(
+  Result<UtxoTag> createUtxoTag(
       String id, int walletId, String name, int colorIndex) {
     return _handleRealm<UtxoTag>(() {
       final tag = RealmUtxoTag(id, walletId, name, colorIndex, DateTime.now());
@@ -434,7 +434,7 @@ class WalletDataManager {
   /// - [utxoId] Utxo Id
   /// - [newUtxoTags] 추가할 UtxoTag 목록
   /// - [selectedTagNames] 선택된 태그명 목록
-  Result<bool> updateUtxoTagList(int walletId, String utxoId,
+  Result<bool> createTagAndUpdateTagsOfUtxo(int walletId, String utxoId,
       List<UtxoTag> newUtxoTags, List<String> selectedTagNames) {
     return _handleRealm<bool>(
       () {
