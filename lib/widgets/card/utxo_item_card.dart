@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -85,7 +86,7 @@ class UtxoItemCard extends StatelessWidget {
                       children: [
                         if (isChange)
                           CustomChip(
-                            text: '잔돈',
+                            text: t.change,
                             borderColor: isConfirmed
                                 ? null
                                 : MyColors.transparentWhite_20,

@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
-import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
