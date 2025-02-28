@@ -4,9 +4,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -69,9 +66,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   bool _isSelectButtonEnabled = false;
   bool _isUpdateButtonEnabled = false;
 
-  /// 선택된 UtxoTag - update type 에서 변경될 수 있음 fixme: 사용하는데가 없음 ????
-  UtxoTag? _updateUtxoTag;
-
   // 변경된 태그 이름과 색상
   late String _updateTagName;
   late int _updateTagColorIndex;
@@ -100,7 +94,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     if (widget.updateUtxoTag != null) {
       _updateTagName = widget.updateUtxoTag!.name;
       _updateTagColorIndex = widget.updateUtxoTag!.colorIndex;
-      _updateUtxoTag = widget.updateUtxoTag;
     }
     _controller.text = _updateTagName;
     _controller.selection = TextSelection.fromPosition(
@@ -199,7 +192,18 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                     bool isSelected =
                         _selectedUtxoTagNames.contains(_utxoTags[index].name);
                     return IntrinsicWidth(
-                      child: GestureDetector(
+                      child: CoconutChip(
+                        minWidth: 40,
+                        color: CoconutColors.backgroundColorPaletteDark[
+                            _utxoTags[index].colorIndex],
+                        hasOpacity: true,
+                        borderColor: CoconutColors
+                            .colorPalette[_utxoTags[index].colorIndex],
+                        label: '#${_utxoTags[index].name}',
+                        labelSize: 12,
+                        labelColor: CoconutColors
+                            .colorPalette[_utxoTags[index].colorIndex],
+                        isSelected: isSelected,
                         onTap: () {
                           final tag = _utxoTags[index].name;
                           setState(() {
@@ -218,32 +222,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                             _checkSelectButtonEnabled();
                           });
                         },
-                        child: CoconutChip(
-                          minWidth: 40,
-                          color: isSelected
-                              ? CoconutColors.backgroundColorPaletteDark[
-                                      _utxoTags[index].colorIndex]
-                                  .withOpacity(0.35)
-                              : CoconutColors.backgroundColorPaletteDark[
-                                      _utxoTags[index].colorIndex]
-                                  .withOpacity(0.18),
-                          borderColor: CoconutColors
-                              .colorPalette[_utxoTags[index].colorIndex],
-                          borderWidth: isSelected ? 1 : 0.5,
-                          child: Text(
-                            '#${_utxoTags[index].name}',
-                            style: isSelected
-                                ? CoconutTypography.body3_12_Bold.setColor(
-                                    CoconutColors.colorPalette[
-                                        _utxoTags[index].colorIndex],
-                                  )
-                                : CoconutTypography.body3_12.setColor(
-                                    CoconutColors.colorPalette[
-                                        _utxoTags[index].colorIndex],
-                                  ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
                       ),
                     );
                   },

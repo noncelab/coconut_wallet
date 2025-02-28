@@ -4,7 +4,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 
@@ -146,14 +145,10 @@ class UtxoItemCard extends StatelessWidget {
                           utxo.tags?[index].colorIndex ?? 0],
                       borderColor: CoconutColors
                           .colorPalette[utxo.tags?[index].colorIndex ?? 0],
-                      child: Text(
-                        '#${utxo.tags?[index].name ?? ''}',
-                        style: CoconutTypography.body3_12.setColor(
-                          CoconutColors
-                              .colorPalette[utxo.tags?[index].colorIndex ?? 0],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                      label: '#${utxo.tags?[index].name ?? ''}',
+                      labelSize: 12,
+                      labelColor: CoconutColors
+                          .colorPalette[utxo.tags?[index].colorIndex ?? 0],
                     ),
                   ),
                 ),

@@ -4,7 +4,6 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -122,14 +121,10 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                                   widget.utxoTags?[index].colorIndex ?? 0],
                               borderColor: CoconutColors.colorPalette[
                                   widget.utxoTags?[index].colorIndex ?? 0],
-                              child: Text(
-                                '#${widget.utxoTags?[index].name ?? ''}',
-                                style: CoconutTypography.body3_12.setColor(
-                                  CoconutColors.colorPalette[
-                                      widget.utxoTags?[index].colorIndex ?? 0],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+                              label: '#${widget.utxoTags?[index].name ?? ''}',
+                              labelSize: 12,
+                              labelColor: CoconutColors.colorPalette[
+                                  widget.utxoTags?[index].colorIndex ?? 0],
                             ),
                           ),
                         ),
