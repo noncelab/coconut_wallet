@@ -190,8 +190,8 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                 children: List.generate(
                   _utxoTags.length,
                   (index) {
-                    bool isSelected =
-                        _prevSelectedUtxoTagNames.contains(_utxoTags[index].name);
+                    bool isSelected = _prevSelectedUtxoTagNames
+                        .contains(_utxoTags[index].name);
                     return IntrinsicWidth(
                       child: CoconutChip(
                         minWidth: 40,
