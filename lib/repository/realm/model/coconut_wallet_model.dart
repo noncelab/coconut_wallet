@@ -6,7 +6,6 @@ part 'coconut_wallet_model.realm.dart'; // dart run realm generate
 class _RealmWalletBase {
   @PrimaryKey()
   late int id;
-
   late int colorIndex;
   late int iconIndex;
   late String descriptor;
@@ -103,8 +102,42 @@ class _RealmWalletBalance {
   late int id;
   @Indexed()
   late int walletId;
-
   late int total;
   late int confirmed;
   late int unconfirmed;
+}
+
+@RealmModel()
+class _RealmBlockTimestamp {
+  @PrimaryKey()
+  late int blockHeight;
+  late DateTime timestamp;
+}
+
+@RealmModel()
+class _RealmScriptStatus {
+  @PrimaryKey()
+  late String scriptPubKey;
+  late String status;
+  @Indexed()
+  late int walletId;
+  late DateTime timestamp;
+}
+
+@RealmModel()
+class _RealmUtxo {
+  @PrimaryKey()
+  late String id;
+  @Indexed()
+  late int walletId;
+  @Indexed()
+  late String address;
+  @Indexed()
+  late int amount;
+  @Indexed()
+  late DateTime timestamp;
+  late String transactionHash;
+  late int index; // 트랜잭션 내 인덱스
+  late String derivationPath;
+  late int blockHeight;
 }

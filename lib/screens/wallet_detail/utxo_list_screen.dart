@@ -7,7 +7,6 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/body/utxo_list_body.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
@@ -51,173 +50,16 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   late UtxoListViewModel _viewModel;
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<WalletProvider, ConnectivityProvider,
-        UpbitConnectModel, UtxoListViewModel>(
-      create: (_) {
-        _viewModel = UtxoListViewModel(
-          widget.id,
-          Provider.of<WalletProvider>(_, listen: false),
-          Provider.of<UtxoTagProvider>(_, listen: false),
-          Provider.of<ConnectivityProvider>(_, listen: false),
-          Provider.of<UpbitConnectModel>(_, listen: false),
-        );
-        return _viewModel;
-      },
-      update: (_, walletProvider, connectProvider, upbitModel, viewModel) {
-        return viewModel!..updateProvider();
-      },
-      child: Consumer<UtxoListViewModel>(
-        builder: (context, viewModel, child) {
-          final state = viewModel.walletInitState;
-          final balance = viewModel.balance;
-          final isNetworkOn = viewModel.isNetworkOn;
-          return PopScope(
-            canPop: true,
-            onPopInvokedWithResult: (didPop, _) {
-              _removeFilterDropdown();
-            },
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () {
-                _removeFilterDropdown();
-              },
-              child: Stack(
-                children: [
-                  Scaffold(
-                    backgroundColor: MyColors.black,
-                    appBar: CoconutAppBar.build(
-                      entireWidgetKey: _appBarKey,
-                      title: t.utxo_list,
-                      context: context,
-                      backgroundColor: CoconutColors.black,
-                    ),
-                    body: CustomScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      controller: _scrollController,
-                      semanticChildCount: viewModel.isUtxoTagListEmpty
-                          ? 1
-                          : viewModel.utxoList.length,
-                      slivers: [
-                        CupertinoSliverRefreshControl(
-                          onRefresh: () async {
-                            _isPullToRefreshing = true;
-                            try {
-                              if (!_checkStateAndShowToast(
-                                  state, balance, isNetworkOn)) {
-                                return;
-                              }
-                            } finally {
-                              _isPullToRefreshing = false;
-                            }
-                          },
-                        ),
-                        SliverToBoxAdapter(
-                          child: UtxoListHeader(
-                            dropdownGlobalKey: _headerDropdownKey,
-                            balance: balance,
-                            btcPriceInKrw: viewModel.bitcoinPriceKrw,
-                            selectedFilter: viewModel.selectedUtxoOrder.text,
-                            onTapDropdown: () {
-                              setState(() {
-                                if (_isHeaderDropdownVisible ||
-                                    _isStickyHeaderDropdownVisible) {
-                                  _isHeaderDropdownVisible = false;
-                                } else {
-                                  _isHeaderDropdownVisible = true;
-                                }
-                              });
-                            },
-                          ),
-                        ),
-                        SliverSafeArea(
-                          minimum: const EdgeInsets.symmetric(horizontal: 16),
-                          sliver: UtxoListBody(
-                            utxoSliverListKey: _utxoSliverListKey,
-                            walletId: widget.id,
-                            walletType: viewModel.walletType,
-                            isUtxoListLoadComplete:
-                                viewModel.isUtxoListLoadComplete,
-                            utxoList: viewModel.utxoList,
-                            removePopup: () {
-                              _removeFilterDropdown();
-                            },
-                            popFromUtxoDetail: (resultUtxo) {
-                              if (viewModel.isUpdatedTagList) {
-                                viewModel.updateUtxoTagList(resultUtxo.utxoId,
-                                    viewModel.selectedTagList);
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  UtxoListStickyHeader(
-                    dropdownGlobalKey: _stickyHeaderDropdownKey,
-                    height: _appBarSize.height,
-                    isVisible: _stickyHeaderVisible,
-                    balance: balance,
-                    totalCount: viewModel.utxoList.length,
-                    selectedFilter: viewModel.selectedUtxoOrder.text,
-                    onTapDropdown: () {
-                      setState(() {
-                        _scrollController.jumpTo(_scrollController.offset);
-                        if (_isHeaderDropdownVisible ||
-                            _isStickyHeaderDropdownVisible) {
-                          _isStickyHeaderDropdownVisible = false;
-                        } else {
-                          _isStickyHeaderDropdownVisible = true;
-                        }
-                      });
-                    },
-                    removePopup: () {
-                      _removeFilterDropdown();
-                    },
-                  ),
-                  UtxoFilterDropdown(
-                    isVisible: viewModel.utxoList.isNotEmpty &&
-                            _isHeaderDropdownVisible ||
-                        _isStickyHeaderDropdownVisible,
-                    positionTop: _isHeaderDropdownVisible
-                        ? _headerDropdownPosition.dy +
-                            _headerDropdownSize.height
-                        : _isStickyHeaderDropdownVisible
-                            ? _stickyHeaderDropdownPosition.dy +
-                                _stickyHeaderDropdownSize.height
-                            : 0,
-                    selectedFilter: viewModel.selectedUtxoOrder,
-                    onSelected: (filter) {
-                      setState(() {
-                        _isHeaderDropdownVisible =
-                            _isStickyHeaderDropdownVisible = false;
-                      });
-                      if (_stickyHeaderVisible) {
-                        _scrollController.animateTo(kToolbarHeight + 28,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut);
-                      }
-                      viewModel.updateUtxoFilter(filter);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   void initState() {
     super.initState();
+    _viewModel = UtxoListViewModel(
+      widget.id,
+      Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<UtxoTagProvider>(context, listen: false),
+      Provider.of<ConnectivityProvider>(context, listen: false),
+      Provider.of<UpbitConnectModel>(context, listen: false),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appBarRenderBox =
           _appBarKey.currentContext?.findRenderObject() as RenderBox;
@@ -237,6 +79,94 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         }
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProxyProvider4<WalletProvider, UtxoTagProvider,
+        ConnectivityProvider, UpbitConnectModel, UtxoListViewModel>(
+      create: (_) => _viewModel,
+      update: (_, walletProvider, utxoTagProvider, connectivityProvider,
+          upbitConnectModel, viewModel) {
+        return viewModel!..updateProvider();
+      },
+      child: Consumer<UtxoListViewModel>(
+        builder: (context, viewModel, child) {
+          return PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (didPop, _) {
+              _removeFilterDropdown();
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                _removeFilterDropdown();
+              },
+              child: Stack(
+                children: [
+                  Scaffold(
+                    backgroundColor: CoconutColors.black,
+                    appBar: CoconutAppBar.build(
+                      entireWidgetKey: _appBarKey,
+                      title: t.utxo_list,
+                      context: context,
+                      backgroundColor: CoconutColors.black,
+                    ),
+                    body: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      controller: _scrollController,
+                      semanticChildCount: viewModel.isUtxoTagListEmpty
+                          ? 1
+                          : viewModel.utxoList.length,
+                      slivers: [
+                        CupertinoSliverRefreshControl(
+                          onRefresh: () async {
+                            _isPullToRefreshing = true;
+                            try {
+                              if (!_checkStateAndShowToast(
+                                  viewModel.walletInitState,
+                                  viewModel.balance,
+                                  viewModel.isNetworkOn)) {
+                                return;
+                              }
+                            } finally {
+                              _isPullToRefreshing = false;
+                            }
+                          },
+                        ),
+                        SliverToBoxAdapter(child: _buildHeader(viewModel)),
+                        SliverSafeArea(
+                          minimum: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: UtxoListBody(
+                            utxoSliverListKey: _utxoSliverListKey,
+                            walletId: widget.id,
+                            walletType: viewModel.walletType,
+                            isUtxoListLoadComplete:
+                                viewModel.isUtxoListLoadComplete,
+                            utxoList: viewModel.utxoList,
+                            removePopup: () {
+                              _removeFilterDropdown();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildStickyHeader(viewModel),
+                  _buildUtxoOrderDropdownMenu(viewModel),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _updateHeaderDropdownPosition() {
@@ -307,5 +237,77 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       _isHeaderDropdownVisible = false;
       _isStickyHeaderDropdownVisible = false;
     });
+  }
+
+  Widget _buildHeader(UtxoListViewModel viewModel) {
+    return UtxoListHeader(
+        key: ValueKey(viewModel.utxoTagListKey),
+        dropdownGlobalKey: _headerDropdownKey,
+        balance: viewModel.balance,
+        btcPriceInKrw: viewModel.bitcoinPriceKrw,
+        selectedFilter: viewModel.selectedUtxoOrder.text,
+        utxoTagList: viewModel.utxoTagList,
+        selectedUtxoTagName: viewModel.selectedUtxoTagName,
+        onTapDropdown: () {
+          setState(() {
+            if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
+              _isHeaderDropdownVisible = false;
+            } else {
+              _isHeaderDropdownVisible = true;
+            }
+          });
+        },
+        onTagSelected: (tagName) {
+          viewModel.setSelectedUtxoTagName(tagName);
+        });
+  }
+
+  Widget _buildUtxoOrderDropdownMenu(UtxoListViewModel viewModel) {
+    return UtxoOrderDropdown(
+      isVisible: _isHeaderDropdownVisible || _isStickyHeaderDropdownVisible,
+      positionTop: _isHeaderDropdownVisible
+          ? _headerDropdownPosition.dy + _headerDropdownSize.height
+          : _isStickyHeaderDropdownVisible
+              ? _stickyHeaderDropdownPosition.dy +
+                  _stickyHeaderDropdownSize.height
+              : 0,
+      selectedFilter: viewModel.selectedUtxoOrder,
+      onSelected: (filter) {
+        setState(() {
+          _isHeaderDropdownVisible = _isStickyHeaderDropdownVisible = false;
+        });
+        if (_stickyHeaderVisible) {
+          _scrollController.animateTo(kToolbarHeight + 28,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut);
+        }
+        viewModel.updateUtxoFilter(filter);
+      },
+    );
+  }
+
+  Widget _buildStickyHeader(UtxoListViewModel viewModel) {
+    return UtxoListStickyHeader(
+      key: ValueKey(viewModel.utxoTagListKey),
+      dropdownGlobalKey: _stickyHeaderDropdownKey,
+      height: _appBarSize.height,
+      isVisible: _stickyHeaderVisible,
+      balance: viewModel.balance,
+      totalCount: viewModel.utxoList.length,
+      selectedFilter: viewModel.selectedUtxoOrder.text,
+      onTapDropdown: () {
+        setState(() {
+          _scrollController.jumpTo(_scrollController.offset);
+          if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
+            _isStickyHeaderDropdownVisible = false;
+          } else {
+            _isStickyHeaderDropdownVisible = true;
+          }
+        });
+      },
+      removePopup: () {
+        _removeFilterDropdown();
+      },
+    );
   }
 }

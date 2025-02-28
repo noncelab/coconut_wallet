@@ -165,7 +165,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _checkTxCount() {
-    final txCount = _walletListBaseItem!.txCount;
+    final txCount = _txProvider.txList.length;
     final isLatestTxBlockHeightZero =
         _walletListBaseItem!.isLatestTxBlockHeightZero;
     Logger.log('--> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
@@ -206,5 +206,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   // todo: 상태를 반환해주도록 수정되면 좋겠음.
   Future<void> refreshWallet() async {
     _walletProvider.initWallet(targetId: _walletId);
+    _txProvider.initTxList(_walletId);
+    _checkTxCount();
   }
 }

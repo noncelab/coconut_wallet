@@ -11,38 +11,21 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
-  final int _walletId;
-  final WalletProvider _walletProvider;
-  final UtxoTagProvider _tagProvider;
-  final ConnectivityProvider _connectProvider;
-  final UpbitConnectModel _upbitConnectModel;
-
-  WalletListItemBase? _walletListBaseItem;
+  late final WalletProvider _walletProvider;
+  late final UtxoTagProvider _tagProvider;
+  late final ConnectivityProvider _connectProvider;
+  late final UpbitConnectModel _upbitConnectModel;
+  late final WalletListItemBase _walletListBaseItem;
+  late final int _walletId;
   WalletInitState _prevWalletInitState = WalletInitState.never;
-  WalletType _walletType = WalletType.singleSignature;
 
-  String _walletName = '';
-  String _selectedUtxoTagName = t.all;
-  bool _isUtxoListLoadComplete = false;
   List<UtxoState> _utxoList = [];
+
   UtxoOrderEnum _selectedUtxoOrder = UtxoOrderEnum.byTimestampDesc;
+  bool _isUtxoListLoadComplete = false;
+  String _selectedUtxoTagName = t.all;
 
-  String get walletName => _walletName;
-  String get selectedUtxoTagName => _selectedUtxoTagName;
-  int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
-  bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
-  bool get isUpdatedTagList => _tagProvider.isUpdatedTagList;
-  bool get isUtxoTagListEmpty => _tagProvider.tagList.isEmpty;
-  bool? get isNetworkOn => _connectProvider.isNetworkOn;
-  List<UtxoState> get utxoList => _utxoList;
-  List<UtxoTag> get selectedTagList => _tagProvider.selectedTagList;
-  List<UtxoTag> get utxoTagList => _tagProvider.tagList;
-  WalletType get walletType => _walletType;
-  WalletInitState get walletInitState => _walletProvider.walletInitState;
-  UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
-
-  int get balance =>
-      _walletProvider.getWalletBalance(_walletListBaseItem!.id).total;
+  List<UtxoTag> _utxoTagList = [];
 
   UtxoListViewModel(
     this._walletId,
@@ -51,20 +34,40 @@ class UtxoListViewModel extends ChangeNotifier {
     this._connectProvider,
     this._upbitConnectModel,
   ) {
+    _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     _prevWalletInitState = _walletProvider.walletInitState;
-    final walletBaseItem = _walletProvider.getWalletById(_walletId);
-    _walletListBaseItem = walletBaseItem;
-    _walletType = walletBaseItem.walletType;
+    _initUtxoTags();
+  }
 
-    if (_walletProvider.walletInitState == WalletInitState.finished) {
-      getUtxoListWithHoldingAddress();
-    }
+  int get balance =>
+      _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
+  int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
+  bool? get isNetworkOn => _connectProvider.isNetworkOn;
 
-    _tagProvider.initTagList(_walletId);
+  bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
 
-    _walletName = walletBaseItem.name.length > 20
-        ? '${walletBaseItem.name.substring(0, 17)}...'
-        : walletBaseItem.name;
+  bool get isUtxoTagListEmpty => utxoTagList.isEmpty;
+
+  UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
+  String get selectedUtxoTagName => _selectedUtxoTagName;
+  UtxoTagProvider get tagProvider => _tagProvider;
+  List<UtxoState> get utxoList => _utxoList;
+
+  List<UtxoTag> get utxoTagList => _utxoTagList;
+
+  // 태그 목록 변경을 감지하기 위한 key
+  String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
+
+  WalletInitState get walletInitState => _walletProvider.walletInitState;
+
+  WalletType get walletType => _walletListBaseItem.walletType;
+
+  void refreshWalletProvider(int id) {
+    _walletProvider.initWallet(targetId: id);
+  }
+
+  void resetUtxoTagsUpdateState() {
+    _tagProvider.resetUtxoTagsUpdateState();
   }
 
   void setSelectedUtxoTagName(String value) {
@@ -72,34 +75,12 @@ class UtxoListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void getUtxoListWithHoldingAddress() {
-    if (_walletListBaseItem == null) return;
-
-    _utxoList = _walletListBaseItem!.utxoList;
-
-    if (_utxoList.isNotEmpty) {
-      for (var utxo in _utxoList) {
-        final tags =
-            _tagProvider.loadSelectedUtxoTagList(_walletId, utxo.utxoId);
-
-        utxo.tags = tags;
-
-        debugPrint('tags $tags');
-      }
-    }
-    _isUtxoListLoadComplete = true;
-    UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
-    notifyListeners();
-  }
-
   void updateProvider() async {
-    if (_prevWalletInitState != WalletInitState.finished &&
-        _walletProvider.walletInitState == WalletInitState.finished) {
-      getUtxoListWithHoldingAddress();
+    if (_tagProvider.isUpdatedTagList) {
+      _getUtxoAndTagList();
+      _tagProvider.resetUtxoTagsUpdateState();
+      notifyListeners();
     }
-    _prevWalletInitState = _walletProvider.walletInitState;
-
-    notifyListeners();
   }
 
   void updateUtxoFilter(UtxoOrderEnum selectedUtxoFilter) async {
@@ -112,11 +93,39 @@ class UtxoListViewModel extends ChangeNotifier {
     final findUtxo = utxoList.firstWhere((item) => item.utxoId == utxoId);
     findUtxo.tags?.clear();
     findUtxo.tags?.addAll(utxoTagList);
-    debugPrint('findUtxo.tags: ${findUtxo.tags}');
     notifyListeners();
   }
 
-  void refreshWalletProvider(int id) {
-    _walletProvider.initWallet(targetId: id);
+  void _getUtxoAndTagList() {
+    _isUtxoListLoadComplete = false;
+    _utxoList = _walletProvider.getUtxoList(_walletId);
+    _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
+
+    final newUtxoTagList = _tagProvider.getUtxoTagList(_walletId);
+    _utxoTagList = newUtxoTagList;
+
+    for (var utxo in _utxoList) {
+      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
+
+      utxo.tags = tags;
+    }
+    UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
+    _isUtxoListLoadComplete = true;
+
+    notifyListeners();
+  }
+
+  void _initUtxoTags() {
+    _isUtxoListLoadComplete = false;
+    _utxoList = _walletProvider.getUtxoList(_walletId);
+    _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
+
+    for (var utxo in _utxoList) {
+      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
+
+      utxo.tags = tags;
+    }
+    _isUtxoListLoadComplete = true;
+    UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
   }
 }

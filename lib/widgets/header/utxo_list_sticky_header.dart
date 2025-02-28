@@ -1,7 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
@@ -50,7 +49,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                     width: MediaQuery.sizeOf(context).width,
                     height: 10,
                     decoration: const BoxDecoration(
-                      color: MyColors.black,
+                      color: CoconutColors.black,
                       boxShadow: [
                         BoxShadow(
                           color: Color.fromRGBO(255, 255, 255, 0.2),
@@ -73,24 +72,20 @@ class UtxoListStickyHeader extends StatelessWidget {
                           top: 20.0,
                         ),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text.rich(
-                              TextSpan(
-                                text: balance != null
+                            Text(
+                                balance != null
                                     ? satoshiToBitcoinString(balance!)
                                     : t.fetch_balance_failed,
-                                style: CoconutTypography.heading4_18_NumberBold,
-                                children: [
-                                  TextSpan(
-                                    text: balance != null
-                                        ? ' ${t.btc}'
-                                        : t.fetch_balance_failed,
-                                    style: CoconutTypography.body2_14_Number,
-                                  ),
-                                ],
-                              ),
+                                style:
+                                    CoconutTypography.heading4_18_NumberBold),
+                            CoconutLayout.spacing_100w,
+                            Text(
+                              t.btc,
+                              style: CoconutTypography.body2_14_Number,
                             ),
-                            CoconutLayout.spacing_200w,
+                            CoconutLayout.spacing_100w,
                             Text(
                               t.total_utxo_count(count: totalCount),
                               style: CoconutTypography.body3_12.setColor(
@@ -121,11 +116,9 @@ class UtxoListStickyHeader extends StatelessWidget {
                               child: Row(
                                 children: [
                                   Text(selectedFilter,
-                                      style: CoconutTypography.caption_10
+                                      style: CoconutTypography.body3_12
                                           .setColor(CoconutColors.white)),
-                                  const SizedBox(
-                                    width: 5,
-                                  ),
+                                  CoconutLayout.spacing_200w,
                                   SvgPicture.asset(
                                     'assets/svg/arrow-down.svg',
                                   ),

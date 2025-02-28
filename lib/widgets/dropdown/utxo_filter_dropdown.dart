@@ -3,12 +3,12 @@ import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 
-class UtxoFilterDropdown extends StatelessWidget {
+class UtxoOrderDropdown extends StatelessWidget {
   final bool isVisible;
   final double positionTop;
   final UtxoOrderEnum selectedFilter;
   final Function onSelected;
-  const UtxoFilterDropdown({
+  const UtxoOrderDropdown({
     super.key,
     required this.isVisible,
     required this.positionTop,
