@@ -56,11 +56,6 @@ class UtxoListBody extends StatelessWidget {
                             arguments: {
                               'utxo': utxo,
                               'id': walletId,
-                              'isChange': DerivationPathUtil.getChangeElement(
-                                    walletType,
-                                    utxo.derivationPath,
-                                  ) ==
-                                  1,
                             },
                           );
                         },

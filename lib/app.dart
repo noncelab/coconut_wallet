@@ -231,7 +231,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   child: UtxoDetailScreen(
                     utxo: args['utxo'],
                     id: args['id'],
-                    isChange: args['isChange'],
                   ),
                 ),
               ),

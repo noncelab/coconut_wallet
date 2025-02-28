@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -30,13 +31,11 @@ const _divider = Divider(color: CoconutColors.gray800);
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
   final UtxoState utxo;
-  final bool isChange;
 
   const UtxoDetailScreen({
     super.key,
     required this.id,
     required this.utxo,
-    this.isChange = false,
   });
 
   @override
@@ -98,11 +97,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         utxoTags: tags,
         selectedUtxoTagNames: selectedTags.map((e) => e.name).toList(),
         onSelected: (selectedNames, addTags) {
-          debugPrint('onSelected $addTags');
           viewModel.updateUtxoTags(widget.utxo.utxoId, selectedNames, addTags);
-        },
-        onUpdated: (tags) {
-          debugPrint('onUpdated 이게 호출되는건 언제???');
         },
       ),
     );
@@ -130,12 +125,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               _buildDateTime(viewModel.dateString),
               CoconutLayout.spacing_600h,
               _buildAmount(),
-              CoconutLayout.spacing_200h,
               _buildPrice(),
-              CoconutLayout.spacing_200h,
-              const SizedBox(height: 12),
+              CoconutLayout.spacing_600h,
               _buildTxInputOutputSection(viewModel, tx),
-              CoconutLayout.spacing_200h,
+              CoconutLayout.spacing_400h,
               _buildAddress(),
               _buildTxMemo(
                 tx.memo,
@@ -355,6 +348,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   Widget _buildAddress() {
+    List<String> path = widget.utxo.derivationPath.split('/');
+    int changeIndex = path.length - 2;
+
     return Column(
       children: [
         UnderlineButtonItemCard(
@@ -362,7 +358,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             underlineButtonLabel: t.view_mempool,
             onTapUnderlineButton: () => launchUrl(Uri.parse(
                 "${CoconutWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
-            isChangeTagVisible: widget.isChange,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -372,11 +367,35 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                       .merge(const TextStyle(height: 22 / 14)),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  widget.utxo.derivationPath,
-                  style: CoconutTypography.body2_14
-                      .copyWith(color: CoconutColors.gray500),
-                )
+                Row(children: [
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        for (int i = 0; i < path.length; i++) ...[
+                          TextSpan(
+                            text: path[i],
+                            style: i == changeIndex && path[changeIndex] == '1'
+                                ? CoconutTypography.body3_12_NumberBold
+                                    .setColor(CoconutColors.gray200)
+                                : CoconutTypography.body3_12_Number
+                                    .setColor(CoconutColors.gray500),
+                          ),
+                          if (i < path.length - 1)
+                            TextSpan(
+                                text: "/",
+                                style: CoconutTypography.body3_12_Number
+                                    .setColor(CoconutColors.gray500)),
+                        ]
+                      ],
+                    ),
+                  ),
+                  CoconutLayout.spacing_100w,
+                  if (path[changeIndex] == '1') ...{
+                    Text('(${t.change})',
+                        style: CoconutTypography.body3_12
+                            .setColor(CoconutColors.gray500))
+                  }
+                ])
               ],
             )),
         _divider,
