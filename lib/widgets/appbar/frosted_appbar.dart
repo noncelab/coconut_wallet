@@ -8,13 +8,16 @@ import 'package:coconut_wallet/widgets/label_testnet.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 
+@Deprecated('Use CoconutAppBar.buildHomeAppbar instead')
 class FrostedAppBar extends StatelessWidget {
   final Function onTapSeeMore;
   final Function onTapAddScanner;
+  final PreferredSizeWidget? bottomWidget;
   const FrostedAppBar({
     super.key,
     required this.onTapSeeMore,
     required this.onTapAddScanner,
+    this.bottomWidget,
   });
 
   @override
@@ -22,8 +25,14 @@ class FrostedAppBar extends StatelessWidget {
     return SliverAppBar(
       pinned: true,
       floating: false,
-      expandedHeight: 84,
+      expandedHeight: 84 + (bottomWidget?.preferredSize.height ?? 0),
       backgroundColor: Colors.transparent,
+      bottom: bottomWidget != null
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(30),
+              child: bottomWidget!,
+            )
+          : null,
       flexibleSpace: ClipRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),

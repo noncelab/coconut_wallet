@@ -47,6 +47,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get coconut_wallet => 'coconut_wallet';
   String get coconut_vault => 'coconut_vault';
   String get coconut_lib => 'coconut_lib';
+  String get wallet => 'Wallet';
   String get btc => 'BTC';
   String get sats => 'sats';
   String get testnet => '테스트넷';
@@ -606,6 +607,7 @@ class TranslationsErrorsKr {
   String get realm_exception => 'Realm 작업 중 오류가 발생했습니다.';
   String get node_unknown => '노드 연결 중 알 수 없는 오류가 발생했습니다.';
   String get network_connect => '네트워크 연결이 없습니다.';
+  String get network_not_found => '네트워크가 연결되어 있지 않아요!';
   String get insufficient_balance => '잔액이 부족해요.';
   late final TranslationsErrorsFeeSelectionErrorKr fee_selection_error =
       TranslationsErrorsFeeSelectionErrorKr.internal(_root);
@@ -959,6 +961,8 @@ extension on Translations {
         return 'coconut_vault';
       case 'coconut_lib':
         return 'coconut_lib';
+      case 'wallet':
+        return 'Wallet';
       case 'btc':
         return 'BTC';
       case 'sats':
@@ -1360,6 +1364,8 @@ extension on Translations {
         return '노드 연결 중 알 수 없는 오류가 발생했습니다.';
       case 'errors.network_connect':
         return '네트워크 연결이 없습니다.';
+      case 'errors.network_not_found':
+        return '네트워크가 연결되어 있지 않아요!';
       case 'errors.insufficient_balance':
         return '잔액이 부족해요.';
       case 'errors.fee_selection_error.insufficient_balance':

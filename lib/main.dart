@@ -87,7 +87,7 @@ void main() {
     CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
     runApp(const CoconutWalletApp());
   }, (error, stackTrace) {
-    Logger.log(">>>>> runZoneGuarded error: $error");
-    Logger.log('Stack trace: $stackTrace');
+    Logger.error(">>>>> runZoneGuarded error: $error");
+    Logger.log('>>>>> runZoneGuarded StackTrace: $stackTrace');
   });
 }

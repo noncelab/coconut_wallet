@@ -134,17 +134,15 @@ class WalletDataManager {
         decryptedDescriptor =
             await _cryptography!.decrypt(walletBases[i].descriptor);
       }
-
-      var balance = getWalletBalance(walletBases[i].id);
+      // TODO: 지갑 목록에서 balance field 제거함, balance 목록은 wallet_provider에서 따로 관리함
+      //var balance = getWalletBalance(walletBases[i].id);
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
         _walletList!.add(mapRealmWalletBaseToSinglesigWalletListItem(
-            walletBases[i], decryptedDescriptor, balance.total));
+            walletBases[i], decryptedDescriptor));
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         _walletList!.add(mapRealmMultisigWalletToMultisigWalletListItem(
-            multisigWallets[multisigWalletIndex++],
-            decryptedDescriptor,
-            balance.total));
+            multisigWallets[multisigWalletIndex++], decryptedDescriptor));
       }
     }
 
@@ -725,12 +723,12 @@ class WalletDataManager {
   }
 
   /// 필요한 경우 새로운 주소를 생성하고 저장
-  void ensureAddressesExist({
+  Future<void> ensureAddressesExist({
     required WalletListItemBase walletItemBase,
     required int cursor,
     required int count,
     required bool isChange,
-  }) {
+  }) async {
     _checkInitialized();
 
     final realmWalletBase = _realm.find<RealmWalletBase>(walletItemBase.id);
@@ -755,7 +753,7 @@ class WalletDataManager {
           isChange: isChange,
         );
 
-        _saveAddressesToDB(realmWalletBase, addresses, isChange);
+        await _saveAddressesToDB(realmWalletBase, addresses, isChange);
       }
     }
   }
@@ -774,8 +772,8 @@ class WalletDataManager {
     return paginatedResults.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
-  void _saveAddressesToDB(RealmWalletBase realmWalletBase,
-      List<WalletAddress> addresses, bool isChange) {
+  Future<void> _saveAddressesToDB(RealmWalletBase realmWalletBase,
+      List<WalletAddress> addresses, bool isChange) async {
     int lastId = getLastId(_realm, (RealmWalletAddress).toString());
 
     final realmAddresses = addresses
@@ -795,8 +793,8 @@ class WalletDataManager {
         )
         .toList();
 
-    _realm.write(() {
-      _realm.addAll<RealmWalletAddress>(realmAddresses);
+    await _realm.writeAsync(() {
+      _realm.addAll(realmAddresses);
 
       // 생성된 주소 인덱스 업데이트
       if (isChange) {

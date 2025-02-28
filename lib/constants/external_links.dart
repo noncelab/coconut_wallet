@@ -20,3 +20,6 @@ const TELEGRAM_POW = 'https://t.me/+s4D6-03LjaY5ZmU1';
 
 /// X
 const X_POW = 'https://x.com/POWbitcoiner';
+
+/// Tutorial
+const TUTORIAL_URL = 'https://www.coconut.onl/';
