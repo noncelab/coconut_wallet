@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/script/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
 
 /// @nodoc
@@ -33,22 +39,32 @@ abstract class NodeClient {
       getBalance(WalletBase wallet,
           {int receiveUsedIndex = -1, int changeUsedIndex = -1});
 
-  Stream<BaseStreamState<BlockTimestamp>> fetchBlocksByHeight(Set<int> heights);
+  Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights);
 
-  /// [knownTransactionHashes]: already confirmed transaction hashes
-  Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
-      WalletBase wallet,
-      {Set<String>? knownTransactionHashes,
-      int receiveUsedIndex = -1,
-      int changeUsedIndex = -1});
+  Future<List<FetchTransactionResponse>> getFetchTransactionResponses(
+      ScriptStatus scriptStatus, Set<String> knownTransactionHashes);
 
-  Stream<BaseStreamState<Transaction>> fetchTransactionDetails(
+  Stream<BaseStreamState<Transaction>> fetchTransactions(
       Set<String> transactionHashes);
 
-  Stream<BaseStreamState<UtxoState>> fetchUtxos(WalletBase wallet,
-      {int receiveUsedIndex = -1, int changeUsedIndex = -1});
+  Future<SubscribeWalletResponse> subscribeWallet(
+      WalletListItemBase walletItem,
+      StreamController<
+              ({
+                WalletListItemBase walletItem,
+                ScriptStatus scriptStatus,
+                WalletProvider walletProvider,
+              })>
+          scriptStatusController,
+      WalletProvider walletProvider);
+
+  Future<bool> unsubscribeWallet(WalletListItemBase walletItem);
 
   void dispose();
+
+  Future<List<UtxoState>> getUtxoStateList(ScriptStatus scriptStatus);
+
+  Future<Balance> getAddressBalance(String script);
 }
 
 /// Factory for creating NodeClient instances

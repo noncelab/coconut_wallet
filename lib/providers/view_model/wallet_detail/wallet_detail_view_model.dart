@@ -1,5 +1,5 @@
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -9,14 +9,11 @@ import 'package:coconut_wallet/services/model/error/default_error_response.dart'
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
-import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -25,12 +22,9 @@ class WalletDetailViewModel extends ChangeNotifier {
   final int _walletId;
   final WalletProvider _walletProvider;
   final TransactionProvider _txProvider;
-  final UtxoTagProvider _tagProvider;
   final ConnectivityProvider _connectProvider;
   final UpbitConnectModel _upbitConnectModel;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-
-  List<UtxoState> _utxoList = [];
 
   WalletListItemBase? _walletListBaseItem;
   WalletType _walletType = WalletType.singleSignature;
@@ -38,10 +32,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   WalletInitState _prevWalletInitState = WalletInitState.never;
   bool _prevIsLatestTxBlockHeightZero = false;
 
-  bool _isUtxoListLoadComplete = false;
   int? _prevTxCount;
 
-  UtxoOrderEnum _selectedUtxoOrder = UtxoOrderEnum.byTimestampDesc;
   bool _faucetTooltipVisible = false;
 
   /// Faucet
@@ -61,7 +53,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       _walletProvider.getWalletBalance(_walletListBaseItem!.id).total;
 
   WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
-      this._tagProvider, this._connectProvider, this._upbitConnectModel) {
+      this._connectProvider, this._upbitConnectModel) {
     // 지갑 상세 초기화
     _prevWalletInitState = _walletProvider.walletInitState;
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
@@ -71,20 +63,17 @@ class WalletDetailViewModel extends ChangeNotifier {
     _prevIsLatestTxBlockHeightZero = walletBaseItem.isLatestTxBlockHeightZero;
     _walletType = walletBaseItem.walletType;
 
-    if (_walletProvider.walletInitState == WalletInitState.finished) {
-      getUtxoListWithHoldingAddress();
-    }
-
     _txProvider.initTxList(_walletId);
-    _tagProvider.initTagList(_walletId);
+    // _tagProvider.initTagList(_walletId);
 
     // Faucet
     var receiveAddress = _walletProvider.getReceiveAddress(_walletId);
     _walletAddress = receiveAddress.address;
-    _derivationPath = receiveAddress.derivationPath;
-    _walletName = walletBaseItem.name.length > 20
-        ? '${walletBaseItem.name.substring(0, 17)}...'
-        : walletBaseItem.name; // FIXME 지갑 이름 최대 20자로 제한, 이 코드 필요 없음
+    _derivationPath =
+        receiveAddress.derivationPath; // fixme: 잘못된 derivationPath
+    _walletName = walletBaseItem.name.length > 10
+        ? '${walletBaseItem.name.substring(0, 7)}...'
+        : walletBaseItem.name;
     _receiveAddressIndex = receiveAddress.derivationPath.split('/').last;
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetRecord();
@@ -98,16 +87,9 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   bool get isRequesting => _isRequesting;
 
-  bool get isUpdatedTagList => _tagProvider.isUpdatedTagList;
-  bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
-
   String get receiveAddressIndex => _receiveAddressIndex;
 
-  List<UtxoTag> get selectedTagList => _tagProvider.selectedTagList;
-  UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
-
   List<TransactionRecord> get txList => _txProvider.txList;
-  List<UtxoState> get utxoList => _utxoList;
 
   int get walletId => _walletId;
   String get walletAddress => _walletAddress;
@@ -118,25 +100,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   WalletType get walletType => _walletType;
   bool? get isNetworkOn => _connectProvider.isNetworkOn;
   int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
-
-  void getUtxoListWithHoldingAddress() {
-    if (_walletListBaseItem == null) return;
-
-    _utxoList = _walletListBaseItem!.utxoList;
-
-    if (_utxoList.isNotEmpty) {
-      for (var utxo in _utxoList) {
-        final tags =
-            _tagProvider.loadSelectedUtxoTagList(_walletId, utxo.utxoId);
-
-        utxo.tags = tags;
-      }
-    }
-
-    _isUtxoListLoadComplete = true;
-    UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
-    notifyListeners();
-  }
 
   void removeFaucetTooltip() {
     _faucetTooltipVisible = false;
@@ -183,24 +146,11 @@ class WalletDetailViewModel extends ChangeNotifier {
     if (_prevWalletInitState != WalletInitState.finished &&
         _walletProvider.walletInitState == WalletInitState.finished) {
       _checkTxCount();
-      getUtxoListWithHoldingAddress();
+      // getUtxoListWithHoldingAddress();
     }
     _prevWalletInitState = _walletProvider.walletInitState;
     _walletAddress = _walletProvider.getReceiveAddress(_walletId).address;
 
-    notifyListeners();
-  }
-
-  void updateUtxoFilter(UtxoOrderEnum selectedUtxoFilter) async {
-    _selectedUtxoOrder = selectedUtxoFilter;
-    UtxoState.sortUtxo(_utxoList, selectedUtxoFilter);
-    notifyListeners();
-  }
-
-  void updateUtxoTagList(String utxoId, List<UtxoTag> utxoTagList) {
-    final findUtxo = utxoList.firstWhere((item) => item.utxoId == utxoId);
-    findUtxo.tags?.clear();
-    findUtxo.tags?.addAll(utxoTagList);
     notifyListeners();
   }
 
@@ -215,7 +165,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _checkTxCount() {
-    final txCount = _walletListBaseItem!.txCount;
+    final txCount = _txProvider.txList.length;
     final isLatestTxBlockHeightZero =
         _walletListBaseItem!.isLatestTxBlockHeightZero;
     Logger.log('--> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
@@ -251,5 +201,12 @@ class WalletDetailViewModel extends ChangeNotifier {
     _faucetRecord =
         _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
     _saveFaucetRecordToSharedPrefs();
+  }
+
+  // todo: 상태를 반환해주도록 수정되면 좋겠음.
+  Future<void> refreshWallet() async {
+    _walletProvider.initWallet(targetId: _walletId);
+    _txProvider.initTxList(_walletId);
+    _checkTxCount();
   }
 }

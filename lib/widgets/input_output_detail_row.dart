@@ -1,5 +1,5 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
@@ -31,12 +31,10 @@ class InputOutputDetailRow extends StatelessWidget {
       children: [
         Text(
           TextUtils.truncate(address, 19, 11, 8),
-          style: Styles.body2Number.merge(
-            TextStyle(
-              color: rowProperty.leftItemColor,
-              fontSize: 14,
-              height: 16 / 14,
-            ),
+          style: CoconutTypography.body2_14_Number.copyWith(
+            color: rowProperty.leftItemColor,
+            fontSize: 14,
+            height: 16 / 14,
           ),
           maxLines: 1,
         ),
@@ -61,12 +59,9 @@ class InputOutputDetailRow extends StatelessWidget {
                   child: Text(
                     textAlign: TextAlign.end,
                     satoshiToBitcoinString(balance).normalizeTo11Characters(),
-                    style: Styles.body2Number.merge(
-                      TextStyle(
-                        color: rowProperty.rightItemColor,
-                        fontSize: 14,
-                        height: 16 / 14,
-                      ),
+                    style: CoconutTypography.body2_14_Number.copyWith(
+                      color: rowProperty.rightItemColor,
+                      height: 16 / 14,
                     ),
                   ),
                 ),
@@ -82,12 +77,9 @@ class InputOutputDetailRow extends StatelessWidget {
                   width: balanceMaxWidth,
                   child: Text(
                     satoshiToBitcoinString(balance).normalizeTo11Characters(),
-                    style: Styles.body2Number.merge(
-                      TextStyle(
-                        color: rowProperty.rightItemColor,
-                        fontSize: 14,
-                        height: 16 / 14,
-                      ),
+                    style: CoconutTypography.body2_14_Number.copyWith(
+                      color: rowProperty.rightItemColor,
+                      height: 16 / 14,
                     ),
                   ),
                 ),
@@ -113,21 +105,33 @@ class InputOutputDetailRow extends StatelessWidget {
     TransactionStatus? transactionStatus,
     bool isCurrentAddress,
   ) {
-    Color leftItemColor = MyColors.white;
-    Color rightItemColor = MyColors.white;
-    Color svgColor = MyColors.white;
+    Color leftItemColor = CoconutColors.gray500;
+    Color rightItemColor = CoconutColors.gray500;
+    Color svgColor = CoconutColors.gray500;
 
     String svgPath = 'assets/svg/circle-arrow-right.svg';
 
     if (rowType == InputOutputRowType.fee) {
+      // UTXO 화면인 경우
       svgPath = 'assets/svg/circle-pick.svg';
       if (transactionStatus == null) {
-        // UTXO 화면인 경우 색상 변경
-        leftItemColor =
-            rightItemColor = svgColor = MyColors.transparentWhite_40;
+        return RowProperty(
+          leftItemColor: leftItemColor,
+          rightItemColor: rightItemColor,
+          svgColor: svgColor,
+          svgPath: svgPath,
+        );
       }
 
-      /// 수수료인 경우 바로 리턴
+      if (transactionStatus == TransactionStatus.sending ||
+          transactionStatus == TransactionStatus.sent) {
+        leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
+      } else if (transactionStatus == TransactionStatus.self ||
+          transactionStatus == TransactionStatus.selfsending) {
+        leftItemColor = CoconutColors.white;
+        rightItemColor = svgColor = CoconutColors.primary;
+      }
+
       return RowProperty(
         leftItemColor: leftItemColor,
         rightItemColor: rightItemColor,
@@ -142,61 +146,51 @@ class InputOutputDetailRow extends StatelessWidget {
         case TransactionStatus.received:
         case TransactionStatus.receiving:
           if (rowType == InputOutputRowType.input) {
-            /// 인풋
             if (!isCurrentAddress) {
-              /// 현재 주소가 아닌 경우
-              leftItemColor =
-                  rightItemColor = svgColor = MyColors.transparentWhite_40;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.gray500;
             }
           } else {
-            /// 아웃풋
             if (isCurrentAddress) {
-              /// 현재 주소인 경우
-              rightItemColor = svgColor = MyColors.secondary;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.cyan;
             } else {
-              /// 현재 주소가 아닌 경우
-              leftItemColor =
-                  rightItemColor = svgColor = MyColors.transparentWhite_40;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.gray500;
             }
           }
           break;
         case TransactionStatus.sending:
         case TransactionStatus.sent:
           if (rowType == InputOutputRowType.input) {
-            /// 안풋
-            rightItemColor = svgColor = MyColors.primary;
-          } else if (rowType == InputOutputRowType.output &&
-              !isCurrentAddress) {
-            /// 아웃풋, 현재 주소가 아닌 경우
-            leftItemColor =
-                rightItemColor = svgColor = MyColors.transparentWhite_40;
+            leftItemColor = rightItemColor = svgColor = CoconutColors.white;
+          } else if (rowType == InputOutputRowType.output) {
+            if (isCurrentAddress) {
+              leftItemColor = rightItemColor = svgColor = CoconutColors.white;
+            } else {
+              leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
+            }
+          } else if (rowType == InputOutputRowType.fee) {
+            leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
           }
           break;
         case TransactionStatus.self:
         case TransactionStatus.selfsending:
           if (rowType == InputOutputRowType.input) {
             if (isCurrentAddress) {
-              rightItemColor = svgColor = MyColors.primary;
-            } else {
-              leftItemColor =
-                  rightItemColor = svgColor = MyColors.transparentWhite_40;
+              leftItemColor = rightItemColor = svgColor = CoconutColors.white;
             }
+          } else if (rowType == InputOutputRowType.fee) {
+            leftItemColor = CoconutColors.white;
           } else {
             if (isCurrentAddress) {
-              rightItemColor = svgColor = MyColors.secondary;
-            } else {
-              leftItemColor =
-                  rightItemColor = svgColor = MyColors.transparentWhite_40;
+              leftItemColor = CoconutColors.white;
+              rightItemColor = svgColor = CoconutColors.cyan;
             }
           }
           break;
       }
     } else {
       /// transactionStatus가 null이면 UTXO 상세 화면
-      if (rowType == InputOutputRowType.input ||
-          (rowType == InputOutputRowType.output && !isCurrentAddress)) {
-        leftItemColor =
-            rightItemColor = svgColor = MyColors.transparentWhite_40;
+      if (rowType == InputOutputRowType.output && isCurrentAddress) {
+        leftItemColor = rightItemColor = svgColor = CoconutColors.white;
       }
     }
     return RowProperty(

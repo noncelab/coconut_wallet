@@ -32,6 +32,8 @@ class SocketManager {
 
   /// Response
   final Map<int, Completer<dynamic>> _completerMap = {};
+  final Map<String, Function(String, String?)> _scriptSubscribeCallbacks =
+      {}; // ScriptPubKey -> Callback
 
   /// On Reconnect callback
   void Function()? onReconnect;
@@ -51,6 +53,15 @@ class SocketManager {
 
   setCompleter(int id, Completer completer) {
     _completerMap[id] = completer;
+  }
+
+  setSubscriptionCallback(
+      String scriptReverseHash, Function(String, String?) callback) {
+    _scriptSubscribeCallbacks[scriptReverseHash] = callback;
+  }
+
+  removeSubscriptionCallback(String scriptReverseHash) {
+    _scriptSubscribeCallbacks.remove(scriptReverseHash);
   }
 
   Future<void> connect(String host, int port, {bool ssl = true}) async {
@@ -101,7 +112,6 @@ class SocketManager {
   }
 
   void _onDone() {
-    Logger.log('Connection closed.');
     _connectionStatus = SocketConnectionStatus.terminated;
   }
 
@@ -179,9 +189,17 @@ class SocketManager {
 
   void _processJsonObject(Map<String, dynamic> jsonObject) {
     final id = jsonObject['id'];
-    if (_completerMap.containsKey(id)) {
+    final method = jsonObject['method'];
+    if (id != null && _completerMap.containsKey(id)) {
       _completerMap[id]!.complete(jsonObject);
       _completerMap.remove(id);
+    } else if (method == 'blockchain.scripthash.subscribe') {
+      final scriptReversedHash = jsonObject['params'][0];
+      final status = jsonObject['params'][1];
+      final callback = _scriptSubscribeCallbacks[scriptReversedHash];
+      if (callback != null) {
+        callback(scriptReversedHash, status);
+      }
     }
   }
 }

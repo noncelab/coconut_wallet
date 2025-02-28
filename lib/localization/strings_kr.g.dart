@@ -48,6 +48,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get coconut_vault => 'coconut_vault';
   String get coconut_lib => 'coconut_lib';
   String get btc => 'BTC';
+  String get sats => 'sats';
   String get testnet => '테스트넷';
   String get address => '주소';
   String get fee => '수수료';
@@ -108,6 +109,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String apply_item({required Object count}) => '${count}개에 적용';
   String fee_sats({required Object value}) => ' (${value} sats/vb)';
   String utxo_count({required Object count}) => '(${count}개)';
+  String total_utxo_count({required Object count}) => '(총 ${count}개)';
   String get view_app_info => '앱 정보 보기';
   String get view_tx_details => '거래 자세히 보기';
   String get view_more => '더보기';
@@ -160,6 +162,8 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
       TranslationsSettingsScreenKr.internal(_root);
   late final TranslationsAddressListScreenKr address_list_screen =
       TranslationsAddressListScreenKr.internal(_root);
+  late final TranslationsUtxoListScreenKr utxo_list_screen =
+      TranslationsUtxoListScreenKr.internal(_root);
   late final TranslationsTransactionDetailScreenKr transaction_detail_screen =
       TranslationsTransactionDetailScreenKr.internal(_root);
   late final TranslationsUtxoDetailScreenKr utxo_detail_screen =
@@ -397,6 +401,16 @@ class TranslationsAddressListScreenKr {
   String get change => '잔돈';
 }
 
+// Path: utxo_list_screen
+class TranslationsUtxoListScreenKr {
+  TranslationsUtxoListScreenKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get total_balance => '총 잔액';
+}
+
 // Path: transaction_detail_screen
 class TranslationsTransactionDetailScreenKr {
   TranslationsTransactionDetailScreenKr.internal(this._root);
@@ -590,6 +604,7 @@ class TranslationsErrorsKr {
   String get realm_unknown => '알 수 없는 오류가 발생했습니다.';
   String get realm_not_found => '데이터를 찾을 수 없습니다.';
   String get realm_exception => 'Realm 작업 중 오류가 발생했습니다.';
+  String get node_unknown => '노드 연결 중 알 수 없는 오류가 발생했습니다.';
   String get network_connect => '네트워크 연결이 없습니다.';
   String get insufficient_balance => '잔액이 부족해요.';
   late final TranslationsErrorsFeeSelectionErrorKr fee_selection_error =
@@ -602,7 +617,6 @@ class TranslationsErrorsKr {
       TranslationsErrorsPinSettingErrorKr.internal(_root);
   String get data_loading_failed => '데이터를 불러오는 중 오류가 발생했습니다.';
   String get data_not_found => '데이터가 없습니다.';
-  String get node_unknown => '노드 연결 중 알 수 없는 오류가 발생했습니다.';
 }
 
 // Path: text_field
@@ -947,6 +961,8 @@ extension on Translations {
         return 'coconut_lib';
       case 'btc':
         return 'BTC';
+      case 'sats':
+        return 'sats';
       case 'testnet':
         return '테스트넷';
       case 'address':
@@ -1067,6 +1083,8 @@ extension on Translations {
         return ({required Object value}) => ' (${value} sats/vb)';
       case 'utxo_count':
         return ({required Object count}) => '(${count}개)';
+      case 'total_utxo_count':
+        return ({required Object count}) => '(총 ${count}개)';
       case 'view_app_info':
         return '앱 정보 보기';
       case 'view_tx_details':
@@ -1204,6 +1222,8 @@ extension on Translations {
         return '입금';
       case 'address_list_screen.change':
         return '잔돈';
+      case 'utxo_list_screen.total_balance':
+        return '총 잔액';
       case 'transaction_detail_screen.confirmation':
         return ({required Object height, required Object count}) =>
             '${height} (${count} 승인)';
@@ -1336,6 +1356,8 @@ extension on Translations {
         return '데이터를 찾을 수 없습니다.';
       case 'errors.realm_exception':
         return 'Realm 작업 중 오류가 발생했습니다.';
+      case 'errors.node_unknown':
+        return '노드 연결 중 알 수 없는 오류가 발생했습니다.';
       case 'errors.network_connect':
         return '네트워크 연결이 없습니다.';
       case 'errors.insufficient_balance':

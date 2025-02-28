@@ -26,7 +26,9 @@ class UtxoState extends Utxo {
   static void updateTimestampFromBlocks(
       List<UtxoState> utxos, Map<int, BlockTimestamp> blockTimestamps) {
     for (var utxo in utxos) {
-      utxo.updateTimestamp(blockTimestamps[utxo.blockHeight]!.timestamp);
+      // 언컨펌 Utxo의 경우 현재 시간으로 설정
+      utxo.updateTimestamp(
+          blockTimestamps[utxo.blockHeight]?.timestamp ?? DateTime.now());
     }
   }
 

@@ -9,6 +9,7 @@ coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
 btc: "BTC"
+sats: "sats"
 testnet: "테스트넷"
 address: "주소"
 fee: "수수료"
@@ -70,6 +71,7 @@ bitcoin_text: "$bitcoin BTC"
 apply_item: "$count개에 적용"
 fee_sats: " ($value sats/vb)"
 utxo_count: "($count개)"
+total_utxo_count: "(총 $count개)"
 
 view_app_info: "앱 정보 보기"
 view_tx_details: "거래 자세히 보기"
@@ -170,6 +172,8 @@ address_list_screen:
   address_index: "주소 - $index"
   receiving: "입금"
   change: "잔돈"
+utxo_list_screen:
+  total_balance: "총 잔액"
 transaction_detail_screen:
   confirmation: "$height ($count 승인)"
 utxo_detail_screen:

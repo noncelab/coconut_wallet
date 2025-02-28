@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -48,7 +49,7 @@ class TransactionItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '받기 완료',
+              t.status_received,
               style: fontStyle,
             )
           ],
@@ -63,7 +64,7 @@ class TransactionItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '받는 중',
+              t.status_receiving,
               style: fontStyle,
             )
           ],
@@ -78,7 +79,7 @@ class TransactionItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '보내기 완료',
+              t.status_sent,
               style: fontStyle,
             )
           ],
@@ -93,7 +94,7 @@ class TransactionItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '보내는 중',
+              t.status_sending,
               style: fontStyle,
             )
           ],
@@ -108,7 +109,7 @@ class TransactionItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '받기 완료',
+              t.status_received,
               style: fontStyle,
             )
           ],
@@ -123,7 +124,7 @@ class TransactionItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '보내는 중',
+              t.status_sending,
               style: fontStyle,
             )
           ],
@@ -167,8 +168,8 @@ class TransactionItemCard extends StatelessWidget {
         );
       default:
         // 기본 값으로 처리될 수 있도록 한 경우
-        return const SizedBox(
-          child: Text("상태 없음"),
+        return SizedBox(
+          child: Text(t.no_status),
         );
     }
   }

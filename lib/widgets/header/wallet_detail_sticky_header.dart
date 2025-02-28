@@ -1,10 +1,9 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/selector/wallet_detail_tab.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_svg/svg.dart';
 
 class WalletDetailStickyHeader extends StatelessWidget {
   final Key widgetKey;
@@ -13,11 +12,8 @@ class WalletDetailStickyHeader extends StatelessWidget {
   final Unit currentUnit;
   final int? balance;
   final WalletAddress receiveAddress;
-  final WalletDetailTabType selectedListType;
-  final String selectedFilter;
   final Function(int?, String, String) onTapReceive;
   final Function(int?) onTapSend;
-  final Function onTapDropdown;
   final Function removePopup;
   const WalletDetailStickyHeader({
     required this.widgetKey,
@@ -26,11 +22,8 @@ class WalletDetailStickyHeader extends StatelessWidget {
     required this.currentUnit,
     required this.balance,
     required this.receiveAddress,
-    required this.selectedListType,
-    required this.selectedFilter,
     required this.onTapReceive,
     required this.onTapSend,
-    required this.onTapDropdown,
     required this.removePopup,
   }) : super(key: widgetKey);
 
@@ -38,8 +31,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final walletAddress = receiveAddress.address;
     final derivationPath = receiveAddress.derivationPath;
-    // TODO: utxoListIsNotEmpty
-    final utxoListIsNotEmpty = false;
     return Positioned(
       top: height,
       left: 0,
@@ -67,15 +58,15 @@ class WalletDetailStickyHeader extends StatelessWidget {
                               ? (currentUnit == Unit.btc
                                   ? satoshiToBitcoinString(balance!)
                                   : addCommasToIntegerPart(balance!.toDouble()))
-                              : '잔액 조회 불가',
+                              : '-',
                           style: Styles.h2Number,
                           children: [
                             TextSpan(
                               text: balance != null
                                   ? currentUnit == Unit.btc
-                                      ? ' BTC'
-                                      : ' sats'
-                                  : '잔액 조회 불가',
+                                      ? ' ${t.btc}'
+                                      : ' ${t.sats}'
+                                  : '',
                               style: Styles.label.merge(
                                 TextStyle(
                                   fontFamily: CustomFonts.number.getFontFamily,
@@ -103,7 +94,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
                         width: 35,
                         child: Center(
                           child: Text(
-                            '받기',
+                            t.receive,
                             style: Styles.caption.merge(
                               const TextStyle(
                                   color: MyColors.black,
@@ -166,48 +157,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: Visibility(
-                          visible:
-                              selectedListType == WalletDetailTabType.utxo &&
-                                  utxoListIsNotEmpty,
-                          maintainAnimation: true,
-                          maintainState: true,
-                          maintainSize: true,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Container(),
-                              ),
-                              CupertinoButton(
-                                padding: const EdgeInsets.only(
-                                  top: 10,
-                                ),
-                                minSize: 0,
-                                onPressed: () {
-                                  onTapDropdown();
-                                },
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      selectedFilter,
-                                      style: Styles.caption2.merge(
-                                        const TextStyle(
-                                          color: MyColors.white,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      width: 5,
-                                    ),
-                                    SvgPicture.asset(
-                                        'assets/svg/arrow-down.svg'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                       SizedBox(
                         height: 16,
@@ -234,9 +183,10 @@ class WalletDetailStickyHeader extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            selectedListType == WalletDetailTabType.transaction
-                                ? '거래 내역'
-                                : 'UTXO 목록', // TODO: 선택된 리스트 대입
+                            t.tx_list,
+                            // selectedListType == WalletDetailTabType.transaction
+                            // ? '거래 내역'
+                            // : 'UTXO 목록', // TODO: 선택된 리스트 대입
                             style: Styles.caption2.merge(
                               const TextStyle(
                                 fontWeight: FontWeight.w700,

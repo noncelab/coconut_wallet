@@ -26,7 +26,8 @@ import 'package:coconut_wallet/screens/send/signed_psbt_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
@@ -218,13 +219,18 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               ),
           '/send-confirm': (context) =>
               const CustomLoadingOverlay(child: SendConfirmScreen()),
+          '/utxo-list': (context) => buildScreenWithArguments(
+                context,
+                (args) => CustomLoadingOverlay(
+                  child: UtxoListScreen(id: args['id']),
+                ),
+              ),
           '/utxo-detail': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
                   child: UtxoDetailScreen(
                     utxo: args['utxo'],
                     id: args['id'],
-                    isChange: args['isChange'],
                   ),
                 ),
               ),
@@ -232,7 +238,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/negative-feedback': (context) => const NegativeFeedbackScreen(),
           '/mnemonic-word-list': (context) => const Bip39ListScreen(),
           '/utxo-tag': (context) => buildScreenWithArguments(
-              context, (args) => UtxoTagScreen(id: args['id'])),
+              context, (args) => UtxoTagCrudScreen(id: args['id'])),
         },
       ),
     );

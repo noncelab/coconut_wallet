@@ -1,28 +1,89 @@
 import 'dart:async';
-import 'dart:collection';
-import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/script/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
 import 'package:coconut_wallet/services/isolate_manager.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
-import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
-import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
+import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/services/model/stream/stream_state.dart';
 import 'package:coconut_wallet/services/network/node_client.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
+
+/// 갱신된 데이터 종류
+enum UpdateType { balance, utxo, transaction }
+
+/// 갱신된 데이터의 상태
+enum UpdateTypeState { syncing, completed }
+
+/// 메인 소켓의 상태, 지갑 중 어느 하나라도 동기화 중이면 syncing, 모두 동기화 완료면 waiting로 변경
+enum MainClientState { waiting, syncing, disconnected }
+
+/// 갱신된 데이터 정보를 담는 클래스
+class WalletUpdateInfo {
+  final int walletId;
+  UpdateTypeState balance;
+  UpdateTypeState utxo;
+  UpdateTypeState transaction;
+
+  WalletUpdateInfo(this.walletId,
+      {this.balance = UpdateTypeState.completed,
+      this.transaction = UpdateTypeState.completed,
+      this.utxo = UpdateTypeState.completed});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WalletUpdateInfo &&
+          walletId == other.walletId &&
+          balance == other.balance &&
+          utxo == other.utxo &&
+          transaction == other.transaction;
+
+  @override
+  int get hashCode => Object.hash(walletId, balance, utxo, transaction);
+
+  factory WalletUpdateInfo.fromExisting(WalletUpdateInfo existingInfo,
+      {UpdateTypeState? balance,
+      UpdateTypeState? transaction,
+      UpdateTypeState? utxo}) {
+    return WalletUpdateInfo(existingInfo.walletId,
+        balance: balance ?? existingInfo.balance,
+        transaction: transaction ?? existingInfo.transaction,
+        utxo: utxo ?? existingInfo.utxo);
+  }
+}
+
+/// NodeProvider 상태 정보를 담는 클래스
+class NodeProviderState {
+  final MainClientState connectionState;
+  final Map<int, WalletUpdateInfo> updatedWallets;
+
+  const NodeProviderState({
+    required this.connectionState,
+    required this.updatedWallets,
+  });
+
+  NodeProviderState copyWith({
+    MainClientState? newConnectionState,
+    Map<int, WalletUpdateInfo>? newUpdatedWallets,
+  }) {
+    return NodeProviderState(
+      connectionState: newConnectionState ?? connectionState,
+      updatedWallets: newUpdatedWallets ?? updatedWallets,
+    );
+  }
+}
 
 class NodeProvider extends ChangeNotifier {
   final IsolateManager _isolateManager;
@@ -33,11 +94,35 @@ class NodeProvider extends ChangeNotifier {
   Completer<void>? _initCompleter;
   Completer<void>? _syncCompleter;
 
+  NodeProviderState _state = const NodeProviderState(
+    connectionState: MainClientState.waiting,
+    updatedWallets: {},
+  );
+
+  NodeProviderState get state => _state;
+
+  // 구독, 단건 기능 처리를 위한 소켓
+  late NodeClient _mainClient;
+
+  // 구독중인 스크립트 상태 변경을 인지하는 컨트롤러
+  late StreamController<
+      ({
+        WalletListItemBase walletItem,
+        ScriptStatus scriptStatus,
+        WalletProvider walletProvider,
+      })> _scriptStatusController;
+
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
-  bool get isSyncing => _syncCompleter != null;
   String get host => _host;
   int get port => _port;
   bool get ssl => _ssl;
+
+  Stream<
+      ({
+        WalletListItemBase walletItem,
+        ScriptStatus scriptStatus,
+        WalletProvider walletProvider,
+      })> get scriptStatusStream => _scriptStatusController.stream;
 
   NodeProvider(
     this._host,
@@ -53,15 +138,127 @@ class NodeProvider extends ChangeNotifier {
 
   Future<void> _initialize(NodeClientFactory? nodeClientFactory) async {
     try {
+      // IsolateManager 초기화
       final factory = nodeClientFactory ?? ElectrumNodeClientFactory();
       await _isolateManager.initialize(factory, _host, _port, _ssl);
+
+      _mainClient = await factory.create(_host, _port, ssl: _ssl);
+      _scriptStatusController = StreamController<
+          ({
+            WalletListItemBase walletItem,
+            ScriptStatus scriptStatus,
+            WalletProvider walletProvider,
+          })>.broadcast();
+      _scriptStatusController.stream.listen(_handleScriptStatusChanged);
       _initCompleter?.complete();
     } catch (e) {
       _initCompleter?.completeError(e);
+      rethrow;
     }
   }
 
-  Future<Result<T>> _wrapResult<T>(Future<T> future) async {
+  void _setState(
+      {MainClientState? newConnectionState,
+      Map<int, WalletUpdateInfo>? newUpdatedWallets}) {
+    _state = _state.copyWith(
+      newConnectionState: newConnectionState,
+      newUpdatedWallets: newUpdatedWallets,
+    );
+    notifyListeners();
+  }
+
+  /// 지갑의 업데이트 정보를 추가합니다.
+  void _addWalletSyncState(int walletId, UpdateType updateType) {
+    final existingInfo = _state.updatedWallets[walletId];
+
+    WalletUpdateInfo walletUpdateInfo;
+
+    if (existingInfo == null) {
+      walletUpdateInfo = WalletUpdateInfo(walletId);
+    } else {
+      walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
+    }
+
+    switch (updateType) {
+      case UpdateType.balance:
+        walletUpdateInfo.balance = UpdateTypeState.syncing;
+        break;
+      case UpdateType.transaction:
+        walletUpdateInfo.transaction = UpdateTypeState.syncing;
+        break;
+      case UpdateType.utxo:
+        walletUpdateInfo.utxo = UpdateTypeState.syncing;
+        break;
+    }
+
+    // mainClient 상태 업데이트
+    _setState(
+      newConnectionState: MainClientState.syncing,
+      newUpdatedWallets: {
+        ..._state.updatedWallets,
+        walletId: walletUpdateInfo,
+      },
+    );
+  }
+
+  void _addWalletCompletedState(int walletId, UpdateType updateType) {
+    final existingInfo = _state.updatedWallets[walletId];
+
+    WalletUpdateInfo walletUpdateInfo;
+
+    if (existingInfo == null) {
+      walletUpdateInfo = WalletUpdateInfo(walletId);
+    } else {
+      walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
+    }
+
+    switch (updateType) {
+      case UpdateType.balance:
+        walletUpdateInfo.balance = UpdateTypeState.completed;
+        break;
+      case UpdateType.transaction:
+        walletUpdateInfo.transaction = UpdateTypeState.completed;
+        break;
+      case UpdateType.utxo:
+        walletUpdateInfo.utxo = UpdateTypeState.completed;
+        break;
+    }
+
+    _setState(
+      newUpdatedWallets: {
+        ..._state.updatedWallets,
+        walletId: walletUpdateInfo,
+      },
+    );
+  }
+
+  /// 지갑의 특정 업데이트 타입을 제거합니다.
+  void removeWalletUpdateType(int walletId, UpdateType updateType) {
+    final existingInfo = _state.updatedWallets[walletId];
+    if (existingInfo == null) return;
+
+    switch (updateType) {
+      case UpdateType.balance:
+        existingInfo.balance = UpdateTypeState.completed;
+        break;
+      case UpdateType.transaction:
+        existingInfo.transaction = UpdateTypeState.completed;
+        break;
+      case UpdateType.utxo:
+        existingInfo.utxo = UpdateTypeState.completed;
+        break;
+    }
+
+    // notifyListeners 호출 없이 상태만 업데이트
+    _setState(
+      newUpdatedWallets: {
+        ..._state.updatedWallets,
+        walletId: existingInfo,
+      },
+    );
+  }
+
+  Future<Result<T>> _handleResult<T>(Future<T> future) async {
     if (!isInitialized) {
       try {
         await _initCompleter?.future;
@@ -77,326 +274,304 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<Result<String>> broadcast(Transaction signedTx) async {
-    final result =
-        await _wrapResult(_isolateManager.broadcast(signedTx.serialize()));
+  /// 스크립트 상태 변경 이벤트 처리
+  Future<void> _handleScriptStatusChanged(
+      ({
+        WalletListItemBase walletItem,
+        ScriptStatus scriptStatus,
+        WalletProvider walletProvider,
+      }) params) async {
+    try {
+      final now = DateTime.now();
+      Logger.log(
+          'HandleScriptStatusChanged: ${params.walletItem.name} - ${params.scriptStatus.derivationPath}');
 
-    if (result.isFailure) {
-      return result;
+      // 지갑 인덱스 업데이트
+      int receiveUsedIndex = params.scriptStatus.isChange
+          ? params.walletItem.receiveUsedIndex
+          : params.scriptStatus.index;
+      int changeUsedIndex = params.scriptStatus.isChange
+          ? params.scriptStatus.index
+          : params.walletItem.changeUsedIndex;
+      _walletDataManager.updateWalletUsedIndex(
+          params.walletItem, receiveUsedIndex, changeUsedIndex);
+
+      // Balance 동기화
+      await _fetchScriptBalance(params.walletItem, params.scriptStatus);
+
+      // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
+      await _fetchScriptTransaction(
+          params.walletItem, params.scriptStatus, params.walletProvider,
+          now: now);
+
+      // UTXO 동기화
+      await _fetchScriptUtxo(params.walletItem, params.scriptStatus);
+
+      // 동기화 완료 state 업데이트
+      _setState(newConnectionState: MainClientState.waiting);
+    } catch (e) {
+      Logger.error('Failed to handle script status change: $e');
+    }
+  }
+
+  /// 스크립트 구독
+  /// [scriptPubKey] 구독할 스크립트 공개키
+  /// [walletId] 지갑 ID
+  Future<Result<bool>> subscribeWallet(
+      WalletListItemBase walletItem, WalletProvider walletProvider) async {
+    if (!isInitialized) {
+      return Result.failure(ErrorCodes.nodeIsolateError);
     }
 
-    _walletDataManager
-        .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
-        .catchError((_) {
-      Logger.error(_);
-    });
+    try {
+      // DB에 있는 스크립트 로드
+      walletItem.scriptStatusMap =
+          _walletDataManager.getScriptStatuseMap(walletItem.id);
 
-    return result;
-  }
+      SubscribeWalletResponse subscribeResponse = await _mainClient
+          .subscribeWallet(walletItem, _scriptStatusController, walletProvider);
 
-  Future<Result<int>> getNetworkMinimumFeeRate() async {
-    return _wrapResult(_isolateManager.getNetworkMinimumFeeRate());
-  }
+      if (subscribeResponse.scriptStatuses.isEmpty) {
+        return Result.success(true);
+      }
 
-  Future<Result<BlockTimestamp>> getLatestBlock() async {
-    return _wrapResult(_isolateManager.getLatestBlock());
-  }
+      // 구독중인 스크립트 메모리 저장;
+      final newScriptStatuses = {
+        for (var scriptStatus in subscribeResponse.scriptStatuses)
+          scriptStatus.scriptPubKey: scriptStatus,
+      };
+      // 변경된 스크립트 상태만 필터링
+      final changedScriptStatuses =
+          subscribeResponse.scriptStatuses.where((newStatus) {
+        final existingStatus =
+            walletItem.scriptStatusMap[newStatus.scriptPubKey];
+        return existingStatus?.status != newStatus.status;
+      }).toList();
 
-  Future<Result<String>> getTransaction(String txHash) async {
-    return _wrapResult(_isolateManager.getTransaction(txHash));
-  }
+      Logger.log(
+          'SubscribeWallet: ${walletItem.name} - changedScriptStatuses: ${changedScriptStatuses.length}');
 
-  Future<Result<List<Transaction>>> getPreviousTransactions(
-      Transaction transaction, List<Transaction> existingTxList) async {
-    return _wrapResult(
-        _isolateManager.getPreviousTransactions(transaction, existingTxList));
-  }
+      // 메모리 상태 업데이트
+      walletItem.scriptStatusMap = newScriptStatuses;
 
-  Future<Result<RecommendedFee>> getRecommendedFees() async {
-    return _wrapResult(_isolateManager.getRecommendedFees());
-  }
+      if (changedScriptStatuses.isEmpty) {
+        return Result.success(true);
+      }
 
-  Future<
-      Result<
-          (
-            List<AddressBalance> receiveBalanceList,
-            List<AddressBalance> changeBalanceList,
-            Balance total
-          )>> getBalance(WalletListItemBase walletItem) async {
-    final result = await _wrapResult(_isolateManager.getBalance(
-        walletItem.walletBase,
-        receiveUsedIndex: walletItem.receiveUsedIndex,
-        changeUsedIndex: walletItem.changeUsedIndex));
+      // 지갑 인덱스 업데이트
+      _walletDataManager.updateWalletUsedIndex(
+          walletItem,
+          subscribeResponse.usedReceiveIndex,
+          subscribeResponse.usedChangeIndex);
 
-    if (result.isSuccess) {
-      _walletDataManager.updateWalletBalance(walletItem.id, result.value.$3);
-      notifyListeners();
+      // 배치 업데이트 처리
+      await _handleBatchScriptStatusChanged(
+        walletItem: walletItem,
+        scriptStatuses: changedScriptStatuses,
+        walletProvider: walletProvider,
+      );
+
+      // 변경된 상태만 DB에 저장
+      _walletDataManager.batchUpdateScriptStatuses(
+          changedScriptStatuses, walletItem.id);
+
+      Logger.log('SubscribeWallet: ${walletItem.name} - finished');
+      return Result.success(true);
+    } catch (e) {
+      Logger.error('SubscribeWallet: ${walletItem.name} - failed');
+      return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
     }
-
-    return result;
   }
 
-  Stream<BaseStreamState<BlockTimestamp>> fetchBlocksByHeight(
-      Set<int> heights) {
-    return _isolateManager.fetchBlocksByHeight(heights);
+  Future<Result<bool>> unsubscribeWallet(WalletListItemBase walletItem) async {
+    return _handleResult(() async {
+      await _mainClient.unsubscribeWallet(walletItem);
+      walletItem.scriptStatusMap.clear();
+      Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
+      return true;
+    }());
   }
 
-  Stream<BaseStreamState<FetchTransactionResponse>> fetchTransactions(
-      WalletListItemBase walletItemBase,
-      {Set<String>? knownTransactionHashes}) {
-    return _isolateManager.fetchTransactions(
-      walletItemBase.walletBase,
-      knownTransactionHashes: knownTransactionHashes,
-      receiveUsedIndex: walletItemBase.receiveUsedIndex,
-      changeUsedIndex: walletItemBase.changeUsedIndex,
-    );
-  }
+  /// 스크립트 상태 변경 배치 처리
+  Future<void> _handleBatchScriptStatusChanged({
+    required WalletListItemBase walletItem,
+    required List<ScriptStatus> scriptStatuses,
+    required WalletProvider walletProvider,
+  }) async {
+    try {
+      // Balance 병렬 처리
+      _addWalletSyncState(walletItem.id, UpdateType.balance);
+      await Future.wait(
+        scriptStatuses.map((status) => _fetchScriptBalance(walletItem, status)),
+      );
+      _addWalletCompletedState(walletItem.id, UpdateType.balance);
 
-  Stream<BaseStreamState<Transaction>> fetchTransactionDetails(
-      Set<String> transactionHashes) {
-    return _isolateManager.fetchTransactionDetails(transactionHashes);
-  }
+      // Transaction 병렬 처리
+      _addWalletSyncState(walletItem.id, UpdateType.transaction);
+      final transactionFutures = scriptStatuses.map(
+        (status) => _fetchScriptTransaction(walletItem, status, walletProvider),
+      );
+      await Future.wait(transactionFutures);
+      _addWalletCompletedState(walletItem.id, UpdateType.transaction);
 
-  void stopFetching() {
-    if (_syncCompleter != null && !_syncCompleter!.isCompleted) {
-      _syncCompleter?.completeError(ErrorCodes.nodeConnectionError);
+      // UTXO 병렬 처리
+      _addWalletSyncState(walletItem.id, UpdateType.utxo);
+      await Future.wait(
+        scriptStatuses.map((status) => _fetchScriptUtxo(walletItem, status)),
+      );
+      _addWalletCompletedState(walletItem.id, UpdateType.utxo);
+
+      // 동기화 완료 state 업데이트
+      _setState(newConnectionState: MainClientState.waiting);
+    } catch (e) {
+      Logger.error('Failed to handle batch script status change: $e');
+      _setState(newConnectionState: MainClientState.waiting);
     }
-    dispose();
   }
 
-  List<TransactionRecord> getUnconfirmedTransactions(int walletId) {
-    return _walletDataManager
-        .getUnconfirmedTransactions(walletId)
-        .map((realmTx) => mapRealmTransactionToTransaction(realmTx))
-        .toList();
+  Future<void> _fetchScriptBalance(
+      WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
+    // 동기화 시작 state 업데이트
+    _addWalletSyncState(walletItem.id, UpdateType.balance);
+
+    final addressBalance =
+        await _mainClient.getAddressBalance(scriptStatus.scriptPubKey);
+
+    _walletDataManager.updateAddressBalance(
+        walletId: walletItem.id,
+        index: scriptStatus.index,
+        isChange: scriptStatus.isChange,
+        balance: addressBalance);
+
+    // Balance 업데이트 완료 state 업데이트
+    _addWalletCompletedState(walletItem.id, UpdateType.balance);
   }
 
-  Future<void> updateTransactionStates(
-      int walletId,
-      List<String> txsToUpdate,
-      List<String> txsToDelete,
-      Map<String, FetchTransactionResponse> fetchedTxMap,
-      Map<int, BlockTimestamp> blockTimestampMap) async {
-    await _walletDataManager.updateTransactionStates(
-        walletId, txsToUpdate, txsToDelete, fetchedTxMap, blockTimestampMap);
-  }
+  Future<void> _fetchScriptTransaction(WalletListItemBase walletItem,
+      ScriptStatus scriptStatus, WalletProvider walletProvider,
+      {DateTime? now}) async {
+    // Transaction 동기화 시작 state 업데이트
+    _addWalletSyncState(walletItem.id, UpdateType.transaction);
 
-  /// 새로운 트랜잭션을 조회합니다.
-  Future<List<FetchTransactionResponse>> scanNewTransactionResponses(
-      WalletListItemBase walletItemBase, WalletProvider walletProvider) async {
-    Set<String> knownTransactionHashes = _walletDataManager
-        .getTransactions(walletItemBase.id)
-        .where((tx) {
-          if (tx.blockHeight == null) {
-            return false;
-          }
-          return tx.blockHeight! > 0;
-        })
+    // 새로운 트랜잭션 조회
+    final knownTransactionHashes = _walletDataManager
+        .getTransactions(walletItem.id)
+        .where((tx) => tx.blockHeight != null && tx.blockHeight! > 0)
         .map((tx) => tx.transactionHash)
         .toSet();
 
-    final List<FetchTransactionResponse> transactions = [];
-    // 최대 주소 인덱스 업데이트
-    int receiveUsedIndex = -1;
-    int changeUsedIndex = -1;
+    final txFetchResults = await _mainClient.getFetchTransactionResponses(
+        scriptStatus, knownTransactionHashes);
 
-    await for (final state in fetchTransactions(walletItemBase,
-        knownTransactionHashes: knownTransactionHashes)) {
-      if (state is SuccessState<FetchTransactionResponse>) {
-        // 주소 인덱스가 -1인 경우는 스캔 완료를 의미
-        if (state.data.addressIndex > -1) {
-          transactions.add(state.data);
-        }
-
-        if (state.data.isChange) {
-          changeUsedIndex = max(changeUsedIndex, state.data.addressIndex);
-        } else {
-          receiveUsedIndex = max(receiveUsedIndex, state.data.addressIndex);
-        }
-      }
-    }
-
-    if (walletItemBase.receiveUsedIndex < receiveUsedIndex) {
-      walletItemBase.receiveUsedIndex = receiveUsedIndex;
-      walletProvider.generateWalletAddress(
-          walletItemBase, receiveUsedIndex, false);
-    }
-    if (walletItemBase.changeUsedIndex < changeUsedIndex) {
-      walletItemBase.changeUsedIndex = changeUsedIndex;
-      walletProvider.generateWalletAddress(
-          walletItemBase, changeUsedIndex, true);
-    }
-
-    return transactions;
-  }
-
-  /// 기존 fetchTransactions 함수를 두 개의 함수로 분리하여 호출하는 방식으로 변경
-  Future<void> saveFetchTransactions(
-      WalletListItemBase walletItemBase,
-      List<FetchTransactionResponse> fetchTxResList,
-      WalletProvider walletProvider) async {
-    if (fetchTxResList.isEmpty) {
+    if (txFetchResults.isEmpty) {
       return;
     }
 
-    // 1. 미확인 트랜잭션 상태 업데이트
-    await _updateUnconfirmedTransactions(
-      walletItemBase.id,
-      fetchTxResList,
-    );
-
-    // 2. 트랜잭션의 블록 타임스탬프 조회
-    final txBlockHeightMap = _createTxBlockHeightMap(fetchTxResList);
-    final blockTimestampMap =
-        await _fetchBlockTimestamps(txBlockHeightMap.values.toSet());
-
-    // 3. 트랜잭션 상세 조회 및 처리
-    final fetchedTransactions = await _fetchTransactionDetails(fetchTxResList);
-
-    // 4. 트랜잭션 레코드 생성 및 저장
-    final newTransactionRecords = await _createTransactionRecords(
-      walletItemBase,
-      fetchedTransactions,
-      txBlockHeightMap,
-      blockTimestampMap,
-      walletProvider,
-    );
-
-    // DB에 저장
-    _walletDataManager.addAllTransactions(
-        walletItemBase.id, newTransactionRecords);
-    notifyListeners();
-  }
-
-  /// 미확인 트랜잭션의 상태를 업데이트합니다.
-  Future<void> _updateUnconfirmedTransactions(
-    int walletId,
-    List<FetchTransactionResponse> fetchedTxs,
-  ) async {
-    // 1. DB에서 미확인 트랜잭션 조회
-    final unconfirmedTxs = getUnconfirmedTransactions(walletId);
-    if (unconfirmedTxs.isEmpty) {
-      return;
-    }
-
-    // 2. 새로 조회한 트랜잭션과 비교
-    final fetchedTxMap = {for (var tx in fetchedTxs) tx.transactionHash: tx};
-
-    final List<String> txsToUpdate = [];
-    final List<String> txsToDelete = [];
-
-    for (final unconfirmedTx in unconfirmedTxs) {
-      final fetchedTx = fetchedTxMap[unconfirmedTx.transactionHash];
-
-      if (fetchedTx == null) {
-        // INFO: RBF(Replace-By-Fee)에 의해서 처리되지 않은 트랜잭션이 삭제된 경우를 대비
-        // INFO: 추후에는 삭제가 아니라 '무효화됨'으로 표기될 수 있음
-        txsToDelete.add(unconfirmedTx.transactionHash);
-      } else if (fetchedTx.height > 0) {
-        // 블록에 포함된 경우 (confirmed)
-        txsToUpdate.add(unconfirmedTx.transactionHash);
-      }
-    }
-
-    if (txsToUpdate.isEmpty && txsToDelete.isEmpty) {
-      return;
-    }
-
-    // 3. 블록 타임스탬프 조회 (업데이트할 트랜잭션이 있는 경우)
-    Map<int, BlockTimestamp> blockTimestampMap = txsToUpdate.isEmpty
-        ? {}
-        : await _fetchBlockTimestamps(
-            fetchedTxs
-                .where((tx) => txsToUpdate.contains(tx.transactionHash))
-                .map((tx) => tx.height)
-                .toSet(),
-          );
-
-    // 4. 트랜잭션 상태 업데이트
-    await updateTransactionStates(
-      walletId,
-      txsToUpdate,
-      txsToDelete,
-      fetchedTxMap,
-      blockTimestampMap,
-    );
-  }
-
-  /// 트랜잭션 해시와 블록 높이를 매핑하는 맵을 생성합니다.
-  Map<String, int> _createTxBlockHeightMap(
-      List<FetchTransactionResponse> fetchTxResList) {
-    return HashMap.fromEntries(fetchTxResList
+    final txBlockHeightMap = Map<String, int>.fromEntries(txFetchResults
         .where((tx) => tx.height > 0)
         .map((tx) => MapEntry(tx.transactionHash, tx.height)));
-  }
 
-  /// 블록 타임스탬프를 조회합니다.
-  Future<Map<int, BlockTimestamp>> _fetchBlockTimestamps(
-    Set<int> blockHeights,
-  ) async {
-    return await fetchBlocksByHeight(blockHeights)
-        .where((state) => state is SuccessState<BlockTimestamp>)
-        .cast<SuccessState<BlockTimestamp>>()
-        .map((state) => state.data)
-        .fold<Map<int, BlockTimestamp>>({}, (map, blockTimestamp) {
-      map[blockTimestamp.height] = blockTimestamp;
-      return map;
-    });
-  }
+    final blockTimestampMap = txBlockHeightMap.isEmpty
+        ? <int, BlockTimestamp>{}
+        : await _mainClient.getBlocksByHeight(txBlockHeightMap.values.toSet());
 
-  /// 트랜잭션 상세 정보를 조회합니다.
-  Future<List<Transaction>> _fetchTransactionDetails(
-    List<FetchTransactionResponse> fetchTxResList,
-  ) async {
-    final fetchedTxHashes =
-        fetchTxResList.map((tx) => tx.transactionHash).toSet();
+    final transactionFuture = await _mainClient
+        .fetchTransactions(
+            txFetchResults.map((tx) => tx.transactionHash).toSet())
+        .toList();
 
-    return await fetchTransactionDetails(fetchedTxHashes)
-        .where((state) => state is SuccessState<Transaction>)
-        .cast<SuccessState<Transaction>>()
+    final txs = transactionFuture
+        .whereType<SuccessState<Transaction>>()
         .map((state) => state.data)
         .toList();
+
+    final txRecords = await _createTransactionRecords(
+        walletItem, txs, txBlockHeightMap, blockTimestampMap, walletProvider,
+        now: now);
+
+    _walletDataManager.addAllTransactions(walletItem.id, txRecords);
+
+    // Transaction 업데이트 완료 state 업데이트
+    _addWalletCompletedState(walletItem.id, UpdateType.transaction);
+  }
+
+  Future<void> _fetchScriptUtxo(
+      WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
+    // UTXO 동기화 시작 state 업데이트
+    _addWalletSyncState(walletItem.id, UpdateType.utxo);
+
+    // UTXO 목록 조회
+    final utxos = await _mainClient.getUtxoStateList(scriptStatus);
+
+    final blockTimestampMap = await _mainClient
+        .getBlocksByHeight(utxos.map((utxo) => utxo.blockHeight).toSet());
+
+    UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
+
+    _walletDataManager.addAllUtxos(walletItem.id, utxos);
+
+    // UTXO 업데이트 완료 state 업데이트
+    _addWalletCompletedState(walletItem.id, UpdateType.utxo);
   }
 
   /// 트랜잭션 레코드를 생성합니다.
   Future<List<TransactionRecord>> _createTransactionRecords(
-    WalletListItemBase walletItemBase,
-    List<Transaction> fetchedTransactions,
-    Map<String, int> txBlockHeightMap,
-    Map<int, BlockTimestamp> blockTimestampMap,
-    WalletProvider walletProvider,
-  ) async {
-    return Future.wait(fetchedTransactions.map((tx) async {
-      final previousTxsResult = await getPreviousTransactions(tx, []);
-
-      if (previousTxsResult.isFailure) {
-        throw ErrorCodes.fetchTransactionsError;
-      }
-
-      final txDetails = await _processTransactionDetails(
-          tx, previousTxsResult.value, walletItemBase, walletProvider);
-
-      return TransactionRecord.fromTransactions(
-        transactionHash: tx.transactionHash,
-        timestamp:
-            blockTimestampMap[txBlockHeightMap[tx.transactionHash]!]!.timestamp,
-        blockHeight: txBlockHeightMap[tx.transactionHash]!,
-        inputAddressList: txDetails.inputAddressList,
-        outputAddressList: txDetails.outputAddressList,
-        transactionType: txDetails.txType.name,
-        amount: txDetails.amount,
-        fee: txDetails.fee,
-      );
+      WalletListItemBase walletItemBase,
+      List<Transaction> txs,
+      Map<String, int> txBlockHeightMap,
+      Map<int, BlockTimestamp> blockTimestampMap,
+      WalletProvider walletProvider,
+      {NodeClient? nodeClient,
+      List<Transaction> previousTxs = const [],
+      DateTime? now}) async {
+    return Future.wait(txs.map((tx) async {
+      return _createTransactionRecord(walletItemBase, tx, txBlockHeightMap,
+          blockTimestampMap, walletProvider,
+          nodeClient: nodeClient, previousTxs: previousTxs, now: now);
     }));
   }
 
+  /// 트랜잭션 레코드를 생성합니다.
+  Future<TransactionRecord> _createTransactionRecord(
+      WalletListItemBase walletItemBase,
+      Transaction tx,
+      Map<String, int> txBlockHeightMap,
+      Map<int, BlockTimestamp> blockTimestampMap,
+      WalletProvider walletProvider,
+      {NodeClient? nodeClient,
+      List<Transaction> previousTxs = const [],
+      DateTime? now}) async {
+    now ??= DateTime.now();
+
+    final previousTxsResult =
+        await _getPreviousTransactions(tx, previousTxs, nodeClient: nodeClient);
+
+    if (previousTxsResult.isFailure) {
+      throw ErrorCodes.fetchTransactionsError;
+    }
+    int blockHeight = txBlockHeightMap[tx.transactionHash] ?? 0;
+    final txDetails = _processTransactionDetails(
+        tx, previousTxsResult.value, walletItemBase, walletProvider);
+
+    return TransactionRecord.fromTransactions(
+      transactionHash: tx.transactionHash,
+      timestamp: blockTimestampMap[blockHeight]?.timestamp ?? now,
+      blockHeight: blockHeight,
+      inputAddressList: txDetails.inputAddressList,
+      outputAddressList: txDetails.outputAddressList,
+      transactionType: txDetails.txType.name,
+      amount: txDetails.amount,
+      fee: txDetails.fee,
+    );
+  }
+
   /// 트랜잭션의 입출력 상세 정보를 처리합니다.
-  Future<_TransactionDetails> _processTransactionDetails(
+  _TransactionDetails _processTransactionDetails(
     Transaction tx,
     List<Transaction> previousTxs,
     WalletListItemBase walletItemBase,
     WalletProvider walletProvider,
-  ) async {
+  ) {
     List<TransactionAddress> inputAddressList = [];
     int selfInputCount = 0;
     int selfOutputCount = 0;
@@ -458,31 +633,61 @@ class NodeProvider extends ChangeNotifier {
     );
   }
 
-  Future<List<UtxoState>> fetchUtxos(WalletListItemBase walletItem) async {
-    final receiveUsedIndex = walletItem.receiveUsedIndex;
-    final changeUsedIndex = walletItem.changeUsedIndex;
+  Future<Result<String>> broadcast(Transaction signedTx) async {
+    final result =
+        await _handleResult(_mainClient.broadcast(signedTx.serialize()));
 
-    final utxos = await _isolateManager
-        .fetchUtxos(walletItem.walletBase,
-            receiveUsedIndex: receiveUsedIndex,
-            changeUsedIndex: changeUsedIndex)
-        .map((state) => state.data)
-        .where((utxo) => utxo != null)
-        .map((utxo) => utxo!)
-        .toList();
+    if (result.isFailure) {
+      return result;
+    }
 
-    final blockTimestampMap = await _fetchBlockTimestamps(
-        utxos.map((utxo) => utxo.blockHeight).toSet());
+    _walletDataManager
+        .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
+        .catchError((_) {
+      Logger.error(_);
+    });
 
-    UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
+    return result;
+  }
 
-    return utxos;
+  Future<Result<int>> getNetworkMinimumFeeRate() async {
+    return _handleResult(_mainClient.getNetworkMinimumFeeRate());
+  }
+
+  Future<Result<BlockTimestamp>> getLatestBlock() async {
+    return _handleResult(_mainClient.getLatestBlock());
+  }
+
+  Future<Result<String>> getTransaction(String txHash) async {
+    return _handleResult(_mainClient.getTransaction(txHash));
+  }
+
+  Future<Result<List<Transaction>>> _getPreviousTransactions(
+      Transaction transaction, List<Transaction> existingTxList,
+      {NodeClient? nodeClient}) async {
+    nodeClient ??= _mainClient;
+
+    return _handleResult(
+        nodeClient.getPreviousTransactions(transaction, existingTxList));
+  }
+
+  Future<Result<RecommendedFee>> getRecommendedFees() async {
+    return _handleResult(_mainClient.getRecommendedFees());
+  }
+
+  void stopFetching() {
+    if (_syncCompleter != null && !_syncCompleter!.isCompleted) {
+      _syncCompleter?.completeError(ErrorCodes.nodeConnectionError);
+    }
+    dispose();
   }
 
   @override
   void dispose() {
     super.dispose();
     _syncCompleter = null;
+    _mainClient.dispose();
+    _scriptStatusController.close();
     _isolateManager.dispose();
   }
 }

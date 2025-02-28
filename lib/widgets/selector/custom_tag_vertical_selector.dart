@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
@@ -5,7 +6,7 @@ import 'package:flutter/material.dart';
 /// [CustomTagVerticalSelector] : 태그 목록을 보여주고 선택할 수 있는 위젯 (세로)
 /// [tags] : 표시할 태그 목록
 /// [onSelectedTag] : 태그 선택시 호출되는 콜백
-/// [externalUpdatedTagName] : 선택된 태그명이 외부에서 변경되었을 때 선택 상태를 업데이트
+/// [externalUpdatedTagName] : 선택된 태그명이 외부에서 변경되었을 때 선택 상태를 업데이트 ????
 class CustomTagVerticalSelector extends StatefulWidget {
   final List<UtxoTag> tags;
   final Function(UtxoTag?) onSelectedTag;
@@ -24,6 +25,7 @@ class CustomTagVerticalSelector extends StatefulWidget {
 
 class _CustomTagVerticalSelectorState extends State<CustomTagVerticalSelector> {
   String _selectedTagName = '';
+  int _selectedTagIndex = -1;
 
   @override
   void initState() {
@@ -54,18 +56,22 @@ class _CustomTagVerticalSelectorState extends State<CustomTagVerticalSelector> {
           onTap: () {
             if (_selectedTagName != utxoTag.name) {
               _selectedTagName = utxoTag.name;
+              _selectedTagIndex = utxoTag.colorIndex;
               widget.onSelectedTag.call(utxoTag);
             } else {
               _selectedTagName = '';
+              _selectedTagIndex = -1;
               widget.onSelectedTag.call(null);
             }
             setState(() {});
           },
           child: CustomTagSelectorItem(
+            key: ValueKey(utxoTag.id),
             tag: utxoTag.name,
             colorIndex: utxoTag.colorIndex,
             usedCount: utxoTag.utxoIdList?.length ?? 0,
-            isSelected: _selectedTagName == utxoTag.name,
+            isSelected: _selectedTagName == utxoTag.name &&
+                _selectedTagIndex == utxoTag.colorIndex,
           ),
         );
       },
@@ -143,7 +149,7 @@ class CustomTagSelectorItem extends StatelessWidget {
                 Visibility(
                   visible: usedCount > 0,
                   child: Text(
-                    '$usedCount개에 적용',
+                    t.apply_item(count: usedCount),
                     style: Styles.body1
                         .copyWith(fontSize: 11, color: MyColors.white),
                   ),

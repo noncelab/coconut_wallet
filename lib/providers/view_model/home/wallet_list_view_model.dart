@@ -5,7 +5,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 
@@ -48,37 +47,14 @@ class WalletListViewModel extends ChangeNotifier {
 
   Future initWallet(
       {int? targetId, int? exceptionalId, bool syncOthers = true}) async {
+    for (var walletItem in _walletProvider.walletItemList) {
+      await _nodeProvider.unsubscribeWallet(walletItem);
+      await _nodeProvider.subscribeWallet(walletItem, _walletProvider);
+    }
     _walletProvider.initWallet(
         targetId: targetId,
         exceptionalId: exceptionalId,
         syncOthers: syncOthers);
-
-    for (var walletItem in walletItemList) {
-      Logger.log('>>>>> walletItem: ${walletItem.name}');
-      // 새로운 내역이 있는지 조회
-      final newTxResList = await _nodeProvider.scanNewTransactionResponses(
-          walletItem, _walletProvider);
-
-      // 잔액 조회
-      final balanceResult = await _nodeProvider.getBalance(walletItem);
-      if (balanceResult.isSuccess) {
-        _walletProvider.updateWalletAddressList(walletItem,
-            balanceResult.value.$1, balanceResult.value.$2, newTxResList);
-      }
-      notifyListeners();
-
-      // 트랜잭션 내역 조회
-      if (newTxResList.isNotEmpty) {
-        await _nodeProvider.saveFetchTransactions(
-            walletItem, newTxResList, _walletProvider);
-      }
-      notifyListeners();
-
-      // Utxo 조회
-      walletItem.utxoList = await _nodeProvider.fetchUtxos(walletItem);
-
-      notifyListeners();
-    }
   }
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {

@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
@@ -109,12 +110,6 @@ class WalletProvider extends ChangeNotifier {
               _walletInitError!.code == ErrorCodes.storageReadError.code)) {
         Logger.log(">>>>> 1. _loadWalletFromLocal");
         await _loadWalletFromLocal();
-      }
-
-      // 지갑 로드 시 최소 gapLimit 만큼 주소 생성
-      for (var walletItem in _walletItemList) {
-        generateWalletAddress(walletItem, -1, false);
-        generateWalletAddress(walletItem, -1, true);
       }
 
       // 네트워크 확인이 완료된 후 다음 과정 진행
@@ -227,6 +222,10 @@ class WalletProvider extends ChangeNotifier {
     } else {
       newItem = await _walletDataManager.addSinglesigWallet(watchOnlyWallet);
     }
+
+    generateWalletAddress(newItem, -1, false);
+    generateWalletAddress(newItem, -1, true);
+
     //final newItem = await _createNewWallet(walletSync, isMultisig);
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
     updatedList.add(newItem);
@@ -355,10 +354,6 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  List<TransactionRecord>? getTxList(int walletId) {
-    return _walletDataManager.getTxList(walletId);
-  }
-
   /// 네트워크가 꺼지면 네트워크를 해제함.
   void setIsNetworkOn(bool? isNetworkOn) {
     if (_isNetworkOn == isNetworkOn) return;
@@ -472,6 +467,23 @@ class WalletProvider extends ChangeNotifier {
 
   WalletAddress getReceiveAddress(int walletId) {
     return _walletDataManager.getReceiveAddress(walletId);
+  }
+
+  List<UtxoState> getUtxoList(int walletId) {
+    return _walletDataManager.getUtxoStateList(walletId);
+  }
+
+  List<TransactionRecord> getTransactionRecordList(int walletId) {
+    return _walletDataManager.getTransactionRecordList(walletId);
+  }
+
+  UtxoState? getUtxoState(int walletId, String utxoId) {
+    return _walletDataManager.getUtxoState(walletId, utxoId);
+  }
+
+  TransactionRecord? getTransactionRecord(
+      int walletId, String transactionHash) {
+    return _walletDataManager.getTransactionRecord(walletId, transactionHash);
   }
 }
 

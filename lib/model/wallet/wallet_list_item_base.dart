@@ -1,6 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/script/script_status.dart';
 
 abstract class WalletListItemBase {
   static const String walletTypeField = 'walletType';
@@ -21,7 +21,9 @@ abstract class WalletListItemBase {
       false; // _nodeConnector.fetch 결과에서 latestTxBlockHeight가 변경되지 않았는지 확인용
 
   late WalletBase walletBase;
-  List<UtxoState> utxoList = []; // TODO: DB 추가 후 DB에서 조회하도록 수정
+
+  Map<String, UnaddressedScriptStatus> scriptStatusMap =
+      {}; // { ScriptPubKey: ScriptStatus }
 
   WalletListItemBase(
       {required this.id,
