@@ -1,6 +1,6 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,8 +41,8 @@ void main() {
       final gestureFinder = find.byWidgetPredicate(
         (widget) =>
             widget is GestureDetector &&
-            widget.child is CustomTagChip &&
-            (widget.child as CustomTagChip).tag == 'kyc',
+            widget.child is CoconutChip &&
+            (widget.child as CoconutChip).label == 'kyc',
       );
       expect(gestureFinder, findsOneWidget);
       await tester.tap(gestureFinder);
@@ -51,8 +51,8 @@ void main() {
       final gestureFinder2 = find.byWidgetPredicate(
         (widget) =>
             widget is GestureDetector &&
-            widget.child is CustomTagChip &&
-            (widget.child as CustomTagChip).tag == 'strike',
+            widget.child is CoconutChip &&
+            (widget.child as CoconutChip).label == 'strike',
       );
       expect(gestureFinder2, findsOneWidget);
       await tester.tap(gestureFinder2);

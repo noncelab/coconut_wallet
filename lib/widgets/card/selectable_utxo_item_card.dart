@@ -1,9 +1,9 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -115,11 +115,16 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                         children: List.generate(
                           widget.utxoTags?.length ?? 0,
                           (index) => IntrinsicWidth(
-                            child: CustomTagChip(
-                              tag: widget.utxoTags?[index].name ?? '',
-                              colorIndex:
-                                  widget.utxoTags?[index].colorIndex ?? 0,
-                              type: CustomTagChipType.fix,
+                            child: CoconutChip(
+                              minWidth: 40,
+                              color: CoconutColors.backgroundColorPaletteDark[
+                                  widget.utxoTags?[index].colorIndex ?? 0],
+                              borderColor: CoconutColors.colorPalette[
+                                  widget.utxoTags?[index].colorIndex ?? 0],
+                              label: '#${widget.utxoTags?[index].name ?? ''}',
+                              labelSize: 12,
+                              labelColor: CoconutColors.colorPalette[
+                                  widget.utxoTags?[index].colorIndex ?? 0],
                             ),
                           ),
                         ),

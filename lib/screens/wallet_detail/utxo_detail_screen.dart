@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -17,7 +16,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
@@ -473,10 +471,16 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                   children: List.generate(
                     selectedTags.length,
                     (index) => IntrinsicWidth(
-                      child: CustomTagChip(
-                        tag: selectedTags[index].name,
-                        colorIndex: selectedTags[index].colorIndex,
-                        type: CustomTagChipType.fix,
+                      child: CoconutChip(
+                        minWidth: 40,
+                        color: CoconutColors.backgroundColorPaletteDark[
+                            selectedTags[index].colorIndex],
+                        borderColor: CoconutColors
+                            .colorPalette[selectedTags[index].colorIndex],
+                        label: '#${selectedTags[index].name}',
+                        labelSize: 12,
+                        labelColor: CoconutColors
+                            .colorPalette[selectedTags[index].colorIndex],
                       ),
                     ),
                   ),

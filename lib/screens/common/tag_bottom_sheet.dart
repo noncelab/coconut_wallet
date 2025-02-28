@@ -4,9 +4,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
-import 'package:coconut_wallet/widgets/custom_tag_chip.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -70,9 +67,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   bool _isNextButtonEnabled = false;
   bool _isUpdateButtonEnabled = false;
 
-  /// 선택된 UtxoTag - update type 에서 변경될 수 있음 fixme: 사용하는데가 없음 ????
-  UtxoTag? _updateUtxoTag;
-
   // 변경된 태그 이름과 색상
   late String _updateTagName;
   late int _updateTagColorIndex;
@@ -101,7 +95,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     if (widget.updateUtxoTag != null) {
       _updateTagName = widget.updateUtxoTag!.name;
       _updateTagColorIndex = widget.updateUtxoTag!.colorIndex;
-      _updateUtxoTag = widget.updateUtxoTag;
     }
     _controller.text = _updateTagName;
     _controller.selection = TextSelection.fromPosition(
@@ -196,36 +189,43 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                 runSpacing: 8,
                 children: List.generate(
                   _utxoTags.length,
-                  (index) => IntrinsicWidth(
-                    child: GestureDetector(
-                      onTap: () {
-                        final tag = _utxoTags[index].name;
-                        setState(() {
-                          if (_prevSelectedUtxoTagNames.contains(tag)) {
-                            _prevSelectedUtxoTagNames.remove(tag);
-                          } else {
-                            if (_prevSelectedUtxoTagNames.length == 5) {
-                              CustomToast.showToast(
-                                  context: context,
-                                  text: t.tag_bottom_sheet.max_tag_count,
-                                  seconds: 2);
-                              return;
+                  (index) {
+                    bool isSelected =
+                        _prevSelectedUtxoTagNames.contains(_utxoTags[index].name);
+                    return IntrinsicWidth(
+                      child: CoconutChip(
+                        minWidth: 40,
+                        color: CoconutColors.backgroundColorPaletteDark[
+                            _utxoTags[index].colorIndex],
+                        hasOpacity: true,
+                        borderColor: CoconutColors
+                            .colorPalette[_utxoTags[index].colorIndex],
+                        label: '#${_utxoTags[index].name}',
+                        labelSize: 12,
+                        labelColor: CoconutColors
+                            .colorPalette[_utxoTags[index].colorIndex],
+                        isSelected: isSelected,
+                        onTap: () {
+                          final tag = _utxoTags[index].name;
+                          setState(() {
+                            if (_prevSelectedUtxoTagNames.contains(tag)) {
+                              _prevSelectedUtxoTagNames.remove(tag);
+                            } else {
+                              if (_prevSelectedUtxoTagNames.length == 5) {
+                                CustomToast.showToast(
+                                    context: context,
+                                    text: t.tag_bottom_sheet.max_tag_count,
+                                    seconds: 2);
+                                return;
+                              }
+                              _prevSelectedUtxoTagNames.add(tag);
                             }
-                            _prevSelectedUtxoTagNames.add(tag);
-                          }
-                          _checkNextButtonEnabled();
-                        });
-                      },
-                      child: CustomTagChip(
-                        tag: _utxoTags[index].name,
-                        colorIndex: _utxoTags[index].colorIndex,
-                        type: _prevSelectedUtxoTagNames
-                                .contains(_utxoTags[index].name)
-                            ? CustomTagChipType.select
-                            : CustomTagChipType.disable,
+                            _checkNextButtonEnabled();
+                          });
+                        },
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
