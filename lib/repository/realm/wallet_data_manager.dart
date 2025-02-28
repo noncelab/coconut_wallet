@@ -8,7 +8,7 @@ import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/model/script/script_status.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -1210,7 +1210,8 @@ class WalletDataManager {
     ).firstOrNull;
 
     if (realmWalletBalance == null) {
-      throw StateError('[updateAddressBalance] Wallet balance not found');
+      throw StateError(
+          '[updateAddressBalance] Wallet balance not found, walletId: $walletId');
     }
 
     final realmWalletAddress = _realm.query<RealmWalletAddress>(
@@ -1219,7 +1220,8 @@ class WalletDataManager {
     ).firstOrNull;
 
     if (realmWalletAddress == null) {
-      throw StateError('[updateAddressBalance] Wallet address not found');
+      throw StateError(
+          '[updateAddressBalance] Wallet address not found, walletId: $walletId, index: $index, isChange: $isChange');
     }
 
     final confirmedDiff = balance.confirmed - realmWalletAddress.confirmed;
