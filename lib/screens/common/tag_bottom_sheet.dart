@@ -58,7 +58,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
 
   late List<UtxoTag> _utxoTags;
   late List<UtxoTag> _createdUtxoTags;
-  late List<String> _selectedUtxoTagNames;
+  late List<String> _prevSelectedUtxoTagNames;
 
   // 바텀 시트를 호출한 컨텍스트
   // 1. select: utxo 상세 화면 utxo 태그 선택
@@ -66,7 +66,8 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   // 3. update: utxo 관리 화면 태그 수정
   late final TagBottomSheetType _callContext;
   late TagBottomSheetType _bottomSheetViewType;
-  bool _isSelectButtonEnabled = false;
+
+  bool _isNextButtonEnabled = false;
   bool _isUpdateButtonEnabled = false;
 
   /// 선택된 UtxoTag - update type 에서 변경될 수 있음 fixme: 사용하는데가 없음 ????
@@ -84,7 +85,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     _focusNode = FocusNode();
     _utxoTags = [];
     _createdUtxoTags = [];
-    _selectedUtxoTagNames = [];
+    _prevSelectedUtxoTagNames = [];
     _updateTagName = '';
     _updateTagColorIndex = 0;
 
@@ -94,7 +95,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     _utxoTags = List.from(widget.utxoTags);
 
     if (widget.selectedUtxoTagNames != null) {
-      _selectedUtxoTagNames = List.from(widget.selectedUtxoTagNames!);
+      _prevSelectedUtxoTagNames = List.from(widget.selectedUtxoTagNames!);
     }
 
     if (widget.updateUtxoTag != null) {
@@ -132,14 +133,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
       appBar: CoconutAppBar.buildWithNext(
           isBottom: true,
           context: context,
-          isActive: _bottomSheetViewType == TagBottomSheetType.create
-              ? _controller.text.runes.length <= 30 &&
-                  _updateTagName.isNotEmpty &&
-                  !_utxoTags.any((tag) => tag.name == _updateTagName) &&
-                  !_controller.text.endsWith(' ')
-              : _bottomSheetViewType == TagBottomSheetType.attach
-                  ? _isSelectButtonEnabled
-                  : _isUpdateButtonEnabled,
           onBackPressed: () {
             if (_bottomSheetViewType == TagBottomSheetType.create) {
               _resetTagCreation();
@@ -147,10 +140,18 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
             }
             Navigator.pop(context);
           },
-          onNextPressed: _handleButtonPressed,
+          onNextPressed: _complete,
           title: TagBottomSheetType.create == _bottomSheetViewType
               ? t.tag_bottom_sheet.title_new_tag
               : t.tag_bottom_sheet.title_edit_tag,
+          isActive: _bottomSheetViewType == TagBottomSheetType.create
+              ? _controller.text.runes.length <= 30 &&
+                  _updateTagName.isNotEmpty &&
+                  !_utxoTags.any((tag) => tag.name == _updateTagName) &&
+                  !_controller.text.endsWith(' ')
+              : _bottomSheetViewType == TagBottomSheetType.attach
+                  ? _isNextButtonEnabled
+                  : _isUpdateButtonEnabled,
           nextButtonTitle: t.complete),
       body: SafeArea(
         child: Padding(
@@ -200,25 +201,25 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                       onTap: () {
                         final tag = _utxoTags[index].name;
                         setState(() {
-                          if (_selectedUtxoTagNames.contains(tag)) {
-                            _selectedUtxoTagNames.remove(tag);
+                          if (_prevSelectedUtxoTagNames.contains(tag)) {
+                            _prevSelectedUtxoTagNames.remove(tag);
                           } else {
-                            if (_selectedUtxoTagNames.length == 5) {
+                            if (_prevSelectedUtxoTagNames.length == 5) {
                               CustomToast.showToast(
                                   context: context,
                                   text: t.tag_bottom_sheet.max_tag_count,
                                   seconds: 2);
                               return;
                             }
-                            _selectedUtxoTagNames.add(tag);
+                            _prevSelectedUtxoTagNames.add(tag);
                           }
-                          _checkSelectButtonEnabled();
+                          _checkNextButtonEnabled();
                         });
                       },
                       child: CustomTagChip(
                         tag: _utxoTags[index].name,
                         colorIndex: _utxoTags[index].colorIndex,
-                        type: _selectedUtxoTagNames
+                        type: _prevSelectedUtxoTagNames
                                 .contains(_utxoTags[index].name)
                             ? CustomTagChipType.select
                             : CustomTagChipType.disable,
@@ -336,15 +337,14 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     }
   }
 
-  /// select type 에서 완료 버튼 활성화 여부 업데이트 함수
-  void _checkSelectButtonEnabled() {
+  void _checkNextButtonEnabled() {
     if (widget.utxoTags.length != _utxoTags.length) return;
     final prevTags = widget.selectedUtxoTagNames ?? [];
     setState(() {
-      _isSelectButtonEnabled =
-          _selectedUtxoTagNames.length != prevTags.length ||
-              _selectedUtxoTagNames.length == prevTags.length &&
-                  !Set.from(prevTags).containsAll(_selectedUtxoTagNames);
+      _isNextButtonEnabled =
+          _prevSelectedUtxoTagNames.length != prevTags.length ||
+              _prevSelectedUtxoTagNames.length == prevTags.length &&
+                  !Set.from(prevTags).containsAll(_prevSelectedUtxoTagNames);
     });
   }
 
@@ -362,15 +362,15 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     });
   }
 
-  void _handleButtonPressed() {
+  void _complete() {
     switch (_callContext) {
       case TagBottomSheetType.attach:
         if (_bottomSheetViewType == TagBottomSheetType.create) {
           _handleCreateTag();
           _bottomSheetViewType = TagBottomSheetType.attach;
-          _isSelectButtonEnabled = true;
+          _isNextButtonEnabled = true;
         } else if (_bottomSheetViewType == TagBottomSheetType.attach) {
-          widget.onSelected?.call(_selectedUtxoTagNames, _createdUtxoTags);
+          widget.onSelected?.call(_prevSelectedUtxoTagNames, _createdUtxoTags);
           Navigator.pop(context);
         }
         break;
@@ -398,12 +398,10 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     setState(() {
       _utxoTags.insert(0, createdUtxoTag);
       _createdUtxoTags.add(createdUtxoTag);
-      if (_selectedUtxoTagNames.length < 5) {
-        _selectedUtxoTagNames.add(_updateTagName);
+      if (_prevSelectedUtxoTagNames.length < 5) {
+        _prevSelectedUtxoTagNames.add(_updateTagName);
       }
     });
-
-    _resetTagCreation();
   }
 
   void _handleUpdateTag() {
