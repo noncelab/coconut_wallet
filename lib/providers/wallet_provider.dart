@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:math';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -14,7 +13,11 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
-import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -77,7 +80,11 @@ class WalletProvider extends ChangeNotifier {
 
   int gapLimit = 20;
 
-  late final WalletDataManager _walletDataManager;
+  final RealmManager _realmManager;
+  final AddressRepository _addressRepository;
+  final TransactionRepository _transactionRepository;
+  final UtxoRepository _utxoRepository;
+  final WalletRepository _walletRepository;
 
   late final Future<void> Function(int) _saveWalletCount;
   late final bool _isSetPin;
@@ -89,8 +96,19 @@ class WalletProvider extends ChangeNotifier {
       StreamController<Map<int, Balance>>();
   StreamController<Map<int, Balance>> get balanceStream => _balanceStream;
 
-  WalletProvider(this._walletDataManager, this._isNetworkOn,
-      this._saveWalletCount, this._isSetPin, this._nodeProvider) {
+  WalletProvider(
+    this._realmManager,
+    this._addressRepository,
+    this._transactionRepository,
+    this._utxoRepository,
+    this._walletRepository,
+    bool? isNetworkOn,
+    Future<void> Function(int) saveWalletCount,
+    bool isSetPin,
+    this._nodeProvider,
+  )   : _isNetworkOn = isNetworkOn,
+        _saveWalletCount = saveWalletCount,
+        _isSetPin = isSetPin {
     _nodeProvider.addListener(_onNodeProviderStateUpdated);
     _isNodeProviderInitialized = _nodeProvider.isInitialized;
     _loadWalletListFromDB().then((_) {
@@ -136,11 +154,11 @@ class WalletProvider extends ChangeNotifier {
 
     try {
       Logger.log(
-          '--> _walletDataManager.isInitialized: ${_walletDataManager.isInitialized}');
-      if (!_walletDataManager.isInitialized) {
-        await _walletDataManager.init(_isSetPin);
+          '--> RealmManager.isInitialized: ${_realmManager.isInitialized}');
+      if (!_realmManager.isInitialized) {
+        await _realmManager.init(_isSetPin);
       }
-      _walletItemList = await _walletDataManager.loadWalletsFromDB();
+      _walletItemList = await _walletRepository.getWalletItemList();
       _walletLoadState = WalletLoadState.loadCompleted;
     } catch (e) {
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
@@ -313,12 +331,11 @@ class WalletProvider extends ChangeNotifier {
 
       // case 2: 변경 사항 체크하며 업데이트
       if (_hasChangedOfUI(_walletItemList[index], watchOnlyWallet)) {
-        _walletDataManager.updateWalletUI(
+        _walletRepository.updateWalletUI(
             _walletItemList[index].id, watchOnlyWallet);
 
-        _walletItemList[index] = _walletDataManager.walletList[index];
-        List<WalletListItemBase> updatedList = List.from(_walletItemList);
-        _walletItemList = updatedList;
+        // 업데이트된 지갑 목록 가져오기
+        _walletItemList = await _walletRepository.getWalletItemList();
         result = WalletSyncResult.existingWalletUpdated;
         notifyListeners();
       }
@@ -337,9 +354,9 @@ class WalletProvider extends ChangeNotifier {
     // case 1: 새 지갑 생성
     WalletListItemBase newItem;
     if (isMultisig) {
-      newItem = await _walletDataManager.addMultisigWallet(watchOnlyWallet);
+      newItem = await _walletRepository.addMultisigWallet(watchOnlyWallet);
     } else {
-      newItem = await _walletDataManager.addSinglesigWallet(watchOnlyWallet);
+      newItem = await _walletRepository.addSinglesigWallet(watchOnlyWallet);
     }
 
     await _nodeProvider.subscribeWallet(newItem, this);
@@ -407,10 +424,9 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
-    _walletDataManager.deleteWallet(walletId);
-    _walletItemList = List.from(_walletDataManager.walletList);
-    //_walletItemList = _walletDataManager.walletList;
-    _walletDataManager.deleteAllUtxoTag(walletId);
+    _walletRepository.deleteWallet(walletId);
+    _walletItemList = await _walletRepository.getWalletItemList();
+    _utxoRepository.deleteAllUtxoTag(walletId);
     _saveWalletCount(_walletItemList.length);
     //if (_walletItemList.isEmpty) {
     //_subStateModel.saveNotEmptyWalletList(false);
@@ -462,7 +478,7 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Balance getWalletBalance(int walletId) {
-    final realmBalance = _walletDataManager.getWalletBalance(walletId);
+    final realmBalance = _walletRepository.getWalletBalance(walletId);
     return Balance(
       realmBalance.confirmed,
       realmBalance.unconfirmed,
@@ -471,7 +487,7 @@ class WalletProvider extends ChangeNotifier {
 
   Future<void> generateWalletAddress(
       WalletListItemBase walletItem, int usedIndex, bool isChange) async {
-    await _walletDataManager.ensureAddressesExist(
+    await _addressRepository.ensureAddressesExist(
         walletItemBase: walletItem,
         cursor: usedIndex,
         count: gapLimit,
@@ -480,25 +496,25 @@ class WalletProvider extends ChangeNotifier {
 
   List<WalletAddress> getWalletAddressList(
       WalletListItemBase wallet, int cursor, int count, bool isChange) {
-    return _walletDataManager.getWalletAddressList(
+    return _addressRepository.getWalletAddressList(
         wallet, cursor, count, isChange);
   }
 
   Future encryptWalletSecureData(String hashedPin) async {
-    await _walletDataManager.encrypt(hashedPin);
+    await _realmManager.encrypt(hashedPin);
   }
 
   Future decryptWalletSecureData() async {
-    await _walletDataManager.decrypt();
+    await _realmManager.decrypt();
   }
 
   bool containsAddress(int walletId, String address) {
-    return _walletDataManager.containsAddress(walletId, address);
+    return _addressRepository.containsAddress(walletId, address);
   }
 
   List<WalletAddress> filterChangeAddressesFromList(
       int walletId, List<String> addresses) {
-    return _walletDataManager.filterChangeAddressesFromList(
+    return _addressRepository.filterChangeAddressesFromList(
         walletId, addresses);
   }
 
@@ -545,36 +561,37 @@ class WalletProvider extends ChangeNotifier {
       }
     }
 
-    _walletDataManager.updateWalletAddressList(
+    _addressRepository.updateWalletAddressList(
         walletItem, newReceiveBalanceList, false);
-    _walletDataManager.updateWalletAddressList(
+    _addressRepository.updateWalletAddressList(
         walletItem, newChangeBalanceList, true);
     notifyListeners();
   }
 
   WalletAddress getChangeAddress(int walletId) {
-    return _walletDataManager.getChangeAddress(walletId);
+    return _addressRepository.getChangeAddress(walletId);
   }
 
   WalletAddress getReceiveAddress(int walletId) {
-    return _walletDataManager.getReceiveAddress(walletId);
+    return _addressRepository.getReceiveAddress(walletId);
   }
 
   List<UtxoState> getUtxoList(int walletId) {
-    return _walletDataManager.getUtxoStateList(walletId);
+    return _utxoRepository.getUtxoStateList(walletId);
   }
 
   List<TransactionRecord> getTransactionRecordList(int walletId) {
-    return _walletDataManager.getTransactionRecordList(walletId);
+    return _transactionRepository.getTransactionRecordList(walletId);
   }
 
   UtxoState? getUtxoState(int walletId, String utxoId) {
-    return _walletDataManager.getUtxoState(walletId, utxoId);
+    return _utxoRepository.getUtxoState(walletId, utxoId);
   }
 
   TransactionRecord? getTransactionRecord(
       int walletId, String transactionHash) {
-    return _walletDataManager.getTransactionRecord(walletId, transactionHash);
+    return _transactionRepository.getTransactionRecord(
+        walletId, transactionHash);
   }
 
   @override

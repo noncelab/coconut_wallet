@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
-SinglesigWalletListItem mapRealmWalletBaseToSinglesigWalletListItem(
+SinglesigWalletListItem mapRealmToSinglesigWalletItem(
     RealmWalletBase realmWalletBase, String? decryptedDescriptor) {
   return SinglesigWalletListItem(
       id: realmWalletBase.id,

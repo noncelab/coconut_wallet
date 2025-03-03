@@ -12,7 +12,10 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/subscribe_repository.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/isolate_manager.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -25,7 +28,10 @@ import 'package:flutter/foundation.dart';
 
 class NodeProvider extends ChangeNotifier {
   final IsolateManager _isolateManager;
-  final WalletDataManager _walletDataManager;
+  final AddressRepository _addressRepository;
+  final TransactionRepository _transactionRepository;
+  final UtxoRepository _utxoRepository;
+  final SubscribeRepository _subscribeRepository;
   final String _host;
   final int _port;
   final bool _ssl;
@@ -57,7 +63,10 @@ class NodeProvider extends ChangeNotifier {
     this._host,
     this._port,
     this._ssl,
-    this._walletDataManager, {
+    this._addressRepository,
+    this._transactionRepository,
+    this._utxoRepository,
+    this._subscribeRepository, {
     IsolateManager? isolateManager,
     NodeClientFactory? nodeClientFactory,
   }) : _isolateManager = isolateManager ?? IsolateManager() {
@@ -75,6 +84,7 @@ class NodeProvider extends ChangeNotifier {
       _scriptStatusController =
           StreamController<SubscribeScriptStreamDto>.broadcast();
       _scriptStatusController.stream.listen(_handleScriptStatusChanged);
+
       _initCompleter?.complete();
     } catch (e) {
       _initCompleter?.completeError(e);
@@ -219,7 +229,7 @@ class NodeProvider extends ChangeNotifier {
       int changeUsedIndex = dto.scriptStatus.isChange
           ? dto.scriptStatus.index
           : dto.walletItem.changeUsedIndex;
-      _walletDataManager.updateWalletUsedIndex(
+      _addressRepository.updateWalletUsedIndex(
           dto.walletItem, receiveUsedIndex, changeUsedIndex);
 
       // Balance 동기화
@@ -295,7 +305,7 @@ class NodeProvider extends ChangeNotifier {
           .toList();
 
       // 지갑 인덱스 업데이트
-      _walletDataManager.updateWalletUsedIndex(
+      _addressRepository.updateWalletUsedIndex(
           walletItem,
           subscribeResponse.usedReceiveIndex,
           subscribeResponse.usedChangeIndex);
@@ -308,7 +318,7 @@ class NodeProvider extends ChangeNotifier {
       );
 
       // 변경된 상태만 DB에 저장
-      _walletDataManager.batchUpdateScriptStatuses(
+      _subscribeRepository.batchUpdateScriptStatuses(
           changedScriptStatuses, walletItem.id);
 
       Logger.log(
@@ -374,7 +384,7 @@ class NodeProvider extends ChangeNotifier {
     final addressBalance =
         await _mainClient.getAddressBalance(scriptStatus.scriptPubKey);
 
-    _walletDataManager.updateAddressBalance(
+    _addressRepository.updateAddressBalance(
         walletId: walletItem.id,
         index: scriptStatus.index,
         isChange: scriptStatus.isChange,
@@ -391,7 +401,7 @@ class NodeProvider extends ChangeNotifier {
     _addWalletSyncState(walletItem.id, UpdateType.transaction);
 
     // 새로운 트랜잭션 조회
-    final knownTransactionHashes = _walletDataManager
+    final knownTransactionHashes = _transactionRepository
         .getTransactions(walletItem.id)
         .where((tx) => tx.blockHeight != null && tx.blockHeight! > 0)
         .map((tx) => tx.transactionHash)
@@ -426,7 +436,7 @@ class NodeProvider extends ChangeNotifier {
         walletItem, txs, txBlockHeightMap, blockTimestampMap, walletProvider,
         now: now);
 
-    _walletDataManager.addAllTransactions(walletItem.id, txRecords);
+    _transactionRepository.addAllTransactions(walletItem.id, txRecords);
 
     // Transaction 업데이트 완료 state 업데이트
     _addWalletCompletedState(walletItem.id, UpdateType.transaction);
@@ -445,7 +455,7 @@ class NodeProvider extends ChangeNotifier {
 
     UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
 
-    _walletDataManager.addAllUtxos(walletItem.id, utxos);
+    _utxoRepository.addAllUtxos(walletItem.id, utxos);
 
     // UTXO 업데이트 완료 state 업데이트
     _addWalletCompletedState(walletItem.id, UpdateType.utxo);
@@ -578,7 +588,7 @@ class NodeProvider extends ChangeNotifier {
       return result;
     }
 
-    _walletDataManager
+    _transactionRepository
         .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
         .catchError((_) {
       Logger.error(_);

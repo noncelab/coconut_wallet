@@ -1,12 +1,12 @@
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
 
 class UtxoTagProvider extends ChangeNotifier {
-  final WalletDataManager _walletDataManager = WalletDataManager();
+  final UtxoRepository _utxoRepository;
 
   List<UtxoTag> _utxoTags = [];
   List<UtxoTag> _utxoTagsForSelectedUtxo = [];
@@ -29,6 +29,8 @@ class UtxoTagProvider extends ChangeNotifier {
   List<String> get previousUtxoIds => _usedUtxoIds;
   bool get isTagsMoveAllowed => _isTagsMoveAllowed; // ??
 
+  UtxoTagProvider(this._utxoRepository);
+
   List<UtxoTag> fetchUtxoTagsByWalletId(int walletId) {
     _isUpdatedTagList = false;
     _utxoTags = _fetchUtxoTags(walletId);
@@ -50,7 +52,7 @@ class UtxoTagProvider extends ChangeNotifier {
   bool addUtxoTag(int walletId, UtxoTag utxoTag) {
     final newUtxoTag = utxoTag.copyWith(walletId: walletId);
     final id = const Uuid().v4();
-    final result = _walletDataManager.addUtxoTag(
+    final result = _utxoRepository.addUtxoTag(
         id, newUtxoTag.walletId, newUtxoTag.name, newUtxoTag.colorIndex);
     if (result.isSuccess) {
       _utxoTags = _fetchUtxoTags(walletId);
@@ -68,7 +70,7 @@ class UtxoTagProvider extends ChangeNotifier {
   // 선택된 utxo를 제거하고, wallet Id에 해당하는 utxoTag 목록을 갱신
   bool deleteUtxoTag(int walletId) {
     if (_selectedUtxoTag != null) {
-      final result = _walletDataManager.deleteUtxoTag(_selectedUtxoTag!.id);
+      final result = _utxoRepository.deleteUtxoTag(_selectedUtxoTag!.id);
       if (result.isSuccess) {
         _utxoTags = _fetchUtxoTags(walletId);
         _selectedUtxoTag = null;
@@ -86,7 +88,7 @@ class UtxoTagProvider extends ChangeNotifier {
 
   bool updateUtxoTag(int walletId, UtxoTag utxoTag) {
     if (_selectedUtxoTag?.name.isNotEmpty == true) {
-      final result = _walletDataManager.updateUtxoTag(
+      final result = _utxoRepository.updateUtxoTag(
           utxoTag.id, utxoTag.name, utxoTag.colorIndex);
       if (result.isSuccess) {
         _utxoTags = _fetchUtxoTags(walletId);
@@ -114,7 +116,7 @@ class UtxoTagProvider extends ChangeNotifier {
     required List<UtxoTag> addTags,
     required List<String> selectedNames,
   }) {
-    final updateUtxoTagListResult = _walletDataManager.updateUtxoTagList(
+    final updateUtxoTagListResult = _utxoRepository.updateUtxoTagList(
         walletId, utxoId, addTags, selectedNames);
 
     if (updateUtxoTagListResult.isFailure) {
@@ -140,7 +142,7 @@ class UtxoTagProvider extends ChangeNotifier {
         ? outputIndexes.map((index) => makeUtxoId(signedTx, index)).toList()
         : [];
 
-    final result = await _walletDataManager.updateTagsOfSpentUtxos(
+    final result = await _utxoRepository.updateTagsOfSpentUtxos(
         walletId, _usedUtxoIds, newUtxoIds);
     if (result.isFailure) {
       Logger.error(result.error);
@@ -157,7 +159,7 @@ class UtxoTagProvider extends ChangeNotifier {
   }
 
   List<UtxoTag> fetchUtxoTagsByUtxoId(int walletId, String txHash) {
-    final result = _walletDataManager.getUtxoTagsByTxHash(walletId, txHash);
+    final result = _utxoRepository.getUtxoTagsByTxHash(walletId, txHash);
     if (result.isFailure) {
       Logger.log('-----------------------------------------------------------');
       Logger.log(
@@ -169,7 +171,7 @@ class UtxoTagProvider extends ChangeNotifier {
   }
 
   List<UtxoTag> _fetchUtxoTags(int walletId) {
-    final result = _walletDataManager.fetchUtxoTags(walletId);
+    final result = _utxoRepository.getUtxoTags(walletId);
     if (result.isFailure) {
       Logger.log('-----------------------------------------------------------');
       Logger.log('fetchUtxoTags(walletId: $walletId)');
