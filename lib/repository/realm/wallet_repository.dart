@@ -201,12 +201,22 @@ class WalletRepository extends BaseRepository {
     final realmWalletBalance = balanceResults.first;
 
     realm.write(() {
-      realmWalletBase.balance = balance.total;
       realmWalletBalance.total = balance.total;
       realmWalletBalance.confirmed = balance.confirmed;
       realmWalletBalance.unconfirmed = balance.unconfirmed;
     });
 
+    return realmWalletBalance;
+  }
+
+  RealmWalletBalance incrementWalletBalance(int walletId, Balance balanceDiff) {
+    final realmWalletBalance = getWalletBalance(walletId);
+
+    realm.write(() {
+      realmWalletBalance.total += balanceDiff.total;
+      realmWalletBalance.confirmed += balanceDiff.confirmed;
+      realmWalletBalance.unconfirmed += balanceDiff.unconfirmed;
+    });
     return realmWalletBalance;
   }
 

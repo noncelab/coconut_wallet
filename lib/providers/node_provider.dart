@@ -16,6 +16,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/subscribe_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/isolate_manager.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -32,6 +33,7 @@ class NodeProvider extends ChangeNotifier {
   final TransactionRepository _transactionRepository;
   final UtxoRepository _utxoRepository;
   final SubscribeRepository _subscribeRepository;
+  final WalletRepository _walletRepository;
   final String _host;
   final int _port;
   final bool _ssl;
@@ -66,7 +68,8 @@ class NodeProvider extends ChangeNotifier {
     this._addressRepository,
     this._transactionRepository,
     this._utxoRepository,
-    this._subscribeRepository, {
+    this._subscribeRepository,
+    this._walletRepository, {
     IsolateManager? isolateManager,
     NodeClientFactory? nodeClientFactory,
   }) : _isolateManager = isolateManager ?? IsolateManager() {
@@ -391,11 +394,13 @@ class NodeProvider extends ChangeNotifier {
     final addressBalance =
         await _mainClient.getAddressBalance(scriptStatus.scriptPubKey);
 
-    _addressRepository.updateAddressBalance(
+    final balanceDiff = _addressRepository.updateAddressBalance(
         walletId: walletItem.id,
         index: scriptStatus.index,
         isChange: scriptStatus.isChange,
         balance: addressBalance);
+
+    _walletRepository.incrementWalletBalance(walletItem.id, balanceDiff);
 
     // Balance 업데이트 완료 state 업데이트
     _addWalletCompletedState(walletItem.id, UpdateType.balance);

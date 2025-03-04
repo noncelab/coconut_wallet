@@ -254,7 +254,8 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 주소 잔액 업데이트
-  void updateAddressBalance(
+  /// 해당 주소의 Balance 변화량을 반환합니다.
+  Balance updateAddressBalance(
       {required int walletId,
       required int index,
       required bool isChange,
@@ -269,11 +270,17 @@ class AddressRepository extends BaseRepository {
           '[updateAddressBalance] Wallet address not found, walletId: $walletId, index: $index, isChange: $isChange');
     }
 
+    final confirmedDiff = balance.confirmed - realmWalletAddress.confirmed;
+    final unconfirmedDiff =
+        balance.unconfirmed - realmWalletAddress.unconfirmed;
+
     realm.write(() {
       // 지갑 주소 잔액 업데이트
       realmWalletAddress.confirmed = balance.confirmed;
       realmWalletAddress.unconfirmed = balance.unconfirmed;
       realmWalletAddress.total = balance.total;
     });
+
+    return Balance(confirmedDiff, unconfirmedDiff);
   }
 }
