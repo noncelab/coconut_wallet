@@ -94,14 +94,21 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
+  /// 노드 상태 업데이트
+  /// [newConnectionState] 노드 상태
+  /// [newUpdatedWallets] 지갑 업데이트 정보
+  /// [notify] 상태 변경 시 리스너에게 알림 여부 (default: true)
   void _setState(
       {MainClientState? newConnectionState,
-      Map<int, WalletUpdateInfo>? newUpdatedWallets}) {
+      Map<int, WalletUpdateInfo>? newUpdatedWallets,
+      bool notify = true}) {
     _state = _state.copyWith(
       newConnectionState: newConnectionState,
       newUpdatedWallets: newUpdatedWallets,
     );
-    notifyListeners();
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   /// 지갑의 업데이트 정보를 추가합니다.
@@ -169,20 +176,20 @@ class NodeProvider extends ChangeNotifier {
     );
   }
 
-  /// 지갑의 특정 업데이트 타입을 제거합니다.
-  void removeWalletUpdateType(int walletId, UpdateType updateType) {
+  /// 지갑의 특정 업데이트 타입을 대기 상태로 변경합니다. completed 상태에서 적절히 처리 후 이 함수를 호출해야 합니다.
+  void setWalletUpdateTypeWaiting(int walletId, UpdateType updateType) {
     final existingInfo = _state.updatedWallets[walletId];
     if (existingInfo == null) return;
 
     switch (updateType) {
       case UpdateType.balance:
-        existingInfo.balance = UpdateTypeState.completed;
+        existingInfo.balance = UpdateTypeState.waiting;
         break;
       case UpdateType.transaction:
-        existingInfo.transaction = UpdateTypeState.completed;
+        existingInfo.transaction = UpdateTypeState.waiting;
         break;
       case UpdateType.utxo:
-        existingInfo.utxo = UpdateTypeState.completed;
+        existingInfo.utxo = UpdateTypeState.waiting;
         break;
     }
 
@@ -192,6 +199,7 @@ class NodeProvider extends ChangeNotifier {
         ..._state.updatedWallets,
         walletId: existingInfo,
       },
+      notify: false,
     );
   }
 
@@ -233,7 +241,6 @@ class NodeProvider extends ChangeNotifier {
           dto.walletItem, receiveUsedIndex, changeUsedIndex);
 
       // Balance 동기화
-
       await _fetchScriptBalance(dto.walletItem, dto.scriptStatus);
 
       // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
