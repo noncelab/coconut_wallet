@@ -3,10 +3,9 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/script_status.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/utils/result.dart';
-import 'package:realm/realm.dart';
 
-class SubscribeRepository extends BaseRepository {
-  SubscribeRepository(super._realmManager);
+class SubscriptionRepository extends BaseRepository {
+  SubscriptionRepository(super._realmManager);
 
   /// 스크립트 상태 업데이트 또는 생성
   /// [scriptPubKey] 스크립트 공개키
@@ -59,7 +58,6 @@ class SubscribeRepository extends BaseRepository {
   ) {
     return handleRealm(() {
       final existingStatusMap = _getExistingScriptStatusMap(
-        realm: realm,
         walletId: walletId,
         scriptPubKeys: scriptStatuses.map((e) => e.scriptPubKey).toList(),
       );
@@ -129,7 +127,6 @@ class SubscribeRepository extends BaseRepository {
 
   /// 기존 스크립트 상태 맵 가져오기
   Map<String, RealmScriptStatus> _getExistingScriptStatusMap({
-    required Realm realm,
     required int walletId,
     required List<String> scriptPubKeys,
   }) {

@@ -13,7 +13,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/repository/realm/subscribe_repository.dart';
+import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -32,7 +32,7 @@ class NodeProvider extends ChangeNotifier {
   final AddressRepository _addressRepository;
   final TransactionRepository _transactionRepository;
   final UtxoRepository _utxoRepository;
-  final SubscribeRepository _subscribeRepository;
+  final SubscriptionRepository _subscribeRepository;
   final WalletRepository _walletRepository;
   final String _host;
   final int _port;
@@ -115,7 +115,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   /// 지갑의 업데이트 정보를 추가합니다.
-  void _addWalletSyncState(int walletId, UpdateType updateType) {
+  void _addWalletSyncState(int walletId, UpdateElement updateType) {
     final existingInfo = _state.updatedWallets[walletId];
 
     WalletUpdateInfo walletUpdateInfo;
@@ -127,13 +127,13 @@ class NodeProvider extends ChangeNotifier {
     }
 
     switch (updateType) {
-      case UpdateType.balance:
+      case UpdateElement.balance:
         walletUpdateInfo.balance = UpdateTypeState.syncing;
         break;
-      case UpdateType.transaction:
+      case UpdateElement.transaction:
         walletUpdateInfo.transaction = UpdateTypeState.syncing;
         break;
-      case UpdateType.utxo:
+      case UpdateElement.utxo:
         walletUpdateInfo.utxo = UpdateTypeState.syncing;
         break;
     }
@@ -148,7 +148,7 @@ class NodeProvider extends ChangeNotifier {
     );
   }
 
-  void _addWalletCompletedState(int walletId, UpdateType updateType) {
+  void _addWalletCompletedState(int walletId, UpdateElement updateType) {
     final existingInfo = _state.updatedWallets[walletId];
 
     WalletUpdateInfo walletUpdateInfo;
@@ -160,13 +160,13 @@ class NodeProvider extends ChangeNotifier {
     }
 
     switch (updateType) {
-      case UpdateType.balance:
+      case UpdateElement.balance:
         walletUpdateInfo.balance = UpdateTypeState.completed;
         break;
-      case UpdateType.transaction:
+      case UpdateElement.transaction:
         walletUpdateInfo.transaction = UpdateTypeState.completed;
         break;
-      case UpdateType.utxo:
+      case UpdateElement.utxo:
         walletUpdateInfo.utxo = UpdateTypeState.completed;
         break;
     }
@@ -180,18 +180,18 @@ class NodeProvider extends ChangeNotifier {
   }
 
   /// 지갑의 특정 업데이트 타입을 대기 상태로 변경합니다. completed 상태에서 적절히 처리 후 이 함수를 호출해야 합니다.
-  void setWalletUpdateTypeWaiting(int walletId, UpdateType updateType) {
+  void setWalletUpdateTypeWaiting(int walletId, UpdateElement updateType) {
     final existingInfo = _state.updatedWallets[walletId];
     if (existingInfo == null) return;
 
     switch (updateType) {
-      case UpdateType.balance:
+      case UpdateElement.balance:
         existingInfo.balance = UpdateTypeState.waiting;
         break;
-      case UpdateType.transaction:
+      case UpdateElement.transaction:
         existingInfo.transaction = UpdateTypeState.waiting;
         break;
-      case UpdateType.utxo:
+      case UpdateElement.utxo:
         existingInfo.utxo = UpdateTypeState.waiting;
         break;
     }
@@ -357,26 +357,26 @@ class NodeProvider extends ChangeNotifier {
   }) async {
     try {
       // Balance 병렬 처리
-      _addWalletSyncState(walletItem.id, UpdateType.balance);
+      _addWalletSyncState(walletItem.id, UpdateElement.balance);
       await Future.wait(
         scriptStatuses.map((status) => _fetchScriptBalance(walletItem, status)),
       );
-      _addWalletCompletedState(walletItem.id, UpdateType.balance);
+      _addWalletCompletedState(walletItem.id, UpdateElement.balance);
 
       // Transaction 병렬 처리
-      _addWalletSyncState(walletItem.id, UpdateType.transaction);
+      _addWalletSyncState(walletItem.id, UpdateElement.transaction);
       final transactionFutures = scriptStatuses.map(
         (status) => _fetchScriptTransaction(walletItem, status, walletProvider),
       );
       await Future.wait(transactionFutures);
-      _addWalletCompletedState(walletItem.id, UpdateType.transaction);
+      _addWalletCompletedState(walletItem.id, UpdateElement.transaction);
 
       // UTXO 병렬 처리
-      _addWalletSyncState(walletItem.id, UpdateType.utxo);
+      _addWalletSyncState(walletItem.id, UpdateElement.utxo);
       await Future.wait(
         scriptStatuses.map((status) => _fetchScriptUtxo(walletItem, status)),
       );
-      _addWalletCompletedState(walletItem.id, UpdateType.utxo);
+      _addWalletCompletedState(walletItem.id, UpdateElement.utxo);
 
       // 동기화 완료 state 업데이트
       _setState(newConnectionState: MainClientState.waiting);
@@ -389,7 +389,7 @@ class NodeProvider extends ChangeNotifier {
   Future<void> _fetchScriptBalance(
       WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
     // 동기화 시작 state 업데이트
-    _addWalletSyncState(walletItem.id, UpdateType.balance);
+    _addWalletSyncState(walletItem.id, UpdateElement.balance);
 
     final addressBalance =
         await _mainClient.getAddressBalance(scriptStatus.scriptPubKey);
@@ -403,14 +403,14 @@ class NodeProvider extends ChangeNotifier {
     _walletRepository.incrementWalletBalance(walletItem.id, balanceDiff);
 
     // Balance 업데이트 완료 state 업데이트
-    _addWalletCompletedState(walletItem.id, UpdateType.balance);
+    _addWalletCompletedState(walletItem.id, UpdateElement.balance);
   }
 
   Future<void> _fetchScriptTransaction(WalletListItemBase walletItem,
       ScriptStatus scriptStatus, WalletProvider walletProvider,
       {DateTime? now}) async {
     // Transaction 동기화 시작 state 업데이트
-    _addWalletSyncState(walletItem.id, UpdateType.transaction);
+    _addWalletSyncState(walletItem.id, UpdateElement.transaction);
 
     // 새로운 트랜잭션 조회
     final knownTransactionHashes = _transactionRepository
@@ -451,13 +451,13 @@ class NodeProvider extends ChangeNotifier {
     _transactionRepository.addAllTransactions(walletItem.id, txRecords);
 
     // Transaction 업데이트 완료 state 업데이트
-    _addWalletCompletedState(walletItem.id, UpdateType.transaction);
+    _addWalletCompletedState(walletItem.id, UpdateElement.transaction);
   }
 
   Future<void> _fetchScriptUtxo(
       WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
     // UTXO 동기화 시작 state 업데이트
-    _addWalletSyncState(walletItem.id, UpdateType.utxo);
+    _addWalletSyncState(walletItem.id, UpdateElement.utxo);
 
     // UTXO 목록 조회
     final utxos = await _mainClient.getUtxoStateList(scriptStatus);
@@ -470,7 +470,7 @@ class NodeProvider extends ChangeNotifier {
     _utxoRepository.addAllUtxos(walletItem.id, utxos);
 
     // UTXO 업데이트 완료 state 업데이트
-    _addWalletCompletedState(walletItem.id, UpdateType.utxo);
+    _addWalletCompletedState(walletItem.id, UpdateElement.utxo);
   }
 
   /// 트랜잭션 레코드를 생성합니다.

@@ -21,7 +21,7 @@ enum TransactionTypeEnum {
 enum SocketConnectionStatus { reconnecting, connecting, connected, terminated }
 
 /// 갱신된 데이터 종류
-enum UpdateType { balance, utxo, transaction }
+enum UpdateElement { balance, utxo, transaction }
 
 /// 갱신된 데이터의 상태
 enum UpdateTypeState { waiting, syncing, completed }

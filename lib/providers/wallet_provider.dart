@@ -141,7 +141,7 @@ class WalletProvider extends ChangeNotifier {
             UpdateTypeState.completed) {
           fetchWalletBalance(key);
           // 잔액 업데이트 완료 후 대기 상태로 변경하여 다시 업데이트 되지 않도록 합니다.
-          _nodeProvider.setWalletUpdateTypeWaiting(key, UpdateType.balance);
+          _nodeProvider.setWalletUpdateTypeWaiting(key, UpdateElement.balance);
         }
       }
     }

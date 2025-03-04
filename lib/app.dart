@@ -10,7 +10,7 @@ import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
-import 'package:coconut_wallet/repository/realm/subscribe_repository.dart';
+import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -121,11 +121,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           update: (context, realmManager, previous) =>
               previous ?? UtxoRepository(realmManager),
         ),
-        ProxyProvider<RealmManager, SubscribeRepository>(
+        ProxyProvider<RealmManager, SubscriptionRepository>(
           create: (context) =>
-              SubscribeRepository(context.read<RealmManager>()),
+              SubscriptionRepository(context.read<RealmManager>()),
           update: (context, realmManager, previous) =>
-              previous ?? SubscribeRepository(realmManager),
+              previous ?? SubscriptionRepository(realmManager),
         ),
 
         ChangeNotifierProvider(
@@ -139,7 +139,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
         // NodeProvider
         ProxyProvider5<AddressRepository, TransactionRepository, UtxoRepository,
-            SubscribeRepository, WalletRepository, NodeProvider>(
+            SubscriptionRepository, WalletRepository, NodeProvider>(
           create: (context) => NodeProvider(
             CoconutWalletApp.kElectrumHost,
             CoconutWalletApp.kElectrumPort,
@@ -147,7 +147,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             context.read<AddressRepository>(),
             context.read<TransactionRepository>(),
             context.read<UtxoRepository>(),
-            context.read<SubscribeRepository>(),
+            context.read<SubscriptionRepository>(),
             context.read<WalletRepository>(),
           ),
           update: (context,
