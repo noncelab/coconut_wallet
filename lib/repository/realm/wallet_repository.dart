@@ -40,7 +40,7 @@ class WalletRepository extends BaseRepository {
 
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
         walletList.add(
-            mapRealmToSinglesigWalletItem(walletBases[i], decryptedDescriptor));
+            mapRealmToSingleSigWalletItem(walletBases[i], decryptedDescriptor));
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         walletList.add(mapRealmToMultisigWalletItem(
@@ -73,7 +73,7 @@ class WalletRepository extends BaseRepository {
 
     _recordNextWalletId(id + 1);
 
-    return mapRealmToSinglesigWalletItem(wallet, descriptor);
+    return mapRealmToSingleSigWalletItem(wallet, descriptor);
   }
 
   /// 멀티시그 지갑 추가
