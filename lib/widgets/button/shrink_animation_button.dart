@@ -88,9 +88,13 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
                   ? BoxDecorations.getMultisigLinearGradient(
                       widget.borderGradientColors!)
                   : null,
+              border: widget.borderGradientColors == null
+                  ? Border.all(color: MyColors.defaultBackground)
+                  : null,
             ),
             child: AnimatedContainer(
-              margin: EdgeInsets.all(widget.borderWidth),
+              margin: EdgeInsets.all(
+                  widget.borderGradientColors != null ? widget.borderWidth : 0),
               duration: const Duration(milliseconds: 100),
               decoration: BoxDecoration(
                 color: MyColors.black,

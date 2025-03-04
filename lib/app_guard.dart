@@ -51,7 +51,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
     if (_isNetworkOn != isNetworkOn) {
       _connectivityProvider.setIsNetworkOn(isNetworkOn);
       _isNetworkOn = isNetworkOn;
-      _showToastAboutNetwork(isNetworkOn);
+      // _showToastAboutNetwork(isNetworkOn);
 
       if (isNetworkOn) {
         /// 네트워크가 꺼졌다가 다시 켜지면 시세를 위한 소켓을 연결함.
@@ -63,12 +63,13 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
     }
   }
 
-  void _showToastAboutNetwork(bool isNetworkOn) {
-    if (!isNetworkOn) {
-      CustomToast.showToast(
-          context: context, text: "네트워크 연결이 없습니다.", seconds: 7);
-    }
-  }
+  // TODO: 아래를 주석처리 했기 때문에 네트워크 연결이 필요한 화면에서 별도 처리가 필요합니다.
+  // void _showToastAboutNetwork(bool isNetworkOn) {
+  //   if (!isNetworkOn) {
+  //     CustomToast.showToast(
+  //         context: context, text: "네트워크 연결이 없습니다.", seconds: 7);
+  //   }
+  // }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {

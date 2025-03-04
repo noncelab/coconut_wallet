@@ -56,6 +56,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   late int? _requiredSignature;
   late int? _totalSigner;
   late WalletListItemBase _walletBaseItem;
+  late final int _walletId;
 
   List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
@@ -75,10 +76,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     FeeInfoWithLevel(level: TransactionFeeLevel.hour),
   ];
 
+  List<UtxoTag> _utxoTagList = [];
   String selectedUtxoTagName = t.all; // 선택된 태그, default: 전체
   final Map<String, List<UtxoTag>> _utxoTagMap = {};
-  int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
 
+  int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
   SendUtxoSelectionViewModel(
       this._walletProvider,
       this._tagProvider,
@@ -87,8 +89,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       this._nodeProvider,
       this._bitcoinPriceKrw,
       UtxoOrderEnum initialUtxoOrder) {
-    _walletBaseItem =
-        _walletProvider.getWalletById(_sendInfoProvider.walletId!);
+    _walletId = _sendInfoProvider.walletId!;
+    _walletBaseItem = _walletProvider.getWalletById(_walletId);
     _requiredSignature = _walletBaseItem.walletType == WalletType.multiSignature
         ? (_walletBaseItem as MultisigWalletListItem).requiredSignatureCount
         : null;
@@ -105,14 +107,15 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     //_confirmedBalance = _walletBaseItem.balance ?? 0;
     _confirmedBalance = 0;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
-    _changeAddress =
-        _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address;
+    _changeAddress = _walletProvider.getChangeAddress(_walletId).address;
     _isMaxMode = _confirmedBalance ==
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
 
     _transaction = _createTransaction(_isMaxMode, 1, _walletBaseItem);
     _syncSelectedUtxosWithTransaction();
+
+    _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
     _setRecommendedFees().then((bool result) async {
       if (result) {
@@ -122,6 +125,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       notifyListeners();
     });
   }
+  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
 
   int? get change {
     if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) {
@@ -161,6 +165,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   int get confirmedBalance => _confirmedBalance;
+
   List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;
   bool get customFeeSelected => _selectedLevel == null;
@@ -185,11 +190,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     return null;
   }
 
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get estimatedFee => _estimatedFee;
+
   bool get isMaxMode => _isMaxMode;
-  bool get isUtxoTagListEmpty => _tagProvider.utxoTags.isEmpty;
+  bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
   int get needAmount => _sendAmount + (_estimatedFee ?? 0);
+
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus =>
       _recommendedFeeFetchStatus;
   RecommendedFee? get recommendedFees => _recommendedFees;
@@ -204,6 +210,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   TransactionFeeLevel? get selectedLevel => _selectedLevel;
+
   int get selectedUtxoAmountSum {
     _cachedSelectedUtxoAmountSum ??=
         _calculateTotalAmountOfUtxoList(_selectedUtxoList);
@@ -214,8 +221,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   int get sendAmount => _sendAmount;
 
-  List<UtxoTag> get utxoTagList => _tagProvider.utxoTags;
-
+  List<UtxoTag> get utxoTagList => _utxoTagList;
   Map<String, List<UtxoTag>> get utxoTagMap => _utxoTagMap;
 
   void addSelectedUtxoList(UtxoState utxo) {
@@ -282,18 +288,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _updateFeeRateOfTransaction(satsPerVb);
   }
 
-  void _setAmount() {
-    _sendAmount = _isMaxMode
-        ? UnitUtil.bitcoinToSatoshi(
-              _sendInfoProvider.amount!,
-            ) -
-            (_estimatedFee ?? 0)
-        : UnitUtil.bitcoinToSatoshi(
-            _sendInfoProvider.amount!,
-          );
-  }
-
-  void saveUsedUtxoIdsWhenTagged({required bool isTagsMoveAllowed}) {
+  void cacheSpentUtxoIdsWithTag({required bool isTagsMoveAllowed}) {
     _tagProvider.cacheUsedUtxoIds(
         _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
         isTagsMoveAllowed: isTagsMoveAllowed);
@@ -356,6 +351,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateBitcoinPriceKrw(int btcPriceInKrw) {
+    _bitcoinPriceKrw = btcPriceInKrw;
+    notifyListeners();
+  }
+
   int _calculateTotalAmountOfUtxoList(List<Utxo> utxos) {
     return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
   }
@@ -413,7 +413,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _initUtxoTagMap() {
     for (var (element) in _confirmedUtxoList) {
-      final tags = _tagProvider.fetchUtxoTagsByUtxoId(
+      final tags = _tagProvider.getUtxoTagsByUtxoId(
           _sendInfoProvider.walletId!, element.utxoId);
       _utxoTagMap[element.utxoId] = tags;
     }
@@ -430,6 +430,17 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       throw StateError("EstimatedFee has not been calculated yet");
     }
     return selectedUtxoAmountSum >= needAmount;
+  }
+
+  void _setAmount() {
+    _sendAmount = _isMaxMode
+        ? UnitUtil.bitcoinToSatoshi(
+              _sendInfoProvider.amount!,
+            ) -
+            (_estimatedFee ?? 0)
+        : UnitUtil.bitcoinToSatoshi(
+            _sendInfoProvider.amount!,
+          );
   }
 
   Future<bool> _setRecommendedFees() async {
@@ -453,6 +464,20 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
     }
     return updateFeeInfoResult;
+  }
+
+  void _sortConfirmedUtxoList(UtxoOrderEnum basis) {
+    if (basis == UtxoOrderEnum.byAmountDesc) {
+      _confirmedUtxoList.sort((a, b) {
+        if (b.amount != a.amount) {
+          return b.amount.compareTo(a.amount);
+        }
+
+        return a.timestamp.compareTo(b.timestamp);
+      });
+    } else {
+      UtxoState.sortUtxo(_confirmedUtxoList, basis);
+    }
   }
 
   void _syncSelectedUtxosWithTransaction() {
@@ -491,24 +516,5 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMaxMode(isMaxMode);
     _sendInfoProvider.setIsMultisig(_requiredSignature != null);
     _sendInfoProvider.setTransaction(_transaction);
-  }
-
-  void updateBitcoinPriceKrw(int btcPriceInKrw) {
-    _bitcoinPriceKrw = btcPriceInKrw;
-    notifyListeners();
-  }
-
-  void _sortConfirmedUtxoList(UtxoOrderEnum basis) {
-    if (basis == UtxoOrderEnum.byAmountDesc) {
-      _confirmedUtxoList.sort((a, b) {
-        if (b.amount != a.amount) {
-          return b.amount.compareTo(a.amount);
-        }
-
-        return a.timestamp.compareTo(b.timestamp);
-      });
-    } else {
-      UtxoState.sortUtxo(_confirmedUtxoList, basis);
-    }
   }
 }

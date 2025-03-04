@@ -77,18 +77,6 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future initWallet(
-      {int? targetId, int? exceptionalId, bool syncOthers = true}) async {
-    for (var walletItem in _walletProvider.walletItemList) {
-      await _nodeProvider.unsubscribeWallet(walletItem);
-      await _nodeProvider.subscribeWallet(walletItem, _walletProvider);
-    }
-    _walletProvider.initWallet(
-        targetId: targetId,
-        exceptionalId: exceptionalId,
-        syncOthers: syncOthers);
-  }
-
   Future<void> refreshWallets() async {
     Logger.log('--> refreshWallet 시작');
     for (var wallet in walletItemList) {

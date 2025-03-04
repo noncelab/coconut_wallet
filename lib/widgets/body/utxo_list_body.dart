@@ -2,8 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
-import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -15,7 +13,6 @@ class UtxoListBody extends StatelessWidget {
   final WalletType walletType;
   final bool isUtxoListLoadComplete;
   final List<UtxoState> utxoList;
-  final Function(UtxoState)? popFromUtxoDetail;
   final Function removePopup;
   const UtxoListBody({
     super.key,
@@ -25,7 +22,6 @@ class UtxoListBody extends StatelessWidget {
     required this.isUtxoListLoadComplete,
     required this.utxoList,
     required this.removePopup,
-    this.popFromUtxoDetail,
   });
 
   @override
@@ -59,14 +55,8 @@ class UtxoListBody extends StatelessWidget {
                             arguments: {
                               'utxo': utxo,
                               'id': walletId,
-                              'isChange': DerivationPathUtil.getChangeElement(
-                                    walletType,
-                                    utxo.derivationPath,
-                                  ) ==
-                                  1,
                             },
                           );
-                          popFromUtxoDetail?.call(utxo);
                         },
                         utxo: utxoList[index],
                       ),
