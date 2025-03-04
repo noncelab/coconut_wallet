@@ -9,11 +9,12 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:flutter/cupertino.dart';
 
-class WalletDetailHeader extends StatelessWidget {
+class WalletDetailHeader extends StatefulWidget {
   final int walletId;
   final String address;
   final String derivationPath;
   final int? balance;
+  final int? prevBalance;
   final Unit currentUnit;
   final int? btcPriceInKrw;
   final Function onPressedUnitToggle;
@@ -25,11 +26,69 @@ class WalletDetailHeader extends StatelessWidget {
     required this.address,
     required this.derivationPath,
     required this.balance,
+    required this.prevBalance,
     required this.currentUnit,
     required this.btcPriceInKrw,
     required this.onPressedUnitToggle,
     this.checkPrerequisites,
   });
+
+  @override
+  State<WalletDetailHeader> createState() => _WalletDetailHeaderState();
+}
+
+class _WalletDetailHeaderState extends State<WalletDetailHeader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _balanceAnimController;
+  late Animation<double> _balanceAnimation;
+  double _currentBalance = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _balanceAnimController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+
+    _initializeAnimation();
+  }
+
+  void _initializeAnimation() {
+    double startBalance = widget.prevBalance?.toDouble() ?? 0.0;
+    double endBalance = widget.balance?.toDouble() ?? 0.0;
+
+    _balanceAnimation =
+        Tween<double>(begin: startBalance, end: endBalance).animate(
+      CurvedAnimation(
+          parent: _balanceAnimController, curve: Curves.easeOutCubic),
+    )..addListener(() {
+            setState(() {
+              _currentBalance = _balanceAnimation.value;
+            });
+          });
+
+    if (startBalance != endBalance) {
+      _balanceAnimController.forward(
+          from: 0.0); // 애니메이션의 진행도를 처음부터 다시 시작하기 위함(부드럽게)
+    } else {
+      _currentBalance = endBalance;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant WalletDetailHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.balance != oldWidget.balance) {
+      _initializeAnimation();
+    }
+  }
+
+  @override
+  void dispose() {
+    _balanceAnimController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +102,7 @@ class WalletDetailHeader extends StatelessWidget {
             const SizedBox(height: 40),
             GestureDetector(
                 onTap: () {
-                  if (balance != null) onPressedUnitToggle();
+                  if (widget.balance != null) widget.onPressedUnitToggle();
                 },
                 child: Column(
                   children: [
@@ -53,25 +112,26 @@ class WalletDetailHeader extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              balance == null
+                              widget.balance == null
                                   ? '-'
-                                  : currentUnit == Unit.btc
-                                      ? satoshiToBitcoinString(balance!)
-                                      : addCommasToIntegerPart(
-                                          balance!.toDouble()),
+                                  : widget.currentUnit == Unit.btc
+                                      ? satoshiToBitcoinString(
+                                          _currentBalance.toInt())
+                                      : addCommasToIntegerPart(_currentBalance),
                               style: Styles.h1Number.merge(
                                   const TextStyle(color: MyColors.white)),
                             ),
                             const SizedBox(width: 4.0),
-                            Text(currentUnit == Unit.btc ? t.btc : t.sats,
+                            Text(
+                                widget.currentUnit == Unit.btc ? t.btc : t.sats,
                                 style: Styles.unit),
                           ],
                         )),
                     SizedBox(
                         height: 24,
                         child: Text(
-                            balance != null
-                                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(balance!, btcPriceInKrw!).toDouble())} ${CurrencyCode.KRW.code}'
+                            widget.balance != null
+                                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(_currentBalance.toInt(), widget.btcPriceInKrw!).toDouble())} ${CurrencyCode.KRW.code}'
                                 : '-',
                             style: Styles.subLabel.merge(TextStyle(
                                 fontFamily: CustomFonts.number.getFontFamily,
@@ -84,16 +144,16 @@ class WalletDetailHeader extends StatelessWidget {
                 Expanded(
                     child: CupertinoButton(
                         onPressed: () {
-                          if (checkPrerequisites != null) {
-                            if (!checkPrerequisites!()) return;
+                          if (widget.checkPrerequisites != null) {
+                            if (!widget.checkPrerequisites!()) return;
                           }
 
                           CommonBottomSheets.showBottomSheet_90(
                             context: context,
                             child: ReceiveAddressBottomSheet(
-                              id: walletId,
-                              address: address,
-                              derivationPath: derivationPath,
+                              id: widget.walletId,
+                              address: widget.address,
+                              derivationPath: widget.derivationPath,
                             ),
                           );
                         },
@@ -108,16 +168,16 @@ class WalletDetailHeader extends StatelessWidget {
                 Expanded(
                     child: CupertinoButton(
                         onPressed: () {
-                          if (balance == null) {
+                          if (widget.balance == null) {
                             CustomToast.showToast(
                                 context: context, text: t.toast.no_balance);
                             return;
                           }
-                          if (checkPrerequisites != null) {
-                            if (!checkPrerequisites!()) return;
+                          if (widget.checkPrerequisites != null) {
+                            if (!widget.checkPrerequisites!()) return;
                           }
                           Navigator.pushNamed(context, '/send-address',
-                              arguments: {'id': walletId});
+                              arguments: {'id': widget.walletId});
                         },
                         borderRadius: BorderRadius.circular(12.0),
                         padding: EdgeInsets.zero,
