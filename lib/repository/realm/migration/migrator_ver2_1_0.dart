@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager_cryptography.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -129,7 +129,7 @@ class MigratorVer2_1_0 {
 
     if (cryptography != null) {
       await SecureStorageRepository()
-          .write(key: WalletDataManager.nonceField, value: cryptography.nonce);
+          .write(key: RealmManager.nonceField, value: cryptography.nonce);
     }
     await SecureStorageRepository().delete(key: walletListField);
     Logger.log('--> migration 성공');

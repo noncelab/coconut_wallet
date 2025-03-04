@@ -8,8 +8,13 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
@@ -39,6 +44,8 @@ import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
 
@@ -58,6 +65,22 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   /// 0 = splash, 1 = main, 2 = pin check
   AppEntryFlow _appEntryFlow = AppEntryFlow.splash;
 
+  final RealmManager _realmManager = RealmManager();
+  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeRealmManager();
+  }
+
+  // RealmManager 초기화 메서드
+  Future<void> _initializeRealmManager() async {
+    // SharedPreferences에서 PIN 설정 여부 확인
+    final isSetPin = _sharedPrefs.getBool(SharedPrefKeys.kIsSetPin);
+    await _realmManager.init(isSetPin);
+  }
+
   /// startSplash 완료 콜백
   void _completeSplash(AppEntryFlow appEntryFlow) {
     setState(() {
@@ -70,19 +93,82 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
-
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
 
-        ChangeNotifierProvider(create: (_) => UtxoTagProvider()),
-        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        Provider.value(value: _realmManager),
+
+        // Repository 등록 - Provider보다 먼저 등록해야 함
+        ProxyProvider<RealmManager, WalletRepository>(
+          create: (context) => WalletRepository(context.read<RealmManager>()),
+          update: (context, realmManager, previous) =>
+              previous ?? WalletRepository(realmManager),
+        ),
+        ProxyProvider<RealmManager, AddressRepository>(
+          create: (context) => AddressRepository(context.read<RealmManager>()),
+          update: (context, realmManager, previous) =>
+              previous ?? AddressRepository(realmManager),
+        ),
+        ProxyProvider<RealmManager, TransactionRepository>(
+          create: (context) =>
+              TransactionRepository(context.read<RealmManager>()),
+          update: (context, realmManager, previous) =>
+              previous ?? TransactionRepository(realmManager),
+        ),
+        ProxyProvider<RealmManager, UtxoRepository>(
+          create: (context) => UtxoRepository(context.read<RealmManager>()),
+          update: (context, realmManager, previous) =>
+              previous ?? UtxoRepository(realmManager),
+        ),
+        ProxyProvider<RealmManager, SubscriptionRepository>(
+          create: (context) =>
+              SubscriptionRepository(context.read<RealmManager>()),
+          update: (context, realmManager, previous) =>
+              previous ?? SubscriptionRepository(realmManager),
+        ),
+
         ChangeNotifierProvider(
-            create: (_) => NodeProvider(
+            create: (context) => UtxoTagProvider(
+                  context.read<UtxoRepository>(),
+                )),
+        ChangeNotifierProvider(
+            create: (context) => TransactionProvider(
+                  context.read<TransactionRepository>(),
+                )),
+
+        // NodeProvider
+        ProxyProvider5<AddressRepository, TransactionRepository, UtxoRepository,
+            SubscriptionRepository, WalletRepository, NodeProvider>(
+          create: (context) => NodeProvider(
+            CoconutWalletApp.kElectrumHost,
+            CoconutWalletApp.kElectrumPort,
+            CoconutWalletApp.kElectrumIsSSL,
+            context.read<AddressRepository>(),
+            context.read<TransactionRepository>(),
+            context.read<UtxoRepository>(),
+            context.read<SubscriptionRepository>(),
+            context.read<WalletRepository>(),
+          ),
+          update: (context,
+                  addressRepository,
+                  transactionRepository,
+                  utxoRepository,
+                  subscribeRepository,
+                  walletRepository,
+                  previous) =>
+              previous ??
+              NodeProvider(
                 CoconutWalletApp.kElectrumHost,
                 CoconutWalletApp.kElectrumPort,
                 CoconutWalletApp.kElectrumIsSSL,
-                WalletDataManager())),
+                addressRepository,
+                transactionRepository,
+                utxoRepository,
+                subscribeRepository,
+                walletRepository,
+              ),
+        ),
 
         /// main 에서만 사용하는 모델
         if (_appEntryFlow == AppEntryFlow.main) ...{
@@ -92,7 +178,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               AuthProvider, WalletProvider>(
             create: (_) {
               return WalletProvider(
-                  WalletDataManager(),
+                  Provider.of<RealmManager>(_, listen: false),
+                  Provider.of<AddressRepository>(_, listen: false),
+                  Provider.of<TransactionRepository>(_, listen: false),
+                  Provider.of<UtxoRepository>(_, listen: false),
+                  Provider.of<WalletRepository>(_, listen: false),
                   Provider.of<ConnectivityProvider>(_, listen: false)
                       .isNetworkOn,
                   Provider.of<VisibilityProvider>(_, listen: false)

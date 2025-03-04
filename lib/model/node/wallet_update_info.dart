@@ -8,9 +8,9 @@ class WalletUpdateInfo {
   UpdateTypeState transaction;
 
   WalletUpdateInfo(this.walletId,
-      {this.balance = UpdateTypeState.completed,
-      this.transaction = UpdateTypeState.completed,
-      this.utxo = UpdateTypeState.completed});
+      {this.balance = UpdateTypeState.waiting,
+      this.transaction = UpdateTypeState.waiting,
+      this.utxo = UpdateTypeState.waiting});
 
   @override
   bool operator ==(Object other) =>
