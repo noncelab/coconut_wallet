@@ -25,7 +25,7 @@ class WalletListViewModel extends ChangeNotifier {
   late final TransactionProvider _transactionProvider;
   late final ConnectivityProvider _connectivityProvider;
   final Map<int, int> _walletBalance = {};
-  late StreamSubscription<Map<int, Balance>> _balanceSubscription;
+  late StreamSubscription<Map<int, Balance?>> _balanceSubscription;
   bool _isFirstSyncFinished = false;
   late bool? _isNetworkOn;
 
@@ -50,13 +50,15 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void _updateBalance(Map<int, Balance?> newBalance) {
-    final balance = newBalance.entries.first.value;
-    if (balance != null) {
-      _walletBalance[newBalance.keys.first] = balance.total;
-      notifyListeners();
-    } else {
-      _walletBalance.remove(newBalance.keys.first);
-    }
+    newBalance.forEach((key, balance) {
+      if (balance != null) {
+        _walletBalance[key] = balance.total;
+      } else {
+        _walletBalance.remove(key);
+      }
+    });
+
+    notifyListeners();
   }
 
   bool get isBalanceHidden => _isBalanceHidden;

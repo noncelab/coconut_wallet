@@ -92,9 +92,9 @@ class WalletProvider extends ChangeNotifier {
   late final NodeProvider _nodeProvider;
   late bool _isNodeProviderInitialized;
   // TODO:
-  final StreamController<Map<int, Balance>> _balanceStream =
-      StreamController<Map<int, Balance>>();
-  StreamController<Map<int, Balance>> get balanceStream => _balanceStream;
+  final StreamController<Map<int, Balance?>> _balanceStream =
+      StreamController<Map<int, Balance?>>();
+  StreamController<Map<int, Balance?>> get balanceStream => _balanceStream;
 
   WalletProvider(
     this._realmManager,
@@ -161,6 +161,11 @@ class WalletProvider extends ChangeNotifier {
         await _realmManager.init(_isSetPin);
       }
       _walletItemList = await _walletRepository.getWalletItemList();
+      Map<int, Balance?> balanceMap = {
+        for (var wallet in _walletItemList)
+          wallet.id: getWalletBalance(wallet.id)
+      };
+      _balanceStream.add(balanceMap);
       _walletLoadState = WalletLoadState.loadCompleted;
     } catch (e) {
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
@@ -175,7 +180,7 @@ class WalletProvider extends ChangeNotifier {
   Future<void> _syncWalletData() async {
     if (_walletLoadState != WalletLoadState.loadCompleted ||
         !_isNodeProviderInitialized) {
-      Logger.log('--> walletLoad, nodeProvider 준비 안됨');
+      Logger.log('--> [WP] walletLoad, nodeProvider 준비 안됨');
       return;
     }
 
@@ -183,11 +188,11 @@ class WalletProvider extends ChangeNotifier {
       return;
     }
     if (_isNetworkOn == null) {
-      Logger.log('--> 네트워크 상태 확인 중이어서 sync 못함');
+      Logger.log('--> [WP] 네트워크 상태 확인 중이어서 sync 못함');
       return;
     }
     if (_isNetworkOn == false) {
-      Logger.log('--> 네트워크가 꺼져있어서 sync 실패');
+      Logger.log('--> [WP] 네트워크가 꺼져있어서 sync 실패');
       _walletSyncingState = WalletSyncingState.failed;
       return;
     }
