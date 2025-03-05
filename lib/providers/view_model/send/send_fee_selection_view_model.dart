@@ -61,8 +61,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     final amount = UnitUtil.bitcoinToSatoshi(_amount);
 
     // FIXME
-    // 1. forSinglePayment: utxoList 중 필요한 utxo만 선택하는 로직 추가
-    // 2. forSweep: 생성한 psbt를 서명하기위해 볼트에서 스캔 후 볼트가 멈추는 현상 나타남.
+    // forSinglePayment: utxoList 중 필요한 utxo만 선택하는 로직 추가
 
     final transaction = _isMaxMode
         ? Transaction.forSweep(
