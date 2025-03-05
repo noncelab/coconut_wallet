@@ -3,14 +3,14 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 /// 갱신된 데이터 정보를 담는 클래스
 class WalletUpdateInfo {
   final int walletId;
-  UpdateTypeState balance;
-  UpdateTypeState utxo;
-  UpdateTypeState transaction;
+  UpdateStatus balance;
+  UpdateStatus utxo;
+  UpdateStatus transaction;
 
   WalletUpdateInfo(this.walletId,
-      {this.balance = UpdateTypeState.waiting,
-      this.transaction = UpdateTypeState.waiting,
-      this.utxo = UpdateTypeState.waiting});
+      {this.balance = UpdateStatus.waiting,
+      this.transaction = UpdateStatus.waiting,
+      this.utxo = UpdateStatus.waiting});
 
   @override
   bool operator ==(Object other) =>
@@ -25,9 +25,7 @@ class WalletUpdateInfo {
   int get hashCode => Object.hash(walletId, balance, utxo, transaction);
 
   factory WalletUpdateInfo.fromExisting(WalletUpdateInfo existingInfo,
-      {UpdateTypeState? balance,
-      UpdateTypeState? transaction,
-      UpdateTypeState? utxo}) {
+      {UpdateStatus? balance, UpdateStatus? transaction, UpdateStatus? utxo}) {
     return WalletUpdateInfo(existingInfo.walletId,
         balance: balance ?? existingInfo.balance,
         transaction: transaction ?? existingInfo.transaction,

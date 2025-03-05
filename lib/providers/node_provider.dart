@@ -128,13 +128,13 @@ class NodeProvider extends ChangeNotifier {
 
     switch (updateType) {
       case UpdateElement.balance:
-        walletUpdateInfo.balance = UpdateTypeState.syncing;
+        walletUpdateInfo.balance = UpdateStatus.syncing;
         break;
       case UpdateElement.transaction:
-        walletUpdateInfo.transaction = UpdateTypeState.syncing;
+        walletUpdateInfo.transaction = UpdateStatus.syncing;
         break;
       case UpdateElement.utxo:
-        walletUpdateInfo.utxo = UpdateTypeState.syncing;
+        walletUpdateInfo.utxo = UpdateStatus.syncing;
         break;
     }
 
@@ -161,13 +161,13 @@ class NodeProvider extends ChangeNotifier {
 
     switch (updateType) {
       case UpdateElement.balance:
-        walletUpdateInfo.balance = UpdateTypeState.completed;
+        walletUpdateInfo.balance = UpdateStatus.completed;
         break;
       case UpdateElement.transaction:
-        walletUpdateInfo.transaction = UpdateTypeState.completed;
+        walletUpdateInfo.transaction = UpdateStatus.completed;
         break;
       case UpdateElement.utxo:
-        walletUpdateInfo.utxo = UpdateTypeState.completed;
+        walletUpdateInfo.utxo = UpdateStatus.completed;
         break;
     }
 
@@ -186,13 +186,13 @@ class NodeProvider extends ChangeNotifier {
 
     switch (updateType) {
       case UpdateElement.balance:
-        existingInfo.balance = UpdateTypeState.waiting;
+        existingInfo.balance = UpdateStatus.waiting;
         break;
       case UpdateElement.transaction:
-        existingInfo.transaction = UpdateTypeState.waiting;
+        existingInfo.transaction = UpdateStatus.waiting;
         break;
       case UpdateElement.utxo:
-        existingInfo.utxo = UpdateTypeState.waiting;
+        existingInfo.utxo = UpdateStatus.waiting;
         break;
     }
 
@@ -400,7 +400,7 @@ class NodeProvider extends ChangeNotifier {
         isChange: scriptStatus.isChange,
         balance: addressBalance);
 
-    _walletRepository.incrementWalletBalance(walletItem.id, balanceDiff);
+    _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
 
     // Balance 업데이트 완료 state 업데이트
     _addWalletCompletedState(walletItem.id, UpdateElement.balance);
@@ -572,15 +572,15 @@ class NodeProvider extends ChangeNotifier {
     }
 
     // 트랜잭션 유형 결정
-    TransactionTypeEnum txType;
+    TransactionType txType;
     if (selfInputCount > 0 &&
         selfOutputCount == tx.outputs.length &&
         selfInputCount == tx.inputs.length) {
-      txType = TransactionTypeEnum.self;
+      txType = TransactionType.self;
     } else if (selfInputCount > 0 && selfOutputCount < tx.outputs.length) {
-      txType = TransactionTypeEnum.sent;
+      txType = TransactionType.sent;
     } else {
-      txType = TransactionTypeEnum.received;
+      txType = TransactionType.received;
     }
 
     return _TransactionDetails(
@@ -655,7 +655,7 @@ class NodeProvider extends ChangeNotifier {
 class _TransactionDetails {
   final List<TransactionAddress> inputAddressList;
   final List<TransactionAddress> outputAddressList;
-  final TransactionTypeEnum txType;
+  final TransactionType txType;
   final int amount;
   final int fee;
 

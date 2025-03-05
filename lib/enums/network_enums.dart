@@ -1,19 +1,12 @@
-enum ConnectionTypeEnum { electrum, rpc }
+enum UtxoOrder { byAmountDesc, byAmountAsc, byTimestampDesc, byTimestampAsc }
 
-enum UtxoOrderEnum {
-  byAmountDesc,
-  byAmountAsc,
-  byTimestampDesc,
-  byTimestampAsc
-}
-
-enum TransactionTypeEnum {
+enum TransactionType {
   received('RECEIVED'),
   sent('SENT'),
   unknown('UNKNOWN'),
   self('SELF');
 
-  const TransactionTypeEnum(this.name);
+  const TransactionType(this.name);
 
   final String name;
 }
@@ -24,7 +17,7 @@ enum SocketConnectionStatus { reconnecting, connecting, connected, terminated }
 enum UpdateElement { balance, utxo, transaction }
 
 /// 갱신된 데이터의 상태
-enum UpdateTypeState { waiting, syncing, completed }
+enum UpdateStatus { waiting, syncing, completed }
 
 /// 메인 소켓의 상태, 지갑 중 어느 하나라도 동기화 중이면 syncing, 모두 동기화 완료면 waiting로 변경
 enum MainClientState { waiting, syncing, disconnected }
