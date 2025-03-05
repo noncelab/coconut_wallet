@@ -32,7 +32,7 @@ class UtxoState extends Utxo {
     }
   }
 
-  static void sortUtxo(List<UtxoState> utxos, UtxoOrderEnum order) {
+  static void sortUtxo(List<UtxoState> utxos, UtxoOrder order) {
     int getLastIndex(String path) => int.parse(path.split('/').last);
 
     int compareUtxos(
@@ -57,13 +57,13 @@ class UtxoState extends Utxo {
 
     utxos.sort((a, b) {
       switch (order) {
-        case UtxoOrderEnum.byAmountDesc:
+        case UtxoOrder.byAmountDesc:
           return compareUtxos(a, b, false, true);
-        case UtxoOrderEnum.byAmountAsc:
+        case UtxoOrder.byAmountAsc:
           return compareUtxos(a, b, true, true);
-        case UtxoOrderEnum.byTimestampDesc:
+        case UtxoOrder.byTimestampDesc:
           return compareUtxos(a, b, false, false);
-        case UtxoOrderEnum.byTimestampAsc:
+        case UtxoOrder.byTimestampAsc:
           return compareUtxos(a, b, true, false);
       }
     });

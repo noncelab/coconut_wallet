@@ -88,7 +88,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       this._connectivityProvider,
       this._nodeProvider,
       this._bitcoinPriceKrw,
-      UtxoOrderEnum initialUtxoOrder) {
+      UtxoOrder initialUtxoOrder) {
     _walletId = _sendInfoProvider.walletId!;
     _walletBaseItem = _walletProvider.getWalletById(_walletId);
     _requiredSignature = _walletBaseItem.walletType == WalletType.multiSignature
@@ -230,7 +230,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void changeUtxoOrder(UtxoOrderEnum orderEnum) async {
+  void changeUtxoOrder(UtxoOrder orderEnum) async {
     _sortConfirmedUtxoList(orderEnum);
     notifyListeners();
   }
@@ -466,8 +466,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     return updateFeeInfoResult;
   }
 
-  void _sortConfirmedUtxoList(UtxoOrderEnum basis) {
-    if (basis == UtxoOrderEnum.byAmountDesc) {
+  void _sortConfirmedUtxoList(UtxoOrder basis) {
+    if (basis == UtxoOrder.byAmountDesc) {
       _confirmedUtxoList.sort((a, b) {
         if (b.amount != a.amount) {
           return b.amount.compareTo(a.amount);
