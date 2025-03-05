@@ -12,7 +12,11 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/isolate_manager.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -25,7 +29,11 @@ import 'package:flutter/foundation.dart';
 
 class NodeProvider extends ChangeNotifier {
   final IsolateManager _isolateManager;
-  final WalletDataManager _walletDataManager;
+  final AddressRepository _addressRepository;
+  final TransactionRepository _transactionRepository;
+  final UtxoRepository _utxoRepository;
+  final SubscriptionRepository _subscribeRepository;
+  final WalletRepository _walletRepository;
   final String _host;
   final int _port;
   final bool _ssl;
@@ -57,7 +65,11 @@ class NodeProvider extends ChangeNotifier {
     this._host,
     this._port,
     this._ssl,
-    this._walletDataManager, {
+    this._addressRepository,
+    this._transactionRepository,
+    this._utxoRepository,
+    this._subscribeRepository,
+    this._walletRepository, {
     IsolateManager? isolateManager,
     NodeClientFactory? nodeClientFactory,
   }) : _isolateManager = isolateManager ?? IsolateManager() {
@@ -75,6 +87,7 @@ class NodeProvider extends ChangeNotifier {
       _scriptStatusController =
           StreamController<SubscribeScriptStreamDto>.broadcast();
       _scriptStatusController.stream.listen(_handleScriptStatusChanged);
+
       _initCompleter?.complete();
     } catch (e) {
       _initCompleter?.completeError(e);
@@ -84,18 +97,25 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
+  /// 노드 상태 업데이트
+  /// [newConnectionState] 노드 상태
+  /// [newUpdatedWallets] 지갑 업데이트 정보
+  /// [notify] 상태 변경 시 리스너에게 알림 여부 (default: true)
   void _setState(
       {MainClientState? newConnectionState,
-      Map<int, WalletUpdateInfo>? newUpdatedWallets}) {
+      Map<int, WalletUpdateInfo>? newUpdatedWallets,
+      bool notify = true}) {
     _state = _state.copyWith(
       newConnectionState: newConnectionState,
       newUpdatedWallets: newUpdatedWallets,
     );
-    notifyListeners();
+    if (notify) {
+      notifyListeners();
+    }
   }
 
   /// 지갑의 업데이트 정보를 추가합니다.
-  void _addWalletSyncState(int walletId, UpdateType updateType) {
+  void _addWalletSyncState(int walletId, UpdateElement updateType) {
     final existingInfo = _state.updatedWallets[walletId];
 
     WalletUpdateInfo walletUpdateInfo;
@@ -107,14 +127,14 @@ class NodeProvider extends ChangeNotifier {
     }
 
     switch (updateType) {
-      case UpdateType.balance:
-        walletUpdateInfo.balance = UpdateTypeState.syncing;
+      case UpdateElement.balance:
+        walletUpdateInfo.balance = UpdateStatus.syncing;
         break;
-      case UpdateType.transaction:
-        walletUpdateInfo.transaction = UpdateTypeState.syncing;
+      case UpdateElement.transaction:
+        walletUpdateInfo.transaction = UpdateStatus.syncing;
         break;
-      case UpdateType.utxo:
-        walletUpdateInfo.utxo = UpdateTypeState.syncing;
+      case UpdateElement.utxo:
+        walletUpdateInfo.utxo = UpdateStatus.syncing;
         break;
     }
 
@@ -128,7 +148,7 @@ class NodeProvider extends ChangeNotifier {
     );
   }
 
-  void _addWalletCompletedState(int walletId, UpdateType updateType) {
+  void _addWalletCompletedState(int walletId, UpdateElement updateType) {
     final existingInfo = _state.updatedWallets[walletId];
 
     WalletUpdateInfo walletUpdateInfo;
@@ -140,14 +160,14 @@ class NodeProvider extends ChangeNotifier {
     }
 
     switch (updateType) {
-      case UpdateType.balance:
-        walletUpdateInfo.balance = UpdateTypeState.completed;
+      case UpdateElement.balance:
+        walletUpdateInfo.balance = UpdateStatus.completed;
         break;
-      case UpdateType.transaction:
-        walletUpdateInfo.transaction = UpdateTypeState.completed;
+      case UpdateElement.transaction:
+        walletUpdateInfo.transaction = UpdateStatus.completed;
         break;
-      case UpdateType.utxo:
-        walletUpdateInfo.utxo = UpdateTypeState.completed;
+      case UpdateElement.utxo:
+        walletUpdateInfo.utxo = UpdateStatus.completed;
         break;
     }
 
@@ -159,20 +179,20 @@ class NodeProvider extends ChangeNotifier {
     );
   }
 
-  /// 지갑의 특정 업데이트 타입을 제거합니다.
-  void removeWalletUpdateType(int walletId, UpdateType updateType) {
+  /// 지갑의 특정 업데이트 타입을 대기 상태로 변경합니다. completed 상태에서 적절히 처리 후 이 함수를 호출해야 합니다.
+  void setWalletUpdateTypeWaiting(int walletId, UpdateElement updateType) {
     final existingInfo = _state.updatedWallets[walletId];
     if (existingInfo == null) return;
 
     switch (updateType) {
-      case UpdateType.balance:
-        existingInfo.balance = UpdateTypeState.completed;
+      case UpdateElement.balance:
+        existingInfo.balance = UpdateStatus.waiting;
         break;
-      case UpdateType.transaction:
-        existingInfo.transaction = UpdateTypeState.completed;
+      case UpdateElement.transaction:
+        existingInfo.transaction = UpdateStatus.waiting;
         break;
-      case UpdateType.utxo:
-        existingInfo.utxo = UpdateTypeState.completed;
+      case UpdateElement.utxo:
+        existingInfo.utxo = UpdateStatus.waiting;
         break;
     }
 
@@ -182,6 +202,7 @@ class NodeProvider extends ChangeNotifier {
         ..._state.updatedWallets,
         walletId: existingInfo,
       },
+      notify: false,
     );
   }
 
@@ -219,11 +240,10 @@ class NodeProvider extends ChangeNotifier {
       int changeUsedIndex = dto.scriptStatus.isChange
           ? dto.scriptStatus.index
           : dto.walletItem.changeUsedIndex;
-      _walletDataManager.updateWalletUsedIndex(
+      _addressRepository.updateWalletUsedIndex(
           dto.walletItem, receiveUsedIndex, changeUsedIndex);
 
       // Balance 동기화
-
       await _fetchScriptBalance(dto.walletItem, dto.scriptStatus);
 
       // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
@@ -295,7 +315,7 @@ class NodeProvider extends ChangeNotifier {
           .toList();
 
       // 지갑 인덱스 업데이트
-      _walletDataManager.updateWalletUsedIndex(
+      _addressRepository.updateWalletUsedIndex(
           walletItem,
           subscribeResponse.usedReceiveIndex,
           subscribeResponse.usedChangeIndex);
@@ -308,7 +328,7 @@ class NodeProvider extends ChangeNotifier {
       );
 
       // 변경된 상태만 DB에 저장
-      _walletDataManager.batchUpdateScriptStatuses(
+      _subscribeRepository.batchUpdateScriptStatuses(
           changedScriptStatuses, walletItem.id);
 
       Logger.log(
@@ -337,26 +357,26 @@ class NodeProvider extends ChangeNotifier {
   }) async {
     try {
       // Balance 병렬 처리
-      _addWalletSyncState(walletItem.id, UpdateType.balance);
+      _addWalletSyncState(walletItem.id, UpdateElement.balance);
       await Future.wait(
         scriptStatuses.map((status) => _fetchScriptBalance(walletItem, status)),
       );
-      _addWalletCompletedState(walletItem.id, UpdateType.balance);
+      _addWalletCompletedState(walletItem.id, UpdateElement.balance);
 
       // Transaction 병렬 처리
-      _addWalletSyncState(walletItem.id, UpdateType.transaction);
+      _addWalletSyncState(walletItem.id, UpdateElement.transaction);
       final transactionFutures = scriptStatuses.map(
         (status) => _fetchScriptTransaction(walletItem, status, walletProvider),
       );
       await Future.wait(transactionFutures);
-      _addWalletCompletedState(walletItem.id, UpdateType.transaction);
+      _addWalletCompletedState(walletItem.id, UpdateElement.transaction);
 
       // UTXO 병렬 처리
-      _addWalletSyncState(walletItem.id, UpdateType.utxo);
+      _addWalletSyncState(walletItem.id, UpdateElement.utxo);
       await Future.wait(
         scriptStatuses.map((status) => _fetchScriptUtxo(walletItem, status)),
       );
-      _addWalletCompletedState(walletItem.id, UpdateType.utxo);
+      _addWalletCompletedState(walletItem.id, UpdateElement.utxo);
 
       // 동기화 완료 state 업데이트
       _setState(newConnectionState: MainClientState.waiting);
@@ -369,29 +389,31 @@ class NodeProvider extends ChangeNotifier {
   Future<void> _fetchScriptBalance(
       WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
     // 동기화 시작 state 업데이트
-    _addWalletSyncState(walletItem.id, UpdateType.balance);
+    _addWalletSyncState(walletItem.id, UpdateElement.balance);
 
     final addressBalance =
         await _mainClient.getAddressBalance(scriptStatus.scriptPubKey);
 
-    _walletDataManager.updateAddressBalance(
+    final balanceDiff = _addressRepository.updateAddressBalance(
         walletId: walletItem.id,
         index: scriptStatus.index,
         isChange: scriptStatus.isChange,
         balance: addressBalance);
 
+    _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
+
     // Balance 업데이트 완료 state 업데이트
-    _addWalletCompletedState(walletItem.id, UpdateType.balance);
+    _addWalletCompletedState(walletItem.id, UpdateElement.balance);
   }
 
   Future<void> _fetchScriptTransaction(WalletListItemBase walletItem,
       ScriptStatus scriptStatus, WalletProvider walletProvider,
       {DateTime? now}) async {
     // Transaction 동기화 시작 state 업데이트
-    _addWalletSyncState(walletItem.id, UpdateType.transaction);
+    _addWalletSyncState(walletItem.id, UpdateElement.transaction);
 
     // 새로운 트랜잭션 조회
-    final knownTransactionHashes = _walletDataManager
+    final knownTransactionHashes = _transactionRepository
         .getTransactions(walletItem.id)
         .where((tx) => tx.blockHeight != null && tx.blockHeight! > 0)
         .map((tx) => tx.transactionHash)
@@ -426,16 +448,16 @@ class NodeProvider extends ChangeNotifier {
         walletItem, txs, txBlockHeightMap, blockTimestampMap, walletProvider,
         now: now);
 
-    _walletDataManager.addAllTransactions(walletItem.id, txRecords);
+    _transactionRepository.addAllTransactions(walletItem.id, txRecords);
 
     // Transaction 업데이트 완료 state 업데이트
-    _addWalletCompletedState(walletItem.id, UpdateType.transaction);
+    _addWalletCompletedState(walletItem.id, UpdateElement.transaction);
   }
 
   Future<void> _fetchScriptUtxo(
       WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
     // UTXO 동기화 시작 state 업데이트
-    _addWalletSyncState(walletItem.id, UpdateType.utxo);
+    _addWalletSyncState(walletItem.id, UpdateElement.utxo);
 
     // UTXO 목록 조회
     final utxos = await _mainClient.getUtxoStateList(scriptStatus);
@@ -445,10 +467,10 @@ class NodeProvider extends ChangeNotifier {
 
     UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
 
-    _walletDataManager.addAllUtxos(walletItem.id, utxos);
+    _utxoRepository.addAllUtxos(walletItem.id, utxos);
 
     // UTXO 업데이트 완료 state 업데이트
-    _addWalletCompletedState(walletItem.id, UpdateType.utxo);
+    _addWalletCompletedState(walletItem.id, UpdateElement.utxo);
   }
 
   /// 트랜잭션 레코드를 생성합니다.
@@ -550,15 +572,15 @@ class NodeProvider extends ChangeNotifier {
     }
 
     // 트랜잭션 유형 결정
-    TransactionTypeEnum txType;
+    TransactionType txType;
     if (selfInputCount > 0 &&
         selfOutputCount == tx.outputs.length &&
         selfInputCount == tx.inputs.length) {
-      txType = TransactionTypeEnum.self;
+      txType = TransactionType.self;
     } else if (selfInputCount > 0 && selfOutputCount < tx.outputs.length) {
-      txType = TransactionTypeEnum.sent;
+      txType = TransactionType.sent;
     } else {
-      txType = TransactionTypeEnum.received;
+      txType = TransactionType.received;
     }
 
     return _TransactionDetails(
@@ -578,7 +600,7 @@ class NodeProvider extends ChangeNotifier {
       return result;
     }
 
-    _walletDataManager
+    _transactionRepository
         .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
         .catchError((_) {
       Logger.error(_);
@@ -633,7 +655,7 @@ class NodeProvider extends ChangeNotifier {
 class _TransactionDetails {
   final List<TransactionAddress> inputAddressList;
   final List<TransactionAddress> outputAddressList;
-  final TransactionTypeEnum txType;
+  final TransactionType txType;
   final int amount;
   final int fee;
 

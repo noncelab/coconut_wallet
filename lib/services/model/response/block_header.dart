@@ -27,7 +27,7 @@ class BlockHeader {
 
   /// Parse the block header
   factory BlockHeader.parse(int height, String header) {
-    Uint8List bytes = lib.Converter.hexToBytes(header);
+    Uint8List bytes = lib.Encoder.decodeHex(header);
     int version = lib.Converter.littleEndianToInt(bytes.sublist(0, 4));
     Uint8List prevBlockHash =
         Uint8List.fromList(bytes.sublist(4, 36).reversed.toList());

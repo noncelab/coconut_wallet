@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -35,13 +36,11 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     _bitcoinPriceKrw = _bitcoinPriceKrw;
     _walletId = _sendInfoProvider.walletId!;
     _amount = _sendInfoProvider.amount!;
-    _isMaxMode = _confirmedBalance ==
-        UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
+    _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_amount);
     _recipientAddress = _sendInfoProvider.recipientAddress!;
     _isNetworkOn = isNetworkOn;
 
-    _updateSendInfoProvider(_isMultisigWallet, _isMaxMode);
-    _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_amount);
+    _updateSendInfoProvider();
   }
 
   double get amount => _amount;
@@ -55,18 +54,26 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   int get walletId => _walletId;
   WalletProvider get walletProvider => _walletProvider;
   NodeProvider get nodeprovider => _nodeProvider;
-  Future<int?> estimateFee(int satsPerVb) async {
-    // TODO: estimateFee
-    // return await _walletListItemBase.walletFeature.estimateFee(
-    //     _recipientAddress, UnitUtil.bitcoinToSatoshi(amount), satsPerVb);
-    return 0;
-  }
+  int estimateFee(int satsPerVb) {
+    final utxoPool = _walletProvider.getUtxoList(walletId);
+    final wallet = _walletProvider.getWalletById(walletId);
+    final changeAddress = _walletProvider.getChangeAddress(walletId);
+    final amount = UnitUtil.bitcoinToSatoshi(_amount);
 
-  Future<int?> estimateFeeWithMaximum(int satsPerVb) async {
-    // TODO: estimateFeeWithMaximum
-    // return await _walletListItemBase.walletFeature
-    //     .estimateFeeWithMaximum(_recipientAddress, satsPerVb);
-    return 0;
+    final transaction = _isMaxMode
+        ? Transaction.forSweep(
+            utxoPool, _recipientAddress, satsPerVb, wallet.walletBase)
+        : Transaction.forPayment(utxoPool, _recipientAddress,
+            changeAddress.address, amount, satsPerVb, wallet.walletBase);
+
+    if (_isMultisigWallet) {
+      final multisigWallet = wallet.walletBase as MultisignatureWallet;
+      return transaction.estimateFee(satsPerVb, wallet.walletBase.addressType,
+          requiredSignature: multisigWallet.requiredSignature,
+          totalSigner: multisigWallet.totalSigner);
+    }
+
+    return transaction.estimateFee(satsPerVb, wallet.walletBase.addressType);
   }
 
   double getAmount(int estimatedFee) {
@@ -105,7 +112,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _updateSendInfoProvider(bool isMultisig, bool isMaxMode) {
+  void _updateSendInfoProvider() {
     _sendInfoProvider.setIsMultisig(_isMultisigWallet);
     _sendInfoProvider.setIsMaxMode(_isMaxMode);
   }
