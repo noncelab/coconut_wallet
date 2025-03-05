@@ -312,12 +312,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     context.loaderOverlay.show();
 
     try {
-      int? estimatedFee;
-      if (_viewModel.isMaxMode) {
-        estimatedFee = await _viewModel.estimateFeeWithMaximum(customSatsPerVb);
-      } else {
-        estimatedFee = await _viewModel.estimateFee(customSatsPerVb);
-      }
+      int estimatedFee = _viewModel.estimateFee(customSatsPerVb);
 
       setState(() {
         _customFeeInfo = FeeInfo(satsPerVb: customSatsPerVb);
@@ -411,15 +406,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
     for (var feeInfo in feeInfos) {
       try {
-        int? estimatedFee;
-        if (_viewModel.isMaxMode) {
-          estimatedFee =
-              await _viewModel.estimateFeeWithMaximum(feeInfo.satsPerVb!);
-        } else {
-          estimatedFee = await _viewModel.estimateFee(feeInfo.satsPerVb!);
-        }
+        int estimatedFee = _viewModel.estimateFee(feeInfo.satsPerVb!);
         setState(() {
-          _setFeeInfo(feeInfo, estimatedFee!);
+          _setFeeInfo(feeInfo, estimatedFee);
         });
       } catch (error) {
         int? estimatedFee = _handleFeeEstimationError(error as Exception);
