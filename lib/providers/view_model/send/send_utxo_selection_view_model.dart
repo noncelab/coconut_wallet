@@ -247,12 +247,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   void deselectAllUtxo() {
     _clearUtxoList();
     if (!_isMaxMode) {
-      _transaction = Transaction.fromUtxoList(
-          [],
-          {_recipientAddress: _sendAmount},
-          _changeAddress,
-          satsPerVb ?? 1,
-          _walletBase);
+      _transaction = Transaction.forSinglePayment([], _recipientAddress,
+          _changeAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
     }
   }
 
@@ -302,10 +298,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     setSelectedUtxoList(List.from(confirmedUtxoList));
 
     if (!isMaxMode) {
-      _transaction = Transaction.fromUtxoList(
+      _transaction = Transaction.forSinglePayment(
           selectedUtxoList,
-          {_recipientAddress: _sendAmount},
+          _recipientAddress,
           _changeAddress,
+          _sendAmount,
           satsPerVb ?? 1,
           _walletBase);
 
@@ -378,7 +375,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     }
 
     try {
-      return Transaction.forPayment(
+      return Transaction.forSinglePayment(
           utxoList,
           _sendInfoProvider.recipientAddress!,
           _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,

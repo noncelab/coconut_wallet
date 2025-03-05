@@ -38,17 +38,23 @@ class SendConfirmViewModel extends ChangeNotifier {
     String generatedTx;
     var utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
     if (_sendInfoProvider.isMaxMode!) {
-      generatedTx = await _walletListItemBase.walletBase.generatePsbtForSweep(
-          utxoList,
-          _sendInfoProvider.recipientAddress!,
-          _sendInfoProvider.feeRate!);
+      generatedTx = Transaction.forSweep(
+              utxoList,
+              _sendInfoProvider.recipientAddress!,
+              _sendInfoProvider.feeRate!,
+              _walletListItemBase.walletBase)
+          .serialize();
     } else {
-      generatedTx = await _walletListItemBase.walletBase.generatePsbtForPayment(
-          utxoList,
-          _sendInfoProvider.recipientAddress!,
-          _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
-          UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
-          _sendInfoProvider.feeRate!);
+      generatedTx = Transaction.forSinglePayment(
+              utxoList,
+              _sendInfoProvider.recipientAddress!,
+              _walletProvider
+                  .getChangeAddress(_sendInfoProvider.walletId!)
+                  .address,
+              UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+              _sendInfoProvider.feeRate!,
+              _walletListItemBase.walletBase)
+          .serialize();
     }
 
     // printLongString(">>>>>> psbt 생성");
