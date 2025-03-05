@@ -19,14 +19,13 @@ class WalletListViewModel extends ChangeNotifier {
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
-  late WalletSyncingState _walletSyncingState;
+  late WalletSubscriptionState _walletSyncingState;
   late WalletInitState _prevWalletInitState;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _transactionProvider;
   late final ConnectivityProvider _connectivityProvider;
   final Map<int, int> _walletBalance = {};
   late StreamSubscription<Map<int, Balance?>> _balanceSubscription;
-  bool _isFirstSyncFinished = false;
   late bool? _isNetworkOn;
 
   WalletListViewModel(
@@ -41,7 +40,7 @@ class WalletListViewModel extends ChangeNotifier {
 
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
-    _walletSyncingState = _walletProvider.walletSyncingState;
+    _walletSyncingState = _walletProvider.walletSubscriptionState;
     // TODO:
     _balanceSubscription =
         _walletProvider.balanceStream.stream.listen(_updateBalance);
@@ -65,7 +64,11 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
-  bool get shouldShowLoadingIndicator => !_isFirstSyncFinished;
+  bool get shouldShowLoadingIndicator =>
+      _walletProvider.walletSubscriptionState ==
+          WalletSubscriptionState.never ||
+      _walletProvider.walletSubscriptionState ==
+          WalletSubscriptionState.syncing;
   int get lastUpdateTime => _walletProvider.lastUpdateTime;
   String? get walletInitErrorMessage =>
       _walletProvider.walletInitError?.message;
@@ -88,23 +91,18 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
-    if (!_isFirstSyncFinished &&
-        (walletProvider.walletSyncingState == WalletSyncingState.completed ||
-            walletProvider.walletSyncingState == WalletSyncingState.failed)) {
-      _isFirstSyncFinished = true;
-    }
-
     _walletProvider = walletProvider;
     notifyListeners();
 
-    if (_walletSyncingState != walletProvider.walletSyncingState) {
-      if (walletProvider.walletSyncingState == WalletSyncingState.completed) {
+    if (_walletSyncingState != walletProvider.walletSubscriptionState) {
+      if (walletProvider.walletSubscriptionState ==
+          WalletSubscriptionState.completed) {
         vibrateLight();
-      } else if (walletProvider.walletSyncingState ==
-          WalletSyncingState.failed) {
+      } else if (walletProvider.walletSubscriptionState ==
+          WalletSubscriptionState.failed) {
         vibrateLightDouble();
       }
-      _walletSyncingState = walletProvider.walletSyncingState;
+      _walletSyncingState = walletProvider.walletSubscriptionState;
     }
   }
 

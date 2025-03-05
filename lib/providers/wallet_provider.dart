@@ -30,7 +30,7 @@ enum WalletLoadState {
 }
 
 /// failed: 네트워크가 꺼져있을 때
-enum WalletSyncingState { never, syncing, completed, failed }
+enum WalletSubscriptionState { never, syncing, completed, failed }
 
 /// Represents the initialization state of a wallet. 처음 초기화 때만 사용하지 않고 refresh 할 때도 사용합니다.
 enum WalletInitState {
@@ -56,8 +56,10 @@ class WalletProvider extends ChangeNotifier {
   WalletLoadState _walletLoadState = WalletLoadState.never;
   WalletLoadState get walletLoadState => _walletLoadState;
 
-  WalletSyncingState _walletSyncingState = WalletSyncingState.never;
-  WalletSyncingState get walletSyncingState => _walletSyncingState;
+  WalletSubscriptionState _walletSubscriptionState =
+      WalletSubscriptionState.never;
+  WalletSubscriptionState get walletSubscriptionState =>
+      _walletSubscriptionState;
 
   // init 결과를 알리는 Toast는 "wallet_list_screen"에서 호출합니다.
   WalletInitState _walletInitState = WalletInitState.never;
@@ -112,7 +114,7 @@ class WalletProvider extends ChangeNotifier {
     _nodeProvider.addListener(_onNodeProviderStateUpdated);
     _isNodeProviderInitialized = _nodeProvider.isInitialized;
     _loadWalletListFromDB().then((_) {
-      _syncWalletData();
+      _subscribeNodeProvider();
     });
 
     // initWallet().catchError((_) {
@@ -128,7 +130,7 @@ class WalletProvider extends ChangeNotifier {
       Logger.log(
           '--> _nodeProvider.isInitialized: ${_nodeProvider.isInitialized}');
       _isNodeProviderInitialized = true;
-      _syncWalletData();
+      _subscribeNodeProvider();
     }
 
     Logger.log('--> connectionState: ${_nodeProvider.state.connectionState}');
@@ -157,7 +159,7 @@ class WalletProvider extends ChangeNotifier {
     try {
       Logger.log(
           '--> RealmManager.isInitialized: ${_realmManager.isInitialized}');
-      if (!_realmManager.isInitialized) {
+      if (_realmManager.isInitialized) {
         await _realmManager.init(_isSetPin);
       }
       _walletItemList = await _walletRepository.getWalletItemList();
@@ -177,45 +179,49 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _syncWalletData() async {
+  bool _canSubscribeWallets() {
     if (_walletLoadState != WalletLoadState.loadCompleted ||
-        !_isNodeProviderInitialized) {
-      Logger.log('--> [WP] walletLoad, nodeProvider 준비 안됨');
-      return;
+        !_isNodeProviderInitialized ||
+        _isNetworkOn != true ||
+        _walletSubscriptionState == WalletSubscriptionState.syncing) {
+      Logger.log('--> subscribe wallet 준비 안됐거나 이미 진행 중');
+      return false;
+    }
+    return true;
+  }
+
+  Future<WalletSubscriptionState?> _subscribeNodeProvider() async {
+    if (!_canSubscribeWallets()) {
+      return null;
     }
 
-    if (_walletSyncingState == WalletSyncingState.syncing) {
-      return;
-    }
-    if (_isNetworkOn == null) {
-      Logger.log('--> [WP] 네트워크 상태 확인 중이어서 sync 못함');
-      return;
-    }
-    if (_isNetworkOn == false) {
-      Logger.log('--> [WP] 네트워크가 꺼져있어서 sync 실패');
-      _walletSyncingState = WalletSyncingState.failed;
-      return;
-    }
-    _walletSyncingState = WalletSyncingState.syncing;
+    await _unsubscribeWalletsIfNeeded();
+
+    _walletSubscriptionState = WalletSubscriptionState.syncing;
     notifyListeners();
+
     try {
       for (var wallet in _walletItemList) {
         await _nodeProvider.subscribeWallet(wallet, this);
       }
-
-      for (var wallet in _walletItemList) {
-        fetchWalletBalance(wallet.id);
-      }
-
-      // await Future.delayed(const Duration(seconds: 2));
-      //await _updateBalances();
-      // TODO: syncFromNetwork other data.
-      _walletSyncingState = WalletSyncingState.completed;
+      _walletSubscriptionState = WalletSubscriptionState.completed;
     } catch (e) {
       Logger.error(e);
-      _walletSyncingState = WalletSyncingState.failed;
+      _walletSubscriptionState = WalletSubscriptionState.failed;
     } finally {
       notifyListeners();
+    }
+
+    return _walletSubscriptionState;
+  }
+
+  Future<void> _unsubscribeWalletsIfNeeded() async {
+    if (_walletSubscriptionState != WalletSubscriptionState.completed) {
+      return;
+    }
+
+    for (var wallet in _walletItemList) {
+      await _nodeProvider.unsubscribeWallet(wallet);
     }
   }
 
@@ -470,18 +476,33 @@ class WalletProvider extends ChangeNotifier {
   /// 따라서 네트워크 상태가 null -> true로 변경 되었을 때 지갑 동기화를 해줍니다.
   void setIsNetworkOn(bool? isNetworkOn) {
     if (_isNetworkOn == isNetworkOn) return;
-    // 네트워크 상태가 확인됨
-    if (_isNetworkOn == null && isNetworkOn != null) {
-      _isNetworkOn = isNetworkOn;
-      _syncWalletData();
-      return;
-    }
 
+    bool wasNull = _isNetworkOn == null;
+    bool wasOff = _isNetworkOn == false;
     _isNetworkOn = isNetworkOn;
-    // if (isNetworkOn == false) {
-    //   handleNetworkDisconnected();
-    //   notifyListeners();
-    // }
+
+    if (wasNull) {
+      _onNetworkInitialized();
+    } else if (wasOff && _isNetworkOn == true) {
+      _handleNetworkReconnected();
+    }
+  }
+
+  void _onNetworkInitialized() {
+    assert(_isNetworkOn != null);
+    if (_isNetworkOn!) {
+      _subscribeNodeProvider();
+    } else {
+      _walletSubscriptionState = WalletSubscriptionState.failed;
+      notifyListeners();
+    }
+  }
+
+  void _handleNetworkReconnected() {
+    if (_walletSubscriptionState == WalletSubscriptionState.never ||
+        _walletSubscriptionState == WalletSubscriptionState.failed) {
+      _subscribeNodeProvider();
+    }
   }
 
   Balance getWalletBalance(int walletId) {
