@@ -1,16 +1,16 @@
 import 'network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
-extension UtxoOrderEnumExtension on UtxoOrderEnum {
+extension UtxoOrderEnumExtension on UtxoOrder {
   String get text {
     switch (this) {
-      case UtxoOrderEnum.byAmountDesc:
+      case UtxoOrder.byAmountDesc:
         return t.utxo_order_enums.amt_desc;
-      case UtxoOrderEnum.byAmountAsc:
+      case UtxoOrder.byAmountAsc:
         return t.utxo_order_enums.amt_asc;
-      case UtxoOrderEnum.byTimestampDesc:
+      case UtxoOrder.byTimestampDesc:
         return t.utxo_order_enums.time_desc;
-      case UtxoOrderEnum.byTimestampAsc:
+      case UtxoOrder.byTimestampAsc:
         return t.utxo_order_enums.time_asc;
     }
   }

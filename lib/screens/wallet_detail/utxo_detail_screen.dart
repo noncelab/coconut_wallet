@@ -294,7 +294,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           'dummy_tx_hash',
           DateTime.now(),
           1,
-          TransactionTypeEnum.received.name,
+          TransactionType.received.name,
           null,
           2,
           1,

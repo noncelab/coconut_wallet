@@ -209,7 +209,8 @@ class WalletRepository extends BaseRepository {
     return realmWalletBalance;
   }
 
-  RealmWalletBalance incrementWalletBalance(int walletId, Balance balanceDiff) {
+  RealmWalletBalance accumulateWalletBalance(
+      int walletId, Balance balanceDiff) {
     final realmWalletBalance = getWalletBalance(walletId);
 
     realm.write(() {

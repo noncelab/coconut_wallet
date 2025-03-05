@@ -141,7 +141,7 @@ class SubscriptionRepository extends BaseRepository {
   }
 
   /// 모든 스크립트 상태를 맵으로 가져오기
-  Map<String, UnaddressedScriptStatus> getScriptStatuseMap(int walletId) {
+  Map<String, UnaddressedScriptStatus> getScriptStatusMap(int walletId) {
     final scriptStatuses = realm.query<RealmScriptStatus>(
       r'walletId == $0',
       [walletId],
