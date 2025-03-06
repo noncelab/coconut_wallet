@@ -247,14 +247,14 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   void deselectAllUtxo() {
     _clearUtxoList();
     if (!_isMaxMode) {
-      _transaction = Transaction.fromUtxoList([], _recipientAddress,
+      _transaction = Transaction.forSinglePayment([], _recipientAddress,
           _changeAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
     }
   }
 
   int estimateFee(int feeRate) {
     return _transaction.estimateFee(feeRate, _walletBase.addressType,
-        requiredSignature: _requiredSignature, totalSinger: _totalSigner);
+        requiredSignature: _requiredSignature, totalSigner: _totalSigner);
   }
 
   Future<Result<int>?> getMinimumFeeRateFromNetwork() async {
@@ -298,7 +298,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     setSelectedUtxoList(List.from(confirmedUtxoList));
 
     if (!isMaxMode) {
-      _transaction = Transaction.fromUtxoList(
+      _transaction = Transaction.forSinglePayment(
           selectedUtxoList,
           _recipientAddress,
           _changeAddress,
@@ -333,7 +333,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     if (selectedUtxoList.contains(utxo)) {
       if (!_isMaxMode) {
         _transaction.removeInputWithUtxo(utxo, satsPerVb ?? 1, _walletBase,
-            requiredSignature: _requiredSignature, totalSinger: _totalSigner);
+            requiredSignature: _requiredSignature, totalSigner: _totalSigner);
       }
 
       selectedUtxoList.remove(utxo);
@@ -343,7 +343,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     } else {
       if (!_isMaxMode) {
         _transaction.addInputWithUtxo(utxo, satsPerVb ?? 1, _walletBase,
-            requiredSignature: _requiredSignature, totalSinger: _totalSigner);
+            requiredSignature: _requiredSignature, totalSigner: _totalSigner);
         setEstimatedFee(estimateFee(satsPerVb ?? 1));
       }
       selectedUtxoList.add(utxo);
@@ -375,7 +375,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     }
 
     try {
-      return Transaction.forPayment(
+      return Transaction.forSinglePayment(
           utxoList,
           _sendInfoProvider.recipientAddress!,
           _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
@@ -507,7 +507,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _updateFeeRateOfTransaction(int satsPerVb) {
     _transaction.updateFeeRate(satsPerVb, _walletBase,
-        requiredSignature: _requiredSignature, totalSinger: _totalSigner);
+        requiredSignature: _requiredSignature, totalSigner: _totalSigner);
   }
 
   void _updateSendInfoProvider() {

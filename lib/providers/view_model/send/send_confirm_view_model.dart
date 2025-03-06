@@ -35,25 +35,24 @@ class SendConfirmViewModel extends ChangeNotifier {
       return psbt.serialize();
     }
 
-    String generatedTx;
     var utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
-    if (_sendInfoProvider.isMaxMode!) {
-      generatedTx = await _walletListItemBase.walletBase.generatePsbtForSweep(
-          utxoList,
-          _sendInfoProvider.recipientAddress!,
-          _sendInfoProvider.feeRate!);
-    } else {
-      generatedTx = await _walletListItemBase.walletBase.generatePsbtForPayment(
-          utxoList,
-          _sendInfoProvider.recipientAddress!,
-          _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
-          UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
-          _sendInfoProvider.feeRate!);
-    }
+    final generateTx = _sendInfoProvider.isMaxMode!
+        ? Transaction.forSweep(utxoList, _sendInfoProvider.recipientAddress!,
+            _sendInfoProvider.feeRate!, _walletListItemBase.walletBase)
+        : Transaction.forSinglePayment(
+            utxoList,
+            _sendInfoProvider.recipientAddress!,
+            _walletProvider
+                .getChangeAddress(_sendInfoProvider.walletId!)
+                .address,
+            UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+            _sendInfoProvider.feeRate!,
+            _walletListItemBase.walletBase);
 
     // printLongString(">>>>>> psbt 생성");
     // printLongString(generatedTx);
-    return generatedTx;
+    return Psbt.fromTransaction(generateTx, _walletListItemBase.walletBase)
+        .serialize();
   }
 
   void setTxWaitingForSign(String transaction) {
