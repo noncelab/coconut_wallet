@@ -422,6 +422,11 @@ class NodeProvider extends ChangeNotifier {
     final txFetchResults = await _mainClient.getFetchTransactionResponses(
         scriptStatus, knownTransactionHashes);
 
+    final unconfirmedTxs = txFetchResults
+        .where((tx) => tx.height == 0)
+        .map((tx) => tx.transactionHash)
+        .toSet();
+
     if (txFetchResults.isEmpty) {
       return;
     }
@@ -443,6 +448,14 @@ class NodeProvider extends ChangeNotifier {
         .whereType<SuccessState<Transaction>>()
         .map((state) => state.data)
         .toList();
+
+    // 각 트랜잭션에 대해 사용된 UTXO 상태 업데이트
+    for (final tx in txs) {
+      // 언컨펌 트랜잭션의 경우 새로 브로드캐스트된 트랜잭션이므로 사용된 UTXO 상태 업데이트
+      if (unconfirmedTxs.contains(tx.transactionHash)) {
+        _updateUtxoStatusToOutgoingByTransaction(walletItem.id, tx);
+      }
+    }
 
     final txRecords = await _createTransactionRecords(
         walletItem, txs, txBlockHeightMap, blockTimestampMap, walletProvider,
@@ -466,6 +479,12 @@ class NodeProvider extends ChangeNotifier {
         .getBlocksByHeight(utxos.map((utxo) => utxo.blockHeight).toSet());
 
     UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
+
+    for (var utxo in utxos) {
+      if (utxo.blockHeight == 0) {
+        utxo.status = UtxoStatus.incoming;
+      }
+    }
 
     _utxoRepository.addAllUtxos(walletItem.id, utxos);
 
@@ -607,6 +626,21 @@ class NodeProvider extends ChangeNotifier {
     });
 
     return result;
+  }
+
+  /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.
+  void _updateUtxoStatusToOutgoingByTransaction(
+      int walletId, Transaction transaction) {
+    // 트랜잭션 입력을 순회하며 사용된 UTXO를 pending 상태로 변경
+    for (var input in transaction.inputs) {
+      // UTXO 소유 지갑 ID 찾기
+      final inputTxHash = input.transactionHash;
+      final inputIndex = input.index;
+
+      // UTXO를 pending 상태로 표시하고 RBF 관련 정보 저장
+      _utxoRepository.markUtxoAsOutgoing(
+          walletId, inputTxHash, inputIndex, transaction.transactionHash);
+    }
   }
 
   Future<Result<int>> getNetworkMinimumFeeRate() async {
