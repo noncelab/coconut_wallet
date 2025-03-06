@@ -12,7 +12,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/providers/node_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -140,8 +140,6 @@ class WalletProvider extends ChangeNotifier {
         if (_nodeProvider.state.updatedWallets[key]!.balance ==
             UpdateStatus.completed) {
           fetchWalletBalance(key);
-          // 잔액 업데이트 완료 후 대기 상태로 변경하여 다시 업데이트 되지 않도록 합니다.
-          _nodeProvider.setWalletUpdateTypeWaiting(key, UpdateElement.balance);
         }
       }
     }
