@@ -88,8 +88,9 @@ class ElectrumService extends NodeClient {
   }
 
   @override
-  Future<String> getTransaction(String transactionHash) async {
-    return _client.getTransaction(transactionHash);
+  Future<String> getTransaction(String transactionHash,
+      {bool verbose = false}) async {
+    return _client.getTransaction(transactionHash, verbose: verbose);
   }
 
   @override
@@ -717,6 +718,7 @@ class ElectrumService extends NodeClient {
               derivationPath: scriptStatus.derivationPath,
               blockHeight: e.height,
               to: scriptStatus.address,
+              status: UtxoStatus.unspent,
             ))
         .toList();
   }

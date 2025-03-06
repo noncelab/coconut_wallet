@@ -24,7 +24,7 @@ abstract class NodeClient {
 
   Future<BlockTimestamp> getLatestBlock();
 
-  Future<String> getTransaction(String transactionHash);
+  Future<String> getTransaction(String transactionHash, {bool verbose = false});
 
   Future<List<Transaction>> getPreviousTransactions(
       Transaction transaction, List<Transaction> existingTxList);

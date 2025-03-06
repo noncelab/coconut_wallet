@@ -141,4 +141,22 @@ class MockSocketManager extends _i1.Mock implements _i3.SocketManager {
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
       ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<dynamic> sendRequest(
+    String? requestJson,
+    int? id, {
+    Duration? timeout = const Duration(seconds: 30),
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendRequest,
+          [
+            requestJson,
+            id,
+          ],
+          {#timeout: timeout},
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
 }
