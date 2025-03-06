@@ -9,7 +9,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
-import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/network/electrum/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/services/model/stream/base_stream_state.dart';
