@@ -181,7 +181,6 @@ class TransactionItemCard extends StatelessWidget {
         : DateTimeUtil.formatTimeStamp(tx.getDateTimeToDisplay()!.toLocal());
 
     return ShrinkAnimationButton(
-        defaultColor: MyColors.transparentWhite_06,
         onPressed: () {
           onPressed();
         },
@@ -191,8 +190,8 @@ class TransactionItemCard extends StatelessWidget {
           height: 84,
           padding: Paddings.widgetContainer,
           decoration: BoxDecoration(
-              borderRadius: MyBorder.defaultRadius,
-              color: MyColors.transparentWhite_06),
+            borderRadius: MyBorder.defaultRadius,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,

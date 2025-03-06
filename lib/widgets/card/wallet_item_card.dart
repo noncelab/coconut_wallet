@@ -94,13 +94,6 @@ class WalletItemCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(
-                width: 8,
-              ),
-              SvgPicture.asset('assets/svg/arrow-right.svg',
-                  width: 24,
-                  colorFilter:
-                      const ColorFilter.mode(MyColors.white, BlendMode.srcIn))
             ])));
 
     if (isLastItem) {

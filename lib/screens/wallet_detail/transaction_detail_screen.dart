@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -21,12 +23,14 @@ import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_memo_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/shimmer_text.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
-  static const _divider = Divider(color: MyColors.transparentWhite_15);
+  static const _divider = Divider(color: CoconutColors.gray800);
   final int id;
 
   final String txHash;
@@ -124,13 +128,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           },
                         )),
                         const SizedBox(height: 20),
+                        if (_isTransactionStatusPending(
+                            viewModel.transaction!)) ...{
+                          Column(
+                            children: [
+                              _pendingWidget(viewModel.transaction!),
+                              CoconutLayout.spacing_300h,
+                            ],
+                          )
+                        },
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 16),
                           width: double.infinity,
                           decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
-                              color: MyColors.transparentWhite_12),
+                              color: CoconutColors.gray800),
                           child:
                               Column(mainAxisSize: MainAxisSize.min, children: [
                             ListView.builder(
@@ -329,6 +342,95 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _loadCompletedListener();
     });
+  }
+
+  bool _isTransactionStatusPending(TransactionRecord tx) {
+    switch (TransactionUtil.getStatus(tx)) {
+      case TransactionStatus.receiving:
+      case TransactionStatus.sending:
+      case TransactionStatus.selfsending:
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  Widget _pendingWidget(TransactionRecord tx) {
+    TransactionStatus? status = TransactionUtil.getStatus(tx);
+    if (status == null) {
+      return Container();
+    }
+    bool isSending = status == TransactionStatus.sending ||
+        status == TransactionStatus.selfsending ||
+        status == TransactionStatus.sent;
+
+    return Container(
+      width: MediaQuery.sizeOf(context).width,
+      decoration: BoxDecoration(
+        border: Border.all(
+          width: 1,
+          color: CoconutColors.gray700,
+        ),
+        borderRadius: BorderRadius.circular(
+          CoconutStyles.radius_200,
+        ),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isSending
+                  ? CoconutColors.primary.withOpacity(0.2)
+                  : CoconutColors.cyan.withOpacity(0.2),
+            ),
+            child: Center(
+              child: isSending
+                  ? Lottie.asset('assets/lottie/arrow-up.json',
+                      fit: BoxFit.fill, repeat: true)
+                  : Lottie.asset('assets/lottie/arrow-down.json',
+                      fit: BoxFit.fill, repeat: true),
+            ),
+          ),
+          Text(
+            isSending ? t.status_sending : t.status_receiving,
+            style: CoconutTypography.body2_14
+                .copyWith(fontWeight: FontWeight.w500),
+          ),
+          CoconutLayout.spacing_50w,
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () => Navigator.pushNamed(
+                    context, '/transaction-fee-bumping',
+                    arguments: {
+                      'transaction': tx,
+                      'feeBumpingType':
+                          isSending ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
+                      'walletId': widget.id,
+                      'walletName': _viewModel.getWalletName(),
+                    }),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ShimmerText(
+                    text: isSending ? t.quick_send : t.quick_receive,
+                    color:
+                        isSending ? CoconutColors.primary : CoconutColors.cyan,
+                    textStyle: CoconutTypography.body2_14,
+                  ),
+                ),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
   }
 
   Widget _amountText(TransactionRecord tx) {

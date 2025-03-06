@@ -67,6 +67,8 @@ status_sending: "보내는 중"
 status_sent: "보내기 완료"
 status_updating: "업데이트 중"
 no_status: "상태 없음"
+quick_receive: "빨리 받기"
+quick_send: "빨리 보내기"
 
 bitcoin_text: "$bitcoin BTC"
 apply_item: "$count개에 적용"
@@ -186,6 +188,21 @@ utxo_tag_screen:
 wallet_info_screen:
   title: "$name 정보"
   view_xpub: "확장 공개키 보기"
+transaction_fee_bumping_screen:
+  rbf: "RBF"
+  cpfp: "CPFP"
+  existing_fee: "기존 수수료"
+  existing_fee_value: "${value} sats/vb"
+  total_fee: "총 $fee sats / ${vb}vb"
+  new_fee: "새 수수료"
+  sats_vb: "sats/vb"
+  recommend_fee: "추천 수수료: ${fee}sats/vb 이상"
+  recommend_fee_info_rbf: "기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요."
+  recommend_fee_info_cpfp: "새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = {newTxSize} vb, 추천 수수료율 = {recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = ({originalTxSize} + {newTxSize}) × {recommendedFeeRate} = {totalRequiredFee} sat\n • 새 거래의 수수료 = {totalRequiredFee} - {originalFee} = {newTxFee} sat\n • 새 거래의 수수료율 = {newTxFee} ÷ {newTxSize} {inequalitySign} {newTxFeeRate} sat/vb"
+  current_fee: "현재 수수료"
+  estimated_fee: "예상 총 수수료 ${fee} sats"
+  recommended_fees_fetch_error: "추천 수수료를 조회할 수 없어요!"
+
 
 # lib/widgets/card
 wallet_list_add_guide_card:
@@ -309,6 +326,9 @@ tooltip:
   faucet: "테스트용 비트코인으로 마음껏 테스트 해보세요"
   multisig_wallet: "$total개의 키 중 $count개로 서명해야 하는\n다중 서명 지갑이에요."
   mfp: "지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요."
+  rbf: "수수료를 올려, 기존 거래를 새로운 거래로 대체하는 기능이에요. (RBF, Replace-By-Fee)"
+  cpfp: "새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)"
+
 
 snackbar:
   no_permission: "no Permission"

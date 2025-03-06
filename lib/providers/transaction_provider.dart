@@ -31,7 +31,6 @@ class TransactionProvider extends ChangeNotifier {
   TransactionRecord? getTransaction(int walletId, String txHash,
       {String? utxoTo}) {
     final tx = _loadTransaction(walletId, txHash);
-
     if (utxoTo != null && tx != null) {
       if (tx.outputAddressList.isNotEmpty) {
         tx.outputAddressList.sort((a, b) {
