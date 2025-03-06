@@ -123,7 +123,6 @@ class WalletProvider extends ChangeNotifier {
   }
 
   void _onNodeProviderStateUpdated() {
-    Logger.log('--> [_onNodeProviderStateUpdated()]');
     if (!_isNodeProviderInitialized && _nodeProvider.isInitialized) {
       Logger.log(
           '--> _nodeProvider.isInitialized: ${_nodeProvider.isInitialized}');
@@ -131,17 +130,14 @@ class WalletProvider extends ChangeNotifier {
       _syncWalletData();
     }
 
-    Logger.log('--> connectionState: ${_nodeProvider.state.connectionState}');
+    // 노드 연결 상태 출력
+    _printWalletStatus();
 
-    if (_nodeProvider.state.updatedWallets.isNotEmpty) {
-      for (var key in _nodeProvider.state.updatedWallets.keys) {
-        Logger.log(
-            '--> $key ${_nodeProvider.state.updatedWallets[key]!.balance}');
-        if (_nodeProvider.state.updatedWallets[key]!.balance ==
+    if (_nodeProvider.state.registeredWallets.isNotEmpty) {
+      for (var key in _nodeProvider.state.registeredWallets.keys) {
+        if (_nodeProvider.state.registeredWallets[key]!.balance ==
             UpdateStatus.completed) {
           fetchWalletBalance(key);
-          // 잔액 업데이트 완료 후 대기 상태로 변경하여 다시 업데이트 되지 않도록 합니다.
-          _nodeProvider.setWalletUpdateTypeWaiting(key, UpdateElement.balance);
         }
       }
     }
@@ -194,9 +190,7 @@ class WalletProvider extends ChangeNotifier {
     _walletSyncingState = WalletSyncingState.syncing;
     notifyListeners();
     try {
-      for (var wallet in _walletItemList) {
-        await _nodeProvider.subscribeWallet(wallet, this);
-      }
+      await _nodeProvider.subscribeWallets(_walletItemList, this);
 
       for (var wallet in _walletItemList) {
         fetchWalletBalance(wallet.id);
@@ -601,6 +595,72 @@ class WalletProvider extends ChangeNotifier {
     _nodeProvider.removeListener(_onNodeProviderStateUpdated);
     _balanceStream.close();
     super.dispose();
+  }
+
+  void _printWalletStatus() {
+    // UpdateStatus를 심볼로 변환하는 함수
+    String statusToSymbol(UpdateStatus status) {
+      switch (status) {
+        case UpdateStatus.waiting:
+          return '⏳'; // 대기 중
+        case UpdateStatus.syncing:
+          return '🔄'; // 동기화 중
+        case UpdateStatus.completed:
+          return '✅'; // 완료됨
+      }
+    }
+
+    // ConnectionState를 심볼로 변환하는 함수
+    String connectionStateToSymbol(MainClientState state) {
+      switch (state) {
+        case MainClientState.syncing:
+          return '🔄 동기화 중';
+        case MainClientState.waiting:
+          return '🟢 대기 중 ';
+        case MainClientState.disconnected:
+          return '🔴 연결 끊김';
+      }
+    }
+
+    final connectionState = _nodeProvider.state.connectionState;
+    final connectionStateSymbol = connectionStateToSymbol(connectionState);
+
+    if (_nodeProvider.state.registeredWallets.isEmpty) {
+      Logger.log('--> 등록된 지갑이 없습니다.');
+      Logger.log('--> connectionState: $connectionState');
+      return;
+    }
+
+    // 등록된 지갑의 키 목록 얻기
+    final walletKeys = _nodeProvider.state.registeredWallets.keys.toList();
+
+    // 테이블 헤더 출력 (connectionState 포함)
+    Logger.log('┌───────────────────────────────────────┐');
+    Logger.log(
+        '│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
+    Logger.log('├─────────┬─────────┬─────────┬─────────┤');
+    Logger.log('│ 지갑 ID │  잔액   │  거래   │  UTXO   │');
+    Logger.log('├─────────┼─────────┼─────────┼─────────┤');
+
+    // 각 지갑 상태 출력
+    for (int i = 0; i < walletKeys.length; i++) {
+      final key = walletKeys[i];
+      final value = _nodeProvider.state.registeredWallets[key]!;
+
+      final balanceSymbol = statusToSymbol(value.balance);
+      final transactionSymbol = statusToSymbol(value.transaction);
+      final utxoSymbol = statusToSymbol(value.utxo);
+
+      Logger.log(
+          '│ ${key.toString().padRight(7)} │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
+
+      // 마지막 행이 아니면 행 구분선 추가
+      if (i < walletKeys.length - 1) {
+        Logger.log('├─────────┼─────────┼─────────┼─────────┤');
+      }
+    }
+
+    Logger.log('└─────────┴─────────┴─────────┴─────────┘');
   }
 }
 
