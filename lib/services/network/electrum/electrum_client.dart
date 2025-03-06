@@ -163,9 +163,16 @@ class ElectrumClient {
     return response.result;
   }
 
-  Future<String> getTransaction(String txHash) async {
-    var response = await _call(_BlockchainTransactionGetReq(txHash),
-        (json, {int? id}) => ElectrumResponse(result: json as String));
+  Future<String> getTransaction(String txHash, {bool? verbose}) async {
+    var response =
+        await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose),
+            (json, {int? id}) {
+      // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
+      if (json is Map) {
+        return ElectrumResponse(result: jsonEncode(json));
+      }
+      return ElectrumResponse(result: json as String);
+    });
 
     return response.result;
   }
