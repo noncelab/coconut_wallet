@@ -538,6 +538,7 @@ class NodeProvider extends ChangeNotifier {
       transactionType: txDetails.txType.name,
       amount: txDetails.amount,
       fee: txDetails.fee,
+      vSize: tx.getVirtualByte().ceil(),
     );
   }
 

@@ -332,7 +332,8 @@ class RealmTransaction extends _RealmTransaction
   RealmTransaction(
     int id,
     String transactionHash,
-    int walletId, {
+    int walletId,
+    int vSize, {
     DateTime? timestamp,
     int? blockHeight,
     String? transactionType,
@@ -353,6 +354,7 @@ class RealmTransaction extends _RealmTransaction
     RealmObjectBase.set(this, 'memo', memo);
     RealmObjectBase.set(this, 'amount', amount);
     RealmObjectBase.set(this, 'fee', fee);
+    RealmObjectBase.set(this, 'vSize', vSize);
     RealmObjectBase.set<RealmList<String>>(
         this, 'inputAddressList', RealmList<String>(inputAddressList));
     RealmObjectBase.set<RealmList<String>>(
@@ -416,6 +418,11 @@ class RealmTransaction extends _RealmTransaction
   set fee(int? value) => RealmObjectBase.set(this, 'fee', value);
 
   @override
+  int get vSize => RealmObjectBase.get<int>(this, 'vSize') as int;
+  @override
+  set vSize(int value) => RealmObjectBase.set(this, 'vSize', value);
+
+  @override
   RealmList<String> get inputAddressList =>
       RealmObjectBase.get<String>(this, 'inputAddressList')
           as RealmList<String>;
@@ -467,6 +474,7 @@ class RealmTransaction extends _RealmTransaction
       'memo': memo.toEJson(),
       'amount': amount.toEJson(),
       'fee': fee.toEJson(),
+      'vSize': vSize.toEJson(),
       'inputAddressList': inputAddressList.toEJson(),
       'outputAddressList': outputAddressList.toEJson(),
       'note': note.toEJson(),
@@ -482,11 +490,13 @@ class RealmTransaction extends _RealmTransaction
         'id': EJsonValue id,
         'transactionHash': EJsonValue transactionHash,
         'walletId': EJsonValue walletId,
+        'vSize': EJsonValue vSize,
       } =>
         RealmTransaction(
           fromEJson(id),
           fromEJson(transactionHash),
           fromEJson(walletId),
+          fromEJson(vSize),
           timestamp: fromEJson(ejson['timestamp']),
           blockHeight: fromEJson(ejson['blockHeight']),
           transactionType: fromEJson(ejson['transactionType']),
@@ -520,6 +530,7 @@ class RealmTransaction extends _RealmTransaction
       SchemaProperty('memo', RealmPropertyType.string, optional: true),
       SchemaProperty('amount', RealmPropertyType.int, optional: true),
       SchemaProperty('fee', RealmPropertyType.int, optional: true),
+      SchemaProperty('vSize', RealmPropertyType.int),
       SchemaProperty('inputAddressList', RealmPropertyType.string,
           collectionType: RealmCollectionType.list),
       SchemaProperty('outputAddressList', RealmPropertyType.string,
