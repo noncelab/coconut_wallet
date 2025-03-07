@@ -165,8 +165,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                               ? _balanceWidthSize.width
                                               : 100,
                                       rowType: InputOutputRowType.input,
-                                      isCurrentAddress:
-                                          viewModel.isSameAddress(address),
+                                      isCurrentAddress: viewModel.isSameAddress(
+                                          address, index),
                                       transactionStatus: status,
                                     ),
                                     const SizedBox(height: 8),
@@ -220,8 +220,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                               ? _balanceWidthSize.width
                                               : 100,
                                       rowType: InputOutputRowType.output,
-                                      isCurrentAddress:
-                                          viewModel.isSameAddress(address),
+                                      isCurrentAddress: viewModel.isSameAddress(
+                                          address, index),
                                       transactionStatus: status,
                                     ),
                                     const SizedBox(height: 8),
@@ -407,15 +407,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             child: Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () => Navigator.pushNamed(
-                    context, '/transaction-fee-bumping',
-                    arguments: {
-                      'transaction': tx,
-                      'feeBumpingType':
-                          isSending ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
-                      'walletId': widget.id,
-                      'walletName': _viewModel.getWalletName(),
-                    }),
+                onTap: () async {
+                  Navigator.pushNamed(context, '/transaction-fee-bumping',
+                      arguments: {
+                        'transaction': tx,
+                        'feeBumpingType': isSending
+                            ? FeeBumpingType.rbf
+                            : FeeBumpingType.cpfp,
+                        'walletId': widget.id,
+                        'walletName': _viewModel.getWalletName(),
+                        'currentUtxo': _viewModel.currentUtxo,
+                      });
+                },
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ShimmerText(

@@ -1,11 +1,10 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
@@ -34,6 +33,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   int _inputCountToShow = 0;
   int _outputCountToShow = 0;
+
+  Utxo? _currentUtxo;
+  Utxo? get currentUtxo => _currentUtxo;
 
   TransactionRecord? _transaction;
   TransactionRecord? get transaction => _transaction;
@@ -67,9 +69,22 @@ class TransactionDetailViewModel extends ChangeNotifier {
     _outputCountToShow = 0;
   }
 
-  bool isSameAddress(String address) {
-    return _walletProvider.containsAddress(_walletId, address);
+  bool isSameAddress(String address, int index) {
+    bool isContainAddress = _walletProvider.containsAddress(_walletId, address);
+
+    if (isContainAddress) {
+      // var amount = getInputAmount(index);
+      // var address = _walletProvider.getChangeAddress(walletId)
+      // var derivationPath = Address()
+      //   _currentUtxo = Utxo(_txHash, index, amount, _derivationPath)
+      return true;
+    }
+    return false;
   }
+
+  // String getDerivationPath() {
+
+  // }
 
   void onTapViewMoreInputs() {
     // ignore: no_leading_underscores_for_local_identifiers
@@ -161,6 +176,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  String getWalletName() => _walletProvider.getWalletById(_walletId).name;
 
   String getInputAddress(int index) =>
       TransactionUtil.getInputAddress(_transaction, index);

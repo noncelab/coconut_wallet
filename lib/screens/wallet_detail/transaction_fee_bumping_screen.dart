@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -15,7 +16,6 @@ import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 enum FeeBumpingType {
@@ -28,6 +28,7 @@ class TransactionFeeBumpingScreen extends StatefulWidget {
   final FeeBumpingType feeBumpingType;
   final String walletName;
   final int walletId;
+  final Utxo? currentUtxo;
 
   const TransactionFeeBumpingScreen({
     super.key,
@@ -35,6 +36,7 @@ class TransactionFeeBumpingScreen extends StatefulWidget {
     required this.feeBumpingType,
     required this.walletId,
     required this.walletName,
+    required this.currentUtxo,
   });
 
   @override
@@ -134,9 +136,7 @@ class _TransactionFeeBumpingScreenState
                           CoconutLayout.spacing_500h,
                           _buildNewFeeWidget(),
                           CoconutLayout.spacing_400h,
-                          if (viewModel.isRecommendedFeesFetchError)
-                            _buildFetchFailedWidget()
-                          else ...[
+                          if (viewModel.isRecommendedFeesFetchSuccess) ...[
                             _buildRecommendFeeWidget(
                                 _viewModel.recommendFeeRate),
                             CoconutLayout.spacing_300h,
@@ -145,7 +145,8 @@ class _TransactionFeeBumpingScreenState
                               viewModel.feeInfos[1].satsPerVb ?? 0,
                               viewModel.feeInfos[2].satsPerVb ?? 0,
                             ),
-                          ]
+                          ] else
+                            _buildFetchFailedWidget()
                         ],
                       ),
                     ),
@@ -188,10 +189,10 @@ class _TransactionFeeBumpingScreenState
                       CoconutLayout.spacing_300h,
                       CoconutButton(
                           onPressed: () {
-                            viewModel
-                                .generateUnsignedPsbt(
-                                    int.parse(_textEditingController.text))
-                                .then((value) {
+                            if (viewModel.isLowerFeeError) return;
+                            viewModel.updateSendInfoProvider(
+                                int.parse(_textEditingController.text));
+                            _viewModel.generateUnsignedPsbt().then((value) {
                               viewModel.setTxWaitingForSign(value);
                               Navigator.pushNamed(
                                   context, '/unsigned-transaction-qr',
@@ -268,14 +269,11 @@ class _TransactionFeeBumpingScreenState
   }
 
   FeeBumpingViewModel _getViewModel(BuildContext context) {
-    debugPrint('###### _getViewModel 1');
-
     final nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     final sendInfoProvider =
         Provider.of<SendInfoProvider>(context, listen: false);
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
 
-    debugPrint('###### _getViewModel 2');
     if (widget.feeBumpingType == FeeBumpingType.rbf) {
       return RbfViewModel(
         widget.transaction,
@@ -283,6 +281,7 @@ class _TransactionFeeBumpingScreenState
         nodeProvider,
         sendInfoProvider,
         walletProvider,
+        widget.currentUtxo,
       );
     } else if (widget.feeBumpingType == FeeBumpingType.cpfp) {
       return CpfpViewModel(
@@ -291,6 +290,7 @@ class _TransactionFeeBumpingScreenState
         nodeProvider,
         sendInfoProvider,
         walletProvider,
+        widget.currentUtxo,
       );
     }
     throw Exception('Invalid FeeBumping Type');
@@ -339,8 +339,9 @@ class _TransactionFeeBumpingScreenState
                 style: CoconutTypography.body2_14_Bold,
               ),
               Text(
-                t.transaction_fee_bumping_screen
-                    .existing_fee_value(value: 5), // TODO: value
+                t.transaction_fee_bumping_screen.existing_fee_value(
+                  value: widget.transaction.feeRate,
+                ),
                 style: CoconutTypography.body2_14_Bold,
               ),
             ],
@@ -351,8 +352,11 @@ class _TransactionFeeBumpingScreenState
             children: [
               Text(
                 t.transaction_fee_bumping_screen.total_fee(
-                  fee: addCommasToIntegerPart(1000), // TODO: value
-                  vb: addCommasToIntegerPart(200), // TODO: value
+                  fee: addCommasToIntegerPart(
+                      widget.transaction.amount!.toDouble()),
+                  vb: addCommasToIntegerPart(
+                      widget.transaction.amount!.toDouble() /
+                          widget.transaction.feeRate),
                 ),
                 style: CoconutTypography.body2_14,
               ),
@@ -425,7 +429,7 @@ class _TransactionFeeBumpingScreenState
           children: [
             Text(
               t.transaction_fee_bumping_screen
-                  .recommend_fee(fee: recommendFeeRate),
+                  .recommend_fee(fee: _viewModel.recommendFeeRate),
             ),
             AnimatedRotation(
               turns: _isRecommendFeePannelExpanded ? -0.5 : 0,
@@ -469,7 +473,10 @@ class _TransactionFeeBumpingScreenState
                     _isRbf
                         ? t.transaction_fee_bumping_screen
                             .recommend_fee_info_rbf
-                        : _viewModel.getCpfpFeeInfo(),
+                        : _viewModel.isRecommendedFeesFetchSuccess
+                            ? _viewModel.getCpfpFeeInfo()
+                            : t.transaction_fee_bumping_screen
+                                .recommended_fees_fetch_error,
                     style: CoconutTypography.body2_14,
                   ),
                 ),
