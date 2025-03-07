@@ -140,12 +140,9 @@ class UtxoListViewModel extends ChangeNotifier {
   List<String> getTimeString(int utxoIndex) {
     if (_utxoList.isEmpty) return [];
     final utxo = _utxoList[utxoIndex];
-    final transaction =
-        _txProvider.getTransaction(_walletId, utxo.transactionHash);
-    if (transaction == null) return [];
+    final tx = _txProvider.getTransaction(_walletId, utxo.transactionHash);
+    if (tx == null) return [];
 
-    return (transaction.blockHeight == 0)
-        ? DateTimeUtil.formatTimeStamp(transaction.timestamp!)
-        : DateTimeUtil.formatTimeStamp(utxo.timestamp);
+    return DateTimeUtil.formatTimeStamp(tx.timestamp!);
   }
 }

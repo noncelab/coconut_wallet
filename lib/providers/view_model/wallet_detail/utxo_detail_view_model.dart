@@ -32,10 +32,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
 
     _transaction = _txProvider.getTransaction(_walletId, _utxo.transactionHash);
-    final blockHeight = _txProvider.transaction?.blockHeight;
-    _dateString = blockHeight == 0
-        ? DateTimeUtil.formatTimeStamp(_transaction!.timestamp!)
-        : DateTimeUtil.formatTimeStamp(_utxo.timestamp);
+    _dateString = DateTimeUtil.formatTimeStamp(_transaction!.timestamp!);
 
     _initUtxoInOutputList();
   }
