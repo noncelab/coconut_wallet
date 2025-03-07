@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -59,5 +60,19 @@ class TransactionUtil {
     if (index < 0 || index >= list.length) return defaultValue;
 
     return valueSelector(list[index]);
+  }
+
+  /// 코인베이스 트랜잭션 여부를 확인합니다.
+  static bool isCoinbaseTransaction(Transaction tx) {
+    if (tx.inputs.length != 1) {
+      return false;
+    }
+
+    if (tx.inputs[0].transactionHash !=
+        '0000000000000000000000000000000000000000000000000000000000000000') {
+      return false;
+    }
+
+    return tx.inputs[0].index == 4294967295; // 0xffffffff
   }
 }

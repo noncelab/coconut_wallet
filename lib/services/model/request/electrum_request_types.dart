@@ -1,4 +1,4 @@
-part of '../../network/electrum/electrum_client.dart';
+part of '../../electrum_service.dart';
 
 abstract class _ElectrumRequest {
   String get method;
@@ -170,14 +170,17 @@ class _BroadcastReq extends _ElectrumRequest {
 // blockchain.transaction.get
 class _BlockchainTransactionGetReq extends _ElectrumRequest {
   final String _txHash;
+  final bool? _verbose;
 
-  _BlockchainTransactionGetReq(this._txHash);
+  _BlockchainTransactionGetReq(this._txHash, {bool? verbose})
+      : _verbose = verbose;
 
   @override
   String get method => 'blockchain.transaction.get';
 
   @override
-  List<String> get params => [_txHash];
+  List<dynamic> get params =>
+      _verbose == null ? [_txHash] : [_txHash, _verbose];
 }
 
 // mempool.get_fee_histogram
