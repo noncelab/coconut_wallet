@@ -25,10 +25,13 @@ class UtxoManager {
   /// 스크립트의 UTXO를 조회하고 업데이트합니다.
   Future<void> fetchScriptUtxo(
     WalletListItemBase walletItem,
-    ScriptStatus scriptStatus,
-  ) async {
-    // UTXO 동기화 시작 state 업데이트
-    _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
+    ScriptStatus scriptStatus, {
+    bool inBatchProcess = false,
+  }) async {
+    if (!inBatchProcess) {
+      // UTXO 동기화 시작 state 업데이트
+      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
+    }
 
     // UTXO 목록 조회
     final utxos = await getUtxoStateList(scriptStatus);
@@ -46,8 +49,10 @@ class UtxoManager {
 
     _utxoRepository.addAllUtxos(walletItem.id, utxos);
 
-    // UTXO 업데이트 완료 state 업데이트
-    _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
+    if (!inBatchProcess) {
+      // UTXO 업데이트 완료 state 업데이트
+      _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
+    }
   }
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다.

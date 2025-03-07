@@ -522,8 +522,8 @@ class SubscriptionManager {
       // Balance 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
       await Future.wait(
-        scriptStatuses.map(
-            (status) => _balanceManager.fetchScriptBalance(walletItem, status)),
+        scriptStatuses.map((status) => _balanceManager
+            .fetchScriptBalance(walletItem, status, inBatchProcess: true)),
       );
       _stateManager.addWalletCompletedState(
           walletItem.id, UpdateElement.balance);
@@ -533,7 +533,8 @@ class SubscriptionManager {
           walletItem.id, UpdateElement.transaction);
       final transactionFutures = scriptStatuses.map(
         (status) => _transactionManager.fetchScriptTransaction(
-            walletItem, status, walletProvider),
+            walletItem, status, walletProvider,
+            inBatchProcess: true),
       );
       await Future.wait(transactionFutures);
       _stateManager.addWalletCompletedState(
@@ -542,8 +543,8 @@ class SubscriptionManager {
       // UTXO 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
       await Future.wait(
-        scriptStatuses
-            .map((status) => _utxoManager.fetchScriptUtxo(walletItem, status)),
+        scriptStatuses.map((status) => _utxoManager
+            .fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
       );
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
 

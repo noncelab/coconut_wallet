@@ -24,10 +24,13 @@ class BalanceManager {
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
   Future<void> fetchScriptBalance(
     WalletListItemBase walletItem,
-    ScriptStatus scriptStatus,
-  ) async {
-    // 동기화 시작 state 업데이트
-    _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
+    ScriptStatus scriptStatus, {
+    bool inBatchProcess = false,
+  }) async {
+    if (!inBatchProcess) {
+      // 동기화 시작 state 업데이트
+      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
+    }
 
     final balanceResponse =
         await _electrumService.getBalance(scriptStatus.scriptPubKey);
@@ -45,7 +48,10 @@ class BalanceManager {
 
     _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
 
-    // 동기화 완료 state 업데이트
-    _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
+    if (!inBatchProcess) {
+      // 동기화 완료 state 업데이트
+      _stateManager.addWalletCompletedState(
+          walletItem.id, UpdateElement.balance);
+    }
   }
 }

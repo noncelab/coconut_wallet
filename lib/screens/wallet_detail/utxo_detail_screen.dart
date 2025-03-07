@@ -300,6 +300,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           1,
           [TransactionAddress('dummy_address', 1)],
           [TransactionAddress('dummy_address', 1)],
+          0,
           DateTime.now(),
         );
   }

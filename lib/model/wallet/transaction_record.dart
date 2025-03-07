@@ -11,6 +11,7 @@ class TransactionRecord {
   List<TransactionAddress> _inputAddressList;
   List<TransactionAddress> _outputAddressList;
   DateTime? createdAt;
+  int _vSize;
 
   /// Get the transaction hash of this transaction.
   String get transactionHash => _transactionHash;
@@ -33,6 +34,12 @@ class TransactionRecord {
   /// Get the fee of this transaction.
   int? get fee => _fee;
 
+  /// Get the vSize of this transaction.
+  int get vSize => _vSize;
+
+  /// Get the fee rate of this transaction.
+  double get feeRate => _fee != null ? (_fee! / _vSize * 100).floor() / 100 : 0;
+
   /// Get the input address list of this transaction.
   List<TransactionAddress> get inputAddressList => _inputAddressList;
 
@@ -50,6 +57,7 @@ class TransactionRecord {
       this._fee,
       this._inputAddressList,
       this._outputAddressList,
+      this._vSize,
       this.createdAt);
 
   factory TransactionRecord.fromTransactions({
@@ -61,6 +69,7 @@ class TransactionRecord {
     required int fee,
     required List<TransactionAddress> inputAddressList,
     required List<TransactionAddress> outputAddressList,
+    required int vSize,
     String? memo,
   }) {
     return TransactionRecord(
@@ -73,6 +82,7 @@ class TransactionRecord {
       fee,
       inputAddressList,
       outputAddressList,
+      vSize,
       DateTime.now(), // createdAt
     );
   }

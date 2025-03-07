@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
@@ -122,6 +123,27 @@ class NodeProvider extends ChangeNotifier {
     } catch (e) {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
     }
+  }
+
+  Future<Result<bool>> subscribeWallets(List<WalletListItemBase> walletItems,
+      WalletProvider walletProvider) async {
+    // 지갑별 status 초기화
+    for (var walletItem in walletItems) {
+      _stateManager.initWalletUpdateStatus(walletItem.id);
+    }
+
+    // 동기화 중 state 업데이트
+    _stateManager.setState(newConnectionState: MainClientState.syncing);
+    for (var walletItem in walletItems) {
+      final result = await subscribeWallet(walletItem, walletProvider);
+      if (result.isFailure) {
+        return result;
+      }
+    }
+
+    // 동기화 완료 state 업데이트
+    _stateManager.setState(newConnectionState: MainClientState.waiting);
+    return Result.success(true);
   }
 
   Future<Result<bool>> subscribeWallet(

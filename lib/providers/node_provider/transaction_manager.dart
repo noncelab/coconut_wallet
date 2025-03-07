@@ -38,9 +38,13 @@ class TransactionManager {
     ScriptStatus scriptStatus,
     WalletProvider walletProvider, {
     DateTime? now,
+    bool inBatchProcess = false,
   }) async {
-    // Transaction 동기화 시작 state 업데이트
-    _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
+    if (!inBatchProcess) {
+      // Transaction 동기화 시작 state 업데이트
+      _stateManager.addWalletSyncState(
+          walletItem.id, UpdateElement.transaction);
+    }
 
     // 새로운 트랜잭션 조회
     final knownTransactionHashes = _transactionRepository
@@ -58,8 +62,10 @@ class TransactionManager {
         .toSet();
 
     if (txFetchResults.isEmpty) {
-      _stateManager.addWalletCompletedState(
-          walletItem.id, UpdateElement.transaction);
+      if (!inBatchProcess) {
+        _stateManager.addWalletCompletedState(
+            walletItem.id, UpdateElement.transaction);
+      }
       return;
     }
 
@@ -89,9 +95,11 @@ class TransactionManager {
 
     _transactionRepository.addAllTransactions(walletItem.id, txRecords);
 
-    // Transaction 업데이트 완료 state 업데이트
-    _stateManager.addWalletCompletedState(
-        walletItem.id, UpdateElement.transaction);
+    if (!inBatchProcess) {
+      // Transaction 업데이트 완료 state 업데이트
+      _stateManager.addWalletCompletedState(
+          walletItem.id, UpdateElement.transaction);
+    }
   }
 
   /// 스크립트에 대한 트랜잭션 응답을 가져옵니다.
@@ -296,6 +304,7 @@ class TransactionManager {
       transactionType: txDetails.txType.name,
       amount: txDetails.amount,
       fee: txDetails.fee,
+      vSize: tx.getVirtualByte().ceil(),
     );
   }
 

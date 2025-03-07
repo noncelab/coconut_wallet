@@ -8,7 +8,7 @@ class NodeStateManager {
 
   NodeProviderState _state = const NodeProviderState(
     connectionState: MainClientState.waiting,
-    updatedWallets: {},
+    registeredWallets: {},
   );
 
   NodeProviderState get state => _state;
@@ -33,9 +33,19 @@ class NodeStateManager {
     }
   }
 
+  void initWalletUpdateStatus(int walletId) {
+    setState(
+      newUpdatedWallets: {
+        ..._state.registeredWallets,
+        walletId: WalletUpdateInfo(walletId),
+      },
+      notify: false,
+    );
+  }
+
   /// 지갑의 업데이트 정보를 추가합니다.
   void addWalletSyncState(int walletId, UpdateElement updateType) {
-    final existingInfo = _state.updatedWallets[walletId];
+    final existingInfo = _state.registeredWallets[walletId];
 
     WalletUpdateInfo walletUpdateInfo;
 
@@ -61,14 +71,14 @@ class NodeStateManager {
     setState(
       newConnectionState: MainClientState.syncing,
       newUpdatedWallets: {
-        ..._state.updatedWallets,
+        ..._state.registeredWallets,
         walletId: walletUpdateInfo,
       },
     );
   }
 
   void addWalletCompletedState(int walletId, UpdateElement updateType) {
-    final existingInfo = _state.updatedWallets[walletId];
+    final existingInfo = _state.registeredWallets[walletId];
 
     WalletUpdateInfo walletUpdateInfo;
 
@@ -92,7 +102,7 @@ class NodeStateManager {
 
     setState(
       newUpdatedWallets: {
-        ..._state.updatedWallets,
+        ..._state.registeredWallets,
         walletId: walletUpdateInfo,
       },
     );
