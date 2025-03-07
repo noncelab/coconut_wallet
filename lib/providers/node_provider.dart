@@ -212,6 +212,9 @@ class NodeProvider extends ChangeNotifier {
       Logger.log(
           'HandleScriptStatusChanged: ${dto.walletItem.name} - ${dto.scriptStatus.derivationPath}');
 
+      // 지갑 업데이트 상태 초기화
+      _initWalletUpdateStatus(dto.walletItem.id);
+
       // 기존 인덱스 저장 (변경 전)
       final oldReceiveUsedIndex = dto.walletItem.receiveUsedIndex;
       final oldChangeUsedIndex = dto.walletItem.changeUsedIndex;
