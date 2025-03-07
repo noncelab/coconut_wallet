@@ -70,7 +70,7 @@ class WalletDetailHeader extends StatelessWidget {
                     SizedBox(
                         height: 24,
                         child: Text(
-                            balance != null
+                            balance != null && btcPriceInKrw != null
                                 ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(balance!, btcPriceInKrw!).toDouble())} ${CurrencyCode.KRW.code}'
                                 : '-',
                             style: Styles.subLabel.merge(TextStyle(

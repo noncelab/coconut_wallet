@@ -4,6 +4,8 @@ import 'dart:collection';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
@@ -50,6 +52,8 @@ enum WalletInitState {
   impossible,
 }
 
+typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
+
 class WalletProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
@@ -82,6 +86,9 @@ class WalletProvider extends ChangeNotifier {
 
   int gapLimit = 20;
 
+  bool _isSyncing = false;
+  bool _isAnyBalanceUpdating = false;
+
   final RealmManager _realmManager;
   final AddressRepository _addressRepository;
   final TransactionRepository _transactionRepository;
@@ -97,6 +104,35 @@ class WalletProvider extends ChangeNotifier {
   final StreamController<Map<int, Balance?>> _balanceStream =
       StreamController<Map<int, Balance?>>();
   StreamController<Map<int, Balance?>> get balanceStream => _balanceStream;
+
+  // db 업데이트 중인가
+  bool get isSyncing => _isSyncing;
+
+  bool get isAnyBalanceUpdating => _isAnyBalanceUpdating;
+
+  final Map<int, List<WalletUpdateListener>> _walletUpdateListeners = {};
+
+  void addWalletUpdateListener(int walletId, WalletUpdateListener listener) {
+    if (!_walletUpdateListeners.containsKey(walletId)) {
+      _walletUpdateListeners[walletId] = [];
+    }
+    _walletUpdateListeners[walletId]!.add(listener);
+  }
+
+  void removeWalletUpdateListener(int walletId, WalletUpdateListener listener) {
+    _walletUpdateListeners[walletId]?.remove(listener);
+    if (_walletUpdateListeners[walletId]?.isEmpty ?? false) {
+      _walletUpdateListeners.remove(walletId);
+    }
+  }
+
+  void _notifyWalletUpdateListeners(WalletUpdateInfo walletUpdateInfo) {
+    if (_walletUpdateListeners.containsKey(walletUpdateInfo.walletId)) {
+      for (var listener in _walletUpdateListeners[walletUpdateInfo.walletId]!) {
+        listener(walletUpdateInfo);
+      }
+    }
+  }
 
   WalletProvider(
     this._realmManager,
@@ -132,18 +168,57 @@ class WalletProvider extends ChangeNotifier {
       _subscribeNodeProvider();
     }
 
-    // 노드 연결 상태 출력
+    // NodeProvider 상태 출력
     _printWalletStatus();
+    _updateIsSyncingIfNeeded(_nodeProvider.state);
+    _updateIsAnyBalanceUpdatingIfNeeded(_nodeProvider.state);
+    for (var key in _nodeProvider.state.registeredWallets.keys) {
+      if (_nodeProvider.state.registeredWallets[key] != null) {
+        _notifyWalletUpdateListeners(
+            _nodeProvider.state.registeredWallets[key]!);
+      }
 
-    if (_nodeProvider.state.registeredWallets.isNotEmpty) {
-      for (var key in _nodeProvider.state.registeredWallets.keys) {
-        if (_nodeProvider.state.registeredWallets[key]!.balance ==
-            UpdateStatus.completed) {
-          fetchWalletBalance(key);
-        }
+      // TODO: balance stream 제거하기
+      if (_nodeProvider.state.registeredWallets[key]!.balance ==
+          UpdateStatus.completed) {
+        fetchWalletBalance(key);
       }
     }
     Logger.log('\n');
+  }
+
+  void _updateIsSyncingIfNeeded(NodeProviderState nodeProviderState) {
+    final newSyncingState =
+        nodeProviderState.connectionState == MainClientState.syncing;
+    if (_isSyncing != newSyncingState) {
+      _isSyncing = newSyncingState;
+      notifyListeners();
+    }
+  }
+
+  void _updateIsAnyBalanceUpdatingIfNeeded(
+      NodeProviderState nodeProviderState) {
+    if (nodeProviderState.connectionState != MainClientState.syncing) return;
+
+    bool anyBalanceSyncing = false;
+
+    for (var walletId in nodeProviderState.registeredWallets.keys) {
+      var wallet = nodeProviderState.registeredWallets[walletId];
+      if (wallet == null) continue;
+
+      if (wallet.balance == UpdateStatus.syncing) {
+        anyBalanceSyncing = true;
+        break;
+      }
+    }
+
+    if (anyBalanceSyncing && !_isAnyBalanceUpdating) {
+      _isAnyBalanceUpdating = true;
+      notifyListeners();
+    } else if (!anyBalanceSyncing && _isAnyBalanceUpdating) {
+      _isAnyBalanceUpdating = false;
+      notifyListeners();
+    }
   }
 
   Future<void> _loadWalletListFromDB() async {
@@ -199,6 +274,7 @@ class WalletProvider extends ChangeNotifier {
     try {
       await _nodeProvider.subscribeWallets(_walletItemList, this);
 
+      // TODO: 제거
       for (var wallet in _walletItemList) {
         fetchWalletBalance(wallet.id);
       }
@@ -619,6 +695,15 @@ class WalletProvider extends ChangeNotifier {
       int walletId, String transactionHash) {
     return _transactionRepository.getTransactionRecord(
         walletId, transactionHash);
+  }
+
+  WalletUpdateInfo getWalletUpdateInfo(int walletId) {
+    var result = _nodeProvider.state.registeredWallets[walletId];
+    if (result == null) {
+      return WalletUpdateInfo(walletId);
+    }
+
+    return result;
   }
 
   @override

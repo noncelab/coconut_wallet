@@ -15,6 +15,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/body/wallet_detail_body.dart';
+import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
@@ -158,6 +159,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       controller: _scrollController,
       slivers: [
+        if (viewModel.shouldShowLoadingIndicator)
+          // FIXME: 임시 로딩 위젯
+          const SliverToBoxAdapter(child: LoadingIndicator()),
         CupertinoSliverRefreshControl(
           onRefresh: () async =>
               _onRefresh(viewModel, state, balance, isNetworkOn ?? true),
@@ -365,12 +369,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       return false;
     }
 
+    // TODO: WalletInitState은 삭제 예정임
     if (state == WalletInitState.processing) {
       CustomToast.showToast(
           context: context, text: t.toast.fetching_onchain_data);
       return false;
     }
-
+    // TODO: WalletInitState은 삭제 예정임
     if (!_isPullToRefreshing) {
       if (balance == null || state == WalletInitState.error) {
         CustomToast.showWarningToast(

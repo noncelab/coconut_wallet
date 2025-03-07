@@ -1,5 +1,7 @@
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -26,8 +28,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   final UpbitConnectModel _upbitConnectModel;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
-  WalletListItemBase? _walletListBaseItem;
-  WalletType _walletType = WalletType.singleSignature;
+  late WalletListItemBase _walletListBaseItem;
+  late WalletType _walletType;
 
   WalletInitState _prevWalletInitState = WalletInitState.never;
   bool _prevIsLatestTxBlockHeightZero = false;
@@ -47,10 +49,14 @@ class WalletDetailViewModel extends ChangeNotifier {
   String _receiveAddressIndex = '';
 
   bool _isRequesting = false;
+  // 상태 변화 확인용
+  late WalletUpdateInfo _prevWalletUpdateInfo;
 
-  // fixme
-  int get balance =>
-      _walletProvider.getWalletBalance(_walletListBaseItem!.id).total;
+  late bool _shouldShowLoadingIndicator;
+  bool get shouldShowLoadingIndicator => _shouldShowLoadingIndicator;
+
+  late int _balance;
+  int get balance => _balance;
 
   WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
       this._connectProvider, this._upbitConnectModel) {
@@ -65,6 +71,13 @@ class WalletDetailViewModel extends ChangeNotifier {
 
     _txProvider.initTxList(_walletId);
     // _tagProvider.initTagList(_walletId);
+
+    // 지갑 업데이트
+    _prevWalletUpdateInfo = _walletProvider.getWalletUpdateInfo(_walletId);
+    _addChangeListener();
+    _shouldShowLoadingIndicator =
+        !_allElementUpdateCompleted(_prevWalletUpdateInfo);
+    _balance = _walletProvider.getWalletBalance(_walletId).total;
 
     // Faucet
     var receiveAddress = _walletProvider.getReceiveAddress(_walletId);
@@ -148,7 +161,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     if (_prevWalletInitState != WalletInitState.finished &&
         _walletProvider.walletInitState == WalletInitState.finished) {
       _checkTxCount();
-      // getUtxoListWithHoldingAddress();
     }
     _prevWalletInitState = _walletProvider.walletInitState;
     _walletAddress = _walletProvider.getReceiveAddress(_walletId).address;
@@ -210,5 +222,52 @@ class WalletDetailViewModel extends ChangeNotifier {
     _walletProvider.initWallet(targetId: _walletId);
     _txProvider.initTxList(_walletId);
     _checkTxCount();
+  }
+
+  void _addChangeListener() {
+    _walletProvider.addWalletUpdateListener(
+        _walletId, _onWalletUpdateInfoChanged);
+  }
+
+  // balance, transaction만 고려
+  void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
+    Logger.log('--> 지갑$_walletId 업데이트 체크');
+    if (_prevWalletUpdateInfo.balance != UpdateStatus.completed &&
+        updateInfo.balance == UpdateStatus.completed) {
+      _balance = _walletProvider.getWalletBalance(_walletId).total;
+      notifyListeners();
+      Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.');
+    }
+
+    if (_prevWalletUpdateInfo.transaction != UpdateStatus.completed &&
+        updateInfo.transaction == UpdateStatus.completed) {
+      _txProvider.initTxList(_walletId);
+      notifyListeners();
+      Logger.log('--> 지갑$_walletId의 TX를 업데이트했습니다.');
+    }
+
+    bool isSyncing = !_allElementUpdateCompleted(updateInfo);
+    if (_shouldShowLoadingIndicator != isSyncing) {
+      _shouldShowLoadingIndicator = isSyncing;
+      Logger.log(
+          '--> 지갑$_walletId loading ui: $_shouldShowLoadingIndicator으로 변경');
+      notifyListeners();
+    }
+
+    _prevWalletUpdateInfo = updateInfo;
+  }
+
+  bool _allElementUpdateCompleted(WalletUpdateInfo updateInfo) {
+    return updateInfo.balance == UpdateStatus.completed &&
+        updateInfo.transaction == UpdateStatus.completed;
+  }
+
+  @override
+  void dispose() {
+    _walletProvider.removeWalletUpdateListener(
+        _walletId, _onWalletUpdateInfoChanged);
+
+    // 반드시 super.dispose() 호출
+    super.dispose();
   }
 }
