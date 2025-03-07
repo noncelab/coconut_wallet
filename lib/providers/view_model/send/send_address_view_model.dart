@@ -46,7 +46,7 @@ class SendAddressViewModel extends ChangeNotifier {
     _isNetworkOn = isNetworkOn;
   }
 
-  Future validateAddress(String recipient) async {
+  Future<void> validateAddress(String recipient) async {
     if (recipient.isEmpty || recipient.length < 26) {
       throw invalidAddressMessage;
     }

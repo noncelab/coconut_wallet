@@ -56,6 +56,7 @@ update_failed: "업데이트 실패"
 calculation_failed: "계산 실패"
 contact_email: "hello@noncelab.com"
 email_subject: "[코코넛 월렛] 이용 관련 문의"
+amount: "수량"
 send_amount: "보낼 수량"
 fetch_fee_failed: "수수료 조회 실패"
 fetch_balance_failed: "잔액 조회 불가"
@@ -137,10 +138,12 @@ broadcasting_screen:
   self_sending: "내 지갑으로 보내는 트랜잭션입니다."
 send_address_screen:
   text: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
+  add_recipient: "받는 사람 추가하기"
 send_confirm_screen:
   title: "입력 정보 확인"
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
+  
 
 # lib/screens/settings
 app_info_screen:

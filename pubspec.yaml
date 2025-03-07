@@ -196,6 +196,7 @@ flutter:
     - assets/svg/book.svg
     - assets/svg/wallet-info.svg
     - assets/svg/close.svg
+    - assets/svg/close-bold.svg
     - regtest.env
     - regtestlocal.env
     - assets/lottie/pin-locked-success.json
@@ -219,6 +220,10 @@ flutter:
     - assets/svg/check.svg
     - assets/svg/coins.svg
     - assets/svg/triangle-warning.svg
+    - assets/svg/users-group.svg
+    - assets/svg/user.svg
+    - assets/svg/arrow-reload.svg
+    - assets/svg/scan.svg
 
 
   fonts:

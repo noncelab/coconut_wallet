@@ -95,6 +95,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get calculation_failed => '계산 실패';
   String get contact_email => 'hello@noncelab.com';
   String get email_subject => '[코코넛 월렛] 이용 관련 문의';
+  String get amount => '수량';
   String get send_amount => '보낼 수량';
   String get fetch_fee_failed => '수수료 조회 실패';
   String get fetch_balance_failed => '잔액 조회 불가';
@@ -310,6 +311,7 @@ class TranslationsSendAddressScreenKr {
 
   // Translations
   String get text => 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
+  String get add_recipient => '받는 사람 추가하기';
 }
 
 // Path: send_confirm_screen
@@ -1057,6 +1059,8 @@ extension on Translations {
         return 'hello@noncelab.com';
       case 'email_subject':
         return '[코코넛 월렛] 이용 관련 문의';
+      case 'amount':
+        return '수량';
       case 'send_amount':
         return '보낼 수량';
       case 'fetch_fee_failed':
@@ -1175,6 +1179,8 @@ extension on Translations {
         return '내 지갑으로 보내는 트랜잭션입니다.';
       case 'send_address_screen.text':
         return 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
+      case 'send_address_screen.add_recipient':
+        return '받는 사람 추가하기';
       case 'send_confirm_screen.title':
         return '입력 정보 확인';
       case 'signed_psbt_scanner_screen.title':

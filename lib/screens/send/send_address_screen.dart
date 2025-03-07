@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -7,10 +8,11 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_address_view_model.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
+import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
+import 'package:coconut_wallet/widgets/body/send_address/send_address_body_batch.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
@@ -29,6 +31,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   QRViewController? controller;
   bool _isProcessing = false;
   late SendAddressViewModel _viewModel;
+  bool _isBatchMode = true;
 
   @override
   Widget build(BuildContext context) {
@@ -47,87 +50,67 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
           Consumer<SendAddressViewModel>(builder: (context, viewModel, child) {
         return Scaffold(
             backgroundColor: MyColors.black,
-            appBar: CustomAppBar.build(
-              title: t.send,
-              context: context,
-              hasRightIcon: true,
-              rightIconButton: IconButton(
-                onPressed: () {
-                  if (controller != null) {
-                    controller!.flipCamera();
-                  }
-                },
-                icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
-                color: MyColors.white,
-              ),
-              onBackPressed: () {
-                _stopCamera();
-                controller = null;
-                Navigator.of(context).pop();
-              },
-              backgroundColor: MyColors.black.withOpacity(0.95),
-            ),
-            body: Stack(children: [
-              Positioned(
-                  left: 0,
-                  right: 0,
-                  top: -110, // Adjust this value to move the QRView up or down
-                  height: MediaQuery.of(context).size.height +
-                      MediaQuery.of(context).padding.top +
-                      MediaQuery.of(context).padding.bottom,
-                  child: _buildQrView(context)),
-              Positioned(
-                  top: kToolbarHeight - 75,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                      padding: const EdgeInsets.only(top: 32),
-                      child: Text(
-                        t.send_address_screen.text,
-                        textAlign: TextAlign.center,
-                        style: Styles.label
-                            .merge(const TextStyle(color: MyColors.white)),
-                      ))),
-              Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
-                      child: TextButton(
-                          onPressed: () => _setClipboardAddressAsRecipient(),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: viewModel.address != null
-                                ? MyColors.darkgrey
-                                : MyColors.white,
-                            backgroundColor: viewModel.address != null
-                                ? MyColors.white
-                                : MyColors.transparentBlack_50,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 20),
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(8),
-                              ),
-                            ),
-                          ),
-                          child: viewModel.address != null
-                              ? Text.rich(TextSpan(
-                                  text: '${t.address} ',
-                                  style: Styles.label.merge(const TextStyle(
-                                      color: MyColors.darkgrey)),
-                                  children: [
-                                      TextSpan(
-                                          text:
-                                              '${viewModel.address?.substring(0, 10)}...${viewModel.address?.substring(35)}',
-                                          style: TextStyle(
-                                              fontFamily: CustomFonts
-                                                  .number.getFontFamily,
-                                              fontWeight: FontWeight.bold)),
-                                      TextSpan(text: ' ${t.paste}')
-                                    ]))
-                              : Text(t.paste,
-                                  style: Styles.label.merge(const TextStyle(
-                                      color: MyColors.transparentWhite_20))))))
-            ]));
+            appBar: CoconutAppBar.build(
+                title: t.send,
+                context: context,
+                actionButtonList: [
+                  IconButton(
+                    icon: SvgPicture.asset(
+                        _isBatchMode
+                            ? 'assets/svg/user.svg'
+                            : 'assets/svg/users-group.svg',
+                        width: 20,
+                        height: 20),
+                    onPressed: () {
+                      setState(() {
+                        _isBatchMode = !_isBatchMode;
+                      });
+                    },
+                    padding: null,
+                  ),
+                  IconButton(
+                    icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
+                        width: 20,
+                        height: 20,
+                        colorFilter: ColorFilter.mode(
+                          _isBatchMode
+                              ? CoconutColors.gray800
+                              : CoconutColors.white,
+                          BlendMode.srcIn,
+                        )),
+                    onPressed: _isBatchMode
+                        ? null
+                        : () {
+                            if (controller != null) {
+                              controller!.flipCamera();
+                            }
+                          },
+                  ),
+                ],
+                onBackPressed: () {
+                  _stopCamera();
+                  controller = null;
+                  Navigator.of(context).pop();
+                }),
+            body: !_isBatchMode
+                ? SendAddressBody(
+                    qrKey: qrKey,
+                    onQRViewCreated: _onQRViewCreated,
+                    onPermissionSet: _onPermissionSet,
+                    address: viewModel.address,
+                    pasteAddress: _setClipboardAddressAsRecipient,
+                  )
+                : SendAddressBodyBatch(
+                    validateAddress: _viewModel.validateAddress,
+                    checkSendAvailable: (totalSendAmount) {
+                      throw 'implement';
+                    },
+                    onRecipientsConfirmed: (Map<String, int> recipients) {
+                      throw 'implement';
+                    },
+                    onReset: () {
+                      throw 'implement';
+                    }));
       }),
     );
   }
@@ -161,26 +144,6 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     } else if (Platform.isIOS) {
       controller?.resumeCamera();
     }
-  }
-
-  Widget _buildQrView(BuildContext context) {
-    return QRView(
-      key: qrKey,
-      onQRViewCreated: _onQRViewCreated,
-      overlay: QrScannerOverlayShape(
-          borderColor: MyColors.white,
-          borderRadius: 8,
-          borderLength: (MediaQuery.of(context).size.width < 400 ||
-                  MediaQuery.of(context).size.height < 400)
-              ? 160
-              : MediaQuery.of(context).size.width * 0.9 / 2,
-          borderWidth: 8,
-          cutOutSize: (MediaQuery.of(context).size.width < 400 ||
-                  MediaQuery.of(context).size.height < 400)
-              ? 320.0
-              : MediaQuery.of(context).size.width * 0.9),
-      onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
-    );
   }
 
   void _goNext() async {
