@@ -59,11 +59,17 @@ class TransactionManager {
         scriptStatus,
         knownTransactionHashes);
 
-    final unconfirmedTxs = txFetchResults
-        .where((tx) => tx.height == 0)
+    final unconfirmedTxHashes = txFetchResults
+        .where((tx) => tx.height <= 0)
         .map((tx) => tx.transactionHash)
         .toSet();
 
+    final confirmedTxHashes = txFetchResults
+        .where((tx) => tx.height > 0)
+        .map((tx) => tx.transactionHash)
+        .toSet();
+
+    // 트랜잭션 조회 결과가 없는 경우 state 변경 후 종료
     if (txFetchResults.isEmpty) {
       if (!inBatchProcess) {
         _stateManager.addWalletCompletedState(
@@ -87,8 +93,13 @@ class TransactionManager {
     // 각 트랜잭션에 대해 사용된 UTXO 상태 업데이트
     for (final tx in txs) {
       // 언컨펌 트랜잭션의 경우 새로 브로드캐스트된 트랜잭션이므로 사용된 UTXO 상태 업데이트
-      if (unconfirmedTxs.contains(tx.transactionHash)) {
+      if (unconfirmedTxHashes.contains(tx.transactionHash)) {
         _utxoManager.updateUtxoStatusToOutgoingByTransaction(walletItem.id, tx);
+      }
+
+      // 컨펌 트랜잭션의 경우 사용된 UTXO 삭제
+      if (confirmedTxHashes.contains(tx.transactionHash)) {
+        _utxoManager.deleteUtxosByTransaction(walletItem.id, tx);
       }
     }
 
