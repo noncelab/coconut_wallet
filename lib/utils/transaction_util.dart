@@ -1,6 +1,9 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:flutter/material.dart';
 
 class TransactionUtil {
   static TransactionStatus? getStatus(TransactionRecord tx) {
@@ -59,5 +62,53 @@ class TransactionUtil {
     if (index < 0 || index >= list.length) return defaultValue;
 
     return valueSelector(list[index]);
+  }
+
+  static List<UtxoState> selectOptimalUtxos(List<UtxoState> utxoList,
+      int amount, int feeRate, AddressType addressType) {
+    int baseVbyte = 72; // 0 input, 2 output
+    int vBytePerInput = 0;
+    int dust = _getDustThreshold(addressType);
+    if (addressType.isSegwit) {
+      vBytePerInput = 68; //segwit discount
+    } else {
+      vBytePerInput = 148;
+    }
+    List<UtxoState> selectedUtxos = [];
+    int totalAmount = 0;
+    int totalVbyte = baseVbyte;
+    int finalFee = 0;
+    utxoList.sort((a, b) => b.amount.compareTo(a.amount));
+    for (UtxoState utxo in utxoList) {
+      if (utxo.blockHeight == 0) {
+        // unconfirmed utxo
+        continue;
+      }
+      totalAmount += utxo.amount;
+      selectedUtxos.add(utxo);
+      totalVbyte += vBytePerInput;
+      int fee = totalVbyte * feeRate;
+      if (totalAmount >= amount + fee + dust) {
+        return selectedUtxos;
+      }
+      finalFee = fee;
+    }
+    throw Exception('Not enough amount for sending. (Fee : $finalFee)');
+  }
+
+  static int _getDustThreshold(AddressType addressType) {
+    if (addressType == AddressType.p2wpkh) {
+      return 294;
+    } else if (addressType == AddressType.p2wsh || addressType.isTaproot) {
+      return 330;
+    } else if (addressType == AddressType.p2pkh) {
+      return 546;
+    } else if (addressType == AddressType.p2sh) {
+      return 888;
+    } else if (addressType == AddressType.p2wpkhInP2sh) {
+      return 273;
+    } else {
+      throw Exception('Unsupported Address Type');
+    }
   }
 }
