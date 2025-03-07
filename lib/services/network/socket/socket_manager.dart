@@ -76,11 +76,6 @@ class SocketManager {
 
     ++_connectionAttempts;
 
-    if (_connectionAttempts > 1) {
-      Logger.log(
-          'Retrying to connect to $host:$port ($_connectionAttempts/$_maxConnectionAttempts)');
-    }
-
     if (_connectionStatus != SocketConnectionStatus.reconnecting) {
       return;
     }
@@ -133,8 +128,6 @@ class SocketManager {
   }
 
   void _scheduleReconnect(String host, int port, {bool ssl = true}) {
-    Logger.log(
-        'After $_reconnectDelaySeconds seconds, it will try to reconnect.');
     Future.delayed(Duration(seconds: _reconnectDelaySeconds), () {
       connect(host, port, ssl: ssl).then((any) {
         onReconnect?.call();
@@ -144,62 +137,145 @@ class SocketManager {
 
   void _handleResponse(String data) {
     _buffer.write(data);
+    _processBuffer();
+  }
 
+  void _processBuffer() {
     String bufferString = _buffer.toString();
-    int i = 0;
+    if (bufferString.isEmpty) return;
 
-    while (i < bufferString.length) {
-      var char = bufferString[i];
+    List<Map<String, dynamic>> jsonObjects = _extractJsonObjects(bufferString);
 
-      if (char == '"' && (i == 0 || bufferString[i - 1] != '\\')) {
-        _inString = !_inString;
-      }
-
-      if (!_inString) {
-        if (char == '{') {
-          _braceCount++;
-        } else if (char == '}') {
-          _braceCount--;
-        }
-      }
-
-      i++;
-
-      if (_braceCount == 0 && !_inString) {
-        var jsonString = bufferString.substring(0, i).trim();
-
-        if (jsonString.isNotEmpty) {
-          var jsonObject = json.decode(jsonString);
-          _processJsonObject(jsonObject);
-        }
-
-        bufferString = bufferString.substring(i).trim();
-        _buffer.clear();
-        _buffer.write(bufferString);
-
-        i = 0;
-      }
-    }
-
-    if (bufferString.trim().isNotEmpty) {
-      _braceCount--;
-      _inString = false;
+    for (var jsonObject in jsonObjects) {
+      _processJsonObject(jsonObject);
     }
   }
 
-  void _processJsonObject(Map<String, dynamic> jsonObject) {
-    final id = jsonObject['id'];
-    final method = jsonObject['method'];
-    if (id != null && _completerMap.containsKey(id)) {
-      _completerMap[id]!.complete(jsonObject);
-      _completerMap.remove(id);
-    } else if (method == 'blockchain.scripthash.subscribe') {
-      final scriptReversedHash = jsonObject['params'][0];
-      final status = jsonObject['params'][1];
-      final callback = _scriptSubscribeCallbacks[scriptReversedHash];
-      if (callback != null) {
-        callback(scriptReversedHash, status);
+  List<Map<String, dynamic>> _extractJsonObjects(String input) {
+    List<Map<String, dynamic>> result = [];
+    int startPos = input.indexOf('{');
+    if (startPos == -1) {
+      _buffer.clear();
+      return result;
+    }
+
+    int endPos = -1;
+    int currentPos = startPos;
+    int braceCount = 0;
+    bool inString = false;
+
+    for (int i = currentPos; i < input.length; i++) {
+      var char = input[i];
+
+      if (char == '"' && (i == 0 || input[i - 1] != '\\')) {
+        inString = !inString;
+        continue;
       }
+
+      if (!inString) {
+        if (char == '{') {
+          braceCount++;
+        } else if (char == '}') {
+          braceCount--;
+
+          if (braceCount == 0) {
+            endPos = i;
+            String jsonString = input.substring(startPos, endPos + 1);
+
+            try {
+              Map<String, dynamic> jsonObject = json.decode(jsonString);
+              result.add(jsonObject);
+
+              int nextStartPos = input.indexOf('{', endPos + 1);
+              if (nextStartPos == -1) {
+                _buffer.clear();
+                break;
+              } else {
+                startPos = nextStartPos;
+                i = nextStartPos - 1;
+                braceCount = 0;
+              }
+            } catch (e) {
+              Logger.log(
+                  'JSON 파싱 오류: $e, JSON: ${_truncateForLogging(jsonString)}');
+
+              int nextStartPos = input.indexOf('{', endPos + 1);
+              if (nextStartPos == -1) {
+                _buffer.clear();
+                break;
+              } else {
+                startPos = nextStartPos;
+                i = nextStartPos - 1;
+                braceCount = 0;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (braceCount > 0 && startPos < input.length) {
+      _buffer.clear();
+      _buffer.write(input.substring(startPos));
+    } else {
+      _buffer.clear();
+    }
+
+    return result;
+  }
+
+  String _truncateForLogging(String text, {int maxLength = 200}) {
+    if (text.length <= maxLength) return text;
+    return '${text.substring(0, maxLength)}... (총 ${text.length}자)';
+  }
+
+  void _processJsonObject(Map<String, dynamic> jsonObject) {
+    try {
+      final id = jsonObject['id'];
+      final method = jsonObject['method'];
+
+      if (id != null && _completerMap.containsKey(id)) {
+        if (!_completerMap[id]!.isCompleted) {
+          _completerMap[id]!.complete(jsonObject);
+        } else {
+          Logger.log('이미 완료된 Completer (ID: $id)에 결과를 전달하려고 시도했습니다.');
+        }
+        _completerMap.remove(id);
+      } else if (method == 'blockchain.scripthash.subscribe') {
+        if (jsonObject['params'] != null && jsonObject['params'].length >= 2) {
+          final scriptReversedHash = jsonObject['params'][0];
+          final status = jsonObject['params'][1];
+          final callback = _scriptSubscribeCallbacks[scriptReversedHash];
+          if (callback != null) {
+            callback(scriptReversedHash, status);
+          }
+        } else {
+          Logger.log('유효하지 않은 구독 이벤트: $jsonObject');
+        }
+      } else if (id != null) {
+        Logger.log('ID: $id에 대한 처리기가 없습니다: $jsonObject');
+      }
+    } catch (e) {
+      Logger.log('JSON 객체 처리 중 오류 발생: $e, 객체: $jsonObject');
+    }
+  }
+
+  Future<dynamic> sendRequest(String requestJson, int id,
+      {Duration timeout = const Duration(seconds: 30)}) async {
+    final completer = Completer<dynamic>();
+    setCompleter(id, completer);
+
+    try {
+      await send(requestJson);
+
+      return await completer.future.timeout(timeout, onTimeout: () {
+        Logger.log('ID: $id 요청이 타임아웃되었습니다.');
+        _completerMap.remove(id);
+        throw TimeoutException('요청 처리 타임아웃: ID $id');
+      });
+    } catch (e) {
+      _completerMap.remove(id);
+      rethrow;
     }
   }
 }

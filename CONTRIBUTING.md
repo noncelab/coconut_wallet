@@ -41,6 +41,7 @@
 - `refactor`: 코드 리팩토링
 - `chore`: 빌드 관련 수정, 패키지 매니저 수정
 - `docs`: 문서 수정
+- `test`: 테스트 코드 작성
 
 ## Releases
 

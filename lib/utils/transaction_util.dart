@@ -110,4 +110,18 @@ class TransactionUtil {
       throw Exception('Unsupported Address Type');
     }
   }
+
+  /// 코인베이스 트랜잭션 여부를 확인합니다.
+  static bool isCoinbaseTransaction(Transaction tx) {
+    if (tx.inputs.length != 1) {
+      return false;
+    }
+
+    if (tx.inputs[0].transactionHash !=
+        '0000000000000000000000000000000000000000000000000000000000000000') {
+      return false;
+    }
+
+    return tx.inputs[0].index == 4294967295; // 0xffffffff
+  }
 }
