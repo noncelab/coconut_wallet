@@ -169,6 +169,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             address: viewModel.walletAddress,
             derivationPath: viewModel.derivationPath,
             balance: balance,
+            prevBalance: viewModel.prevBalance,
             currentUnit: _currentUnit,
             btcPriceInKrw: viewModel.bitcoinPriceKrw,
             onPressedUnitToggle: _toggleUnit,
@@ -285,6 +286,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       // walletStatus: viewModel.getInitializedWalletStatus(),
       // walletStatus: null,
       balance: balance,
+      prevBalance: viewModel.prevBalance,
       onTapReceive: (balance, address, path) {
         _onTapReceiveOrSend(balance, state, isNetworkOn,
             address: address, path: path);
@@ -301,6 +303,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appBarRenderBox =
           _appBarKey.currentContext?.findRenderObject() as RenderBox;
