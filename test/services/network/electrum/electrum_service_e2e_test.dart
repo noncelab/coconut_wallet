@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:test/test.dart';
 
@@ -40,8 +41,8 @@ Future<void> main() async {
   });
 
   test('blockchain.scripthash.get_history', () async {
-    var script = '0014f03a3abb34f5f6da0599dd00171386986e17c0b6';
-    var result = await client.getHistory(script);
+    var address = 'bcrt1qp26663xm90par286v03syukvjnkdfzyy88zh5s';
+    var result = await client.getHistory(AddressType.p2wpkh, address);
 
     expect(result, isList);
     expect(result.first.height, 44035);

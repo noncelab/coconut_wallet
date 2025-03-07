@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
@@ -98,7 +99,8 @@ void main() {
         'result': {'confirmed': 0, 'unconfirmed': 0}
       });
     });
-    final response = await electrumClient.getBalance('0123456789abcdef');
+    final response =
+        await electrumClient.getBalance(AddressType.p2wpkh, '0123456789abcdef');
 
     expect(response.confirmed, 0);
     expect(response.unconfirmed, 0);
@@ -124,7 +126,8 @@ void main() {
         ]
       });
     });
-    final response = await electrumClient.getHistory('0123456789abcdef');
+    final response =
+        await electrumClient.getHistory(AddressType.p2wpkh, '0123456789abcdef');
 
     expect(response, isList);
     expect(response[0].height, 1);
@@ -152,7 +155,8 @@ void main() {
         ]
       });
     });
-    final response = await electrumClient.getUnspentList('0123456789abcdef');
+    final response = await electrumClient.getUnspentList(
+        AddressType.p2wpkh, '0123456789abcdef');
 
     expect(response, isList);
     expect(response[0].height, 1);
@@ -381,7 +385,8 @@ void main() {
         ]
       });
     });
-    final response = await electrumClient.getMempool('0123456789abcdef');
+    final response =
+        await electrumClient.getMempool(AddressType.p2wpkh, '0123456789abcdef');
 
     expect(response, isList);
     expect(response[0].height, 0);

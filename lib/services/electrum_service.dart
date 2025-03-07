@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
-import 'package:coconut_wallet/utils/hash_util.dart';
-import 'package:convert/convert.dart';
+import 'package:coconut_wallet/utils/electrum_utils.dart';
 
 part 'model/request/electrum_request_types.dart';
 
@@ -32,11 +32,6 @@ class ElectrumService {
 
   Future<void> connect(String host, int port, {bool ssl = true}) async {
     await _socketManager.connect(host, port, ssl: ssl);
-  }
-
-  String _scriptToReversedHash(String script) {
-    String scriptHash = hexHashString(script);
-    return hex.encode(hex.decode(scriptHash).reversed.toList());
   }
 
   Future<ElectrumResponse<T>> _call<T>(_ElectrumRequest request,
@@ -105,8 +100,10 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<GetBalanceRes> getBalance(String script) async {
-    var reversedScriptHash = _scriptToReversedHash(script);
+  Future<GetBalanceRes> getBalance(
+      AddressType addressType, String address) async {
+    var reversedScriptHash =
+        ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
         _BlockchainScripthashGetBalanceReq(reversedScriptHash),
         (json, {int? id}) =>
@@ -115,8 +112,10 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<List<GetHistoryRes>> getHistory(String script) async {
-    var reversedScriptHash = _scriptToReversedHash(script);
+  Future<List<GetHistoryRes>> getHistory(
+      AddressType addressType, String address) async {
+    var reversedScriptHash =
+        ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
         _BlockchainScripthashGetHistoryReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(
@@ -129,8 +128,10 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<List<ListUnspentRes>> getUnspentList(String script) async {
-    var reversedScriptHash = _scriptToReversedHash(script);
+  Future<List<ListUnspentRes>> getUnspentList(
+      AddressType addressType, String address) async {
+    var reversedScriptHash =
+        ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
         _BlockchainScripthashListUnspentReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(
@@ -143,8 +144,10 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<List<GetMempoolRes>> getMempool(String script) async {
-    var reversedScriptHash = _scriptToReversedHash(script);
+  Future<List<GetMempoolRes>> getMempool(
+      AddressType addressType, String address) async {
+    var reversedScriptHash =
+        ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
         _BlockchainScripthashGetMempoolReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(
@@ -203,9 +206,10 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<String?> subscribeScript(String script,
+  Future<String?> subscribeScript(AddressType addressType, String address,
       {required Function(String, String?) onUpdate}) async {
-    var reversedScriptHash = _scriptToReversedHash(script);
+    var reversedScriptHash =
+        ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
         _BlockchainScripthashSubscribeReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(result: json));
@@ -215,8 +219,10 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<bool> unsubscribeScript(String script) async {
-    var reversedScriptHash = _scriptToReversedHash(script);
+  Future<bool> unsubscribeScript(
+      AddressType addressType, String address) async {
+    var reversedScriptHash =
+        ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
         _BlockchainScripthashUnsubscribeReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(result: json));

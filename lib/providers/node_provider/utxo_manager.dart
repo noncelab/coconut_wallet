@@ -34,7 +34,8 @@ class UtxoManager {
     }
 
     // UTXO 목록 조회
-    final utxos = await getUtxoStateList(scriptStatus);
+    final utxos =
+        await getUtxoStateList(walletItem.walletBase.addressType, scriptStatus);
 
     final blockTimestampMap =
         await getBlocksByHeight(utxos.map((utxo) => utxo.blockHeight).toSet());
@@ -56,10 +57,11 @@ class UtxoManager {
   }
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다.
-  Future<List<UtxoState>> getUtxoStateList(ScriptStatus scriptStatus) async {
+  Future<List<UtxoState>> getUtxoStateList(
+      AddressType addressType, ScriptStatus scriptStatus) async {
     try {
-      final utxos =
-          await _electrumService.getUnspentList(scriptStatus.scriptPubKey);
+      final utxos = await _electrumService.getUnspentList(
+          addressType, scriptStatus.address);
       return utxos
           .map((e) => UtxoState(
                 transactionHash: e.txHash,

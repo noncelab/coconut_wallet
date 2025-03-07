@@ -32,8 +32,8 @@ class BalanceManager {
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
     }
 
-    final balanceResponse =
-        await _electrumService.getBalance(scriptStatus.scriptPubKey);
+    final balanceResponse = await _electrumService.getBalance(
+        walletItem.walletBase.addressType, scriptStatus.address);
 
     // GetBalanceRes에서 Balance 객체로 변환
     final addressBalance =

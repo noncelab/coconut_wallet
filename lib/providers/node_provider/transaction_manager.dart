@@ -17,6 +17,7 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 
 /// NodeProvider의 트랜잭션 관련 기능을 담당하는 매니저 클래스
 class TransactionManager {
@@ -54,7 +55,9 @@ class TransactionManager {
         .toSet();
 
     final txFetchResults = await getFetchTransactionResponses(
-        scriptStatus, knownTransactionHashes);
+        walletItem.walletBase.addressType,
+        scriptStatus,
+        knownTransactionHashes);
 
     final unconfirmedTxs = txFetchResults
         .where((tx) => tx.height == 0)
@@ -104,10 +107,12 @@ class TransactionManager {
 
   /// 스크립트에 대한 트랜잭션 응답을 가져옵니다.
   Future<List<FetchTransactionResponse>> getFetchTransactionResponses(
-      ScriptStatus scriptStatus, Set<String> knownTransactionHashes) async {
+      AddressType addressType,
+      ScriptStatus scriptStatus,
+      Set<String> knownTransactionHashes) async {
     try {
       final historyList =
-          await _electrumService.getHistory(scriptStatus.scriptPubKey);
+          await _electrumService.getHistory(addressType, scriptStatus.address);
 
       if (historyList.isEmpty) {
         return [];
@@ -185,7 +190,7 @@ class TransactionManager {
       return [];
     }
 
-    if (_isCoinbaseTransaction(transaction)) {
+    if (TransactionUtil.isCoinbaseTransaction(transaction)) {
       return [];
     }
 
@@ -234,20 +239,6 @@ class TransactionManager {
       Logger.error('Failed to process previous transactions: $e');
       return [];
     }
-  }
-
-  /// 코인베이스 트랜잭션 여부를 확인합니다.
-  bool _isCoinbaseTransaction(Transaction tx) {
-    if (tx.inputs.length != 1) {
-      return false;
-    }
-
-    if (tx.inputs[0].transactionHash !=
-        '0000000000000000000000000000000000000000000000000000000000000000') {
-      return false;
-    }
-
-    return tx.inputs[0].index == 4294967295; // 0xffffffff
   }
 
   /// 트랜잭션 레코드를 생성합니다.
