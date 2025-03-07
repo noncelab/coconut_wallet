@@ -25,8 +25,13 @@ class BroadcastingViewModel extends ChangeNotifier {
   final List<int> _outputIndexesToMyAddress = [];
   late int? _bitcoinPriceKrw;
 
-  BroadcastingViewModel(this._sendInfoProvider, this._walletProvider,
-      this._tagProvider, this._isNetworkOn, this._bitcoinPriceKrw) {
+  BroadcastingViewModel(
+      this._sendInfoProvider,
+      this._walletProvider,
+      this._tagProvider,
+      this._isNetworkOn,
+      this._bitcoinPriceKrw,
+      this._nodeProvider) {
     _walletBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;

@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart'; // FIXME: remove model import
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -234,7 +235,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         Provider.of<WalletProvider>(context, listen: false),
         Provider.of<UtxoTagProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
-        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw);
+        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
+        Provider.of<NodeProvider>(context, listen: false));
 
     WidgetsBinding.instance.addPostFrameCallback((duration) {
       setOverlayLoading(true);
