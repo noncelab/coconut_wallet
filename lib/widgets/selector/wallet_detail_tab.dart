@@ -1,5 +1,4 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -9,7 +8,6 @@ enum WalletDetailTabType { transaction, utxo }
 
 class WalletDetailTab extends StatelessWidget {
   final WalletDetailTabType selectedListType;
-  final WalletInitState state;
   final int utxoListLength;
   final bool isUtxoDropdownVisible;
   final bool isPullToRefreshing;
@@ -20,7 +18,6 @@ class WalletDetailTab extends StatelessWidget {
   const WalletDetailTab({
     super.key,
     required this.selectedListType,
-    required this.state,
     required this.utxoListLength,
     required this.isUtxoDropdownVisible,
     required this.isPullToRefreshing,
@@ -104,8 +101,7 @@ class WalletDetailTab extends StatelessWidget {
               // ),
               // const Spacer(),
               Visibility(
-                visible:
-                    !isPullToRefreshing && state == WalletInitState.processing,
+                visible: !isPullToRefreshing,
                 child: Row(
                   children: [
                     const Text(
@@ -128,7 +124,7 @@ class WalletDetailTab extends StatelessWidget {
                 ),
               ),
               Visibility(
-                visible: state == WalletInitState.error,
+                visible: false, // FIXME:
                 child: Row(
                   children: [
                     const Text(

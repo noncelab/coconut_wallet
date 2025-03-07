@@ -17,7 +17,6 @@ class UtxoListViewModel extends ChangeNotifier {
   late final UpbitConnectModel _upbitConnectModel;
   late final WalletListItemBase _walletListBaseItem;
   late final int _walletId;
-  WalletInitState _prevWalletInitState = WalletInitState.never;
 
   List<UtxoState> _utxoList = [];
 
@@ -35,7 +34,6 @@ class UtxoListViewModel extends ChangeNotifier {
     this._upbitConnectModel,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
-    _prevWalletInitState = _walletProvider.walletInitState;
     _initUtxoTags();
   }
 
@@ -57,8 +55,6 @@ class UtxoListViewModel extends ChangeNotifier {
 
   // 태그 목록 변경을 감지하기 위한 key
   String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
-
-  WalletInitState get walletInitState => _walletProvider.walletInitState;
 
   WalletType get walletType => _walletListBaseItem.walletType;
 

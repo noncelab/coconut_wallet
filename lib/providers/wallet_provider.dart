@@ -34,24 +34,6 @@ enum WalletLoadState {
 /// failed: 네트워크가 꺼져있을 때
 enum WalletSubscriptionState { never, syncing, completed, failed }
 
-/// Represents the initialization state of a wallet. 처음 초기화 때만 사용하지 않고 refresh 할 때도 사용합니다.
-enum WalletInitState {
-  /// The wallet has never been initialized.
-  never,
-
-  /// The wallet is currently being processed.
-  processing,
-
-  /// The wallet has finished successfully.
-  finished,
-
-  /// An error occurred during wallet initialization.
-  error,
-
-  /// Update impossible (node connection finally failed)
-  impossible,
-}
-
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
 
 class WalletProvider extends ChangeNotifier {
@@ -64,10 +46,6 @@ class WalletProvider extends ChangeNotifier {
       WalletSubscriptionState.never;
   WalletSubscriptionState get walletSubscriptionState =>
       _walletSubscriptionState;
-
-  // init 결과를 알리는 Toast는 "wallet_list_screen"에서 호출합니다.
-  WalletInitState _walletInitState = WalletInitState.never;
-  WalletInitState get walletInitState => _walletInitState;
 
   AppError? _walletInitError;
   AppError? get walletInitError => _walletInitError;
@@ -305,12 +283,6 @@ class WalletProvider extends ChangeNotifier {
     await _sharedPrefs.setInt(
         SharedPrefsRepository.kLastUpdateTime, _lastUpdateTime);
     notifyListeners();
-  }
-
-  /// 네트워크가 끊겼을 때 처리할 로직
-  void handleNetworkDisconnected() {
-    if (_walletInitState == WalletInitState.finished) return;
-    //setWalletInitState(WalletInitState.error, error: ErrorCodes.networkError);
   }
 
   /// 지갑 목록 화면에서 '마지막 업데이트' 일시를 보여주기 위해,

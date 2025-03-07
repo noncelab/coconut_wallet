@@ -20,7 +20,6 @@ class WalletListViewModel extends ChangeNotifier {
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
   late WalletSubscriptionState _walletSyncingState;
-  late WalletInitState _prevWalletInitState;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _transactionProvider;
   late final ConnectivityProvider _connectivityProvider;
