@@ -37,22 +37,18 @@ class UtxoDetailViewModel extends ChangeNotifier {
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
     _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
 
-    // fixme: wallet provider로부터 tx를 가져오는 것으로 변경
-    _transaction = _txProvider.getTransaction(_walletId, _utxo.transactionHash,
-        utxoTo: _utxo.to);
-    // _txProvider.initTransaction(_walletId, _utxo.transactionHash,
-    //     utxoTo: _utxo.to);
+    _transaction = _txProvider.getTransaction(_walletId, _utxo.transactionHash);
     final blockHeight = _txProvider.transaction?.blockHeight;
     _dateString = (blockHeight != null && blockHeight > 0)
         ? DateTimeUtil.formatTimeStamp(_utxo.timestamp)
-        : ['--.--.--', '--:--'];
+        : DateTimeUtil.formatTimeStamp(_transaction!.createdAt!);
 
     _initUtxoInOutputList();
   }
 
   UtxoTagProvider? get tagProvider => _tagProvider;
 
-  TransactionRecord? get transaction => _txProvider.transaction;
+  TransactionRecord? get transaction => _transaction;
 
   List<String> get dateString => _dateString;
 

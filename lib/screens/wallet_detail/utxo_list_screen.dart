@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
@@ -55,6 +56,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     _viewModel = UtxoListViewModel(
       widget.id,
       Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<TransactionProvider>(context, listen: false),
       Provider.of<UtxoTagProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<UpbitConnectModel>(context, listen: false),
@@ -135,6 +137,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                                   viewModel.isNetworkOn)) {
                                 return;
                               }
+
+                              viewModel.fetchUtxoList();
                             } finally {
                               _isPullToRefreshing = false;
                             }

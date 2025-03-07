@@ -61,8 +61,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       ),
       child: Consumer<UtxoDetailViewModel>(
         builder: (_, viewModel, child) {
-          // FIXME: tx should be not null
-          final tx = viewModel.transaction ?? _getTransaction(viewModel);
+          final tx = viewModel.transaction;
           final allTags = viewModel.utxoTagList;
           final tagsApplied = viewModel.selectedUtxoTagList;
 
@@ -104,7 +103,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildScaffold(
     BuildContext context,
     UtxoDetailViewModel viewModel,
-    TransactionRecord tx,
+    TransactionRecord? tx,
     List<UtxoTag> tags,
     List<UtxoTag> selectedTags,
   ) {
@@ -120,27 +119,32 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           ),
           child: Column(
             children: [
-              _buildDateTime(viewModel.dateString),
-              CoconutLayout.spacing_600h,
-              _buildAmount(),
-              _buildPrice(),
-              CoconutLayout.spacing_600h,
-              _buildTxInputOutputSection(viewModel, tx),
-              CoconutLayout.spacing_400h,
-              _buildAddress(),
-              _buildTxMemo(
-                tx.memo,
-              ),
-              _buildTagSection(
-                context,
-                tags,
-                selectedTags,
-                viewModel,
-              ),
-              _buildTxId(),
-              _buildBlockHeight(),
-              CoconutLayout.spacing_1000h,
-              _buildBalanceWidthCheck(),
+              if (tx == null)
+                const Center(child: CircularProgressIndicator())
+              else ...{
+                _buildDateTime(viewModel.dateString),
+                CoconutLayout.spacing_600h,
+                _buildAmount(),
+                _buildPrice(),
+                // ignore: equal_elements_in_set
+                CoconutLayout.spacing_800h,
+                _buildTxInputOutputSection(viewModel, tx),
+                CoconutLayout.spacing_400h,
+                _buildAddress(),
+                _buildTxMemo(
+                  tx.memo,
+                ),
+                _buildTagSection(
+                  context,
+                  tags,
+                  selectedTags,
+                  viewModel,
+                ),
+                _buildTxId(),
+                _buildBlockHeight(),
+                CoconutLayout.spacing_1000h,
+                _buildBalanceWidthCheck(),
+              }
             ],
           ),
         ),
@@ -285,23 +289,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   void _toggleUtxoTooltip() {
     _isUtxoTooltipVisible = !_isUtxoTooltipVisible;
     setState(() {});
-  }
-
-  // FIXME: viewModel의 transaction이 null로 나와서 임의 데이터로 생성했습니다.
-  TransactionRecord _getTransaction(UtxoDetailViewModel viewModel) {
-    return viewModel.transaction ??
-        TransactionRecord(
-          'dummy_tx_hash',
-          DateTime.now(),
-          1,
-          TransactionType.received.name,
-          null,
-          2,
-          1,
-          [TransactionAddress('dummy_address', 1)],
-          [TransactionAddress('dummy_address', 1)],
-          DateTime.now(),
-        );
   }
 
   Widget _buildBalanceWidthCheck() {

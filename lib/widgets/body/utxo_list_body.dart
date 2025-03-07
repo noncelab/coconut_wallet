@@ -45,21 +45,21 @@ class UtxoListBody extends StatelessWidget {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       child: UtxoItemCard(
-                        key: index == 0 ? utxoSliverListKey : null,
-                        onPressed: () async {
-                          removePopup();
-                          final utxo = utxoList[index];
-                          await Navigator.pushNamed(
-                            context,
-                            '/utxo-detail',
-                            arguments: {
-                              'utxo': utxo,
-                              'id': walletId,
-                            },
-                          );
-                        },
-                        utxo: utxoList[index],
-                      ),
+                          key: index == 0 ? utxoSliverListKey : null,
+                          onPressed: () async {
+                            removePopup();
+                            final utxo = utxoList[index];
+                            await Navigator.pushNamed(
+                              context,
+                              '/utxo-detail',
+                              arguments: {
+                                'utxo': utxo,
+                                'id': walletId,
+                              },
+                            );
+                          },
+                          utxo: utxoList[index],
+                          dateString: viewModel.getTimeString(index)),
                     );
                   } else {
                     return const SizedBox();

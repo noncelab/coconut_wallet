@@ -5,19 +5,22 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
   late final WalletProvider _walletProvider;
+  late final TransactionProvider _txProvider;
   late final UtxoTagProvider _tagProvider;
   late final ConnectivityProvider _connectProvider;
   late final UpbitConnectModel _upbitConnectModel;
   late final WalletListItemBase _walletListBaseItem;
   late final int _walletId;
-  WalletInitState _prevWalletInitState = WalletInitState.never;
+  // WalletInitState _prevWalletInitState = WalletInitState.never;
 
   List<UtxoState> _utxoList = [];
 
@@ -30,12 +33,13 @@ class UtxoListViewModel extends ChangeNotifier {
   UtxoListViewModel(
     this._walletId,
     this._walletProvider,
+    this._txProvider,
     this._tagProvider,
     this._connectProvider,
     this._upbitConnectModel,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
-    _prevWalletInitState = _walletProvider.walletInitState;
+    // _prevWalletInitState = _walletProvider.walletInitState;
     _initUtxoTags();
   }
 
@@ -83,6 +87,10 @@ class UtxoListViewModel extends ChangeNotifier {
     }
   }
 
+  void fetchUtxoList() {
+    _getUtxoAndTagList();
+  }
+
   void updateUtxoFilter(UtxoOrder selectedUtxoFilter) async {
     _selectedUtxoOrder = selectedUtxoFilter;
     UtxoState.sortUtxo(_utxoList, selectedUtxoFilter);
@@ -127,5 +135,17 @@ class UtxoListViewModel extends ChangeNotifier {
     }
     _isUtxoListLoadComplete = true;
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
+  }
+
+  List<String> getTimeString(int utxoIndex) {
+    if (_utxoList.isEmpty) return [];
+    final utxo = _utxoList[utxoIndex];
+    final transaction =
+        _txProvider.getTransaction(_walletId, utxo.transactionHash);
+    if (transaction == null) return [];
+
+    return (transaction.blockHeight == 0)
+        ? DateTimeUtil.formatTimeStamp(transaction.timestamp!)
+        : DateTimeUtil.formatTimeStamp(utxo.timestamp);
   }
 }

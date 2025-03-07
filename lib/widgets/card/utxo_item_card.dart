@@ -3,27 +3,25 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 
 class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
+  final List<String> dateString;
   final Function onPressed;
 
   const UtxoItemCard({
     super.key,
     required this.utxo,
+    required this.dateString,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
     bool isConfirmed = utxo.blockHeight != 0;
-    List<String> dateString = isConfirmed
-        ? DateTimeUtil.formatTimeStamp(utxo.timestamp)
-        : ['--.--.--', '--:--'];
     bool isChange = utxo.derivationPath.split('/')[4] == '1';
 
     return ShrinkAnimationButton(
