@@ -45,6 +45,7 @@ class _RealmTransaction {
   String? memo;
   int? amount;
   int? fee;
+  late int vSize;
   late List<String> inputAddressList;
   late List<String> outputAddressList;
   String? note;
