@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 class UtxoOrderDropdown extends StatelessWidget {
   final bool isVisible;
   final double positionTop;
-  final UtxoOrderEnum selectedFilter;
+  final UtxoOrder selectedFilter;
   final Function onSelected;
   const UtxoOrderDropdown({
     super.key,
@@ -26,32 +26,32 @@ class UtxoOrderDropdown extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               child: CustomDropdown(
                 buttons: [
-                  UtxoOrderEnum.byTimestampDesc.text,
-                  UtxoOrderEnum.byTimestampAsc.text,
-                  UtxoOrderEnum.byAmountDesc.text,
-                  UtxoOrderEnum.byAmountAsc.text,
+                  UtxoOrder.byTimestampDesc.text,
+                  UtxoOrder.byTimestampAsc.text,
+                  UtxoOrder.byAmountDesc.text,
+                  UtxoOrder.byAmountAsc.text,
                 ],
                 dividerColor: Colors.black,
                 onTapButton: (index) {
                   switch (index) {
                     case 0: // 큰 금액순
-                      if (selectedFilter != UtxoOrderEnum.byTimestampDesc) {
-                        onSelected(UtxoOrderEnum.byTimestampDesc);
+                      if (selectedFilter != UtxoOrder.byTimestampDesc) {
+                        onSelected(UtxoOrder.byTimestampDesc);
                       }
                       break;
                     case 1: // 작은 금액순
-                      if (selectedFilter != UtxoOrderEnum.byTimestampAsc) {
-                        onSelected(UtxoOrderEnum.byTimestampAsc);
+                      if (selectedFilter != UtxoOrder.byTimestampAsc) {
+                        onSelected(UtxoOrder.byTimestampAsc);
                       }
                       break;
                     case 2: // 최신순
-                      if (selectedFilter != UtxoOrderEnum.byAmountDesc) {
-                        onSelected(UtxoOrderEnum.byAmountDesc);
+                      if (selectedFilter != UtxoOrder.byAmountDesc) {
+                        onSelected(UtxoOrder.byAmountDesc);
                       }
                       break;
                     case 3: // 오래된 순
-                      if (selectedFilter != UtxoOrderEnum.byAmountAsc) {
-                        onSelected(UtxoOrderEnum.byAmountAsc);
+                      if (selectedFilter != UtxoOrder.byAmountAsc) {
+                        onSelected(UtxoOrder.byAmountAsc);
                       }
                       break;
                   }

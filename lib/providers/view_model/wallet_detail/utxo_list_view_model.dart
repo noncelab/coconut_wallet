@@ -21,7 +21,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   List<UtxoState> _utxoList = [];
 
-  UtxoOrderEnum _selectedUtxoOrder = UtxoOrderEnum.byTimestampDesc;
+  UtxoOrder _selectedUtxoOrder = UtxoOrder.byTimestampDesc;
   bool _isUtxoListLoadComplete = false;
   String _selectedUtxoTagName = t.all;
 
@@ -48,7 +48,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   bool get isUtxoTagListEmpty => utxoTagList.isEmpty;
 
-  UtxoOrderEnum get selectedUtxoOrder => _selectedUtxoOrder;
+  UtxoOrder get selectedUtxoOrder => _selectedUtxoOrder;
   String get selectedUtxoTagName => _selectedUtxoTagName;
   UtxoTagProvider get tagProvider => _tagProvider;
   List<UtxoState> get utxoList => _utxoList;
@@ -83,7 +83,7 @@ class UtxoListViewModel extends ChangeNotifier {
     }
   }
 
-  void updateUtxoFilter(UtxoOrderEnum selectedUtxoFilter) async {
+  void updateUtxoFilter(UtxoOrder selectedUtxoFilter) async {
     _selectedUtxoOrder = selectedUtxoFilter;
     UtxoState.sortUtxo(_utxoList, selectedUtxoFilter);
     notifyListeners();

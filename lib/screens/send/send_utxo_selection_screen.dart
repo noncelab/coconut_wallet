@@ -46,13 +46,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   late SendUtxoSelectionViewModel _viewModel;
 
-  final List<UtxoOrderEnum> _utxoOrderOptions = [
-    UtxoOrderEnum.byAmountDesc,
-    UtxoOrderEnum.byAmountAsc,
-    UtxoOrderEnum.byTimestampDesc,
-    UtxoOrderEnum.byTimestampAsc,
+  final List<UtxoOrder> _utxoOrderOptions = [
+    UtxoOrder.byAmountDesc,
+    UtxoOrder.byAmountAsc,
+    UtxoOrder.byTimestampDesc,
+    UtxoOrder.byTimestampAsc,
   ];
-  late UtxoOrderEnum _selectedUtxoOrder;
+  late UtxoOrder _selectedUtxoOrder;
 
   final GlobalKey _orderDropdownButtonKey = GlobalKey();
   final GlobalKey _scrolledOrderDropdownButtonKey = GlobalKey();

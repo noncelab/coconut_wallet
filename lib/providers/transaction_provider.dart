@@ -1,16 +1,18 @@
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/repository/realm/wallet_data_manager.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 
 class TransactionProvider extends ChangeNotifier {
-  final WalletDataManager _walletDataManager = WalletDataManager();
+  final TransactionRepository _transactionRepository;
 
   TransactionRecord? _transaction;
   List<TransactionRecord> _txList = [];
 
   TransactionRecord? get transaction => _transaction;
   List<TransactionRecord> get txList => _txList;
+
+  TransactionProvider(this._transactionRepository);
 
   void initTransaction(int walletId, String txHash, {String? utxoTo}) {
     final tx = _loadTransaction(walletId, txHash);
@@ -45,12 +47,12 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   void initTxList(int walletId) {
-    _txList = _walletDataManager.getTransactionRecordList(walletId);
+    _txList = _transactionRepository.getTransactionRecordList(walletId);
   }
 
   bool updateTransactionMemo(int walletId, String txHash, String memo) {
     final result =
-        _walletDataManager.updateTransactionMemo(walletId, txHash, memo);
+        _transactionRepository.updateTransactionMemo(walletId, txHash, memo);
     if (result.isSuccess) {
       _transaction = _loadTransaction(walletId, txHash);
       notifyListeners();
@@ -65,7 +67,7 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   TransactionRecord? _loadTransaction(int walletId, String txHash) {
-    final result = _walletDataManager.loadTransaction(walletId, txHash);
+    final result = _transactionRepository.loadTransaction(walletId, txHash);
     if (result.isFailure) {
       Logger.log('-----------------------------------------------------------');
       Logger.log('loadTransaction(id: $walletId, _utxoId: $txHash)');
