@@ -24,13 +24,58 @@ class NodeStateManager {
     Map<int, WalletUpdateInfo>? newUpdatedWallets,
     bool notify = true,
   }) {
-    _state = _state.copyWith(
+    // 상태 변경 전 이전 상태 저장
+    final prevState = _state;
+
+    // 새 상태 생성
+    final newState = _state.copyWith(
       newConnectionState: newConnectionState,
       newUpdatedWallets: newUpdatedWallets,
     );
-    if (notify) {
+
+    // 상태 업데이트
+    _state = newState;
+
+    // notify가 true이고 상태가 변경된 경우에만 리스너에게 알림
+    if (notify && _isStateChanged(prevState, newState)) {
       _notifyListeners();
     }
+  }
+
+  /// 이전 상태와 새 상태를 비교하여 변경 여부를 확인
+  bool _isStateChanged(
+      NodeProviderState prevState, NodeProviderState newState) {
+    // ConnectionState 비교
+    if (prevState.connectionState != newState.connectionState) {
+      return true;
+    }
+
+    // 등록된 지갑 수 비교
+    if (prevState.registeredWallets.length !=
+        newState.registeredWallets.length) {
+      return true;
+    }
+
+    // 각 지갑별 상태 비교
+    for (final walletId in newState.registeredWallets.keys) {
+      // 이전 상태에 없는 지갑이 새로 추가된 경우
+      if (!prevState.registeredWallets.containsKey(walletId)) {
+        return true;
+      }
+
+      final prevWalletInfo = prevState.registeredWallets[walletId]!;
+      final newWalletInfo = newState.registeredWallets[walletId]!;
+
+      // 지갑 상세 상태 비교 (balance, transaction, utxo)
+      if (prevWalletInfo.balance != newWalletInfo.balance ||
+          prevWalletInfo.transaction != newWalletInfo.transaction ||
+          prevWalletInfo.utxo != newWalletInfo.utxo) {
+        return true;
+      }
+    }
+
+    // 모든 비교에서 변경이 없으면 false 반환
+    return false;
   }
 
   void initWalletUpdateStatus(int walletId) {
