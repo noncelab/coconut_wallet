@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -122,13 +121,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                 const Center(child: CircularProgressIndicator())
               else ...{
                 _buildDateTime(viewModel.dateString),
-                CoconutLayout.spacing_600h,
                 _buildAmount(),
-                _buildPrice(),
-                // ignore: equal_elements_in_set
-                CoconutLayout.spacing_800h,
+                if (viewModel.utxoStatus == UtxoStatus.unspent)
+                  _buildPrice()
+                else ...{_buildStatus(viewModel.utxoStatus)},
                 _buildTxInputOutputSection(viewModel, tx),
-                CoconutLayout.spacing_400h,
                 _buildAddress(),
                 _buildTxMemo(
                   tx.memo,
@@ -170,21 +167,25 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   Widget _buildTxInputOutputSection(
       UtxoDetailViewModel viewModel, TransactionRecord tx) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: CoconutColors.gray800,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildInputOutputList(tx.inputAddressList, InputOutputRowType.input),
-          _buildFeeSection(),
-          _buildInputOutputList(
-              tx.outputAddressList, InputOutputRowType.output),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
+          color: CoconutColors.gray800,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildInputOutputList(
+                tx.inputAddressList, InputOutputRowType.input),
+            _buildFeeSection(),
+            _buildInputOutputList(
+                tx.outputAddressList, InputOutputRowType.output),
+          ],
+        ),
       ),
     );
   }
@@ -300,35 +301,75 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   Widget _buildDateTime(List<String> timeString) {
-    return HighlightedInfoArea(
-        textList: timeString, textStyle: CoconutTypography.body2_14_Number);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 28.0),
+      child: HighlightedInfoArea(
+          textList: timeString, textStyle: CoconutTypography.body2_14_Number),
+    );
   }
 
+  // TODO: 공통 위젯으로 빼서 여러 화면에서 재사용하기
+  // wallet-detail, tx-detail, utxo-list, utxo-detail
   Widget _buildAmount() {
-    return Center(
-        child: RichText(
-            text: TextSpan(
-                text: satoshiToBitcoinString(widget.utxo.amount),
-                style: CoconutTypography.heading3_21_NumberBold,
-                children: <TextSpan>[
-          TextSpan(text: " ${t.btc}", style: CoconutTypography.body2_14_Number)
-        ])));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2.0),
+      child: Center(
+          child: RichText(
+              text: TextSpan(
+                  text: satoshiToBitcoinString(widget.utxo.amount),
+                  style: CoconutTypography.heading2_28_NumberBold,
+                  children: <InlineSpan>[
+            WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Text(" ${t.btc}",
+                    style: CoconutTypography.heading3_21_Number))
+          ]))),
+    );
   }
 
   Widget _buildPrice() {
-    return Center(
-        child: Selector<UpbitConnectModel, int?>(
-      selector: (context, model) => model.bitcoinPriceKrw,
-      builder: (context, bitcoinPriceKrw, child) {
-        return Text(
-          bitcoinPriceKrw != null
-              ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
-              : '',
-          style: CoconutTypography.body2_14_Number
-              .copyWith(color: CoconutColors.gray500),
-        );
-      },
-    ));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 28),
+      child: Center(
+          child: Selector<UpbitConnectModel, int?>(
+        selector: (context, model) => model.bitcoinPriceKrw,
+        builder: (context, bitcoinPriceKrw, child) {
+          return Text(
+            bitcoinPriceKrw != null
+                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
+                : '',
+            style: CoconutTypography.body2_14_Number
+                .copyWith(color: CoconutColors.gray500),
+          );
+        },
+      )),
+    );
+  }
+
+  Widget _buildStatus(UtxoStatus status) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 28),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            status == UtxoStatus.incoming
+                ? 'assets/svg/tx-receiving.svg'
+                : 'assets/svg/tx-sending.svg',
+            width: 20,
+            height: 20,
+          ),
+          CoconutLayout.spacing_100w,
+          Text(
+            status == UtxoStatus.incoming
+                ? t.status_receiving
+                : t.status_sending,
+            style: CoconutTypography.body2_14_Number
+                .copyWith(color: CoconutColors.gray200),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAddress() {
@@ -347,8 +388,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               children: [
                 Text(
                   widget.utxo.to,
-                  style: Styles.body2Number
-                      .merge(const TextStyle(height: 22 / 14)),
+                  style: CoconutTypography.body2_14_Number,
                 ),
                 const SizedBox(height: 2),
                 Row(children: [

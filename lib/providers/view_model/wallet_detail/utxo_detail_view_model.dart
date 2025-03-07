@@ -45,6 +45,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   int get utxoInputMaxCount => _utxoInputMaxCount;
   int get utxoOutputMaxCount => _utxoOutputMaxCount;
   List<UtxoTag> get utxoTagList => _utxoTagList;
+  UtxoStatus get utxoStatus => _utxo.status;
 
   String getInputAddress(int index) =>
       TransactionUtil.getInputAddress(_transaction, index);
