@@ -283,4 +283,19 @@ class AddressRepository extends BaseRepository {
 
     return Balance(confirmedDiff, unconfirmedDiff);
   }
+
+  String getDerivationPath(
+    int walletId,
+    String address,
+  ) {
+    final existingAddress = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND address == $1',
+      [walletId, address],
+    ).firstOrNull;
+
+    if (existingAddress != null) {
+      return existingAddress.derivationPath;
+    }
+    return '';
+  }
 }

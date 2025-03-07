@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -66,11 +67,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider4<WalletProvider, TransactionProvider,
-        ConnectivityProvider, UpbitConnectModel, WalletDetailViewModel>(
+    return ChangeNotifierProxyProvider5<
+        WalletProvider,
+        TransactionProvider,
+        ConnectivityProvider,
+        UpbitConnectModel,
+        AddressRepository,
+        WalletDetailViewModel>(
       create: (_) => _createViewModel(_),
-      update: (_, walletProvider, txProvider, connectProvider, upbitModel,
-          viewModel) {
+      update: (_, walletProvider, txProvider, connectProvider, addressReposity,
+          upbitModel, viewModel) {
         return viewModel!..updateProvider();
       },
       child: Consumer<WalletDetailViewModel>(
@@ -107,6 +113,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       Provider.of<TransactionProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<UpbitConnectModel>(context, listen: false),
+      Provider.of<AddressRepository>(context, listen: false),
     );
     return _viewModel;
   }
