@@ -72,7 +72,6 @@ class WalletListViewModel extends ChangeNotifier {
   int get lastUpdateTime => _walletProvider.lastUpdateTime;
   String? get walletInitErrorMessage =>
       _walletProvider.walletInitError?.message;
-  WalletInitState get walletInitState => _walletProvider.walletInitState;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
 

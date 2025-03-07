@@ -30,11 +30,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   late WalletListItemBase _walletListBaseItem;
   late WalletType _walletType;
-
-  WalletInitState _prevWalletInitState = WalletInitState.never;
-  bool _prevIsLatestTxBlockHeightZero = false;
-
-  int? _prevTxCount;
+  late WalletAddress _receiveAddress;
 
   bool _faucetTooltipVisible = false;
 
@@ -42,18 +38,14 @@ class WalletDetailViewModel extends ChangeNotifier {
   final Faucet _faucetService = Faucet();
   late FaucetRecord _faucetRecord;
 
-  String _walletAddress = '';
-  String _derivationPath = '';
-
   String _walletName = '';
-  String _receiveAddressIndex = '';
 
   bool _isRequesting = false;
   // 상태 변화 확인용
   late WalletUpdateInfo _prevWalletUpdateInfo;
 
-  late bool _shouldShowLoadingIndicator;
-  bool get shouldShowLoadingIndicator => _shouldShowLoadingIndicator;
+  late bool _isWalletSyncing;
+  bool get isWalletSyncing => _isWalletSyncing;
 
   late int _balance;
   int get balance => _balance;
@@ -61,12 +53,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
       this._connectProvider, this._upbitConnectModel) {
     // 지갑 상세 초기화
-    _prevWalletInitState = _walletProvider.walletInitState;
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
-
-    _prevTxCount = walletBaseItem.txCount;
-    _prevIsLatestTxBlockHeightZero = walletBaseItem.isLatestTxBlockHeightZero;
     _walletType = walletBaseItem.walletType;
 
     _txProvider.initTxList(_walletId);
@@ -75,19 +63,14 @@ class WalletDetailViewModel extends ChangeNotifier {
     // 지갑 업데이트
     _prevWalletUpdateInfo = _walletProvider.getWalletUpdateInfo(_walletId);
     _addChangeListener();
-    _shouldShowLoadingIndicator =
-        !_allElementUpdateCompleted(_prevWalletUpdateInfo);
+    _isWalletSyncing = !_allElementUpdateCompleted(_prevWalletUpdateInfo);
     _balance = _walletProvider.getWalletBalance(_walletId).total;
 
     // Faucet
-    var receiveAddress = _walletProvider.getReceiveAddress(_walletId);
-    _walletAddress = receiveAddress.address;
-    _derivationPath =
-        receiveAddress.derivationPath; // fixme: 잘못된 derivationPath
+    _setReceiveAddress();
     _walletName = walletBaseItem.name.length > 10
         ? '${walletBaseItem.name.substring(0, 7)}...'
         : walletBaseItem.name;
-    _receiveAddressIndex = receiveAddress.derivationPath.split('/').last;
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetRecord();
     //_getFaucetStatus();
@@ -95,18 +78,18 @@ class WalletDetailViewModel extends ChangeNotifier {
     showFaucetTooltip();
   }
 
-  String get derivationPath => _derivationPath;
   bool get faucetTooltipVisible => _faucetTooltipVisible;
 
   bool get isRequesting => _isRequesting;
 
-  String get receiveAddressIndex => _receiveAddressIndex;
+  String get derivationPath => _receiveAddress.derivationPath;
+  String get receiveAddressIndex =>
+      _receiveAddress.derivationPath.split('/').last;
+  String get receiveAddress => _receiveAddress.address;
 
   List<TransactionRecord> get txList => _txProvider.txList;
 
   int get walletId => _walletId;
-  String get walletAddress => _walletAddress;
-  WalletInitState get walletInitState => _walletProvider.walletInitState;
   WalletListItemBase? get walletListBaseItem => _walletListBaseItem;
   String get walletName => _walletName;
   WalletProvider? get walletProvider => _walletProvider;
@@ -117,6 +100,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   void removeFaucetTooltip() {
     _faucetTooltipVisible = false;
     notifyListeners();
+  }
+
+  void _setReceiveAddress() {
+    _receiveAddress = _walletProvider.getReceiveAddress(_walletId);
   }
 
   Future<void> requestTestBitcoin(String address, double requestAmount,
@@ -157,14 +144,9 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // TODO: 필요없을지도 모름.
   void updateProvider() async {
-    if (_prevWalletInitState != WalletInitState.finished &&
-        _walletProvider.walletInitState == WalletInitState.finished) {
-      _checkTxCount();
-    }
-    _prevWalletInitState = _walletProvider.walletInitState;
-    _walletAddress = _walletProvider.getReceiveAddress(_walletId).address;
-
+    _setReceiveAddress();
     notifyListeners();
   }
 
@@ -176,23 +158,6 @@ class WalletDetailViewModel extends ChangeNotifier {
       _saveFaucetRecordToSharedPrefs();
       return;
     }
-  }
-
-  void _checkTxCount() {
-    final txCount = _txProvider.txList.length;
-    final isLatestTxBlockHeightZero =
-        _walletListBaseItem!.isLatestTxBlockHeightZero;
-    Logger.log('--> prevTxCount: $_prevTxCount, wallet.txCount: $txCount');
-    Logger.log(
-        '--> prevIsZero: $_prevIsLatestTxBlockHeightZero, wallet.isZero: $isLatestTxBlockHeightZero');
-
-    /// _walletListItem의 txCount, isLatestTxBlockHeightZero가 변경되었을 때만 트랜잭션 목록 업데이트
-    if (_prevTxCount != txCount ||
-        _prevIsLatestTxBlockHeightZero != isLatestTxBlockHeightZero) {
-      _txProvider.initTxList(_walletId);
-    }
-    _prevTxCount = txCount;
-    _prevIsLatestTxBlockHeightZero = isLatestTxBlockHeightZero;
   }
 
   void _initFaucetRecord() {
@@ -221,7 +186,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   Future<void> refreshWallet() async {
     _walletProvider.initWallet(targetId: _walletId);
     _txProvider.initTxList(_walletId);
-    _checkTxCount();
   }
 
   void _addChangeListener() {
@@ -247,10 +211,9 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
 
     bool isSyncing = !_allElementUpdateCompleted(updateInfo);
-    if (_shouldShowLoadingIndicator != isSyncing) {
-      _shouldShowLoadingIndicator = isSyncing;
-      Logger.log(
-          '--> 지갑$_walletId loading ui: $_shouldShowLoadingIndicator으로 변경');
+    if (_isWalletSyncing != isSyncing) {
+      _isWalletSyncing = isSyncing;
+      Logger.log('--> 지갑$_walletId loading ui: $_isWalletSyncing으로 변경');
       notifyListeners();
     }
 
