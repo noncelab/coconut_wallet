@@ -14,7 +14,7 @@ import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/isolate_manager.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
-import 'package:coconut_wallet/services/network/node_client.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
@@ -44,7 +44,7 @@ class NodeProvider extends ChangeNotifier {
   late NetworkManager _networkManager;
   late SubscriptionManager _subscriptionManager;
 
-  late NodeClient _mainClient;
+  late ElectrumService _electrumService;
 
   NodeProviderState get state => _stateManager.state;
 
@@ -66,28 +66,31 @@ class NodeProvider extends ChangeNotifier {
     this._subscribeRepository,
     this._walletRepository, {
     IsolateManager? isolateManager,
-    NodeClientFactory? nodeClientFactory,
+    ElectrumService? electrumService,
   }) : _isolateManager = isolateManager ?? IsolateManager() {
     _initCompleter = Completer<void>();
     _stateManager = NodeStateManager(() => notifyListeners());
-    _initialize(nodeClientFactory);
+    _initialize(electrumService);
   }
 
-  Future<void> _initialize(NodeClientFactory? nodeClientFactory) async {
+  Future<void> _initialize(ElectrumService? electrumService) async {
     try {
-      final factory = nodeClientFactory ?? ElectrumNodeClientFactory();
-      await _isolateManager.initialize(factory, _host, _port, _ssl);
+      if (electrumService != null) {
+        _electrumService = electrumService;
+      } else {
+        _electrumService = ElectrumService();
+        await _electrumService.connect(_host, _port, ssl: _ssl);
+      }
 
-      _mainClient = await factory.create(_host, _port, ssl: _ssl);
-
-      _networkManager = NetworkManager(_mainClient);
-      _balanceManager = BalanceManager(
-          _mainClient, _stateManager, _addressRepository, _walletRepository);
-      _utxoManager = UtxoManager(_mainClient, _stateManager, _utxoRepository);
-      _transactionManager = TransactionManager(
-          _mainClient, _stateManager, _transactionRepository, _utxoManager);
+      _networkManager = NetworkManager(_electrumService);
+      _balanceManager = BalanceManager(_electrumService, _stateManager,
+          _addressRepository, _walletRepository);
+      _utxoManager =
+          UtxoManager(_electrumService, _stateManager, _utxoRepository);
+      _transactionManager = TransactionManager(_electrumService, _stateManager,
+          _transactionRepository, _utxoManager);
       _subscriptionManager = SubscriptionManager(
-        _mainClient,
+        _electrumService,
         _stateManager,
         _balanceManager,
         _transactionManager,
@@ -167,7 +170,7 @@ class NodeProvider extends ChangeNotifier {
   void dispose() {
     super.dispose();
     _syncCompleter = null;
-    _mainClient.dispose();
+    _electrumService.close();
     _subscriptionManager.dispose();
     _isolateManager.dispose();
   }

@@ -1,4 +1,4 @@
-part of '../../network/electrum/electrum_client.dart';
+part of '../../electrum_service.dart';
 
 abstract class _ElectrumRequest {
   String get method;

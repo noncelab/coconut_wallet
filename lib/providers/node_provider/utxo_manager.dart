@@ -5,16 +5,19 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/services/network/node_client.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/model/response/block_header.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 /// NodeProvider의 UTXO 관련 기능을 담당하는 매니저 클래스
 class UtxoManager {
-  final NodeClient _nodeClient;
+  final ElectrumService _electrumService;
   final NodeStateManager _stateManager;
   final UtxoRepository _utxoRepository;
 
   UtxoManager(
-    this._nodeClient,
+    this._electrumService,
     this._stateManager,
     this._utxoRepository,
   );
@@ -28,10 +31,10 @@ class UtxoManager {
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
 
     // UTXO 목록 조회
-    final utxos = await _nodeClient.getUtxoStateList(scriptStatus);
+    final utxos = await getUtxoStateList(scriptStatus);
 
-    final blockTimestampMap = await _nodeClient
-        .getBlocksByHeight(utxos.map((utxo) => utxo.blockHeight).toSet());
+    final blockTimestampMap =
+        await getBlocksByHeight(utxos.map((utxo) => utxo.blockHeight).toSet());
 
     UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
 
@@ -45,6 +48,52 @@ class UtxoManager {
 
     // UTXO 업데이트 완료 state 업데이트
     _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
+  }
+
+  /// 스크립트에 대한 UTXO 목록을 가져옵니다.
+  Future<List<UtxoState>> getUtxoStateList(ScriptStatus scriptStatus) async {
+    try {
+      final utxos =
+          await _electrumService.getUnspentList(scriptStatus.scriptPubKey);
+      return utxos
+          .map((e) => UtxoState(
+                transactionHash: e.txHash,
+                index: e.txPos,
+                amount: e.value,
+                derivationPath: scriptStatus.derivationPath,
+                blockHeight: e.height,
+                to: scriptStatus.address,
+                status: UtxoStatus.unspent,
+              ))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get UTXO list: $e');
+      return [];
+    }
+  }
+
+  /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
+  Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
+    final futures = heights.map((height) async {
+      try {
+        final header = await _electrumService.getBlockHeader(height);
+        final blockHeader = BlockHeader.parse(height, header);
+        return MapEntry(
+          height,
+          BlockTimestamp(
+            height,
+            DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
+                isUtc: true),
+          ),
+        );
+      } catch (e) {
+        Logger.error('Error fetching block header for height $height: $e');
+        return null;
+      }
+    });
+
+    final results = await Future.wait(futures);
+    return Map.fromEntries(results.whereType<MapEntry<int, BlockTimestamp>>());
   }
 
   /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.

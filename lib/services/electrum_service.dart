@@ -5,12 +5,11 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:convert/convert.dart';
 
-part '../../model/request/electrum_request_types.dart';
+part 'model/request/electrum_request_types.dart';
 
-class ElectrumClient {
+class ElectrumService {
   // static final ElectrumClient _instance = ElectrumClient._();
   final int _timeout = 30;
   int _idCounter = 0;
@@ -22,10 +21,10 @@ class ElectrumClient {
   SocketConnectionStatus get connectionStatus =>
       _socketManager.connectionStatus;
 
-  ElectrumClient._() : _socketManager = SocketManager();
+  ElectrumService._() : _socketManager = SocketManager();
 
-  factory ElectrumClient({SocketManager? socketManager}) {
-    ElectrumClient instance = ElectrumClient._();
+  factory ElectrumService({SocketManager? socketManager}) {
+    ElectrumService instance = ElectrumService._();
     instance._socketManager = socketManager ?? SocketManager();
 
     return instance;

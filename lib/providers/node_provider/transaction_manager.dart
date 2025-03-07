@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -9,21 +11,22 @@ import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
-import 'package:coconut_wallet/services/model/stream/stream_state.dart';
-import 'package:coconut_wallet/services/network/node_client.dart';
+import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 /// NodeProvider의 트랜잭션 관련 기능을 담당하는 매니저 클래스
 class TransactionManager {
-  final NodeClient _nodeClient;
+  final ElectrumService _electrumService;
   final NodeStateManager _stateManager;
   final TransactionRepository _transactionRepository;
   final UtxoManager _utxoManager;
 
   TransactionManager(
-    this._nodeClient,
+    this._electrumService,
     this._stateManager,
     this._transactionRepository,
     this._utxoManager,
@@ -46,7 +49,7 @@ class TransactionManager {
         .map((tx) => tx.transactionHash)
         .toSet();
 
-    final txFetchResults = await _nodeClient.getFetchTransactionResponses(
+    final txFetchResults = await getFetchTransactionResponses(
         scriptStatus, knownTransactionHashes);
 
     final unconfirmedTxs = txFetchResults
@@ -66,17 +69,11 @@ class TransactionManager {
 
     final blockTimestampMap = txBlockHeightMap.isEmpty
         ? <int, BlockTimestamp>{}
-        : await _nodeClient.getBlocksByHeight(txBlockHeightMap.values.toSet());
+        : await getBlocksByHeight(txBlockHeightMap.values.toSet());
 
-    final transactionFuture = await _nodeClient
-        .fetchTransactions(
-            txFetchResults.map((tx) => tx.transactionHash).toSet())
-        .toList();
-
-    final txs = transactionFuture
-        .whereType<SuccessState<Transaction>>()
-        .map((state) => state.data)
-        .toList();
+    // fetchTransactions를 Future 방식으로 변경
+    final txs = await fetchTransactions(
+        txFetchResults.map((tx) => tx.transactionHash).toSet());
 
     // 각 트랜잭션에 대해 사용된 UTXO 상태 업데이트
     for (final tx in txs) {
@@ -97,6 +94,154 @@ class TransactionManager {
         walletItem.id, UpdateElement.transaction);
   }
 
+  /// 스크립트에 대한 트랜잭션 응답을 가져옵니다.
+  Future<List<FetchTransactionResponse>> getFetchTransactionResponses(
+      ScriptStatus scriptStatus, Set<String> knownTransactionHashes) async {
+    try {
+      final historyList =
+          await _electrumService.getHistory(scriptStatus.scriptPubKey);
+
+      if (historyList.isEmpty) {
+        return [];
+      }
+
+      final filteredHistoryList = historyList.where((history) {
+        if (knownTransactionHashes.contains(history.txHash)) return false;
+        knownTransactionHashes.add(history.txHash);
+        return true;
+      });
+
+      return filteredHistoryList
+          .map((history) => FetchTransactionResponse(
+                transactionHash: history.txHash,
+                height: history.height,
+                addressIndex: scriptStatus.index,
+                isChange: scriptStatus.isChange,
+              ))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get fetch transaction responses: $e');
+      return [];
+    }
+  }
+
+  /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
+  Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
+    final futures = heights.map((height) async {
+      try {
+        final header = await _electrumService.getBlockHeader(height);
+        final blockHeader = BlockHeader.parse(height, header);
+        return MapEntry(
+          height,
+          BlockTimestamp(
+            height,
+            DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
+                isUtc: true),
+          ),
+        );
+      } catch (e) {
+        Logger.error('Error fetching block header for height $height: $e');
+        return null;
+      }
+    });
+
+    final results = await Future.wait(futures);
+    return Map.fromEntries(results.whereType<MapEntry<int, BlockTimestamp>>());
+  }
+
+  /// 트랜잭션 목록을 가져옵니다. (Future 방식으로 구현)
+  Future<List<Transaction>> fetchTransactions(
+      Set<String> transactionHashes) async {
+    List<Transaction> results = [];
+
+    final futures = transactionHashes.map((txHash) async {
+      try {
+        final txHex = await _electrumService.getTransaction(txHash);
+        return Transaction.parse(txHex);
+      } catch (e) {
+        Logger.error('Failed to fetch transaction $txHash: $e');
+        return null;
+      }
+    });
+
+    final transactions = await Future.wait(futures);
+    results.addAll(transactions.whereType<Transaction>());
+
+    return results;
+  }
+
+  /// 이전 트랜잭션을 조회합니다.
+  Future<List<Transaction>> getPreviousTransactions(
+      Transaction transaction, List<Transaction> existingTxList) async {
+    if (transaction.inputs.isEmpty) {
+      return [];
+    }
+
+    if (_isCoinbaseTransaction(transaction)) {
+      return [];
+    }
+
+    Set<String> toFetchTransactionHashes = {};
+
+    final existingTxHashes =
+        existingTxList.map((tx) => tx.transactionHash).toSet();
+
+    toFetchTransactionHashes = transaction.inputs
+        .map((input) => input.transactionHash)
+        .where((hash) => !existingTxHashes.contains(hash))
+        .toSet();
+
+    var futures = toFetchTransactionHashes.map((transactionHash) async {
+      try {
+        var inputTx = await _electrumService.getTransaction(transactionHash);
+        return Transaction.parse(inputTx);
+      } catch (e) {
+        Logger.error('Failed to get previous transaction $transactionHash: $e');
+        return null;
+      }
+    });
+
+    try {
+      List<Transaction?> fetchedTransactionsNullable =
+          await Future.wait(futures);
+      List<Transaction> fetchedTransactions =
+          fetchedTransactionsNullable.whereType<Transaction>().toList();
+
+      fetchedTransactions.addAll(existingTxList);
+
+      List<Transaction> previousTransactions = [];
+
+      for (var input in transaction.inputs) {
+        final matchingTx = fetchedTransactions
+            .where((tx) => tx.transactionHash == input.transactionHash)
+            .toList();
+
+        if (matchingTx.isNotEmpty) {
+          previousTransactions.add(matchingTx.first);
+        }
+      }
+
+      return previousTransactions;
+    } catch (e) {
+      Logger.error('Failed to process previous transactions: $e');
+      return [];
+    }
+  }
+
+  /// 코인베이스 트랜잭션 여부를 확인합니다.
+  bool _isCoinbaseTransaction(Transaction tx) {
+    if (tx.inputs.length != 1) {
+      return false;
+    }
+
+    if (tx.inputs[0].transactionHash !=
+        '0000000000000000000000000000000000000000000000000000000000000000') {
+      return false;
+    }
+
+    return tx.inputs[0].index == 4294967295; // 0xffffffff
+  }
+
   /// 트랜잭션 레코드를 생성합니다.
   Future<List<TransactionRecord>> _createTransactionRecords(
     WalletListItemBase walletItemBase,
@@ -104,7 +249,7 @@ class TransactionManager {
     Map<String, int> txBlockHeightMap,
     Map<int, BlockTimestamp> blockTimestampMap,
     WalletProvider walletProvider, {
-    NodeClient? nodeClient,
+    ElectrumService? nodeClient,
     List<Transaction> previousTxs = const [],
     DateTime? now,
   }) async {
@@ -129,21 +274,18 @@ class TransactionManager {
     Map<String, int> txBlockHeightMap,
     Map<int, BlockTimestamp> blockTimestampMap,
     WalletProvider walletProvider, {
-    NodeClient? nodeClient,
+    ElectrumService? nodeClient,
     List<Transaction> previousTxs = const [],
     DateTime? now,
   }) async {
     now ??= DateTime.now();
+    nodeClient ??= _electrumService;
 
-    final previousTxsResult =
-        await _getPreviousTransactions(tx, previousTxs, nodeClient: nodeClient);
+    final prevTxs = await getPreviousTransactions(tx, previousTxs);
 
-    if (previousTxsResult.isFailure) {
-      throw ErrorCodes.fetchTransactionsError;
-    }
     int blockHeight = txBlockHeightMap[tx.transactionHash] ?? 0;
-    final txDetails = _processTransactionDetails(
-        tx, previousTxsResult.value, walletItemBase, walletProvider);
+    final txDetails =
+        _processTransactionDetails(tx, prevTxs, walletItemBase, walletProvider);
 
     return TransactionRecord.fromTransactions(
       transactionHash: tx.transactionHash,
@@ -173,7 +315,23 @@ class TransactionManager {
     // 입력 처리
     for (int i = 0; i < tx.inputs.length; i++) {
       final input = tx.inputs[i];
-      final previousOutput = previousTxs[i].outputs[input.index];
+
+      // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
+      Transaction? previousTx;
+      try {
+        previousTx = previousTxs.firstWhere(
+            (prevTx) => prevTx.transactionHash == input.transactionHash);
+      } catch (_) {
+        // 해당 트랜잭션을 찾지 못한 경우 스킵
+        continue;
+      }
+
+      // 유효한 인덱스인지 확인
+      if (input.index >= previousTx.outputs.length) {
+        continue; // 유효하지 않은 인덱스인 경우 스킵
+      }
+
+      final previousOutput = previousTx.outputs[input.index];
       final inputAddress = TransactionAddress(
           previousOutput.scriptPubKey.getAddress(), previousOutput.amount);
       inputAddressList.add(inputAddress);
@@ -225,27 +383,10 @@ class TransactionManager {
     );
   }
 
-  /// 이전 트랜잭션을 조회합니다.
-  Future<Result<List<Transaction>>> _getPreviousTransactions(
-    Transaction transaction,
-    List<Transaction> existingTxList, {
-    NodeClient? nodeClient,
-  }) async {
-    nodeClient ??= _nodeClient;
-
-    try {
-      final result =
-          await nodeClient.getPreviousTransactions(transaction, existingTxList);
-      return Result.success(result);
-    } catch (e) {
-      return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
-    }
-  }
-
   /// 트랜잭션을 브로드캐스트합니다.
   Future<Result<String>> broadcast(Transaction signedTx) async {
     try {
-      final txHash = await _nodeClient.broadcast(signedTx.serialize());
+      final txHash = await _electrumService.broadcast(signedTx.serialize());
 
       // 브로드캐스트 시간 기록
       _transactionRepository
@@ -264,7 +405,7 @@ class TransactionManager {
   /// 특정 트랜잭션을 조회합니다.
   Future<Result<String>> getTransaction(String txHash) async {
     try {
-      final tx = await _nodeClient.getTransaction(txHash);
+      final tx = await _electrumService.getTransaction(txHash);
       return Result.success(tx);
     } catch (e) {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);

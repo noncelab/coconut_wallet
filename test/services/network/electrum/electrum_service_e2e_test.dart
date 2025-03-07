@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/services/network/electrum/electrum_client.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:test/test.dart';
 
 String host = 'regtest-electrum.coconut.onl';
@@ -6,7 +6,7 @@ int port = 60401;
 bool ssl = true;
 
 Future<void> main() async {
-  ElectrumClient client = ElectrumClient();
+  ElectrumService client = ElectrumService();
   await client.connect(host, port, ssl: ssl);
 
   test('ping', () async {
