@@ -7,7 +7,8 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart'
 // TransactionRecord -> _RealmTransaction 변환 함수
 RealmTransaction mapTransactionToRealmTransaction(
     TransactionRecord transaction, int walletId, int id, DateTime? createdAt) {
-  return RealmTransaction(id, transaction.transactionHash, walletId,
+  return RealmTransaction(
+      id, transaction.transactionHash, walletId, transaction.vSize,
       timestamp: transaction.timestamp,
       blockHeight: transaction.blockHeight,
       transactionType: transaction.transactionType,
@@ -40,6 +41,7 @@ TransactionRecord mapRealmTransactionToTransaction(
       realmTransaction.outputAddressList
           .map((element) => jsonToAddress(jsonDecode(element)))
           .toList(),
+      realmTransaction.vSize,
       realmTransaction.createdAt);
 }
 
