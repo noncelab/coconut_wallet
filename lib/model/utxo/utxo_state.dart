@@ -49,8 +49,9 @@ class UtxoState extends Utxo {
     spentByTxHash = null;
   }
 
-  // UTXO가 RBF 가능한지 확인
-  bool get isReplaceable => status == UtxoStatus.outgoing;
+  bool get isRbfable => status == UtxoStatus.outgoing && blockHeight == 0;
+
+  bool get isCpfpable => status == UtxoStatus.incoming && blockHeight == 0;
 
   static void updateTimestampFromBlocks(
       List<UtxoState> utxos, Map<int, BlockTimestamp> blockTimestamps) {
