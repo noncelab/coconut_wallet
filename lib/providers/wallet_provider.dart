@@ -37,8 +37,6 @@ enum WalletSubscriptionState { never, syncing, completed, failed }
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
 
 class WalletProvider extends ChangeNotifier {
-  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-
   WalletLoadState _walletLoadState = WalletLoadState.never;
   WalletLoadState get walletLoadState => _walletLoadState;
 
@@ -55,17 +53,13 @@ class WalletProvider extends ChangeNotifier {
   List<WalletListItemBase> _walletItemList = [];
   List<WalletListItemBase> get walletItemList => _walletItemList;
 
-  final Map<int, Balance> _walletBalance = {};
+  Map<int, Balance> _walletBalance = {};
   Map<int, Balance> get walletBalance => UnmodifiableMapView(_walletBalance);
-
-  /// 마지막 업데이트 시간
-  int _lastUpdateTime = 0;
-  int get lastUpdateTime => _lastUpdateTime;
 
   int gapLimit = 20;
 
-  bool _isSyncing = false;
-  bool _isAnyBalanceUpdating = false;
+  bool _isSyncing = true;
+  bool _isAnyBalanceUpdating = true;
 
   final RealmManager _realmManager;
   final AddressRepository _addressRepository;
@@ -78,16 +72,10 @@ class WalletProvider extends ChangeNotifier {
 
   late final NodeProvider _nodeProvider;
   late bool _isNodeProviderInitialized;
-  // TODO:
-  final StreamController<Map<int, Balance?>> _balanceStream =
-      StreamController<Map<int, Balance?>>();
-  StreamController<Map<int, Balance?>> get balanceStream => _balanceStream;
 
   // db 업데이트 중인가
   bool get isSyncing => _isSyncing;
-
   bool get isAnyBalanceUpdating => _isAnyBalanceUpdating;
-
   final Map<int, List<WalletUpdateListener>> _walletUpdateListeners = {};
 
   void addWalletUpdateListener(int walletId, WalletUpdateListener listener) {
@@ -142,21 +130,20 @@ class WalletProvider extends ChangeNotifier {
 
     // NodeProvider 상태 출력
     _printWalletStatus();
+
+    // TODO: notifyListeners()가 빈번 -> 개선 필요
     _updateIsSyncingIfNeeded(_nodeProvider.state);
+    if (_isAnyBalanceUpdating) {
+      _walletBalance = fetchWalletBalanceMap();
+      notifyListeners();
+    }
     _updateIsAnyBalanceUpdatingIfNeeded(_nodeProvider.state);
     for (var key in _nodeProvider.state.registeredWallets.keys) {
       if (_nodeProvider.state.registeredWallets[key] != null) {
         _notifyWalletUpdateListeners(
             _nodeProvider.state.registeredWallets[key]!);
       }
-
-      // TODO: balance stream 제거하기
-      if (_nodeProvider.state.registeredWallets[key]!.balance ==
-          UpdateStatus.completed) {
-        fetchWalletBalance(key);
-      }
     }
-    Logger.log('\n');
   }
 
   void _updateIsSyncingIfNeeded(NodeProviderState nodeProviderState) {
@@ -178,17 +165,17 @@ class WalletProvider extends ChangeNotifier {
       var wallet = nodeProviderState.registeredWallets[walletId];
       if (wallet == null) continue;
 
-      if (wallet.balance == UpdateStatus.syncing) {
+      // 업데이트 예정 중이거나 업데이트 중
+      if (wallet.balance == UpdateStatus.waiting ||
+          wallet.balance == UpdateStatus.syncing) {
         anyBalanceSyncing = true;
         break;
       }
     }
 
-    if (anyBalanceSyncing && !_isAnyBalanceUpdating) {
-      _isAnyBalanceUpdating = true;
-      notifyListeners();
-    } else if (!anyBalanceSyncing && _isAnyBalanceUpdating) {
-      _isAnyBalanceUpdating = false;
+    if (_isAnyBalanceUpdating != anyBalanceSyncing) {
+      _isAnyBalanceUpdating = anyBalanceSyncing;
+      Logger.log('--> _isAnyBalanceUpdating 업데이트 / $_isAnyBalanceUpdating');
       notifyListeners();
     }
   }
@@ -206,11 +193,7 @@ class WalletProvider extends ChangeNotifier {
         await _realmManager.init(_isSetPin);
       }
       _walletItemList = await _walletRepository.getWalletItemList();
-      Map<int, Balance?> balanceMap = {
-        for (var wallet in _walletItemList)
-          wallet.id: getWalletBalance(wallet.id)
-      };
-      _balanceStream.add(balanceMap);
+      _walletBalance = fetchWalletBalanceMap();
       _walletLoadState = WalletLoadState.loadCompleted;
     } catch (e) {
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
@@ -220,6 +203,12 @@ class WalletProvider extends ChangeNotifier {
     } finally {
       notifyListeners();
     }
+  }
+
+  Map<int, Balance> fetchWalletBalanceMap() {
+    return {
+      for (var wallet in _walletItemList) wallet.id: getWalletBalance(wallet.id)
+    };
   }
 
   bool _canSubscribeWallets() {
@@ -245,12 +234,6 @@ class WalletProvider extends ChangeNotifier {
 
     try {
       await _nodeProvider.subscribeWallets(_walletItemList, this);
-
-      // TODO: 제거
-      for (var wallet in _walletItemList) {
-        fetchWalletBalance(wallet.id);
-      }
-
       _walletSubscriptionState = WalletSubscriptionState.completed;
     } catch (e) {
       Logger.error(e);
@@ -349,11 +332,7 @@ class WalletProvider extends ChangeNotifier {
   Future<void> fetchWalletBalance(int walletId) async {
     final Balance balance = getWalletBalance(walletId);
     _walletBalance[walletId] = balance;
-
-    // notify
-    _balanceStream.add({walletId: balance});
-    // TODO: 이미 balanceStream을 제공하므로 notifyListeners 불필요할 수 있음.
-    // notifyListeners();
+    notifyListeners();
   }
 
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
@@ -549,7 +528,6 @@ class WalletProvider extends ChangeNotifier {
   @override
   void dispose() {
     _nodeProvider.removeListener(_onNodeProviderStateUpdated);
-    _balanceStream.close();
     super.dispose();
   }
 

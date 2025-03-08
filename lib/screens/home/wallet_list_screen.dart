@@ -222,19 +222,17 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   ),
                           ),
                           // Pull to refresh, refresh indicator(hide)
-                          if (!viewModel.shouldShowLoadingIndicator) ...{
-                            CupertinoSliverRefreshControl(
-                              onRefresh: viewModel.refreshWallets,
-                            )
+                          if (viewModel.shouldShowLoadingIndicator) ...{
+                            const SliverToBoxAdapter(child: LoadingIndicator()),
                           },
+                          CupertinoSliverRefreshControl(
+                            onRefresh: viewModel.refreshWallets,
+                          ),
 
-                          // 용어집, 바로 추가하기, loading indicator
+                          // 용어집, 바로 추가하기
                           SliverToBoxAdapter(
                               child: Column(
                             children: [
-                              if (viewModel.shouldShowLoadingIndicator) ...{
-                                const LoadingIndicator()
-                              },
                               if (!viewModel.shouldShowLoadingIndicator) ...{
                                 if (viewModel.isTermsShortcutVisible)
                                   WalletListTermsShortcutCard(

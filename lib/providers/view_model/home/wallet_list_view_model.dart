@@ -23,7 +23,7 @@ class WalletListViewModel extends ChangeNotifier {
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _transactionProvider;
   late final ConnectivityProvider _connectivityProvider;
-  final Map<int, int> _walletBalance = {};
+  Map<int, int> _walletBalance = {};
   late StreamSubscription<Map<int, Balance?>> _balanceSubscription;
   late bool? _isNetworkOn;
 
@@ -36,39 +36,17 @@ class WalletListViewModel extends ChangeNotifier {
     this._connectivityProvider,
   ) {
     _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
-
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _walletSyncingState = _walletProvider.walletSubscriptionState;
-    // TODO:
-    _balanceSubscription =
-        _walletProvider.balanceStream.stream.listen(_updateBalance);
-
     _isNetworkOn = _connectivityProvider.isNetworkOn;
-  }
-
-  void _updateBalance(Map<int, Balance?> newBalance) {
-    newBalance.forEach((key, balance) {
-      if (balance != null) {
-        _walletBalance[key] = balance.total;
-      } else {
-        _walletBalance.remove(key);
-      }
-    });
-
-    notifyListeners();
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
-  bool get shouldShowLoadingIndicator =>
-      _walletProvider.walletSubscriptionState ==
-          WalletSubscriptionState.never ||
-      _walletProvider.walletSubscriptionState ==
-          WalletSubscriptionState.syncing;
-  int get lastUpdateTime => _walletProvider.lastUpdateTime;
+  bool get shouldShowLoadingIndicator => _walletProvider.isAnyBalanceUpdating;
   String? get walletInitErrorMessage =>
       _walletProvider.walletInitError?.message;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
@@ -81,15 +59,18 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshWallets() async {
-    Logger.log('--> refreshWallet 시작');
-    for (var wallet in walletItemList) {
-      await _walletProvider.fetchWalletBalance(wallet.id);
-    }
-    Logger.log('--> refreshWallet 끝');
+    _updateBalance(_walletProvider.fetchWalletBalanceMap());
+    notifyListeners();
+  }
+
+  void _updateBalance(Map<int, Balance> balanceMap) {
+    _walletBalance =
+        balanceMap.map((key, balance) => MapEntry(key, balance.total));
   }
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
     _walletProvider = walletProvider;
+    _updateBalance(walletProvider.walletBalance);
     notifyListeners();
 
     if (_walletSyncingState != walletProvider.walletSubscriptionState) {
