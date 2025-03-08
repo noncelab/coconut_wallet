@@ -64,7 +64,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     _prevWalletUpdateInfo = _walletProvider.getWalletUpdateInfo(_walletId);
     _addChangeListener();
     _isWalletSyncing = !_allElementUpdateCompleted(_prevWalletUpdateInfo);
-    _balance = _walletProvider.getWalletBalance(_walletId).total;
+    _balance = _getBalance();
 
     // Faucet
     _setReceiveAddress();
@@ -184,8 +184,9 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   // todo: 상태를 반환해주도록 수정되면 좋겠음.
   Future<void> refreshWallet() async {
-    _walletProvider.initWallet(targetId: _walletId);
+    _balance = _getBalance();
     _txProvider.initTxList(_walletId);
+    notifyListeners();
   }
 
   void _addChangeListener() {
@@ -193,12 +194,16 @@ class WalletDetailViewModel extends ChangeNotifier {
         _walletId, _onWalletUpdateInfoChanged);
   }
 
+  int _getBalance() {
+    return _walletProvider.getWalletBalance(_walletId).total;
+  }
+
   // balance, transaction만 고려
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
     Logger.log('--> 지갑$_walletId 업데이트 체크');
     if (_prevWalletUpdateInfo.balance != UpdateStatus.completed &&
         updateInfo.balance == UpdateStatus.completed) {
-      _balance = _walletProvider.getWalletBalance(_walletId).total;
+      _balance = _getBalance();
       notifyListeners();
       Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.');
     }

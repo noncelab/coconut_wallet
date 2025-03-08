@@ -58,10 +58,6 @@ class UtxoListViewModel extends ChangeNotifier {
 
   WalletType get walletType => _walletListBaseItem.walletType;
 
-  void refreshWalletProvider(int id) {
-    _walletProvider.initWallet(targetId: id);
-  }
-
   void resetUtxoTagsUpdateState() {
     _tagProvider.resetUtxoTagsUpdateState();
   }

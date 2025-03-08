@@ -244,10 +244,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               if (success) {
                 Navigator.pop(context);
                 vibrateLight();
-                Future.delayed(const Duration(seconds: 1), () {
-                  viewModel.walletProvider
-                      ?.initWallet(targetId: widget.id, syncOthers: false);
-                });
                 CustomToast.showToast(context: context, text: message);
               } else {
                 vibrateMedium();
