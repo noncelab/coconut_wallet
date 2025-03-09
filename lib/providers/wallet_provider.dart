@@ -23,6 +23,7 @@ import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
 enum WalletLoadState {
@@ -192,7 +193,7 @@ class WalletProvider extends ChangeNotifier {
       if (_realmManager.isInitialized) {
         await _realmManager.init(_isSetPin);
       }
-      _walletItemList = await _walletRepository.getWalletItemList();
+      _walletItemList = await _fetchWalletListFromDB();
       _walletBalance = fetchWalletBalanceMap();
       _walletLoadState = WalletLoadState.loadCompleted;
     } catch (e) {
@@ -232,15 +233,12 @@ class WalletProvider extends ChangeNotifier {
     _walletSubscriptionState = WalletSubscriptionState.syncing;
     notifyListeners();
 
-    try {
-      await _nodeProvider.subscribeWallets(_walletItemList, this);
-      _walletSubscriptionState = WalletSubscriptionState.completed;
-    } catch (e) {
-      Logger.error(e);
-      _walletSubscriptionState = WalletSubscriptionState.failed;
-    } finally {
-      notifyListeners();
-    }
+    Result<bool> result =
+        await _nodeProvider.subscribeWallets(_walletItemList, this);
+    _walletSubscriptionState = result.isSuccess
+        ? WalletSubscriptionState.completed
+        : WalletSubscriptionState.failed;
+    notifyListeners();
 
     return _walletSubscriptionState;
   }
@@ -260,6 +258,10 @@ class WalletProvider extends ChangeNotifier {
       throw Exception('WalletItem is Empty');
     }
     return _walletItemList.firstWhere((element) => element.id == id);
+  }
+
+  Future<List<WalletListItemBase>> _fetchWalletListFromDB() async {
+    return await _walletRepository.getWalletItemList();
   }
 
   // syncFromVault start
@@ -291,7 +293,7 @@ class WalletProvider extends ChangeNotifier {
             _walletItemList[index].id, watchOnlyWallet);
 
         // 업데이트된 지갑 목록 가져오기
-        _walletItemList = await _walletRepository.getWalletItemList();
+        _walletItemList = await _fetchWalletListFromDB();
         result = WalletSyncResult.existingWalletUpdated;
         notifyListeners();
       }
@@ -308,27 +310,36 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // case 1: 새 지갑 생성
-    WalletListItemBase newItem;
-    if (isMultisig) {
-      newItem = await _walletRepository.addMultisigWallet(watchOnlyWallet);
-    } else {
-      newItem = await _walletRepository.addSinglesigWallet(watchOnlyWallet);
+    var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
+    // 기존 지갑들의 구독이 완료될 때까지 기다립니다.
+    while (_walletSubscriptionState != WalletSubscriptionState.completed &&
+        _walletSubscriptionState != WalletSubscriptionState.failed) {
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    if (_walletSubscriptionState != WalletSubscriptionState.failed) {
+      _nodeProvider.subscribeWallet(newWallet, this);
     }
 
-    await _nodeProvider.subscribeWallet(newItem, this);
+    return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
+  }
+
+  Future<WalletListItemBase> _addNewWallet(
+      WatchOnlyWallet wallet, bool isMultisig) async {
+    WalletListItemBase newItem;
+    if (isMultisig) {
+      newItem = await _walletRepository.addMultisigWallet(wallet);
+    } else {
+      newItem = await _walletRepository.addSinglesigWallet(wallet);
+    }
 
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
     updatedList.add(newItem);
     _walletItemList = updatedList;
 
-    if (result == WalletSyncResult.newWalletAdded) {
-      _saveWalletCount(updatedList.length);
-    }
-
-    return ResultOfSyncFromVault(result: result, walletId: newItem.id);
+    _saveWalletCount(updatedList.length);
+    return newItem;
   }
 
-  // TODO: 특정 지갑의 잔액 갱신
   Future<void> fetchWalletBalance(int walletId) async {
     final Balance balance = getWalletBalance(walletId);
     _walletBalance[walletId] = balance;
@@ -368,7 +379,7 @@ class WalletProvider extends ChangeNotifier {
 
   Future<void> deleteWallet(int walletId) async {
     _walletRepository.deleteWallet(walletId);
-    _walletItemList = await _walletRepository.getWalletItemList();
+    _walletItemList = await _fetchWalletListFromDB();
     _utxoRepository.deleteAllUtxoTag(walletId);
     _saveWalletCount(_walletItemList.length);
     notifyListeners();
