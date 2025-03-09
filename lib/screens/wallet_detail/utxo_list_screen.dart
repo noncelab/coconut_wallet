@@ -10,6 +10,7 @@ import 'package:coconut_wallet/widgets/body/utxo_list_body.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
 import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
+import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -123,10 +124,13 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                           ? 1
                           : viewModel.utxoList.length,
                       slivers: [
+                        if (viewModel.isSyncing)
+                          const SliverToBoxAdapter(child: LoadingIndicator()),
                         CupertinoSliverRefreshControl(
                           onRefresh: () async {
-                            // TODO:
-                            // _isPullToRefreshing = true;
+                            _isPullToRefreshing = true;
+                            viewModel.refetchFromDB();
+                            _isPullToRefreshing = false;
                           },
                         ),
                         SliverToBoxAdapter(child: _buildHeader(viewModel)),

@@ -104,6 +104,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   void _setReceiveAddress() {
     _receiveAddress = _walletProvider.getReceiveAddress(_walletId);
+    Logger.log('--> 리시브주소: ${_receiveAddress.address}');
   }
 
   Future<void> requestTestBitcoin(String address, double requestAmount,
@@ -136,8 +137,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   /// Faucet methods
   void showFaucetTooltip() async {
     final faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-    // TODO:balance 제거됨
-    //if (_walletListBaseItem!.balance == 0 && faucetHistory.count < 3) {
     if (faucetHistory.count < 3) {
       _faucetTooltipVisible = true;
     }
@@ -201,13 +200,14 @@ class WalletDetailViewModel extends ChangeNotifier {
   // balance, transaction만 고려
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
     Logger.log('--> 지갑$_walletId 업데이트 체크');
+    // balance
     if (_prevWalletUpdateInfo.balance != UpdateStatus.completed &&
         updateInfo.balance == UpdateStatus.completed) {
       _balance = _getBalance();
       notifyListeners();
       Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.');
     }
-
+    // transaction
     if (_prevWalletUpdateInfo.transaction != UpdateStatus.completed &&
         updateInfo.transaction == UpdateStatus.completed) {
       _txProvider.initTxList(_walletId);
@@ -234,8 +234,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   void dispose() {
     _walletProvider.removeWalletUpdateListener(
         _walletId, _onWalletUpdateInfoChanged);
-
-    // 반드시 super.dispose() 호출
     super.dispose();
   }
 }

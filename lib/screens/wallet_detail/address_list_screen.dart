@@ -72,7 +72,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
               ? viewModel.receivingAddressList
               : viewModel.changeAddressList;
 
-          Logger.log('--> 주소: ${addressList![0].address}');
           return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, _) {

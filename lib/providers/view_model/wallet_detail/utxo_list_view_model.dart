@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
@@ -17,6 +19,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late final UpbitConnectModel _upbitConnectModel;
   late final WalletListItemBase _walletListBaseItem;
   late final int _walletId;
+  late UpdateStatus _prevUpdateStatus;
 
   List<UtxoState> _utxoList = [];
 
@@ -35,6 +38,8 @@ class UtxoListViewModel extends ChangeNotifier {
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     _initUtxoTags();
+    _prevUpdateStatus = _walletProvider.getWalletUpdateInfo(_walletId).utxo;
+    _addChangeListener();
   }
 
   int get balance =>
@@ -57,6 +62,26 @@ class UtxoListViewModel extends ChangeNotifier {
   String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
 
   WalletType get walletType => _walletListBaseItem.walletType;
+
+  bool get isSyncing =>
+      _prevUpdateStatus == UpdateStatus.waiting ||
+      _prevUpdateStatus == UpdateStatus.syncing;
+
+  void _addChangeListener() {
+    _walletProvider.addWalletUpdateListener(
+        _walletId, _onWalletUpdateInfoChanged);
+  }
+
+  void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
+    Logger.log('--> 지갑$_walletId 업데이트 체크 (UTXO)');
+    if (_prevUpdateStatus != updateInfo.utxo &&
+        updateInfo.utxo == UpdateStatus.completed) {
+      _getUtxoAndTagList();
+      notifyListeners();
+    }
+
+    _prevUpdateStatus = updateInfo.utxo;
+  }
 
   void resetUtxoTagsUpdateState() {
     _tagProvider.resetUtxoTagsUpdateState();
@@ -103,7 +128,10 @@ class UtxoListViewModel extends ChangeNotifier {
     }
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
     _isUtxoListLoadComplete = true;
+  }
 
+  void refetchFromDB() {
+    _getUtxoAndTagList();
     notifyListeners();
   }
 
@@ -119,5 +147,12 @@ class UtxoListViewModel extends ChangeNotifier {
     }
     _isUtxoListLoadComplete = true;
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
+  }
+
+  @override
+  void dispose() {
+    _walletProvider.removeWalletUpdateListener(
+        _walletId, _onWalletUpdateInfoChanged);
+    super.dispose();
   }
 }
