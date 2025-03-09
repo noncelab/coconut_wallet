@@ -1269,7 +1269,9 @@ class RealmUtxo extends _RealmUtxo
     int index,
     String derivationPath,
     int blockHeight,
-  ) {
+    String status, {
+    String? spentByTxHash,
+  }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'walletId', walletId);
     RealmObjectBase.set(this, 'address', address);
@@ -1279,6 +1281,8 @@ class RealmUtxo extends _RealmUtxo
     RealmObjectBase.set(this, 'index', index);
     RealmObjectBase.set(this, 'derivationPath', derivationPath);
     RealmObjectBase.set(this, 'blockHeight', blockHeight);
+    RealmObjectBase.set(this, 'status', status);
+    RealmObjectBase.set(this, 'spentByTxHash', spentByTxHash);
   }
 
   RealmUtxo._();
@@ -1335,6 +1339,18 @@ class RealmUtxo extends _RealmUtxo
   set blockHeight(int value) => RealmObjectBase.set(this, 'blockHeight', value);
 
   @override
+  String get status => RealmObjectBase.get<String>(this, 'status') as String;
+  @override
+  set status(String value) => RealmObjectBase.set(this, 'status', value);
+
+  @override
+  String? get spentByTxHash =>
+      RealmObjectBase.get<String>(this, 'spentByTxHash') as String?;
+  @override
+  set spentByTxHash(String? value) =>
+      RealmObjectBase.set(this, 'spentByTxHash', value);
+
+  @override
   Stream<RealmObjectChanges<RealmUtxo>> get changes =>
       RealmObjectBase.getChanges<RealmUtxo>(this);
 
@@ -1356,6 +1372,8 @@ class RealmUtxo extends _RealmUtxo
       'index': index.toEJson(),
       'derivationPath': derivationPath.toEJson(),
       'blockHeight': blockHeight.toEJson(),
+      'status': status.toEJson(),
+      'spentByTxHash': spentByTxHash.toEJson(),
     };
   }
 
@@ -1373,6 +1391,7 @@ class RealmUtxo extends _RealmUtxo
         'index': EJsonValue index,
         'derivationPath': EJsonValue derivationPath,
         'blockHeight': EJsonValue blockHeight,
+        'status': EJsonValue status,
       } =>
         RealmUtxo(
           fromEJson(id),
@@ -1384,6 +1403,8 @@ class RealmUtxo extends _RealmUtxo
           fromEJson(index),
           fromEJson(derivationPath),
           fromEJson(blockHeight),
+          fromEJson(status),
+          spentByTxHash: fromEJson(ejson['spentByTxHash']),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -1406,6 +1427,9 @@ class RealmUtxo extends _RealmUtxo
       SchemaProperty('index', RealmPropertyType.int),
       SchemaProperty('derivationPath', RealmPropertyType.string),
       SchemaProperty('blockHeight', RealmPropertyType.int),
+      SchemaProperty('status', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('spentByTxHash', RealmPropertyType.string, optional: true),
     ]);
   }();
 

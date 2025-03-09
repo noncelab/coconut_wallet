@@ -152,41 +152,6 @@ class WalletDetailStickyHeader extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: MyColors.black,
-                            border: Border.all(
-                                color: MyColors.transparentWhite_50,
-                                width: 0.5),
-                            borderRadius: BorderRadius.circular(
-                              16,
-                            ),
-                          ),
-                          child: Text(
-                            t.tx_list,
-                            // selectedListType == WalletDetailTabType.transaction
-                            // ? '거래 내역'
-                            // : 'UTXO 목록', // TODO: 선택된 리스트 대입
-                            style: Styles.caption2.merge(
-                              const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: MyColors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ],

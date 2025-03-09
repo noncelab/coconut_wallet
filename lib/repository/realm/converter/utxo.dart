@@ -24,6 +24,8 @@ RealmUtxo mapUtxoToRealmUtxo(int walletId, UtxoState utxo) {
     utxo.index,
     utxo.derivationPath,
     utxo.blockHeight,
+    utxoStatusToString(utxo.status),
+    spentByTxHash: utxo.spentByTxHash,
   );
 }
 
@@ -35,9 +37,35 @@ UtxoState mapRealmToUtxoState(RealmUtxo utxo) {
     blockHeight: utxo.blockHeight,
     amount: utxo.amount,
     to: utxo.address,
+    status: stringToUtxoStatus(utxo.status),
+    spentByTxHash: utxo.spentByTxHash,
   );
 
   utxoState.updateTimestamp(utxo.timestamp);
 
   return utxoState;
+}
+
+String utxoStatusToString(UtxoStatus status) {
+  switch (status) {
+    case UtxoStatus.unspent:
+      return 'unspent';
+    case UtxoStatus.outgoing:
+      return 'outgoing';
+    case UtxoStatus.incoming:
+      return 'incoming';
+  }
+}
+
+UtxoStatus stringToUtxoStatus(String status) {
+  switch (status) {
+    case 'unspent':
+      return UtxoStatus.unspent;
+    case 'outgoing':
+      return UtxoStatus.outgoing;
+    case 'incoming':
+      return UtxoStatus.incoming;
+    default:
+      return UtxoStatus.unspent; // 기본값
+  }
 }

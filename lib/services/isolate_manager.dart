@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/isolate/isolate_connector_data.dart';
 import 'package:coconut_wallet/services/model/isolate/isolate_manager_base.dart';
-import 'package:coconut_wallet/services/network/node_client.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 class IsolateManager implements IsolateManagerBase {
@@ -21,10 +21,10 @@ class IsolateManager implements IsolateManagerBase {
 
   @override
   Future<void> initialize(
-      NodeClientFactory factory, String host, int port, bool ssl) async {
+      ElectrumService electrumService, String host, int port, bool ssl) async {
     try {
-      final data =
-          IsolateConnectorData(_receivePort.sendPort, factory, host, port, ssl);
+      final data = IsolateConnectorData(
+          _receivePort.sendPort, electrumService, host, port, ssl);
       _isolate = await Isolate.spawn<IsolateConnectorData>(_isolateEntry, data);
 
       _receivePort.listen(
@@ -94,8 +94,7 @@ class IsolateManager implements IsolateManagerBase {
     final port = ReceivePort();
     data.sendPort.send(port.sendPort);
 
-    final nodeClient =
-        await data.factory.create(data.host, data.port, ssl: data.ssl);
+    await data.electrumService.connect(data.host, data.port, ssl: data.ssl);
 
     port.listen((message) async {
       if (message is List && message.length == 3) {
