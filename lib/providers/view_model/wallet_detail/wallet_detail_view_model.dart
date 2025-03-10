@@ -2,7 +2,6 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
@@ -48,9 +47,15 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   bool _isRequesting = false;
 
+  // balance 애니메이션을 위한 이전 잔액을 담는 변수
+  late int _prevBalance;
+
   // fixme
-  int get balance =>
-      _walletProvider.getWalletBalance(_walletListBaseItem!.id).total;
+  int get balance => _walletProvider
+      .getWalletBalance(_walletListBaseItem!.id)
+      .confirmed; // total금액에서 confirmed된 금액만 보여주도록 변경
+
+  int get prevBalance => _prevBalance;
 
   WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
       this._connectProvider, this._upbitConnectModel) {
@@ -59,6 +64,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
 
+    _prevBalance = balance;
+    debugPrint('prev :: $_prevBalance');
     _prevTxCount = walletBaseItem.txCount;
     _prevIsLatestTxBlockHeightZero = walletBaseItem.isLatestTxBlockHeightZero;
     _walletType = walletBaseItem.walletType;

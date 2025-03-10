@@ -36,18 +36,6 @@ abstract class WalletListItemBase {
       this.receiveUsedIndex = -1,
       this.changeUsedIndex = -1});
 
-  // TODO: walletFeature
-  // dynamic get walletFeature {
-  //   switch (walletType) {
-  //     case WalletType.singleSignature:
-  //       return walletBase as SingleSignatureWallet;
-  //     case WalletType.multiSignature:
-  //       return walletBase as MultisignatureWallet;
-  //     default:
-  //       throw StateError('wrong walletType: ${walletType.name}');
-  //   }
-  // }
-
   @override
   String toString() => 'Wallet($id) / type=$walletType / name=$name';
 }
