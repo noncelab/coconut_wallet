@@ -1580,14 +1580,16 @@ class RealmCpfpHistory extends _RealmCpfpHistory
   RealmCpfpHistory(
     int id,
     int walletId,
-    String transactionHash,
+    String parentTransactionHash,
+    String childTransactionHash,
     double originalFee,
     double newFee,
     DateTime timestamp,
   ) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'walletId', walletId);
-    RealmObjectBase.set(this, 'transactionHash', transactionHash);
+    RealmObjectBase.set(this, 'parentTransactionHash', parentTransactionHash);
+    RealmObjectBase.set(this, 'childTransactionHash', childTransactionHash);
     RealmObjectBase.set(this, 'originalFee', originalFee);
     RealmObjectBase.set(this, 'newFee', newFee);
     RealmObjectBase.set(this, 'timestamp', timestamp);
@@ -1606,11 +1608,18 @@ class RealmCpfpHistory extends _RealmCpfpHistory
   set walletId(int value) => RealmObjectBase.set(this, 'walletId', value);
 
   @override
-  String get transactionHash =>
-      RealmObjectBase.get<String>(this, 'transactionHash') as String;
+  String get parentTransactionHash =>
+      RealmObjectBase.get<String>(this, 'parentTransactionHash') as String;
   @override
-  set transactionHash(String value) =>
-      RealmObjectBase.set(this, 'transactionHash', value);
+  set parentTransactionHash(String value) =>
+      RealmObjectBase.set(this, 'parentTransactionHash', value);
+
+  @override
+  String get childTransactionHash =>
+      RealmObjectBase.get<String>(this, 'childTransactionHash') as String;
+  @override
+  set childTransactionHash(String value) =>
+      RealmObjectBase.set(this, 'childTransactionHash', value);
 
   @override
   double get originalFee =>
@@ -1648,7 +1657,8 @@ class RealmCpfpHistory extends _RealmCpfpHistory
     return <String, dynamic>{
       'id': id.toEJson(),
       'walletId': walletId.toEJson(),
-      'transactionHash': transactionHash.toEJson(),
+      'parentTransactionHash': parentTransactionHash.toEJson(),
+      'childTransactionHash': childTransactionHash.toEJson(),
       'originalFee': originalFee.toEJson(),
       'newFee': newFee.toEJson(),
       'timestamp': timestamp.toEJson(),
@@ -1662,7 +1672,8 @@ class RealmCpfpHistory extends _RealmCpfpHistory
       {
         'id': EJsonValue id,
         'walletId': EJsonValue walletId,
-        'transactionHash': EJsonValue transactionHash,
+        'parentTransactionHash': EJsonValue parentTransactionHash,
+        'childTransactionHash': EJsonValue childTransactionHash,
         'originalFee': EJsonValue originalFee,
         'newFee': EJsonValue newFee,
         'timestamp': EJsonValue timestamp,
@@ -1670,7 +1681,8 @@ class RealmCpfpHistory extends _RealmCpfpHistory
         RealmCpfpHistory(
           fromEJson(id),
           fromEJson(walletId),
-          fromEJson(transactionHash),
+          fromEJson(parentTransactionHash),
+          fromEJson(childTransactionHash),
           fromEJson(originalFee),
           fromEJson(newFee),
           fromEJson(timestamp),
@@ -1687,7 +1699,9 @@ class RealmCpfpHistory extends _RealmCpfpHistory
       SchemaProperty('id', RealmPropertyType.int, primaryKey: true),
       SchemaProperty('walletId', RealmPropertyType.int,
           indexType: RealmIndexType.regular),
-      SchemaProperty('transactionHash', RealmPropertyType.string,
+      SchemaProperty('parentTransactionHash', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('childTransactionHash', RealmPropertyType.string,
           indexType: RealmIndexType.regular),
       SchemaProperty('originalFee', RealmPropertyType.double),
       SchemaProperty('newFee', RealmPropertyType.double),

@@ -170,7 +170,9 @@ class _RealmCpfpHistory {
   @Indexed()
   late int walletId;
   @Indexed()
-  late String transactionHash;
+  late String parentTransactionHash;
+  @Indexed()
+  late String childTransactionHash;
   late double originalFee;
   late double newFee;
   late DateTime timestamp;

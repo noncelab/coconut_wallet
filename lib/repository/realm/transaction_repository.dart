@@ -209,4 +209,61 @@ class TransactionRepository extends BaseRepository {
 
     return mapRealmTransactionToTransaction(realmTransaction);
   }
+
+  void addRbfHistory(int walletId, String originalTransactionHash,
+      String transactionHash, double feeRate, DateTime timestamp) {
+    final existingRbfHistoryList =
+        getRbfHistoryList(walletId, originalTransactionHash);
+
+    int order = existingRbfHistoryList.length + 1;
+
+    realm.write(() {
+      int id = Object.hash(walletId, originalTransactionHash, transactionHash);
+      realm.add(RealmRbfHistory(id, walletId, originalTransactionHash,
+          transactionHash, order, feeRate, timestamp));
+    });
+  }
+
+  void addCpfpHistory(
+      int walletId,
+      String parentTransactionHash,
+      String childTransactionHash,
+      double originalFee,
+      double newFee,
+      DateTime timestamp) {
+    realm.write(() {
+      int id =
+          Object.hash(walletId, parentTransactionHash, childTransactionHash);
+      realm.add(RealmCpfpHistory(id, walletId, parentTransactionHash,
+          childTransactionHash, originalFee, newFee, timestamp));
+    });
+  }
+
+  List<RealmRbfHistory> getRbfHistoryList(
+      int walletId, String transactionHash) {
+    final realmRbfHistory = realm.query<RealmRbfHistory>(
+      r'walletId == $0 AND transactionHash == $1',
+      [walletId, transactionHash],
+    ).firstOrNull;
+
+    if (realmRbfHistory == null) {
+      return [];
+    }
+
+    final realmRbfHistoryList = realm.query<RealmRbfHistory>(
+      r'walletId == $0 AND originalTransactionHash == $1 SORT(order ASC)',
+      [walletId, realmRbfHistory.originalTransactionHash],
+    ).toList();
+
+    return realmRbfHistoryList;
+  }
+
+  RealmCpfpHistory? getCpfpHistory(int walletId, String transactionHash) {
+    final realmCpfpHistory = realm.query<RealmCpfpHistory>(
+      r'walletId == $0 AND (parentTransactionHash == $1 OR childTransactionHash == $1)',
+      [walletId, transactionHash],
+    ).firstOrNull;
+
+    return realmCpfpHistory;
+  }
 }
