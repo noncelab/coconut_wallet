@@ -117,7 +117,13 @@ class WalletProvider extends ChangeNotifier {
     _nodeProvider.addListener(_onNodeProviderStateUpdated);
     _isNodeProviderInitialized = _nodeProvider.isInitialized;
     _loadWalletListFromDB().then((_) {
-      _subscribeNodeProvider();
+      if (_walletItemList.isEmpty) {
+        _isSyncing = false;
+        _isAnyBalanceUpdating = false;
+        notifyListeners();
+      } else {
+        _subscribeNodeProvider();
+      }
     });
   }
 
@@ -229,7 +235,6 @@ class WalletProvider extends ChangeNotifier {
     }
 
     await _unsubscribeWalletsIfNeeded();
-
     _walletSubscriptionState = WalletSubscriptionState.syncing;
     notifyListeners();
 
