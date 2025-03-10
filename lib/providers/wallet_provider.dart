@@ -428,6 +428,7 @@ class WalletProvider extends ChangeNotifier {
   void _handleNetworkReconnected() {
     if (_walletSubscriptionState == WalletSubscriptionState.never ||
         _walletSubscriptionState == WalletSubscriptionState.failed) {
+      _nodeProvider.initialize();
       _subscribeNodeProvider();
     }
   }

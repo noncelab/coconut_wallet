@@ -152,4 +152,17 @@ class NodeStateManager {
       },
     );
   }
+
+  void addWalletCompletedAllStates(int walletId) {
+    final updateInfo = WalletUpdateInfo(walletId);
+
+    updateInfo.balance = UpdateStatus.completed;
+    updateInfo.transaction = UpdateStatus.completed;
+    updateInfo.utxo = UpdateStatus.completed;
+
+    setState(newUpdatedWallets: {
+      ..._state.registeredWallets,
+      walletId: updateInfo,
+    });
+  }
 }

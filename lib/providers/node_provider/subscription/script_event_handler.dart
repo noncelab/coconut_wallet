@@ -142,9 +142,6 @@ class ScriptEventHandler {
             .fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
       );
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
-
-      // 동기화 완료 state 업데이트
-      _stateManager.setState(newConnectionState: MainClientState.waiting);
     } catch (e) {
       Logger.error('Failed to handle batch script status change: $e');
       _stateManager.setState(newConnectionState: MainClientState.waiting);

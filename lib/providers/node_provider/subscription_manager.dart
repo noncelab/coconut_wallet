@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
@@ -49,7 +50,6 @@ class SubscriptionManager {
     _scriptSubscriber = ScriptSubscriber(
       _electrumService,
       _scriptStatusController,
-      _subscriptionRepository,
       _addressRepository,
     );
 
@@ -72,22 +72,48 @@ class SubscriptionManager {
   Future<Result<bool>> subscribeWallet(
       WalletListItemBase walletItem, WalletProvider walletProvider) async {
     try {
-      final result = await _scriptSubscriber.subscribeWallet(
+      final fetchedScriptStatuses = await _scriptSubscriber.subscribeWallet(
         walletItem,
         walletProvider,
       );
 
-      final changedScriptStatuses = result.scriptStatuses
-          .where((status) => status.status != null)
-          .toList();
-
-      if (changedScriptStatuses.isNotEmpty) {
-        await _scriptEventHandler.handleBatchScriptStatusChanged(
-          walletItem: walletItem,
-          scriptStatuses: changedScriptStatuses,
-          walletProvider: walletProvider,
-        );
+      // 사용 이력이 없는 지갑
+      if (fetchedScriptStatuses.isEmpty) {
+        _stateManager.addWalletCompletedAllStates(walletItem.id);
+        return Result.success(true);
       }
+
+      final existingScriptStatusMap =
+          _subscriptionRepository.getScriptStatusMap(
+        walletItem.id,
+      );
+
+      final updatedScriptStatuses = <ScriptStatus>[];
+
+      for (final status in fetchedScriptStatuses) {
+        final existingStatus = existingScriptStatusMap[status.scriptPubKey];
+
+        if (status.status != existingStatus?.status) {
+          updatedScriptStatuses.add(status);
+        }
+      }
+
+      // 변경 이력이 없는 지갑
+      if (updatedScriptStatuses.isEmpty) {
+        _stateManager.addWalletCompletedAllStates(walletItem.id);
+        return Result.success(true);
+      }
+
+      // 변경 이력이 있는 지갑에 대해서만 balance, transaction, utxo 업데이트
+      await _scriptEventHandler.handleBatchScriptStatusChanged(
+        walletItem: walletItem,
+        scriptStatuses: updatedScriptStatuses,
+        walletProvider: walletProvider,
+      );
+
+      // 변경된 ScriptStatus DB에 저장
+      _subscriptionRepository.batchUpdateScriptStatuses(
+          walletItem.id, updatedScriptStatuses, existingScriptStatusMap);
 
       return Result.success(true);
     } catch (e) {
