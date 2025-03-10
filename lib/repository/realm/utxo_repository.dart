@@ -218,7 +218,7 @@ class UtxoRepository extends BaseRepository {
     realm.write(() {
       for (final utxo in utxoToMark) {
         utxo.status = utxoStatusToString(UtxoStatus.incoming);
-        utxo.spentByTxHash = outputTxHash;
+        utxo.spentByTransactionHash = outputTxHash;
       }
     });
   }
@@ -231,7 +231,7 @@ class UtxoRepository extends BaseRepository {
 
     realm.write(() {
       utxoToMark.status = utxoStatusToString(UtxoStatus.outgoing);
-      utxoToMark.spentByTxHash = pendingTxHash;
+      utxoToMark.spentByTransactionHash = pendingTxHash;
     });
   }
 
@@ -243,7 +243,7 @@ class UtxoRepository extends BaseRepository {
     if (utxoToMark == null) return;
     realm.write(() {
       utxoToMark.status = utxoStatusToString(UtxoStatus.unspent);
-      utxoToMark.spentByTxHash = null;
+      utxoToMark.spentByTransactionHash = null;
     });
   }
 

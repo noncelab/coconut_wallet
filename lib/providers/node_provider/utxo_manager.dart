@@ -142,7 +142,7 @@ class UtxoManager {
         '---------------- utxoStateList: ${utxoStateList.length} ----------------');
     for (var utxo in utxoStateList) {
       Logger.log(
-          '${utxo.transactionHash.substring(0, 10)}:${utxo.index} - ${utxo.status} isRbfable: ${utxo.isRbfable} isCpfpable: ${utxo.isCpfpable} amount: ${utxo.amount} spentByTxHash: ${utxo.spentByTxHash?.substring(0, 10)}');
+          '${utxo.transactionHash.substring(0, 10)}:${utxo.index} - ${utxo.status} isRbfable: ${utxo.isRbfable} isCpfpable: ${utxo.isCpfpable} amount: ${utxo.amount} spentByTransactionHash: ${utxo.spentByTransactionHash?.substring(0, 10)}');
     }
     Logger.log('---------------- utxoStateList end ----------------');
   }

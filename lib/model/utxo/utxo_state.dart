@@ -15,7 +15,7 @@ class UtxoState extends Utxo {
   late DateTime timestamp;
   List<UtxoTag>? tags;
   UtxoStatus status = UtxoStatus.unspent;
-  String? spentByTxHash; // 이 UTXO를 사용한 트랜잭션 해시
+  String? spentByTransactionHash; // 이 UTXO를 사용한 트랜잭션 해시
 
   UtxoState({
     required String transactionHash,
@@ -26,7 +26,7 @@ class UtxoState extends Utxo {
     required this.to,
     this.tags,
     this.status = UtxoStatus.unspent,
-    this.spentByTxHash,
+    this.spentByTransactionHash,
   }) : super(transactionHash, index, amount, derivationPath);
 
   void updateTimestamp(DateTime timestamp) {
@@ -36,17 +36,17 @@ class UtxoState extends Utxo {
   // UTXO 상태를 업데이트하는 메서드
   void markAsOutgoing(String txHash) {
     status = UtxoStatus.outgoing;
-    spentByTxHash = txHash;
+    spentByTransactionHash = txHash;
   }
 
   void markAsIncoming() {
     status = UtxoStatus.incoming;
-    spentByTxHash = null;
+    spentByTransactionHash = null;
   }
 
   void markAsUnspent() {
     status = UtxoStatus.unspent;
-    spentByTxHash = null;
+    spentByTransactionHash = null;
   }
 
   bool get isRbfable => status == UtxoStatus.outgoing && blockHeight == 0;
