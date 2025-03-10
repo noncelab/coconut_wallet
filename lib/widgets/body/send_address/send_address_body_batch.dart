@@ -38,18 +38,15 @@ class _SendAddressBodyBatchState extends State<SendAddressBodyBatch> {
             return index != _recipients.length
                 ? AddressAndQuantityCard(
                     title: '받는 사람1', showAddressScanner: () {})
-                : Column(children: [
-                    CoconutUnderlinedButton(
-                      text: t.send_address_screen.add_recipient,
-                      onTap: () {
-                        throw 'imple';
-                      },
-                      textStyle: CoconutTypography.body3_12,
-                      brightness: Brightness.dark,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: Sizes.size36),
-                    ),
-                  ]);
+                : CoconutUnderlinedButton(
+                    text: t.send_address_screen.add_recipient,
+                    onTap: () {
+                      throw 'imple';
+                    },
+                    textStyle: CoconutTypography.body3_12,
+                    brightness: Brightness.dark,
+                    padding: const EdgeInsets.symmetric(vertical: Sizes.size36),
+                  );
           }, childCount: _recipients.length + 1)),
         ),
       ],

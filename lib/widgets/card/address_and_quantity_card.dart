@@ -43,6 +43,28 @@ class _AddressAndQuantityCardState extends State<AddressAndQuantityCard> {
     }
   }
 
+  Widget _buildCoconutTextField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required ValueChanged<String> onChanged,
+    Widget? suffix,
+    TextInputType? textInputType,
+  }) {
+    return CoconutTextField(
+      controller: controller,
+      focusNode: focusNode,
+      height: 52,
+      padding: const EdgeInsets.only(left: CoconutLayout.defaultPadding),
+      activeColor: CoconutColors.gray100,
+      cursorColor: CoconutColors.gray100,
+      placeholderColor: CoconutColors.gray600,
+      backgroundColor: CoconutColors.black,
+      textInputType: textInputType,
+      onChanged: onChanged,
+      suffix: suffix,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Logger.log('--> 글자: ${_addressController.value.text}');
@@ -76,12 +98,9 @@ class _AddressAndQuantityCardState extends State<AddressAndQuantityCard> {
             CoconutLayout.spacing_200h,
             Text(t.address, style: CoconutTypography.body3_12),
             CoconutLayout.spacing_200h,
-            CoconutTextField(
+            _buildCoconutTextField(
               controller: _addressController,
               focusNode: _addressFocusNode,
-              activeColor: CoconutColors.gray100,
-              cursorColor: CoconutColors.gray100,
-              placeholderColor: CoconutColors.gray600,
               onChanged: _onAddressChanged,
               suffix: IconButton(
                 iconSize: 14,
@@ -97,14 +116,10 @@ class _AddressAndQuantityCardState extends State<AddressAndQuantityCard> {
             CoconutLayout.spacing_200h,
             Text(t.amount, style: CoconutTypography.body3_12),
             CoconutLayout.spacing_200h,
-            CoconutTextField(
+            _buildCoconutTextField(
               controller: _quantityController,
               focusNode: _quantityFocusNode,
-              textInputType: TextInputType.number,
-              activeColor: CoconutColors.gray100,
-              cursorColor: CoconutColors.gray100,
-              placeholderColor: CoconutColors.gray600,
-              onChanged: _onAmountChanged,
+              onChanged: _onAddressChanged,
               suffix: _isAmountEmpty
                   ? null
                   : IconButton(
@@ -115,7 +130,7 @@ class _AddressAndQuantityCardState extends State<AddressAndQuantityCard> {
                       },
                       icon: SvgPicture.asset('assets/svg/text-field-clear.svg'),
                     ),
-            )
+            ),
           ],
         ),
       ]),

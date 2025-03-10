@@ -48,69 +48,76 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
       },
       child:
           Consumer<SendAddressViewModel>(builder: (context, viewModel, child) {
-        return Scaffold(
-            backgroundColor: MyColors.black,
-            appBar: CoconutAppBar.build(
-                title: t.send,
-                context: context,
-                actionButtonList: [
-                  IconButton(
-                    icon: SvgPicture.asset(
-                        _isBatchMode
-                            ? 'assets/svg/user.svg'
-                            : 'assets/svg/users-group.svg',
-                        width: 20,
-                        height: 20),
-                    onPressed: () {
-                      setState(() {
-                        _isBatchMode = !_isBatchMode;
-                      });
-                    },
-                    padding: null,
-                  ),
-                  IconButton(
-                    icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
-                        width: 20,
-                        height: 20,
-                        colorFilter: ColorFilter.mode(
+        return GestureDetector(
+          onTap: _isBatchMode
+              ? () {
+                  FocusScope.of(context).unfocus(); // 현재 포커스를 해제 (키보드 내리기)
+                }
+              : null,
+          child: Scaffold(
+              backgroundColor: MyColors.black,
+              appBar: CoconutAppBar.build(
+                  title: t.send,
+                  context: context,
+                  actionButtonList: [
+                    IconButton(
+                      icon: SvgPicture.asset(
                           _isBatchMode
-                              ? CoconutColors.gray800
-                              : CoconutColors.white,
-                          BlendMode.srcIn,
-                        )),
-                    onPressed: _isBatchMode
-                        ? null
-                        : () {
-                            if (controller != null) {
-                              controller!.flipCamera();
-                            }
-                          },
-                  ),
-                ],
-                onBackPressed: () {
-                  _stopCamera();
-                  controller = null;
-                  Navigator.of(context).pop();
-                }),
-            body: !_isBatchMode
-                ? SendAddressBody(
-                    qrKey: qrKey,
-                    onQRViewCreated: _onQRViewCreated,
-                    onPermissionSet: _onPermissionSet,
-                    address: viewModel.address,
-                    pasteAddress: _setClipboardAddressAsRecipient,
-                  )
-                : SendAddressBodyBatch(
-                    validateAddress: _viewModel.validateAddress,
-                    checkSendAvailable: (totalSendAmount) {
-                      throw 'implement';
-                    },
-                    onRecipientsConfirmed: (Map<String, int> recipients) {
-                      throw 'implement';
-                    },
-                    onReset: () {
-                      throw 'implement';
-                    }));
+                              ? 'assets/svg/user.svg'
+                              : 'assets/svg/users-group.svg',
+                          width: 20,
+                          height: 20),
+                      onPressed: () {
+                        setState(() {
+                          _isBatchMode = !_isBatchMode;
+                        });
+                      },
+                      padding: null,
+                    ),
+                    IconButton(
+                      icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
+                          width: 20,
+                          height: 20,
+                          colorFilter: ColorFilter.mode(
+                            _isBatchMode
+                                ? CoconutColors.gray800
+                                : CoconutColors.white,
+                            BlendMode.srcIn,
+                          )),
+                      onPressed: _isBatchMode
+                          ? null
+                          : () {
+                              if (controller != null) {
+                                controller!.flipCamera();
+                              }
+                            },
+                    ),
+                  ],
+                  onBackPressed: () {
+                    _stopCamera();
+                    controller = null;
+                    Navigator.of(context).pop();
+                  }),
+              body: !_isBatchMode
+                  ? SendAddressBody(
+                      qrKey: qrKey,
+                      onQRViewCreated: _onQRViewCreated,
+                      onPermissionSet: _onPermissionSet,
+                      address: viewModel.address,
+                      pasteAddress: _setClipboardAddressAsRecipient,
+                    )
+                  : SendAddressBodyBatch(
+                      validateAddress: _viewModel.validateAddress,
+                      checkSendAvailable: (totalSendAmount) {
+                        throw 'implement';
+                      },
+                      onRecipientsConfirmed: (Map<String, int> recipients) {
+                        throw 'implement';
+                      },
+                      onReset: () {
+                        throw 'implement';
+                      })),
+        );
       }),
     );
   }
