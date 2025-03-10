@@ -46,9 +46,6 @@ class WalletProvider extends ChangeNotifier {
   WalletSubscriptionState get walletSubscriptionState =>
       _walletSubscriptionState;
 
-  AppError? _walletInitError;
-  AppError? get walletInitError => _walletInitError;
-
   bool? _isNetworkOn;
 
   List<WalletListItemBase> _walletItemList = [];
@@ -240,12 +237,21 @@ class WalletProvider extends ChangeNotifier {
 
     Result<bool> result =
         await _nodeProvider.subscribeWallets(_walletItemList, this);
-    _walletSubscriptionState = result.isSuccess
-        ? WalletSubscriptionState.completed
-        : WalletSubscriptionState.failed;
+    if (result.isSuccess) {
+      _walletSubscriptionState = WalletSubscriptionState.completed;
+    } else {
+      _onFailedSubscription();
+    }
     notifyListeners();
 
     return _walletSubscriptionState;
+  }
+
+  // TODO: 실패 했을 때 사용자에게 알리는 장치가 없음
+  void _onFailedSubscription() {
+    _walletSubscriptionState = WalletSubscriptionState.failed;
+    _isSyncing = false;
+    _isAnyBalanceUpdating = false;
   }
 
   Future<void> _unsubscribeWalletsIfNeeded() async {
@@ -412,6 +418,8 @@ class WalletProvider extends ChangeNotifier {
     if (_isNetworkOn!) {
       _subscribeNodeProvider();
     } else {
+      _isSyncing = false;
+      _isAnyBalanceUpdating = false;
       _walletSubscriptionState = WalletSubscriptionState.failed;
       notifyListeners();
     }

@@ -47,8 +47,6 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
   bool get shouldShowLoadingIndicator => _walletProvider.isAnyBalanceUpdating;
-  String? get walletInitErrorMessage =>
-      _walletProvider.walletInitError?.message;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
 
