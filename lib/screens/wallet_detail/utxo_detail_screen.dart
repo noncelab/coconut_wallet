@@ -19,6 +19,7 @@ import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -352,10 +353,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SvgPicture.asset(
+          Lottie.asset(
             status == UtxoStatus.incoming
-                ? 'assets/svg/tx-receiving.svg'
-                : 'assets/svg/tx-sending.svg',
+                ? 'assets/lottie/arrow-down.json'
+                : 'assets/lottie/arrow-up.json',
             width: 20,
             height: 20,
           ),
