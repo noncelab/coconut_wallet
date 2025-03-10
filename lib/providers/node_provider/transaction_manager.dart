@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -11,6 +12,7 @@ import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -18,6 +20,7 @@ import 'package:coconut_wallet/services/model/response/fetch_transaction_respons
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 
 /// NodeProvider의 트랜잭션 관련 기능을 담당하는 매니저 클래스
 class TransactionManager {
@@ -25,12 +28,14 @@ class TransactionManager {
   final NodeStateManager _stateManager;
   final TransactionRepository _transactionRepository;
   final UtxoManager _utxoManager;
+  final UtxoRepository _utxoRepository;
 
   TransactionManager(
     this._electrumService,
     this._stateManager,
     this._transactionRepository,
     this._utxoManager,
+    this._utxoRepository,
   );
 
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
@@ -90,11 +95,29 @@ class TransactionManager {
     final txs = await fetchTransactions(
         txFetchResults.map((tx) => tx.transactionHash).toSet());
 
+    // RBF 및 CPFP 감지 결과를 저장할 맵
+    Map<String, _RbfInfo> rbfInfoMap = {};
+    Map<String, _CpfpInfo> cpfpInfoMap = {};
+
     // 각 트랜잭션에 대해 사용된 UTXO 상태 업데이트
     for (final tx in txs) {
       // 언컨펌 트랜잭션의 경우 새로 브로드캐스트된 트랜잭션이므로 사용된 UTXO 상태 업데이트
       if (unconfirmedTxHashes.contains(tx.transactionHash)) {
         _utxoManager.updateUtxoStatusToOutgoingByTransaction(walletItem.id, tx);
+
+        // RBF 감지 로직
+        final rbfInfo = await _detectRbfTransaction(walletItem.id, tx);
+        if (rbfInfo != null) {
+          rbfInfoMap[tx.transactionHash] = rbfInfo;
+          Logger.log('RBF transaction detected: ${tx.transactionHash}');
+        }
+
+        // CPFP 감지 로직
+        final cpfpInfo = await _detectCpfpTransaction(walletItem.id, tx);
+        if (cpfpInfo != null) {
+          cpfpInfoMap[tx.transactionHash] = cpfpInfo;
+          Logger.log('CPFP transaction detected: ${tx.transactionHash}');
+        }
       }
 
       // 컨펌 트랜잭션의 경우 사용된 UTXO 삭제
@@ -108,6 +131,23 @@ class TransactionManager {
         now: now);
 
     _transactionRepository.addAllTransactions(walletItem.id, txRecords);
+
+    // RBF/CPFP 내역 저장
+    if (rbfInfoMap.isNotEmpty || cpfpInfoMap.isNotEmpty) {
+      for (final txRecord in txRecords) {
+        // RBF 내역 저장
+        if (rbfInfoMap.containsKey(txRecord.transactionHash)) {
+          final rbfInfo = rbfInfoMap[txRecord.transactionHash]!;
+          await _saveRbfTransaction(walletItem.id, txRecord, rbfInfo);
+        }
+
+        // CPFP 내역 저장
+        if (cpfpInfoMap.containsKey(txRecord.transactionHash)) {
+          final cpfpInfo = cpfpInfoMap[txRecord.transactionHash]!;
+          await _saveCpfpTransaction(walletItem.id, txRecord, cpfpInfo);
+        }
+      }
+    }
 
     if (!inBatchProcess) {
       // Transaction 업데이트 완료 state 업데이트
@@ -422,6 +462,173 @@ class TransactionManager {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
     }
   }
+
+  /// RBF 트랜잭션을 감지합니다.
+  ///
+  /// RBF는 같은 UTXO를 소비하는 새로운 트랜잭션이 발생했을 때 감지됩니다.
+  /// 이 메서드는 새로운 트랜잭션이 기존의 outgoing 상태인 UTXO를 소비하는지 확인합니다.
+  Future<_RbfInfo?> _detectRbfTransaction(int walletId, Transaction tx) async {
+    // 이미 RBF 내역이 있는지 확인
+    final existingRbfHistory =
+        _transactionRepository.getRbfHistoryList(walletId, tx.transactionHash);
+    if (existingRbfHistory.isNotEmpty) {
+      return null; // 이미 RBF로 등록된 트랜잭션
+    }
+
+    // 트랜잭션의 입력이 outgoing 상태인 UTXO를 사용하는지 확인
+    bool isRbf = false;
+    String? spentTxHash; // 이 트랜잭션이 대체하는 직전 트랜잭션
+
+    for (final input in tx.inputs) {
+      // UTXO 매니저를 통해 해당 입력이 outgoing 상태인지 확인
+      final utxoId = makeUtxoId(input.transactionHash, input.index);
+      final utxo = _utxoRepository.getUtxoState(walletId, utxoId);
+
+      if (utxo != null &&
+          utxo.status == UtxoStatus.outgoing &&
+          utxo.spentByTransactionHash != null) {
+        isRbf = true;
+        spentTxHash = utxo.spentByTransactionHash;
+        break;
+      }
+    }
+
+    if (isRbf && spentTxHash != null) {
+      // 대체되는 트랜잭션의 RBF 내역 확인
+      final previousRbfHistory =
+          _transactionRepository.getRbfHistoryList(walletId, spentTxHash);
+
+      String originalTxHash;
+      if (previousRbfHistory.isNotEmpty) {
+        // 이미 RBF 내역이 있는 경우, 기존 originalTransactionHash 사용
+        originalTxHash = previousRbfHistory.first.originalTransactionHash;
+      } else {
+        // 첫 번째 RBF인 경우, 대체되는 트랜잭션이 originalTransactionHash
+        originalTxHash = spentTxHash;
+      }
+
+      // 수수료 계산을 위한 정보 수집
+      final prevTxs = await getPreviousTransactions(tx, []);
+
+      return _RbfInfo(
+        originalTransactionHash: originalTxHash,
+        spentTransactionHash: spentTxHash,
+        previousTransactions: prevTxs,
+      );
+    }
+
+    return null;
+  }
+
+  /// RBF 트랜잭션 내역을 저장합니다.
+  Future<bool> _saveRbfTransaction(
+      int walletId, TransactionRecord txRecord, _RbfInfo rbfInfo) async {
+    // 원본 트랜잭션 조회
+    final originalTx = _transactionRepository.getTransactionRecord(
+        walletId, rbfInfo.originalTransactionHash);
+
+    if (originalTx == null) {
+      Logger.error(
+          'Original transaction not found: ${rbfInfo.originalTransactionHash}');
+      return false;
+    }
+
+    // RBF 내역 저장
+    _transactionRepository.addRbfHistory(
+      walletId,
+      rbfInfo.originalTransactionHash,
+      txRecord.transactionHash,
+      txRecord.feeRate,
+      DateTime.now(),
+    );
+
+    return true;
+  }
+
+  /// CPFP 트랜잭션을 감지합니다.
+  ///
+  /// CPFP는 미확인 트랜잭션의 출력을 입력으로 사용하는 새로운 트랜잭션이 발생했을 때 감지됩니다.
+  Future<_CpfpInfo?> _detectCpfpTransaction(
+      int walletId, Transaction tx) async {
+    // 이미 CPFP 내역이 있는지 확인
+    final existingCpfpHistory =
+        _transactionRepository.getCpfpHistory(walletId, tx.transactionHash);
+    if (existingCpfpHistory != null) {
+      return null; // 이미 CPFP로 등록된 트랜잭션
+    }
+
+    // 트랜잭션의 입력이 미확인 트랜잭션의 출력을 사용하는지 확인
+    bool isCpfp = false;
+    String? parentTxHash;
+    double originalFee = 0.0;
+
+    for (final input in tx.inputs) {
+      // 입력으로 사용된 트랜잭션이 미확인 상태인지 확인
+      final parentTx = _transactionRepository.getTransactionRecord(
+          walletId, input.transactionHash);
+      if (parentTx != null && parentTx.blockHeight == 0) {
+        isCpfp = true;
+        parentTxHash = parentTx.transactionHash;
+        originalFee = parentTx.feeRate;
+        break;
+      }
+    }
+
+    if (isCpfp && parentTxHash != null) {
+      // 수수료 계산을 위한 정보 수집
+      final prevTxs = await getPreviousTransactions(tx, []);
+
+      return _CpfpInfo(
+        parentTransactionHash: parentTxHash,
+        originalFee: originalFee,
+        previousTransactions: prevTxs,
+      );
+    }
+
+    return null;
+  }
+
+  /// CPFP 트랜잭션 내역을 저장합니다.
+  Future<bool> _saveCpfpTransaction(
+      int walletId, TransactionRecord txRecord, _CpfpInfo cpfpInfo) async {
+    // CPFP 내역 저장
+    _transactionRepository.addCpfpHistory(
+      walletId,
+      cpfpInfo.parentTransactionHash,
+      txRecord.transactionHash,
+      cpfpInfo.originalFee,
+      txRecord.feeRate,
+      DateTime.now(),
+    );
+
+    return true;
+  }
+}
+
+/// RBF 트랜잭션 정보를 담는 클래스
+class _RbfInfo {
+  final String originalTransactionHash; // RBF 체인의 최초 트랜잭션
+  final String spentTransactionHash; // 이 트랜잭션이 대체하는 직전 트랜잭션
+  final List<Transaction> previousTransactions; // 이전 트랜잭션 목록
+
+  _RbfInfo({
+    required this.originalTransactionHash,
+    required this.spentTransactionHash,
+    required this.previousTransactions,
+  });
+}
+
+/// CPFP 트랜잭션 정보를 담는 클래스
+class _CpfpInfo {
+  final String parentTransactionHash; // 부모 트랜잭션
+  final double originalFee; // 원본 수수료율
+  final List<Transaction> previousTransactions; // 이전 트랜잭션 목록
+
+  _CpfpInfo({
+    required this.parentTransactionHash,
+    required this.originalFee,
+    required this.previousTransactions,
+  });
 }
 
 /// 트랜잭션 상세 정보를 담는 클래스
