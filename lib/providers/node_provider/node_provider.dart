@@ -71,7 +71,9 @@ class NodeProvider extends ChangeNotifier {
   }) : _isolateManager = isolateManager ?? IsolateManager() {
     _initCompleter = Completer<void>();
     _stateManager = NodeStateManager(() => notifyListeners());
-    _initialize(electrumService);
+    _initialize(electrumService).then((_) {
+      _isolateManager.initialize(_electrumService, host, port, ssl);
+    });
   }
 
   Future<void> _initialize(ElectrumService? electrumService) async {
@@ -85,7 +87,7 @@ class NodeProvider extends ChangeNotifier {
 
       _networkManager = NetworkManager(_electrumService);
       _balanceManager = BalanceManager(_electrumService, _stateManager,
-          _addressRepository, _walletRepository);
+          _addressRepository, _walletRepository, _isolateManager);
       _utxoManager =
           UtxoManager(_electrumService, _stateManager, _utxoRepository);
       _transactionManager = TransactionManager(_electrumService, _stateManager,

@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
 
 class AddressRepository extends BaseRepository {
   AddressRepository(super._realmManager);
@@ -282,5 +283,68 @@ class AddressRepository extends BaseRepository {
     });
 
     return Balance(confirmedDiff, unconfirmedDiff);
+  }
+
+  /// DTO 객체를 사용하여 다수의 주소 잔액을 일괄 업데이트하고 총 변화량을 반환합니다.
+  /// @param walletId 지갑 ID
+  /// @param updateDataList 업데이트할 DTO 객체 목록
+  /// @return 전체 잔액 변화량
+  Balance updateAddressBalanceBatch(
+      int walletId, List<AddressBalanceUpdateDto> updateDataList) {
+    if (updateDataList.isEmpty) {
+      return Balance(0, 0);
+    }
+
+    // 모든 주소 정보를 한 번에 쿼리
+    final realmAddresses = realm.query<RealmWalletAddress>(
+      'walletId == $walletId',
+    );
+
+    // 트랜잭션 외부에서 모든 계산 수행
+    List<AddressBalanceCalculationResult> calculationResults = [];
+    int totalConfirmedDiff = 0;
+    int totalUnconfirmedDiff = 0;
+
+    for (var dto in updateDataList) {
+      // 해당 주소 찾기
+      final realmAddress = realmAddresses.firstWhere(
+        (a) =>
+            a.index == dto.scriptStatus.index &&
+            a.isChange == dto.scriptStatus.isChange,
+        orElse: () => throw StateError(
+            '[updateAddressBalanceBatchWithDTO] Wallet address not found, walletId: $walletId, index: ${dto.scriptStatus.index}, isChange: ${dto.scriptStatus.isChange}'),
+      );
+
+      // 차이 계산
+      final confirmedDiff = dto.confirmed - realmAddress.confirmed;
+      final unconfirmedDiff = dto.unconfirmed - realmAddress.unconfirmed;
+
+      // 결과 저장
+      calculationResults.add(
+        AddressBalanceCalculationResult(
+          realmAddress: realmAddress,
+          confirmedDiff: confirmedDiff,
+          unconfirmedDiff: unconfirmedDiff,
+          newConfirmed: dto.confirmed,
+          newUnconfirmed: dto.unconfirmed,
+        ),
+      );
+
+      // 총 차이 누적
+      totalConfirmedDiff += confirmedDiff;
+      totalUnconfirmedDiff += unconfirmedDiff;
+    }
+
+    // 계산이 완료된 후 Realm 트랜잭션에서 실제 DB 업데이트만 수행
+    realm.write(() {
+      for (var result in calculationResults) {
+        final realmAddress = result.realmAddress;
+        realmAddress.confirmed = result.newConfirmed;
+        realmAddress.unconfirmed = result.newUnconfirmed;
+        realmAddress.total = result.newTotal;
+      }
+    });
+
+    return Balance(totalConfirmedDiff, totalUnconfirmedDiff);
   }
 }

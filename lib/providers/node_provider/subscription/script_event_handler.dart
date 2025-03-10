@@ -115,13 +115,7 @@ class ScriptEventHandler {
   }) async {
     try {
       // Balance 병렬 처리
-      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
-      await Future.wait(
-        scriptStatuses.map((status) => _balanceManager
-            .fetchScriptBalance(walletItem, status, inBatchProcess: true)),
-      );
-      _stateManager.addWalletCompletedState(
-          walletItem.id, UpdateElement.balance);
+      await _balanceManager.fetchScriptBalanceBatch(walletItem, scriptStatuses);
 
       // Transaction 병렬 처리
       _stateManager.addWalletSyncState(
