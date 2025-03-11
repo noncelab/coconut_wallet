@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -11,9 +12,11 @@ class SendAddressViewModel extends ChangeNotifier {
   final noRegtestnetAddressMessage = t.errors.address_error.not_for_regtest;
 
   late final SendInfoProvider _sendInfoProvider;
+  late final WalletProvider _walletProvider;
   late bool? _isNetworkOn;
   String? _address;
-  SendAddressViewModel(this._sendInfoProvider, this._isNetworkOn);
+  SendAddressViewModel(
+      this._sendInfoProvider, this._isNetworkOn, this._walletProvider);
 
   String? get address => _address;
 
@@ -80,5 +83,16 @@ class SendAddressViewModel extends ChangeNotifier {
     if (!result) {
       throw invalidAddressMessage;
     }
+  }
+
+  /// --- batch transaction
+  bool isSendAmountValid(int walletId, int totalSendAmount) {
+    return _walletProvider.getWalletBalance(walletId).confirmed >
+        totalSendAmount;
+  }
+
+  void saveWalletIdAndBatchRecipients(int id, Map<String, int> recipients) {
+    _sendInfoProvider.setWalletId(id);
+    _sendInfoProvider.setRecipientsForBatch(recipients);
   }
 }

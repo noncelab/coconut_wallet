@@ -139,6 +139,8 @@ broadcasting_screen:
 send_address_screen:
   text: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
   add_recipient: "받는 사람 추가하기"
+  address_placeholder: "보낼 주소를 입력해 주세요"
+  amount_placeholder: "보낼 수량을 입력해 주세요"
 send_confirm_screen:
   title: "입력 정보 확인"
 signed_psbt_scanner_screen:
@@ -381,6 +383,8 @@ alert:
     title: "태그 삭제"
     description: "#$name를 정말로 삭제하시겠어요?\n"
     description_utxo_tag: "$name를 정말로 삭제하시겠어요?\n$count개 UTXO에 적용되어 있어요."
+  recipient_delete:
+    description: "입력하신 정보가 사라져요.\n그래도 지우시겠어요?"
   faucet:
     no_test_bitcoin: "수도꼭지 단수 상태예요. 잠시 후 다시 시도해 주세요."
     check_address: "올바른 주소인지 확인해 주세요"

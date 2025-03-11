@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_address_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
@@ -67,11 +68,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                               : 'assets/svg/users-group.svg',
                           width: 20,
                           height: 20),
-                      onPressed: () {
-                        setState(() {
-                          _isBatchMode = !_isBatchMode;
-                        });
-                      },
+                      onPressed: _changeIsBatchMode,
                       padding: null,
                     ),
                     IconButton(
@@ -108,15 +105,9 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                     )
                   : SendAddressBodyBatch(
                       validateAddress: _viewModel.validateAddress,
-                      checkSendAvailable: (totalSendAmount) {
-                        throw 'implement';
-                      },
-                      onRecipientsConfirmed: (Map<String, int> recipients) {
-                        throw 'implement';
-                      },
-                      onReset: () {
-                        throw 'implement';
-                      })),
+                      checkSendAvailable: (int totalSendAmount) => viewModel
+                          .isSendAmountValid(widget.id, totalSendAmount),
+                      onRecipientsConfirmed: _onRecipientsConfirmed)),
         );
       }),
     );
@@ -133,7 +124,8 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     super.initState();
     _viewModel = SendAddressViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
+        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+        Provider.of<WalletProvider>(context, listen: false));
     _viewModel.clearSendInfoProvider();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -224,6 +216,24 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
       } catch (e) {
         Logger.log('Failed to pause camera: $e');
       }
+    }
+  }
+
+  /// --- batch transaction
+  void _changeIsBatchMode() {
+    _viewModel.clearSendInfoProvider();
+    setState(() {
+      _isBatchMode = !_isBatchMode;
+    });
+  }
+
+  void _onRecipientsConfirmed(Map<String, int> recipients) {
+    _viewModel.saveWalletIdAndBatchRecipients(widget.id, recipients);
+    if (_viewModel.isNetworkOn) {
+      Navigator.pushNamed(context, "/fee-selection");
+    } else {
+      CustomToast.showWarningToast(
+          context: context, text: ErrorCodes.networkError.message);
     }
   }
 }

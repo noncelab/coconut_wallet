@@ -312,6 +312,8 @@ class TranslationsSendAddressScreenKr {
   // Translations
   String get text => 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
   String get add_recipient => '받는 사람 추가하기';
+  String get address_placeholder => '보낼 주소를 입력해 주세요';
+  String get amount_placeholder => '보낼 수량을 입력해 주세요';
 }
 
 // Path: send_confirm_screen
@@ -732,6 +734,8 @@ class TranslationsAlertKr {
       TranslationsAlertTxDetailKr.internal(_root);
   late final TranslationsAlertTagDeleteKr tag_delete =
       TranslationsAlertTagDeleteKr.internal(_root);
+  late final TranslationsAlertRecipientDeleteKr recipient_delete =
+      TranslationsAlertRecipientDeleteKr.internal(_root);
   late final TranslationsAlertFaucetKr faucet =
       TranslationsAlertFaucetKr.internal(_root);
 }
@@ -938,6 +942,16 @@ class TranslationsAlertTagDeleteKr {
   String description({required Object name}) => '#${name}를 정말로 삭제하시겠어요?\n';
   String description_utxo_tag({required Object name, required Object count}) =>
       '${name}를 정말로 삭제하시겠어요?\n${count}개 UTXO에 적용되어 있어요.';
+}
+
+// Path: alert.recipient_delete
+class TranslationsAlertRecipientDeleteKr {
+  TranslationsAlertRecipientDeleteKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get description => '입력하신 정보가 사라져요.\n그래도 지우시겠어요?';
 }
 
 // Path: alert.faucet
@@ -1181,6 +1195,10 @@ extension on Translations {
         return 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
       case 'send_address_screen.add_recipient':
         return '받는 사람 추가하기';
+      case 'send_address_screen.address_placeholder':
+        return '보낼 주소를 입력해 주세요';
+      case 'send_address_screen.amount_placeholder':
+        return '보낼 수량을 입력해 주세요';
       case 'send_confirm_screen.title':
         return '입력 정보 확인';
       case 'signed_psbt_scanner_screen.title':
@@ -1557,6 +1575,8 @@ extension on Translations {
       case 'alert.tag_delete.description_utxo_tag':
         return ({required Object name, required Object count}) =>
             '${name}를 정말로 삭제하시겠어요?\n${count}개 UTXO에 적용되어 있어요.';
+      case 'alert.recipient_delete.description':
+        return '입력하신 정보가 사라져요.\n그래도 지우시겠어요?';
       case 'alert.faucet.no_test_bitcoin':
         return '수도꼭지 단수 상태예요. 잠시 후 다시 시도해 주세요.';
       case 'alert.faucet.check_address':
