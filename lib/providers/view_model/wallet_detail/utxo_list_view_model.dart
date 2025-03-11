@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -10,6 +11,7 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
@@ -21,6 +23,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late final WalletListItemBase _walletListBaseItem;
   late final int _walletId;
   // WalletInitState _prevWalletInitState = WalletInitState.never;
+  late UpdateStatus _prevUpdateStatus;
 
   List<UtxoState> _utxoList = [];
 
@@ -41,6 +44,8 @@ class UtxoListViewModel extends ChangeNotifier {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     // _prevWalletInitState = _walletProvider.walletInitState;
     _initUtxoTags();
+    _prevUpdateStatus = _walletProvider.getWalletUpdateInfo(_walletId).utxo;
+    _addChangeListener();
   }
 
   int get balance =>
@@ -62,12 +67,26 @@ class UtxoListViewModel extends ChangeNotifier {
   // 태그 목록 변경을 감지하기 위한 key
   String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
 
-  WalletInitState get walletInitState => _walletProvider.walletInitState;
-
   WalletType get walletType => _walletListBaseItem.walletType;
 
-  void refreshWalletProvider(int id) {
-    _walletProvider.initWallet(targetId: id);
+  bool get isSyncing =>
+      _prevUpdateStatus == UpdateStatus.waiting ||
+      _prevUpdateStatus == UpdateStatus.syncing;
+
+  void _addChangeListener() {
+    _walletProvider.addWalletUpdateListener(
+        _walletId, _onWalletUpdateInfoChanged);
+  }
+
+  void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
+    Logger.log('--> 지갑$_walletId 업데이트 체크 (UTXO)');
+    if (_prevUpdateStatus != updateInfo.utxo &&
+        updateInfo.utxo == UpdateStatus.completed) {
+      _getUtxoAndTagList();
+      notifyListeners();
+    }
+
+    _prevUpdateStatus = updateInfo.utxo;
   }
 
   void resetUtxoTagsUpdateState() {
@@ -119,7 +138,10 @@ class UtxoListViewModel extends ChangeNotifier {
     }
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
     _isUtxoListLoadComplete = true;
+  }
 
+  void refetchFromDB() {
+    _getUtxoAndTagList();
     notifyListeners();
   }
 
@@ -144,5 +166,12 @@ class UtxoListViewModel extends ChangeNotifier {
     if (tx == null) return [];
 
     return DateTimeUtil.formatTimeStamp(tx.timestamp!);
+  }
+
+  @override
+  void dispose() {
+    _walletProvider.removeWalletUpdateListener(
+        _walletId, _onWalletUpdateInfoChanged);
+    super.dispose();
   }
 }

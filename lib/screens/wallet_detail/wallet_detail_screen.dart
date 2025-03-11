@@ -4,7 +4,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -15,6 +14,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/body/wallet_detail_body.dart';
+import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
@@ -87,7 +87,53 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   Scaffold(
                     backgroundColor: MyColors.black,
                     appBar: _buildAppBar(context, viewModel),
-                    body: _buildBody(context, viewModel),
+                    body: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      controller: _scrollController,
+                      slivers: [
+                        if (viewModel.isWalletSyncing)
+                          // FIXME: 임시 로딩 위젯
+                          const SliverToBoxAdapter(child: LoadingIndicator()),
+                        CupertinoSliverRefreshControl(
+                          onRefresh: () async => _onRefresh(
+                              viewModel,
+                              viewModel.balance,
+                              viewModel.isNetworkOn ?? false),
+                        ),
+                        SliverToBoxAdapter(
+                          child: WalletDetailHeader(
+                            key: _headerWidgetKey,
+                            balance: viewModel.balance,
+                            currentUnit: _currentUnit,
+                            btcPriceInKrw: viewModel.bitcoinPriceKrw,
+                            onPressedUnitToggle: _toggleUnit,
+                            onTapReceive: _onTapReceive,
+                            onTapSend: _onTapSend,
+                          ),
+                        ),
+                        // todo: 지갑 업데이트 상태 표기
+                        SliverToBoxAdapter(
+                            child: Padding(
+                                key: _tabWidgetKey,
+                                padding: const EdgeInsets.only(
+                                  left: 16.0,
+                                  right: 16.0,
+                                  bottom: 12.0,
+                                  top: 30,
+                                ),
+                                child: Text(t.tx_list, style: Styles.h3))),
+                        SliverSafeArea(
+                          minimum: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: WalletDetailBody(
+                            txSliverListKey: _txSliverListKey,
+                            walletId: widget.id,
+                            walletType: viewModel.walletType,
+                            currentUnit: _currentUnit,
+                            txList: viewModel.txList,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   _buildFaucetTooltip(viewModel),
                   _buildStickyHeader(viewModel),
@@ -113,7 +159,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   PreferredSizeWidget _buildAppBar(
       BuildContext context, WalletDetailViewModel viewModel) {
-    final state = viewModel.walletInitState;
     final balance = viewModel.balance;
     final isNetworkOn = viewModel.isNetworkOn;
 
@@ -128,7 +173,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       actionButtonList: [
         IconButton(
           onPressed: () =>
-              _onFaucetIconPressed(viewModel, state, balance, isNetworkOn),
+              _onFaucetIconPressed(viewModel, balance, isNetworkOn),
           icon:
               SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
         ),
@@ -149,63 +194,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     });
   }
 
-  Widget _buildBody(BuildContext context, WalletDetailViewModel viewModel) {
-    final state = viewModel.walletInitState;
-    final balance = viewModel.balance;
-    final isNetworkOn = viewModel.isNetworkOn; // todo : null인 경우가 있어??
-
-    return CustomScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      controller: _scrollController,
-      slivers: [
-        CupertinoSliverRefreshControl(
-          onRefresh: () async =>
-              _onRefresh(viewModel, state, balance, isNetworkOn ?? true),
-        ),
-        SliverToBoxAdapter(
-          child: WalletDetailHeader(
-            key: _headerWidgetKey,
-            walletId: widget.id,
-            address: viewModel.walletAddress,
-            derivationPath: viewModel.derivationPath,
-            balance: balance,
-            currentUnit: _currentUnit,
-            btcPriceInKrw: viewModel.bitcoinPriceKrw,
-            onPressedUnitToggle: _toggleUnit,
-            checkPrerequisites: () =>
-                _checkStateAndShowToast(state, balance, isNetworkOn),
-          ),
-        ),
-        // todo: 지갑 업데이트 상태 표기
-        SliverToBoxAdapter(
-            child: Padding(
-                key: _tabWidgetKey,
-                padding: const EdgeInsets.only(
-                  left: 16.0,
-                  right: 16.0,
-                  bottom: 12.0,
-                  top: 30,
-                ),
-                child: Text(t.tx_list, style: Styles.h3))),
-        SliverSafeArea(
-          minimum: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: WalletDetailBody(
-            txSliverListKey: _txSliverListKey,
-            walletId: widget.id,
-            walletType: viewModel.walletType,
-            currentUnit: _currentUnit,
-            txList: viewModel.txList,
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _onRefresh(WalletDetailViewModel viewModel, WalletInitState state,
-      int balance, bool isNetworkOn) async {
+  void _onRefresh(
+      WalletDetailViewModel viewModel, int balance, bool isNetworkOn) async {
     _isPullToRefreshing = true;
     try {
-      if (!_checkStateAndShowToast(state, balance, isNetworkOn)) {
+      if (!_checkStateAndShowToast()) {
         return;
       }
       viewModel.refreshWallet();
@@ -225,10 +218,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     );
   }
 
-  void _onFaucetIconPressed(WalletDetailViewModel viewModel,
-      WalletInitState state, int balance, bool? isNetworkOn) async {
+  void _onFaucetIconPressed(
+      WalletDetailViewModel viewModel, int balance, bool? isNetworkOn) async {
     viewModel.removeFaucetTooltip();
-    if (!_checkStateAndShowToast(state, balance, isNetworkOn)) {
+    if (!_checkStateAndShowToast()) {
       return;
     }
     await CommonBottomSheets.showBottomSheet_50(
@@ -238,7 +231,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           // walletAddressBook: const [],
           walletData: {
             'wallet_id': viewModel.walletId,
-            'wallet_address': viewModel.walletAddress,
+            'wallet_address': viewModel.receiveAddress,
             'wallet_name': viewModel.walletName,
             'wallet_index': viewModel.receiveAddressIndex,
           },
@@ -251,10 +244,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               if (success) {
                 Navigator.pop(context);
                 vibrateLight();
-                Future.delayed(const Duration(seconds: 1), () {
-                  viewModel.walletProvider
-                      ?.initWallet(targetId: widget.id, syncOthers: false);
-                });
                 CustomToast.showToast(context: context, text: message);
               } else {
                 vibrateMedium();
@@ -268,34 +257,21 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   Widget _buildStickyHeader(WalletDetailViewModel viewModel) {
-    final state = viewModel.walletInitState;
     final balance = viewModel.balance;
-    final isNetworkOn = viewModel.isNetworkOn;
-
     return WalletDetailStickyHeader(
-      widgetKey: _stickyHeaderWidgetKey,
-      height: _appBarSize.height,
-      isVisible: _stickyHeaderVisible,
-      currentUnit: _currentUnit,
-      // TODO: receiveAddress
-      receiveAddress: WalletAddress('', '', 0, false, 0, 0, 0),
-      // receiveAddress: viewModel.walletListBaseItem!.walletBase
-      //     .getReceiveAddress(),
-      // TODO: walletStatus
-      // walletStatus: viewModel.getInitializedWalletStatus(),
-      // walletStatus: null,
-      balance: balance,
-      onTapReceive: (balance, address, path) {
-        _onTapReceiveOrSend(balance, state, isNetworkOn,
-            address: address, path: path);
-      },
-      onTapSend: (balance) {
-        _onTapReceiveOrSend(balance, state, isNetworkOn);
-      },
-      removePopup: () {
-        viewModel.removeFaucetTooltip();
-      },
-    );
+        widgetKey: _stickyHeaderWidgetKey,
+        height: _appBarSize.height,
+        isVisible: _stickyHeaderVisible,
+        currentUnit: _currentUnit,
+        balance: balance,
+        onTapReceive: () {
+          viewModel.removeFaucetTooltip();
+          _onTapReceive();
+        },
+        onTapSend: () {
+          viewModel.removeFaucetTooltip();
+          _onTapSend();
+        });
   }
 
   @override
@@ -357,48 +333,37 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     super.dispose();
   }
 
-  bool _checkStateAndShowToast(
-      WalletInitState state, int? balance, bool? isNetworkOn) {
-    if (isNetworkOn != true) {
+  bool _checkStateAndShowToast() {
+    if (_viewModel.isNetworkOn != true) {
       CustomToast.showWarningToast(
           context: context, text: ErrorCodes.networkError.message);
       return false;
     }
 
-    if (state == WalletInitState.processing) {
+    if (_viewModel.isWalletSyncing) {
       CustomToast.showToast(
           context: context, text: t.toast.fetching_onchain_data);
       return false;
     }
 
-    if (!_isPullToRefreshing) {
-      if (balance == null || state == WalletInitState.error) {
-        CustomToast.showWarningToast(
-            context: context, text: t.toast.wallet_detail_refresh);
-        return false;
-      }
-    }
-
     return true;
   }
 
-  void _onTapReceiveOrSend(
-      int? balance, WalletInitState state, bool? isNetworkOn,
-      {String? address, String? path}) {
-    if (!_checkStateAndShowToast(state, balance, isNetworkOn)) return;
-    if (address != null && path != null) {
-      CommonBottomSheets.showBottomSheet_90(
-        context: context,
-        child: ReceiveAddressBottomSheet(
-          id: widget.id,
-          address: address,
-          derivationPath: path,
-        ),
-      );
-    } else {
-      Navigator.pushNamed(context, '/send-address',
-          arguments: {'id': widget.id});
-    }
+  void _onTapReceive() {
+    CommonBottomSheets.showBottomSheet_90(
+      context: context,
+      child: ReceiveAddressBottomSheet(
+        id: widget.id,
+        address: _viewModel.receiveAddress,
+        derivationPath: _viewModel.derivationPath,
+      ),
+    );
+  }
+
+  void _onTapSend() {
+    if (!_checkStateAndShowToast()) return;
+
+    Navigator.pushNamed(context, '/send-address', arguments: {'id': widget.id});
   }
 
   void _toggleUnit() {

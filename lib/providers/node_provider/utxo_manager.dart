@@ -9,6 +9,7 @@ import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 
 /// NodeProvider의 UTXO 관련 기능을 담당하는 매니저 클래스
 class UtxoManager {
@@ -111,16 +112,38 @@ class UtxoManager {
     // 트랜잭션 입력을 순회하며 사용된 UTXO를 pending 상태로 변경
     for (var input in transaction.inputs) {
       // UTXO 소유 지갑 ID 찾기
-      final inputTxHash = input.transactionHash;
-      final inputIndex = input.index;
+      final utxoId = makeUtxoId(input.transactionHash, input.index);
 
       // UTXO를 pending 상태로 표시하고 RBF 관련 정보 저장
       _utxoRepository.markUtxoAsOutgoing(
         walletId,
-        inputTxHash,
-        inputIndex,
+        utxoId,
         transaction.transactionHash,
       );
     }
+  }
+
+// 디버깅용
+  void deleteUtxosByTransaction(
+    int walletId,
+    Transaction transaction,
+  ) {
+    final utxoIds = transaction.inputs
+        .map((input) => makeUtxoId(input.transactionHash, input.index))
+        .toList();
+
+    _utxoRepository.deleteUtxoList(walletId, utxoIds);
+  }
+
+  void printUtxoStateList(int walletId) {
+    List<UtxoState> utxoStateList = _utxoRepository.getUtxoStateList(walletId);
+
+    Logger.log(
+        '---------------- utxoStateList: ${utxoStateList.length} ----------------');
+    for (var utxo in utxoStateList) {
+      Logger.log(
+          '${utxo.transactionHash.substring(0, 10)}:${utxo.index} - ${utxo.status} isRbfable: ${utxo.isRbfable} isCpfpable: ${utxo.isCpfpable} amount: ${utxo.amount} spentByTxHash: ${utxo.spentByTxHash?.substring(0, 10)}');
+    }
+    Logger.log('---------------- utxoStateList end ----------------');
   }
 }

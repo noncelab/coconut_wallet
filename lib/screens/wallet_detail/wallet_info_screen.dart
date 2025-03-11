@@ -126,14 +126,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 label: t.view_all_addresses,
                                 showIcon: true,
                                 onPressed: () {
-                                  if (viewModel.walletInitState ==
-                                      WalletInitState.processing) {
-                                    CustomToast.showToast(
-                                      context: context,
-                                      text: t.toast.fetching_onchain_data,
-                                    );
-                                    return;
-                                  }
                                   _removeTooltip();
                                   Navigator.pushNamed(context, '/address-list',
                                       arguments: {'id': widget.id});
@@ -229,8 +221,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   ),
                                 ),
                                 onPressed: () {
-                                  if (viewModel.walletInitState ==
-                                      WalletInitState.processing) {
+                                  if (viewModel.isDbSyncing) {
                                     CustomToast.showToast(
                                       context: context,
                                       text: t.toast.fetching_onchain_data,

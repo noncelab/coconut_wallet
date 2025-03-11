@@ -83,9 +83,10 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   }
 
   void onTap(BuildContext context) {
+    // TODO: 보내기 완료 후 txlist에 트랜잭션 바로 볼 수 있도록 해야 함
     // 보내는 중 tx list 조회를 위한 조치
-    Provider.of<WalletProvider>(context, listen: false)
-        .initWallet(targetId: widget.id);
+    // Provider.of<WalletProvider>(context, listen: false)
+    //     .initWallet(targetId: widget.id);
     Future<dynamic>? showReviewScreenFuture =
         AppReviewService.showReviewScreenIfFirstSending(context,
             animationController: _animationController);

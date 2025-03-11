@@ -1,7 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -11,8 +10,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/body/utxo_list_body.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
+import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -127,21 +126,13 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                           ? 1
                           : viewModel.utxoList.length,
                       slivers: [
+                        if (viewModel.isSyncing)
+                          const SliverToBoxAdapter(child: LoadingIndicator()),
                         CupertinoSliverRefreshControl(
                           onRefresh: () async {
                             _isPullToRefreshing = true;
-                            try {
-                              if (!_checkStateAndShowToast(
-                                  viewModel.walletInitState,
-                                  viewModel.balance,
-                                  viewModel.isNetworkOn)) {
-                                return;
-                              }
-
-                              viewModel.fetchUtxoList();
-                            } finally {
-                              _isPullToRefreshing = false;
-                            }
+                            viewModel.refetchFromDB();
+                            _isPullToRefreshing = false;
                           },
                         ),
                         SliverToBoxAdapter(child: _buildHeader(viewModel)),
@@ -209,31 +200,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
             stickyHeaderDropdownRenderBox.localToGlobal(Offset.zero);
       }
     }
-  }
-
-  bool _checkStateAndShowToast(
-      WalletInitState state, int? balance, bool? isNetworkOn) {
-    if (isNetworkOn != true) {
-      CustomToast.showWarningToast(
-          context: context, text: ErrorCodes.networkError.message);
-      return false;
-    }
-
-    if (state == WalletInitState.processing) {
-      CustomToast.showToast(
-          context: context, text: t.toast.fetching_onchain_data);
-      return false;
-    }
-
-    if (!_isPullToRefreshing) {
-      if (balance == null || state == WalletInitState.error) {
-        CustomToast.showWarningToast(
-            context: context, text: t.toast.wallet_detail_refresh);
-        return false;
-      }
-    }
-
-    return true;
   }
 
   void _removeFilterDropdown() {

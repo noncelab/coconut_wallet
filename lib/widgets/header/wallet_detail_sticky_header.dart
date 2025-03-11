@@ -1,5 +1,4 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -11,26 +10,21 @@ class WalletDetailStickyHeader extends StatelessWidget {
   final bool isVisible;
   final Unit currentUnit;
   final int? balance;
-  final WalletAddress receiveAddress;
-  final Function(int?, String, String) onTapReceive;
-  final Function(int?) onTapSend;
-  final Function removePopup;
+  final Function() onTapReceive;
+  final Function() onTapSend;
+
   const WalletDetailStickyHeader({
     required this.widgetKey,
     required this.height,
     required this.isVisible,
     required this.currentUnit,
     required this.balance,
-    required this.receiveAddress,
     required this.onTapReceive,
     required this.onTapSend,
-    required this.removePopup,
   }) : super(key: widgetKey);
 
   @override
   Widget build(BuildContext context) {
-    final walletAddress = receiveAddress.address;
-    final derivationPath = receiveAddress.derivationPath;
     return Positioned(
       top: height,
       left: 0,
@@ -79,10 +73,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
                       ),
                     ),
                     CupertinoButton(
-                      onPressed: () {
-                        removePopup();
-                        onTapReceive(balance, walletAddress, derivationPath);
-                      },
+                      onPressed: onTapReceive,
                       borderRadius: BorderRadius.circular(8.0),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -109,10 +100,7 @@ class WalletDetailStickyHeader extends StatelessWidget {
                       width: 8,
                     ),
                     CupertinoButton(
-                      onPressed: () {
-                        removePopup();
-                        onTapSend(balance);
-                      },
+                      onPressed: onTapSend,
                       borderRadius: BorderRadius.circular(8.0),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
