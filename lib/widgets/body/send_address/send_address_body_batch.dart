@@ -12,7 +12,7 @@ import 'package:uuid/uuid.dart';
 class SendAddressBodyBatch extends StatefulWidget {
   final Future<void> Function(String recipient) validateAddress;
   final bool Function(int totalSendAmount) checkSendAvailable;
-  final void Function(Map<String, int> recipients) onRecipientsConfirmed;
+  final void Function(Map<String, double> recipients) onRecipientsConfirmed;
 
   const SendAddressBodyBatch(
       {super.key,
@@ -40,11 +40,11 @@ class _SendAddressBodyBatchState extends State<SendAddressBodyBatch> {
     // _recipients = [
     //   _getDefaultRecipientData()
     //     ..address = 'bcrt1qldnq90sqn6wz4kpd6u93f3uxt3gy7ehw7f4tw8'
-    //     ..amount = '0.1'
+    //     ..amount = '1.25031400'
     //     ..isAddressValid = true,
     //   _getDefaultRecipientData()
-    //     ..address = 'bcrt1qldnq90sqn6wz4kpd6u93f3uxt3gy7ehw7f4tw8'
-    //     ..amount = '0.1'
+    //     ..address = 'bcrt1qndytt26zecsx9ypp3wl8zd69jg0cl7kz0lfuhf'
+    //     ..amount = '1.25031500'
     //     ..isAddressValid = true
     // ];
   }
@@ -208,8 +208,7 @@ class _SendAddressBodyBatchState extends State<SendAddressBodyBatch> {
           context: context, text: t.errors.insufficient_balance);
     } else {
       widget.onRecipientsConfirmed(_recipients.fold({}, (result, recipient) {
-        result[recipient.address] =
-            UnitUtil.bitcoinToSatoshi(double.parse(recipient.amount));
+        result[recipient.address] = double.parse(recipient.amount);
         return result;
       }));
     }

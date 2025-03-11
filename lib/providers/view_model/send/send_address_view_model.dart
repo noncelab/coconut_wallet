@@ -91,7 +91,7 @@ class SendAddressViewModel extends ChangeNotifier {
         totalSendAmount;
   }
 
-  void saveWalletIdAndBatchRecipients(int id, Map<String, int> recipients) {
+  void saveWalletIdAndBatchRecipients(int id, Map<String, double> recipients) {
     _sendInfoProvider.setWalletId(id);
     _sendInfoProvider.setRecipientsForBatch(recipients);
   }

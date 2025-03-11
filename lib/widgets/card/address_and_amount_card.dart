@@ -187,7 +187,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
 
   void _onAmountChanged(String value) {
     if (value.isEmpty) {
-      _addressController.clear();
+      _amountController.clear();
     }
 
     widget.onAmountChanged(value);

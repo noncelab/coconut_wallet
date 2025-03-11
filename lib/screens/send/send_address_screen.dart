@@ -227,7 +227,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     });
   }
 
-  void _onRecipientsConfirmed(Map<String, int> recipients) {
+  void _onRecipientsConfirmed(Map<String, double> recipients) {
     _viewModel.saveWalletIdAndBatchRecipients(widget.id, recipients);
     if (_viewModel.isNetworkOn) {
       Navigator.pushNamed(context, "/fee-selection");
