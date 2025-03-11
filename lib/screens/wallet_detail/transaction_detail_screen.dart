@@ -51,7 +51,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   final GlobalKey _balanceWidthKey = GlobalKey();
   Size _balanceWidthSize = Size.zero;
   late TransactionDetailViewModel _viewModel;
-
+  List<FeeHistory> feeHistoryList = [
+    FeeHistory(label: "새 수수료", feeRate: 50, isSlected: true),
+    FeeHistory(label: "기존 수수료", feeRate: 33, isSlected: false),
+    FeeHistory(label: "기존 수수료", feeRate: 7, isSlected: false),
+  ];
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, TransactionProvider,
@@ -135,6 +139,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           Column(
                             children: [
                               _pendingWidget(viewModel.transaction!),
+                              _rbfHistoryWidget(),
                               CoconutLayout.spacing_300h,
                             ],
                           )
@@ -346,6 +351,173 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     });
   }
 
+  Widget _rbfHistoryWidget() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 30),
+      child: Column(
+        children: List.generate(
+          feeHistoryList.length,
+          (index) {
+            final feeHistory = feeHistoryList[index];
+            bool isLast = index == feeHistoryList.length - 1;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 타임라인 선
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 2.5),
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 2,
+                                height: isLast ? 22 : 33,
+                                color: const Color.fromRGBO(81, 81, 96, 1),
+                              ),
+                              if (isLast)
+                                Container(
+                                  width: 2,
+                                  height: 11,
+                                  color: Colors.transparent,
+                                ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16.5),
+                          child: Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Color.fromRGBO(81, 81, 96, 1),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                    CoconutLayout.spacing_100w,
+                    Row(
+                      children: [
+                        CoconutChip(
+                          color: feeHistory.isSlected
+                              ? CoconutColors.primary
+                              : CoconutColors.gray800,
+                          label: feeHistory.label,
+                          labelColor: feeHistory.isSlected
+                              ? CoconutColors.black
+                              : CoconutColors.white,
+                          isSelected: feeHistory.isSlected,
+                          onTap: () {
+                            setState(() {
+                              for (var i = 0; i < feeHistoryList.length; i++) {
+                                feeHistoryList[i] = FeeHistory(
+                                  label: feeHistoryList[i].label,
+                                  feeRate: feeHistoryList[i].feeRate,
+                                  isSlected: i == index,
+                                );
+                              }
+                            });
+                          },
+                        ),
+                        CoconutLayout.spacing_200w,
+                        Text(
+                          t.transaction_fee_bumping_screen
+                              .existing_fee_value(value: feeHistory.feeRate),
+                          style: CoconutTypography.body2_14_NumberBold,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _cpfpHistoryWidget() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Column(
+        children: List.generate(
+          feeHistoryList.length,
+          (index) {
+            final feeHistory = feeHistoryList[index];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 타임라인 선
+                Padding(
+                  padding: EdgeInsets.only(left: (20 * index).toDouble()),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Stack(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 2.5),
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 2,
+                                  height: 22,
+                                  color: const Color.fromRGBO(81, 81, 96, 1),
+                                ),
+                                Container(
+                                  width: 2,
+                                  height: 11,
+                                  color: Colors.transparent,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.5),
+                            child: Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: Color.fromRGBO(81, 81, 96, 1),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                      CoconutLayout.spacing_100w,
+                      Row(
+                        children: [
+                          CoconutChip(
+                            color: CoconutColors.gray800,
+                            label: feeHistory.label,
+                            labelColor: CoconutColors.white,
+                          ),
+                          CoconutLayout.spacing_200w,
+                          Text(
+                            t.transaction_fee_bumping_screen
+                                .existing_fee_value(value: feeHistory.feeRate),
+                            style: CoconutTypography.body2_14_NumberBold,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   bool _isTransactionStatusPending(TransactionRecord tx) {
     switch (TransactionUtil.getStatus(tx)) {
       case TransactionStatus.receiving:
@@ -507,4 +679,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       },
     );
   }
+}
+
+class FeeHistory {
+  final String label;
+  final int feeRate;
+  final bool isSlected;
+
+  FeeHistory({
+    required this.label,
+    required this.feeRate,
+    this.isSlected = false,
+  });
 }
