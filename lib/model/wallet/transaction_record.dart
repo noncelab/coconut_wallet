@@ -88,6 +88,6 @@ class TransactionRecord {
   }
 
   DateTime? getDateTimeToDisplay() {
-    return (blockHeight != null && blockHeight == 0) ? null : timestamp;
+    return timestamp;
   }
 }

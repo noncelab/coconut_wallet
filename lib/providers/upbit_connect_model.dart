@@ -1,4 +1,7 @@
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
@@ -9,9 +12,6 @@ class UpbitConnectModel extends ChangeNotifier {
 
   int? _bitcoinPriceKrw;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
-
-  // String? _bitcoinPriceKrwString;
-  // String? get bitcoinPriceKrwString => _bitcoinPriceKrwString;
 
   UpbitConnectModel() {
     initUpbitWebSocketService();
@@ -26,16 +26,9 @@ class UpbitConnectModel extends ChangeNotifier {
     _upbitWebSocketService ??= WebSocketService();
     _upbitWebSocketService?.tickerStream.listen((ticker) {
       _bitcoinPriceKrw = ticker?.tradePrice;
-      // wallet_list_screen Consumer builder가 계속 호출되어서 주석처리함
       notifyListeners();
     });
   }
-
-  // void setBitcoinPriceKrwString(int sendingAmount) {
-  // _bitcoinPriceKrwString = addCommasToIntegerPart(
-  //     FiatUtil.calculateFiatAmount(sendingAmount, bitcoinPriceKrw!)
-  //         .toDouble());
-  // }
 
   void disposeUpbitWebSocketService() {
     if (upbitWebSocketService != null) {
@@ -49,5 +42,13 @@ class UpbitConnectModel extends ChangeNotifier {
   void dispose() {
     _upbitWebSocketService?.dispose();
     super.dispose();
+  }
+
+  // util: 통화 코드를 받아서 가격을 반환
+  String getFiatPrice(int satoshiAmount, CurrencyCode fiatCode) {
+    if (fiatCode.code == CurrencyCode.KRW.code) {
+      return '${CurrencyCode.KRW.symbol} ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(satoshiAmount, bitcoinPriceKrw!).toDouble())}';
+    }
+    return '';
   }
 }

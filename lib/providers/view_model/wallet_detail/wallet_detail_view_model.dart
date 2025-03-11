@@ -1,8 +1,7 @@
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -50,6 +49,11 @@ class WalletDetailViewModel extends ChangeNotifier {
   late int _balance;
   int get balance => _balance;
 
+  int _receivingAmount = 0;
+  int _sendingAmount = 0;
+  int get receivingAmount => _receivingAmount;
+  int get sendingAmount => _sendingAmount;
+
   WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
       this._connectProvider, this._upbitConnectModel) {
     // 지갑 상세 초기화
@@ -58,13 +62,17 @@ class WalletDetailViewModel extends ChangeNotifier {
     _walletType = walletBaseItem.walletType;
 
     _txProvider.initTxList(_walletId);
-    // _tagProvider.initTagList(_walletId);
 
     // 지갑 업데이트
     _prevWalletUpdateInfo = _walletProvider.getWalletUpdateInfo(_walletId);
     _addChangeListener();
     _isWalletSyncing = !_allElementUpdateCompleted(_prevWalletUpdateInfo);
     _balance = _getBalance();
+
+    // UpbitConnectModel 변경 감지 리스너
+    _upbitConnectModel.addListener(_updateBitcoinPrice);
+
+    _setPendingAmount();
 
     // Faucet
     _setReceiveAddress();
@@ -73,9 +81,13 @@ class WalletDetailViewModel extends ChangeNotifier {
         : walletBaseItem.name;
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetRecord();
-    //_getFaucetStatus();
 
     showFaucetTooltip();
+  }
+
+  void _setReceiveAddress() {
+    _receiveAddress = _walletProvider.getReceiveAddress(_walletId);
+    Logger.log('--> 리시브주소: ${_receiveAddress.address}');
   }
 
   bool get faucetTooltipVisible => _faucetTooltipVisible;
@@ -95,16 +107,109 @@ class WalletDetailViewModel extends ChangeNotifier {
   WalletProvider? get walletProvider => _walletProvider;
   WalletType get walletType => _walletType;
   bool? get isNetworkOn => _connectProvider.isNetworkOn;
-  int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
 
-  void removeFaucetTooltip() {
-    _faucetTooltipVisible = false;
+  int _bitcoinPriceKrw = 0;
+  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
+  String _bitcoinPriceKrwInString = '';
+
+  String get bitcoinPriceKrwInString => _bitcoinPriceKrwInString;
+
+  // todo: 상태를 반환해주도록 수정되면 좋겠음.
+  Future<void> refreshWallet() async {
+    _balance = _getBalance();
+    _txProvider.initTxList(_walletId);
     notifyListeners();
   }
 
-  void _setReceiveAddress() {
-    _receiveAddress = _walletProvider.getReceiveAddress(_walletId);
-    Logger.log('--> 리시브주소: ${_receiveAddress.address}');
+  void _addChangeListener() {
+    _walletProvider.addWalletUpdateListener(
+        _walletId, _onWalletUpdateInfoChanged);
+  }
+
+  void _updateBitcoinPrice() {
+    _bitcoinPriceKrw = _upbitConnectModel.bitcoinPriceKrw ?? 0;
+    _bitcoinPriceKrwInString =
+        _upbitConnectModel.getFiatPrice(_balance, CurrencyCode.KRW);
+    notifyListeners();
+  }
+
+  int _getBalance() {
+    return _walletProvider.getWalletBalance(_walletId).total;
+  }
+
+  // balance, transaction만 고려
+  void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
+    Logger.log('--> 지갑$_walletId 업데이트 체크');
+    // balance
+    if (_prevWalletUpdateInfo.balance != UpdateStatus.completed &&
+        updateInfo.balance == UpdateStatus.completed) {
+      _balance = _getBalance();
+      notifyListeners();
+      Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.');
+    }
+    // transaction
+    if (_prevWalletUpdateInfo.transaction != UpdateStatus.completed &&
+        updateInfo.transaction == UpdateStatus.completed) {
+      _txProvider.initTxList(_walletId);
+      _setReceiveAddress();
+      _setPendingAmount();
+      notifyListeners();
+      Logger.log('--> 지갑$_walletId의 TX를 업데이트했습니다.');
+    }
+
+    bool isSyncing = !_allElementUpdateCompleted(updateInfo);
+    if (_isWalletSyncing != isSyncing) {
+      _isWalletSyncing = isSyncing;
+      Logger.log('--> 지갑$_walletId loading ui: $_isWalletSyncing으로 변경');
+      notifyListeners();
+    }
+
+    _prevWalletUpdateInfo = updateInfo;
+  }
+
+  bool _allElementUpdateCompleted(WalletUpdateInfo updateInfo) {
+    return updateInfo.balance == UpdateStatus.completed &&
+        updateInfo.transaction == UpdateStatus.completed;
+  }
+
+  void _setPendingAmount() {
+    int sending = 0;
+    int receiving = 0;
+
+    for (var tx in _txProvider.txList) {
+      if (tx.transactionType == null) continue;
+
+      if (tx.blockHeight == 0) {
+        switch (tx.transactionType!) {
+          case 'SEND':
+          case 'SELF':
+            sending += tx.amount!;
+            break;
+          case 'RECEIVED':
+            receiving += tx.amount!;
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    _sendingAmount = sending;
+    _receivingAmount = receiving;
+  }
+
+  @override
+  void dispose() {
+    _walletProvider.removeWalletUpdateListener(
+        _walletId, _onWalletUpdateInfoChanged);
+    _upbitConnectModel.removeListener(_updateBitcoinPrice);
+    super.dispose();
+  }
+
+  // ----------> Faucet 메소드 시작
+  void removeFaucetTooltip() {
+    _faucetTooltipVisible = false;
+    notifyListeners();
   }
 
   Future<void> requestTestBitcoin(String address, double requestAmount,
@@ -143,12 +248,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // TODO: 필요없을지도 모름.
-  void updateProvider() async {
-    _setReceiveAddress();
-    notifyListeners();
-  }
-
   void _checkFaucetRecord() {
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     if (!_faucetRecord.isToday) {
@@ -180,60 +279,5 @@ class WalletDetailViewModel extends ChangeNotifier {
         _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
     _saveFaucetRecordToSharedPrefs();
   }
-
-  // todo: 상태를 반환해주도록 수정되면 좋겠음.
-  Future<void> refreshWallet() async {
-    _balance = _getBalance();
-    _txProvider.initTxList(_walletId);
-    notifyListeners();
-  }
-
-  void _addChangeListener() {
-    _walletProvider.addWalletUpdateListener(
-        _walletId, _onWalletUpdateInfoChanged);
-  }
-
-  int _getBalance() {
-    return _walletProvider.getWalletBalance(_walletId).total;
-  }
-
-  // balance, transaction만 고려
-  void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
-    Logger.log('--> 지갑$_walletId 업데이트 체크');
-    // balance
-    if (_prevWalletUpdateInfo.balance != UpdateStatus.completed &&
-        updateInfo.balance == UpdateStatus.completed) {
-      _balance = _getBalance();
-      notifyListeners();
-      Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.');
-    }
-    // transaction
-    if (_prevWalletUpdateInfo.transaction != UpdateStatus.completed &&
-        updateInfo.transaction == UpdateStatus.completed) {
-      _txProvider.initTxList(_walletId);
-      notifyListeners();
-      Logger.log('--> 지갑$_walletId의 TX를 업데이트했습니다.');
-    }
-
-    bool isSyncing = !_allElementUpdateCompleted(updateInfo);
-    if (_isWalletSyncing != isSyncing) {
-      _isWalletSyncing = isSyncing;
-      Logger.log('--> 지갑$_walletId loading ui: $_isWalletSyncing으로 변경');
-      notifyListeners();
-    }
-
-    _prevWalletUpdateInfo = updateInfo;
-  }
-
-  bool _allElementUpdateCompleted(WalletUpdateInfo updateInfo) {
-    return updateInfo.balance == UpdateStatus.completed &&
-        updateInfo.transaction == UpdateStatus.completed;
-  }
-
-  @override
-  void dispose() {
-    _walletProvider.removeWalletUpdateListener(
-        _walletId, _onWalletUpdateInfoChanged);
-    super.dispose();
-  }
+  // <------ Faucet 메소드 끝
 }

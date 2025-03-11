@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -176,9 +177,8 @@ class TransactionItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<String>? transactionTimeStamp = tx.getDateTimeToDisplay() == null
-        ? ['--.--.--', '--:--']
-        : DateTimeUtil.formatTimeStamp(tx.getDateTimeToDisplay()!.toLocal());
+    List<String>? transactionTimeStamp =
+        DateTimeUtil.formatTimeStamp(tx.getDateTimeToDisplay()!);
 
     return ShrinkAnimationButton(
         defaultColor: MyColors.transparentWhite_06,
@@ -203,9 +203,7 @@ class TransactionItemCard extends StatelessWidget {
                     transactionTimeStamp[0],
                     style: Styles.caption,
                   ),
-                  const SizedBox(
-                    width: 8,
-                  ),
+                  CoconutLayout.spacing_200w,
                   Text(
                     '|',
                     style: Styles.caption.merge(
@@ -214,18 +212,14 @@ class TransactionItemCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(
-                    width: 8,
-                  ),
+                  CoconutLayout.spacing_200w,
                   Text(
                     transactionTimeStamp[1],
                     style: Styles.caption,
                   ),
                 ],
               ),
-              const SizedBox(
-                height: 5.0,
-              ),
+              CoconutLayout.spacing_100h,
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
