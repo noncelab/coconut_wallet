@@ -1,5 +1,4 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -12,10 +11,9 @@ class WalletDetailStickyHeader extends StatefulWidget {
   final Unit currentUnit;
   final int? balance;
   final int? prevBalance;
-  final WalletAddress receiveAddress;
-  final Function(int?, String, String) onTapReceive;
-  final Function(int?) onTapSend;
-  final Function removePopup;
+  final Function() onTapReceive;
+  final Function() onTapSend;
+
   const WalletDetailStickyHeader({
     required this.widgetKey,
     required this.height,
@@ -23,10 +21,8 @@ class WalletDetailStickyHeader extends StatefulWidget {
     required this.currentUnit,
     required this.balance,
     required this.prevBalance,
-    required this.receiveAddress,
     required this.onTapReceive,
     required this.onTapSend,
-    required this.removePopup,
   }) : super(key: widgetKey);
 
   @override
@@ -89,8 +85,6 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader>
 
   @override
   Widget build(BuildContext context) {
-    final walletAddress = widget.receiveAddress.address;
-    final derivationPath = widget.receiveAddress.derivationPath;
     return Positioned(
       top: widget.height,
       left: 0,
@@ -140,11 +134,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader>
                       ),
                     ),
                     CupertinoButton(
-                      onPressed: () {
-                        widget.removePopup();
-                        widget.onTapReceive(
-                            widget.balance, walletAddress, derivationPath);
-                      },
+                      onPressed: widget.onTapReceive,
                       borderRadius: BorderRadius.circular(8.0),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -171,10 +161,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader>
                       width: 8,
                     ),
                     CupertinoButton(
-                      onPressed: () {
-                        widget.removePopup();
-                        widget.onTapSend(widget.balance);
-                      },
+                      onPressed: widget.onTapSend,
                       borderRadius: BorderRadius.circular(8.0),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -225,41 +212,6 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader>
                         child: Container(),
                       ),
                     ],
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: MyColors.black,
-                            border: Border.all(
-                                color: MyColors.transparentWhite_50,
-                                width: 0.5),
-                            borderRadius: BorderRadius.circular(
-                              16,
-                            ),
-                          ),
-                          child: Text(
-                            t.tx_list,
-                            // selectedListType == WalletDetailTabType.transaction
-                            // ? '거래 내역'
-                            // : 'UTXO 목록', // TODO: 선택된 리스트 대입
-                            style: Styles.caption2.merge(
-                              const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: MyColors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),

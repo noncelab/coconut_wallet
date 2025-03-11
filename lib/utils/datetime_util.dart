@@ -3,11 +3,14 @@ import 'package:intl/intl.dart';
 class DateTimeUtil {
   // ex) "2024-04-12 18:19:26.000" => List<String> ["24.04.12", "18:19"]
   static List<String> formatTimeStamp(DateTime dateTime) {
+    DateTime localDateTime = dateTime.toLocal();
+
     String formattedDate =
-        "${dateTime.year % 100}.${dateTime.month >= 10 ? dateTime.month : "0${dateTime.month}"}."
-        "${dateTime.day >= 10 ? dateTime.day : "0${dateTime.day}"}";
+        "${localDateTime.year % 100}.${localDateTime.month >= 10 ? localDateTime.month : "0${localDateTime.month}"}."
+        "${localDateTime.day >= 10 ? localDateTime.day : "0${localDateTime.day}"}";
+
     String formattedTime =
-        "${dateTime.hour >= 10 ? dateTime.hour : '0${dateTime.hour}'}:${dateTime.minute >= 10 ? dateTime.minute : "0${dateTime.minute}"}";
+        "${localDateTime.hour >= 10 ? localDateTime.hour : '0${localDateTime.hour}'}:${localDateTime.minute >= 10 ? localDateTime.minute : "0${localDateTime.minute}"}";
 
     return [formattedDate, formattedTime];
   }

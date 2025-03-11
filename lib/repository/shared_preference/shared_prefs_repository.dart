@@ -8,7 +8,6 @@ class SharedPrefsRepository {
   // TODO: lib/contants/shared_pref_keys.dart로 옮긴 것을 사용하기
   static const String kSharedIsBalanceHidden = "SHARED_IS_BALANCE_HIDDEN";
   static const String lastUpdateTime = "LAST_UPDATE_TIME";
-  static const String kLastUpdateTime = "LAST_UPDATE_TIME";
   static const String kFaucetHistories = "FAUCET_HISTORIES";
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kIsNotEmptyWalletList = "IS_NOT_EMPTY_WALLET_LIST";

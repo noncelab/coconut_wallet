@@ -13,11 +13,11 @@ class UtxoRepository extends BaseRepository {
 
   /// walletId 로 태그 목록 조회
   Result<List<UtxoTag>> getUtxoTags(int walletId) {
-    final tags = realm
-        .query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
-
     return handleRealm<List<UtxoTag>>(
       () {
+        final tags = realm
+            .query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
+
         return tags.map(mapRealmUtxoTagToUtxoTag).toList();
       },
     );
@@ -26,10 +26,10 @@ class UtxoRepository extends BaseRepository {
   /// 사용된 UTXO의 태그 업데이트
   Future<Result<void>> updateTagsOfSpentUtxos(
       int walletId, List<String> usedUtxoIds, List<String> newUtxoIds) async {
-    final tags = realm.query<RealmUtxoTag>("walletId == '$walletId'");
-
     return handleAsyncRealm(
       () async {
+        final tags = realm.query<RealmUtxoTag>("walletId == '$walletId'");
+
         await realm.writeAsync(() {
           for (int i = 0; i < tags.length; i++) {
             if (tags[i].utxoIdList.isEmpty) continue;
@@ -185,33 +185,102 @@ class UtxoRepository extends BaseRepository {
     );
 
     final newUtxos = utxos
-        .where((utxo) => !existingUtxoMap
-            .containsKey(makeUtxoId(utxo.transactionHash, utxo.index)))
+        .where((utxo) => !existingUtxoMap.containsKey(utxo.utxoId))
         .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
         .toList();
 
     final toUpdateUtxos = utxos
-        .where((utxo) => existingUtxoMap
-            .containsKey(makeUtxoId(utxo.transactionHash, utxo.index)))
+        .where((utxo) => existingUtxoMap.containsKey(utxo.utxoId))
         .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
         .toList();
 
     realm.write(() {
-      for (final utxo in toUpdateUtxos) {
-        final existingUtxo = existingUtxoMap[utxo.id];
+      for (final toUpdateUtxo in toUpdateUtxos) {
+        final existingUtxo = existingUtxoMap[toUpdateUtxo.id];
         if (existingUtxo != null) {
-          existingUtxo.timestamp = utxo.timestamp;
+          existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
+          existingUtxo.timestamp = toUpdateUtxo.timestamp;
+          existingUtxo.status = toUpdateUtxo.status;
         }
       }
       realm.addAll<RealmUtxo>(newUtxos);
     });
   }
 
-  /// UTXO 목록 조회
+  // UTXO 상태를 "입금 중(incoming)"으로 표시
+  void markUtxoAsIncoming(int walletId, String txHash, String outputTxHash) {
+    final utxoToMark = realm.query<RealmUtxo>(
+      r'walletId == $0 AND transactionHash == $1',
+      [walletId, txHash],
+    );
+
+    if (utxoToMark.isEmpty) return;
+    realm.write(() {
+      for (final utxo in utxoToMark) {
+        utxo.status = utxoStatusToString(UtxoStatus.incoming);
+        utxo.spentByTxHash = outputTxHash;
+      }
+    });
+  }
+
+  // UTXO 상태를 "출금 중(outgoing)"으로 표시
+  void markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) {
+    final utxoToMark = realm.find<RealmUtxo>(utxoId);
+
+    if (utxoToMark == null) return;
+
+    realm.write(() {
+      utxoToMark.status = utxoStatusToString(UtxoStatus.outgoing);
+      utxoToMark.spentByTxHash = pendingTxHash;
+    });
+  }
+
+  // UTXO 상태를 "사용 가능(unspent)"으로 되돌림 (RBF 실패 또는 취소 시)
+  void markUtxoAsUnspent(int walletId, String txHash, int index) {
+    final utxoId = makeUtxoId(txHash, index);
+    final utxoToMark = realm.find<RealmUtxo>(utxoId);
+
+    if (utxoToMark == null) return;
+    realm.write(() {
+      utxoToMark.status = utxoStatusToString(UtxoStatus.unspent);
+      utxoToMark.spentByTxHash = null;
+    });
+  }
+
+  // RBF 가능한 UTXO 목록 조회
+  List<UtxoState> getRbfEligibleUtxos(int walletId) {
+    final rbfEligibleUtxos = realm.query<RealmUtxo>(
+      r'walletId == $0 AND status == $1',
+      [walletId, utxoStatusToString(UtxoStatus.outgoing)],
+    );
+
+    return rbfEligibleUtxos.map(mapRealmToUtxoState).toList();
+  }
+
+  // CPFP 가능한 UTXO 목록 조회 (확인되지 않은 트랜잭션의 출력)
+  List<UtxoState> getCpfpEligibleUtxos(int walletId) {
+    final cpfpEligibleUtxos = realm.query<RealmUtxo>(
+      r'walletId == $0 AND status == $1 AND blockHeight == 0',
+      [walletId, utxoStatusToString(UtxoStatus.incoming)],
+    );
+
+    return cpfpEligibleUtxos.map(mapRealmToUtxoState).toList();
+  }
+
   List<UtxoState> getUtxoStateList(int walletId) {
     final realmUtxos = realm.query<RealmUtxo>(
       r'walletId == $0',
       [walletId],
+    );
+    return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
+  }
+
+  // 특정 상태의 UTXO 목록만 조회
+  List<UtxoState> getUtxosByStatus(int walletId, UtxoStatus status) {
+    final statusStr = utxoStatusToString(status);
+    final realmUtxos = realm.query<RealmUtxo>(
+      r'walletId == $0 AND status == $1',
+      [walletId, statusStr],
     );
     return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
   }
@@ -228,5 +297,31 @@ class UtxoRepository extends BaseRepository {
     }
 
     return mapRealmToUtxoState(realmUtxo);
+  }
+
+  void deleteUtxo(int walletId, String utxoId) {
+    final utxoToDelete = realm.query<RealmUtxo>(
+      r'walletId == $0 AND id == $1',
+      [walletId, utxoId],
+    ).firstOrNull;
+
+    if (utxoToDelete == null) return;
+
+    realm.write(() {
+      realm.delete(utxoToDelete);
+    });
+  }
+
+  void deleteUtxoList(int walletId, List<String> utxoIds) {
+    final utxosToDelete = realm.query<RealmUtxo>(
+      r'walletId == $0 AND id IN $1',
+      [walletId, utxoIds],
+    );
+
+    if (utxosToDelete.isEmpty) return;
+
+    realm.write(() {
+      realm.deleteMany(utxosToDelete);
+    });
   }
 }

@@ -1,16 +1,16 @@
 import 'dart:isolate';
 
-import 'package:coconut_wallet/services/network/node_client.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 
 class IsolateConnectorData {
   final SendPort sendPort;
-  final NodeClientFactory factory;
+  final ElectrumService electrumService;
   final String host;
   final int port;
   final bool ssl;
 
   IsolateConnectorData(
-      this.sendPort, this.factory, this.host, this.port, this.ssl) {
+      this.sendPort, this.electrumService, this.host, this.port, this.ssl) {
     if (host.isEmpty) {
       throw Exception('Host cannot be empty');
     }

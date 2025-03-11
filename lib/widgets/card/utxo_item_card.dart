@@ -1,85 +1,70 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 
 class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
+  final List<String> dateString;
   final Function onPressed;
 
   const UtxoItemCard({
     super.key,
     required this.utxo,
+    required this.dateString,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
     bool isConfirmed = utxo.blockHeight != 0;
-    List<String> dateString = isConfirmed
-        ? DateTimeUtil.formatTimeStamp(utxo.timestamp)
-        : ['--.--.--', '--:--'];
     bool isChange = utxo.derivationPath.split('/')[4] == '1';
 
+    const borderRadius = CoconutStyles.radius_300;
+
     return ShrinkAnimationButton(
-      defaultColor: MyColors.transparentWhite_06,
+      pressedColor: CoconutColors.gray900,
       borderWidth: 0,
-      borderRadius: 20,
+      borderRadius: borderRadius,
       onPressed: () {
         onPressed();
       },
       child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: MyColors.transparentWhite_12),
+              borderRadius: BorderRadius.circular(borderRadius),
+              color: CoconutColors.gray800),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
+                  // data string
                   Row(
                     children: [
                       Text(
                         dateString[0],
-                        style: isConfirmed
-                            ? Styles.caption
-                            : Styles.caption.merge(const TextStyle(
-                                color: MyColors.transparentWhite_20)),
+                        style: CoconutTypography.body3_12_Number
+                            .setColor(CoconutColors.gray300),
                       ),
-                      const SizedBox(
-                        width: 8,
-                      ),
+                      CoconutLayout.spacing_200w,
                       Text(
                         '|',
-                        style: Styles.caption.merge(
-                          TextStyle(
-                            color: isConfirmed
-                                ? MyColors.transparentWhite_40
-                                : MyColors.transparentWhite_20,
-                          ),
-                        ),
+                        style: CoconutTypography.caption_10
+                            .setColor(CoconutColors.gray400),
                       ),
-                      const SizedBox(
-                        width: 8,
-                      ),
+                      CoconutLayout.spacing_200w,
                       Text(
                         dateString[1],
-                        style: isConfirmed
-                            ? Styles.caption
-                            : Styles.caption.merge(
-                                const TextStyle(
-                                  color: MyColors.transparentWhite_20,
-                                ),
-                              ),
+                        style: CoconutTypography.body3_12_Number
+                            .setColor(CoconutColors.gray300),
                       ),
                     ],
                   ),
+                  // amount
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -87,72 +72,60 @@ class UtxoItemCard extends StatelessWidget {
                         if (isChange)
                           CustomChip(
                             text: t.change,
+                            backgroundColor: isConfirmed
+                                ? CoconutColors.gray500
+                                : CoconutColors.gray700,
                             borderColor: isConfirmed
-                                ? null
-                                : MyColors.transparentWhite_20,
-                            textStyle: isConfirmed
-                                ? null
-                                : Styles.caption2.copyWith(
-                                    color: MyColors.transparentWhite_20,
-                                    height: 1.0,
-                                  ),
+                                ? CoconutColors.gray500
+                                : CoconutColors.gray700,
+                            textStyle: CoconutTypography.caption_10_Bold
+                                .setColor(CoconutColors.black),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
                           ),
-                        const SizedBox(
-                          width: 4,
-                        ),
+                        CoconutLayout.spacing_100w,
                         Text(
                           satoshiToBitcoinString(utxo.amount),
-                          style: Styles.body1Number.merge(
-                            TextStyle(
-                              fontWeight: FontWeight.w700,
-                              height: 24 / 16,
-                              letterSpacing: 16 * 0.01,
-                              color: isConfirmed
-                                  ? MyColors.white
-                                  : MyColors.transparentWhite_20,
-                            ),
-                          ),
+                          style: CoconutTypography.heading4_18_NumberBold
+                              .setColor(isConfirmed
+                                  ? CoconutColors.gray200
+                                  : CoconutColors.gray700),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(
-                height: 8,
-              ),
-              Text(
-                utxo.to,
-                style: Styles.body2Number.merge(
-                  TextStyle(
-                    color: isConfirmed
-                        ? MyColors.transparentWhite_50
-                        : MyColors.transparentWhite_20,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                height: 8,
-              ),
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: List.generate(
-                  utxo.tags?.length ?? 0,
-                  (index) => IntrinsicWidth(
-                    child: CoconutChip(
-                      minWidth: 40,
-                      color: CoconutColors.backgroundColorPaletteDark[
-                          utxo.tags?[index].colorIndex ?? 0],
-                      borderColor: CoconutColors
-                          .colorPalette[utxo.tags?[index].colorIndex ?? 0],
-                      label: '#${utxo.tags?[index].name ?? ''}',
-                      labelSize: 12,
-                      labelColor: CoconutColors
-                          .colorPalette[utxo.tags?[index].colorIndex ?? 0],
+              CoconutLayout.spacing_100h,
+              // address
+              Text(utxo.to,
+                  style: CoconutTypography.body2_14_Number
+                      .setColor(CoconutColors.gray400)),
+              Column(
+                children: [
+                  if ((utxo.tags?.isNotEmpty ?? false))
+                    CoconutLayout.spacing_100h, // utxo.tags가 있을 때만 마진 추가
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: List.generate(
+                      utxo.tags?.length ?? 0,
+                      (index) => IntrinsicWidth(
+                        child: CoconutChip(
+                          minWidth: 40,
+                          color: CoconutColors.backgroundColorPaletteDark[
+                              utxo.tags?[index].colorIndex ?? 0],
+                          borderColor: CoconutColors
+                              .colorPalette[utxo.tags?[index].colorIndex ?? 0],
+                          label: '#${utxo.tags?[index].name ?? ''}',
+                          labelSize: 12,
+                          labelColor: CoconutColors
+                              .colorPalette[utxo.tags?[index].colorIndex ?? 0],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           )),
