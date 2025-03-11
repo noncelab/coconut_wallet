@@ -13,8 +13,6 @@ class MultisigWalletListItem extends WalletListItemBase {
       required super.descriptor,
       required this.signers,
       required this.requiredSignatureCount,
-      super.txCount,
-      super.isLatestTxBlockHeightZero,
       super.receiveUsedIndex,
       super.changeUsedIndex})
       : super(walletType: WalletType.multiSignature) {

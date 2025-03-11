@@ -45,6 +45,7 @@ class _RealmTransaction {
   String? memo;
   int? amount;
   int? fee;
+  late int vSize;
   late List<String> inputAddressList;
   late List<String> outputAddressList;
   String? note;
@@ -140,4 +141,9 @@ class _RealmUtxo {
   late int index; // 트랜잭션 내 인덱스
   late String derivationPath;
   late int blockHeight;
+
+  /// [UtxoStatus] 참고
+  @Indexed()
+  late String status; // unspent, outgoing, incoming
+  String? spentByTxHash; // 이 UTXO를 사용한 트랜잭션 해시 (RBF/CPFP에 필요)
 }

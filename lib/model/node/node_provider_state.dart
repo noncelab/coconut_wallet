@@ -4,11 +4,11 @@ import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 /// NodeProvider 상태 정보를 담는 클래스
 class NodeProviderState {
   final MainClientState connectionState;
-  final Map<int, WalletUpdateInfo> updatedWallets;
+  final Map<int, WalletUpdateInfo> registeredWallets;
 
   const NodeProviderState({
     required this.connectionState,
-    required this.updatedWallets,
+    required this.registeredWallets,
   });
 
   NodeProviderState copyWith({
@@ -17,7 +17,7 @@ class NodeProviderState {
   }) {
     return NodeProviderState(
       connectionState: newConnectionState ?? connectionState,
-      updatedWallets: newUpdatedWallets ?? updatedWallets,
+      registeredWallets: newUpdatedWallets ?? registeredWallets,
     );
   }
 }

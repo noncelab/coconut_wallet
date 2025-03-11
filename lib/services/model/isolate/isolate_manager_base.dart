@@ -1,7 +1,7 @@
-import 'package:coconut_wallet/services/network/node_client.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 
 abstract class IsolateManagerBase {
   bool get isInitialized;
   Future<void> initialize(
-      NodeClientFactory factory, String host, int port, bool ssl);
+      ElectrumService electrumService, String host, int port, bool ssl);
 }

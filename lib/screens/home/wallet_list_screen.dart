@@ -5,12 +5,13 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -221,19 +222,17 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   ),
                           ),
                           // Pull to refresh, refresh indicator(hide)
-                          if (!viewModel.shouldShowLoadingIndicator) ...{
-                            CupertinoSliverRefreshControl(
-                              onRefresh: viewModel.refreshWallets,
-                            )
+                          if (viewModel.shouldShowLoadingIndicator) ...{
+                            const SliverToBoxAdapter(child: LoadingIndicator()),
                           },
+                          CupertinoSliverRefreshControl(
+                            onRefresh: viewModel.refreshWallets,
+                          ),
 
-                          // 용어집, 바로 추가하기, loading indicator
+                          // 용어집, 바로 추가하기
                           SliverToBoxAdapter(
                               child: Column(
                             children: [
-                              if (viewModel.shouldShowLoadingIndicator) ...{
-                                _topLoadingIndicatorWidget()
-                              },
                               if (!viewModel.shouldShowLoadingIndicator) ...{
                                 if (viewModel.isTermsShortcutVisible)
                                   WalletListTermsShortcutCard(
