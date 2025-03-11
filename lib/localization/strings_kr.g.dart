@@ -421,14 +421,15 @@ class TranslationsTransactionFeeBumpingScreenKr {
 	String get cpfp => 'CPFP';
 	String get existing_fee => '기존 수수료';
 	String existing_fee_value({required Object value}) => '${value} sats/vb';
-	String total_fee({required Object fee, required Object vb}) => '총 ${fee} sats / ${vb}vb';
+	String total_fee({required Object fee, required Object vb}) => '총 ${fee} sats / ${vb} vb';
 	String get new_fee => '새 수수료';
 	String get sats_vb => 'sats/vb';
 	String recommend_fee({required Object fee}) => '추천 수수료: ${fee}sats/vb 이상';
-	String get recommend_fee_info_rbf => '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
+	String get recommend_fee_info_rbf => '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
 	String get recommend_fee_info_cpfp => '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = {newTxSize} vb, 추천 수수료율 = {recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = ({originalTxSize} + {newTxSize}) × {recommendedFeeRate} = {totalRequiredFee} sat\n • 새 거래의 수수료 = {totalRequiredFee} - {originalFee} = {newTxFee} sat\n • 새 거래의 수수료율 = {newTxFee} ÷ {newTxSize} {inequalitySign} {newTxFeeRate} sat/vb';
 	String get current_fee => '현재 수수료';
 	String estimated_fee({required Object fee}) => '예상 총 수수료 ${fee} sats';
+	String get estimated_fee_too_high_error => '예상 총 수수료가 0.01 BTC 이상이에요!';
 	String get recommended_fees_fetch_error => '추천 수수료를 조회할 수 없어요!';
 }
 
@@ -681,6 +682,7 @@ class TranslationsAlertKr {
 	late final TranslationsAlertTxDetailKr tx_detail = TranslationsAlertTxDetailKr.internal(_root);
 	late final TranslationsAlertTagDeleteKr tag_delete = TranslationsAlertTagDeleteKr.internal(_root);
 	late final TranslationsAlertFaucetKr faucet = TranslationsAlertFaucetKr.internal(_root);
+	late final TranslationsAlertFeeBumpingKr fee_bumping = TranslationsAlertFeeBumpingKr.internal(_root);
 }
 
 // Path: errors.fee_selection_error
@@ -893,6 +895,16 @@ class TranslationsAlertFaucetKr {
 	String try_again({required Object count}) => '${count} 후에 다시 시도해 주세요';
 }
 
+// Path: alert.fee_bumping
+class TranslationsAlertFeeBumpingKr {
+	TranslationsAlertFeeBumpingKr.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+	String not_enough_amount({required Object bumpingType}) => '${bumpingType}를 실행하기에 충분한 잔액이 없습니다.\n현재 사용 가능한 잔액을 확인해 주세요.';
+}
+
 /// Flat map(s) containing all translations.
 /// Only for edge cases! For simple maps, use the map function of this library.
 extension on Translations {
@@ -1047,14 +1059,15 @@ extension on Translations {
 			case 'transaction_fee_bumping_screen.cpfp': return 'CPFP';
 			case 'transaction_fee_bumping_screen.existing_fee': return '기존 수수료';
 			case 'transaction_fee_bumping_screen.existing_fee_value': return ({required Object value}) => '${value} sats/vb';
-			case 'transaction_fee_bumping_screen.total_fee': return ({required Object fee, required Object vb}) => '총 ${fee} sats / ${vb}vb';
+			case 'transaction_fee_bumping_screen.total_fee': return ({required Object fee, required Object vb}) => '총 ${fee} sats / ${vb} vb';
 			case 'transaction_fee_bumping_screen.new_fee': return '새 수수료';
 			case 'transaction_fee_bumping_screen.sats_vb': return 'sats/vb';
 			case 'transaction_fee_bumping_screen.recommend_fee': return ({required Object fee}) => '추천 수수료: ${fee}sats/vb 이상';
-			case 'transaction_fee_bumping_screen.recommend_fee_info_rbf': return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
+			case 'transaction_fee_bumping_screen.recommend_fee_info_rbf': return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
 			case 'transaction_fee_bumping_screen.recommend_fee_info_cpfp': return '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = {newTxSize} vb, 추천 수수료율 = {recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = ({originalTxSize} + {newTxSize}) × {recommendedFeeRate} = {totalRequiredFee} sat\n • 새 거래의 수수료 = {totalRequiredFee} - {originalFee} = {newTxFee} sat\n • 새 거래의 수수료율 = {newTxFee} ÷ {newTxSize} {inequalitySign} {newTxFeeRate} sat/vb';
 			case 'transaction_fee_bumping_screen.current_fee': return '현재 수수료';
 			case 'transaction_fee_bumping_screen.estimated_fee': return ({required Object fee}) => '예상 총 수수료 ${fee} sats';
+			case 'transaction_fee_bumping_screen.estimated_fee_too_high_error': return '예상 총 수수료가 0.01 BTC 이상이에요!';
 			case 'transaction_fee_bumping_screen.recommended_fees_fetch_error': return '추천 수수료를 조회할 수 없어요!';
 			case 'wallet_list_add_guide_card.add_watch_only': return '보기 전용 지갑을 추가해 주세요';
 			case 'wallet_list_add_guide_card.top_right_icon': return '오른쪽 위 + 버튼을 눌러도 추가할 수 있어요';
@@ -1212,6 +1225,7 @@ extension on Translations {
 			case 'alert.faucet.no_test_bitcoin': return '수도꼭지 단수 상태예요. 잠시 후 다시 시도해 주세요.';
 			case 'alert.faucet.check_address': return '올바른 주소인지 확인해 주세요';
 			case 'alert.faucet.try_again': return ({required Object count}) => '${count} 후에 다시 시도해 주세요';
+			case 'alert.fee_bumping.not_enough_amount': return ({required Object bumpingType}) => '${bumpingType}를 실행하기에 충분한 잔액이 없습니다.\n현재 사용 가능한 잔액을 확인해 주세요.';
 			default: return null;
 		}
 	}

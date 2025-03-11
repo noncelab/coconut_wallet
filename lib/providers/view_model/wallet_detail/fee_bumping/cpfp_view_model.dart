@@ -1,8 +1,8 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping/fee_bumping_view_model.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:flutter/material.dart';
 
 class CpfpViewModel extends FeeBumpingViewModel {
   double _newTxSize = 0; // 새 거래의 크기
@@ -12,12 +12,7 @@ class CpfpViewModel extends FeeBumpingViewModel {
   double totalRequiredFee = 0; // 새로운 총 수수료
   double newTxFee = 0; // 새 거래의 수수료
 
-  int? get recommendedFeeRate => getRecommendedFeeRate(); // 추천 수수료율 (보통 속도)
-  int get recommendFeeRate =>
-      getRecommendFeeRate(); // 추천 수수료 e.g) '추천 수수료: ${recommendFeeRate}sats/vb 이상
-
   Transaction? generateTx;
-
   CpfpViewModel(
     super._transaction,
     super._walletId,
@@ -25,43 +20,57 @@ class CpfpViewModel extends FeeBumpingViewModel {
     super._sendInfoProvider,
     super._walletProvider,
     super._currentUtxo,
+    super._addressRepository,
   ) {
     Logger.log('CpfpViewModel created');
-    addListener(_onFeeUpdated);
   }
 
-  /// `feeInfos[1].satsPerVb` 값이 변경되면 실행됨
-  void _onFeeUpdated() {
-    if (feeInfos[1].satsPerVb != null) {
-      Logger.log('현재 수수료(보통) 업데이트 됨 >> ${feeInfos[1].satsPerVb}');
-      initializeGenerateTx();
-    }
-  }
+  int? get recommendedFeeRate => getRecommendedFeeRate(); // 추천 수수료율 (보통 속도)
 
-  void initializeGenerateTx() {
-//     List<String> myAddresses = walletProvider.getAllAddresses(walletId);
+  int get recommendFeeRate =>
+      getRecommendFeeRate(); // 추천 수수료 e.g) '추천 수수료: ${recommendFeeRate}sats/vb 이상
 
-// // 기존 트랜잭션의 output 중 내 주소와 일치하는 output을 찾음
-//     TransactionAddress? myOutputAddress =
-//         transaction.outputAddressList.firstWhere(
-//       (output) => myAddresses.contains(output.address),
-//       orElse: () => null, // 만약 없으면 null 반환
-//     );
-    print('walletProvider.getUtxoList(walletId): ');
+  Future<String> generateUnsignedPsbt() async {
+    // List<UtxoState> utxoPool = walletProvider.getUtxoList(walletId);
+    String recipientAddress =
+        walletProvider.getReceiveAddress(walletId).address;
+    int satsPerVb = sendInfoProvider.feeRate!;
+    WalletBase wallet = walletListItemBase.walletBase;
+
+    debugPrint('''
+========== CPFP Transaction Info ==========
+- _newTxSize: $_newTxSize vB
+- _originalFee: $_originalFee sats
+- _originalTxSize: $_originalTxSize vB
+- totalRequiredFee: $totalRequiredFee sats
+- newTxFee: $newTxFee sats
+- newTxFeeRate: $newTxFeeRate sats/vB
+--------------------------------------------
+- Input Addresses: 
+  ${transaction.inputAddressList.map((e) => e.address).join('\n  ')}
+--------------------------------------------
+- Output Addresses: 
+  ${transaction.outputAddressList.map((e) => e.address).join('\n  ')}
+--------------------------------------------
+- Transaction vSize: ${transaction.vSize} vB
+============================================
+''');
     generateTx = Transaction.forSweep(
-        walletProvider.getUtxoList(walletId),
-        walletProvider.getReceiveAddress(walletId).address,
-        feeInfos[1].satsPerVb!,
-        walletListItemBase.walletBase);
+        [currentUtxo!], recipientAddress, satsPerVb, wallet);
+    debugPrint('''
+========== Generated Transaction Info ==========
+- transactionHash: ${generateTx!.transactionHash}
+--------------------------------------------
+- Inputs: 
+  ${generateTx!.inputs.map((e) => e.toString())}
+- totalInputAmount: ${generateTx!.totalInputAmount}
+--------------------------------------------
+- Outputs: 
+  ${generateTx!.outputs.map((e) => e.toString())}
+''');
 
-    _newTxSize = generateTx?.getVirtualByte() ?? 0;
-    _originalFee = transaction.amount!;
-    _originalTxSize = _originalFee / transaction.feeRate;
-    totalRequiredFee =
-        (_originalTxSize + _newTxSize) * (recommendedFeeRate ?? 0);
-    newTxFee = totalRequiredFee - _originalFee;
-
-    newTxFeeRate = newTxFee / _newTxSize;
+    return Psbt.fromTransaction(generateTx!, walletListItemBase.walletBase)
+        .serialize();
   }
 
   String getCpfpFeeInfo() {
@@ -72,7 +81,6 @@ class CpfpViewModel extends FeeBumpingViewModel {
     새로운 총 수수료 (sat)	totalRequiredFee
     새 거래의 수수료 (sat)	newTxFee
     새 거래의 수수료율 (sat/vB)	newTxFeeRate */
-
     String inequalitySign =
         newTxFeeRate % 1 == 0 ? "=" : "≈"; // 소수로 떨어지면 근사값 기호로 적용
 
@@ -94,26 +102,41 @@ class CpfpViewModel extends FeeBumpingViewModel {
     if (newTxFeeRate.isNaN || newTxFeeRate.isInfinite) {
       return 0;
     }
-    return newTxFeeRate % 1 == 0
-        ? newTxFeeRate.toInt()
-        : newTxFeeRate.ceil().toInt();
+    return (newTxFeeRate % 1 == 0
+            ? newTxFeeRate.toInt()
+            : newTxFeeRate.ceil().toInt()) +
+        1;
+  }
+
+  @override
+  void initializeGenerateTx() {
+    generateTx = Transaction.forSweep(
+        [currentUtxo!],
+        walletProvider.getReceiveAddress(walletId).address,
+        feeInfos[1].satsPerVb!,
+        walletListItemBase.walletBase);
+
+    _newTxSize = generateTx?.getVirtualByte() ?? 0;
+    _originalFee = transaction.fee!;
+    // _originalTxSize = _originalFee / transaction.feeRate;
+    _originalTxSize = transaction.vSize.toDouble();
+    totalRequiredFee =
+        (_originalTxSize + _newTxSize) * (recommendedFeeRate ?? 0);
+    newTxFee = totalRequiredFee - _originalFee;
+
+    newTxFeeRate = newTxFee / _newTxSize;
+  }
+
+  @override
+  void updateSendInfoProvider(int newTxFeeRate) {
+    super.updateSendInfoProvider(newTxFeeRate);
+    // bool isMaxMode = walletProvider.getWalletBalance(_walletId).confirmed ==
+    //     UnitUtil.bitcoinToSatoshi(transaction.amount!.toDouble());
+    sendInfoProvider
+        .setAmount(transaction.amount!.toDouble()); // TODO CPFP 금액 설정
   }
 
   String _formatNumber(double value) {
     return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1);
-  }
-
-  Future<String> generateUnsignedPsbt() async {
-    List<UtxoState> utxoPool = walletProvider.getUtxoList(walletId);
-    String recipientAddress =
-        walletProvider.getReceiveAddress(walletId).address;
-    int satsPerVb = sendInfoProvider.feeRate!;
-    WalletBase wallet = walletListItemBase.walletBase;
-
-    generateTx =
-        Transaction.forSweep(utxoPool, recipientAddress, satsPerVb, wallet);
-
-    return Psbt.fromTransaction(generateTx!, walletListItemBase.walletBase)
-        .serialize();
   }
 }

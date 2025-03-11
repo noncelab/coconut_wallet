@@ -67,16 +67,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider5<
-        WalletProvider,
-        TransactionProvider,
-        ConnectivityProvider,
-        UpbitConnectModel,
-        AddressRepository,
-        WalletDetailViewModel>(
+    return ChangeNotifierProxyProvider4<WalletProvider, TransactionProvider,
+        ConnectivityProvider, UpbitConnectModel, WalletDetailViewModel>(
       create: (_) => _createViewModel(_),
-      update: (_, walletProvider, txProvider, connectProvider, addressReposity,
-          upbitModel, viewModel) {
+      update: (_, walletProvider, txProvider, connectProvider, upbitModel,
+          viewModel) {
         return viewModel!..updateProvider();
       },
       child: Consumer<WalletDetailViewModel>(
@@ -113,7 +108,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       Provider.of<TransactionProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<UpbitConnectModel>(context, listen: false),
-      Provider.of<AddressRepository>(context, listen: false),
     );
     return _viewModel;
   }

@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -62,6 +63,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           Provider.of<WalletProvider>(_, listen: false),
           Provider.of<TransactionProvider>(_, listen: false),
           Provider.of<NodeProvider>(_, listen: false),
+          Provider.of<AddressRepository>(_, listen: false),
         );
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
         _viewModel.loadCompletedNotifier.addListener(_loadCompletedListener);

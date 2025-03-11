@@ -4,6 +4,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final NodeProvider _nodeProvider;
   final TransactionProvider _txProvider;
+  final AddressRepository _addressRepository;
 
   BlockTimestamp? _currentBlock;
 
@@ -41,7 +43,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   TransactionRecord? get transaction => _transaction;
 
   TransactionDetailViewModel(this._walletId, this._txHash, this._walletProvider,
-      this._txProvider, this._nodeProvider) {
+      this._txProvider, this._nodeProvider, this._addressRepository) {
     _transaction = _txProvider.getTransaction(_walletId, _txHash);
     _initViewMoreButtons();
   }
@@ -73,18 +75,14 @@ class TransactionDetailViewModel extends ChangeNotifier {
     bool isContainAddress = _walletProvider.containsAddress(_walletId, address);
 
     if (isContainAddress) {
-      // var amount = getInputAmount(index);
-      // var address = _walletProvider.getChangeAddress(walletId)
-      // var derivationPath = Address()
-      //   _currentUtxo = Utxo(_txHash, index, amount, _derivationPath)
+      var amount = getInputAmount(index);
+      var derivationPath =
+          _addressRepository.getDerivationPath(_walletId, address);
+      _currentUtxo = Utxo(_txHash, index, amount, derivationPath);
       return true;
     }
     return false;
   }
-
-  // String getDerivationPath() {
-
-  // }
 
   void onTapViewMoreInputs() {
     // ignore: no_leading_underscores_for_local_identifiers
@@ -190,4 +188,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   int getOutputAmount(int index) =>
       TransactionUtil.getOutputAmount(_transaction, index);
+
+  String getDerivationPath(String address) {
+    return _addressRepository.getDerivationPath(_walletId, address);
+  }
 }
