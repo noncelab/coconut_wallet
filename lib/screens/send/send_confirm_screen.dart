@@ -69,7 +69,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                         child: Text.rich(
                           TextSpan(
                               text: satoshiToBitcoinString(
-                                  UnitUtil.bitcoinToSatoshi(_viewModel.amount)),
+                                  UnitUtil.bitcoinToSatoshi(viewModel.amount)),
                               children: <TextSpan>[
                                 TextSpan(text: ' ${t.btc}', style: Styles.unit)
                               ]),
@@ -85,12 +85,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                           child: Center(
                               child: Text(
                                   bitcoinPriceKrw != null
-                                      ? '${addCommasToIntegerPart(_viewModel.amount * bitcoinPriceKrw)} ${CurrencyCode.KRW.code}'
+                                      ? '${addCommasToIntegerPart(viewModel.amount * bitcoinPriceKrw)} ${CurrencyCode.KRW.code}'
                                       : '',
                                   style: Styles.balance2)));
                     },
                   ),
-
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Container(
@@ -104,27 +103,29 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                               children: [
                                 InformationItemCard(
                                     label: t.recipient,
-                                    value: viewModel.address,
+                                    value: viewModel.addresses,
                                     isNumber: true),
                                 const Divider(
                                     color: MyColors.transparentWhite_12,
                                     height: 1),
                                 InformationItemCard(
                                     label: t.estimated_fee,
-                                    value: viewModel.estimatedFee != null &&
-                                            viewModel.estimatedFee != 0
-                                        ? '${satoshiToBitcoinString(viewModel.estimatedFee!)} ${t.btc}'
-                                        : t.calculation_failed,
+                                    value: [
+                                      viewModel.estimatedFee != 0
+                                          ? '${satoshiToBitcoinString(viewModel.estimatedFee)} ${t.btc}'
+                                          : t.calculation_failed
+                                    ],
                                     isNumber: true),
                                 const Divider(
                                     color: MyColors.transparentWhite_12,
                                     height: 1),
                                 InformationItemCard(
                                     label: t.total_cost,
-                                    value: viewModel.estimatedFee != null &&
-                                            viewModel.estimatedFee != 0
-                                        ? '${satoshiToBitcoinString(UnitUtil.bitcoinToSatoshi(viewModel.amount) + viewModel.estimatedFee!)} BTC'
-                                        : t.calculation_failed,
+                                    value: [
+                                      viewModel.estimatedFee != 0
+                                          ? '${satoshiToBitcoinString(viewModel.totalUsedAmount)} BTC'
+                                          : t.calculation_failed
+                                    ],
                                     isNumber: true),
                               ],
                             ))),

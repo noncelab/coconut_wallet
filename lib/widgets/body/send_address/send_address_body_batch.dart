@@ -35,18 +35,18 @@ class _SendAddressBodyBatchState extends State<SendAddressBodyBatch> {
   @override
   void initState() {
     super.initState();
-    _recipients = [_getDefaultRecipientData()];
+    //_recipients = [_getDefaultRecipientData()];
     // TODO: for test
-    // _recipients = [
-    //   _getDefaultRecipientData()
-    //     ..address = 'bcrt1qldnq90sqn6wz4kpd6u93f3uxt3gy7ehw7f4tw8'
-    //     ..amount = '1.25031400'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address = 'bcrt1qndytt26zecsx9ypp3wl8zd69jg0cl7kz0lfuhf'
-    //     ..amount = '1.25031500'
-    //     ..isAddressValid = true
-    // ];
+    _recipients = [
+      _getDefaultRecipientData()
+        ..address = 'bcrt1qldnq90sqn6wz4kpd6u93f3uxt3gy7ehw7f4tw8'
+        ..amount = '0.1'
+        ..isAddressValid = true,
+      _getDefaultRecipientData()
+        ..address = 'bcrt1qndytt26zecsx9ypp3wl8zd69jg0cl7kz0lfuhf'
+        ..amount = '0.1'
+        ..isAddressValid = true
+    ];
   }
 
   @override
