@@ -84,16 +84,8 @@ class UtxoManager {
   Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
     final futures = heights.map((height) async {
       try {
-        final header = await _electrumService.getBlockHeader(height);
-        final blockHeader = BlockHeader.parse(height, header);
-        return MapEntry(
-          height,
-          BlockTimestamp(
-            height,
-            DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
-                isUtc: true),
-          ),
-        );
+        final blockTimestamp = await _electrumService.getBlockTimestamp(height);
+        return MapEntry(height, blockTimestamp);
       } catch (e) {
         Logger.error('Error fetching block header for height $height: $e');
         return null;

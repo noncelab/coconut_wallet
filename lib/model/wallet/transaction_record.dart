@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 
 class TransactionRecord {
@@ -25,6 +26,7 @@ class TransactionRecord {
   int? get blockHeight => _blockHeight;
 
   /// Get the transaction type of this transaction. (RECEIVED, SEND, SELF, UNKNOWN)
+  /// [TransactionType]
   String? get transactionType => _transactionType;
 
   /// Get the memo of this transaction.

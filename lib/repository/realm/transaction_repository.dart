@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
@@ -42,13 +43,13 @@ class TransactionRepository extends BaseRepository {
 
   /// 트랜잭션 CRUD 관련 함수
   /// walletID, txHash 로 transaction 조회
-  Result<TransactionRecord?> loadTransaction(int walletId, String txHash) {
+  Result<TransactionRecord> loadTransaction(int walletId, String txHash) {
     final transactions = realm.query<RealmTransaction>(
         "walletId == '$walletId' AND transactionHash == '$txHash'");
 
-    return handleRealm<TransactionRecord?>(
+    return handleRealm<TransactionRecord>(
       () => transactions.isEmpty
-          ? null
+          ? throw ErrorCodes.realmNotFound
           : mapRealmTransactionToTransaction(transactions.first),
     );
   }
@@ -207,36 +208,117 @@ class TransactionRepository extends BaseRepository {
       return null;
     }
 
+    if (realmTransaction.blockHeight == 0) {
+      final realmRbfHistoryList = getRbfHistoryList(walletId, transactionHash);
+      final realmCpfpHistory = getCpfpHistory(walletId, transactionHash);
+
+      return mapRealmTransactionToTransaction(realmTransaction,
+          realmRbfHistoryList: realmRbfHistoryList,
+          realmCpfpHistory: realmCpfpHistory);
+    }
+
     return mapRealmTransactionToTransaction(realmTransaction);
   }
 
-  void addRbfHistory(int walletId, String originalTransactionHash,
-      String transactionHash, double feeRate, DateTime timestamp) {
-    final existingRbfHistoryList =
-        getRbfHistoryList(walletId, originalTransactionHash);
+  /// RBF 내역을 일괄 저장합니다.
+  ///
+  /// 중복 체크를 수행하여 이미 저장된 내역은 다시 저장하지 않습니다.
+  Future<void> addAllRbfHistory(List<RbfHistoryDto> rbfHistoryList) async {
+    if (rbfHistoryList.isEmpty) return;
 
-    int order = existingRbfHistoryList.length + 1;
+    // 중복 체크를 위한 기존 ID 목록 생성
+    final existingIds = <int>{};
+    for (final dto in rbfHistoryList) {
+      final id = Object.hash(
+          dto.walletId, dto.originalTransactionHash, dto.transactionHash);
 
-    realm.write(() {
-      int id = Object.hash(walletId, originalTransactionHash, transactionHash);
-      realm.add(RealmRbfHistory(id, walletId, originalTransactionHash,
-          transactionHash, order, feeRate, timestamp));
-    });
+      // 이미 존재하는지 확인
+      final existing = realm.find<RealmRbfHistory>(id);
+      if (existing != null) {
+        existingIds.add(id);
+      }
+    }
+
+    // 새로 추가할 RBF 내역 생성
+    final newRbfHistories = <RealmRbfHistory>[];
+
+    for (final dto in rbfHistoryList) {
+      final id = Object.hash(
+          dto.walletId, dto.originalTransactionHash, dto.transactionHash);
+
+      // 이미 존재하는 내역은 건너뜀
+      if (existingIds.contains(id)) continue;
+
+      // 순서 계산
+      final existingRbfHistoryList =
+          getRbfHistoryList(dto.walletId, dto.originalTransactionHash);
+      int order = existingRbfHistoryList.length + 1;
+
+      newRbfHistories.add(RealmRbfHistory(
+        id,
+        dto.walletId,
+        dto.originalTransactionHash,
+        dto.transactionHash,
+        order,
+        dto.feeRate,
+        dto.timestamp,
+      ));
+    }
+
+    // 일괄 저장
+    if (newRbfHistories.isNotEmpty) {
+      await realm.writeAsync(() {
+        realm.addAll<RealmRbfHistory>(newRbfHistories);
+      });
+    }
   }
 
-  void addCpfpHistory(
-      int walletId,
-      String parentTransactionHash,
-      String childTransactionHash,
-      double originalFee,
-      double newFee,
-      DateTime timestamp) {
-    realm.write(() {
-      int id =
-          Object.hash(walletId, parentTransactionHash, childTransactionHash);
-      realm.add(RealmCpfpHistory(id, walletId, parentTransactionHash,
-          childTransactionHash, originalFee, newFee, timestamp));
-    });
+  /// CPFP 내역을 일괄 저장합니다.
+  ///
+  /// 중복 체크를 수행하여 이미 저장된 내역은 다시 저장하지 않습니다.
+  Future<void> addAllCpfpHistory(List<CpfpHistoryDto> cpfpHistoryList) async {
+    if (cpfpHistoryList.isEmpty) return;
+
+    // 중복 체크를 위한 기존 ID 목록 생성
+    final existingIds = <int>{};
+    for (final dto in cpfpHistoryList) {
+      final id = Object.hash(
+          dto.walletId, dto.parentTransactionHash, dto.childTransactionHash);
+
+      // 이미 존재하는지 확인
+      final existing = realm.find<RealmCpfpHistory>(id);
+      if (existing != null) {
+        existingIds.add(id);
+      }
+    }
+
+    // 새로 추가할 CPFP 내역 생성
+    final newCpfpHistories = <RealmCpfpHistory>[];
+
+    for (final dto in cpfpHistoryList) {
+      final id = Object.hash(
+          dto.walletId, dto.parentTransactionHash, dto.childTransactionHash);
+
+      // 이미 존재하는 내역은 건너뜀
+      if (existingIds.contains(id)) continue;
+
+      newCpfpHistories.add(RealmCpfpHistory(
+        id,
+        dto.walletId,
+        dto.parentTransactionHash,
+        dto.childTransactionHash,
+        dto.originalFee,
+        dto.newFee,
+        dto.timestamp,
+      ));
+    }
+
+    // 일괄 저장
+    if (newCpfpHistories.isNotEmpty) {
+      await realm.writeAsync(() {
+        realm.addAll<RealmCpfpHistory>(newCpfpHistories);
+      });
+    }
   }
 
   List<RealmRbfHistory> getRbfHistoryList(
@@ -266,4 +348,40 @@ class TransactionRepository extends BaseRepository {
 
     return realmCpfpHistory;
   }
+}
+
+/// RBF 내역 일괄 저장을 위한 DTO 클래스
+class RbfHistoryDto {
+  final int walletId;
+  final String originalTransactionHash;
+  final String transactionHash;
+  final double feeRate;
+  final DateTime timestamp;
+
+  RbfHistoryDto({
+    required this.walletId,
+    required this.originalTransactionHash,
+    required this.transactionHash,
+    required this.feeRate,
+    required this.timestamp,
+  });
+}
+
+/// CPFP 내역 일괄 저장을 위한 DTO 클래스
+class CpfpHistoryDto {
+  final int walletId;
+  final String parentTransactionHash;
+  final String childTransactionHash;
+  final double originalFee;
+  final double newFee;
+  final DateTime timestamp;
+
+  CpfpHistoryDto({
+    required this.walletId,
+    required this.parentTransactionHash,
+    required this.childTransactionHash,
+    required this.originalFee,
+    required this.newFee,
+    required this.timestamp,
+  });
 }

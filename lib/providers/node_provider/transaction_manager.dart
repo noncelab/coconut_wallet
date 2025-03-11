@@ -134,17 +134,72 @@ class TransactionManager {
 
     // RBF/CPFP 내역 저장
     if (rbfInfoMap.isNotEmpty || cpfpInfoMap.isNotEmpty) {
-      for (final txRecord in txRecords) {
-        // RBF 내역 저장
-        if (rbfInfoMap.containsKey(txRecord.transactionHash)) {
-          final rbfInfo = rbfInfoMap[txRecord.transactionHash]!;
-          await _saveRbfTransaction(walletItem.id, txRecord, rbfInfo);
+      // 트랜잭션 해시와 레코드를 매핑하는 맵 생성
+      final txRecordMap = {
+        for (var record in txRecords) record.transactionHash: record
+      };
+
+      // RBF 내역 일괄 저장
+      if (rbfInfoMap.isNotEmpty) {
+        final rbfHistoryDtos = <RbfHistoryDto>[];
+
+        for (final entry in rbfInfoMap.entries) {
+          final txHash = entry.key;
+          final rbfInfo = entry.value;
+          final txRecord = txRecordMap[txHash];
+
+          if (txRecord != null) {
+            // 원본 트랜잭션 조회
+            final originalTx = _transactionRepository.getTransactionRecord(
+                walletItem.id, rbfInfo.originalTransactionHash);
+
+            if (originalTx != null) {
+              rbfHistoryDtos.add(RbfHistoryDto(
+                walletId: walletItem.id,
+                originalTransactionHash: rbfInfo.originalTransactionHash,
+                transactionHash: txRecord.transactionHash,
+                feeRate: txRecord.feeRate,
+                timestamp: DateTime.now(),
+              ));
+            } else {
+              Logger.error(
+                  'Original transaction not found: ${rbfInfo.originalTransactionHash}');
+            }
+          }
         }
 
-        // CPFP 내역 저장
-        if (cpfpInfoMap.containsKey(txRecord.transactionHash)) {
-          final cpfpInfo = cpfpInfoMap[txRecord.transactionHash]!;
-          await _saveCpfpTransaction(walletItem.id, txRecord, cpfpInfo);
+        // 일괄 저장
+        if (rbfHistoryDtos.isNotEmpty) {
+          await _transactionRepository.addAllRbfHistory(rbfHistoryDtos);
+          Logger.log('Saved ${rbfHistoryDtos.length} RBF histories in batch');
+        }
+      }
+
+      // CPFP 내역 일괄 저장
+      if (cpfpInfoMap.isNotEmpty) {
+        final cpfpHistoryDtos = <CpfpHistoryDto>[];
+
+        for (final entry in cpfpInfoMap.entries) {
+          final txHash = entry.key;
+          final cpfpInfo = entry.value;
+          final txRecord = txRecordMap[txHash];
+
+          if (txRecord != null) {
+            cpfpHistoryDtos.add(CpfpHistoryDto(
+              walletId: walletItem.id,
+              parentTransactionHash: cpfpInfo.parentTransactionHash,
+              childTransactionHash: txRecord.transactionHash,
+              originalFee: cpfpInfo.originalFee,
+              newFee: txRecord.feeRate,
+              timestamp: DateTime.now(),
+            ));
+          }
+        }
+
+        // 일괄 저장
+        if (cpfpHistoryDtos.isNotEmpty) {
+          await _transactionRepository.addAllCpfpHistory(cpfpHistoryDtos);
+          Logger.log('Saved ${cpfpHistoryDtos.length} CPFP histories in batch');
         }
       }
     }
@@ -153,6 +208,26 @@ class TransactionManager {
       // Transaction 업데이트 완료 state 업데이트
       _stateManager.addWalletCompletedState(
           walletItem.id, UpdateElement.transaction);
+    }
+
+    if (txs.isNotEmpty) {
+      final tx = _transactionRepository.getTransactionRecord(
+          walletItem.id, txs.first.transactionHash);
+
+      if (tx == null || tx.rbfHistoryList == null) {
+        return;
+      }
+
+      if (tx.rbfHistoryList!.isNotEmpty) {
+        Logger.log(
+            '-----------------------------------------------------------');
+        Logger.log('RBF History List');
+        for (final rbfHistory in tx.rbfHistoryList!) {
+          Logger.log('${rbfHistory.transactionHash} : ${rbfHistory.feeRate}');
+        }
+        Logger.log(
+            '-----------------------------------------------------------');
+      }
     }
   }
 
@@ -193,16 +268,8 @@ class TransactionManager {
   Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
     final futures = heights.map((height) async {
       try {
-        final header = await _electrumService.getBlockHeader(height);
-        final blockHeader = BlockHeader.parse(height, header);
-        return MapEntry(
-          height,
-          BlockTimestamp(
-            height,
-            DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
-                isUtc: true),
-          ),
-        );
+        final blockTimestamp = await _electrumService.getBlockTimestamp(height);
+        return MapEntry(height, blockTimestamp);
       } catch (e) {
         Logger.error('Error fetching block header for height $height: $e');
         return null;
@@ -487,6 +554,7 @@ class TransactionManager {
       if (utxo != null &&
           utxo.status == UtxoStatus.outgoing &&
           utxo.spentByTransactionHash != null) {
+        Logger.log('detect Rbf utxo: $utxoId');
         isRbf = true;
         spentTxHash = utxo.spentByTransactionHash;
         break;
@@ -518,31 +586,6 @@ class TransactionManager {
     }
 
     return null;
-  }
-
-  /// RBF 트랜잭션 내역을 저장합니다.
-  Future<bool> _saveRbfTransaction(
-      int walletId, TransactionRecord txRecord, _RbfInfo rbfInfo) async {
-    // 원본 트랜잭션 조회
-    final originalTx = _transactionRepository.getTransactionRecord(
-        walletId, rbfInfo.originalTransactionHash);
-
-    if (originalTx == null) {
-      Logger.error(
-          'Original transaction not found: ${rbfInfo.originalTransactionHash}');
-      return false;
-    }
-
-    // RBF 내역 저장
-    _transactionRepository.addRbfHistory(
-      walletId,
-      rbfInfo.originalTransactionHash,
-      txRecord.transactionHash,
-      txRecord.feeRate,
-      DateTime.now(),
-    );
-
-    return true;
   }
 
   /// CPFP 트랜잭션을 감지합니다.
@@ -586,22 +629,6 @@ class TransactionManager {
     }
 
     return null;
-  }
-
-  /// CPFP 트랜잭션 내역을 저장합니다.
-  Future<bool> _saveCpfpTransaction(
-      int walletId, TransactionRecord txRecord, _CpfpInfo cpfpInfo) async {
-    // CPFP 내역 저장
-    _transactionRepository.addCpfpHistory(
-      walletId,
-      cpfpInfo.parentTransactionHash,
-      txRecord.transactionHash,
-      cpfpInfo.originalFee,
-      txRecord.feeRate,
-      DateTime.now(),
-    );
-
-    return true;
   }
 }
 
