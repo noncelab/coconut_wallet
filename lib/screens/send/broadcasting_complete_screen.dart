@@ -1,6 +1,5 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
