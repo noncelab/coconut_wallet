@@ -12,7 +12,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
@@ -25,6 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
+import 'package:lottie/lottie.dart';
 
 enum Unit { btc, sats }
 
@@ -109,7 +109,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                                         .body3_12_Bold
                                                         .setColor(CoconutColors
                                                             .primary)),
-                                                CoconutLayout.spacing_200w,
+                                                CoconutLayout.spacing_100w,
+                                                LottieBuilder.asset(
+                                                  'assets/files/status_loading.json',
+                                                  width: 16,
+                                                  height: 16,
+                                                ),
                                               ]),
                                         )
                                       : null));
