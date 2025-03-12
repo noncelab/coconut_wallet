@@ -184,7 +184,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                                 children: [
                                   InformationItemCard(
                                       label: t.recipient,
-                                      value: [viewModel.address ?? ""],
+                                      value: viewModel.recipientAddresses,
                                       isNumber: true),
                                   const Divider(
                                       color: MyColors.transparentWhite_12,
