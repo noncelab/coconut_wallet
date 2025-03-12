@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
@@ -57,7 +56,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             child: Stack(
               children: [
                 Scaffold(
-                  backgroundColor: MyColors.black,
+                  backgroundColor: CoconutColors.black,
                   appBar: _buildAppBar(context),
                   body: CustomScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -88,51 +87,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                               );
                             }),
                       ),
-                      Selector<WalletDetailViewModel, bool>(
-                        selector: (_, viewModel) => viewModel.isWalletSyncing,
-                        builder: (_, isWalletSyncing, __) {
-                          return SliverToBoxAdapter(
-                              child: SizedBox(
-                                  height: 32,
-                                  child: isWalletSyncing
-                                      ? Padding(
-                                          padding: const EdgeInsets.only(
-                                              right: 16.0),
-                                          child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              children: [
-                                                Text(t.status_updating,
-                                                    style: CoconutTypography
-                                                        .body3_12_Bold
-                                                        .setColor(CoconutColors
-                                                            .primary)),
-                                                CoconutLayout.spacing_100w,
-                                                LottieBuilder.asset(
-                                                  'assets/files/status_loading.json',
-                                                  width: 16,
-                                                  height: 16,
-                                                ),
-                                              ]),
-                                        )
-                                      : null));
-                        },
-                      ),
-                      SliverToBoxAdapter(
-                          child: Padding(
-                              key: _txListLabelWidgetKey,
-                              padding: const EdgeInsets.only(
-                                left: 16.0,
-                                right: 16.0,
-                                bottom: 12.0,
-                              ),
-                              child: Text(t.tx_list, style: Styles.h3))),
+                      _buildLoadingWidget(),
+                      _buildTxListLabel(),
                       TransactionList(
-                          // txListKey: _txListKey,
-                          currentUnit: _currentUnit,
-                          widget: widget),
+                          currentUnit: _currentUnit, widget: widget),
                     ],
                   ),
                 ),
@@ -148,7 +106,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return CoconutAppBar.build(
       entireWidgetKey: _appBarKey,
       faucetIconKey: _faucetIconKey,
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       title: TextUtils.ellipsisIfLonger(_viewModel.walletName, maxLength: 15),
       context: context,
       onTitlePressed: () => _navigateToWalletInfo(context),
@@ -204,6 +162,50 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           _viewModel.removeFaucetTooltip();
           _onTapSend();
         });
+  }
+
+  Selector<WalletDetailViewModel, bool> _buildLoadingWidget() {
+    return Selector<WalletDetailViewModel, bool>(
+      selector: (_, viewModel) => viewModel.isWalletSyncing,
+      builder: (_, isWalletSyncing, __) {
+        return SliverToBoxAdapter(
+            child: SizedBox(
+                height: 32,
+                child: isWalletSyncing
+                    ? Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(t.status_updating,
+                                  style: CoconutTypography.body3_12_Bold
+                                      .setColor(CoconutColors.primary)),
+                              CoconutLayout.spacing_100w,
+                              LottieBuilder.asset(
+                                'assets/files/status_loading.json',
+                                width: 16,
+                                height: 16,
+                              ),
+                            ]),
+                      )
+                    : null));
+      },
+    );
+  }
+
+  Widget _buildTxListLabel() {
+    return SliverToBoxAdapter(
+        child: Padding(
+            key: _txListLabelWidgetKey,
+            padding: const EdgeInsets.only(
+              left: 16.0,
+              right: 16.0,
+              bottom: 12.0,
+            ),
+            child: Text(t.tx_list,
+                style: CoconutTypography.heading4_18_Bold
+                    .setColor(CoconutColors.white))));
   }
 
   // 스크롤 시 sticky header 렌더링을 위한 상태 변수들
@@ -262,8 +264,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       _appBarSize = appBarRenderBox.size;
       final topSelectorWidgetSize = headerWidgetRenderBox.size;
       final topHeaderWidgetSize = _txlistLabelRenderBox.size;
-      final positionedTopWidgetSize =
-          positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
+      final positionedTopWidgetSize = positionedTopWidgetRenderBox.size;
 
       setState(() {
         _topPadding = topSelectorWidgetSize.height +
