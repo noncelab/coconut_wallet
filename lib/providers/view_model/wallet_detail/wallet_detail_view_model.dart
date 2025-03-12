@@ -181,9 +181,9 @@ class WalletDetailViewModel extends ChangeNotifier {
 
       if (tx.blockHeight == 0) {
         switch (tx.transactionType!) {
-          case 'SEND':
+          case 'SENT':
           case 'SELF':
-            sending += tx.amount!;
+            sending += tx.amount!.abs();
             break;
           case 'RECEIVED':
             receiving += tx.amount!;
@@ -196,6 +196,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
     _sendingAmount = sending;
     _receivingAmount = receiving;
+    notifyListeners();
   }
 
   @override
