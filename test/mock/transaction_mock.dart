@@ -69,8 +69,12 @@ class TransactionMock {
     );
   }
 
-  static Transaction createMockTransaction(String toAddress, int amount,
-      {bool isCoinbase = false}) {
+  static Transaction createMockTransaction({
+    required String toAddress,
+    required int amount,
+    String? inputTransactionHash,
+    bool isCoinbase = false,
+  }) {
     List<TransactionInput> inputs = [];
 
     if (isCoinbase) {
@@ -78,8 +82,8 @@ class TransactionMock {
           '0000000000000000000000000000000000000000000000000000000000000000',
           4294967295));
     } else {
-      inputs.add(
-          TransactionInput.forPayment(Hash.sha256('$toAddress$amount'), 0));
+      inputs.add(TransactionInput.forPayment(
+          inputTransactionHash ?? Hash.sha256('$toAddress$amount'), 0));
     }
 
     List<TransactionOutput> outputs = [

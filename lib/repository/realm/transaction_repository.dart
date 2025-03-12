@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart' as lib;
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 class TransactionRepository extends BaseRepository {
   TransactionRepository(super._realmManager);
@@ -347,6 +349,44 @@ class TransactionRepository extends BaseRepository {
     ).firstOrNull;
 
     return realmCpfpHistory;
+  }
+
+  /// RBF 내역 삭제, 트랜잭션이 컨펌되면 RBF내역은 불필요하므로 연관된 내역도 함께 삭제함
+  void deleteRbfHistory(int walletId, lib.Transaction fetchedTx) {
+    final realmRbfHistory = realm.query<RealmRbfHistory>(
+      r'walletId == $0 AND transactionHash == $1',
+      [walletId, fetchedTx.transactionHash],
+    ).firstOrNull;
+
+    if (realmRbfHistory != null) {
+      final relatedRbfHistoryList = realm.query<RealmRbfHistory>(
+        r'walletId == $0 AND originalTransactionHash == $1',
+        [walletId, realmRbfHistory.originalTransactionHash],
+      );
+
+      if (relatedRbfHistoryList.isNotEmpty) {
+        realm.write(() {
+          realm.deleteMany(relatedRbfHistoryList);
+        });
+      }
+    }
+  }
+
+  /// CPFP 내역 삭제, 트랜잭션이 컨펌되면 CPFP내역은 불필요하므로 연관된 내역도 함께 삭제하
+  void deleteCpfpHistory(int walletId, lib.Transaction fetchedTx) {
+    final realmCpfpHistory = realm.query<RealmCpfpHistory>(
+      r'walletId == $0 AND (parentTransactionHash == $1 OR childTransactionHash == $1)',
+      [walletId, fetchedTx.transactionHash],
+    ).firstOrNull;
+
+    if (realmCpfpHistory != null) {
+      realm.write(() {
+        realm.delete(realmCpfpHistory);
+      });
+
+      // 자세한 로깅
+      Logger.log('CPFP 내역 삭제: ${fetchedTx.transactionHash} (컨펌된 트랜잭션)');
+    }
   }
 }
 

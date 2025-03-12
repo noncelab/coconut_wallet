@@ -6,7 +6,6 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -101,21 +100,40 @@ class UtxoManager {
     int walletId,
     Transaction transaction,
   ) {
+    Logger.log('UTXO 상태 업데이트 (outgoing): ${transaction.transactionHash}');
     // 트랜잭션 입력을 순회하며 사용된 UTXO를 pending 상태로 변경
     for (var input in transaction.inputs) {
       // UTXO 소유 지갑 ID 찾기
       final utxoId = makeUtxoId(input.transactionHash, input.index);
+      final utxo = _utxoRepository.getUtxoState(walletId, utxoId);
 
-      // UTXO를 pending 상태로 표시하고 RBF 관련 정보 저장
+      // UTXO가 자기 자신을 참조하지 않는지 확인
+      if (utxo?.spentByTransactionHash == transaction.transactionHash) {
+        Logger.log('자기 참조 UTXO 감지: $utxoId는 현재 트랜잭션에 의해 사용됨');
+        continue;
+      }
+
+      // 이미 outgoing 상태인 UTXO를 다시 업데이트할 때는 기존 spentByTransactionHash 유지
+      if (utxo != null &&
+          utxo.status == UtxoStatus.outgoing &&
+          utxo.spentByTransactionHash != null) {
+        Logger.log(
+            'RBF에 사용된 UTXO 감지: $utxoId는 이미 ${utxo.spentByTransactionHash}에 의해 사용 중입니다');
+        // 이전 트랜잭션 정보를 유지하여 RBF 감지가 가능하도록 함
+        continue;
+      }
+
+      // UTXO를 outgoing 상태로 표시하고 RBF 관련 정보 저장
       _utxoRepository.markUtxoAsOutgoing(
         walletId,
         utxoId,
         transaction.transactionHash,
       );
+      Logger.log(
+          'UTXO를 outgoing으로 표시: $utxoId (spentBy: ${transaction.transactionHash})');
     }
   }
 
-// 디버깅용
   void deleteUtxosByTransaction(
     int walletId,
     Transaction transaction,
@@ -127,6 +145,7 @@ class UtxoManager {
     _utxoRepository.deleteUtxoList(walletId, utxoIds);
   }
 
+  // 디버깅용
   void printUtxoStateList(int walletId) {
     List<UtxoState> utxoStateList = _utxoRepository.getUtxoStateList(walletId);
 

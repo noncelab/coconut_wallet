@@ -145,8 +145,10 @@ class ScriptEventHandler {
 
       // 동기화 완료 state 업데이트
       _stateManager.setState(newConnectionState: MainClientState.waiting);
-    } catch (e) {
+    } catch (e, stackTrace) {
       Logger.error('Failed to handle batch script status change: $e');
+      Logger.error('Stack trace: $stackTrace');
+      _stateManager.initWalletUpdateStatus(walletItem.id);
       _stateManager.setState(newConnectionState: MainClientState.waiting);
     }
   }
