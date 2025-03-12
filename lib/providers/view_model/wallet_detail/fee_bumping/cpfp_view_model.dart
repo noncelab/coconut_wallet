@@ -11,6 +11,7 @@ class CpfpViewModel extends FeeBumpingViewModel {
   double newTxFeeRate = 0; // 새 거래의 수수료율
   double totalRequiredFee = 0; // 새로운 총 수수료
   double newTxFee = 0; // 새 거래의 수수료
+  int _recommendFeeRate = 0; // 추천 수수료
 
   Transaction? generateTx;
   CpfpViewModel(
@@ -28,7 +29,9 @@ class CpfpViewModel extends FeeBumpingViewModel {
   int? get recommendedFeeRate => getRecommendedFeeRate(); // 추천 수수료율 (보통 속도)
 
   int get recommendFeeRate =>
-      getRecommendFeeRate(); // 추천 수수료 e.g) '추천 수수료: ${recommendFeeRate}sats/vb 이상
+      _recommendFeeRate; // 추천 수수료 e.g) '추천 수수료: ${recommendFeeRate}sats/vb 이상
+
+  double get newTxSize => _newTxSize;
 
   Future<String> generateUnsignedPsbt() async {
     // List<UtxoState> utxoPool = walletProvider.getUtxoList(walletId);
@@ -83,6 +86,7 @@ class CpfpViewModel extends FeeBumpingViewModel {
     새 거래의 수수료율 (sat/vB)	newTxFeeRate */
     String inequalitySign =
         newTxFeeRate % 1 == 0 ? "=" : "≈"; // 소수로 떨어지면 근사값 기호로 적용
+    setRecommendFeeRate();
 
     return t.transaction_fee_bumping_screen.recommend_fee_info_cpfp
         .replaceAll("{newTxSize}", _formatNumber(_newTxSize.toDouble()))
@@ -98,11 +102,13 @@ class CpfpViewModel extends FeeBumpingViewModel {
         .replaceAll("{inequalitySign}", inequalitySign);
   }
 
-  int getRecommendFeeRate() {
+  @override
+  void setRecommendFeeRate() {
     if (newTxFeeRate.isNaN || newTxFeeRate.isInfinite) {
-      return 0;
+      _recommendFeeRate = 0;
+      return;
     }
-    return (newTxFeeRate % 1 == 0
+    _recommendFeeRate = (newTxFeeRate % 1 == 0
             ? newTxFeeRate.toInt()
             : newTxFeeRate.ceil().toInt()) +
         1;
@@ -125,6 +131,7 @@ class CpfpViewModel extends FeeBumpingViewModel {
     newTxFee = totalRequiredFee - _originalFee;
 
     newTxFeeRate = newTxFee / _newTxSize;
+    setRecommendFeeRate();
   }
 
   @override
@@ -134,6 +141,11 @@ class CpfpViewModel extends FeeBumpingViewModel {
     //     UnitUtil.bitcoinToSatoshi(transaction.amount!.toDouble());
     sendInfoProvider
         .setAmount(transaction.amount!.toDouble()); // TODO CPFP 금액 설정
+  }
+
+  @override
+  int getTotalEstimatedFee(int newFeeRate) {
+    return (_newTxSize * newFeeRate).ceil();
   }
 
   String _formatNumber(double value) {

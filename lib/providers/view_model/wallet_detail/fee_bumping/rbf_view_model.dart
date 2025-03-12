@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping/fee_bumping_view_model.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class RbfViewModel extends FeeBumpingViewModel {
@@ -15,7 +16,7 @@ class RbfViewModel extends FeeBumpingViewModel {
     super._currentUtxo,
     super._addressRepository,
   ) {
-    print('RbfViewModel created');
+    Logger.log('RbfViewModel created');
   }
 
   int _getRecommendFeeRate() {
@@ -25,10 +26,16 @@ class RbfViewModel extends FeeBumpingViewModel {
   }
 
   @override
+  int getTotalEstimatedFee(int newFeeRate) {
+    return (transaction.vSize * newFeeRate).ceil();
+  }
+
+  @override
+  void setRecommendFeeRate() {}
+
+  @override
   void updateSendInfoProvider(int newTxFeeRate) {
     super.updateSendInfoProvider(newTxFeeRate);
-    // bool isMaxMode = walletProvider.getWalletBalance(_walletId).confirmed ==
-    //     UnitUtil.bitcoinToSatoshi(transaction.amount!.toDouble());
     sendInfoProvider.setAmount(transaction.amount!.toDouble());
   }
 

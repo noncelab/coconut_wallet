@@ -191,9 +191,9 @@ class _TransactionFeeBumpingScreenState
                                 Text(
                                   t.transaction_fee_bumping_screen
                                       .estimated_fee(
-                                    fee: addCommasToIntegerPart((int.parse(
-                                                _textEditingController.text) *
-                                            viewModel.transaction.vSize)
+                                    fee: addCommasToIntegerPart(_viewModel
+                                        .getTotalEstimatedFee(int.parse(
+                                            _textEditingController.text))
                                         .toDouble()),
                                   ),
                                   style: CoconutTypography.body2_14,
@@ -280,7 +280,7 @@ class _TransactionFeeBumpingScreenState
     } else {
       setState(() {
         _isEstimatedFeeTooHigh =
-            value * (_viewModel.transaction.vSize) >= 1000000;
+            _viewModel.getTotalEstimatedFee(value) >= 1000000;
       });
       _viewModel.setLowerFeeError(false);
     }

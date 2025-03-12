@@ -86,11 +86,15 @@ abstract class FeeBumpingViewModel extends ChangeNotifier {
     if (feeInfos[1].satsPerVb != null) {
       Logger.log('현재 수수료(보통) 업데이트 됨 >> ${feeInfos[1].satsPerVb}');
       initializeGenerateTx();
+    } else {
+      setRecommendFeeRate();
     }
   }
 
   // abstract 메서드
   void initializeGenerateTx();
+  void getTotalEstimatedFee(int newFeeRate);
+  void setRecommendFeeRate();
 
   void updateSendInfoProvider(int newTxFeeRate) {
     bool isMultisig =
@@ -98,8 +102,6 @@ abstract class FeeBumpingViewModel extends ChangeNotifier {
     sendInfoProvider.setFeeRate(newTxFeeRate);
     sendInfoProvider.setIsMultisig(isMultisig);
     sendInfoProvider.setIsMaxMode(false);
-
-    debugPrint('send!!!!!! ${sendInfoProvider.feeRate}');
   }
 
   TransactionType? getTransactionType() {
@@ -131,6 +133,8 @@ abstract class FeeBumpingViewModel extends ChangeNotifier {
     _feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
     _feeInfos[2].satsPerVb = recommendedFees.hourFee;
     _isRecommendedFeesFetchSuccess = true;
+    initializeGenerateTx();
+
     notifyListeners();
   }
 }
