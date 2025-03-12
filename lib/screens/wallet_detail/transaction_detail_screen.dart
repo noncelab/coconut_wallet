@@ -126,10 +126,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         HighlightedInfoArea(
-                            textList: viewModel.timestamp != null
-                                ? DateTimeUtil.formatTimeStamp(
-                                    viewModel.timestamp!.toLocal())
-                                : ['--.--.--', '--:--']),
+                          textList: DateTimeUtil.formatTimeStamp(
+                            viewModel
+                                .transactionList![
+                                    viewModel.selectedTransactionIndex]
+                                .transaction!
+                                .timestamp!
+                                .toLocal(),
+                          ),
+                        ),
                         const SizedBox(
                           height: 24,
                         ),
@@ -174,7 +179,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             children: [
                               _pendingWidget(
                                   viewModel.transactionList![0].transaction!),
-                              _rbfHistoryWidget(),
+                              rbfType
+                                  ? _rbfHistoryWidget()
+                                  : _cpfpHistoryWidget(),
                               CoconutLayout.spacing_300h,
                             ],
                           )
