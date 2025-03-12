@@ -152,7 +152,6 @@ class WalletDetailViewModel extends ChangeNotifier {
         updateInfo.transaction == UpdateStatus.completed) {
       _txProvider.initTxList(_walletId);
       _setReceiveAddress();
-      _setPendingAmount();
       notifyListeners();
       Logger.log('--> 지갑$_walletId의 TX를 업데이트했습니다.');
     }
@@ -164,6 +163,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       notifyListeners();
     }
 
+    _setPendingAmount();
     _prevWalletUpdateInfo = updateInfo;
   }
 

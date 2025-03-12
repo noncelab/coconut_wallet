@@ -137,7 +137,8 @@ class WalletDetailHeader extends StatelessWidget {
           CoconutLayout.spacing_200w,
           Text(
             text,
-            style: CoconutTypography.body2_14_Number,
+            style: CoconutTypography.body2_14_Number
+                .setColor(CoconutColors.gray200),
           ),
         ],
       ),

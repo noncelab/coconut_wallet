@@ -46,6 +46,10 @@ class UpbitConnectModel extends ChangeNotifier {
 
   // util: 통화 코드를 받아서 가격을 반환
   String getFiatPrice(int satoshiAmount, CurrencyCode fiatCode) {
+    if (_bitcoinPriceKrw == null) {
+      return '';
+    }
+
     if (fiatCode.code == CurrencyCode.KRW.code) {
       return '${CurrencyCode.KRW.symbol} ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(satoshiAmount, bitcoinPriceKrw!).toDouble())}';
     }
