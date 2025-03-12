@@ -1,9 +1,10 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
@@ -12,7 +13,6 @@ import 'package:provider/provider.dart';
 class UtxoListHeader extends StatefulWidget {
   final GlobalKey dropdownGlobalKey;
   final int? balance;
-  final int? btcPriceInKrw;
   final String selectedFilter;
   final Function onTapDropdown;
   final List<UtxoTag> utxoTagList;
@@ -23,7 +23,6 @@ class UtxoListHeader extends StatefulWidget {
       {super.key,
       required this.dropdownGlobalKey,
       required this.balance,
-      required this.btcPriceInKrw,
       required this.selectedFilter,
       required this.onTapDropdown,
       required this.utxoTagList,
@@ -44,7 +43,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
           children: [
             Container(
               padding: const EdgeInsets.only(
-                left: 35,
+                left: 20,
                 top: 28,
               ),
               width: MediaQuery.sizeOf(context).width,
@@ -55,7 +54,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     t.utxo_list_screen.total_balance,
                     style: CoconutTypography.body1_16_Bold,
                   ),
-                  CoconutLayout.spacing_200h,
+                  CoconutLayout.spacing_100h,
                   IntrinsicWidth(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -76,12 +75,14 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                       ],
                     ),
                   ),
-                  CoconutLayout.spacing_100h,
-                  if (widget.balance != null && widget.btcPriceInKrw != null)
-                    Text(
-                        '₩ ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.balance!, widget.btcPriceInKrw!).toDouble())}',
-                        style: CoconutTypography.body1_16_Number
-                            .setColor(CoconutColors.gray500)),
+                  CoconutLayout.spacing_50h,
+                  if (widget.balance != null)
+                    Consumer<UpbitConnectModel>(
+                        builder: (context, viewModel, child) => Text(
+                            viewModel.getFiatPrice(
+                                widget.balance!, CurrencyCode.KRW),
+                            style: CoconutTypography.body2_14_Number
+                                .setColor(CoconutColors.gray500))),
                   CoconutLayout.spacing_400h,
                   Row(
                     children: [
@@ -123,7 +124,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                 ),
               );
             }),
-            CoconutLayout.spacing_400h,
+            CoconutLayout.spacing_300h,
           ],
         )
       ],

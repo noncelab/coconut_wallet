@@ -469,7 +469,8 @@ class _TransactionListState extends State<TransactionList> {
       key: _txListKey,
       initialItemCount: txList.length,
       itemBuilder: (context, index, animation) {
-        return _buildTransactionItem(txList, index, animation);
+        return _buildTransactionItem(
+            txList[index], animation, txList.length - 1 == index);
       },
     );
   }
@@ -484,7 +485,7 @@ class _TransactionListState extends State<TransactionList> {
   }
 
   Widget _buildTransactionItem(
-      List<TransactionRecord> txList, int index, Animation<double> animation) {
+      TransactionRecord tx, Animation<double> animation, bool isLastItem) {
     var offsetAnimation = _buildSlideAnimation(animation);
 
     return Column(
@@ -494,8 +495,8 @@ class _TransactionListState extends State<TransactionList> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: TransactionItemCard(
-              key: Key(txList[index].transactionHash),
-              tx: txList[index],
+              key: Key(tx.transactionHash),
+              tx: tx,
               currentUnit: widget._currentUnit,
               id: widget.widget.id,
               onPressed: () {
@@ -504,16 +505,14 @@ class _TransactionListState extends State<TransactionList> {
                   '/transaction-detail',
                   arguments: {
                     'id': widget.widget.id,
-                    'txHash': txList[index].transactionHash,
+                    'txHash': tx.transactionHash,
                   },
                 );
               },
             ),
           ),
         ),
-        txList.length - 1 == index
-            ? CoconutLayout.spacing_1000h
-            : CoconutLayout.spacing_200h,
+        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
       ],
     );
   }

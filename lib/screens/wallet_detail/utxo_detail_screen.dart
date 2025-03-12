@@ -52,30 +52,21 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoDetailViewModel>(
-      create: (_) => UtxoDetailViewModel(
-        widget.id,
-        widget.utxo,
-        Provider.of<UtxoTagProvider>(_, listen: false),
-        Provider.of<TransactionProvider>(_, listen: false),
-      ),
-      child: Consumer<UtxoDetailViewModel>(
-        builder: (_, viewModel, child) {
-          final tx = viewModel.transaction;
-          final allTags = viewModel.utxoTagList;
-          final tagsApplied = viewModel.selectedUtxoTagList;
-
-          return GestureDetector(
-            onTap: _removeUtxoTooltip,
-            child: Stack(
-              children: [
-                _buildScaffold(context, viewModel, tx, allTags, tagsApplied),
-                if (_isUtxoTooltipVisible) _buildTooltip(context),
-              ],
+        create: (_) => UtxoDetailViewModel(
+              widget.id,
+              widget.utxo,
+              Provider.of<UtxoTagProvider>(_, listen: false),
+              Provider.of<TransactionProvider>(_, listen: false),
             ),
-          );
-        },
-      ),
-    );
+        child: GestureDetector(
+          onTap: _removeUtxoTooltip,
+          child: Stack(
+            children: [
+              _buildScaffold(context),
+              if (_isUtxoTooltipVisible) _buildTooltip(context),
+            ],
+          ),
+        ));
   }
 
   void _showTagBottomSheet(
@@ -99,13 +90,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  Widget _buildScaffold(
-    BuildContext context,
-    UtxoDetailViewModel viewModel,
-    TransactionRecord? tx,
-    List<UtxoTag> tags,
-    List<UtxoTag> selectedTags,
-  ) {
+  Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       backgroundColor: CoconutColors.black,
       appBar: _buildAppBar(context),
@@ -116,34 +101,40 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             horizontal: 16,
             vertical: 20,
           ),
-          child: Column(
-            children: [
-              if (tx == null)
-                const Center(child: CircularProgressIndicator())
-              else ...{
-                _buildDateTime(viewModel.dateString),
-                _buildAmount(),
-                if (viewModel.utxoStatus == UtxoStatus.unspent)
-                  _buildPrice()
-                else ...{_buildStatus(viewModel.utxoStatus)},
-                _buildTxInputOutputSection(viewModel, tx),
-                _buildAddress(),
-                _buildTxMemo(
-                  tx.memo,
-                ),
-                _buildTagSection(
-                  context,
-                  tags,
-                  selectedTags,
-                  viewModel,
-                ),
-                _buildTxId(),
-                _buildBlockHeight(),
-                CoconutLayout.spacing_1000h,
-                _buildBalanceWidthCheck(),
-              }
-            ],
-          ),
+          child: Consumer<UtxoDetailViewModel>(builder: (_, viewModel, child) {
+            final tx = viewModel.transaction;
+            final tags = viewModel.utxoTagList;
+            final selectedTags = viewModel.selectedUtxoTagList;
+
+            return Column(
+              children: [
+                if (tx == null)
+                  const Center(child: CircularProgressIndicator())
+                else ...{
+                  _buildDateTime(viewModel.dateString),
+                  _buildAmount(),
+                  if (viewModel.utxoStatus == UtxoStatus.unspent)
+                    _buildPrice()
+                  else ...{_buildStatus(viewModel.utxoStatus)},
+                  _buildTxInputOutputSection(viewModel, tx),
+                  _buildAddress(),
+                  _buildTxMemo(
+                    tx.memo,
+                  ),
+                  _buildTagSection(
+                    context,
+                    tags,
+                    selectedTags,
+                    viewModel,
+                  ),
+                  _buildTxId(),
+                  _buildBlockHeight(),
+                  CoconutLayout.spacing_1000h,
+                  _buildBalanceWidthCheck(),
+                }
+              ],
+            );
+          }),
         ),
       ),
     );
@@ -331,14 +322,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildPrice() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
-      child: Center(
-          child: Selector<UpbitConnectModel, int?>(
-        selector: (context, model) => model.bitcoinPriceKrw,
-        builder: (context, bitcoinPriceKrw, child) {
+      child: Center(child: Consumer<UpbitConnectModel>(
+        builder: (context, viewModel, child) {
           return Text(
-            bitcoinPriceKrw != null
-                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
-                : '',
+            viewModel.getFiatPrice(widget.utxo.amount, CurrencyCode.KRW),
             style: CoconutTypography.body2_14_Number
                 .copyWith(color: CoconutColors.gray500),
           );
@@ -353,14 +340,22 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Lottie.asset(
-            status == UtxoStatus.incoming
-                ? 'assets/lottie/arrow-down.json'
-                : 'assets/lottie/arrow-up.json',
-            width: 20,
-            height: 20,
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10.0),
+              color: status == UtxoStatus.incoming
+                  ? CoconutColors.cyan.withOpacity(0.2)
+                  : CoconutColors.primary.withOpacity(0.2),
+            ),
+            child: Lottie.asset(
+              status == UtxoStatus.incoming
+                  ? 'assets/lottie/arrow-down.json'
+                  : 'assets/lottie/arrow-up.json',
+              width: 20,
+              height: 20,
+            ),
           ),
-          CoconutLayout.spacing_100w,
+          CoconutLayout.spacing_200w,
           Text(
             status == UtxoStatus.incoming
                 ? t.status_receiving
@@ -469,8 +464,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     return UnderlineButtonItemCard(
         label: t.block_num,
         underlineButtonLabel: t.view_mempool,
-        onTapUnderlineButton: () => launchUrl(Uri.parse(
-            "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
+        onTapUnderlineButton: () {
+          if (widget.utxo.blockHeight == 0) return;
+
+          launchUrl(Uri.parse(
+              "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}"));
+        },
         child: Text(
           widget.utxo.blockHeight.toString(),
           style: CoconutTypography.body2_14_Number,

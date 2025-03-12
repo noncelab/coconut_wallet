@@ -65,7 +65,7 @@ class WalletDetailHeader extends StatelessWidget {
       child: Text(
         balance != null ? btcPriceInKrw : '-',
         style:
-            CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350),
+            CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
       ),
     );
   }

@@ -128,7 +128,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                           ],
                         ),
                       ),
-                      CoconutLayout.spacing_200h,
+                      CoconutLayout.spacing_50h,
                       Visibility(
                         visible: !viewModel.isUtxoTagListEmpty,
                         child: CustomTagHorizontalSelector(
