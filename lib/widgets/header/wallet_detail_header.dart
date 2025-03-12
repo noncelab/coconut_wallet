@@ -106,6 +106,7 @@ class WalletDetailHeader extends StatelessWidget {
               : '',
           CoconutColors.primary.withOpacity(0.2),
         ),
+        CoconutLayout.spacing_50h,
         _buildPendingAmountRow(
           receivingAmount != 0,
           'assets/lottie/arrow-down.json',

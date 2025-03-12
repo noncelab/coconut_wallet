@@ -425,13 +425,41 @@ class _TransactionListState extends State<TransactionList> {
   }
 
   void _handleTransactionListUpdate(List<TransactionRecord> txList) {
-    // TODO: 로직 변경 필요
-    // 1. 트랜잭션 추가 위치: 반드시 맨 앞이 아닐수 있음
-    // 2. 삭제 케이스: rbf 시 기존 트랜잭션은 삭제됨.
-    // 3. 트랜잭션의 상태만 바뀌는 경우, 부분 렌더링 가능할까?
-    if (txList.length > _previousTxList.length) {
-      _txListKey.currentState?.insertItem(0, duration: _duration);
+    final oldTxMap = {for (var tx in _previousTxList) tx.transactionHash: tx};
+    final newTxMap = {for (var tx in txList) tx.transactionHash: tx};
+
+    final List<int> insertedIndexes = [];
+    final List<int> removedIndexes = [];
+
+    for (int i = 0; i < txList.length; i++) {
+      if (!oldTxMap.containsKey(txList[i].transactionHash)) {
+        insertedIndexes.add(i);
+        debugPrint('insertedIndexes: $i');
+      }
     }
+
+    for (int i = 0; i < _previousTxList.length; i++) {
+      if (!newTxMap.containsKey(_previousTxList[i].transactionHash)) {
+        removedIndexes.add(i);
+        debugPrint('removedIndexes: $i');
+      }
+    }
+
+    // 마지막 인덱스부터 삭제 (index shift 문제 방지)
+    for (var index in removedIndexes.reversed) {
+      _txListKey.currentState?.removeItem(
+        index,
+        (context, animation) =>
+            _buildRemoveTransactionItem(_previousTxList[index], animation),
+        duration: _duration,
+      );
+    }
+
+    // 삽입된 인덱스 순서대로 추가
+    for (var index in insertedIndexes) {
+      _txListKey.currentState?.insertItem(index, duration: _duration);
+    }
+
     _previousTxList = List.from(txList);
   }
 
@@ -486,6 +514,34 @@ class _TransactionListState extends State<TransactionList> {
             ? CoconutLayout.spacing_1000h
             : CoconutLayout.spacing_200h,
       ],
+    );
+  }
+
+  Widget _buildRemoveTransactionItem(
+      TransactionRecord tx, Animation<double> animation) {
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: animation.drive(Tween<Offset>(
+          begin: Offset.zero,
+          end: const Offset(-1.0, 0.0), // 왼쪽으로 사라지는 애니메이션
+        ).chain(CurveTween(curve: Curves.easeInExpo))),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: TransactionItemCard(
+            key: Key(tx.transactionHash),
+            tx: tx,
+            currentUnit: widget._currentUnit,
+            id: widget.widget.id,
+            onPressed: () {
+              Navigator.pushNamed(context, '/transaction-detail', arguments: {
+                'id': widget.widget.id,
+                'txHash': tx.transactionHash
+              });
+            },
+          ),
+        ),
+      ),
     );
   }
 
