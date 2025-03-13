@@ -61,34 +61,46 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                   title: t.send,
                   context: context,
                   actionButtonList: [
-                    IconButton(
-                      icon: SvgPicture.asset(
-                          _isBatchMode
+                    Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: IconButton(
+                          icon: SvgPicture.asset(_isBatchMode
                               ? 'assets/svg/user.svg'
-                              : 'assets/svg/users-group.svg',
-                          width: 20,
-                          height: 20),
-                      onPressed: _changeIsBatchMode,
-                      padding: null,
+                              : 'assets/svg/users-group.svg'),
+                          onPressed: _changeIsBatchMode,
+                          padding: const EdgeInsets.all(0),
+                        ),
+                      ),
                     ),
-                    IconButton(
-                      icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
-                          width: 20,
-                          height: 20,
-                          colorFilter: ColorFilter.mode(
-                            _isBatchMode
-                                ? CoconutColors.gray800
-                                : CoconutColors.white,
-                            BlendMode.srcIn,
-                          )),
-                      onPressed: _isBatchMode
-                          ? null
-                          : () {
-                              if (controller != null) {
-                                controller!.flipCamera();
-                              }
-                            },
-                    ),
+                    CoconutLayout.spacing_200w,
+                    Padding(
+                      padding: const EdgeInsets.all(2.0),
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: IconButton(
+                          iconSize: 24,
+                          icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
+                              colorFilter: ColorFilter.mode(
+                                _isBatchMode
+                                    ? CoconutColors.gray800
+                                    : CoconutColors.white,
+                                BlendMode.srcIn,
+                              )),
+                          onPressed: _isBatchMode
+                              ? null
+                              : () {
+                                  if (controller != null) {
+                                    controller!.flipCamera();
+                                  }
+                                },
+                          padding: const EdgeInsets.all(0),
+                        ),
+                      ),
+                    )
                   ],
                   onBackPressed: () {
                     _stopCamera();

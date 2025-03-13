@@ -110,7 +110,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
             right: 0,
             child: IconButton(
               iconSize: 14,
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.all(1.0),
               onPressed: _onDeleted,
               icon: SvgPicture.asset('assets/svg/close-bold.svg',
                   colorFilter: const ColorFilter.mode(
