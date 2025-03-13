@@ -9,22 +9,24 @@ import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
-class SendAddressBodyBatch extends StatefulWidget {
+class SendAddressAmountBodyForBatch extends StatefulWidget {
   final Future<void> Function(String recipient) validateAddress;
   final bool Function(int totalSendAmount) checkSendAvailable;
   final void Function(Map<String, double> recipients) onRecipientsConfirmed;
 
-  const SendAddressBodyBatch(
+  const SendAddressAmountBodyForBatch(
       {super.key,
       required this.validateAddress,
       required this.checkSendAvailable,
       required this.onRecipientsConfirmed});
 
   @override
-  State<SendAddressBodyBatch> createState() => _SendAddressBodyBatchState();
+  State<SendAddressAmountBodyForBatch> createState() =>
+      _SendAddressAmountBodyForBatchState();
 }
 
-class _SendAddressBodyBatchState extends State<SendAddressBodyBatch> {
+class _SendAddressAmountBodyForBatchState
+    extends State<SendAddressAmountBodyForBatch> {
   final ScrollController _scrollController = ScrollController();
   late final List<_RecipientInfo> _recipients;
   // TODO: recipients가 N개 이하 (테스트 해보고, 적합한 개수를 설정해야 함)

@@ -10,7 +10,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
-import 'package:coconut_wallet/widgets/body/send_address/send_address_body_batch.dart';
+import 'package:coconut_wallet/widgets/body/send_address/send_address_amount_body_for_batch.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -102,7 +102,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                       address: viewModel.address,
                       pasteAddress: _setClipboardAddressAsRecipient,
                     )
-                  : SendAddressBodyBatch(
+                  : SendAddressAmountBodyForBatch(
                       validateAddress: _viewModel.validateAddress,
                       checkSendAvailable: (int totalSendAmount) => viewModel
                           .isSendAmountValid(widget.id, totalSendAmount),
