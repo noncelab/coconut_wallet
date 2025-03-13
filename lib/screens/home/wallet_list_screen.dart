@@ -4,12 +4,14 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
@@ -53,6 +55,11 @@ class _WalletListScreenState extends State<WalletListScreen>
   late ScrollController _scrollController;
   List<GlobalKey> _itemKeys = [];
 
+  late List<WalletListItemBase> _previousWalletList = [];
+  final GlobalKey<SliverAnimatedListState> _walletListKey =
+      GlobalKey<SliverAnimatedListState>();
+  final Duration _duration = const Duration(milliseconds: 1200);
+
   AnimationController? _slideAnimationController;
   AnimationController? _blinkAnimationController;
   Animation<Offset>? _slideAnimation;
@@ -88,14 +95,20 @@ class _WalletListScreenState extends State<WalletListScreen>
         if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
           previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
         }
-
+        debugPrint('update!!!!!!!!!!!!');
         // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
         return previous..onWalletProviderUpdated(walletProvider);
       },
       child: Consumer<WalletListViewModel>(
         builder: (context, viewModel, child) {
+          debugPrint('builder!!!!!!!!!!!');
           _itemKeys = List.generate(
               viewModel.walletItemList.length, (index) => GlobalKey());
+          _handleTransactionListUpdate(
+            viewModel.walletItemList,
+            (id) => viewModel.getWalletBalance(id),
+            viewModel.isBalanceHidden,
+          );
           return PopScope(
             canPop: false,
             onPopInvokedWithResult: (didPop, _) async {
@@ -120,6 +133,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               extendBodyBehindAppBar: true,
               body: SafeArea(
                 top: false,
+                bottom: false,
                 child: Stack(
                   children: [
                     CustomScrollView(
@@ -250,17 +264,21 @@ class _WalletListScreenState extends State<WalletListScreen>
                             ],
                           )),
                           // 지갑 목록
-                          SliverSafeArea(
-                            top: false,
-                            minimum: const EdgeInsets.symmetric(horizontal: 8),
-                            sliver: SliverList(
-                              delegate: SliverChildBuilderDelegate(
-                                  childCount: viewModel.walletItemList.length,
-                                  (ctx, index) {
-                                return _getWalletRowItem(index, viewModel);
-                              }),
-                            ),
-                          ),
+                          // SliverSafeArea(
+                          //   top: false,
+                          //   minimum: const EdgeInsets.symmetric(horizontal: 8),
+                          //   sliver: SliverList(
+                          //     delegate: SliverChildBuilderDelegate(
+                          //         childCount: viewModel.walletItemList.length,
+                          //         (ctx, index) {
+                          //       return _getWalletRowItem(index, viewModel);
+                          //     }),
+                          //   ),
+                          // ),
+                          _buildSliverAnimatedList(
+                              viewModel.walletItemList,
+                              (id) => viewModel.getWalletBalance(id),
+                              viewModel.isBalanceHidden),
                         ]),
                     Visibility(
                       visible: _isDropdownMenuVisible,
@@ -311,6 +329,114 @@ class _WalletListScreenState extends State<WalletListScreen>
           );
         },
       ),
+    );
+  }
+
+  void _handleTransactionListUpdate(List<WalletListItemBase> walletList,
+      Function(int) getWalletBalance, bool isBalanceHidden) {
+    final oldTxMap = {
+      for (var walletItem in _previousWalletList) walletItem.id: walletItem
+    };
+
+    final newTxMap = {
+      for (var walletItem in walletList) walletItem.id: walletItem
+    };
+
+    final List<int> insertedIndexes = [];
+    int removedIndex = -1;
+
+    for (int i = 0; i < walletList.length; i++) {
+      if (!oldTxMap.containsKey(walletList[i].id)) {
+        insertedIndexes.add(i);
+      }
+    }
+    debugPrint('oldTxMap ${oldTxMap.keys}');
+    debugPrint('newTxMap ${newTxMap.keys}');
+
+    for (int i = 0; i < _previousWalletList.length; i++) {
+      if (!newTxMap.containsKey(_previousWalletList[i].id)) {
+        removedIndex = i;
+        break;
+      }
+    }
+    debugPrint('pid ${_previousWalletList.map(
+      (e) => e.id,
+    )}');
+
+    // 삽입된 인덱스 순서대로 추가
+    for (var index in insertedIndexes) {
+      _walletListKey.currentState?.insertItem(index, duration: _duration);
+    }
+
+    _previousWalletList = List.from(walletList);
+    if (removedIndex != -1) {
+      return _walletListKey.currentState?.removeItem(
+        removedIndex,
+        (context, animation) {
+          debugPrint('_previousWalletList : ${_previousWalletList.length}');
+          if (removedIndex >= _previousWalletList.length) return Container();
+          return _buildRemoveTransactionItem(
+            _previousWalletList[removedIndex],
+            removedIndex,
+            animation,
+            walletList,
+            getWalletBalance,
+            isBalanceHidden,
+          );
+        },
+        duration: _duration,
+      );
+    }
+  }
+
+  Widget _buildSliverAnimatedList(List<WalletListItemBase> walletList,
+      Function(int) getWalletBalance, bool isBalanceHidden) {
+    return SliverAnimatedList(
+      key: _walletListKey,
+      initialItemCount: walletList.length,
+      itemBuilder: (context, index, animation) {
+        return _buildTransactionItem(
+            walletList, index, animation, getWalletBalance, isBalanceHidden);
+      },
+    );
+  }
+
+  Widget _buildTransactionItem(
+      List<WalletListItemBase> walletList,
+      int index,
+      Animation<double> animation,
+      Function(int) getWalletBalance,
+      bool isBalanceHidden) {
+    var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
+
+    return Column(
+      children: [
+        SlideTransition(
+            position: offsetAnimation,
+            child: _getWalletRowItem(Key(walletList[index].id.toString()),
+                index, walletList, getWalletBalance, isBalanceHidden)),
+        walletList.length - 1 == index
+            ? CoconutLayout.spacing_1000h
+            : CoconutLayout.spacing_200h,
+      ],
+    );
+  }
+
+  Widget _buildRemoveTransactionItem(
+      WalletListItemBase wallet,
+      int index,
+      Animation<double> animation,
+      List<WalletListItemBase> walletList,
+      Function(int) getWalletBalance,
+      bool isBalanceHidden) {
+    var offsetAnimation = AnimationUtil.buildSlideOutAnimation(animation);
+
+    return FadeTransition(
+      opacity: animation.drive(Tween<double>(begin: 1.0, end: 0.0)),
+      child: SlideTransition(
+          position: offsetAnimation,
+          child: _getWalletRowItem(Key(wallet.id.toString()), index, walletList,
+              getWalletBalance, isBalanceHidden)),
     );
   }
 
@@ -473,16 +599,21 @@ class _WalletListScreenState extends State<WalletListScreen>
     _slideAnimationController!.forward();
   }
 
-  Widget? _getWalletRowItem(int index, WalletListViewModel viewModel) {
-    if (index < viewModel.walletItemList.length) {
+  Widget? _getWalletRowItem(
+      Key key,
+      int index,
+      List<WalletListItemBase> walletList,
+      Function(int) getWalletBalance,
+      bool isBalanceHidden) {
+    if (index < walletList.length) {
       final WalletListItemBase(
         id: id,
         name: name,
         iconIndex: iconIndex,
         colorIndex: colorIndex,
-      ) = viewModel.walletItemList[index];
-      final base = viewModel.walletItemList[index];
-      final int? balance = viewModel.getWalletBalance(id);
+      ) = walletList[index];
+      final base = walletList[index];
+      final int? balance = getWalletBalance(id);
 
       List<MultisigSigner>? signers;
       if (base.walletType == WalletType.multiSignature) {
@@ -490,110 +621,110 @@ class _WalletListScreenState extends State<WalletListScreen>
       }
 
       final walletItemCard = WalletItemCard(
-        key: _itemKeys[index],
+        key: key,
         id: id,
         name: name,
         balance: balance,
         iconIndex: iconIndex,
         colorIndex: colorIndex,
-        isLastItem: index == viewModel.walletItemList.length - 1,
-        isBalanceHidden: viewModel.isBalanceHidden,
+        isLastItem: index == walletList.length - 1,
+        isBalanceHidden: isBalanceHidden,
         signers: signers,
       );
-
-      switch (_resultOfSyncFromVault?.result) {
-        // case WalletSyncResult.newWalletAdded:
-        //   if (index == viewModel.walletItemList.length - 1) {
-        //     // todo: balance 업데이트 함수 호출 필요
-        //     Logger.log('newWalletAdded');
-        //     _initializeLeftSlideAnimationController();
-        //     return SlideTransition(
-        //         position: _slideAnimation!, child: walletItemCard);
-        //   }
-        //   break;
-        // case WalletSyncResult.existingWalletUpdated:
-        // if (viewModel.walletItemList[index].id ==
-        //     _resultOfSyncFromVault?.walletId!) {
-        //   Logger.log('existingWalletUpdated');
-        //   _initializeBlinkAnimationController();
-        //   return Stack(
-        //     children: [
-        //       walletItemCard,
-        //       IgnorePointer(
-        //         child: AnimatedBuilder(
-        //           animation: _blinkAnimation!,
-        //           builder: (context, child) {
-        //             return Container(
-        //               decoration: BoxDecoration(
-        //                   color: _blinkAnimation!.value,
-        //                   borderRadius: BorderRadius.circular(28)),
-        //               width: itemCardWidth,
-        //               height: itemCardHeight,
-        //             );
-        //           },
-        //         ),
-        //       )
-        //     ],
-        //   );
-        // }
-        // break;
-        default:
-          return walletItemCard;
-      }
+      return walletItemCard;
+      // switch (_resultOfSyncFromVault?.result) {
+      // case WalletSyncResult.newWalletAdded:
+      //   if (index == viewModel.walletItemList.length - 1) {
+      //     // todo: balance 업데이트 함수 호출 필요
+      //     Logger.log('newWalletAdded');
+      //     _initializeLeftSlideAnimationController();
+      //     return SlideTransition(
+      //         position: _slideAnimation!, child: walletItemCard);
+      //   }
+      //   break;
+      // case WalletSyncResult.existingWalletUpdated:
+      // if (viewModel.walletItemList[index].id ==
+      //     _resultOfSyncFromVault?.walletId!) {
+      //   Logger.log('existingWalletUpdated');
+      //   _initializeBlinkAnimationController();
+      //   return Stack(
+      //     children: [
+      //       walletItemCard,
+      //       IgnorePointer(
+      //         child: AnimatedBuilder(
+      //           animation: _blinkAnimation!,
+      //           builder: (context, child) {
+      //             return Container(
+      //               decoration: BoxDecoration(
+      //                   color: _blinkAnimation!.value,
+      //                   borderRadius: BorderRadius.circular(28)),
+      //               width: itemCardWidth,
+      //               height: itemCardHeight,
+      //             );
+      //           },
+      //         ),
+      //       )
+      //     ],
+      //   );
+      // }
+      // break;
+      //   default:
+      //     return walletItemCard;
+      // }
     }
     return null;
   }
 
-  void _initializeBlinkAnimationController() {
-    if (_blinkAnimationController != null && _blinkAnimation != null) {
-      return;
-    }
+  // void _initializeBlinkAnimationController() {
+  //   if (_blinkAnimationController != null && _blinkAnimation != null) {
+  //     return;
+  //   }
 
-    _blinkAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
+  //   _blinkAnimationController = AnimationController(
+  //     vsync: this,
+  //     duration: const Duration(milliseconds: 500),
+  //   );
 
-    _blinkAnimation = TweenSequence<Color?>(
-      [
-        TweenSequenceItem(
-          tween: ColorTween(
-            begin: Colors.transparent,
-            end: CoconutColors.white.withOpacity(0.2),
-          ),
-          weight: 50,
-        ),
-        TweenSequenceItem(
-          tween: ColorTween(
-            begin: CoconutColors.white.withOpacity(0.2),
-            end: Colors.transparent,
-          ),
-          weight: 50,
-        ),
-      ],
-    ).animate(_blinkAnimationController!);
-  }
+  //   _blinkAnimation = TweenSequence<Color?>(
+  //     [
+  //       TweenSequenceItem(
+  //         tween: ColorTween(
+  //           begin: Colors.transparent,
+  //           end: CoconutColors.white.withOpacity(0.2),
+  //         ),
+  //         weight: 50,
+  //       ),
+  //       TweenSequenceItem(
+  //         tween: ColorTween(
+  //           begin: CoconutColors.white.withOpacity(0.2),
+  //           end: Colors.transparent,
+  //         ),
+  //         weight: 50,
+  //       ),
+  //     ],
+  //   ).animate(_blinkAnimationController!);
+  // }
 
-  void _initializeLeftSlideAnimationController() {
-    if (_slideAnimationController != null && _slideAnimation != null) {
-      return;
-    }
+  // void _initializeLeftSlideAnimationController() {
+  //   if (_slideAnimationController != null && _slideAnimation != null) {
+  //     return;
+  //   }
 
-    _slideAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
+  //   _slideAnimationController = AnimationController(
+  //     vsync: this,
+  //     duration: const Duration(milliseconds: 500),
+  //   );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _slideAnimationController!,
-        curve: Curves.easeInOut,
-      ),
-    );
-  }
+  //   _slideAnimation = Tween<Offset>(
+  //     begin: const Offset(1.0, 0.0),
+  //     end: Offset.zero,
+  //   ).animate(
+  //     CurvedAnimation(
+  //       parent: _slideAnimationController!,
+  //       curve: Curves.easeInOut,
+  //     ),
+  //   );
+  // }
 
   void _onAddScannerPressed() async {
     final ResultOfSyncFromVault? scanResult =

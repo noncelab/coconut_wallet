@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
@@ -474,18 +475,9 @@ class _TransactionListState extends State<TransactionList> {
     );
   }
 
-  Animation<Offset> _buildSlideAnimation(Animation<double> animation) {
-    const begin = Offset(1.0, 0.0);
-    const end = Offset.zero;
-    const curve = Curves.easeOutExpo;
-
-    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-    return animation.drive(tween);
-  }
-
   Widget _buildTransactionItem(
       List<TransactionRecord> txList, int index, Animation<double> animation) {
-    var offsetAnimation = _buildSlideAnimation(animation);
+    var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
 
     return Column(
       children: [
@@ -520,13 +512,12 @@ class _TransactionListState extends State<TransactionList> {
 
   Widget _buildRemoveTransactionItem(
       TransactionRecord tx, Animation<double> animation) {
+    var offsetAnimation = AnimationUtil.buildSlideOutAnimation(animation);
+
     return FadeTransition(
       opacity: animation,
       child: SlideTransition(
-        position: animation.drive(Tween<Offset>(
-          begin: Offset.zero,
-          end: const Offset(-1.0, 0.0), // 왼쪽으로 사라지는 애니메이션
-        ).chain(CurveTween(curve: Curves.easeInExpo))),
+        position: offsetAnimation,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: TransactionItemCard(
