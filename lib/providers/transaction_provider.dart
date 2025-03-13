@@ -72,6 +72,7 @@ class TransactionProvider extends ChangeNotifier {
       Logger.log('-----------------------------------------------------------');
       Logger.log('loadTransaction(id: $walletId, _utxoId: $txHash)');
       Logger.log(result.error);
+      return null;
     }
     return result.value;
   }

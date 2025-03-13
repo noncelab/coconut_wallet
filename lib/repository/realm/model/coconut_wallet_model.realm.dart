@@ -1269,7 +1269,9 @@ class RealmUtxo extends _RealmUtxo
     int index,
     String derivationPath,
     int blockHeight,
-  ) {
+    String status, {
+    String? spentByTransactionHash,
+  }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'walletId', walletId);
     RealmObjectBase.set(this, 'address', address);
@@ -1279,6 +1281,8 @@ class RealmUtxo extends _RealmUtxo
     RealmObjectBase.set(this, 'index', index);
     RealmObjectBase.set(this, 'derivationPath', derivationPath);
     RealmObjectBase.set(this, 'blockHeight', blockHeight);
+    RealmObjectBase.set(this, 'status', status);
+    RealmObjectBase.set(this, 'spentByTransactionHash', spentByTransactionHash);
   }
 
   RealmUtxo._();
@@ -1335,6 +1339,18 @@ class RealmUtxo extends _RealmUtxo
   set blockHeight(int value) => RealmObjectBase.set(this, 'blockHeight', value);
 
   @override
+  String get status => RealmObjectBase.get<String>(this, 'status') as String;
+  @override
+  set status(String value) => RealmObjectBase.set(this, 'status', value);
+
+  @override
+  String? get spentByTransactionHash =>
+      RealmObjectBase.get<String>(this, 'spentByTransactionHash') as String?;
+  @override
+  set spentByTransactionHash(String? value) =>
+      RealmObjectBase.set(this, 'spentByTransactionHash', value);
+
+  @override
   Stream<RealmObjectChanges<RealmUtxo>> get changes =>
       RealmObjectBase.getChanges<RealmUtxo>(this);
 
@@ -1356,6 +1372,8 @@ class RealmUtxo extends _RealmUtxo
       'index': index.toEJson(),
       'derivationPath': derivationPath.toEJson(),
       'blockHeight': blockHeight.toEJson(),
+      'status': status.toEJson(),
+      'spentByTransactionHash': spentByTransactionHash.toEJson(),
     };
   }
 
@@ -1373,6 +1391,7 @@ class RealmUtxo extends _RealmUtxo
         'index': EJsonValue index,
         'derivationPath': EJsonValue derivationPath,
         'blockHeight': EJsonValue blockHeight,
+        'status': EJsonValue status,
       } =>
         RealmUtxo(
           fromEJson(id),
@@ -1384,6 +1403,8 @@ class RealmUtxo extends _RealmUtxo
           fromEJson(index),
           fromEJson(derivationPath),
           fromEJson(blockHeight),
+          fromEJson(status),
+          spentByTransactionHash: fromEJson(ejson['spentByTransactionHash']),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -1406,6 +1427,285 @@ class RealmUtxo extends _RealmUtxo
       SchemaProperty('index', RealmPropertyType.int),
       SchemaProperty('derivationPath', RealmPropertyType.string),
       SchemaProperty('blockHeight', RealmPropertyType.int),
+      SchemaProperty('status', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('spentByTransactionHash', RealmPropertyType.string,
+          optional: true),
+    ]);
+  }();
+
+  @override
+  SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
+}
+
+class RealmRbfHistory extends _RealmRbfHistory
+    with RealmEntity, RealmObjectBase, RealmObject {
+  RealmRbfHistory(
+    int id,
+    int walletId,
+    String originalTransactionHash,
+    String transactionHash,
+    int order,
+    double feeRate,
+    DateTime timestamp,
+  ) {
+    RealmObjectBase.set(this, 'id', id);
+    RealmObjectBase.set(this, 'walletId', walletId);
+    RealmObjectBase.set(
+        this, 'originalTransactionHash', originalTransactionHash);
+    RealmObjectBase.set(this, 'transactionHash', transactionHash);
+    RealmObjectBase.set(this, 'order', order);
+    RealmObjectBase.set(this, 'feeRate', feeRate);
+    RealmObjectBase.set(this, 'timestamp', timestamp);
+  }
+
+  RealmRbfHistory._();
+
+  @override
+  int get id => RealmObjectBase.get<int>(this, 'id') as int;
+  @override
+  set id(int value) => RealmObjectBase.set(this, 'id', value);
+
+  @override
+  int get walletId => RealmObjectBase.get<int>(this, 'walletId') as int;
+  @override
+  set walletId(int value) => RealmObjectBase.set(this, 'walletId', value);
+
+  @override
+  String get originalTransactionHash =>
+      RealmObjectBase.get<String>(this, 'originalTransactionHash') as String;
+  @override
+  set originalTransactionHash(String value) =>
+      RealmObjectBase.set(this, 'originalTransactionHash', value);
+
+  @override
+  String get transactionHash =>
+      RealmObjectBase.get<String>(this, 'transactionHash') as String;
+  @override
+  set transactionHash(String value) =>
+      RealmObjectBase.set(this, 'transactionHash', value);
+
+  @override
+  int get order => RealmObjectBase.get<int>(this, 'order') as int;
+  @override
+  set order(int value) => RealmObjectBase.set(this, 'order', value);
+
+  @override
+  double get feeRate => RealmObjectBase.get<double>(this, 'feeRate') as double;
+  @override
+  set feeRate(double value) => RealmObjectBase.set(this, 'feeRate', value);
+
+  @override
+  DateTime get timestamp =>
+      RealmObjectBase.get<DateTime>(this, 'timestamp') as DateTime;
+  @override
+  set timestamp(DateTime value) =>
+      RealmObjectBase.set(this, 'timestamp', value);
+
+  @override
+  Stream<RealmObjectChanges<RealmRbfHistory>> get changes =>
+      RealmObjectBase.getChanges<RealmRbfHistory>(this);
+
+  @override
+  Stream<RealmObjectChanges<RealmRbfHistory>> changesFor(
+          [List<String>? keyPaths]) =>
+      RealmObjectBase.getChangesFor<RealmRbfHistory>(this, keyPaths);
+
+  @override
+  RealmRbfHistory freeze() =>
+      RealmObjectBase.freezeObject<RealmRbfHistory>(this);
+
+  EJsonValue toEJson() {
+    return <String, dynamic>{
+      'id': id.toEJson(),
+      'walletId': walletId.toEJson(),
+      'originalTransactionHash': originalTransactionHash.toEJson(),
+      'transactionHash': transactionHash.toEJson(),
+      'order': order.toEJson(),
+      'feeRate': feeRate.toEJson(),
+      'timestamp': timestamp.toEJson(),
+    };
+  }
+
+  static EJsonValue _toEJson(RealmRbfHistory value) => value.toEJson();
+  static RealmRbfHistory _fromEJson(EJsonValue ejson) {
+    if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
+    return switch (ejson) {
+      {
+        'id': EJsonValue id,
+        'walletId': EJsonValue walletId,
+        'originalTransactionHash': EJsonValue originalTransactionHash,
+        'transactionHash': EJsonValue transactionHash,
+        'order': EJsonValue order,
+        'feeRate': EJsonValue feeRate,
+        'timestamp': EJsonValue timestamp,
+      } =>
+        RealmRbfHistory(
+          fromEJson(id),
+          fromEJson(walletId),
+          fromEJson(originalTransactionHash),
+          fromEJson(transactionHash),
+          fromEJson(order),
+          fromEJson(feeRate),
+          fromEJson(timestamp),
+        ),
+      _ => raiseInvalidEJson(ejson),
+    };
+  }
+
+  static final schema = () {
+    RealmObjectBase.registerFactory(RealmRbfHistory._);
+    register(_toEJson, _fromEJson);
+    return const SchemaObject(
+        ObjectType.realmObject, RealmRbfHistory, 'RealmRbfHistory', [
+      SchemaProperty('id', RealmPropertyType.int, primaryKey: true),
+      SchemaProperty('walletId', RealmPropertyType.int,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('originalTransactionHash', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('transactionHash', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('order', RealmPropertyType.int),
+      SchemaProperty('feeRate', RealmPropertyType.double),
+      SchemaProperty('timestamp', RealmPropertyType.timestamp),
+    ]);
+  }();
+
+  @override
+  SchemaObject get objectSchema => RealmObjectBase.getSchema(this) ?? schema;
+}
+
+class RealmCpfpHistory extends _RealmCpfpHistory
+    with RealmEntity, RealmObjectBase, RealmObject {
+  RealmCpfpHistory(
+    int id,
+    int walletId,
+    String parentTransactionHash,
+    String childTransactionHash,
+    double originalFee,
+    double newFee,
+    DateTime timestamp,
+  ) {
+    RealmObjectBase.set(this, 'id', id);
+    RealmObjectBase.set(this, 'walletId', walletId);
+    RealmObjectBase.set(this, 'parentTransactionHash', parentTransactionHash);
+    RealmObjectBase.set(this, 'childTransactionHash', childTransactionHash);
+    RealmObjectBase.set(this, 'originalFee', originalFee);
+    RealmObjectBase.set(this, 'newFee', newFee);
+    RealmObjectBase.set(this, 'timestamp', timestamp);
+  }
+
+  RealmCpfpHistory._();
+
+  @override
+  int get id => RealmObjectBase.get<int>(this, 'id') as int;
+  @override
+  set id(int value) => RealmObjectBase.set(this, 'id', value);
+
+  @override
+  int get walletId => RealmObjectBase.get<int>(this, 'walletId') as int;
+  @override
+  set walletId(int value) => RealmObjectBase.set(this, 'walletId', value);
+
+  @override
+  String get parentTransactionHash =>
+      RealmObjectBase.get<String>(this, 'parentTransactionHash') as String;
+  @override
+  set parentTransactionHash(String value) =>
+      RealmObjectBase.set(this, 'parentTransactionHash', value);
+
+  @override
+  String get childTransactionHash =>
+      RealmObjectBase.get<String>(this, 'childTransactionHash') as String;
+  @override
+  set childTransactionHash(String value) =>
+      RealmObjectBase.set(this, 'childTransactionHash', value);
+
+  @override
+  double get originalFee =>
+      RealmObjectBase.get<double>(this, 'originalFee') as double;
+  @override
+  set originalFee(double value) =>
+      RealmObjectBase.set(this, 'originalFee', value);
+
+  @override
+  double get newFee => RealmObjectBase.get<double>(this, 'newFee') as double;
+  @override
+  set newFee(double value) => RealmObjectBase.set(this, 'newFee', value);
+
+  @override
+  DateTime get timestamp =>
+      RealmObjectBase.get<DateTime>(this, 'timestamp') as DateTime;
+  @override
+  set timestamp(DateTime value) =>
+      RealmObjectBase.set(this, 'timestamp', value);
+
+  @override
+  Stream<RealmObjectChanges<RealmCpfpHistory>> get changes =>
+      RealmObjectBase.getChanges<RealmCpfpHistory>(this);
+
+  @override
+  Stream<RealmObjectChanges<RealmCpfpHistory>> changesFor(
+          [List<String>? keyPaths]) =>
+      RealmObjectBase.getChangesFor<RealmCpfpHistory>(this, keyPaths);
+
+  @override
+  RealmCpfpHistory freeze() =>
+      RealmObjectBase.freezeObject<RealmCpfpHistory>(this);
+
+  EJsonValue toEJson() {
+    return <String, dynamic>{
+      'id': id.toEJson(),
+      'walletId': walletId.toEJson(),
+      'parentTransactionHash': parentTransactionHash.toEJson(),
+      'childTransactionHash': childTransactionHash.toEJson(),
+      'originalFee': originalFee.toEJson(),
+      'newFee': newFee.toEJson(),
+      'timestamp': timestamp.toEJson(),
+    };
+  }
+
+  static EJsonValue _toEJson(RealmCpfpHistory value) => value.toEJson();
+  static RealmCpfpHistory _fromEJson(EJsonValue ejson) {
+    if (ejson is! Map<String, dynamic>) return raiseInvalidEJson(ejson);
+    return switch (ejson) {
+      {
+        'id': EJsonValue id,
+        'walletId': EJsonValue walletId,
+        'parentTransactionHash': EJsonValue parentTransactionHash,
+        'childTransactionHash': EJsonValue childTransactionHash,
+        'originalFee': EJsonValue originalFee,
+        'newFee': EJsonValue newFee,
+        'timestamp': EJsonValue timestamp,
+      } =>
+        RealmCpfpHistory(
+          fromEJson(id),
+          fromEJson(walletId),
+          fromEJson(parentTransactionHash),
+          fromEJson(childTransactionHash),
+          fromEJson(originalFee),
+          fromEJson(newFee),
+          fromEJson(timestamp),
+        ),
+      _ => raiseInvalidEJson(ejson),
+    };
+  }
+
+  static final schema = () {
+    RealmObjectBase.registerFactory(RealmCpfpHistory._);
+    register(_toEJson, _fromEJson);
+    return const SchemaObject(
+        ObjectType.realmObject, RealmCpfpHistory, 'RealmCpfpHistory', [
+      SchemaProperty('id', RealmPropertyType.int, primaryKey: true),
+      SchemaProperty('walletId', RealmPropertyType.int,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('parentTransactionHash', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('childTransactionHash', RealmPropertyType.string,
+          indexType: RealmIndexType.regular),
+      SchemaProperty('originalFee', RealmPropertyType.double),
+      SchemaProperty('newFee', RealmPropertyType.double),
+      SchemaProperty('timestamp', RealmPropertyType.timestamp),
     ]);
   }();
 

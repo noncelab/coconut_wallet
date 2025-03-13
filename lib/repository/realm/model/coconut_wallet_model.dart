@@ -141,4 +141,39 @@ class _RealmUtxo {
   late int index; // 트랜잭션 내 인덱스
   late String derivationPath;
   late int blockHeight;
+
+  /// [UtxoStatus] 참고
+  @Indexed()
+  late String status; // unspent, outgoing, incoming
+  String? spentByTransactionHash; // 이 UTXO를 사용한 트랜잭션 해시 (RBF/CPFP에 필요)
+}
+
+@RealmModel()
+class _RealmRbfHistory {
+  @PrimaryKey()
+  late int id;
+  @Indexed()
+  late int walletId;
+  @Indexed()
+  late String originalTransactionHash;
+  @Indexed()
+  late String transactionHash;
+  late int order;
+  late double feeRate;
+  late DateTime timestamp;
+}
+
+@RealmModel()
+class _RealmCpfpHistory {
+  @PrimaryKey()
+  late int id;
+  @Indexed()
+  late int walletId;
+  @Indexed()
+  late String parentTransactionHash;
+  @Indexed()
+  late String childTransactionHash;
+  late double originalFee;
+  late double newFee;
+  late DateTime timestamp;
 }
