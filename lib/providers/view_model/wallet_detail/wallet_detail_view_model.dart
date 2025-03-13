@@ -43,6 +43,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   // 상태 변화 확인용
   late WalletUpdateInfo _prevWalletUpdateInfo;
 
+  // balance 애니메이션을 위한 이전 잔액을 담는 변수
+  late int _prevBalance;
+
+  int get prevBalance => _prevBalance;
   late bool _isWalletSyncing;
   bool get isWalletSyncing => _isWalletSyncing;
 
@@ -60,7 +64,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
     _walletType = walletBaseItem.walletType;
-
     _txProvider.initTxList(_walletId);
 
     // 지갑 업데이트
@@ -73,6 +76,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     _upbitConnectModel.addListener(_updateBitcoinPrice);
 
     _setPendingAmount();
+    _prevBalance = balance;
+    debugPrint('prev :: $_prevBalance');
 
     // Faucet
     _setReceiveAddress();

@@ -67,9 +67,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       ),
                       SliverToBoxAdapter(
                         child: Selector<WalletDetailViewModel,
-                                Tuple4<int, String, int, int>>(
-                            selector: (_, viewModel) => Tuple4(
+                                Tuple5<int, int, String, int, int>>(
+                            selector: (_, viewModel) => Tuple5(
                                 viewModel.balance,
+                                viewModel.prevBalance,
                                 viewModel.bitcoinPriceKrwInString,
                                 viewModel.sendingAmount,
                                 viewModel.receivingAmount),
@@ -78,9 +79,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                 key: _headerWidgetKey,
                                 balance: data.item1,
                                 currentUnit: _currentUnit,
-                                btcPriceInKrw: data.item2,
-                                sendingAmount: data.item3,
-                                receivingAmount: data.item4,
+                                prevBalance: data.item2,
+                                btcPriceInKrw: data.item3,
+                                sendingAmount: data.item4,
+                                receivingAmount: data.item5,
                                 onPressedUnitToggle: _toggleUnit,
                                 onTapReceive: _onTapReceive,
                                 onTapSend: _onTapSend,
@@ -161,7 +163,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         onTapSend: () {
           _viewModel.removeFaucetTooltip();
           _onTapSend();
-        });
+        },
+        prevBalance: _viewModel.prevBalance);
   }
 
   Selector<WalletDetailViewModel, bool> _buildLoadingWidget() {
