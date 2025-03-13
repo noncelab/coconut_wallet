@@ -6,6 +6,7 @@ import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager_cryptography.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:realm/realm.dart';
 
@@ -40,11 +41,16 @@ class RealmManager {
               RealmScriptStatus.schema,
               RealmBlockTimestamp.schema,
               RealmUtxo.schema,
+              RealmRbfHistory.schema,
+              RealmCpfpHistory.schema,
             ],
             schemaVersion: 1,
             migrationCallback: (migration, oldVersion) {},
           ),
         );
+
+  @visibleForTesting
+  RealmManager.withRealm(this._realm);
 
   Future init(bool isSetPin) async {
     String? hashedPin;

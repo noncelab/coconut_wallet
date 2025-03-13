@@ -25,7 +25,7 @@ RealmUtxo mapUtxoToRealmUtxo(int walletId, UtxoState utxo) {
     utxo.derivationPath,
     utxo.blockHeight,
     utxoStatusToString(utxo.status),
-    spentByTxHash: utxo.spentByTxHash,
+    spentByTransactionHash: utxo.spentByTransactionHash,
   );
 }
 
@@ -38,7 +38,7 @@ UtxoState mapRealmToUtxoState(RealmUtxo utxo) {
     amount: utxo.amount,
     to: utxo.address,
     status: stringToUtxoStatus(utxo.status),
-    spentByTxHash: utxo.spentByTxHash,
+    spentByTransactionHash: utxo.spentByTransactionHash,
   );
 
   utxoState.updateTimestamp(utxo.timestamp);
