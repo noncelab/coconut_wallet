@@ -64,8 +64,16 @@ class ScriptSubscriber {
         .toList();
 
     // 지갑 인덱스 업데이트
-    _addressRepository.updateWalletUsedIndex(walletItem,
-        subscribeResponse.usedReceiveIndex, subscribeResponse.usedChangeIndex);
+    _addressRepository.updateWalletUsedIndex(
+      walletItem,
+      subscribeResponse.usedReceiveIndex,
+      isChange: false,
+    );
+    _addressRepository.updateWalletUsedIndex(
+      walletItem,
+      subscribeResponse.usedChangeIndex,
+      isChange: true,
+    );
 
     // 변경된 상태만 DB에 저장
     _subscriptionRepository.batchUpdateScriptStatuses(

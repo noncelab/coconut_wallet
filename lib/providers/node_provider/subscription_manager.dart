@@ -7,7 +7,7 @@ import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_event_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_subscriber.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';

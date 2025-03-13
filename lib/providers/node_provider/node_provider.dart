@@ -22,7 +22,7 @@ import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 
 class NodeProvider extends ChangeNotifier {

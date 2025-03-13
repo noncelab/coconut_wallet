@@ -216,40 +216,38 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 지갑 사용 인덱스 업데이트
-  void updateWalletUsedIndex(WalletListItemBase walletItem,
-      int usedReceiveIndex, int usedChangeIndex) {
+  void updateWalletUsedIndex(WalletListItemBase walletItem, int usedIndex,
+      {required bool isChange}) {
     final realmWalletBase = getWalletBase(walletItem.id);
 
-    int receiveCursor =
-        max(usedReceiveIndex, realmWalletBase.usedReceiveIndex) + 1;
-    int changeCursor =
-        max(usedChangeIndex, realmWalletBase.usedChangeIndex) + 1;
+    int dbUsedIndex = isChange
+        ? realmWalletBase.usedChangeIndex
+        : realmWalletBase.usedReceiveIndex;
 
-    walletItem.receiveUsedIndex = receiveCursor - 1;
-    walletItem.changeUsedIndex = changeCursor - 1;
+    int cursor = max(usedIndex, dbUsedIndex) + 1;
+
+    if (isChange) {
+      walletItem.changeUsedIndex = cursor - 1;
+    } else {
+      walletItem.receiveUsedIndex = cursor - 1;
+    }
 
     // 필요한 경우에만 새 주소 생성
     ensureAddressesExist(
       walletItemBase: walletItem,
-      cursor: receiveCursor,
+      cursor: cursor,
       count: 1,
-      isChange: false,
-    );
-
-    ensureAddressesExist(
-      walletItemBase: walletItem,
-      cursor: changeCursor,
-      count: 1,
-      isChange: true,
+      isChange: isChange,
     );
 
     // 지갑 인덱스 업데이트
     realm.write(() {
-      if (usedReceiveIndex > realmWalletBase.usedReceiveIndex) {
-        realmWalletBase.usedReceiveIndex = usedReceiveIndex;
-      }
-      if (usedChangeIndex > realmWalletBase.usedChangeIndex) {
-        realmWalletBase.usedChangeIndex = usedChangeIndex;
+      if (usedIndex > dbUsedIndex) {
+        if (isChange) {
+          realmWalletBase.usedChangeIndex = usedIndex;
+        } else {
+          realmWalletBase.usedReceiveIndex = usedIndex;
+        }
       }
     });
   }

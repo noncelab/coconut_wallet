@@ -15,7 +15,7 @@ class IsolateHandler {
     final addressType = params[0];
     final scriptStatuses = params[1] as List<ScriptStatus>;
 
-    List<AddressBalanceUpdateDto> results = [];
+    List<AddressBalanceUpdateDto> balanceUpdateDtoList = [];
     for (var script in scriptStatuses) {
       try {
         final balance =
@@ -27,12 +27,12 @@ class IsolateHandler {
           unconfirmed: balance.unconfirmed,
         );
 
-        results.add(dto);
+        balanceUpdateDtoList.add(dto);
       } catch (e) {
         Logger.error('Error fetching balance for script ${script.address}: $e');
         continue;
       }
     }
-    replyPort.send(results);
+    replyPort.send(balanceUpdateDtoList);
   }
 }
