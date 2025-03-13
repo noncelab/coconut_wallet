@@ -59,15 +59,6 @@ class TransactionManager {
     );
   }
 
-  /// 이전 트랜잭션을 조회합니다.
-  Future<List<Transaction>> getPreviousTransactions(
-      Transaction transaction, List<Transaction> existingTxList) async {
-    return _transactionProcessor.getPreviousTransactions(
-      transaction,
-      existingTxList,
-    );
-  }
-
   /// 트랜잭션을 브로드캐스트합니다.
   Future<Result<String>> broadcast(Transaction signedTx) async {
     try {

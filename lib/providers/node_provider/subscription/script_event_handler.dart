@@ -43,6 +43,12 @@ class ScriptEventHandler {
       // 지갑 업데이트 상태 초기화
       _stateManager.initWalletUpdateStatus(dto.walletItem.id);
 
+      // 스크립트 상태가 변경되었으면 주소 사용 여부 업데이트
+      if (dto.scriptStatus.status != null) {
+        _addressRepository.setWalletAddressUsed(
+            dto.walletItem, dto.scriptStatus.index, dto.scriptStatus.isChange);
+      }
+
       // 기존 인덱스 저장 (변경 전)
       final oldUsedIndex = dto.scriptStatus.isChange
           ? dto.walletItem.changeUsedIndex

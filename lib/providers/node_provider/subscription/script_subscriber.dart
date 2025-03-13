@@ -63,6 +63,10 @@ class ScriptSubscriber {
         .where((status) => status.status != null)
         .toList();
 
+    // 주소 사용 여부 업데이트
+    await _addressRepository.setWalletAddressUsedBatch(
+        walletItem, changedScriptStatuses);
+
     // 지갑 인덱스 업데이트
     _addressRepository.updateWalletUsedIndex(
       walletItem,

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 class AddressRepository extends BaseRepository {
   AddressRepository(super._realmManager);
@@ -160,28 +162,6 @@ class AddressRepository extends BaseRepository {
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
-  /// 주소 목록 업데이트 (잔액과 사용여부만 갱신)
-  void updateWalletAddressList(WalletListItemBase walletItem,
-      List<WalletAddress> walletAddressList, bool isChange) {
-    final realmWalletAddresses = realm.query<RealmWalletAddress>(
-      r'walletId == $0 AND isChange == $1',
-      [walletItem.id, isChange],
-    );
-
-    realm.write(() {
-      for (final walletAddress in walletAddressList) {
-        final realmAddress = realmWalletAddresses.firstWhere(
-          (a) => a.index == walletAddress.index,
-        );
-
-        realmAddress.confirmed = walletAddress.confirmed;
-        realmAddress.unconfirmed = walletAddress.unconfirmed;
-        realmAddress.total = walletAddress.total;
-        realmAddress.isUsed = walletAddress.isUsed;
-      }
-    });
-  }
-
   /// 변경 주소 가져오기
   WalletAddress getChangeAddress(int walletId) {
     final realmWalletBase = getWalletBase(walletId);
@@ -213,6 +193,69 @@ class AddressRepository extends BaseRepository {
       throw StateError('[getWalletBase] Wallet not found');
     }
     return realmWalletBase;
+  }
+
+  void setWalletAddressUsed(
+      WalletListItemBase walletItem, int addressIndex, bool isChange) {
+    final realmWalletAddress = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND index == $1 AND isChange == $2',
+      [walletItem.id, addressIndex, isChange],
+    ).firstOrNull;
+
+    if (realmWalletAddress == null) {
+      Logger.error(
+          '[setWalletAddressUsed] Wallet address not found, walletId: ${walletItem.id}, index: $addressIndex, isChange: $isChange');
+      return;
+    }
+
+    realm.write(() {
+      realmWalletAddress.isUsed = true;
+    });
+  }
+
+  Future<void> setWalletAddressUsedBatch(WalletListItemBase walletItem,
+      List<ScriptStatus> changedScriptStatuses) async {
+    final receiveIndices = changedScriptStatuses
+        .where((status) => !status.isChange)
+        .map((status) => status.index)
+        .toSet();
+    final changeIndices = changedScriptStatuses
+        .where((status) => status.isChange)
+        .map((status) => status.index)
+        .toSet();
+
+    final receiveAddresses = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isChange == false AND index IN $1',
+      [walletItem.id, receiveIndices],
+    ).toList();
+
+    final changeAddresses = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isChange == true AND index IN $1',
+      [walletItem.id, changeIndices],
+    ).toList();
+
+    // 미리 모든 주소를 조회하여 맵으로 구성
+    final addressMap = <String, RealmWalletAddress>{};
+    for (final address in [...changeAddresses, ...receiveAddresses]) {
+      final key = '${address.index}_${address.isChange}';
+      addressMap[key] = address;
+    }
+
+    // 단일 트랜잭션으로 모든 주소 업데이트
+    await realm.writeAsync(() {
+      for (final scriptStatus in changedScriptStatuses) {
+        final key = '${scriptStatus.index}_${scriptStatus.isChange}';
+        final realmWalletAddress = addressMap[key];
+
+        if (realmWalletAddress == null) {
+          Logger.error(
+              '[setWalletAddressUsedBatch] Wallet address not found, walletId: ${walletItem.id}, index: ${scriptStatus.index}, isChange: ${scriptStatus.isChange}');
+          continue;
+        }
+
+        realmWalletAddress.isUsed = true;
+      }
+    });
   }
 
   /// 지갑 사용 인덱스 업데이트
