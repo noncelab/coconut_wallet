@@ -67,31 +67,33 @@ class _SendAddressBodyBatchState extends State<SendAddressBodyBatch> {
                     ? Padding(
                         padding: const EdgeInsets.only(bottom: Sizes.size12),
                         child: AddressAndAmountCard(
-                            key: ValueKey(_recipients[index].key),
-                            title: '받는 사람${index + 1}',
-                            address: _recipients[index].address,
-                            amount: _recipients[index].amount,
-                            onAddressChanged: (String address) {
-                              _updateAddress(index, address);
-                            },
-                            onAmountChanged: (String amount) {
-                              _updateAmount(index, amount);
-                            },
-                            onDeleted: (bool isContentEmpty) {
-                              _onDeleted(isContentEmpty, index);
-                            },
-                            validateAddress: widget.validateAddress,
-                            isRemovable:
-                                !(_recipients.length == 1 && index == 0),
-                            addressPlaceholder:
-                                t.send_address_screen.address_placeholder,
-                            amountPlaceholder:
-                                t.send_address_screen.amount_placeholder,
-                            isAddressInvalid:
-                                _recipients[index].isAddressValid == false,
-                            isAmountDust:
-                                _recipients[index].isAmountDust == true),
-                      )
+                          key: ValueKey(_recipients[index].key),
+                          title: '받는 사람${index + 1}',
+                          address: _recipients[index].address,
+                          amount: _recipients[index].amount,
+                          onAddressChanged: (String address) {
+                            _updateAddress(index, address);
+                          },
+                          onAmountChanged: (String amount) {
+                            _updateAmount(index, amount);
+                          },
+                          onDeleted: (bool isContentEmpty) {
+                            _onDeleted(isContentEmpty, index);
+                          },
+                          validateAddress: widget.validateAddress,
+                          isRemovable: !(_recipients.length == 1 && index == 0),
+                          addressPlaceholder:
+                              t.send_address_screen.address_placeholder,
+                          amountPlaceholder:
+                              t.send_address_screen.amount_placeholder,
+                          isAddressInvalid:
+                              _recipients[index].isAddressValid == false,
+                          isAmountDust: _recipients[index].isAmountDust == true,
+                          addressErrorMessage:
+                              _recipients[index].isAddressDuplicated == true
+                                  ? t.errors.address_error.duplicated
+                                  : null,
+                        ))
                     : CoconutUnderlinedButton(
                         text: t.send_address_screen.add_recipient,
                         onTap: _addAddressAndQuantityCard,
@@ -125,21 +127,32 @@ class _SendAddressBodyBatchState extends State<SendAddressBodyBatch> {
     if (address.isEmpty) {
       setState(() {
         _recipients[index].isAddressValid = null;
+        _recipients[index].isAddressDuplicated = null;
       });
     } else {
       try {
         await widget.validateAddress(address);
-        _recipients[index].isAddressValid = true;
+        if (!_isAddressDuplicated(address)) {
+          _recipients[index].isAddressValid = true;
+          _recipients[index].isAddressDuplicated = false;
+        } else {
+          _recipients[index].isAddressValid = false;
+          _recipients[index].isAddressDuplicated = true;
+        }
       } catch (_) {
         if (_recipients[index].isAddressValid != false) {
-          setState(() {
-            _recipients[index].isAddressValid = false;
-          });
+          _recipients[index].isAddressValid = false;
         }
+        _recipients[index].isAddressDuplicated = null;
+        setState(() {});
       }
     }
 
     _recipients[index].address = address;
+  }
+
+  bool _isAddressDuplicated(String address) {
+    return _recipients.any((r) => r.address == address);
   }
 
   void _updateAmount(int index, String amount) {
@@ -221,6 +234,7 @@ class _RecipientInfo {
   String amount;
   bool? isAddressValid;
   bool? isAmountDust;
+  bool? isAddressDuplicated;
 
   _RecipientInfo({required this.key, this.address = '', this.amount = ''});
 }

@@ -23,22 +23,23 @@ class AddressAndAmountCard extends StatefulWidget {
   final bool isRemovable;
   final bool isAddressInvalid;
   final bool isAmountDust;
+  final String? addressErrorMessage;
 
-  const AddressAndAmountCard({
-    super.key,
-    required this.title,
-    required this.address,
-    required this.amount,
-    required this.onAddressChanged,
-    required this.onAmountChanged,
-    required this.onDeleted,
-    required this.validateAddress,
-    required this.isRemovable,
-    required this.isAddressInvalid,
-    required this.isAmountDust,
-    this.addressPlaceholder,
-    this.amountPlaceholder,
-  });
+  const AddressAndAmountCard(
+      {super.key,
+      required this.title,
+      required this.address,
+      required this.amount,
+      required this.onAddressChanged,
+      required this.onAmountChanged,
+      required this.onDeleted,
+      required this.validateAddress,
+      required this.isRemovable,
+      required this.isAddressInvalid,
+      required this.isAmountDust,
+      this.addressPlaceholder,
+      this.amountPlaceholder,
+      this.addressErrorMessage});
 
   @override
   State<AddressAndAmountCard> createState() => _AddressAndAmountCardState();
@@ -147,6 +148,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 ),
                 placeholderText: widget.addressPlaceholder,
                 isError: widget.isAddressInvalid,
+                errorText: widget.addressErrorMessage,
                 padding:
                     const EdgeInsets.only(left: CoconutLayout.defaultPadding)),
             CoconutLayout.spacing_200h,

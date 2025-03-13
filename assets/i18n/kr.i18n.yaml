@@ -278,6 +278,7 @@ errors:
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."
     not_for_regtest: "레그테스트넷 주소가 아니에요."
+    duplicated: "이미 입력한 주소에요."
   pin_check_error:
     trial_count: "$count번 다시 시도할 수 있어요"
     failed: "더 이상 시도할 수 없어요\n앱을 종료해 주세요"

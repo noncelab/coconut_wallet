@@ -753,6 +753,7 @@ class TranslationsErrorsAddressErrorKr {
   String get not_for_testnet => '테스트넷 주소가 아니에요.';
   String get not_for_mainnet => '메인넷 주소가 아니에요.';
   String get not_for_regtest => '레그테스트넷 주소가 아니에요.';
+  String get duplicated => '이미 입력한 주소에요.';
 }
 
 // Path: errors.pin_check_error
@@ -1397,6 +1398,8 @@ extension on Translations {
         return '메인넷 주소가 아니에요.';
       case 'errors.address_error.not_for_regtest':
         return '레그테스트넷 주소가 아니에요.';
+      case 'errors.address_error.duplicated':
+        return '이미 입력한 주소에요.';
       case 'errors.pin_check_error.trial_count':
         return ({required Object count}) => '${count}번 다시 시도할 수 있어요';
       case 'errors.pin_check_error.failed':
