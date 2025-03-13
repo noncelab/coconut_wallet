@@ -344,6 +344,7 @@ class RealmTransaction extends _RealmTransaction
     Iterable<String> outputAddressList = const [],
     String? note,
     DateTime? createdAt,
+    String? replaceByTransactionHash,
   }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'transactionHash', transactionHash);
@@ -361,6 +362,8 @@ class RealmTransaction extends _RealmTransaction
         this, 'outputAddressList', RealmList<String>(outputAddressList));
     RealmObjectBase.set(this, 'note', note);
     RealmObjectBase.set(this, 'createdAt', createdAt);
+    RealmObjectBase.set(
+        this, 'replaceByTransactionHash', replaceByTransactionHash);
   }
 
   RealmTransaction._();
@@ -451,6 +454,13 @@ class RealmTransaction extends _RealmTransaction
       RealmObjectBase.set(this, 'createdAt', value);
 
   @override
+  String? get replaceByTransactionHash =>
+      RealmObjectBase.get<String>(this, 'replaceByTransactionHash') as String?;
+  @override
+  set replaceByTransactionHash(String? value) =>
+      RealmObjectBase.set(this, 'replaceByTransactionHash', value);
+
+  @override
   Stream<RealmObjectChanges<RealmTransaction>> get changes =>
       RealmObjectBase.getChanges<RealmTransaction>(this);
 
@@ -479,6 +489,7 @@ class RealmTransaction extends _RealmTransaction
       'outputAddressList': outputAddressList.toEJson(),
       'note': note.toEJson(),
       'createdAt': createdAt.toEJson(),
+      'replaceByTransactionHash': replaceByTransactionHash.toEJson(),
     };
   }
 
@@ -507,6 +518,8 @@ class RealmTransaction extends _RealmTransaction
           outputAddressList: fromEJson(ejson['outputAddressList']),
           note: fromEJson(ejson['note']),
           createdAt: fromEJson(ejson['createdAt']),
+          replaceByTransactionHash:
+              fromEJson(ejson['replaceByTransactionHash']),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -537,6 +550,8 @@ class RealmTransaction extends _RealmTransaction
           collectionType: RealmCollectionType.list),
       SchemaProperty('note', RealmPropertyType.string, optional: true),
       SchemaProperty('createdAt', RealmPropertyType.timestamp, optional: true),
+      SchemaProperty('replaceByTransactionHash', RealmPropertyType.string,
+          optional: true),
     ]);
   }();
 

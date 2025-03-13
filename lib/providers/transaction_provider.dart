@@ -15,7 +15,7 @@ class TransactionProvider extends ChangeNotifier {
   TransactionProvider(this._transactionRepository);
 
   void initTransaction(int walletId, String txHash, {String? utxoTo}) {
-    final tx = _loadTransaction(walletId, txHash);
+    final tx = _transactionRepository.getTransactionRecord(walletId, txHash);
 
     if (utxoTo != null && tx != null) {
       if (tx.outputAddressList.isNotEmpty) {
@@ -32,7 +32,7 @@ class TransactionProvider extends ChangeNotifier {
 
   TransactionRecord? getTransaction(int walletId, String txHash,
       {String? utxoTo}) {
-    final tx = _loadTransaction(walletId, txHash);
+    final tx = _transactionRepository.getTransactionRecord(walletId, txHash);
 
     if (utxoTo != null && tx != null) {
       if (tx.outputAddressList.isNotEmpty) {
@@ -55,7 +55,8 @@ class TransactionProvider extends ChangeNotifier {
     final result =
         _transactionRepository.updateTransactionMemo(walletId, txHash, memo);
     if (result.isSuccess) {
-      _transaction = _loadTransaction(walletId, txHash);
+      _transaction =
+          _transactionRepository.getTransactionRecord(walletId, txHash);
       notifyListeners();
       return true;
     } else {
@@ -65,17 +66,6 @@ class TransactionProvider extends ChangeNotifier {
       Logger.log(result.error);
     }
     return false;
-  }
-
-  TransactionRecord? _loadTransaction(int walletId, String txHash) {
-    final result = _transactionRepository.loadTransaction(walletId, txHash);
-    if (result.isFailure) {
-      Logger.log('-----------------------------------------------------------');
-      Logger.log('loadTransaction(id: $walletId, _utxoId: $txHash)');
-      Logger.log(result.error);
-      return null;
-    }
-    return result.value;
   }
 
   void resetData() {

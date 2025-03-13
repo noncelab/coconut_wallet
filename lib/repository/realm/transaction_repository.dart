@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart' as lib;
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
@@ -14,7 +13,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 class TransactionRepository extends BaseRepository {
   TransactionRepository(super._realmManager);
 
-  /// walletId 로 트랜잭션 목록 조회
+  /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함
   List<TransactionRecord> getTransactionRecordList(int walletId) {
     final transactions = realm
         .query<RealmTransaction>('walletId == $walletId SORT(timestamp DESC)');
@@ -41,19 +40,6 @@ class TransactionRepository extends BaseRepository {
   RealmResults<RealmTransaction> getUnconfirmedTransactions(int walletId) {
     return realm.query<RealmTransaction>(
         r'walletId = $0 AND blockHeight = 0', [walletId]);
-  }
-
-  /// 트랜잭션 CRUD 관련 함수
-  /// walletID, txHash 로 transaction 조회
-  Result<TransactionRecord> loadTransaction(int walletId, String txHash) {
-    final transactions = realm.query<RealmTransaction>(
-        "walletId == '$walletId' AND transactionHash == '$txHash'");
-
-    return handleRealm<TransactionRecord>(
-      () => transactions.isEmpty
-          ? throw ErrorCodes.realmNotFound
-          : mapRealmTransactionToTransaction(transactions.first),
-    );
   }
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
@@ -193,9 +179,12 @@ class TransactionRepository extends BaseRepository {
     }
   }
 
-  /// 트랜잭션 목록 가져오기
-  RealmResults<RealmTransaction> getTransactions(int walletId) {
-    return realm.query<RealmTransaction>('walletId == $walletId');
+  /// 해당 지갑에 존재하는 트랜잭션 해시 set 조회
+  Set<String> getConfirmedTransactionHashSet(int walletId) {
+    return realm
+        .query<RealmTransaction>('walletId == $walletId AND blockHeight > 0')
+        .map((tx) => tx.transactionHash)
+        .toSet();
   }
 
   /// 특정 트랜잭션 조회

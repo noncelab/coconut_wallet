@@ -4,17 +4,17 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
-import 'dart:ui' as _i22;
+import 'dart:ui' as _i21;
 
 import 'package:coconut_lib/coconut_lib.dart' as _i10;
 import 'package:coconut_wallet/enums/network_enums.dart' as _i12;
-import 'package:coconut_wallet/enums/wallet_enums.dart' as _i23;
+import 'package:coconut_wallet/enums/wallet_enums.dart' as _i22;
 import 'package:coconut_wallet/model/node/node_provider_state.dart' as _i4;
 import 'package:coconut_wallet/model/node/script_status.dart' as _i17;
 import 'package:coconut_wallet/model/node/wallet_update_info.dart' as _i15;
 import 'package:coconut_wallet/model/utxo/utxo_state.dart' as _i18;
 import 'package:coconut_wallet/model/wallet/balance.dart' as _i8;
-import 'package:coconut_wallet/model/wallet/transaction_record.dart' as _i21;
+import 'package:coconut_wallet/model/wallet/transaction_record.dart' as _i20;
 import 'package:coconut_wallet/model/wallet/wallet_address.dart' as _i9;
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart' as _i6;
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart' as _i19;
@@ -28,8 +28,6 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart'
     as _i3;
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart'
     as _i2;
-import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart'
-    as _i20;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i13;
 
@@ -914,26 +912,6 @@ class MockWalletProvider extends _i1.Mock implements _i7.WalletProvider {
       ) as List<_i9.WalletAddress>);
 
   @override
-  void updateWalletAddressList(
-    _i6.WalletListItemBase? walletItem,
-    List<_i8.AddressBalance>? receiveBalanceList,
-    List<_i8.AddressBalance>? changeBalanceList,
-    List<_i20.FetchTransactionResponse>? newTxResList,
-  ) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #updateWalletAddressList,
-          [
-            walletItem,
-            receiveBalanceList,
-            changeBalanceList,
-            newTxResList,
-          ],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
   _i9.WalletAddress getChangeAddress(int? walletId) => (super.noSuchMethod(
         Invocation.method(
           #getChangeAddress,
@@ -973,14 +951,14 @@ class MockWalletProvider extends _i1.Mock implements _i7.WalletProvider {
       ) as List<_i18.UtxoState>);
 
   @override
-  List<_i21.TransactionRecord> getTransactionRecordList(int? walletId) =>
+  List<_i20.TransactionRecord> getTransactionRecordList(int? walletId) =>
       (super.noSuchMethod(
         Invocation.method(
           #getTransactionRecordList,
           [walletId],
         ),
-        returnValue: <_i21.TransactionRecord>[],
-      ) as List<_i21.TransactionRecord>);
+        returnValue: <_i20.TransactionRecord>[],
+      ) as List<_i20.TransactionRecord>);
 
   @override
   _i18.UtxoState? getUtxoState(
@@ -996,7 +974,7 @@ class MockWalletProvider extends _i1.Mock implements _i7.WalletProvider {
       )) as _i18.UtxoState?);
 
   @override
-  _i21.TransactionRecord? getTransactionRecord(
+  _i20.TransactionRecord? getTransactionRecord(
     int? walletId,
     String? transactionHash,
   ) =>
@@ -1006,7 +984,7 @@ class MockWalletProvider extends _i1.Mock implements _i7.WalletProvider {
           walletId,
           transactionHash,
         ],
-      )) as _i21.TransactionRecord?);
+      )) as _i20.TransactionRecord?);
 
   @override
   void dispose() => super.noSuchMethod(
@@ -1018,7 +996,7 @@ class MockWalletProvider extends _i1.Mock implements _i7.WalletProvider {
       );
 
   @override
-  void addListener(_i22.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i21.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -1027,7 +1005,7 @@ class MockWalletProvider extends _i1.Mock implements _i7.WalletProvider {
       );
 
   @override
-  void removeListener(_i22.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i21.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -1118,13 +1096,13 @@ class MockWalletListItemBase extends _i1.Mock
       ) as String);
 
   @override
-  _i23.WalletType get walletType => (super.noSuchMethod(
+  _i22.WalletType get walletType => (super.noSuchMethod(
         Invocation.getter(#walletType),
-        returnValue: _i23.WalletType.singleSignature,
-      ) as _i23.WalletType);
+        returnValue: _i22.WalletType.singleSignature,
+      ) as _i22.WalletType);
 
   @override
-  set walletType(_i23.WalletType? _walletType) => super.noSuchMethod(
+  set walletType(_i22.WalletType? _walletType) => super.noSuchMethod(
         Invocation.setter(
           #walletType,
           _walletType,

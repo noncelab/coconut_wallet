@@ -58,16 +58,6 @@ void main() {
       expect(transactions.length, 1);
       expect(transactions[0].transactionHash, testTransaction.transactionHash);
     });
-
-    test('존재하지 않는 트랜잭션 조회 시 null을 반환해야 함', () {
-      // 존재하지 않는 트랜잭션 조회
-      final result = transactionRepository.loadTransaction(
-          testWalletItem.id, 'non_existent_hash');
-
-      // 검증
-      expect(result.isFailure, true);
-      expect(result.error, ErrorCodes.realmNotFound);
-    });
   });
 
   group('트랜잭션 상태 업데이트 테스트', () {

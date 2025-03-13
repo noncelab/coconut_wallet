@@ -53,11 +53,8 @@ class TransactionFetcher {
     }
 
     // db에 저장된 트랜잭션 조회, 네트워크 요청을 줄이기 위함.
-    final knownTransactionHashes = _transactionRepository
-        .getTransactions(walletItem.id)
-        .where((tx) => tx.blockHeight != null && tx.blockHeight! > 0)
-        .map((tx) => tx.transactionHash)
-        .toSet();
+    final knownTransactionHashes =
+        _transactionRepository.getConfirmedTransactionHashSet(walletItem.id);
 
     // 스크립트에 대한 트랜잭션 내역 조회, 이미 존재하는 트랜잭션은 제외함
     final txFetchResults = await getFetchTransactionResponses(
