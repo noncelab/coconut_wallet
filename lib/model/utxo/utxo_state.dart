@@ -67,6 +67,9 @@ class UtxoState extends Utxo {
 
     int compareUtxos(
         UtxoState a, UtxoState b, bool isAscending, bool byAmount) {
+      if (a.blockHeight == 0 && b.blockHeight != 0) return -1;
+      if (b.blockHeight == 0 && a.blockHeight != 0) return 1;
+
       int primaryCompare = byAmount
           ? (isAscending ? a.amount : b.amount)
               .compareTo(isAscending ? b.amount : a.amount)

@@ -146,7 +146,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                             context: context,
                             leadingSvgAsset: SvgPicture.asset(
                                 'assets/svg/coconut.svg',
-                                color: CoconutColors.white,
+                                colorFilter: const ColorFilter.mode(
+                                    CoconutColors.white, BlendMode.srcIn),
                                 width: 24),
                             appTitle: t.wallet,
                             actionButtonList: [
@@ -235,14 +236,31 @@ class _WalletListScreenState extends State<WalletListScreen>
                                     top: 30,
                                   ),
                           ),
-                          // Pull to refresh, refresh indicator(hide)
-                          if (viewModel.shouldShowLoadingIndicator) ...{
-                            const SliverToBoxAdapter(child: LoadingIndicator()),
-                          },
                           CupertinoSliverRefreshControl(
                             onRefresh: viewModel.refreshWallets,
                           ),
-
+                          // loading indicator with animation
+                          SliverToBoxAdapter(
+                              child: AnimatedSwitcher(
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                              opacity: animation,
+                              child: SizeTransition(
+                                sizeFactor: animation,
+                                child: child,
+                              ),
+                            ),
+                            duration: const Duration(milliseconds: 300),
+                            child: viewModel.shouldShowLoadingIndicator
+                                ? const Center(
+                                    child: Padding(
+                                      key: ValueKey("loading"),
+                                      padding: EdgeInsets.only(bottom: 20.0),
+                                      child: LoadingIndicator(),
+                                    ),
+                                  )
+                                : null,
+                          )),
                           // 용어집, 바로 추가하기
                           SliverToBoxAdapter(
                               child: Column(
@@ -368,14 +386,14 @@ class _WalletListScreenState extends State<WalletListScreen>
       _walletListKey.currentState?.insertItem(index, duration: _duration);
     }
 
-    _previousWalletList = List.from(walletList);
     if (removedIndex != -1) {
-      return _walletListKey.currentState?.removeItem(
+      _walletListKey.currentState?.removeItem(
         removedIndex,
+        duration: _duration,
         (context, animation) {
-          debugPrint('_previousWalletList : ${_previousWalletList.length}');
+          // 이미 삭제된 인덱스 무시
           if (removedIndex >= _previousWalletList.length) return Container();
-          return _buildRemoveTransactionItem(
+          return _buildRemoveWalletItem(
             _previousWalletList[removedIndex],
             removedIndex,
             animation,
@@ -384,9 +402,10 @@ class _WalletListScreenState extends State<WalletListScreen>
             isBalanceHidden,
           );
         },
-        duration: _duration,
       );
     }
+
+    _previousWalletList = List.from(walletList);
   }
 
   Widget _buildSliverAnimatedList(List<WalletListItemBase> walletList,
@@ -395,13 +414,13 @@ class _WalletListScreenState extends State<WalletListScreen>
       key: _walletListKey,
       initialItemCount: walletList.length,
       itemBuilder: (context, index, animation) {
-        return _buildTransactionItem(
+        return _buildWalletItem(
             walletList, index, animation, getWalletBalance, isBalanceHidden);
       },
     );
   }
 
-  Widget _buildTransactionItem(
+  Widget _buildWalletItem(
       List<WalletListItemBase> walletList,
       int index,
       Animation<double> animation,
@@ -413,8 +432,12 @@ class _WalletListScreenState extends State<WalletListScreen>
       children: [
         SlideTransition(
             position: offsetAnimation,
-            child: _getWalletRowItem(Key(walletList[index].id.toString()),
-                index, walletList, getWalletBalance, isBalanceHidden)),
+            child: _getWalletRowItem(
+                Key(walletList[index].id.toString()),
+                walletList[index],
+                getWalletBalance,
+                isBalanceHidden,
+                index == walletList.length - 1)),
         walletList.length - 1 == index
             ? CoconutLayout.spacing_1000h
             : CoconutLayout.spacing_200h,
@@ -422,7 +445,8 @@ class _WalletListScreenState extends State<WalletListScreen>
     );
   }
 
-  Widget _buildRemoveTransactionItem(
+  // TODO: 삭제 애니메이션 필요 없음
+  Widget _buildRemoveWalletItem(
       WalletListItemBase wallet,
       int index,
       Animation<double> animation,
@@ -434,9 +458,10 @@ class _WalletListScreenState extends State<WalletListScreen>
     return FadeTransition(
       opacity: animation.drive(Tween<double>(begin: 1.0, end: 0.0)),
       child: SlideTransition(
-          position: offsetAnimation,
-          child: _getWalletRowItem(Key(wallet.id.toString()), index, walletList,
-              getWalletBalance, isBalanceHidden)),
+        position: offsetAnimation,
+        child: _getWalletRowItem(Key(wallet.id.toString()), walletList[index],
+            getWalletBalance, isBalanceHidden, index == walletList.length - 1),
+      ),
     );
   }
 
@@ -599,80 +624,73 @@ class _WalletListScreenState extends State<WalletListScreen>
     _slideAnimationController!.forward();
   }
 
-  Widget? _getWalletRowItem(
-      Key key,
-      int index,
-      List<WalletListItemBase> walletList,
-      Function(int) getWalletBalance,
-      bool isBalanceHidden) {
-    if (index < walletList.length) {
-      final WalletListItemBase(
-        id: id,
-        name: name,
-        iconIndex: iconIndex,
-        colorIndex: colorIndex,
-      ) = walletList[index];
-      final base = walletList[index];
-      final int? balance = getWalletBalance(id);
+  Widget? _getWalletRowItem(Key key, WalletListItemBase walletItem,
+      Function(int) getWalletBalance, bool isBalanceHidden, bool isLastItem) {
+    final WalletListItemBase(
+      id: id,
+      name: name,
+      iconIndex: iconIndex,
+      colorIndex: colorIndex,
+    ) = walletItem;
+    final int? balance = getWalletBalance(id);
 
-      List<MultisigSigner>? signers;
-      if (base.walletType == WalletType.multiSignature) {
-        signers = (base as MultisigWalletListItem).signers;
-      }
-
-      final walletItemCard = WalletItemCard(
-        key: key,
-        id: id,
-        name: name,
-        balance: balance,
-        iconIndex: iconIndex,
-        colorIndex: colorIndex,
-        isLastItem: index == walletList.length - 1,
-        isBalanceHidden: isBalanceHidden,
-        signers: signers,
-      );
-      return walletItemCard;
-      // switch (_resultOfSyncFromVault?.result) {
-      // case WalletSyncResult.newWalletAdded:
-      //   if (index == viewModel.walletItemList.length - 1) {
-      //     // todo: balance 업데이트 함수 호출 필요
-      //     Logger.log('newWalletAdded');
-      //     _initializeLeftSlideAnimationController();
-      //     return SlideTransition(
-      //         position: _slideAnimation!, child: walletItemCard);
-      //   }
-      //   break;
-      // case WalletSyncResult.existingWalletUpdated:
-      // if (viewModel.walletItemList[index].id ==
-      //     _resultOfSyncFromVault?.walletId!) {
-      //   Logger.log('existingWalletUpdated');
-      //   _initializeBlinkAnimationController();
-      //   return Stack(
-      //     children: [
-      //       walletItemCard,
-      //       IgnorePointer(
-      //         child: AnimatedBuilder(
-      //           animation: _blinkAnimation!,
-      //           builder: (context, child) {
-      //             return Container(
-      //               decoration: BoxDecoration(
-      //                   color: _blinkAnimation!.value,
-      //                   borderRadius: BorderRadius.circular(28)),
-      //               width: itemCardWidth,
-      //               height: itemCardHeight,
-      //             );
-      //           },
-      //         ),
-      //       )
-      //     ],
-      //   );
-      // }
-      // break;
-      //   default:
-      //     return walletItemCard;
-      // }
+    List<MultisigSigner>? signers;
+    if (walletItem.walletType == WalletType.multiSignature) {
+      signers = (walletItem as MultisigWalletListItem).signers;
     }
-    return null;
+
+    final walletItemCard = WalletItemCard(
+      key: key,
+      id: id,
+      name: name,
+      balance: balance,
+      iconIndex: iconIndex,
+      colorIndex: colorIndex,
+      isLastItem: isLastItem,
+      isBalanceHidden: isBalanceHidden,
+      signers: signers,
+    );
+    return walletItemCard;
+
+    // switch (_resultOfSyncFromVault?.result) {
+    // case WalletSyncResult.newWalletAdded:
+    //   if (index == viewModel.walletItemList.length - 1) {
+    //     // todo: balance 업데이트 함수 호출 필요
+    //     Logger.log('newWalletAdded');
+    //     _initializeLeftSlideAnimationController();
+    //     return SlideTransition(
+    //         position: _slideAnimation!, child: walletItemCard);
+    //   }
+    //   break;
+    // case WalletSyncResult.existingWalletUpdated:
+    // if (viewModel.walletItemList[index].id ==
+    //     _resultOfSyncFromVault?.walletId!) {
+    //   Logger.log('existingWalletUpdated');
+    //   _initializeBlinkAnimationController();
+    //   return Stack(
+    //     children: [
+    //       walletItemCard,
+    //       IgnorePointer(
+    //         child: AnimatedBuilder(
+    //           animation: _blinkAnimation!,
+    //           builder: (context, child) {
+    //             return Container(
+    //               decoration: BoxDecoration(
+    //                   color: _blinkAnimation!.value,
+    //                   borderRadius: BorderRadius.circular(28)),
+    //               width: itemCardWidth,
+    //               height: itemCardHeight,
+    //             );
+    //           },
+    //         ),
+    //       )
+    //     ],
+    //   );
+    // }
+    // break;
+    //   default:
+    //     return walletItemCard;
+    // }
   }
 
   // void _initializeBlinkAnimationController() {

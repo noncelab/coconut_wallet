@@ -25,6 +25,7 @@ class WalletListViewModel extends ChangeNotifier {
   Map<int, int> _walletBalance = {};
   late StreamSubscription<Map<int, Balance?>> _balanceSubscription;
   late bool? _isNetworkOn;
+  bool _isFirstLoaded = false;
 
   WalletListViewModel(
     this._walletProvider,
@@ -45,7 +46,8 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
-  bool get shouldShowLoadingIndicator => _walletProvider.isAnyBalanceUpdating;
+  bool get shouldShowLoadingIndicator =>
+      !_isFirstLoaded && _walletProvider.isAnyBalanceUpdating;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
 
@@ -74,6 +76,9 @@ class WalletListViewModel extends ChangeNotifier {
       if (walletProvider.walletSubscriptionState ==
           WalletSubscriptionState.completed) {
         vibrateLight();
+        if (_isFirstLoaded == false) {
+          _isFirstLoaded = true;
+        }
       } else if (walletProvider.walletSubscriptionState ==
           WalletSubscriptionState.failed) {
         vibrateLightDouble();

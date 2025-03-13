@@ -68,9 +68,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       ),
                       SliverToBoxAdapter(
                         child: Selector<WalletDetailViewModel,
-                                Tuple4<int, String, int, int>>(
-                            selector: (_, viewModel) => Tuple4(
+                                Tuple5<int, int, String, int, int>>(
+                            selector: (_, viewModel) => Tuple5(
                                 viewModel.balance,
+                                viewModel.prevBalance,
                                 viewModel.bitcoinPriceKrwInString,
                                 viewModel.sendingAmount,
                                 viewModel.receivingAmount),
@@ -79,9 +80,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                                 key: _headerWidgetKey,
                                 balance: data.item1,
                                 currentUnit: _currentUnit,
-                                btcPriceInKrw: data.item2,
-                                sendingAmount: data.item3,
-                                receivingAmount: data.item4,
+                                prevBalance: data.item2,
+                                btcPriceInKrw: data.item3,
+                                sendingAmount: data.item4,
+                                receivingAmount: data.item5,
                                 onPressedUnitToggle: _toggleUnit,
                                 onTapReceive: _onTapReceive,
                                 onTapSend: _onTapSend,
@@ -162,7 +164,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         onTapSend: () {
           _viewModel.removeFaucetTooltip();
           _onTapSend();
-        });
+        },
+        prevBalance: _viewModel.prevBalance);
   }
 
   Selector<WalletDetailViewModel, bool> _buildLoadingWidget() {
@@ -470,24 +473,23 @@ class _TransactionListState extends State<TransactionList> {
       key: _txListKey,
       initialItemCount: txList.length,
       itemBuilder: (context, index, animation) {
-        return _buildTransactionItem(txList, index, animation);
+        return _buildTransactionItem(
+            txList[index], animation, txList.length - 1 == index);
       },
     );
   }
 
   Widget _buildTransactionItem(
-      List<TransactionRecord> txList, int index, Animation<double> animation) {
-    var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
-
+      TransactionRecord tx, Animation<double> animation, bool isLastItem) {
     return Column(
       children: [
         SlideTransition(
-          position: offsetAnimation,
+          position: AnimationUtil.buildSlideInAnimation(animation),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: TransactionItemCard(
-              key: Key(txList[index].transactionHash),
-              tx: txList[index],
+              key: Key(tx.transactionHash),
+              tx: tx,
               currentUnit: widget._currentUnit,
               id: widget.widget.id,
               onPressed: () {
@@ -496,16 +498,14 @@ class _TransactionListState extends State<TransactionList> {
                   '/transaction-detail',
                   arguments: {
                     'id': widget.widget.id,
-                    'txHash': txList[index].transactionHash,
+                    'txHash': tx.transactionHash,
                   },
                 );
               },
             ),
           ),
         ),
-        txList.length - 1 == index
-            ? CoconutLayout.spacing_1000h
-            : CoconutLayout.spacing_200h,
+        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
       ],
     );
   }
