@@ -199,7 +199,25 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
       _amountController.clear();
     }
 
-    widget.onAmountChanged(value);
+    _amountController.text = _filterAmountInput(value);
+
+    widget.onAmountChanged(_amountController.text);
+  }
+
+  String _filterAmountInput(String input) {
+    String allowedCharsInput = input.replaceAll(RegExp(r'[^0-9.]'), '');
+    if (input == '00') return '0';
+
+    var splitedInput = allowedCharsInput.split('.');
+    if (splitedInput.length > 2) {
+      return '${splitedInput[0]}.${splitedInput[1]}';
+    }
+
+    if (splitedInput.length == 2 && splitedInput[1].length > 8) {
+      return '${splitedInput[0]}.${splitedInput[1].substring(0, 8)}';
+    }
+
+    return allowedCharsInput;
   }
 
   void _onDeleted() {

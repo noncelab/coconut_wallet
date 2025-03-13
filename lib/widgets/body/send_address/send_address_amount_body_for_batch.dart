@@ -32,12 +32,15 @@ class _SendAddressAmountBodyForBatchState
   // TODO: recipients가 N개 이하 (테스트 해보고, 적합한 개수를 설정해야 함)
   bool get isCompleteButtonEnabled =>
       _recipients.length >= 2 &&
-      _recipients.every((r) => r.isAddressValid == true && r.amount.isNotEmpty);
+      _recipients.every((r) =>
+          r.isAddressValid == true &&
+          r.isAddressDuplicated != true &&
+          r.amount.isNotEmpty);
 
   @override
   void initState() {
     super.initState();
-    //_recipients = [_getDefaultRecipientData()];
+    //_recipients = [_getDefaultRecipientData(), _getDefaultRecipientData()];
     // TODO: for test
     _recipients = [
       _getDefaultRecipientData()
@@ -83,27 +86,30 @@ class _SendAddressAmountBodyForBatchState
                             _onDeleted(isContentEmpty, index);
                           },
                           validateAddress: widget.validateAddress,
-                          isRemovable: !(_recipients.length == 1 && index == 0),
+                          isRemovable: _recipients.length > 2,
                           addressPlaceholder:
                               t.send_address_screen.address_placeholder,
                           amountPlaceholder:
                               t.send_address_screen.amount_placeholder,
-                          isAddressInvalid:
-                              _recipients[index].isAddressValid == false,
+                          isAddressInvalid: _recipients[index].isAddressValid ==
+                                  false ||
+                              _recipients[index].isAddressDuplicated == true,
                           isAmountDust: _recipients[index].isAmountDust == true,
                           addressErrorMessage:
                               _recipients[index].isAddressDuplicated == true
                                   ? t.errors.address_error.duplicated
                                   : null,
                         ))
-                    : CoconutUnderlinedButton(
-                        text: t.send_address_screen.add_recipient,
-                        onTap: _addAddressAndQuantityCard,
-                        textStyle: CoconutTypography.body3_12,
-                        brightness: Brightness.dark,
-                        padding: const EdgeInsets.only(
-                            top: Sizes.size24, bottom: Sizes.size48),
-                      );
+                    : Column(children: [
+                        CoconutUnderlinedButton(
+                          text: t.send_address_screen.add_recipient,
+                          onTap: _addAddressAndQuantityCard,
+                          textStyle: CoconutTypography.body3_12,
+                          brightness: Brightness.dark,
+                          padding: const EdgeInsets.only(
+                              top: Sizes.size24, bottom: Sizes.size48),
+                        ),
+                      ]);
               }, childCount: _recipients.length + 1)),
             ),
           ],
@@ -138,7 +144,7 @@ class _SendAddressAmountBodyForBatchState
           _recipients[index].isAddressValid = true;
           _recipients[index].isAddressDuplicated = false;
         } else {
-          _recipients[index].isAddressValid = false;
+          _recipients[index].isAddressValid = true;
           _recipients[index].isAddressDuplicated = true;
         }
       } catch (_) {
@@ -146,11 +152,11 @@ class _SendAddressAmountBodyForBatchState
           _recipients[index].isAddressValid = false;
         }
         _recipients[index].isAddressDuplicated = null;
-        setState(() {});
       }
     }
 
     _recipients[index].address = address;
+    setState(() {});
   }
 
   bool _isAddressDuplicated(String address) {
@@ -161,6 +167,7 @@ class _SendAddressAmountBodyForBatchState
     double? doubleAmount = double.tryParse(amount);
     if (doubleAmount == null || doubleAmount == 0) {
       setState(() {
+        _recipients[index].amount = '';
         _recipients[index].isAmountDust = null;
       });
       return;
@@ -170,6 +177,7 @@ class _SendAddressAmountBodyForBatchState
       Logger.log(
           '-->doubleAmount: $doubleAmount, ${UnitUtil.satoshiToBitcoin(dustLimit)}');
       setState(() {
+        _recipients[index].amount = '';
         _recipients[index].isAmountDust = true;
       });
       return;
@@ -197,6 +205,7 @@ class _SendAddressAmountBodyForBatchState
           title: '${t.delete} ${t.confirm}',
           message: t.alert.recipient_delete.description, onConfirm: () {
         _deleteRecipient(index);
+        _updateIsAddressDuplication();
         Navigator.pop(context);
       }, onCancel: () {
         Navigator.pop(context);
@@ -211,6 +220,19 @@ class _SendAddressAmountBodyForBatchState
     setState(() {
       _recipients.removeAt(index);
     });
+  }
+
+  void _updateIsAddressDuplication() {
+    final addressDuplicatedRecipients =
+        _recipients.where((r) => r.isAddressDuplicated == true);
+    for (var addressDuplicatedOne in addressDuplicatedRecipients) {
+      var sameAddressCount = _recipients
+          .where((r) => r.address == addressDuplicatedOne.address)
+          .length;
+      if (sameAddressCount == 1) {
+        addressDuplicatedOne.isAddressDuplicated = false;
+      }
+    }
   }
 
   void _onComplete(BuildContext context) {
