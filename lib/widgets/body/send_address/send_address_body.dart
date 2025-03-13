@@ -6,8 +6,6 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 class SendAddressBody extends StatelessWidget {
   final Key qrKey;
   final void Function(QRViewController) onQRViewCreated;
-  final void Function(BuildContext context, QRViewController, bool)
-      onPermissionSet;
   final String? address;
   final void Function()? pasteAddress;
 
@@ -15,7 +13,6 @@ class SendAddressBody extends StatelessWidget {
       {super.key,
       required this.qrKey,
       required this.onQRViewCreated,
-      required this.onPermissionSet,
       this.address,
       this.pasteAddress});
 
@@ -35,7 +32,6 @@ class SendAddressBody extends StatelessWidget {
                   MediaQuery.of(context).size.height < 400)
               ? 320.0
               : MediaQuery.of(context).size.width * 0.9),
-      onPermissionSet: (ctrl, p) => onPermissionSet(context, ctrl, p),
     );
   }
 
@@ -57,49 +53,52 @@ class SendAddressBody extends StatelessWidget {
           child: Container(
               padding: const EdgeInsets.only(top: 32),
               child: Text(
-                t.send_address_screen.text,
+                pasteAddress != null
+                    ? t.send_address_screen.text1
+                    : t.send_address_screen.text2,
                 textAlign: TextAlign.center,
                 style:
                     Styles.label.merge(const TextStyle(color: MyColors.white)),
               ))),
-      Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
-              child: TextButton(
-                  onPressed: pasteAddress,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor:
-                        address != null ? MyColors.darkgrey : MyColors.white,
-                    backgroundColor: address != null
-                        ? MyColors.white
-                        : MyColors.transparentBlack_50,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 20),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(8),
+      if (pasteAddress != null)
+        Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
+                child: TextButton(
+                    onPressed: pasteAddress,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor:
+                          address != null ? MyColors.darkgrey : MyColors.white,
+                      backgroundColor: address != null
+                          ? MyColors.white
+                          : MyColors.transparentBlack_50,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 20),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(8),
+                        ),
                       ),
                     ),
-                  ),
-                  child: address != null
-                      ? Text.rich(TextSpan(
-                          text: '${t.address} ',
-                          style: Styles.label
-                              .merge(const TextStyle(color: MyColors.darkgrey)),
-                          children: [
-                              TextSpan(
-                                  text:
-                                      '${address?.substring(0, 10)}...${address?.substring(35)}',
-                                  style: TextStyle(
-                                      fontFamily:
-                                          CustomFonts.number.getFontFamily,
-                                      fontWeight: FontWeight.bold)),
-                              TextSpan(text: ' ${t.paste}')
-                            ]))
-                      : Text(t.paste,
-                          style: Styles.label.merge(const TextStyle(
-                              color: MyColors.transparentWhite_20))))))
+                    child: address != null
+                        ? Text.rich(TextSpan(
+                            text: '${t.address} ',
+                            style: Styles.label.merge(
+                                const TextStyle(color: MyColors.darkgrey)),
+                            children: [
+                                TextSpan(
+                                    text:
+                                        '${address?.substring(0, 10)}...${address?.substring(35)}',
+                                    style: TextStyle(
+                                        fontFamily:
+                                            CustomFonts.number.getFontFamily,
+                                        fontWeight: FontWeight.bold)),
+                                TextSpan(text: ' ${t.paste}')
+                              ]))
+                        : Text(t.paste,
+                            style: Styles.label.merge(const TextStyle(
+                                color: MyColors.transparentWhite_20))))))
     ]);
   }
 }

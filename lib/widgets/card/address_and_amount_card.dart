@@ -3,8 +3,12 @@ import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class AddressAndAmountCard extends StatefulWidget {
   final String title;
@@ -12,10 +16,10 @@ class AddressAndAmountCard extends StatefulWidget {
   final String amount;
   final String? addressPlaceholder;
   final String? amountPlaceholder;
-  final void Function() showAddressScanner;
   final void Function(String address) onAddressChanged;
   final void Function(String amount) onAmountChanged;
   final void Function(bool isContentEmpty) onDeleted;
+  final Future<void> Function(String address) validateAddress;
   final bool isRemovable;
   final bool isAddressInvalid;
   final bool isAmountDust;
@@ -25,10 +29,10 @@ class AddressAndAmountCard extends StatefulWidget {
     required this.title,
     required this.address,
     required this.amount,
-    required this.showAddressScanner,
     required this.onAddressChanged,
     required this.onAmountChanged,
     required this.onDeleted,
+    required this.validateAddress,
     required this.isRemovable,
     required this.isAddressInvalid,
     required this.isAmountDust,
@@ -45,7 +49,8 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
   late final TextEditingController _amountController;
   final _addressFocusNode = FocusNode();
   final _quantityFocusNode = FocusNode();
-  bool _isAmountEmpty = true;
+  QRViewController? _qrViewController;
+  bool _isQrDataHandling = false;
 
   @override
   void initState() {
@@ -126,7 +131,9 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 suffix: IconButton(
                   iconSize: 14,
                   padding: EdgeInsets.zero,
-                  onPressed: () => _onAddressChanged(''),
+                  onPressed: _addressController.text.isEmpty
+                      ? _showAddressScanner
+                      : () => _onAddressChanged(''),
                   icon: _addressController.text.isEmpty
                       ? SvgPicture.asset('assets/svg/scan.svg')
                       : SvgPicture.asset(
@@ -196,5 +203,60 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
   void _onDeleted() {
     widget.onDeleted(
         _addressController.text.isEmpty && _amountController.text.isEmpty);
+  }
+
+  void _onQRViewCreated(QRViewController qrViewController) {
+    _qrViewController = qrViewController;
+    qrViewController.scannedDataStream.listen((scanData) {
+      if (_isQrDataHandling || scanData.code == null) return;
+      if (scanData.code!.isEmpty) return;
+
+      _isQrDataHandling = true;
+
+      widget.validateAddress(scanData.code!).then((_) {
+        Navigator.pop(context, scanData.code!);
+      }).catchError((e) {
+        CustomToast.showToast(context: context, text: e.toString());
+      }).whenComplete(() async {
+        // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
+        await Future.delayed(const Duration(seconds: 1));
+        _isQrDataHandling = false;
+      });
+    });
+  }
+
+  void _showAddressScanner() async {
+    final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+    final scannedAddress = await CommonBottomSheets.showBottomSheet_100(
+        context: context,
+        child: Scaffold(
+            backgroundColor: CoconutColors.black,
+            appBar: CoconutAppBar.build(
+                title: t.send,
+                context: context,
+                actionButtonList: [
+                  IconButton(
+                    icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
+                        width: 20,
+                        height: 20,
+                        colorFilter: const ColorFilter.mode(
+                          CoconutColors.white,
+                          BlendMode.srcIn,
+                        )),
+                    onPressed: () {
+                      _qrViewController?.flipCamera();
+                    },
+                  ),
+                ],
+                onBackPressed: () {
+                  _qrViewController?.dispose();
+                  _qrViewController = null;
+                  Navigator.of(context).pop();
+                }),
+            body: SendAddressBody(
+                qrKey: qrKey, onQRViewCreated: _onQRViewCreated)));
+
+    _addressController.text = scannedAddress;
+    _onAddressChanged(scannedAddress);
   }
 }

@@ -99,7 +99,6 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                   ? SendAddressBody(
                       qrKey: qrKey,
                       onQRViewCreated: _onQRViewCreated,
-                      onPermissionSet: _onPermissionSet,
                       address: viewModel.address,
                       pasteAddress: _setClipboardAddressAsRecipient,
                     )
@@ -159,15 +158,6 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
       }).then((_) {
         controller?.resumeCamera();
       });
-    }
-  }
-
-  void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
-    Logger.log('${DateTime.now().toIso8601String()}_onPermissionSet $p');
-    if (!p) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.snackbar.no_permission)),
-      );
     }
   }
 

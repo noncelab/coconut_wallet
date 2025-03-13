@@ -62,75 +62,80 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                     });
                   }),
               body: SafeArea(
-                child: Column(children: [
-                  Container(
-                      margin: const EdgeInsets.only(top: 40),
-                      child: Center(
-                        child: Text.rich(
-                          TextSpan(
-                              text: satoshiToBitcoinString(
-                                  UnitUtil.bitcoinToSatoshi(viewModel.amount)),
-                              children: <TextSpan>[
-                                TextSpan(text: ' ${t.btc}', style: Styles.unit)
-                              ]),
-                          style: Styles.balance1,
-                        ),
-                      )),
-                  // fiatValue
-                  Selector<SendConfirmViewModel, int?>(
-                    selector: (context, model) => model.bitcoinPriceKrw,
-                    builder: (context, bitcoinPriceKrw, child) {
-                      return Container(
-                          margin: const EdgeInsets.only(bottom: 40),
-                          child: Center(
-                              child: Text(
-                                  bitcoinPriceKrw != null
-                                      ? '${addCommasToIntegerPart(viewModel.amount * bitcoinPriceKrw)} ${CurrencyCode.KRW.code}'
-                                      : '',
-                                  style: Styles.balance2)));
-                    },
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(28.0),
-                          color: MyColors.transparentWhite_06,
-                        ),
-                        child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: Column(
-                              children: [
-                                InformationItemCard(
-                                    label: t.recipient,
-                                    value: viewModel.addresses,
-                                    isNumber: true),
-                                const Divider(
-                                    color: MyColors.transparentWhite_12,
-                                    height: 1),
-                                InformationItemCard(
-                                    label: t.estimated_fee,
-                                    value: [
-                                      viewModel.estimatedFee != 0
-                                          ? '${satoshiToBitcoinString(viewModel.estimatedFee)} ${t.btc}'
-                                          : t.calculation_failed
-                                    ],
-                                    isNumber: true),
-                                const Divider(
-                                    color: MyColors.transparentWhite_12,
-                                    height: 1),
-                                InformationItemCard(
-                                    label: t.total_cost,
-                                    value: [
-                                      viewModel.estimatedFee != 0
-                                          ? '${satoshiToBitcoinString(viewModel.totalUsedAmount)} BTC'
-                                          : t.calculation_failed
-                                    ],
-                                    isNumber: true),
-                              ],
-                            ))),
-                  )
-                ]),
+                child: SingleChildScrollView(
+                  child: Column(children: [
+                    Container(
+                        margin: const EdgeInsets.only(top: 40),
+                        child: Center(
+                          child: Text.rich(
+                            TextSpan(
+                                text: satoshiToBitcoinString(
+                                    UnitUtil.bitcoinToSatoshi(
+                                        viewModel.amount)),
+                                children: <TextSpan>[
+                                  TextSpan(
+                                      text: ' ${t.btc}', style: Styles.unit)
+                                ]),
+                            style: Styles.balance1,
+                          ),
+                        )),
+                    // fiatValue
+                    Selector<SendConfirmViewModel, int?>(
+                      selector: (context, model) => model.bitcoinPriceKrw,
+                      builder: (context, bitcoinPriceKrw, child) {
+                        return Container(
+                            margin: const EdgeInsets.only(bottom: 40),
+                            child: Center(
+                                child: Text(
+                                    bitcoinPriceKrw != null
+                                        ? '${addCommasToIntegerPart(viewModel.amount * bitcoinPriceKrw)} ${CurrencyCode.KRW.code}'
+                                        : '',
+                                    style: Styles.balance2)));
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28.0),
+                            color: MyColors.transparentWhite_06,
+                          ),
+                          child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24),
+                              child: Column(
+                                children: [
+                                  InformationItemCard(
+                                      label: t.recipient,
+                                      value: viewModel.addresses,
+                                      isNumber: true),
+                                  const Divider(
+                                      color: MyColors.transparentWhite_12,
+                                      height: 1),
+                                  InformationItemCard(
+                                      label: t.estimated_fee,
+                                      value: [
+                                        viewModel.estimatedFee != 0
+                                            ? '${satoshiToBitcoinString(viewModel.estimatedFee)} ${t.btc}'
+                                            : t.calculation_failed
+                                      ],
+                                      isNumber: true),
+                                  const Divider(
+                                      color: MyColors.transparentWhite_12,
+                                      height: 1),
+                                  InformationItemCard(
+                                      label: t.total_cost,
+                                      value: [
+                                        viewModel.estimatedFee != 0
+                                            ? '${satoshiToBitcoinString(viewModel.totalUsedAmount)} BTC'
+                                            : t.calculation_failed
+                                      ],
+                                      isNumber: true),
+                                ],
+                              ))),
+                    )
+                  ]),
+                ),
               ));
         },
       ),

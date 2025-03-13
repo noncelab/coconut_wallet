@@ -69,7 +69,6 @@ class _SendAddressBodyBatchState extends State<SendAddressBodyBatch> {
                         child: AddressAndAmountCard(
                             key: ValueKey(_recipients[index].key),
                             title: '받는 사람${index + 1}',
-                            showAddressScanner: () {},
                             address: _recipients[index].address,
                             amount: _recipients[index].amount,
                             onAddressChanged: (String address) {
@@ -81,6 +80,7 @@ class _SendAddressBodyBatchState extends State<SendAddressBodyBatch> {
                             onDeleted: (bool isContentEmpty) {
                               _onDeleted(isContentEmpty, index);
                             },
+                            validateAddress: widget.validateAddress,
                             isRemovable:
                                 !(_recipients.length == 1 && index == 0),
                             addressPlaceholder:

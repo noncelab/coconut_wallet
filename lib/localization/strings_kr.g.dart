@@ -201,8 +201,6 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
       TranslationsTextFieldKr.internal(_root);
   late final TranslationsTooltipKr tooltip =
       TranslationsTooltipKr.internal(_root);
-  late final TranslationsSnackbarKr snackbar =
-      TranslationsSnackbarKr.internal(_root);
   late final TranslationsToastKr toast = TranslationsToastKr.internal(_root);
   late final TranslationsAlertKr alert = TranslationsAlertKr.internal(_root);
 }
@@ -310,7 +308,8 @@ class TranslationsSendAddressScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text => 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
+  String get text1 => 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
+  String get text2 => '주소 QR 코드를 스캔해 주세요';
   String get add_recipient => '받는 사람 추가하기';
   String get address_placeholder => '보낼 주소를 입력해 주세요';
   String get amount_placeholder => '보낼 수량을 입력해 주세요';
@@ -668,16 +667,6 @@ class TranslationsTooltipKr {
   String multisig_wallet({required Object total, required Object count}) =>
       '${total}개의 키 중 ${count}개로 서명해야 하는\n다중 서명 지갑이에요.';
   String get mfp => '지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요.';
-}
-
-// Path: snackbar
-class TranslationsSnackbarKr {
-  TranslationsSnackbarKr.internal(this._root);
-
-  final Translations _root; // ignore: unused_field
-
-  // Translations
-  String get no_permission => 'no Permission';
 }
 
 // Path: toast
@@ -1191,8 +1180,10 @@ extension on Translations {
         return '아래 정보로 송금할게요';
       case 'broadcasting_screen.self_sending':
         return '내 지갑으로 보내는 트랜잭션입니다.';
-      case 'send_address_screen.text':
+      case 'send_address_screen.text1':
         return 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
+      case 'send_address_screen.text2':
+        return '주소 QR 코드를 스캔해 주세요';
       case 'send_address_screen.add_recipient':
         return '받는 사람 추가하기';
       case 'send_address_screen.address_placeholder':
@@ -1468,8 +1459,6 @@ extension on Translations {
             '${total}개의 키 중 ${count}개로 서명해야 하는\n다중 서명 지갑이에요.';
       case 'tooltip.mfp':
         return '지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요.';
-      case 'snackbar.no_permission':
-        return 'no Permission';
       case 'toast.back_exit':
         return '뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.';
       case 'toast.min_fee':
