@@ -132,7 +132,8 @@ class _WalletListScreenState extends State<WalletListScreen>
                             context: context,
                             leadingSvgAsset: SvgPicture.asset(
                                 'assets/svg/coconut.svg',
-                                color: CoconutColors.white,
+                                colorFilter: const ColorFilter.mode(
+                                    CoconutColors.white, BlendMode.srcIn),
                                 width: 24),
                             appTitle: t.wallet,
                             actionButtonList: [
@@ -221,14 +222,31 @@ class _WalletListScreenState extends State<WalletListScreen>
                                     top: 30,
                                   ),
                           ),
-                          // Pull to refresh, refresh indicator(hide)
-                          if (viewModel.shouldShowLoadingIndicator) ...{
-                            const SliverToBoxAdapter(child: LoadingIndicator()),
-                          },
                           CupertinoSliverRefreshControl(
                             onRefresh: viewModel.refreshWallets,
                           ),
-
+                          // loading indicator with animation
+                          SliverToBoxAdapter(
+                              child: AnimatedSwitcher(
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                              opacity: animation,
+                              child: SizeTransition(
+                                sizeFactor: animation,
+                                child: child,
+                              ),
+                            ),
+                            duration: const Duration(milliseconds: 300),
+                            child: viewModel.shouldShowLoadingIndicator
+                                ? const Center(
+                                    child: Padding(
+                                      key: ValueKey("loading"),
+                                      padding: EdgeInsets.only(bottom: 20.0),
+                                      child: LoadingIndicator(),
+                                    ),
+                                  )
+                                : null,
+                          )),
                           // 용어집, 바로 추가하기
                           SliverToBoxAdapter(
                               child: Column(
