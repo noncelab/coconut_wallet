@@ -259,8 +259,9 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 지갑 사용 인덱스 업데이트
-  void updateWalletUsedIndex(WalletListItemBase walletItem, int usedIndex,
-      {required bool isChange}) {
+  Future<void> updateWalletUsedIndex(
+      WalletListItemBase walletItem, int usedIndex,
+      {required bool isChange}) async {
     final realmWalletBase = getWalletBase(walletItem.id);
 
     int dbUsedIndex = isChange
@@ -276,7 +277,7 @@ class AddressRepository extends BaseRepository {
     }
 
     // 필요한 경우에만 새 주소 생성
-    ensureAddressesExist(
+    await ensureAddressesExist(
       walletItemBase: walletItem,
       cursor: cursor,
       count: 1,

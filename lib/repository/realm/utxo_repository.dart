@@ -207,22 +207,6 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  // UTXO 상태를 "입금 중(incoming)"으로 표시
-  void markUtxoAsIncoming(int walletId, String txHash, String outputTxHash) {
-    final utxoToMark = realm.query<RealmUtxo>(
-      r'walletId == $0 AND transactionHash == $1',
-      [walletId, txHash],
-    );
-
-    if (utxoToMark.isEmpty) return;
-    realm.write(() {
-      for (final utxo in utxoToMark) {
-        utxo.status = utxoStatusToString(UtxoStatus.incoming);
-        utxo.spentByTransactionHash = outputTxHash;
-      }
-    });
-  }
-
   // UTXO 상태를 "출금 중(outgoing)"으로 표시
   void markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) {
     final utxoToMark = realm.find<RealmUtxo>(utxoId);
@@ -232,18 +216,6 @@ class UtxoRepository extends BaseRepository {
     realm.write(() {
       utxoToMark.status = utxoStatusToString(UtxoStatus.outgoing);
       utxoToMark.spentByTransactionHash = pendingTxHash;
-    });
-  }
-
-  // UTXO 상태를 "사용 가능(unspent)"으로 되돌림 (RBF 실패 또는 취소 시)
-  void markUtxoAsUnspent(int walletId, String txHash, int index) {
-    final utxoId = makeUtxoId(txHash, index);
-    final utxoToMark = realm.find<RealmUtxo>(utxoId);
-
-    if (utxoToMark == null) return;
-    realm.write(() {
-      utxoToMark.status = utxoStatusToString(UtxoStatus.unspent);
-      utxoToMark.spentByTransactionHash = null;
     });
   }
 

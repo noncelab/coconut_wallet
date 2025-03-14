@@ -33,22 +33,6 @@ class UtxoState extends Utxo {
     this.timestamp = timestamp;
   }
 
-  // UTXO 상태를 업데이트하는 메서드
-  void markAsOutgoing(String txHash) {
-    status = UtxoStatus.outgoing;
-    spentByTransactionHash = txHash;
-  }
-
-  void markAsIncoming() {
-    status = UtxoStatus.incoming;
-    spentByTransactionHash = null;
-  }
-
-  void markAsUnspent() {
-    status = UtxoStatus.unspent;
-    spentByTransactionHash = null;
-  }
-
   bool get isRbfable => status == UtxoStatus.outgoing && blockHeight == 0;
 
   bool get isCpfpable => status == UtxoStatus.incoming && blockHeight == 0;

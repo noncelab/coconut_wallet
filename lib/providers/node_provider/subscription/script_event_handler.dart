@@ -55,7 +55,7 @@ class ScriptEventHandler {
           : dto.walletItem.receiveUsedIndex;
 
       // 지갑 인덱스 업데이트
-      _addressRepository.updateWalletUsedIndex(
+      await _addressRepository.updateWalletUsedIndex(
         dto.walletItem,
         dto.scriptStatus.index,
         isChange: dto.scriptStatus.isChange,

@@ -113,13 +113,7 @@ class UtxoManager {
         continue;
       }
 
-      // 이미 outgoing 상태인 UTXO를 다시 업데이트할 때는 기존 spentByTransactionHash 유지
-      if (utxo != null &&
-          utxo.status == UtxoStatus.outgoing &&
-          utxo.spentByTransactionHash != null) {
-        Logger.log(
-            'RBF에 사용된 UTXO 감지: $utxoId는 이미 ${utxo.spentByTransactionHash}에 의해 사용 중입니다');
-        // 이전 트랜잭션 정보를 유지하여 RBF 감지가 가능하도록 함
+      if (utxo == null) {
         continue;
       }
 

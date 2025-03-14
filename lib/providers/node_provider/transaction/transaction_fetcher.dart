@@ -99,9 +99,6 @@ class TransactionFetcher {
     for (final fetchedTx in fetchedTransactions) {
       // 언컨펌 트랜잭션의 경우 새로 브로드캐스트된 트랜잭션이므로 사용된 UTXO 상태 업데이트
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
-        _utxoManager.updateUtxoStatusToOutgoingByTransaction(
-            walletItem.id, fetchedTx);
-
         // RBF 및 CPFP 감지
         final rbfInfo = await _rbfHandler.detectRbfTransaction(
           walletItem.id,
@@ -122,6 +119,9 @@ class TransactionFetcher {
           cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
           Logger.log('CPFP 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
         }
+
+        _utxoManager.updateUtxoStatusToOutgoingByTransaction(
+            walletItem.id, fetchedTx);
       }
 
       if (confirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
