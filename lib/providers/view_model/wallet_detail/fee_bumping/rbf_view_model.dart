@@ -173,7 +173,7 @@ class RbfViewModel extends FeeBumpingViewModel {
     debugPrint('''
 ========== Generated Transaction Info ==========
 - transactionHash: ${generateTx.transactionHash}
-- changeAddress: ${generateTx.changeAddress}
+- changeAddress: ${generateTx.changeAddressDerivationPath}
 - paymentMap: ${generateTx.paymentMap.entries.toString()}
 - totalInputAmount: ${generateTx.totalInputAmount}
 --------------------------------------------
