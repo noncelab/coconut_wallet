@@ -28,8 +28,8 @@ class UnderlineButtonItemCard extends StatelessWidget {
           Row(children: [
             Text(label,
                 style: CoconutTypography.body2_14
-                    .copyWith(color: CoconutColors.gray300)),
-            const SizedBox(width: 6),
+                    .copyWith(color: CoconutColors.gray400)),
+            const SizedBox(width: 4),
             if (underlineButtonLabel != null)
               Expanded(
                 child: Align(

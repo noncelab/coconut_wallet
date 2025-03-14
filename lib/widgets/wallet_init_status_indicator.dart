@@ -1,9 +1,26 @@
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
+
+/// Represents the initialization state of a wallet. 처음 초기화 때만 사용하지 않고 refresh 할 때도 사용합니다.
+enum WalletInitState {
+  /// The wallet has never been initialized.
+  never,
+
+  /// The wallet is currently being processed.
+  processing,
+
+  /// The wallet has finished successfully.
+  finished,
+
+  /// An error occurred during wallet initialization.
+  error,
+
+  /// Update impossible (node connection finally failed)
+  impossible,
+}
 
 class WalletInitStatusIndicator extends StatelessWidget {
   final WalletInitState state;

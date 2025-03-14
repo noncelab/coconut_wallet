@@ -201,6 +201,8 @@ flutter:
     - regtestlocal.env
     - assets/lottie/pin-locked-success.json
     - assets/lottie/loading-three-dots.json
+    - assets/lottie/arrow-up.json
+    - assets/lottie/arrow-down.json
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg
     - assets/images/telegram-circle-logo.png

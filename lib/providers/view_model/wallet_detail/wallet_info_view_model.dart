@@ -39,7 +39,7 @@ class WalletInfoViewModel extends ChangeNotifier {
     }
   }
 
-  WalletInitState get walletInitState => _walletProvider.walletInitState;
+  bool get isDbSyncing => _walletProvider.isSyncing;
   bool get isSetPin => _authProvider.isSetPin;
 
   String get walletName => _walletName;

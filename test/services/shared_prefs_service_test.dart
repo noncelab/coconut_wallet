@@ -24,21 +24,6 @@ void main() {
       sharedPrefs.setSharedPreferencesForTest(mockPrefs);
     });
 
-    test('LAST_UPDATE_TIME integer must be saved and imported', () async {
-      final dateTime = DateTime.now().millisecondsSinceEpoch;
-      when(mockPrefs.setInt(SharedPrefsRepository.kLastUpdateTime, dateTime))
-          .thenAnswer((_) async => true);
-      when(mockPrefs.getInt(SharedPrefsRepository.kLastUpdateTime))
-          .thenReturn(dateTime);
-
-      await sharedPrefs.sharedPrefs
-          .setInt(SharedPrefsRepository.kLastUpdateTime, dateTime);
-      final result =
-          sharedPrefs.sharedPrefs.getInt(SharedPrefsRepository.kLastUpdateTime);
-
-      expect(result, dateTime);
-    });
-
     test('FAUCET_HISTORIES string(json) must be saved and imported', () async {
       final histories = {
         1: FaucetRecord(id: 1, dateTime: 1627848390, count: 3),

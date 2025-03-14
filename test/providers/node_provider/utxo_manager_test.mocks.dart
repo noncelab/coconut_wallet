@@ -466,4 +466,13 @@ class MockNodeStateManager extends _i1.Mock implements _i10.NodeStateManager {
         ),
         returnValueForMissingStub: null,
       );
+
+  @override
+  void addWalletCompletedAllStates(int? walletId) => super.noSuchMethod(
+        Invocation.method(
+          #addWalletCompletedAllStates,
+          [walletId],
+        ),
+        returnValueForMissingStub: null,
+      );
 }

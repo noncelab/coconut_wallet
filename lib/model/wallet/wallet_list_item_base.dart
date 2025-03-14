@@ -14,11 +14,6 @@ abstract class WalletListItemBase {
   int receiveUsedIndex;
   int changeUsedIndex;
 
-  /// wallet.fetchOnChainData(nodeConnector) 또는 _nodeConnector.fetch 결과에서 txCount가 변경되지 않았는지 확인용
-  int? txCount;
-  bool isLatestTxBlockHeightZero =
-      false; // _nodeConnector.fetch 결과에서 latestTxBlockHeight가 변경되지 않았는지 확인용
-
   late WalletBase walletBase;
 
   Map<String, UnaddressedScriptStatus> subscribedScriptMap =
@@ -31,8 +26,6 @@ abstract class WalletListItemBase {
       required this.iconIndex,
       required this.descriptor,
       required this.walletType,
-      this.txCount,
-      this.isLatestTxBlockHeightZero = false,
       this.receiveUsedIndex = -1,
       this.changeUsedIndex = -1});
 

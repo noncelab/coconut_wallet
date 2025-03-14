@@ -6,7 +6,6 @@ import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -17,19 +16,17 @@ import '../../../utils/electrum_utils.dart';
 class ScriptSubscriber {
   final ElectrumService _electrumService;
   final StreamController<SubscribeScriptStreamDto> _scriptStatusController;
-  final SubscriptionRepository _subscriptionRepository;
   final AddressRepository _addressRepository;
   final int _gapLimit = 20; // 기본 gap limit 설정
 
   ScriptSubscriber(
     this._electrumService,
     this._scriptStatusController,
-    this._subscriptionRepository,
     this._addressRepository,
   );
 
   /// 지갑의 스크립트 구독
-  Future<SubscribeWalletResponse> subscribeWallet(
+  Future<List<ScriptStatus>> subscribeWallet(
     WalletListItemBase walletItem,
     WalletProvider walletProvider,
   ) async {
@@ -44,19 +41,21 @@ class ScriptSubscriber {
     walletItem.receiveUsedIndex = receiveResult.lastUsedIndex;
     walletItem.changeUsedIndex = changeResult.lastUsedIndex;
 
-    List<ScriptStatus> allScriptStatuses = [...receiveResult.scriptStatuses];
-    allScriptStatuses.addAll(changeResult.scriptStatuses);
+    List<ScriptStatus> fetchedScriptStatuses = [
+      ...receiveResult.scriptStatuses
+    ];
+    fetchedScriptStatuses.addAll(changeResult.scriptStatuses);
 
     // 구독 응답 객체 생성
     SubscribeWalletResponse subscribeResponse = SubscribeWalletResponse(
-      scriptStatuses: allScriptStatuses,
+      scriptStatuses: fetchedScriptStatuses,
       usedReceiveIndex: receiveResult.lastUsedIndex,
       usedChangeIndex: changeResult.lastUsedIndex,
     );
 
     if (subscribeResponse.scriptStatuses.isEmpty) {
       Logger.log('SubscribeWallet: ${walletItem.name} - no script statuses');
-      return subscribeResponse;
+      return [];
     }
 
     final changedScriptStatuses = subscribeResponse.scriptStatuses
@@ -79,14 +78,10 @@ class ScriptSubscriber {
     await _addressRepository.setWalletAddressUsedBatch(
         walletItem, changedScriptStatuses);
 
-    // 변경된 상태만 DB에 저장
-    _subscriptionRepository.batchUpdateScriptStatuses(
-        changedScriptStatuses, walletItem.id);
-
     Logger.log(
         'SubscribeWallet: ${walletItem.name} - finished / subscribedScriptMap.length: ${walletItem.subscribedScriptMap.length}');
 
-    return subscribeResponse;
+    return fetchedScriptStatuses;
   }
 
   /// 지갑의 스크립트 구독 해제

@@ -1,7 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -11,7 +10,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -21,6 +19,7 @@ import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -61,8 +60,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       ),
       child: Consumer<UtxoDetailViewModel>(
         builder: (_, viewModel, child) {
-          // FIXME: tx should be not null
-          final tx = viewModel.transaction ?? _getTransaction(viewModel);
+          final tx = viewModel.transaction;
           final allTags = viewModel.utxoTagList;
           final tagsApplied = viewModel.selectedUtxoTagList;
 
@@ -104,7 +102,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildScaffold(
     BuildContext context,
     UtxoDetailViewModel viewModel,
-    TransactionRecord tx,
+    TransactionRecord? tx,
     List<UtxoTag> tags,
     List<UtxoTag> selectedTags,
   ) {
@@ -120,27 +118,30 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           ),
           child: Column(
             children: [
-              _buildDateTime(viewModel.dateString),
-              CoconutLayout.spacing_600h,
-              _buildAmount(),
-              _buildPrice(),
-              CoconutLayout.spacing_600h,
-              _buildTxInputOutputSection(viewModel, tx),
-              CoconutLayout.spacing_400h,
-              _buildAddress(),
-              _buildTxMemo(
-                tx.memo,
-              ),
-              _buildTagSection(
-                context,
-                tags,
-                selectedTags,
-                viewModel,
-              ),
-              _buildTxId(),
-              _buildBlockHeight(),
-              CoconutLayout.spacing_1000h,
-              _buildBalanceWidthCheck(),
+              if (tx == null)
+                const Center(child: CircularProgressIndicator())
+              else ...{
+                _buildDateTime(viewModel.dateString),
+                _buildAmount(),
+                if (viewModel.utxoStatus == UtxoStatus.unspent)
+                  _buildPrice()
+                else ...{_buildStatus(viewModel.utxoStatus)},
+                _buildTxInputOutputSection(viewModel, tx),
+                _buildAddress(),
+                _buildTxMemo(
+                  tx.memo,
+                ),
+                _buildTagSection(
+                  context,
+                  tags,
+                  selectedTags,
+                  viewModel,
+                ),
+                _buildTxId(),
+                _buildBlockHeight(),
+                CoconutLayout.spacing_1000h,
+                _buildBalanceWidthCheck(),
+              }
             ],
           ),
         ),
@@ -167,21 +168,25 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   Widget _buildTxInputOutputSection(
       UtxoDetailViewModel viewModel, TransactionRecord tx) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: CoconutColors.gray800,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildInputOutputList(tx.inputAddressList, InputOutputRowType.input),
-          _buildFeeSection(),
-          _buildInputOutputList(
-              tx.outputAddressList, InputOutputRowType.output),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
+          color: CoconutColors.gray800,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildInputOutputList(
+                tx.inputAddressList, InputOutputRowType.input),
+            _buildFeeSection(),
+            _buildInputOutputList(
+                tx.outputAddressList, InputOutputRowType.output),
+          ],
+        ),
       ),
     );
   }
@@ -287,24 +292,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     setState(() {});
   }
 
-  // FIXME: viewModel의 transaction이 null로 나와서 임의 데이터로 생성했습니다.
-  TransactionRecord _getTransaction(UtxoDetailViewModel viewModel) {
-    return viewModel.transaction ??
-        TransactionRecord(
-          'dummy_tx_hash',
-          DateTime.now(),
-          1,
-          TransactionType.received.name,
-          null,
-          2,
-          1,
-          [TransactionAddress('dummy_address', 1)],
-          [TransactionAddress('dummy_address', 1)],
-          0,
-          DateTime.now(),
-        );
-  }
-
   Widget _buildBalanceWidthCheck() {
     return Text(
       key: _balanceWidthKey,
@@ -315,35 +302,75 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   Widget _buildDateTime(List<String> timeString) {
-    return HighlightedInfoArea(
-        textList: timeString, textStyle: CoconutTypography.body2_14_Number);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 28.0),
+      child: HighlightedInfoArea(
+          textList: timeString, textStyle: CoconutTypography.body2_14_Number),
+    );
   }
 
+  // TODO: 공통 위젯으로 빼서 여러 화면에서 재사용하기
+  // wallet-detail, tx-detail, utxo-list, utxo-detail
   Widget _buildAmount() {
-    return Center(
-        child: RichText(
-            text: TextSpan(
-                text: satoshiToBitcoinString(widget.utxo.amount),
-                style: CoconutTypography.heading3_21_NumberBold,
-                children: <TextSpan>[
-          TextSpan(text: " ${t.btc}", style: CoconutTypography.body2_14_Number)
-        ])));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2.0),
+      child: Center(
+          child: RichText(
+              text: TextSpan(
+                  text: satoshiToBitcoinString(widget.utxo.amount),
+                  style: CoconutTypography.heading2_28_NumberBold,
+                  children: <InlineSpan>[
+            WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Text(" ${t.btc}",
+                    style: CoconutTypography.heading3_21_Number))
+          ]))),
+    );
   }
 
   Widget _buildPrice() {
-    return Center(
-        child: Selector<UpbitConnectModel, int?>(
-      selector: (context, model) => model.bitcoinPriceKrw,
-      builder: (context, bitcoinPriceKrw, child) {
-        return Text(
-          bitcoinPriceKrw != null
-              ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
-              : '',
-          style: CoconutTypography.body2_14_Number
-              .copyWith(color: CoconutColors.gray500),
-        );
-      },
-    ));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 28),
+      child: Center(
+          child: Selector<UpbitConnectModel, int?>(
+        selector: (context, model) => model.bitcoinPriceKrw,
+        builder: (context, bitcoinPriceKrw, child) {
+          return Text(
+            bitcoinPriceKrw != null
+                ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(widget.utxo.amount, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
+                : '',
+            style: CoconutTypography.body2_14_Number
+                .copyWith(color: CoconutColors.gray500),
+          );
+        },
+      )),
+    );
+  }
+
+  Widget _buildStatus(UtxoStatus status) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 28),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(
+            status == UtxoStatus.incoming
+                ? 'assets/lottie/arrow-down.json'
+                : 'assets/lottie/arrow-up.json',
+            width: 20,
+            height: 20,
+          ),
+          CoconutLayout.spacing_100w,
+          Text(
+            status == UtxoStatus.incoming
+                ? t.status_receiving
+                : t.status_sending,
+            style: CoconutTypography.body2_14_Number
+                .copyWith(color: CoconutColors.gray200),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAddress() {
@@ -362,8 +389,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               children: [
                 Text(
                   widget.utxo.to,
-                  style: Styles.body2Number
-                      .merge(const TextStyle(height: 22 / 14)),
+                  style: CoconutTypography.body2_14_Number,
                 ),
                 const SizedBox(height: 2),
                 Row(children: [
