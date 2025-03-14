@@ -289,9 +289,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                               child: CoconutPulldownMenu(
                                 shadowColor: CoconutColors.gray800,
                                 dividerColor: CoconutColors.gray800,
-                                dividerPointColor: CoconutColors.gray700,
                                 buttons: _dropdownButtons,
-                                dividerIndex: 3,
                                 onTap: ((index) {
                                   setState(() {
                                     _isDropdownMenuVisible = false;
