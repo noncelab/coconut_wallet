@@ -50,7 +50,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;
-  late String _changeAddress;
+  late String _changeAddressDerivationPath;
   late WalletBase _walletBase;
   late bool _isMaxMode;
   late Transaction _transaction;
@@ -107,7 +107,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _walletBase = _walletBaseItem.walletBase;
     _confirmedBalance = _walletProvider.getWalletBalance(_walletId).confirmed;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
-    _changeAddress = _walletProvider.getChangeAddress(_walletId).address;
+    _changeAddressDerivationPath =
+        _walletProvider.getChangeAddress(_walletId).derivationPath;
     _isMaxMode = _confirmedBalance ==
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
@@ -248,8 +249,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   void deselectAllUtxo() {
     _clearUtxoList();
     if (!_isMaxMode) {
-      _transaction = Transaction.forSinglePayment([], _recipientAddress,
-          _changeAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
+      _transaction = Transaction.forSinglePayment([],
+          _recipientAddress,
+          _changeAddressDerivationPath,
+          _sendAmount,
+          satsPerVb ?? 1,
+          _walletBase);
     }
   }
 
@@ -302,7 +307,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       _transaction = Transaction.forSinglePayment(
           _selectedUtxoList,
           _recipientAddress,
-          _changeAddress,
+          _changeAddressDerivationPath,
           _sendAmount,
           satsPerVb ?? 1,
           _walletBase);
@@ -382,7 +387,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       return Transaction.forSinglePayment(
           optimalUtxos,
           _sendInfoProvider.recipientAddress!,
-          _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
+          _walletProvider
+              .getChangeAddress(_sendInfoProvider.walletId!)
+              .derivationPath,
           UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
           feeRate,
           walletListItemBase.walletBase);

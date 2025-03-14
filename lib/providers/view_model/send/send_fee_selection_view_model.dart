@@ -84,7 +84,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
               utxoPool, amount, satsPerVb, _walletAddressType),
           _sendInfoProvider.recipientsForBatch!.map(
               (key, value) => MapEntry(key, UnitUtil.bitcoinToSatoshi(value))),
-          changeAddress.address,
+          changeAddress.derivationPath,
           satsPerVb,
           _walletListItemBase.walletBase);
     }
@@ -96,7 +96,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
             TransactionUtil.selectOptimalUtxos(
                 utxoPool, amount, satsPerVb, _walletAddressType),
             _recipientAddress!,
-            changeAddress.address,
+            changeAddress.derivationPath,
             amount,
             satsPerVb,
             _walletListItemBase.walletBase);

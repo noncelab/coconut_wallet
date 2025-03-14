@@ -32,7 +32,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   QRViewController? controller;
   bool _isProcessing = false;
   late SendAddressViewModel _viewModel;
-  bool _isBatchMode = true;
+  bool _isBatchMode = false;
 
   @override
   Widget build(BuildContext context) {
