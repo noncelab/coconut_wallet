@@ -473,7 +473,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       return;
     }
 
-    feeBumpingHistoryList = _viewModel.transactionList!.map((transactionDetail) {
+    feeBumpingHistoryList =
+        _viewModel.transactionList!.map((transactionDetail) {
       return FeeHistory(
         feeRate: transactionDetail.transaction!.feeRate.toInt(),
         isSlected: _viewModel.selectedTransactionIndex ==
