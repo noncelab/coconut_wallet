@@ -140,8 +140,13 @@ class RbfViewModel extends FeeBumpingViewModel {
         {
           debugPrint('### Original TransactionType: forSinglePayment');
 
-          generateTx = Transaction.forSinglePayment(inputUtxoList,
-              recipientAddress, changeAddress, amount, satsPerVb, wallet);
+          generateTx = Transaction.forSinglePayment(
+              inputUtxoList,
+              recipientAddress,
+              addressRepository.getDerivationPath(walletId, changeAddress),
+              amount,
+              satsPerVb,
+              wallet);
           break;
         }
       case TransactionType.forBatchPayment:
@@ -173,7 +178,7 @@ class RbfViewModel extends FeeBumpingViewModel {
     debugPrint('''
 ========== Generated Transaction Info ==========
 - transactionHash: ${generateTx.transactionHash}
-- changeAddress: ${generateTx.changeAddress}
+- changeAddress: ${generateTx.changeAddressDerivationPath}
 - paymentMap: ${generateTx.paymentMap.entries.toString()}
 - totalInputAmount: ${generateTx.totalInputAmount}
 --------------------------------------------

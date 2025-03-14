@@ -44,7 +44,7 @@ class SendConfirmViewModel extends ChangeNotifier {
             _sendInfoProvider.recipientAddress!,
             _walletProvider
                 .getChangeAddress(_sendInfoProvider.walletId!)
-                .address,
+                .derivationPath,
             UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
             _sendInfoProvider.feeRate!,
             _walletListItemBase.walletBase);

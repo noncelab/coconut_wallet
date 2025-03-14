@@ -74,7 +74,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
                     ? AddressType.p2wpkh
                     : AddressType.p2wsh),
             _recipientAddress,
-            changeAddress.address,
+            changeAddress.derivationPath,
             amount,
             satsPerVb,
             wallet.walletBase);

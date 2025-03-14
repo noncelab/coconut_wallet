@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -50,7 +51,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;
-  late String _changeAddress;
+  late WalletAddress _changeAddress;
   late WalletBase _walletBase;
   late bool _isMaxMode;
   late Transaction _transaction;
@@ -107,7 +108,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _walletBase = _walletBaseItem.walletBase;
     _confirmedBalance = _walletProvider.getWalletBalance(_walletId).confirmed;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
-    _changeAddress = _walletProvider.getChangeAddress(_walletId).address;
+    _changeAddress = _walletProvider.getChangeAddress(_walletId);
     _isMaxMode = _confirmedBalance ==
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
@@ -248,8 +249,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   void deselectAllUtxo() {
     _clearUtxoList();
     if (!_isMaxMode) {
-      _transaction = Transaction.forSinglePayment([], _recipientAddress,
-          _changeAddress, _sendAmount, satsPerVb ?? 1, _walletBase);
+      _transaction = Transaction.forSinglePayment([],
+          _recipientAddress,
+          _changeAddress.derivationPath,
+          _sendAmount,
+          satsPerVb ?? 1,
+          _walletBase);
     }
   }
 
@@ -302,7 +307,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       _transaction = Transaction.forSinglePayment(
           _selectedUtxoList,
           _recipientAddress,
-          _changeAddress,
+          _changeAddress.derivationPath,
           _sendAmount,
           satsPerVb ?? 1,
           _walletBase);
@@ -382,7 +387,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       return Transaction.forSinglePayment(
           optimalUtxos,
           _sendInfoProvider.recipientAddress!,
-          _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
+          _walletProvider
+              .getChangeAddress(_sendInfoProvider.walletId!)
+              .derivationPath,
           UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
           feeRate,
           walletListItemBase.walletBase);
