@@ -16,7 +16,7 @@ class Result<T> {
     return Result<T>._(error: error);
   }
 
-  bool get isSuccess => _value != null;
+  bool get isSuccess => _error == null;
   bool get isFailure => _error != null;
 
   T get value {

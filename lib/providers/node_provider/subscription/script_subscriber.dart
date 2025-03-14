@@ -57,9 +57,26 @@ class ScriptSubscriber {
       Logger.log('SubscribeWallet: ${walletItem.name} - no script statuses');
       return [];
     }
+
+    final changedScriptStatuses = subscribeResponse.scriptStatuses
+        .where((status) => status.status != null)
+        .toList();
+
     // 지갑 인덱스 업데이트
-    _addressRepository.updateWalletUsedIndex(
-        walletItem, receiveResult.lastUsedIndex, changeResult.lastUsedIndex);
+    await _addressRepository.updateWalletUsedIndex(
+      walletItem,
+      subscribeResponse.usedReceiveIndex,
+      isChange: false,
+    );
+    await _addressRepository.updateWalletUsedIndex(
+      walletItem,
+      subscribeResponse.usedChangeIndex,
+      isChange: true,
+    );
+
+    // 주소 사용 여부 업데이트
+    await _addressRepository.setWalletAddressUsedBatch(
+        walletItem, changedScriptStatuses);
 
     Logger.log(
         'SubscribeWallet: ${walletItem.name} - finished / subscribedScriptMap.length: ${walletItem.subscribedScriptMap.length}');

@@ -22,7 +22,7 @@ import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 
 class NodeProvider extends ChangeNotifier {
@@ -70,7 +70,9 @@ class NodeProvider extends ChangeNotifier {
     ElectrumService? electrumService,
   }) : _isolateManager = isolateManager ?? IsolateManager() {
     _stateManager = NodeStateManager(() => notifyListeners());
-    initialize(electrumService: electrumService);
+    initialize(electrumService: electrumService).then((_) {
+      _isolateManager.initialize(_electrumService, host, port, ssl);
+    });
   }
 
   Future<void> initialize({ElectrumService? electrumService}) async {
@@ -85,7 +87,7 @@ class NodeProvider extends ChangeNotifier {
 
       _networkManager = NetworkManager(_electrumService);
       _balanceManager = BalanceManager(_electrumService, _stateManager,
-          _addressRepository, _walletRepository);
+          _addressRepository, _walletRepository, _isolateManager);
       _utxoManager =
           UtxoManager(_electrumService, _stateManager, _utxoRepository);
       _transactionManager = TransactionManager(_electrumService, _stateManager,

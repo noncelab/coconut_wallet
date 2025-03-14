@@ -467,56 +467,6 @@ class WalletProvider extends ChangeNotifier {
         walletId, addresses);
   }
 
-  /// 지갑 주소의 사용여부와 잔액을 업데이트 합니다.
-  /// 새로운 트랜잭션 이력이 있는 주소를 기준으로 업데이트 합니다.
-  void updateWalletAddressList(
-      WalletListItemBase walletItem,
-      List<AddressBalance> receiveBalanceList,
-      List<AddressBalance> changeBalanceList,
-      List<FetchTransactionResponse> newTxResList) {
-    final receiveBalanceMap = <int, AddressBalance>{};
-    final changeBalanceMap = <int, AddressBalance>{};
-
-    for (var addressBalance in receiveBalanceList) {
-      receiveBalanceMap[addressBalance.index] = addressBalance;
-    }
-
-    for (var addressBalance in changeBalanceList) {
-      changeBalanceMap[addressBalance.index] = addressBalance;
-    }
-
-    final newReceiveBalanceList = <WalletAddress>[];
-    final newChangeBalanceList = <WalletAddress>[];
-
-    for (var fetchTxRes in newTxResList) {
-      if (fetchTxRes.isChange) {
-        newChangeBalanceList.add(WalletAddress(
-            '',
-            '',
-            fetchTxRes.addressIndex,
-            true,
-            changeBalanceMap[fetchTxRes.addressIndex]!.confirmed,
-            changeBalanceMap[fetchTxRes.addressIndex]!.unconfirmed,
-            changeBalanceMap[fetchTxRes.addressIndex]!.total));
-      } else {
-        newReceiveBalanceList.add(WalletAddress(
-            '',
-            '',
-            fetchTxRes.addressIndex,
-            true,
-            receiveBalanceMap[fetchTxRes.addressIndex]!.confirmed,
-            receiveBalanceMap[fetchTxRes.addressIndex]!.unconfirmed,
-            receiveBalanceMap[fetchTxRes.addressIndex]!.total));
-      }
-    }
-
-    _addressRepository.updateWalletAddressList(
-        walletItem, newReceiveBalanceList, false);
-    _addressRepository.updateWalletAddressList(
-        walletItem, newChangeBalanceList, true);
-    notifyListeners();
-  }
-
   WalletAddress getChangeAddress(int walletId) {
     return _addressRepository.getChangeAddress(walletId);
   }
