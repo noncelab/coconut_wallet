@@ -1,12 +1,15 @@
 import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 class AddressRepository extends BaseRepository {
   AddressRepository(super._realmManager);
@@ -159,28 +162,6 @@ class AddressRepository extends BaseRepository {
     return realmWalletAddresses.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
-  /// 주소 목록 업데이트 (잔액과 사용여부만 갱신)
-  void updateWalletAddressList(WalletListItemBase walletItem,
-      List<WalletAddress> walletAddressList, bool isChange) {
-    final realmWalletAddresses = realm.query<RealmWalletAddress>(
-      r'walletId == $0 AND isChange == $1',
-      [walletItem.id, isChange],
-    );
-
-    realm.write(() {
-      for (final walletAddress in walletAddressList) {
-        final realmAddress = realmWalletAddresses.firstWhere(
-          (a) => a.index == walletAddress.index,
-        );
-
-        realmAddress.confirmed = walletAddress.confirmed;
-        realmAddress.unconfirmed = walletAddress.unconfirmed;
-        realmAddress.total = walletAddress.total;
-        realmAddress.isUsed = walletAddress.isUsed;
-      }
-    });
-  }
-
   /// 변경 주소 가져오기
   WalletAddress getChangeAddress(int walletId) {
     final realmWalletBase = getWalletBase(walletId);
@@ -214,41 +195,103 @@ class AddressRepository extends BaseRepository {
     return realmWalletBase;
   }
 
+  void setWalletAddressUsed(
+      WalletListItemBase walletItem, int addressIndex, bool isChange) {
+    final realmWalletAddress = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND index == $1 AND isChange == $2',
+      [walletItem.id, addressIndex, isChange],
+    ).firstOrNull;
+
+    if (realmWalletAddress == null) {
+      Logger.error(
+          '[setWalletAddressUsed] Wallet address not found, walletId: ${walletItem.id}, index: $addressIndex, isChange: $isChange');
+      return;
+    }
+
+    realm.write(() {
+      realmWalletAddress.isUsed = true;
+    });
+  }
+
+  Future<void> setWalletAddressUsedBatch(WalletListItemBase walletItem,
+      List<ScriptStatus> changedScriptStatuses) async {
+    final receiveIndices = changedScriptStatuses
+        .where((status) => !status.isChange)
+        .map((status) => status.index)
+        .toSet();
+    final changeIndices = changedScriptStatuses
+        .where((status) => status.isChange)
+        .map((status) => status.index)
+        .toSet();
+
+    final receiveAddresses = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isChange == false AND index IN $1',
+      [walletItem.id, receiveIndices],
+    ).toList();
+
+    final changeAddresses = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND isChange == true AND index IN $1',
+      [walletItem.id, changeIndices],
+    ).toList();
+
+    // 미리 모든 주소를 조회하여 맵으로 구성
+    final addressMap = <String, RealmWalletAddress>{};
+    for (final address in [...changeAddresses, ...receiveAddresses]) {
+      final key = '${address.index}_${address.isChange}';
+      addressMap[key] = address;
+    }
+
+    // 단일 트랜잭션으로 모든 주소 업데이트
+    await realm.writeAsync(() {
+      for (final scriptStatus in changedScriptStatuses) {
+        final key = '${scriptStatus.index}_${scriptStatus.isChange}';
+        final realmWalletAddress = addressMap[key];
+
+        if (realmWalletAddress == null) {
+          Logger.error(
+              '[setWalletAddressUsedBatch] Wallet address not found, walletId: ${walletItem.id}, index: ${scriptStatus.index}, isChange: ${scriptStatus.isChange}');
+          continue;
+        }
+
+        realmWalletAddress.isUsed = true;
+      }
+    });
+  }
+
   /// 지갑 사용 인덱스 업데이트
-  void updateWalletUsedIndex(WalletListItemBase walletItem,
-      int usedReceiveIndex, int usedChangeIndex) {
+  Future<void> updateWalletUsedIndex(
+      WalletListItemBase walletItem, int usedIndex,
+      {required bool isChange}) async {
     final realmWalletBase = getWalletBase(walletItem.id);
 
-    int receiveCursor =
-        max(usedReceiveIndex, realmWalletBase.usedReceiveIndex) + 1;
-    int changeCursor =
-        max(usedChangeIndex, realmWalletBase.usedChangeIndex) + 1;
+    int dbUsedIndex = isChange
+        ? realmWalletBase.usedChangeIndex
+        : realmWalletBase.usedReceiveIndex;
 
-    walletItem.receiveUsedIndex = receiveCursor - 1;
-    walletItem.changeUsedIndex = changeCursor - 1;
+    int cursor = max(usedIndex, dbUsedIndex) + 1;
+
+    if (isChange) {
+      walletItem.changeUsedIndex = cursor - 1;
+    } else {
+      walletItem.receiveUsedIndex = cursor - 1;
+    }
 
     // 필요한 경우에만 새 주소 생성
-    ensureAddressesExist(
+    await ensureAddressesExist(
       walletItemBase: walletItem,
-      cursor: receiveCursor,
+      cursor: cursor,
       count: 1,
-      isChange: false,
-    );
-
-    ensureAddressesExist(
-      walletItemBase: walletItem,
-      cursor: changeCursor,
-      count: 1,
-      isChange: true,
+      isChange: isChange,
     );
 
     // 지갑 인덱스 업데이트
     realm.write(() {
-      if (usedReceiveIndex > realmWalletBase.usedReceiveIndex) {
-        realmWalletBase.usedReceiveIndex = usedReceiveIndex;
-      }
-      if (usedChangeIndex > realmWalletBase.usedChangeIndex) {
-        realmWalletBase.usedChangeIndex = usedChangeIndex;
+      if (usedIndex > dbUsedIndex) {
+        if (isChange) {
+          realmWalletBase.usedChangeIndex = usedIndex;
+        } else {
+          realmWalletBase.usedReceiveIndex = usedIndex;
+        }
       }
     });
   }
@@ -282,5 +325,68 @@ class AddressRepository extends BaseRepository {
     });
 
     return Balance(confirmedDiff, unconfirmedDiff);
+  }
+
+  /// DTO 객체를 사용하여 다수의 주소 잔액을 일괄 업데이트하고 총 변화량을 반환합니다.
+  /// @param walletId 지갑 ID
+  /// @param updateDataList 업데이트할 DTO 객체 목록
+  /// @return 전체 잔액 변화량
+  Balance updateAddressBalanceBatch(
+      int walletId, List<AddressBalanceUpdateDto> updateDataList) {
+    if (updateDataList.isEmpty) {
+      return Balance(0, 0);
+    }
+
+    // 모든 주소 정보를 한 번에 쿼리
+    final realmAddresses = realm.query<RealmWalletAddress>(
+      'walletId == $walletId',
+    );
+
+    // 트랜잭션 외부에서 모든 계산 수행
+    List<AddressBalanceCalculationResult> calculationResults = [];
+    int totalConfirmedDiff = 0;
+    int totalUnconfirmedDiff = 0;
+
+    for (var dto in updateDataList) {
+      // 해당 주소 찾기
+      final realmAddress = realmAddresses.firstWhere(
+        (a) =>
+            a.index == dto.scriptStatus.index &&
+            a.isChange == dto.scriptStatus.isChange,
+        orElse: () => throw StateError(
+            '[updateAddressBalanceBatchWithDTO] Wallet address not found, walletId: $walletId, index: ${dto.scriptStatus.index}, isChange: ${dto.scriptStatus.isChange}'),
+      );
+
+      // 차이 계산
+      final confirmedDiff = dto.confirmed - realmAddress.confirmed;
+      final unconfirmedDiff = dto.unconfirmed - realmAddress.unconfirmed;
+
+      // 결과 저장
+      calculationResults.add(
+        AddressBalanceCalculationResult(
+          realmAddress: realmAddress,
+          confirmedDiff: confirmedDiff,
+          unconfirmedDiff: unconfirmedDiff,
+          newConfirmed: dto.confirmed,
+          newUnconfirmed: dto.unconfirmed,
+        ),
+      );
+
+      // 총 차이 누적
+      totalConfirmedDiff += confirmedDiff;
+      totalUnconfirmedDiff += unconfirmedDiff;
+    }
+
+    // 계산이 완료된 후 Realm 트랜잭션에서 실제 DB 업데이트만 수행
+    realm.write(() {
+      for (var result in calculationResults) {
+        final realmAddress = result.realmAddress;
+        realmAddress.confirmed = result.newConfirmed;
+        realmAddress.unconfirmed = result.newUnconfirmed;
+        realmAddress.total = result.newTotal;
+      }
+    });
+
+    return Balance(totalConfirmedDiff, totalUnconfirmedDiff);
   }
 }

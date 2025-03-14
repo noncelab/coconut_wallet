@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/services/model/response/block_header.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
@@ -91,6 +93,16 @@ class ElectrumService {
         (json, {int? id}) => ElectrumResponse(result: json));
 
     return response.result;
+  }
+
+  Future<BlockTimestamp> getBlockTimestamp(int height) async {
+    final blockHeaderHex = await getBlockHeader(height);
+    final blockHeader = BlockHeader.parse(height, blockHeaderHex);
+    return BlockTimestamp(
+      height,
+      DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
+          isUtc: true),
+    );
   }
 
   Future<num> estimateFee(int targetConfirmation) async {

@@ -146,3 +146,8 @@ key.properties
 
 # FVM Version Cache
 .fvm/
+
+# Test (realm)
+default.realm.management
+*.mx
+*.cv

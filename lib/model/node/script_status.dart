@@ -18,6 +18,8 @@ class ScriptStatus extends UnaddressedScriptStatus {
 
 class UnaddressedScriptStatus {
   final String scriptPubKey;
+
+  /// script status (sha256 hash)
   final String? status;
   final DateTime timestamp;
 
