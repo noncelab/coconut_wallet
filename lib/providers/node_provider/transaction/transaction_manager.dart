@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/node_provider/transaction/transaction_p
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -19,7 +18,6 @@ class TransactionManager {
   final NodeStateManager _stateManager;
   final TransactionRepository _transactionRepository;
   final UtxoManager _utxoManager;
-  final UtxoRepository _utxoRepository;
 
   late final TransactionProcessor _transactionProcessor;
   late final TransactionFetcher _transactionFetcher;
@@ -29,7 +27,6 @@ class TransactionManager {
     this._stateManager,
     this._transactionRepository,
     this._utxoManager,
-    this._utxoRepository,
   ) {
     _transactionProcessor = TransactionProcessor(_electrumService);
     _transactionFetcher = TransactionFetcher(
@@ -38,7 +35,6 @@ class TransactionManager {
       _transactionProcessor,
       _stateManager,
       _utxoManager,
-      _utxoRepository,
     );
   }
 

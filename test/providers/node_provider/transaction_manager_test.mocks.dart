@@ -571,7 +571,7 @@ class MockUtxoManager extends _i1.Mock implements _i16.UtxoManager {
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<List<_i18.UtxoState>> getUtxoStateList(
+  _i5.Future<List<_i18.UtxoState>> fetchUtxoStateList(
     _i10.AddressType? addressType,
     _i17.ScriptStatus? scriptStatus,
   ) =>
@@ -587,7 +587,7 @@ class MockUtxoManager extends _i1.Mock implements _i16.UtxoManager {
       ) as _i5.Future<List<_i18.UtxoState>>);
 
   @override
-  _i5.Future<Map<int, _i3.BlockTimestamp>> getBlocksByHeight(
+  _i5.Future<Map<int, _i3.BlockTimestamp>> fetchBlocksByHeight(
           Set<int>? heights) =>
       (super.noSuchMethod(
         Invocation.method(

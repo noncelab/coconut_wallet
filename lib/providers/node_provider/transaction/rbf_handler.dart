@@ -3,17 +3,17 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 
 /// RBF(Replace-By-Fee) 트랜잭션 처리를 담당하는 클래스
 class RbfHandler {
   final TransactionRepository _transactionRepository;
-  final UtxoRepository _utxoRepository;
+  final UtxoManager _utxoManager;
 
-  RbfHandler(this._transactionRepository, this._utxoRepository);
+  RbfHandler(this._transactionRepository, this._utxoManager);
 
   /// RBF 트랜잭션을 감지합니다.
   ///
@@ -43,7 +43,7 @@ class RbfHandler {
     Logger.log('입력 UTXO 분석 시작 (입력 개수: ${tx.inputs.length})');
     for (final input in tx.inputs) {
       final utxoId = makeUtxoId(input.transactionHash, input.index);
-      final utxo = _utxoRepository.getUtxoState(walletId, utxoId);
+      final utxo = _utxoManager.getUtxoState(walletId, utxoId);
 
       if (utxo != null) {
         Logger.log(

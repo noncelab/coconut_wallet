@@ -91,7 +91,7 @@ class NodeProvider extends ChangeNotifier {
       _utxoManager =
           UtxoManager(_electrumService, _stateManager, _utxoRepository);
       _transactionManager = TransactionManager(_electrumService, _stateManager,
-          _transactionRepository, _utxoManager, _utxoRepository);
+          _transactionRepository, _utxoManager);
       _subscriptionManager = SubscriptionManager(
         _electrumService,
         _stateManager,

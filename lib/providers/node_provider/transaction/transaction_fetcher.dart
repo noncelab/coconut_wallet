@@ -11,7 +11,6 @@ import 'package:coconut_wallet/providers/node_provider/transaction/transaction_p
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
@@ -24,7 +23,6 @@ class TransactionFetcher {
   final TransactionProcessor _transactionProcessor;
   final NodeStateManager _stateManager;
   final UtxoManager _utxoManager;
-  final UtxoRepository _utxoRepository;
   final RbfHandler _rbfHandler;
   final CpfpHandler _cpfpHandler;
 
@@ -34,8 +32,7 @@ class TransactionFetcher {
     this._transactionProcessor,
     this._stateManager,
     this._utxoManager,
-    this._utxoRepository,
-  )   : _rbfHandler = RbfHandler(_transactionRepository, _utxoRepository),
+  )   : _rbfHandler = RbfHandler(_transactionRepository, _utxoManager),
         _cpfpHandler = CpfpHandler(_transactionRepository);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
@@ -163,6 +160,8 @@ class TransactionFetcher {
       if (rbfInfoMap.isNotEmpty) {
         await _rbfHandler.saveRbfHistoryMap(
             walletItem, rbfInfoMap, txRecordMap, walletItem.id);
+
+        _transactionRepository.markAsRbfReplaced(walletItem.id, rbfInfoMap);
       }
 
       if (cpfpInfoMap.isNotEmpty) {

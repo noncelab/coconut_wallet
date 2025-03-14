@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart' as lib;
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -15,8 +16,8 @@ class TransactionRepository extends BaseRepository {
 
   /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함
   List<TransactionRecord> getTransactionRecordList(int walletId) {
-    final transactions = realm
-        .query<RealmTransaction>('walletId == $walletId SORT(timestamp DESC)');
+    final transactions = realm.query<RealmTransaction>(
+        'walletId == $walletId AND replaceByTransactionHash == null SORT(timestamp DESC)');
 
     if (transactions.isEmpty) return [];
     List<TransactionRecord> result = [];
@@ -376,6 +377,32 @@ class TransactionRepository extends BaseRepository {
       // 자세한 로깅
       Logger.log('CPFP 내역 삭제: ${fetchedTx.transactionHash} (컨펌된 트랜잭션)');
     }
+  }
+
+  /// rbfInfoMap - {key(새로운 rbfTransactionHash): [RbfInfo]}
+  /// 기존 트랜잭션을 찾아서 rbf로 대체되었다는 표시를 하기 위한 메서드
+  void markAsRbfReplaced(int walletId, Map<String, RbfInfo> rbfInfoMap) {
+    final Map<String, String> spentToOriginalTxMap = {};
+
+    for (final entry in rbfInfoMap.entries) {
+      final originalTxHash = entry.key;
+      final rbfInfo = entry.value;
+      final spentTxHash = rbfInfo.spentTransactionHash;
+
+      spentToOriginalTxMap[spentTxHash] = originalTxHash;
+    }
+
+    final txListToReplce = realm.query<RealmTransaction>(
+      r'walletId == $0 AND transactionHash IN $1',
+      [walletId, spentToOriginalTxMap.keys.toList()],
+    );
+
+    realm.write(() {
+      for (final realmTx in txListToReplce) {
+        realmTx.replaceByTransactionHash =
+            spentToOriginalTxMap[realmTx.transactionHash];
+      }
+    });
   }
 }
 

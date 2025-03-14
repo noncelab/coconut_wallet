@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
 
 class TransactionMock {
   static const String testTxHash = 'test_tx_hash';
@@ -92,5 +93,32 @@ class TransactionMock {
 
     return Transaction.withInputsAndOutputs(
         inputs, outputs, AddressType.p2wpkh);
+  }
+
+  /// RBF 테스트를 위한 RbfInfo 생성 메서드
+  static RbfInfo createMockRbfInfo({
+    required String originalTransactionHash,
+    required String spentTransactionHash,
+    List<Transaction>? previousTransactions,
+  }) {
+    return RbfInfo(
+      originalTransactionHash: originalTransactionHash,
+      spentTransactionHash: spentTransactionHash,
+      previousTransactions: previousTransactions ?? [],
+    );
+  }
+
+  /// RBF 테스트를 위한 트랜잭션 생성 메서드
+  static TransactionRecord createRbfTransactionRecord({
+    required String transactionHash,
+    int amount = 1000000,
+    int fee = 15000, // RBF는 보통 더 높은 수수료
+  }) {
+    return createMockTransactionRecord(
+      transactionHash: transactionHash,
+      blockHeight: 0, // 미확인 트랜잭션
+      amount: amount,
+      fee: fee,
+    );
   }
 }

@@ -71,7 +71,6 @@ void main() {
       stateManager,
       transactionRepository,
       utxoManager,
-      utxoRepository,
     );
 
     transactionProcessor = TransactionProcessor(electrumService);
@@ -81,10 +80,9 @@ void main() {
       transactionProcessor,
       stateManager,
       utxoManager,
-      utxoRepository,
     );
 
-    rbfDetector = RbfHandler(transactionRepository, utxoRepository);
+    rbfDetector = RbfHandler(transactionRepository, utxoManager);
     cpfpDetector = CpfpHandler(transactionRepository);
 
     // 테스트용 지갑 생성
