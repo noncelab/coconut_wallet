@@ -34,11 +34,11 @@ class UtxoManager {
     }
 
     // UTXO 목록 조회
-    final utxos =
-        await getUtxoStateList(walletItem.walletBase.addressType, scriptStatus);
+    final utxos = await fetchUtxoStateList(
+        walletItem.walletBase.addressType, scriptStatus);
 
-    final blockTimestampMap =
-        await getBlocksByHeight(utxos.map((utxo) => utxo.blockHeight).toSet());
+    final blockTimestampMap = await fetchBlocksByHeight(
+        utxos.map((utxo) => utxo.blockHeight).toSet());
 
     UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
 
@@ -57,7 +57,7 @@ class UtxoManager {
   }
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다.
-  Future<List<UtxoState>> getUtxoStateList(
+  Future<List<UtxoState>> fetchUtxoStateList(
       AddressType addressType, ScriptStatus scriptStatus) async {
     try {
       final utxos = await _electrumService.getUnspentList(
@@ -80,7 +80,7 @@ class UtxoManager {
   }
 
   /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
-  Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
+  Future<Map<int, BlockTimestamp>> fetchBlocksByHeight(Set<int> heights) async {
     final futures = heights.map((height) async {
       try {
         final blockTimestamp = await _electrumService.getBlockTimestamp(height);
@@ -113,13 +113,7 @@ class UtxoManager {
         continue;
       }
 
-      // 이미 outgoing 상태인 UTXO를 다시 업데이트할 때는 기존 spentByTransactionHash 유지
-      if (utxo != null &&
-          utxo.status == UtxoStatus.outgoing &&
-          utxo.spentByTransactionHash != null) {
-        Logger.log(
-            'RBF에 사용된 UTXO 감지: $utxoId는 이미 ${utxo.spentByTransactionHash}에 의해 사용 중입니다');
-        // 이전 트랜잭션 정보를 유지하여 RBF 감지가 가능하도록 함
+      if (utxo == null) {
         continue;
       }
 
@@ -132,6 +126,10 @@ class UtxoManager {
       Logger.log(
           'UTXO를 outgoing으로 표시: $utxoId (spentBy: ${transaction.transactionHash})');
     }
+  }
+
+  UtxoState? getUtxoState(int walletId, String utxoId) {
+    return _utxoRepository.getUtxoState(walletId, utxoId);
   }
 
   void deleteUtxosByTransaction(

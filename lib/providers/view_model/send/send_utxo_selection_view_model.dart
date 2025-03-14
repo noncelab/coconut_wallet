@@ -21,6 +21,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
 enum ErrorState {
@@ -81,6 +82,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   final Map<String, List<UtxoTag>> _utxoTagMap = {};
 
   int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
+
   SendUtxoSelectionViewModel(
       this._walletProvider,
       this._tagProvider,
@@ -103,9 +105,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _initUtxoTagMap();
 
     _walletBase = _walletBaseItem.walletBase;
-    // TODO:
-    //_confirmedBalance = _walletBaseItem.balance ?? 0;
-    _confirmedBalance = 0;
+    _confirmedBalance = _walletProvider.getWalletBalance(_walletId).confirmed;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
     _changeAddress = _walletProvider.getChangeAddress(_walletId).address;
     _isMaxMode = _confirmedBalance ==
@@ -146,13 +146,14 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
     if (changeAddresses.isEmpty) {
       changeAmount = 0;
+    } else {
+      // 가장 마지막 change 주소에 해당하는 금액을 change 금액으로 간주함
+      changeAmount = _transaction.outputs
+          .where(
+              (output) => output.getAddress() == changeAddresses.last.address)
+          .first
+          .amount;
     }
-
-    // 가장 마지막 change 주소에 해당하는 금액을 change 금액으로 간주함
-    changeAmount = _transaction.outputs
-        .where((output) => output.getAddress() == changeAddresses.last.address)
-        .first
-        .amount;
 
     if (changeAmount != 0) return changeAmount;
     if (_estimatedFee == null) return null;
@@ -299,7 +300,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
     if (!isMaxMode) {
       _transaction = Transaction.forSinglePayment(
-          selectedUtxoList,
+          _selectedUtxoList,
           _recipientAddress,
           _changeAddress,
           _sendAmount,
@@ -368,15 +369,18 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   Transaction _createTransaction(
       bool isMaxMode, int feeRate, WalletListItemBase walletListItemBase) {
-    final utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
+    final allUtxos = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
     if (isMaxMode) {
-      return Transaction.forSweep(utxoList, _sendInfoProvider.recipientAddress!,
+      return Transaction.forSweep(allUtxos, _sendInfoProvider.recipientAddress!,
           _sendInfoProvider.feeRate!, walletListItemBase.walletBase);
     }
 
     try {
+      final optimalUtxos = TransactionUtil.selectOptimalUtxos(
+          allUtxos, _sendAmount, satsPerVb ?? 1, _walletBase.addressType);
+      _selectedUtxoList = optimalUtxos;
       return Transaction.forSinglePayment(
-          utxoList,
+          optimalUtxos,
           _sendInfoProvider.recipientAddress!,
           _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
           UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
@@ -385,7 +389,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     } catch (e) {
       if (e.toString().contains('Not enough amount for sending. (Fee')) {
         return Transaction.forSweep(
-            utxoList,
+            allUtxos,
             _sendInfoProvider.recipientAddress!,
             _sendInfoProvider.feeRate!,
             walletListItemBase.walletBase);

@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
 class SendFeeSelectionViewModel extends ChangeNotifier {
@@ -54,20 +55,29 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   int get walletId => _walletId;
   WalletProvider get walletProvider => _walletProvider;
   NodeProvider get nodeprovider => _nodeProvider;
+
   int estimateFee(int satsPerVb) {
     final utxoPool = _walletProvider.getUtxoList(walletId);
     final wallet = _walletProvider.getWalletById(walletId);
     final changeAddress = _walletProvider.getChangeAddress(walletId);
     final amount = UnitUtil.bitcoinToSatoshi(_amount);
 
-    // FIXME
-    // forSinglePayment: utxoList 중 필요한 utxo만 선택하는 로직 추가
-
     final transaction = _isMaxMode
         ? Transaction.forSweep(
             utxoPool, _recipientAddress, satsPerVb, wallet.walletBase)
-        : Transaction.forSinglePayment(utxoPool, _recipientAddress,
-            changeAddress.address, amount, satsPerVb, wallet.walletBase);
+        : Transaction.forSinglePayment(
+            TransactionUtil.selectOptimalUtxos(
+                utxoPool,
+                amount,
+                satsPerVb,
+                wallet.walletType == WalletType.singleSignature
+                    ? AddressType.p2wpkh
+                    : AddressType.p2wsh),
+            _recipientAddress,
+            changeAddress.address,
+            amount,
+            satsPerVb,
+            wallet.walletBase);
 
     if (_isMultisigWallet) {
       final multisigWallet = wallet.walletBase as MultisignatureWallet;

@@ -3,7 +3,11 @@ import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_handler.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/rbf_handler.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_fetcher.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_processor.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -42,6 +46,10 @@ void main() {
   late UtxoRepository utxoRepository;
   late MockWalletProvider walletProvider;
   late TransactionManager transactionManager;
+  late TransactionFetcher transactionFetcher;
+  late TransactionProcessor transactionProcessor;
+  late RbfHandler rbfDetector;
+  late CpfpHandler cpfpDetector;
 
   const int testWalletId = 1;
   final SinglesigWalletListItem testWalletItem =
@@ -63,8 +71,19 @@ void main() {
       stateManager,
       transactionRepository,
       utxoManager,
-      utxoRepository,
     );
+
+    transactionProcessor = TransactionProcessor(electrumService);
+    transactionFetcher = TransactionFetcher(
+      electrumService,
+      transactionRepository,
+      transactionProcessor,
+      stateManager,
+      utxoManager,
+    );
+
+    rbfDetector = RbfHandler(transactionRepository, utxoManager);
+    cpfpDetector = CpfpHandler(transactionRepository);
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
@@ -101,7 +120,7 @@ void main() {
           .thenAnswer((_) async => historyList);
 
       // 함수 실행
-      final result = await transactionManager.getFetchTransactionResponses(
+      final result = await transactionFetcher.getFetchTransactionResponses(
         AddressType.p2wpkh,
         scriptStatus,
         {'known_tx_hash'}, // 이미 알고 있는 트랜잭션 해시
@@ -323,22 +342,19 @@ void main() {
         inputTransactionHash: Hash.sha256('original_tx_hash_input'),
       );
 
-      // 첫 번째 RBF 트랜잭션 (이전 트랜잭션)
+      // 대체될 트랜잭션
       final prevTx = TransactionMock.createMockTransaction(
         toAddress: testWalletItem.walletBase.getAddress(1),
         amount: 950000,
         inputTransactionHash: mockOriginalTx.transactionHash,
       );
 
-      // 두 번째 RBF 트랜잭션 (현재 테스트 대상)
+      // RBF 트랜잭션 (현재 테스트 대상)
       final mockTx = TransactionMock.createMockTransaction(
-        toAddress: testWalletItem.walletBase.getAddress(9999),
+        toAddress: testWalletItem.walletBase.getAddress(1),
         amount: 900000,
-        inputTransactionHash: prevTx.transactionHash,
+        inputTransactionHash: mockOriginalTx.transactionHash,
       );
-
-      // 실제 RBF 감지를 위한 입력 transactionHash
-      final inputTransactionHash = mockTx.inputs[0].transactionHash;
 
       // UTXO 상태 생성 - UtxoMock 클래스 사용
       realmManager.realm.write(() {
@@ -346,10 +362,10 @@ void main() {
           walletId: testWalletId,
           address: testAddress,
           amount: 1000000,
-          transactionHash: inputTransactionHash,
+          transactionHash: mockOriginalTx.transactionHash,
           index: 0,
           addressIndex: 0,
-          spentByTransactionHash: mockOriginalTx.transactionHash,
+          spentByTransactionHash: prevTx.transactionHash,
         );
         realmManager.realm.add(utxo);
       });
@@ -357,7 +373,7 @@ void main() {
       // 원본 트랜잭션 추가 - 명시적으로 transactionHash를 mockOriginalTxHash로 설정
       transactionRepository.addAllTransactions(testWalletId, [
         TransactionMock.createUnconfirmedTransactionRecord(
-          transactionHash: mockOriginalTx.transactionHash, // 명시적으로 해시값 지정
+          transactionHash: prevTx.transactionHash, // 명시적으로 해시값 지정
         )
       ]);
 
@@ -368,7 +384,7 @@ void main() {
       when(electrumService.getTransaction(mockTx.transactionHash))
           .thenAnswer((_) async => mockTx.serialize());
       when(electrumService.getTransaction(mockTx.inputs[0].transactionHash))
-          .thenAnswer((_) async => prevTx.serialize());
+          .thenAnswer((_) async => mockOriginalTx.serialize());
       when(electrumService.getTransaction(prevTx.inputs[0].transactionHash))
           .thenAnswer((_) async => mockOriginalTx.serialize());
 
@@ -388,8 +404,8 @@ void main() {
           testWalletId, mockTx.transactionHash);
 
       expect(rbfHistories.length, 1);
-      expect(rbfHistories.first.originalTransactionHash,
-          mockOriginalTx.transactionHash);
+      expect(
+          rbfHistories.first.originalTransactionHash, prevTx.transactionHash);
     });
   });
 
@@ -443,8 +459,14 @@ void main() {
       });
 
       // 함수 실행
-      final result = await transactionManager.detectRbfTransaction(
-          testWalletId, mockNewTx);
+      final result = await rbfDetector.detectRbfTransaction(
+        testWalletId,
+        mockNewTx,
+        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
+          transaction,
+          prevTxs,
+        ),
+      );
 
       // 검증
       expect(result, isNull);
@@ -456,8 +478,14 @@ void main() {
           mockOriginalTxHash);
 
       // 함수 실행
-      final result = await transactionManager.detectRbfTransaction(
-          testWalletId, mockNewTx);
+      final result = await rbfDetector.detectRbfTransaction(
+        testWalletId,
+        mockNewTx,
+        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
+          transaction,
+          prevTxs,
+        ),
+      );
 
       // 검증
       expect(result, isNull);
@@ -486,8 +514,14 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await transactionManager.detectRbfTransaction(
-          testWalletId, mockNewTx);
+      final result = await rbfDetector.detectRbfTransaction(
+        testWalletId,
+        mockNewTx,
+        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
+          transaction,
+          prevTxs,
+        ),
+      );
 
       // 검증 - previousTransactions 확인 제외 (모킹 어려움)
       expect(result, isNotNull);
@@ -526,8 +560,14 @@ void main() {
           realmManager, testWalletId, mockSpentTxHash, mockOriginalTxHash);
 
       // 함수 실행
-      final result = await transactionManager.detectRbfTransaction(
-          testWalletId, mockNewTx);
+      final result = await rbfDetector.detectRbfTransaction(
+        testWalletId,
+        mockNewTx,
+        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
+          transaction,
+          prevTxs,
+        ),
+      );
 
       // 검증 - previousTransactions 확인 제외 (모킹 어려움)
       expect(result, isNotNull);
@@ -569,8 +609,14 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await transactionManager.detectRbfTransaction(
-          testWalletId, multiInputTx);
+      final result = await rbfDetector.detectRbfTransaction(
+        testWalletId,
+        multiInputTx,
+        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
+          transaction,
+          prevTxs,
+        ),
+      );
 
       // 검증 - previousTransactions 확인 제외 (모킹 어려움)
       expect(result, isNotNull);

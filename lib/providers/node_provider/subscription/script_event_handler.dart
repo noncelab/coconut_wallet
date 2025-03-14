@@ -6,7 +6,7 @@ import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -43,19 +43,23 @@ class ScriptEventHandler {
       // 지갑 업데이트 상태 초기화
       _stateManager.initWalletUpdateStatus(dto.walletItem.id);
 
+      // 스크립트 상태가 변경되었으면 주소 사용 여부 업데이트
+      if (dto.scriptStatus.status != null) {
+        _addressRepository.setWalletAddressUsed(
+            dto.walletItem, dto.scriptStatus.index, dto.scriptStatus.isChange);
+      }
+
       // 기존 인덱스 저장 (변경 전)
-      final oldReceiveUsedIndex = dto.walletItem.receiveUsedIndex;
-      final oldChangeUsedIndex = dto.walletItem.changeUsedIndex;
+      final oldUsedIndex = dto.scriptStatus.isChange
+          ? dto.walletItem.changeUsedIndex
+          : dto.walletItem.receiveUsedIndex;
 
       // 지갑 인덱스 업데이트
-      int receiveUsedIndex = dto.scriptStatus.isChange
-          ? dto.walletItem.receiveUsedIndex
-          : dto.scriptStatus.index;
-      int changeUsedIndex = dto.scriptStatus.isChange
-          ? dto.scriptStatus.index
-          : dto.walletItem.changeUsedIndex;
-      _addressRepository.updateWalletUsedIndex(
-          dto.walletItem, receiveUsedIndex, changeUsedIndex);
+      await _addressRepository.updateWalletUsedIndex(
+        dto.walletItem,
+        dto.scriptStatus.index,
+        isChange: dto.scriptStatus.isChange,
+      );
 
       // Balance 동기화
       await _balanceManager.fetchScriptBalance(
@@ -72,9 +76,9 @@ class ScriptEventHandler {
       // 새 스크립트 구독 여부 확인 및 처리
       if (_needSubscriptionUpdate(
         dto.walletItem,
-        oldReceiveUsedIndex,
-        oldChangeUsedIndex,
+        oldUsedIndex,
         dto.walletProvider,
+        dto.scriptStatus.isChange,
       )) {
         final subResult =
             await _subscribeWallet(dto.walletItem, dto.walletProvider);
@@ -98,13 +102,14 @@ class ScriptEventHandler {
   /// 필요한 경우 추가 스크립트를 구독합니다.
   bool _needSubscriptionUpdate(
     WalletListItemBase walletItem,
-    int oldReceiveUsedIndex,
-    int oldChangeUsedIndex,
+    int oldUsedIndex,
     WalletProvider walletProvider,
+    bool isChange,
   ) {
     // receive 또는 change 인덱스가 증가한 경우 추가 구독이 필요
-    return walletItem.receiveUsedIndex > oldReceiveUsedIndex ||
-        walletItem.changeUsedIndex > oldChangeUsedIndex;
+    return isChange
+        ? walletItem.changeUsedIndex > oldUsedIndex
+        : walletItem.receiveUsedIndex > oldUsedIndex;
   }
 
   /// 스크립트 상태 변경 배치 처리
@@ -115,13 +120,7 @@ class ScriptEventHandler {
   }) async {
     try {
       // Balance 병렬 처리
-      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
-      await Future.wait(
-        scriptStatuses.map((status) => _balanceManager
-            .fetchScriptBalance(walletItem, status, inBatchProcess: true)),
-      );
-      _stateManager.addWalletCompletedState(
-          walletItem.id, UpdateElement.balance);
+      await _balanceManager.fetchScriptBalanceBatch(walletItem, scriptStatuses);
 
       // Transaction 병렬 처리
       _stateManager.addWalletSyncState(

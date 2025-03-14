@@ -22,7 +22,7 @@ import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 
 class NodeProvider extends ChangeNotifier {
@@ -69,13 +69,15 @@ class NodeProvider extends ChangeNotifier {
     IsolateManager? isolateManager,
     ElectrumService? electrumService,
   }) : _isolateManager = isolateManager ?? IsolateManager() {
-    _initCompleter = Completer<void>();
     _stateManager = NodeStateManager(() => notifyListeners());
-    _initialize(electrumService);
+    initialize(electrumService: electrumService).then((_) {
+      _isolateManager.initialize(_electrumService, host, port, ssl);
+    });
   }
 
-  Future<void> _initialize(ElectrumService? electrumService) async {
+  Future<void> initialize({ElectrumService? electrumService}) async {
     try {
+      _initCompleter = Completer<void>();
       if (electrumService != null) {
         _electrumService = electrumService;
       } else {
@@ -85,11 +87,11 @@ class NodeProvider extends ChangeNotifier {
 
       _networkManager = NetworkManager(_electrumService);
       _balanceManager = BalanceManager(_electrumService, _stateManager,
-          _addressRepository, _walletRepository);
+          _addressRepository, _walletRepository, _isolateManager);
       _utxoManager =
           UtxoManager(_electrumService, _stateManager, _utxoRepository);
       _transactionManager = TransactionManager(_electrumService, _stateManager,
-          _transactionRepository, _utxoManager, _utxoRepository);
+          _transactionRepository, _utxoManager);
       _subscriptionManager = SubscriptionManager(
         _electrumService,
         _stateManager,

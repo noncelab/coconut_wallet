@@ -85,7 +85,7 @@ class WalletItemCard extends StatelessWidget {
                                 Text(
                                   balance != null
                                       ? satoshiToBitcoinString(balance!)
-                                      : '조회 중...',
+                                      : '0',
                                   style: Styles.h3Number,
                                 ),
                                 const Text(" BTC", style: Styles.unitSmall),

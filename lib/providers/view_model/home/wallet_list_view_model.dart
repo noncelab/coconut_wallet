@@ -19,14 +19,12 @@ class WalletListViewModel extends ChangeNotifier {
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
-  late WalletSyncingState _walletSyncingState;
-  late WalletInitState _prevWalletInitState;
+  late WalletSubscriptionState _walletSyncingState;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _transactionProvider;
   late final ConnectivityProvider _connectivityProvider;
-  final Map<int, int> _walletBalance = {};
-  late StreamSubscription<Map<int, Balance>> _balanceSubscription;
-  bool _isFirstSyncFinished = false;
+  Map<int, int> _walletBalance = {};
+  late StreamSubscription<Map<int, Balance?>> _balanceSubscription;
   late bool? _isNetworkOn;
 
   WalletListViewModel(
@@ -38,36 +36,17 @@ class WalletListViewModel extends ChangeNotifier {
     this._connectivityProvider,
   ) {
     _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
-
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
-    _walletSyncingState = _walletProvider.walletSyncingState;
-    // TODO:
-    _balanceSubscription =
-        _walletProvider.balanceStream.stream.listen(_updateBalance);
-
+    _walletSyncingState = _walletProvider.walletSubscriptionState;
     _isNetworkOn = _connectivityProvider.isNetworkOn;
-  }
-
-  void _updateBalance(Map<int, Balance?> newBalance) {
-    final balance = newBalance.entries.first.value;
-    if (balance != null) {
-      _walletBalance[newBalance.keys.first] = balance.total;
-      notifyListeners();
-    } else {
-      _walletBalance.remove(newBalance.keys.first);
-    }
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
-  bool get shouldShowLoadingIndicator => !_isFirstSyncFinished;
-  int get lastUpdateTime => _walletProvider.lastUpdateTime;
-  String? get walletInitErrorMessage =>
-      _walletProvider.walletInitError?.message;
-  WalletInitState get walletInitState => _walletProvider.walletInitState;
+  bool get shouldShowLoadingIndicator => _walletProvider.isAnyBalanceUpdating;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
 
@@ -78,31 +57,29 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshWallets() async {
-    Logger.log('--> refreshWallet 시작');
-    for (var wallet in walletItemList) {
-      await _walletProvider.fetchWalletBalance(wallet.id);
-    }
-    Logger.log('--> refreshWallet 끝');
+    _updateBalance(_walletProvider.fetchWalletBalanceMap());
+    notifyListeners();
+  }
+
+  void _updateBalance(Map<int, Balance> balanceMap) {
+    _walletBalance =
+        balanceMap.map((key, balance) => MapEntry(key, balance.total));
   }
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
-    if (!_isFirstSyncFinished &&
-        (walletProvider.walletSyncingState == WalletSyncingState.completed ||
-            walletProvider.walletSyncingState == WalletSyncingState.failed)) {
-      _isFirstSyncFinished = true;
-    }
-
     _walletProvider = walletProvider;
+    _updateBalance(walletProvider.walletBalance);
     notifyListeners();
 
-    if (_walletSyncingState != walletProvider.walletSyncingState) {
-      if (walletProvider.walletSyncingState == WalletSyncingState.completed) {
+    if (_walletSyncingState != walletProvider.walletSubscriptionState) {
+      if (walletProvider.walletSubscriptionState ==
+          WalletSubscriptionState.completed) {
         vibrateLight();
-      } else if (walletProvider.walletSyncingState ==
-          WalletSyncingState.failed) {
+      } else if (walletProvider.walletSubscriptionState ==
+          WalletSubscriptionState.failed) {
         vibrateLightDouble();
       }
-      _walletSyncingState = walletProvider.walletSyncingState;
+      _walletSyncingState = walletProvider.walletSubscriptionState;
     }
   }
 

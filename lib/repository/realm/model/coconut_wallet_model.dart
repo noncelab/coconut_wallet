@@ -50,6 +50,7 @@ class _RealmTransaction {
   late List<String> outputAddressList;
   String? note;
   DateTime? createdAt;
+  String? replaceByTransactionHash;
 }
 
 @RealmModel()

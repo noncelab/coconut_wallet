@@ -14,9 +14,6 @@ MultisigWalletListItem mapRealmToMultisigWalletItem(
       signers: MultisigSigner.fromJsonList(
           realmMultisigWallet.signersInJsonSerialization),
       requiredSignatureCount: realmMultisigWallet.requiredSignatureCount,
-      txCount: realmMultisigWallet.walletBase!.txCount,
-      isLatestTxBlockHeightZero:
-          realmMultisigWallet.walletBase!.isLatestTxBlockHeightZero,
       receiveUsedIndex: realmMultisigWallet.walletBase!.usedReceiveIndex,
       changeUsedIndex: realmMultisigWallet.walletBase!.usedChangeIndex);
 }
