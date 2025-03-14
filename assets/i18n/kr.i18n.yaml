@@ -178,7 +178,7 @@ address_list_screen:
 utxo_list_screen:
   total_balance: "총 잔액"
 transaction_detail_screen:
-  confirmation: "$height ($count 승인)"
+  confirmation: "$height ($count승인)"
 utxo_detail_screen:
   pending: "승인 대기중"
   address: "보유 주소"

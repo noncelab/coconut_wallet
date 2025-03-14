@@ -20,9 +20,12 @@ class RbfViewModel extends FeeBumpingViewModel {
   }
 
   int _getRecommendFeeRate() {
-    return transaction.feeRate < (feeInfos[2].satsPerVb ?? 0)
-        ? (feeInfos[2].satsPerVb ?? 0)
-        : (feeInfos[2].satsPerVb ?? 0) + 1;
+    if (feeInfos[2].satsPerVb == null) {
+      return transaction.feeRate.toInt() + 1;
+    }
+    return transaction.feeRate < (feeInfos[2].satsPerVb!)
+        ? (feeInfos[2].satsPerVb!)
+        : transaction.feeRate.toInt() + 1;
   }
 
   @override

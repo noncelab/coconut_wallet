@@ -374,7 +374,7 @@ class TranslationsTransactionDetailScreenKr {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
-	String confirmation({required Object height, required Object count}) => '${height} (${count} 승인)';
+	String confirmation({required Object height, required Object count}) => '${height} (${count}승인)';
 }
 
 // Path: utxo_detail_screen
@@ -1048,7 +1048,7 @@ extension on Translations {
 			case 'address_list_screen.receiving': return '입금';
 			case 'address_list_screen.change': return '잔돈';
 			case 'utxo_list_screen.total_balance': return '총 잔액';
-			case 'transaction_detail_screen.confirmation': return ({required Object height, required Object count}) => '${height} (${count} 승인)';
+			case 'transaction_detail_screen.confirmation': return ({required Object height, required Object count}) => '${height} (${count}승인)';
 			case 'utxo_detail_screen.pending': return '승인 대기중';
 			case 'utxo_detail_screen.address': return '보유 주소';
 			case 'utxo_tag_screen.no_such_tag': return '태그가 없어요';

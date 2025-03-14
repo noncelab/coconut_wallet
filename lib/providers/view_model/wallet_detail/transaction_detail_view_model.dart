@@ -45,51 +45,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   TransactionDetailViewModel(this._walletId, this._txHash, this._walletProvider,
       this._txProvider, this._nodeProvider, this._addressRepository) {
-    _transactionList = [
-      TransactionDetail(_txProvider.getTransaction(_walletId, _txHash)),
-      TransactionDetail(
-        TransactionRecord.fromTransactions(
-          transactionHash: "a1b2c3d4e5f6g7h8i9j0",
-          timestamp:
-              DateTime.now().subtract(const Duration(days: 1)), // 하루 전 거래
-          blockHeight: 123456,
-          transactionType: "RECEIVED",
-          amount: 500000, // 500,000 sats (0.005 BTC)
-          fee: 1000, // 1,000 sats
-          inputAddressList: [
-            TransactionAddress("bc1qexamplefrom", 500000),
-          ],
-          outputAddressList: [
-            TransactionAddress(
-                "bcrt1qxmqqt7r959ekepyl03nu0jd3hsfm54d2n88ds2", 499000),
-            TransactionAddress("bc1qexamplefrom", 499000),
-          ],
-          vSize: 225,
-          memo: "Received payment",
-        ),
-      ), // FIXME 임시 데이터
-      TransactionDetail(
-        TransactionRecord.fromTransactions(
-          transactionHash: "a2b1c3d4e5f6g7h8i9j0",
-          timestamp:
-              DateTime.now().subtract(const Duration(days: 1)), // 하루 전 거래
-          blockHeight: 123456,
-          transactionType: "RECEIVED",
-          amount: 500000, // 500,000 sats (0.005 BTC)
-          fee: 1000, // 1,000 sats
-          inputAddressList: [
-            TransactionAddress("bc1qexamplefrom", 500000),
-          ],
-          outputAddressList: [
-            TransactionAddress(
-                "bcrt1qxmqqt7r959ekepyl03nu0jd3hsfm54d2n88ds2", 499000),
-            TransactionAddress("bc1qexamplefrom", 499000),
-          ],
-          vSize: 225,
-          memo: "Received payment",
-        ),
-      ), // FIXME 임시 데이터
-    ];
+    _initTransactionList();
     _initViewMoreButtons();
   }
 
@@ -105,12 +61,43 @@ class TransactionDetailViewModel extends ChangeNotifier {
         : null;
   }
 
-  void init() {
-    _transactionList![0].setCanSeeMoreInputs(false);
-    _transactionList![0].setCanSeeMoreOutputs(false);
-    _transactionList![0].setInputCountToShow(0);
-    _transactionList![0].setOutputCountToShow(0);
+  void _initTransactionList() {
+    final currentTransaction =
+        _txProvider.getTransactionRecord(_walletId, _txHash);
+    _transactionList = [TransactionDetail(currentTransaction)];
+    debugPrint('_txHash : $_txHash');
+    debugPrint(
+        '(1) currentTransaction.feerate: ${currentTransaction!.feeRate}');
+    debugPrint(
+        '(2) currentTransaction.inputaddress: ${currentTransaction.inputAddressList.map((e) => e.address.toString())}');
+    debugPrint(
+        '(3) rbfHistoryList.length : ${_transactionList!.last.transaction!.rbfHistoryList?.length}');
+    // rbfHistory가 존재하면 순차적으로 _transactionList에 추가
+    if (currentTransaction.rbfHistoryList != null &&
+        currentTransaction.rbfHistoryList!.isNotEmpty) {
+      // rbfHistoryList를 역순으로 정렬
+      var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
+      for (var rbfTx in reversedRbfHistoryList) {
+        var rbfTxTransaction =
+            _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
+        _transactionList!.add(TransactionDetail(rbfTxTransaction));
+        debugPrint('(4) rbfHistory::: ${rbfTx.feeRate}');
+      }
+    }
+    debugPrint('(5) _transactionList.length::: ${_transactionList!.length}');
+
+    debugPrint(
+        '(6) first.feerate: ${_transactionList![0].transaction!.feeRate}');
+    debugPrint(
+        '(7) last.feerate: ${_transactionList![_transactionList!.length - 1].transaction!.feeRate}');
   }
+
+  // void init() {
+  //   _transactionList![0].setCanSeeMoreInputs(false);
+  //   _transactionList![0].setCanSeeMoreOutputs(false);
+  //   _transactionList![0].setInputCountToShow(0);
+  //   _transactionList![0].setOutputCountToShow(0);
+  // }
 
   bool isSameAddress(String address, int index) {
     bool isContainAddress = _walletProvider.containsAddress(_walletId, address);
@@ -255,7 +242,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
     if (result.isSuccess) {
       _currentBlock = result.value;
-      notifyListeners();
     }
   }
 
@@ -272,7 +258,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   int getOutputAmount(int index) => TransactionUtil.getOutputAmount(
       _transactionList![_selectedTransactionIndex].transaction!, index);
-
   String getDerivationPath(String address) {
     return _addressRepository.getDerivationPath(_walletId, address);
   }
