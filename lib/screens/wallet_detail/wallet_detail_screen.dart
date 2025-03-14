@@ -439,14 +439,12 @@ class _TransactionListState extends State<TransactionList> {
     for (int i = 0; i < txList.length; i++) {
       if (!oldTxMap.containsKey(txList[i].transactionHash)) {
         insertedIndexes.add(i);
-        debugPrint('insertedIndexes: $i');
       }
     }
 
     for (int i = 0; i < _previousTxList.length; i++) {
       if (!newTxMap.containsKey(_previousTxList[i].transactionHash)) {
         removedIndexes.add(i);
-        debugPrint('removedIndexes: $i');
       }
     }
 
