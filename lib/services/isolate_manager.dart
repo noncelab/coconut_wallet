@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'dart:isolate';
 
+import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/isolate/isolate_connector_data.dart';
+import 'package:coconut_wallet/services/model/isolate/isolate_handler.dart';
 import 'package:coconut_wallet/services/model/isolate/isolate_manager_base.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
@@ -11,6 +15,7 @@ class IsolateManager implements IsolateManagerBase {
   SendPort? _sendPort;
   final ReceivePort _receivePort;
   late Completer<void> _isolateReady;
+  static final IsolateHandler _isolateHandler = IsolateHandler();
 
   @override
   bool get isInitialized => (_sendPort != null && _isolate != null);
@@ -23,8 +28,8 @@ class IsolateManager implements IsolateManagerBase {
   Future<void> initialize(
       ElectrumService electrumService, String host, int port, bool ssl) async {
     try {
-      final data = IsolateConnectorData(
-          _receivePort.sendPort, electrumService, host, port, ssl);
+      final data = IsolateConnectorData(_receivePort.sendPort, host, port, ssl);
+
       _isolate = await Isolate.spawn<IsolateConnectorData>(_isolateEntry, data);
 
       _receivePort.listen(
@@ -90,11 +95,29 @@ class IsolateManager implements IsolateManagerBase {
     responsePort.close();
   }
 
+  /// 여러 스크립트의 잔액을 한번에 가져오고 DTO 형태로 반환합니다.
+  Future<List<AddressBalanceUpdateDto>> getBalanceBatch(
+      WalletListItemBase wallet, List<ScriptStatus> scriptStatuses) async {
+    if (scriptStatuses.isEmpty) {
+      return [];
+    }
+
+    final results = await _send<List<AddressBalanceUpdateDto>>(
+        IsolateMessageType.getBalanceBatch,
+        [wallet.walletBase.addressType, scriptStatuses]);
+
+    return results;
+  }
+
+  /// Isolate 내부에서 실행되는 메인 로직
   static void _isolateEntry(IsolateConnectorData data) async {
     final port = ReceivePort();
     data.sendPort.send(port.sendPort);
 
-    await data.electrumService.connect(data.host, data.port, ssl: data.ssl);
+    final electrumService = ElectrumService();
+    await electrumService.connect(data.host, data.port, ssl: data.ssl);
+
+    Logger.log('Isolate: ElectrumService connected and ready');
 
     port.listen((message) async {
       if (message is List && message.length == 3) {
@@ -104,12 +127,10 @@ class IsolateManager implements IsolateManagerBase {
 
         try {
           switch (messageType) {
-            case IsolateMessageType.getBalance:
-            // TODO: Handle this case.
-            case IsolateMessageType.fetchTransactionRecords:
-            // TODO: Handle this case.
-            case IsolateMessageType.getUtxoStates:
-            // TODO: Handle this case.
+            case IsolateMessageType.getBalanceBatch:
+              await _isolateHandler.handleGetBalanceBatch(
+                  electrumService, params, replyPort);
+              break;
           }
         } catch (e, stack) {
           Logger.error('Error in isolate processing: $e');

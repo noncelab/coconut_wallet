@@ -6,7 +6,6 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -35,11 +34,11 @@ class UtxoManager {
     }
 
     // UTXO 목록 조회
-    final utxos =
-        await getUtxoStateList(walletItem.walletBase.addressType, scriptStatus);
+    final utxos = await fetchUtxoStateList(
+        walletItem.walletBase.addressType, scriptStatus);
 
-    final blockTimestampMap =
-        await getBlocksByHeight(utxos.map((utxo) => utxo.blockHeight).toSet());
+    final blockTimestampMap = await fetchBlocksByHeight(
+        utxos.map((utxo) => utxo.blockHeight).toSet());
 
     UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
 
@@ -58,7 +57,7 @@ class UtxoManager {
   }
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다.
-  Future<List<UtxoState>> getUtxoStateList(
+  Future<List<UtxoState>> fetchUtxoStateList(
       AddressType addressType, ScriptStatus scriptStatus) async {
     try {
       final utxos = await _electrumService.getUnspentList(
@@ -81,19 +80,11 @@ class UtxoManager {
   }
 
   /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
-  Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
+  Future<Map<int, BlockTimestamp>> fetchBlocksByHeight(Set<int> heights) async {
     final futures = heights.map((height) async {
       try {
-        final header = await _electrumService.getBlockHeader(height);
-        final blockHeader = BlockHeader.parse(height, header);
-        return MapEntry(
-          height,
-          BlockTimestamp(
-            height,
-            DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
-                isUtc: true),
-          ),
-        );
+        final blockTimestamp = await _electrumService.getBlockTimestamp(height);
+        return MapEntry(height, blockTimestamp);
       } catch (e) {
         Logger.error('Error fetching block header for height $height: $e');
         return null;
@@ -109,21 +100,38 @@ class UtxoManager {
     int walletId,
     Transaction transaction,
   ) {
+    Logger.log('UTXO 상태 업데이트 (outgoing): ${transaction.transactionHash}');
     // 트랜잭션 입력을 순회하며 사용된 UTXO를 pending 상태로 변경
     for (var input in transaction.inputs) {
       // UTXO 소유 지갑 ID 찾기
       final utxoId = makeUtxoId(input.transactionHash, input.index);
+      final utxo = _utxoRepository.getUtxoState(walletId, utxoId);
 
-      // UTXO를 pending 상태로 표시하고 RBF 관련 정보 저장
+      // UTXO가 자기 자신을 참조하지 않는지 확인
+      if (utxo?.spentByTransactionHash == transaction.transactionHash) {
+        Logger.log('자기 참조 UTXO 감지: $utxoId는 현재 트랜잭션에 의해 사용됨');
+        continue;
+      }
+
+      if (utxo == null) {
+        continue;
+      }
+
+      // UTXO를 outgoing 상태로 표시하고 RBF 관련 정보 저장
       _utxoRepository.markUtxoAsOutgoing(
         walletId,
         utxoId,
         transaction.transactionHash,
       );
+      Logger.log(
+          'UTXO를 outgoing으로 표시: $utxoId (spentBy: ${transaction.transactionHash})');
     }
   }
 
-// 디버깅용
+  UtxoState? getUtxoState(int walletId, String utxoId) {
+    return _utxoRepository.getUtxoState(walletId, utxoId);
+  }
+
   void deleteUtxosByTransaction(
     int walletId,
     Transaction transaction,
@@ -135,6 +143,7 @@ class UtxoManager {
     _utxoRepository.deleteUtxoList(walletId, utxoIds);
   }
 
+  // 디버깅용
   void printUtxoStateList(int walletId) {
     List<UtxoState> utxoStateList = _utxoRepository.getUtxoStateList(walletId);
 
@@ -142,7 +151,7 @@ class UtxoManager {
         '---------------- utxoStateList: ${utxoStateList.length} ----------------');
     for (var utxo in utxoStateList) {
       Logger.log(
-          '${utxo.transactionHash.substring(0, 10)}:${utxo.index} - ${utxo.status} isRbfable: ${utxo.isRbfable} isCpfpable: ${utxo.isCpfpable} amount: ${utxo.amount} spentByTxHash: ${utxo.spentByTxHash?.substring(0, 10)}');
+          '${utxo.transactionHash.substring(0, 10)}:${utxo.index} - ${utxo.status} isRbfable: ${utxo.isRbfable} isCpfpable: ${utxo.isCpfpable} amount: ${utxo.amount} spentByTransactionHash: ${utxo.spentByTransactionHash?.substring(0, 10)}');
     }
     Logger.log('---------------- utxoStateList end ----------------');
   }

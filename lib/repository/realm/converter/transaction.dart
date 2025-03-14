@@ -26,7 +26,9 @@ RealmTransaction mapTransactionToRealmTransaction(
 
 // note(트랜잭션 메모) 정보가 추가로 필요하여 TransactionDto를 반환
 TransactionRecord mapRealmTransactionToTransaction(
-    RealmTransaction realmTransaction) {
+    RealmTransaction realmTransaction,
+    {List<RealmRbfHistory>? realmRbfHistoryList,
+    RealmCpfpHistory? realmCpfpHistory}) {
   return TransactionRecord(
       realmTransaction.transactionHash,
       realmTransaction.timestamp,
@@ -42,7 +44,23 @@ TransactionRecord mapRealmTransactionToTransaction(
           .map((element) => jsonToAddress(jsonDecode(element)))
           .toList(),
       realmTransaction.vSize,
-      realmTransaction.createdAt);
+      realmTransaction.createdAt,
+      rbfHistoryList: realmRbfHistoryList
+          ?.map((element) => RbfHistory(
+                feeRate: element.feeRate,
+                timestamp: element.timestamp,
+                transactionHash: element.transactionHash,
+              ))
+          .toList(),
+      cpfpHistory: realmCpfpHistory != null
+          ? CpfpHistory(
+              originalFee: realmCpfpHistory.originalFee,
+              newFee: realmCpfpHistory.newFee,
+              timestamp: realmCpfpHistory.timestamp,
+              parentTransactionHash: realmCpfpHistory.parentTransactionHash,
+              childTransactionHash: realmCpfpHistory.childTransactionHash,
+            )
+          : null);
 }
 
 Map<String, dynamic> addressToJson(TransactionAddress address) {

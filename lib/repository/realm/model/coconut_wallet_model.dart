@@ -50,6 +50,7 @@ class _RealmTransaction {
   late List<String> outputAddressList;
   String? note;
   DateTime? createdAt;
+  String? replaceByTransactionHash;
 }
 
 @RealmModel()
@@ -145,5 +146,35 @@ class _RealmUtxo {
   /// [UtxoStatus] 참고
   @Indexed()
   late String status; // unspent, outgoing, incoming
-  String? spentByTxHash; // 이 UTXO를 사용한 트랜잭션 해시 (RBF/CPFP에 필요)
+  String? spentByTransactionHash; // 이 UTXO를 사용한 트랜잭션 해시 (RBF/CPFP에 필요)
+}
+
+@RealmModel()
+class _RealmRbfHistory {
+  @PrimaryKey()
+  late int id;
+  @Indexed()
+  late int walletId;
+  @Indexed()
+  late String originalTransactionHash;
+  @Indexed()
+  late String transactionHash;
+  late int order;
+  late double feeRate;
+  late DateTime timestamp;
+}
+
+@RealmModel()
+class _RealmCpfpHistory {
+  @PrimaryKey()
+  late int id;
+  @Indexed()
+  late int walletId;
+  @Indexed()
+  late String parentTransactionHash;
+  @Indexed()
+  late String childTransactionHash;
+  late double originalFee;
+  late double newFee;
+  late DateTime timestamp;
 }

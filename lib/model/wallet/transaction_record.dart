@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 
 class TransactionRecord {
@@ -12,6 +13,8 @@ class TransactionRecord {
   List<TransactionAddress> _outputAddressList;
   DateTime? createdAt;
   int _vSize;
+  List<RbfHistory>? _rbfHistoryList;
+  CpfpHistory? _cpfpHistory;
 
   /// Get the transaction hash of this transaction.
   String get transactionHash => _transactionHash;
@@ -23,6 +26,7 @@ class TransactionRecord {
   int? get blockHeight => _blockHeight;
 
   /// Get the transaction type of this transaction. (RECEIVED, SEND, SELF, UNKNOWN)
+  /// [TransactionType]
   String? get transactionType => _transactionType;
 
   /// Get the memo of this transaction.
@@ -46,6 +50,12 @@ class TransactionRecord {
   /// Get the output address list of this transaction.
   List<TransactionAddress> get outputAddressList => _outputAddressList;
 
+  /// Get the rbf history list of this transaction.
+  List<RbfHistory>? get rbfHistoryList => _rbfHistoryList;
+
+  /// Get the cpfp history of this transaction.
+  CpfpHistory? get cpfpHistory => _cpfpHistory;
+
   /// @nodoc
   TransactionRecord(
       this._transactionHash,
@@ -58,7 +68,11 @@ class TransactionRecord {
       this._inputAddressList,
       this._outputAddressList,
       this._vSize,
-      this.createdAt);
+      this.createdAt,
+      {List<RbfHistory>? rbfHistoryList,
+      CpfpHistory? cpfpHistory})
+      : _rbfHistoryList = rbfHistoryList,
+        _cpfpHistory = cpfpHistory;
 
   factory TransactionRecord.fromTransactions({
     required String transactionHash,
@@ -90,4 +104,32 @@ class TransactionRecord {
   DateTime? getDateTimeToDisplay() {
     return (blockHeight != null && blockHeight == 0) ? null : timestamp;
   }
+}
+
+class RbfHistory {
+  final double feeRate;
+  final DateTime timestamp;
+  final String transactionHash;
+
+  RbfHistory({
+    required this.feeRate,
+    required this.timestamp,
+    required this.transactionHash,
+  });
+}
+
+class CpfpHistory {
+  final double originalFee;
+  final double newFee;
+  final DateTime timestamp;
+  final String parentTransactionHash;
+  final String childTransactionHash;
+
+  CpfpHistory({
+    required this.originalFee,
+    required this.newFee,
+    required this.timestamp,
+    required this.parentTransactionHash,
+    required this.childTransactionHash,
+  });
 }
