@@ -99,12 +99,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       },
       child: Consumer<TransactionDetailViewModel>(
         builder: (_, viewModel, child) {
-          if (viewModel.transactionList![_viewModel.selectedTransactionIndex]
-                  .transaction ==
-              null) return Container();
+          if (viewModel.transactionList == null ||
+              viewModel.transactionList!.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           final transactionDetail =
-              viewModel.transactionList![_viewModel.selectedTransactionIndex];
+              viewModel.transactionList![viewModel.selectedTransactionIndex];
 
           return Scaffold(
               backgroundColor: MyColors.black,
@@ -456,7 +457,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       duration: const Duration(milliseconds: 500),
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCompletedListener();
       _animationController.value = 1.0;
     });
@@ -848,11 +849,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   }
 
   void _loadCompletedListener() {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final box =
-          _balanceWidthKey.currentContext?.findRenderObject() as RenderBox;
-      _balanceWidthSize = box.size;
-      setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final renderBox = _balanceWidthKey.currentContext?.findRenderObject();
+      if (renderBox is RenderBox) {
+        setState(() {
+          _balanceWidthSize = renderBox.size;
+        });
+      }
     });
   }
 
