@@ -3,7 +3,6 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -12,6 +11,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
@@ -47,6 +47,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   final SendInfoProvider _sendInfoProvider;
   final ConnectivityProvider _connectivityProvider;
   final NodeProvider _nodeProvider;
+  final UpbitConnectModel _upbitConnectProvider;
   late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;
@@ -89,7 +90,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       this._sendInfoProvider,
       this._connectivityProvider,
       this._nodeProvider,
-      this._bitcoinPriceKrw,
+      this._upbitConnectProvider,
       UtxoOrder initialUtxoOrder) {
     _walletId = _sendInfoProvider.walletId!;
     _walletBaseItem = _walletProvider.getWalletById(_walletId);
@@ -124,7 +125,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       }
       notifyListeners();
     });
+
+    _bitcoinPriceKrw = _upbitConnectProvider.bitcoinPriceKrw;
+    _upbitConnectProvider.addListener(_updateBitcoinPriceKrw);
   }
+
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
 
   int? get change {
@@ -236,13 +241,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // TODO: 추후 반환 타입 변경
-  void checkGoingNextAvailable() {
-    if (_connectivityProvider.isNetworkOn != true) {
-      throw ErrorCodes.networkError.message;
-    }
-
-    _updateSendInfoProvider();
+  bool isNetworkOn() {
+    return _connectivityProvider.isNetworkOn == true;
   }
 
   void deselectAllUtxo() {
@@ -352,8 +352,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateBitcoinPriceKrw(int btcPriceInKrw) {
-    _bitcoinPriceKrw = btcPriceInKrw;
+  void _updateBitcoinPriceKrw() {
+    _bitcoinPriceKrw = _upbitConnectProvider.bitcoinPriceKrw;
     notifyListeners();
   }
 
@@ -382,7 +382,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       return Transaction.forSinglePayment(
           optimalUtxos,
           _sendInfoProvider.recipientAddress!,
-          _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).address,
+          _walletProvider
+              .getChangeAddress(_sendInfoProvider.walletId!)
+              .derivationPath,
           UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
           feeRate,
           walletListItemBase.walletBase);
@@ -514,11 +516,17 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         requiredSignature: _requiredSignature, totalSigner: _totalSigner);
   }
 
-  void _updateSendInfoProvider() {
+  void saveSendInfo() {
     _sendInfoProvider.setEstimatedFee(_estimatedFee!);
     _sendInfoProvider.setFeeRate(satsPerVb!);
     _sendInfoProvider.setIsMaxMode(isMaxMode);
     _sendInfoProvider.setIsMultisig(_requiredSignature != null);
     _sendInfoProvider.setTransaction(_transaction);
+  }
+
+  @override
+  void dispose() {
+    _upbitConnectProvider.removeListener(_updateBitcoinPriceKrw);
+    super.dispose();
   }
 }

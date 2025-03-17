@@ -3,6 +3,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -67,18 +68,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   Widget build(BuildContext context) {
     // try-catch: initState _viewModel 생성 실패로 lateError 발생 할 수 있음
     try {
-      return ChangeNotifierProxyProvider2<UpbitConnectModel,
-          ConnectivityProvider, SendUtxoSelectionViewModel>(
+      return ChangeNotifierProvider<SendUtxoSelectionViewModel>(
         create: (_) => _viewModel,
-        update: (_, upbitConnectModel, connectivityProvider, viewModel) {
-          if (upbitConnectModel.bitcoinPriceKrw != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              viewModel!
-                  .updateBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
-            });
-          }
-          return viewModel!;
-        },
         child: Consumer<SendUtxoSelectionViewModel>(
           builder: (context, viewModel, child) => Scaffold(
             appBar: CoconutAppBar.buildWithNext(
@@ -138,8 +129,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           Provider.of<SendInfoProvider>(context, listen: false),
           Provider.of<ConnectivityProvider>(context, listen: false),
           Provider.of<NodeProvider>(context, listen: false),
-          Provider.of<UpbitConnectModel>(context, listen: false)
-              .bitcoinPriceKrw,
+          Provider.of<UpbitConnectModel>(context, listen: false),
           _selectedUtxoOrder);
 
       _scrollController.addListener(() {
@@ -191,10 +181,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _goNext() {
-    try {
-      _viewModel.checkGoingNextAvailable();
-    } catch (e) {
-      CustomToast.showWarningToast(context: context, text: e.toString());
+    if (!_viewModel.isNetworkOn()) {
+      CustomToast.showWarningToast(
+          context: context, text: ErrorCodes.networkError.message);
       return;
     }
 
@@ -225,6 +214,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _moveToSendConfirm() {
+    _viewModel.saveSendInfo();
     Navigator.pushNamed(context, '/send-confirm');
   }
 
