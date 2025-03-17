@@ -50,3 +50,6 @@
 - minor 버전 값이 업데이트 되어 `1.0.2`버전에서 `1.1.0`버전이 된다면 새로운 브랜치 **release-1.1**을 만들고 이 브랜치에 **develop** 브랜치를 머지해야 합니다. 
 - **만약 release 과정에서 변경 사항이 생기면 우선, 별다른 문제가 없는 경우 develop에서 브랜치를 따서 작업 후 release 브랜치에 머지하는 것으로 합니다.** 
 - release-x.y 배포가 완료되면 **github TAG**를 달아줍니다. 예를 들어 1.0.0버전이라면 최종적으로 ios가 배포된 커밋에 `1.0.0-ios`, 최종적으로 aos가 배포된 커밋에 `1.0.0-aos` TAG를 추가해줍니다.
+
+## 문구 수정(i18n)
+- 문구 변경 시 kr.i18n.yaml 파일을 수정한 후 터미널에 `flutter pub run slang`을 실행하면 lib/localization의 strings_kr.g.dart, strings.g.dart 파일이 업데이트됩니다.
