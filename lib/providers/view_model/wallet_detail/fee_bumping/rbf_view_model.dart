@@ -15,6 +15,7 @@ class RbfViewModel extends FeeBumpingViewModel {
     super._walletProvider,
     super._currentUtxo,
     super._addressRepository,
+    super._utxoRepository,
   ) {
     Logger.log('RbfViewModel created');
   }
@@ -46,18 +47,32 @@ class RbfViewModel extends FeeBumpingViewModel {
       List<TransactionAddress> inputAddressList, String txHash, int walletId) {
     List<Utxo> utxoList = [];
 
-    for (var transactionAddress in inputAddressList) {
-      var derivationPath = addressRepository.getDerivationPath(
-          walletId, transactionAddress.address);
+    for (var inputAddress in inputAddressList) {
+      var derivationPath =
+          addressRepository.getDerivationPath(walletId, inputAddress.address);
 
-      Utxo utxo = Utxo(
-        txHash,
-        inputAddressList.indexOf(transactionAddress),
-        transactionAddress.amount,
-        derivationPath,
-      );
+      utxoRepository.getUtxoStateList(walletId).forEach((utxoState) {
+        if (inputAddress.address == utxoState.to &&
+            inputAddress.amount == utxoState.amount) {
+          Utxo utxo = Utxo(
+            utxoState.transactionHash,
+            inputAddressList.indexOf(inputAddress),
+            inputAddress.amount,
+            derivationPath,
+          );
 
-      utxoList.add(utxo);
+          utxoList.add(utxo);
+        }
+      });
+
+      // Utxo utxo = Utxo(
+      //   txHash,
+      //   inputAddressList.indexOf(inputAddress),
+      //   inputAddress.amount,
+      //   derivationPath,
+      // );
+
+      // utxoList.add(utxo);
     }
 
     return utxoList;

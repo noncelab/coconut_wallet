@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping/fe
 import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping/rbf_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -332,6 +333,7 @@ class _TransactionFeeBumpingScreenState
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
     final addressRepository =
         Provider.of<AddressRepository>(context, listen: false);
+    final utxoRepositry = Provider.of<UtxoRepository>(context, listen: false);
 
     if (widget.feeBumpingType == FeeBumpingType.rbf) {
       return RbfViewModel(
@@ -342,17 +344,18 @@ class _TransactionFeeBumpingScreenState
         walletProvider,
         widget.currentUtxo,
         addressRepository,
+        utxoRepositry,
       );
     } else if (widget.feeBumpingType == FeeBumpingType.cpfp) {
       return CpfpViewModel(
-        widget.transaction,
-        widget.walletId,
-        nodeProvider,
-        sendInfoProvider,
-        walletProvider,
-        widget.currentUtxo,
-        addressRepository,
-      );
+          widget.transaction,
+          widget.walletId,
+          nodeProvider,
+          sendInfoProvider,
+          walletProvider,
+          widget.currentUtxo,
+          addressRepository,
+          utxoRepositry);
     }
     throw Exception('Invalid FeeBumping Type');
   }

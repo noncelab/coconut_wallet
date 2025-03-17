@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
@@ -23,6 +24,7 @@ abstract class FeeBumpingViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
   final AddressRepository _addressRepository;
+  final UtxoRepository _utxoRepository;
   final int _walletId;
   final Utxo? _currentUtxo;
 
@@ -44,6 +46,7 @@ abstract class FeeBumpingViewModel extends ChangeNotifier {
     this._walletProvider,
     this._currentUtxo,
     this._addressRepository,
+    this._utxoRepository,
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
     _sendInfoProvider.setWalletId(_walletId);
@@ -63,6 +66,7 @@ abstract class FeeBumpingViewModel extends ChangeNotifier {
   WalletProvider get walletProvider => _walletProvider;
 
   AddressRepository get addressRepository => _addressRepository;
+  UtxoRepository get utxoRepository => _utxoRepository;
 
   int? getRecommendedFeeRate() {
     return _feeInfos[1].satsPerVb;

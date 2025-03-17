@@ -22,6 +22,7 @@ class CpfpViewModel extends FeeBumpingViewModel {
     super._walletProvider,
     super._currentUtxo,
     super._addressRepository,
+    super._utxoRepository,
   ) {
     Logger.log('CpfpViewModel created');
   }
