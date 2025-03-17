@@ -63,6 +63,7 @@ class TransactionUtil {
     return valueSelector(list[index]);
   }
 
+  /// confirmed uxto만 사용 가능
   static List<UtxoState> selectOptimalUtxos(List<UtxoState> utxoList,
       int amount, int feeRate, AddressType addressType) {
     int baseVbyte = 72; // 0 input, 2 output
@@ -78,10 +79,10 @@ class TransactionUtil {
         .where((u) => u.status == UtxoStatus.unspent)
         .toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
-    List<UtxoState> incomingUtxos = utxoList
-        .where((u) => u.status == UtxoStatus.incoming)
-        .toList()
-      ..sort((a, b) => b.amount.compareTo(a.amount));
+    // List<UtxoState> incomingUtxos = utxoList
+    //     .where((u) => u.status == UtxoStatus.incoming)
+    //     .toList()
+    //   ..sort((a, b) => b.amount.compareTo(a.amount));
 
     int totalAmount = 0;
     int totalVbyte = baseVbyte;
@@ -92,11 +93,10 @@ class TransactionUtil {
         totalAmount += utxo.amount;
         selectedUtxos.add(utxo);
         totalVbyte += vBytePerInput;
-        int fee = totalVbyte * feeRate;
-        if (totalAmount >= amount + fee + dust) {
+        finalFee = totalVbyte * feeRate;
+        if (totalAmount >= amount + finalFee + dust) {
           return;
         }
-        finalFee = fee;
       }
     }
 
@@ -104,9 +104,9 @@ class TransactionUtil {
     selectFrom(unspentUtxos);
 
     // 부족하면 incoming UTXO 추가
-    if (totalAmount < amount + finalFee + dust) {
-      selectFrom(incomingUtxos);
-    }
+    // if (totalAmount < amount + finalFee + dust) {
+    //   selectFrom(incomingUtxos);
+    // }
 
     if (totalAmount < amount + finalFee + dust) {
       throw Exception('Not enough amount for sending. (Fee : $finalFee)');
