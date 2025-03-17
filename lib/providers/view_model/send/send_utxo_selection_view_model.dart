@@ -409,6 +409,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   List<UtxoState> _getAllConfirmedUtxoList(WalletListItemBase walletItem) {
     final utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
     return utxoList.where((utxo) => utxo.blockHeight != 0).toList();
+    return utxoList
+        .where((utxo) => utxo.status != UtxoStatus.outgoing)
+        .toList();
   }
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
