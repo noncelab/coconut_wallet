@@ -2,26 +2,25 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/cpfp_info.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_processor.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 /// 트랜잭션 조회를 담당하는 클래스
 class TransactionFetcher {
   final ElectrumService _electrumService;
   final TransactionRepository _transactionRepository;
   final TransactionProcessor _transactionProcessor;
-  final NodeStateManager _stateManager;
+  final StateManagerInterface _stateManager;
   final UtxoManager _utxoManager;
   final RbfHandler _rbfHandler;
   final CpfpHandler _cpfpHandler;
@@ -38,8 +37,7 @@ class TransactionFetcher {
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
   Future<void> fetchScriptTransaction(
     WalletListItemBase walletItem,
-    ScriptStatus scriptStatus,
-    WalletProvider walletProvider, {
+    ScriptStatus scriptStatus, {
     DateTime? now,
     bool inBatchProcess = false,
   }) async {
@@ -125,8 +123,6 @@ class TransactionFetcher {
       }
 
       if (confirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
-        Logger.log('확인된 트랜잭션 처리: ${fetchedTx.transactionHash}');
-
         // 컨펌 트랜잭션의 경우 사용된 UTXO 삭제
         _utxoManager.deleteUtxosByTransaction(walletItem.id, fetchedTx);
 
@@ -143,7 +139,6 @@ class TransactionFetcher {
       fetchedTransactions,
       txBlockHeightMap,
       blockTimestampMap,
-      walletProvider,
       getTransactionHex: (txHash) => _electrumService.getTransaction(txHash),
       now: now,
     );

@@ -5,23 +5,21 @@ import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 /// 스크립트 상태 변경 이벤트 처리를 담당하는 클래스
 class ScriptEventHandler {
-  final NodeStateManager _stateManager;
+  final StateManagerInterface _stateManager;
   final BalanceManager _balanceManager;
   final TransactionManager _transactionManager;
   final UtxoManager _utxoManager;
   final AddressRepository _addressRepository;
-  final Future<Result<bool>> Function(
-          WalletListItemBase walletItem, WalletProvider walletProvider)
+  final Future<Result<bool>> Function(WalletListItemBase walletItem)
       _subscribeWallet;
 
   ScriptEventHandler(
@@ -66,9 +64,8 @@ class ScriptEventHandler {
           dto.walletItem, dto.scriptStatus);
 
       // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
-      await _transactionManager.fetchScriptTransaction(
-          dto.walletItem, dto.scriptStatus, dto.walletProvider,
-          now: now);
+      await _transactionManager
+          .fetchScriptTransaction(dto.walletItem, dto.scriptStatus, now: now);
 
       // UTXO 동기화
       await _utxoManager.fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
@@ -77,11 +74,9 @@ class ScriptEventHandler {
       if (_needSubscriptionUpdate(
         dto.walletItem,
         oldUsedIndex,
-        dto.walletProvider,
         dto.scriptStatus.isChange,
       )) {
-        final subResult =
-            await _subscribeWallet(dto.walletItem, dto.walletProvider);
+        final subResult = await _subscribeWallet(dto.walletItem);
 
         if (subResult.isSuccess) {
           Logger.log(
@@ -103,7 +98,6 @@ class ScriptEventHandler {
   bool _needSubscriptionUpdate(
     WalletListItemBase walletItem,
     int oldUsedIndex,
-    WalletProvider walletProvider,
     bool isChange,
   ) {
     // receive 또는 change 인덱스가 증가한 경우 추가 구독이 필요
@@ -116,7 +110,6 @@ class ScriptEventHandler {
   Future<void> handleBatchScriptStatusChanged({
     required WalletListItemBase walletItem,
     required List<ScriptStatus> scriptStatuses,
-    required WalletProvider walletProvider,
   }) async {
     try {
       // Balance 병렬 처리
@@ -126,9 +119,8 @@ class ScriptEventHandler {
       _stateManager.addWalletSyncState(
           walletItem.id, UpdateElement.transaction);
       final transactionFutures = scriptStatuses.map(
-        (status) => _transactionManager.fetchScriptTransaction(
-            walletItem, status, walletProvider,
-            inBatchProcess: true),
+        (status) => _transactionManager
+            .fetchScriptTransaction(walletItem, status, inBatchProcess: true),
       );
       await Future.wait(transactionFutures);
       _stateManager.addWalletCompletedState(

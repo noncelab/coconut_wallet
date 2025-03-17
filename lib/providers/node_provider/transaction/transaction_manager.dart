@@ -6,19 +6,20 @@ import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_fetcher.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_processor.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 /// NodeProvider의 트랜잭션 관련 기능을 담당하는 매니저 클래스
 class TransactionManager {
   final ElectrumService _electrumService;
-  final NodeStateManager _stateManager;
+  final StateManagerInterface _stateManager;
   final TransactionRepository _transactionRepository;
   final UtxoManager _utxoManager;
-
+  final AddressRepository _addressRepository;
   late final TransactionProcessor _transactionProcessor;
   late final TransactionFetcher _transactionFetcher;
 
@@ -27,8 +28,10 @@ class TransactionManager {
     this._stateManager,
     this._transactionRepository,
     this._utxoManager,
+    this._addressRepository,
   ) {
-    _transactionProcessor = TransactionProcessor(_electrumService);
+    _transactionProcessor =
+        TransactionProcessor(_electrumService, _addressRepository);
     _transactionFetcher = TransactionFetcher(
       _electrumService,
       _transactionRepository,
@@ -41,15 +44,13 @@ class TransactionManager {
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
   Future<void> fetchScriptTransaction(
     WalletListItemBase walletItem,
-    ScriptStatus scriptStatus,
-    WalletProvider walletProvider, {
+    ScriptStatus scriptStatus, {
     DateTime? now,
     bool inBatchProcess = false,
   }) async {
     await _transactionFetcher.fetchScriptTransaction(
       walletItem,
       scriptStatus,
-      walletProvider,
       now: now,
       inBatchProcess: inBatchProcess,
     );

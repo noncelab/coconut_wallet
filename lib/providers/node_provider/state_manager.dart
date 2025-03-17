@@ -1,9 +1,13 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_eum.dart';
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 /// NodeProvider의 상태 관리를 담당하는 매니저 클래스
-class NodeStateManager {
+class NodeStateManager implements StateManagerInterface {
   final void Function() _notifyListeners;
 
   NodeProviderState _state = const NodeProviderState(
@@ -19,12 +23,12 @@ class NodeStateManager {
   /// [newConnectionState] 노드 상태
   /// [newUpdatedWallets] 지갑 업데이트 정보
   /// [notify] 상태 변경 시 리스너에게 알림 여부 (default: true)
+  @override
   void setState({
     MainClientState? newConnectionState,
     Map<int, WalletUpdateInfo>? newUpdatedWallets,
     bool notify = true,
   }) {
-    // 상태 변경 전 이전 상태 저장
     final prevState = _state;
 
     // 새 상태 생성
@@ -78,6 +82,7 @@ class NodeStateManager {
     return false;
   }
 
+  @override
   void initWalletUpdateStatus(int walletId) {
     setState(
       newUpdatedWallets: {
@@ -89,6 +94,7 @@ class NodeStateManager {
   }
 
   /// 지갑의 업데이트 정보를 추가합니다.
+  @override
   void addWalletSyncState(int walletId, UpdateElement updateType) {
     final existingInfo = _state.registeredWallets[walletId];
 
@@ -122,6 +128,7 @@ class NodeStateManager {
     );
   }
 
+  @override
   void addWalletCompletedState(int walletId, UpdateElement updateType) {
     final existingInfo = _state.registeredWallets[walletId];
 
@@ -153,6 +160,7 @@ class NodeStateManager {
     );
   }
 
+  @override
   void addWalletCompletedAllStates(int walletId) {
     final updateInfo = WalletUpdateInfo(walletId);
 
@@ -164,5 +172,36 @@ class NodeStateManager {
       ..._state.registeredWallets,
       walletId: updateInfo,
     });
+  }
+
+  void handleIsolateStateMessage(IsolateStateMessage message) {
+    final methodName = message.methodName;
+    final params = message.params;
+
+    try {
+      switch (methodName) {
+        case IsolateStateMethod.initWalletUpdateStatus:
+          initWalletUpdateStatus(params[0]);
+          break;
+        case IsolateStateMethod.addWalletSyncState:
+          addWalletSyncState(params[0], params[1]);
+          break;
+        case IsolateStateMethod.addWalletCompletedState:
+          addWalletCompletedState(params[0], params[1]);
+          break;
+        case IsolateStateMethod.addWalletCompletedAllStates:
+          addWalletCompletedAllStates(params[0]);
+          break;
+        case IsolateStateMethod.setState:
+          setState(
+            newConnectionState: params[0],
+            newUpdatedWallets: params[1],
+            notify: params.length > 2 ? params[2] : true,
+          );
+          break;
+      }
+    } catch (e) {
+      Logger.error('handleIsolateStateMessage 처리 중 에러 발생: $e');
+    }
   }
 }
