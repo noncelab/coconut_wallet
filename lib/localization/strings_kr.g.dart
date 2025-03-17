@@ -486,7 +486,7 @@ class TranslationsTransactionFeeBumpingScreenKr {
       '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = {newTxSize} vb, 추천 수수료율 = {recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = ({originalTxSize} + {newTxSize}) × {recommendedFeeRate} = {totalRequiredFee} sat\n • 새 거래의 수수료 = {totalRequiredFee} - {originalFee} = {newTxFee} sat\n • 새 거래의 수수료율 = {newTxFee} ÷ {newTxSize} {inequalitySign} {newTxFeeRate} sat/vb';
   String get current_fee => '현재 수수료';
   String estimated_fee({required Object fee}) => '예상 총 수수료 ${fee} sats';
-  String get estimated_fee_too_high_error => '예상 총 수수료가 0.01 BTC 이상이에요!';
+  String get estimated_fee_too_high_error => '예상 총 수수료가 0.01 BTC 이상이예요!';
   String get recommended_fees_fetch_error => '추천 수수료를 조회할 수 없어요!';
   String get recommended_fees_is_null => '수수료를 조회하는 중이예요';
   String get recommended_fee_less_than_pending_tx_fee =>
@@ -778,7 +778,7 @@ class TranslationsTransactionFeeBumpingScreenDialogKr {
 
   // Translations
   String get title => '알림';
-  String get description => '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
+  String get description => '설정하신 총 수수료가 0.01 BTC 이상이예요. 그래도 계속 진행하시겠어요?';
 }
 
 // Path: errors.fee_selection_error
@@ -1352,7 +1352,7 @@ extension on Translations {
       case 'transaction_fee_bumping_screen.estimated_fee':
         return ({required Object fee}) => '예상 총 수수료 ${fee} sats';
       case 'transaction_fee_bumping_screen.estimated_fee_too_high_error':
-        return '예상 총 수수료가 0.01 BTC 이상이에요!';
+        return '예상 총 수수료가 0.01 BTC 이상이예요!';
       case 'transaction_fee_bumping_screen.recommended_fees_fetch_error':
         return '추천 수수료를 조회할 수 없어요!';
       case 'transaction_fee_bumping_screen.recommended_fees_is_null':
@@ -1362,7 +1362,7 @@ extension on Translations {
       case 'transaction_fee_bumping_screen.dialog.title':
         return '알림';
       case 'transaction_fee_bumping_screen.dialog.description':
-        return '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
+        return '설정하신 총 수수료가 0.01 BTC 이상이예요. 그래도 계속 진행하시겠어요?';
       case 'wallet_list_add_guide_card.add_watch_only':
         return '보기 전용 지갑을 추가해 주세요';
       case 'wallet_list_add_guide_card.top_right_icon':
