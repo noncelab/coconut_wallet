@@ -68,6 +68,10 @@ class TransactionProvider extends ChangeNotifier {
     return false;
   }
 
+  TransactionRecord? getTransactionRecord(int walletId, String txHash) {
+    return _transactionRepository.getTransactionRecord(walletId, txHash);
+  }
+
   void resetData() {
     _transaction = null;
     _txList.clear();
