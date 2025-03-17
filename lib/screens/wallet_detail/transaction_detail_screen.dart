@@ -523,39 +523,34 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
               children: [
                 // 타임라인 선
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Stack(
+                      alignment: Alignment.center,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 2.5),
-                          child: Column(
-                            children: [
+                        Column(
+                          children: [
+                            Container(
+                                width: 1,
+                                height: isLast ? 18 : 36,
+                                color: CoconutColors.gray700),
+                            if (isLast)
                               Container(
-                                width: 2,
-                                height: isLast ? 22 : 33,
-                                color: const Color.fromRGBO(81, 81, 96, 1),
+                                width: 1,
+                                height: 11,
+                                color: Colors.transparent,
                               ),
-                              if (isLast)
-                                Container(
-                                  width: 2,
-                                  height: 11,
-                                  color: Colors.transparent,
-                                ),
-                            ],
+                          ],
+                        ),
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                            color: CoconutColors.gray700,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16.5),
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: Color.fromRGBO(81, 81, 96, 1),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        )
+                        // )
                       ],
                     ),
                     CoconutLayout.spacing_100w,
@@ -635,12 +630,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             child: Column(
                               children: [
                                 Container(
-                                  width: 2,
+                                  width: 1,
                                   height: 22,
                                   color: const Color.fromRGBO(81, 81, 96, 1),
                                 ),
                                 Container(
-                                  width: 2,
+                                  width: 1,
                                   height: 11,
                                   color: Colors.transparent,
                                 ),
@@ -762,10 +757,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: ShimmerText(
-                    text: rbfType ? t.quick_send : t.quick_receive,
-                    color: rbfType ? CoconutColors.primary : CoconutColors.cyan,
-                    textStyle: CoconutTypography.body2_14,
+                  child: Text(
+                    rbfType ? t.quick_send : t.quick_receive,
+                    style: CoconutTypography.body2_14.setColor(
+                        rbfType ? CoconutColors.primary : CoconutColors.cyan),
                   ),
                 ),
               ),

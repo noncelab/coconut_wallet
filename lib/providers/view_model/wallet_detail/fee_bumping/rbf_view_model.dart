@@ -44,7 +44,7 @@ class RbfViewModel extends FeeBumpingViewModel {
   }
 
   List<Utxo> convertInputAddressesToUtxos(
-      List<TransactionAddress> inputAddressList, String txHash, int walletId) {
+      List<TransactionAddress> inputAddressList, int walletId) {
     List<Utxo> utxoList = [];
 
     for (var inputAddress in inputAddressList) {
@@ -56,23 +56,14 @@ class RbfViewModel extends FeeBumpingViewModel {
             inputAddress.amount == utxoState.amount) {
           Utxo utxo = Utxo(
             utxoState.transactionHash,
-            inputAddressList.indexOf(inputAddress),
-            inputAddress.amount,
+            utxoState.index,
+            utxoState.amount,
             derivationPath,
           );
 
           utxoList.add(utxo);
         }
       });
-
-      // Utxo utxo = Utxo(
-      //   txHash,
-      //   inputAddressList.indexOf(inputAddress),
-      //   inputAddress.amount,
-      //   derivationPath,
-      // );
-
-      // utxoList.add(utxo);
     }
 
     return utxoList;
@@ -117,8 +108,8 @@ class RbfViewModel extends FeeBumpingViewModel {
     WalletBase wallet = walletListItemBase.walletBase;
 
     Transaction generateTx;
-    List<Utxo> inputUtxoList = convertInputAddressesToUtxos(
-        transaction.inputAddressList, transaction.transactionHash, walletId);
+    List<Utxo> inputUtxoList =
+        convertInputAddressesToUtxos(transaction.inputAddressList, walletId);
 
     debugPrint('''
   ========================== RBF Transaction Info =========================
