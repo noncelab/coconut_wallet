@@ -1,6 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -87,9 +86,41 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('(5) _transactionList.length::: ${_transactionList!.length}');
 
     debugPrint(
-        '(6) first.feerate: ${_transactionList![0].transaction!.feeRate}');
+        '====================================================================');
+    for (var transaction in _transactionList!) {
+      debugPrint('transaction feeRate: ${transaction._transaction!.feeRate}}');
+      debugPrint('transaction fee: ${transaction._transaction.fee}}');
+      debugPrint(
+          'transaction blockHeight: ${transaction._transaction.blockHeight}}');
+      debugPrint('transaction amount: ${transaction._transaction.amount}}');
+      debugPrint(
+          'transaction createdAt: ${transaction._transaction.createdAt}}');
+      debugPrint(
+          'transaction transactionHash: ${transaction._transaction.transactionHash}}');
+      debugPrint(
+          'transaction transactionType: ${transaction._transaction.transactionType}}');
+      debugPrint('transaction vSize: ${transaction._transaction.vSize}}');
+      debugPrint(
+          'transaction rbfHistoryList.length: ${transaction._transaction.rbfHistoryList?.length}}');
+      debugPrint(
+          '////////////////////////////////////////////////////////////');
+      if (transaction._transaction.rbfHistoryList != null) {
+        for (var a in transaction._transaction.rbfHistoryList!) {
+          debugPrint(
+              'rbfHistory[${transaction._transaction.rbfHistoryList!.indexOf(a)}] feeRate: ${a.feeRate}');
+          debugPrint(
+              'rbfHistory[${transaction._transaction.rbfHistoryList!.indexOf(a)}] timestamp: ${a.timestamp}');
+          debugPrint(
+              'rbfHistory[${transaction._transaction.rbfHistoryList!.indexOf(a)}] transactionHash: ${a.transactionHash}');
+          debugPrint(
+              '-------------------------------------------------------------');
+        }
+      }
+      debugPrint(
+          '////////////////////////////////////////////////////////////');
+    }
     debugPrint(
-        '(7) last.feerate: ${_transactionList![_transactionList!.length - 1].transaction!.feeRate}');
+        '====================================================================');
   }
 
   // void init() {
