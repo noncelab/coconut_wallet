@@ -408,7 +408,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   List<UtxoState> _getAllConfirmedUtxoList(WalletListItemBase walletItem) {
     final utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
-    return utxoList.where((utxo) => utxo.blockHeight != 0).toList();
+    Logger.log('--> 첫번째 Utxo 상태: ${utxoList[0].status}');
     return utxoList
         .where((utxo) => utxo.status != UtxoStatus.outgoing)
         .toList();
