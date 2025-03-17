@@ -125,6 +125,9 @@ class IsolateManager {
 
   /// Isolate 내부에서 실행되는 메인 로직
   static void _isolateEntry(IsolateConnectorData data) async {
+    // TODO: 메인넷/테스트넷 설정을 isolate 스레드에서도 적용해야 함. (환경변수로 등록하면 좋을듯)
+    NetworkType.setNetworkType(NetworkType.regtest);
+
     final isolateFromMainReceivePort = ReceivePort();
 
     // 초기화 됐음을 알리는 목적으로 사용
