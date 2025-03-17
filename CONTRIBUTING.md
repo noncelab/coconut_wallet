@@ -2,7 +2,7 @@
 
 * PR은 `develop`브랜치에서 시작해야 합니다.
 * 새로운 패키지를 추가하지 마세요. 기존 패키지를 제거할 수 있는 수정은 환영입니다.
-* Git hooks를 설정해주세요. (`dart foramt .` 실행)
+* Git hooks를 설정해주세요. (`dart format .` 실행)
   ```bash
   # 프로젝트 디렉토리 이동
   cd /path/your/coconut_wallet
