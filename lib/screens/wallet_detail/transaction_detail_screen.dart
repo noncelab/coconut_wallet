@@ -752,7 +752,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             rbfType ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
                         'walletId': widget.id,
                         'walletName': _viewModel.getWalletName(),
-                        'currentUtxo': _viewModel.currentUtxo,
                       });
                 },
                 child: Padding(

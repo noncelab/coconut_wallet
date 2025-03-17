@@ -479,7 +479,7 @@ class TranslationsTransactionFeeBumpingScreenKr {
       '총 ${fee} sats / ${vb} vb';
   String get new_fee => '새 수수료';
   String get sats_vb => 'sats/vb';
-  String recommend_fee({required Object fee}) => '추천 수수료: ${fee}sats/vb 이상';
+  String recommend_fee({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
   String get recommend_fee_info_rbf =>
       '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
   String get recommend_fee_info_cpfp =>
@@ -488,6 +488,11 @@ class TranslationsTransactionFeeBumpingScreenKr {
   String estimated_fee({required Object fee}) => '예상 총 수수료 ${fee} sats';
   String get estimated_fee_too_high_error => '예상 총 수수료가 0.01 BTC 이상이에요!';
   String get recommended_fees_fetch_error => '추천 수수료를 조회할 수 없어요!';
+  String get recommended_fees_is_null => '수수료를 조회하는 중이예요';
+  String get recommended_fee_less_than_pending_tx_fee =>
+      '기존 수수료보다 큰 수수료를 지정해 주세요';
+  late final TranslationsTransactionFeeBumpingScreenDialogKr dialog =
+      TranslationsTransactionFeeBumpingScreenDialogKr.internal(_root);
 }
 
 // Path: wallet_list_add_guide_card
@@ -763,6 +768,17 @@ class TranslationsAlertKr {
       TranslationsAlertFaucetKr.internal(_root);
   late final TranslationsAlertFeeBumpingKr fee_bumping =
       TranslationsAlertFeeBumpingKr.internal(_root);
+}
+
+// Path: transaction_fee_bumping_screen.dialog
+class TranslationsTransactionFeeBumpingScreenDialogKr {
+  TranslationsTransactionFeeBumpingScreenDialogKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get title => '알림';
+  String get description => '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
 }
 
 // Path: errors.fee_selection_error
@@ -1326,7 +1342,7 @@ extension on Translations {
       case 'transaction_fee_bumping_screen.sats_vb':
         return 'sats/vb';
       case 'transaction_fee_bumping_screen.recommend_fee':
-        return ({required Object fee}) => '추천 수수료: ${fee}sats/vb 이상';
+        return ({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
       case 'transaction_fee_bumping_screen.recommend_fee_info_rbf':
         return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
       case 'transaction_fee_bumping_screen.recommend_fee_info_cpfp':
@@ -1339,6 +1355,14 @@ extension on Translations {
         return '예상 총 수수료가 0.01 BTC 이상이에요!';
       case 'transaction_fee_bumping_screen.recommended_fees_fetch_error':
         return '추천 수수료를 조회할 수 없어요!';
+      case 'transaction_fee_bumping_screen.recommended_fees_is_null':
+        return '수수료를 조회하는 중이예요';
+      case 'transaction_fee_bumping_screen.recommended_fee_less_than_pending_tx_fee':
+        return '기존 수수료보다 큰 수수료를 지정해 주세요';
+      case 'transaction_fee_bumping_screen.dialog.title':
+        return '알림';
+      case 'transaction_fee_bumping_screen.dialog.description':
+        return '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
       case 'wallet_list_add_guide_card.add_watch_only':
         return '보기 전용 지갑을 추가해 주세요';
       case 'wallet_list_add_guide_card.top_right_icon':
@@ -1546,8 +1570,6 @@ extension on Translations {
         return '수수료를 올려, 기존 거래를 새로운 거래로 대체하는 기능이에요. (RBF, Replace-By-Fee)';
       case 'tooltip.cpfp':
         return '새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)';
-      case 'snackbar.no_permission':
-        return 'no Permission';
       case 'toast.back_exit':
         return '뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.';
       case 'toast.min_fee':

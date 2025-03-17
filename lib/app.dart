@@ -292,7 +292,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   feeBumpingType: args['feeBumpingType'],
                   walletId: args['walletId'],
                   walletName: args['walletName'],
-                  currentUtxo: args['currentUtxo'],
                 ),
               ),
           '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
