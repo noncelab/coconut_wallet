@@ -1,8 +1,11 @@
+import 'dart:collection';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
@@ -17,8 +20,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   bool _isInitDone = false;
   bool _isSendingToMyAddress = false;
-  String? _address;
-  int? _amount;
+  final List<String> _recipientAddresses = [];
+  int? _sendingAmount;
   int? _fee;
   int? _totalAmount;
   int? _sendingAmountWhenAddressIsMyChange; // 내 지갑의 change address로 보내는 경우 잔액
@@ -37,10 +40,12 @@ class BroadcastingViewModel extends ChangeNotifier {
     _walletId = _sendInfoProvider.walletId!;
   }
 
-  String? get address => _address;
-  int? get amount => _amount;
+  List<String> get recipientAddresses =>
+      UnmodifiableListView(_recipientAddresses);
+
+  int? get amount => _sendingAmount;
   int? get amountValueInKrw {
-    if (_bitcoinPriceKrw == null || _amount == null) return null;
+    if (_bitcoinPriceKrw == null || _sendingAmount == null) return null;
     return FiatUtil.calculateFiatAmount(
         sendingAmountWhenAddressIsMyChange != null
             ? sendingAmountWhenAddressIsMyChange!
@@ -76,39 +81,63 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   void setTxInfo() async {
-    try {
-      Psbt signedPsbt = Psbt.parse(signedTransaction);
-      // print("!!! -> ${_model.signedTransaction!}");
-      List<PsbtOutput> outputs = signedPsbt.outputs;
+    Psbt signedPsbt = Psbt.parse(signedTransaction);
+    // print("!!! -> ${_model.signedTransaction!}");
+    List<PsbtOutput> outputs = signedPsbt.outputs;
 
-      // case1. 다른 사람에게 보내고(B1) 잔액이 있는 경우(A2)
-      // case2. 다른 사람에게 보내고(B1) 잔액이 없는 경우
-      // case3. 내 지갑의 다른 주소로 보내고(A2) 잔액이 있는 경우(A3)
-      // case4. 내 지갑의 다른 주소로 보내고(A2) 잔액이 없는 경우
-      // 만약 실수로 내 지갑의 change address로 보내는 경우에는 sendingAmount가 0
-      List<PsbtOutput> outputToMyReceivingAddress = [];
-      List<PsbtOutput> outputToMyChangeAddress = [];
-      List<PsbtOutput> outputsToOther = [];
-      for (int i = 0; i < outputs.length; i++) {
-        if (outputs[i].derivationPath == null) {
-          outputsToOther.add(outputs[i]);
-        } else if (outputs[i].isChange) {
-          outputToMyChangeAddress.add(outputs[i]);
-          _outputIndexesToMyAddress.add(i);
-        } else {
-          outputToMyReceivingAddress.add(outputs[i]);
-          _outputIndexesToMyAddress.add(i);
+    // case1. 다른 사람에게 보내고(B1) 잔액이 있는 경우(A2)
+    // case2. 다른 사람에게 보내고(B1) 잔액이 없는 경우
+    // case3. 내 지갑의 다른 주소로 보내고(A2) 잔액이 있는 경우(A3)
+    // case4. 내 지갑의 다른 주소로 보내고(A2) 잔액이 없는 경우
+    // 만약 실수로 내 지갑의 change address로 보내는 경우에는 sendingAmount가 0
+    List<PsbtOutput> outputToMyReceivingAddress = [];
+    List<PsbtOutput> outputToMyChangeAddress = [];
+    List<PsbtOutput> outputsToOther = [];
+    for (int i = 0; i < outputs.length; i++) {
+      if (outputs[i].derivationPath == null) {
+        outputsToOther.add(outputs[i]);
+      } else if (outputs[i].isChange) {
+        outputToMyChangeAddress.add(outputs[i]);
+        _outputIndexesToMyAddress.add(i);
+      } else {
+        outputToMyReceivingAddress.add(outputs[i]);
+        _outputIndexesToMyAddress.add(i);
+      }
+    }
+
+    if (_isBatchTransaction(
+        outputToMyReceivingAddress, outputToMyChangeAddress, outputsToOther)) {
+      Map<String, double> recipientAmounts = {};
+      if (outputsToOther.isNotEmpty) {
+        for (var output in outputsToOther) {
+          recipientAmounts[output.getAddress()] =
+              UnitUtil.satoshiToBitcoin(output.amount!);
         }
       }
-
+      if (outputToMyReceivingAddress.isNotEmpty) {
+        for (var output in outputToMyReceivingAddress) {
+          recipientAmounts[output.getAddress()] =
+              UnitUtil.satoshiToBitcoin(output.amount!);
+        }
+        _isSendingToMyAddress = true;
+      }
+      if (outputToMyChangeAddress.length > 1) {
+        for (int i = outputToMyChangeAddress.length - 1; i > 0; i--) {
+          var output = outputToMyChangeAddress[i];
+          recipientAmounts[output.getAddress()] =
+              UnitUtil.satoshiToBitcoin(output.amount!);
+        }
+      }
+      _sendingAmount = signedPsbt.sendingAmount;
+      _recipientAddresses
+          .addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value})'));
+    } else {
       PsbtOutput? output;
       if (outputsToOther.isNotEmpty) {
         output = outputsToOther[0];
-        notifyListeners();
       } else if (outputToMyReceivingAddress.isNotEmpty) {
         output = outputToMyReceivingAddress[0];
         _isSendingToMyAddress = true;
-        notifyListeners();
       } else if (outputToMyChangeAddress.isNotEmpty) {
         // 받는 주소에 내 지갑의 change address를 입력한 경우
         // 원래 이 경우 output.sendingAmount = 0, 보낼 주소가 표기되지 않았었지만, 버그처럼 보이는 문제 때문에 대응합니다.
@@ -118,19 +147,38 @@ class BroadcastingViewModel extends ChangeNotifier {
         output = outputToMyChangeAddress[0];
         _sendingAmountWhenAddressIsMyChange = output.amount;
         _isSendingToMyAddress = true;
-        notifyListeners();
       }
 
-      _address = output?.getAddress() ?? '';
-      _amount = signedPsbt.sendingAmount;
-
-      _fee = signedPsbt.fee;
-      _totalAmount = signedPsbt.sendingAmount + signedPsbt.fee;
-      _isInitDone = true;
-      notifyListeners();
-    } catch (e) {
-      rethrow;
+      _sendingAmount = signedPsbt.sendingAmount;
+      if (output != null) {
+        _recipientAddresses.add(output.getAddress());
+      }
     }
+    _fee = signedPsbt.fee;
+    _totalAmount = signedPsbt.sendingAmount + signedPsbt.fee;
+    _isInitDone = true;
+    notifyListeners();
+  }
+
+  ///예외: 사용자가 배치 트랜잭션에 '남의 주소 또는 내 Receive 주소 1개'와 '본인 change 주소 1개'를 입력하고, 이 트랜잭션의 잔액이 없는 희박한 상황에서는 배치 트랜잭션임을 구분하지 못함
+  bool _isBatchTransaction(
+      List<PsbtOutput> outputToMyReceivingAddress,
+      List<PsbtOutput> outputToMyChangeAddress,
+      List<PsbtOutput> outputsToOther) {
+    var countExceptToMyChangeAddress =
+        outputToMyReceivingAddress.length + outputsToOther.length;
+    if (countExceptToMyChangeAddress >= 2) {
+      return true;
+    }
+    if (outputToMyChangeAddress.length >= 3) {
+      return true;
+    }
+    if (outputToMyChangeAddress.length == 2 &&
+        countExceptToMyChangeAddress >= 1) {
+      return true;
+    }
+
+    return false;
   }
 
   Future<void> updateTagsOfUsedUtxos(String signedTx) async {

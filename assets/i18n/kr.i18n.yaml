@@ -56,6 +56,7 @@ update_failed: "업데이트 실패"
 calculation_failed: "계산 실패"
 contact_email: "hello@noncelab.com"
 email_subject: "[코코넛 월렛] 이용 관련 문의"
+amount: "수량"
 send_amount: "보낼 수량"
 fetch_fee_failed: "수수료 조회 실패"
 fetch_balance_failed: "잔액 조회 불가"
@@ -138,11 +139,16 @@ broadcasting_screen:
   description: "아래 정보로 송금할게요"
   self_sending: "내 지갑으로 보내는 트랜잭션입니다."
 send_address_screen:
-  text: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
+  text1: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
+  text2: "주소 QR 코드를 스캔해 주세요"
+  add_recipient: "받는 사람 추가하기"
+  address_placeholder: "보낼 주소를 입력해 주세요"
+  amount_placeholder: "보낼 수량을 입력해 주세요"
 send_confirm_screen:
   title: "입력 정보 확인"
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
+  
 
 # lib/screens/settings
 app_info_screen:
@@ -290,6 +296,7 @@ errors:
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."
     not_for_regtest: "레그테스트넷 주소가 아니에요."
+    duplicated: "이미 입력한 주소에요."
   pin_check_error:
     trial_count: "$count번 다시 시도할 수 있어요"
     failed: "더 이상 시도할 수 없어요\n앱을 종료해 주세요"
@@ -330,9 +337,6 @@ tooltip:
   rbf: "수수료를 올려, 기존 거래를 새로운 거래로 대체하는 기능이에요. (RBF, Replace-By-Fee)"
   cpfp: "새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)"
 
-
-snackbar:
-  no_permission: "no Permission"
 
 toast:
   back_exit: "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다."
@@ -399,6 +403,8 @@ alert:
     title: "태그 삭제"
     description: "#$name를 정말로 삭제하시겠어요?\n"
     description_utxo_tag: "$name를 정말로 삭제하시겠어요?\n$count개 UTXO에 적용되어 있어요."
+  recipient_delete:
+    description: "입력하신 정보가 사라져요.\n그래도 지우시겠어요?"
   faucet:
     no_test_bitcoin: "수도꼭지 단수 상태예요. 잠시 후 다시 시도해 주세요."
     check_address: "올바른 주소인지 확인해 주세요"

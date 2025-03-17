@@ -1,9 +1,10 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class InformationItemCard extends StatelessWidget {
   final String label;
-  final String? value;
+  final List<String>? value;
   final VoidCallback? onPressed;
   final bool showIcon;
   final bool isNumber;
@@ -26,20 +27,31 @@ class InformationItemCard extends StatelessWidget {
             color: Colors.transparent,
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label, style: Styles.body2Bold),
                 showIcon ? const Spacer() : const SizedBox(width: 32),
                 if (value != null)
                   Expanded(
-                      child: Text(value!,
-                          textAlign: TextAlign.right,
-                          style: Styles.body2.merge(
-                            TextStyle(
-                                fontFamily: isNumber
-                                    ? CustomFonts.number.getFontFamily
-                                    : CustomFonts.text.getFontFamily),
-                          ))),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: value!.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value;
+                            final isLast = index == value!.length - 1;
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                  bottom: isLast ? 0 : Sizes.size4),
+                              child: Text(item,
+                                  textAlign: TextAlign.right,
+                                  style: Styles.body2.merge(
+                                    TextStyle(
+                                        fontFamily: isNumber
+                                            ? CustomFonts.number.getFontFamily
+                                            : CustomFonts.text.getFontFamily),
+                                  )),
+                            );
+                          }).toList())),
                 if (showIcon)
                   rightIcon ??
                       const Icon(Icons.keyboard_arrow_right_rounded,

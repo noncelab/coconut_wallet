@@ -1,4 +1,7 @@
+import 'dart:collection';
+
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -10,49 +13,57 @@ class SendConfirmViewModel extends ChangeNotifier {
   late final WalletProvider _walletProvider;
   late WalletListItemBase _walletListItemBase;
   late int? _bitcoinPriceKrw;
+  late int _totalUsedAmount;
+
   late double _amount;
-  late String _address;
+  late List<String> _addresses;
+  Map<String, double>? _recipientsForBatch;
 
   SendConfirmViewModel(
       this._sendInfoProvider, this._walletProvider, this._bitcoinPriceKrw) {
     _walletListItemBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
-    _amount = _sendInfoProvider.amount!;
-    _address = _sendInfoProvider.recipientAddress!;
+    if (_sendInfoProvider.recipientsForBatch != null) {
+      _setBatchTxParams();
+    } else {
+      _setSingleTxParams();
+    }
   }
 
   double get amount => _amount;
-  String get address => _address;
+  List<String> get addresses => _addresses;
+  Map<String, double>? get recipientsForBatch => _recipientsForBatch == null
+      ? null
+      : UnmodifiableMapView(_recipientsForBatch!);
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
-  int? get estimatedFee => _sendInfoProvider.estimatedFee;
+  int get estimatedFee => _sendInfoProvider.estimatedFee!;
   String get walletName => _walletListItemBase.name;
+  int get totalUsedAmount => _totalUsedAmount;
+
+  void _setSingleTxParams() {
+    _amount = _sendInfoProvider.amount!;
+    _addresses = [_sendInfoProvider.recipientAddress!];
+    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + estimatedFee;
+  }
+
+  void _setBatchTxParams() {
+    _recipientsForBatch = _sendInfoProvider.recipientsForBatch!;
+    double totalSendAmount = 0;
+    List<String> addresses = [];
+    _recipientsForBatch!.forEach((key, value) {
+      totalSendAmount += value;
+      addresses.add('$key ($value ${t.btc})');
+    });
+    _amount = totalSendAmount;
+    _addresses = addresses;
+    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + estimatedFee;
+  }
 
   Future<String> generateUnsignedPsbt() async {
-    // utxo selection
-    if (_sendInfoProvider.transaction != null) {
-      var psbt = Psbt.fromTransaction(
-          _sendInfoProvider.transaction!, _walletListItemBase.walletBase);
-      return psbt.serialize();
-    }
-
-    var utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
-    final generateTx = _sendInfoProvider.isMaxMode!
-        ? Transaction.forSweep(utxoList, _sendInfoProvider.recipientAddress!,
-            _sendInfoProvider.feeRate!, _walletListItemBase.walletBase)
-        : Transaction.forSinglePayment(
-            utxoList,
-            _sendInfoProvider.recipientAddress!,
-            _walletProvider
-                .getChangeAddress(_sendInfoProvider.walletId!)
-                .derivationPath,
-            UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
-            _sendInfoProvider.feeRate!,
-            _walletListItemBase.walletBase);
-
-    // printLongString(">>>>>> psbt 생성");
-    // printLongString(generatedTx);
-    return Psbt.fromTransaction(generateTx, _walletListItemBase.walletBase)
-        .serialize();
+    assert(_sendInfoProvider.transaction != null);
+    var psbt = Psbt.fromTransaction(
+        _sendInfoProvider.transaction!, _walletListItemBase.walletBase);
+    return psbt.serialize();
   }
 
   void setTxWaitingForSign(String transaction) {

@@ -70,14 +70,14 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  coconut_lib:
-    git:
-      url: https://github.com/noncelab/coconut_lib.git
-      ref: develop
   coconut_design_system:
     git:
       url: https://github.com/noncelab/coconut_design_system.git
       ref: main
+  coconut_lib:
+    git:
+      url: https://github.com/noncelab/coconut_lib.git
+      ref: develop
   realm: ^20.0.0
   cryptography: ^2.7.0
   slang: ^4.4.1
@@ -197,6 +197,7 @@ flutter:
     - assets/svg/book.svg
     - assets/svg/wallet-info.svg
     - assets/svg/close.svg
+    - assets/svg/close-bold.svg
     - regtest.env
     - regtestlocal.env
     - assets/lottie/pin-locked-success.json
@@ -224,6 +225,10 @@ flutter:
     - assets/svg/check.svg
     - assets/svg/coins.svg
     - assets/svg/triangle-warning.svg
+    - assets/svg/users-group.svg
+    - assets/svg/user.svg
+    - assets/svg/arrow-reload.svg
+    - assets/svg/scan.svg
 
 
   fonts:

@@ -95,6 +95,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get calculation_failed => '계산 실패';
   String get contact_email => 'hello@noncelab.com';
   String get email_subject => '[코코넛 월렛] 이용 관련 문의';
+  String get amount => '수량';
   String get send_amount => '보낼 수량';
   String get fetch_fee_failed => '수수료 조회 실패';
   String get fetch_balance_failed => '잔액 조회 불가';
@@ -205,8 +206,6 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
       TranslationsTextFieldKr.internal(_root);
   late final TranslationsTooltipKr tooltip =
       TranslationsTooltipKr.internal(_root);
-  late final TranslationsSnackbarKr snackbar =
-      TranslationsSnackbarKr.internal(_root);
   late final TranslationsToastKr toast = TranslationsToastKr.internal(_root);
   late final TranslationsAlertKr alert = TranslationsAlertKr.internal(_root);
 }
@@ -314,7 +313,11 @@ class TranslationsSendAddressScreenKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get text => 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
+  String get text1 => 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
+  String get text2 => '주소 QR 코드를 스캔해 주세요';
+  String get add_recipient => '받는 사람 추가하기';
+  String get address_placeholder => '보낼 주소를 입력해 주세요';
+  String get amount_placeholder => '보낼 수량을 입력해 주세요';
 }
 
 // Path: send_confirm_screen
@@ -700,16 +703,6 @@ class TranslationsTooltipKr {
       '새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)';
 }
 
-// Path: snackbar
-class TranslationsSnackbarKr {
-  TranslationsSnackbarKr.internal(this._root);
-
-  final Translations _root; // ignore: unused_field
-
-  // Translations
-  String get no_permission => 'no Permission';
-}
-
 // Path: toast
 class TranslationsToastKr {
   TranslationsToastKr.internal(this._root);
@@ -764,6 +757,8 @@ class TranslationsAlertKr {
       TranslationsAlertTxDetailKr.internal(_root);
   late final TranslationsAlertTagDeleteKr tag_delete =
       TranslationsAlertTagDeleteKr.internal(_root);
+  late final TranslationsAlertRecipientDeleteKr recipient_delete =
+      TranslationsAlertRecipientDeleteKr.internal(_root);
   late final TranslationsAlertFaucetKr faucet =
       TranslationsAlertFaucetKr.internal(_root);
   late final TranslationsAlertFeeBumpingKr fee_bumping =
@@ -794,6 +789,7 @@ class TranslationsErrorsAddressErrorKr {
   String get not_for_testnet => '테스트넷 주소가 아니에요.';
   String get not_for_mainnet => '메인넷 주소가 아니에요.';
   String get not_for_regtest => '레그테스트넷 주소가 아니에요.';
+  String get duplicated => '이미 입력한 주소에요.';
 }
 
 // Path: errors.pin_check_error
@@ -974,6 +970,16 @@ class TranslationsAlertTagDeleteKr {
       '${name}를 정말로 삭제하시겠어요?\n${count}개 UTXO에 적용되어 있어요.';
 }
 
+// Path: alert.recipient_delete
+class TranslationsAlertRecipientDeleteKr {
+  TranslationsAlertRecipientDeleteKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get description => '입력하신 정보가 사라져요.\n그래도 지우시겠어요?';
+}
+
 // Path: alert.faucet
 class TranslationsAlertFaucetKr {
   TranslationsAlertFaucetKr.internal(this._root);
@@ -1104,6 +1110,8 @@ extension on Translations {
         return 'hello@noncelab.com';
       case 'email_subject':
         return '[코코넛 월렛] 이용 관련 문의';
+      case 'amount':
+        return '수량';
       case 'send_amount':
         return '보낼 수량';
       case 'fetch_fee_failed':
@@ -1224,8 +1232,16 @@ extension on Translations {
         return '아래 정보로 송금할게요';
       case 'broadcasting_screen.self_sending':
         return '내 지갑으로 보내는 트랜잭션입니다.';
-      case 'send_address_screen.text':
+      case 'send_address_screen.text1':
         return 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
+      case 'send_address_screen.text2':
+        return '주소 QR 코드를 스캔해 주세요';
+      case 'send_address_screen.add_recipient':
+        return '받는 사람 추가하기';
+      case 'send_address_screen.address_placeholder':
+        return '보낼 주소를 입력해 주세요';
+      case 'send_address_screen.amount_placeholder':
+        return '보낼 수량을 입력해 주세요';
       case 'send_confirm_screen.title':
         return '입력 정보 확인';
       case 'signed_psbt_scanner_screen.title':
@@ -1462,6 +1478,8 @@ extension on Translations {
         return '메인넷 주소가 아니에요.';
       case 'errors.address_error.not_for_regtest':
         return '레그테스트넷 주소가 아니에요.';
+      case 'errors.address_error.duplicated':
+        return '이미 입력한 주소에요.';
       case 'errors.pin_check_error.trial_count':
         return ({required Object count}) => '${count}번 다시 시도할 수 있어요';
       case 'errors.pin_check_error.failed':
@@ -1635,6 +1653,8 @@ extension on Translations {
       case 'alert.tag_delete.description_utxo_tag':
         return ({required Object name, required Object count}) =>
             '${name}를 정말로 삭제하시겠어요?\n${count}개 UTXO에 적용되어 있어요.';
+      case 'alert.recipient_delete.description':
+        return '입력하신 정보가 사라져요.\n그래도 지우시겠어요?';
       case 'alert.faucet.no_test_bitcoin':
         return '수도꼭지 단수 상태예요. 잠시 후 다시 시도해 주세요.';
       case 'alert.faucet.check_address':
