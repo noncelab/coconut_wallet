@@ -104,12 +104,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                   (element) => element.level == _selectedLevel)
                               .satsPerVb!;
 
-                      double amount = _viewModel.getAmount(_estimatedFee!);
-
-                      viewModel.setAmount(amount);
-                      viewModel.setEstimatedFee(_estimatedFee!);
-                      viewModel.setFeeRate(satsPerVb);
-
+                      _viewModel.saveFinalSendInfo(_estimatedFee!, satsPerVb);
                       Navigator.pushNamed(context, '/send-confirm');
                     }),
                 body: SafeArea(
@@ -316,7 +311,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
       setState(() {
         _customFeeInfo = FeeInfo(satsPerVb: customSatsPerVb);
-        _setFeeInfo(_customFeeInfo!, estimatedFee!);
+        _setFeeInfo(_customFeeInfo!, estimatedFee);
       });
     } catch (error) {
       int? estimatedFee = _handleFeeEstimationError(error as Exception);

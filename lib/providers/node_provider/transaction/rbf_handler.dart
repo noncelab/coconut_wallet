@@ -78,21 +78,13 @@ class RbfHandler {
         }
 
         // spentTransaction이 존재하고, 해당 트랜잭션이 미확인 상태일 때만 RBF로 간주
-        if (spentTransaction.blockHeight == 0) {
+        if (spentTransaction.blockHeight != null &&
+            spentTransaction.blockHeight! < 1) {
           Logger.log(
               'RBF 조건 충족: $utxoId, spentTx: ${utxo.spentByTransactionHash}');
           isRbf = true;
           spentTxHash = utxo.spentByTransactionHash;
           break;
-        } else {
-          Logger.log(
-              'RBF 조건 불충족: spentTransaction 블록높이가 0이 아님 ${spentTransaction.blockHeight}');
-        }
-      } else {
-        if (utxo.status != UtxoStatus.outgoing) {
-          Logger.log('RBF 조건 불충족: UTXO 상태가 outgoing이 아님 (${utxo.status})');
-        } else if (utxo.spentByTransactionHash == null) {
-          Logger.log('RBF 조건 불충족: spentByTransactionHash가 없음');
         }
       }
     }
@@ -149,6 +141,20 @@ class RbfHandler {
           Logger.log(
               'RBF 내역 등록: $txHash ← ${rbfInfo.spentTransactionHash} (원본: ${rbfInfo.originalTransactionHash})');
           Logger.log('  - 수수료율: ${txRecord.feeRate}');
+
+          final existingRbfHistory = _transactionRepository.getRbfHistoryList(
+              walletItem.id, txRecord.transactionHash);
+
+          // 최초로 RBF 내역을 등록하는 경우 원본 트랜잭션 내역도 등록
+          if (existingRbfHistory.isEmpty) {
+            rbfHistoryDtos.add(RbfHistoryDto(
+              walletId: walletItem.id,
+              originalTransactionHash: rbfInfo.originalTransactionHash,
+              transactionHash: rbfInfo.originalTransactionHash,
+              feeRate: originalTx.feeRate,
+              timestamp: originalTx.timestamp ?? DateTime.now(),
+            ));
+          }
 
           rbfHistoryDtos.add(RbfHistoryDto(
             walletId: walletItem.id,

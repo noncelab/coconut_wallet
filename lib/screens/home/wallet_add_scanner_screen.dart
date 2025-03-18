@@ -85,8 +85,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                                 MediaQuery.of(context).size.height < 400)
                             ? 320.0
                             : MediaQuery.of(context).size.width * 0.9),
-                    onPermissionSet: (ctrl, p) =>
-                        _onPermissionSet(context, ctrl, p),
                   ),
                 ),
               ],
@@ -138,15 +136,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                   showIcon: true,
                   type: TooltipType.info)),
         ]));
-  }
-
-  void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
-    Logger.log('${DateTime.now().toIso8601String()}_onPermissionSet $p');
-    if (!p) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.snackbar.no_permission)),
-      );
-    }
   }
 
   void _onQRViewCreated(QRViewController controller) {

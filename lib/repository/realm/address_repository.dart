@@ -21,19 +21,54 @@ class AddressRepository extends BaseRepository {
     int count,
     bool isChange,
   ) {
-    ensureAddressesExist(
-      walletItemBase: walletItemBase,
-      cursor: cursor,
-      count: count,
-      isChange: isChange,
-    );
+    final generatedAddressIndex =
+        getGeneratedAddressIndex(walletItemBase, isChange);
 
-    return _getAddressesFromDB(
-      walletId: walletItemBase.id,
-      cursor: cursor,
-      count: count,
-      isChange: isChange,
-    );
+    if (generatedAddressIndex > cursor + count) {
+      return _getAddressListFromDb(
+        walletId: walletItemBase.id,
+        cursor: cursor,
+        count: count,
+        isChange: isChange,
+      );
+    }
+
+    // 기존 DB에 있는 주소 가져오기
+    List<WalletAddress> existingAddresses = generatedAddressIndex > cursor
+        ? _getAddressListFromDb(
+            walletId: walletItemBase.id,
+            cursor: cursor,
+            count: count,
+            isChange: isChange,
+          )
+        : [];
+
+    // 필요한 경우 새 주소 생성하고 저장하지 않고 반환
+    if (existingAddresses.length < count) {
+      final newAddresses = _generateAddresses(
+        wallet: walletItemBase.walletBase,
+        startIndex: existingAddresses.isEmpty
+            ? cursor
+            : existingAddresses.last.index + 1,
+        count: count - existingAddresses.length,
+        isChange: isChange,
+      );
+
+      existingAddresses.addAll(newAddresses);
+    }
+
+    return existingAddresses;
+  }
+
+  int getGeneratedAddressIndex(
+      WalletListItemBase walletItemBase, bool isChange) {
+    final realmWalletBase = realm.find<RealmWalletBase>(walletItemBase.id);
+    if (realmWalletBase == null) {
+      throw StateError('[getGeneratedAddressIndex] Wallet not found');
+    }
+    return isChange
+        ? realmWalletBase.generatedChangeIndex
+        : realmWalletBase.generatedReceiveIndex;
   }
 
   /// 필요한 경우 새로운 주소를 생성하고 저장
@@ -65,13 +100,13 @@ class AddressRepository extends BaseRepository {
           isChange: isChange,
         );
 
-        await _saveAddressesToDB(realmWalletBase, addresses, isChange);
+        await _addAllAddressList(realmWalletBase, addresses, isChange);
       }
     }
   }
 
   /// DB에서 주소 목록 조회
-  List<WalletAddress> _getAddressesFromDB({
+  List<WalletAddress> _getAddressListFromDb({
     required int walletId,
     required int cursor,
     required int count,
@@ -85,7 +120,7 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 주소를 DB에 저장
-  Future<void> _saveAddressesToDB(RealmWalletBase realmWalletBase,
+  Future<void> _addAllAddressList(RealmWalletBase realmWalletBase,
       List<WalletAddress> addresses, bool isChange) async {
     final realmAddresses = addresses
         .map(
@@ -388,5 +423,20 @@ class AddressRepository extends BaseRepository {
     });
 
     return Balance(totalConfirmedDiff, totalUnconfirmedDiff);
+  }
+
+  String getDerivationPath(
+    int walletId,
+    String address,
+  ) {
+    final existingAddress = realm.query<RealmWalletAddress>(
+      r'walletId == $0 AND address == $1',
+      [walletId, address],
+    ).firstOrNull;
+
+    if (existingAddress != null) {
+      return existingAddress.derivationPath;
+    }
+    return '';
   }
 }

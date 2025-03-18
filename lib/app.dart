@@ -30,6 +30,7 @@ import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 import 'package:coconut_wallet/screens/send/signed_psbt_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
@@ -273,6 +274,15 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 context,
                 (args) => TransactionDetailScreen(
                     id: args['id'], txHash: args['txHash']),
+              ),
+          '/transaction-fee-bumping': (context) => buildScreenWithArguments(
+                context,
+                (args) => TransactionFeeBumpingScreen(
+                  transaction: args['transaction'],
+                  feeBumpingType: args['feeBumpingType'],
+                  walletId: args['walletId'],
+                  walletName: args['walletName'],
+                ),
               ),
           '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
                 context,

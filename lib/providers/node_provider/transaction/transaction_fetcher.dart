@@ -83,7 +83,8 @@ class TransactionFetcher {
 
     final blockTimestampMap = txBlockHeightMap.isEmpty
         ? <int, BlockTimestamp>{}
-        : await getBlocksByHeight(txBlockHeightMap.values.toSet());
+        : await _electrumService
+            .fetchBlocksByHeight(txBlockHeightMap.values.toSet());
 
     // 트랜잭션 상세 정보 조회
     final fetchedTransactions = await fetchTransactions(
@@ -164,6 +165,26 @@ class TransactionFetcher {
             walletItem, cpfpInfoMap, txRecordMap, walletItem.id);
       }
     }
+
+    // 대체되었으나 RBF이력 없이 DB에 존재하는 언컨펌 트랜잭션 내역 삭제
+    final unconfirmedTxs = _transactionRepository
+        .getUnconfirmedTransactionRecordList(walletItem.id);
+
+    final toDeleteTxs = <String>[];
+    for (final tx in unconfirmedTxs) {
+      try {
+        await _electrumService.getTransaction(tx.transactionHash,
+            verbose: true);
+      } catch (e) {
+        // 대체되어 존재하지 않는 트랜잭션은 삭제
+        toDeleteTxs.add(tx.transactionHash);
+      }
+    }
+
+    if (toDeleteTxs.isNotEmpty) {
+      _transactionRepository.deleteTransaction(walletItem.id, toDeleteTxs);
+    }
+
     if (!inBatchProcess) {
       // Transaction 업데이트 완료 state 업데이트
       _stateManager.addWalletCompletedState(
@@ -202,22 +223,6 @@ class TransactionFetcher {
       Logger.error('Failed to get fetch transaction responses: $e');
       return [];
     }
-  }
-
-  /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
-  Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
-    final futures = heights.map((height) async {
-      try {
-        final blockTimestamp = await _electrumService.getBlockTimestamp(height);
-        return MapEntry(height, blockTimestamp);
-      } catch (e) {
-        Logger.error('Error fetching block header for height $height: $e');
-        return null;
-      }
-    });
-
-    final results = await Future.wait(futures);
-    return Map.fromEntries(results.whereType<MapEntry<int, BlockTimestamp>>());
   }
 
   /// 트랜잭션 목록을 가져옵니다.

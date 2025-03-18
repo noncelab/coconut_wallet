@@ -106,6 +106,8 @@ class _UnsignedTransactionQrScreenState
     final sendInfoProvider =
         Provider.of<SendInfoProvider>(context, listen: false);
     _psbtBase64 = sendInfoProvider.txWaitingForSign!;
+    debugPrint(
+        'txWaitingForSign = ${sendInfoProvider.txWaitingForSign!.length}');
     _isMultisig = sendInfoProvider.isMultisig!;
   }
 }
