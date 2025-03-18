@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:flutter/material.dart';
@@ -255,11 +256,12 @@ class _TransactionFeeBumpingScreenState
     _feeTextFieldFocusNode.unfocus();
     if (_isEstimatedFeeTooLow) return;
     bool canContinue = await _showConfirmationDialog(context);
-
+    
     if (!canContinue) return;
 
     viewModel
-        .generateUnsignedPsbt(int.parse(_textEditingController.text))
+        .generateUnsignedPsbt(
+            int.parse(_textEditingController.text), widget.feeBumpingType)
         .then((value) {
       Navigator.pushNamed(context, '/unsigned-transaction-qr',
           arguments: {'walletName': widget.walletName});
@@ -294,28 +296,8 @@ class _TransactionFeeBumpingScreenState
   }
 
   Future<bool> _showConfirmationDialog(BuildContext context) async {
-    if (_viewModel.hasTransactionConfirmedBeforePsbt()) {
-      await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return CoconutPopup(
-            title:
-                t.transaction_fee_bumping_screen.dialog.confirmed_alert_title,
-            description: t.transaction_fee_bumping_screen.dialog
-                .confirmed_alert_description,
-            backgroundColor: CoconutColors.gray800,
-            rightButtonText: t.view_tx_details,
-            rightButtonTextStyle: CoconutTypography.body1_16,
-            rightButtonColor: CoconutColors.white,
-            onTapRight: () {
-              Navigator.popUntil(context, (route) {
-                return route.settings.name == '/transaction-detail';
-              });
-            },
-          );
-        },
-      );
+    if (_viewModel.hasTransactionConfirmed()) {
+      await TransactionUtil.showTransactionConfirmedDialog(context);
       return false;
     }
     if (!_isEstimatedFeeTooHigh) return true;

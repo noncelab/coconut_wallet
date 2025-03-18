@@ -1,4 +1,3 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -58,6 +57,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
     _sendInfoProvider.setWalletId(_walletId);
+
     _fetchRecommendedFees(); // 현재 수수료 조회
   }
 
@@ -82,7 +82,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
-  bool hasTransactionConfirmedBeforePsbt() {
+  bool hasTransactionConfirmed() {
     TransactionRecord? tx =
         _txProvider.getTransactionRecord(walletId, transaction.transactionHash);
     if (tx == null || tx.blockHeight! <= 0) return false;
@@ -90,10 +90,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   // unsinged psbt 생성
-  Future<String> generateUnsignedPsbt(int newTxFeeRate) async {
+  Future<String> generateUnsignedPsbt(
+      int newTxFeeRate, FeeBumpingType feeBumpingType) async {
     _generateTransaction(newTxFeeRate);
     if (_bumpingTransaction != null) {
-      _updateSendInfoProvider(newTxFeeRate);
+      _updateSendInfoProvider(newTxFeeRate, feeBumpingType);
 
       return Psbt.fromTransaction(
               _bumpingTransaction!, walletListItemBase.walletBase)
@@ -123,7 +124,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
   }
 
-  void _updateSendInfoProvider(int newTxFeeRate) {
+  void _updateSendInfoProvider(
+      int newTxFeeRate, FeeBumpingType feeBumpingType) {
     debugPrint('updateSendInfoProvider');
     bool isMultisig =
         walletListItemBase.walletType == WalletType.multiSignature;
@@ -132,6 +134,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(
             _bumpingTransaction!, walletListItemBase.walletBase)
         .serialize());
+    _sendInfoProvider.setFeeBumptingType(feeBumpingType);
 
     if (_type == FeeBumpingType.rbf) {
       _sendInfoProvider.setAmount(_transaction.amount!.toDouble());
@@ -177,6 +180,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // 새 수수료로 트랜잭션 생성
   void _generateTransaction(int newFeeRate) {
+    if (hasTransactionConfirmed()) return;
     if (_type == FeeBumpingType.cpfp) {
       _generateCpfpTransaction(newFeeRate);
     } else if (_type == FeeBumpingType.rbf) {

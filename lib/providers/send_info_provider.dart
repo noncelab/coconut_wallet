@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 
 class SendInfoProvider {
   int? _walletId;
@@ -15,6 +16,8 @@ class SendInfoProvider {
   String? _signedPsbtBase64Encoded;
   // batch tx (주소, 수량)
   Map<String, double>? _recipientsForBatch;
+  // null인 경우 RBF 또는 CPFP가 아닙니다.
+  FeeBumpingType? _feeBumpingType;
 
   int? get walletId => _walletId;
   String? get recipientAddress => _recipientAddress;
@@ -29,6 +32,7 @@ class SendInfoProvider {
   Map<String, double>? get recipientsForBatch => _recipientsForBatch == null
       ? null
       : UnmodifiableMapView(_recipientsForBatch!);
+  FeeBumpingType? get feeBumpingType => _feeBumpingType;
 
   void setWalletId(int id) {
     _walletId = id;
@@ -72,6 +76,10 @@ class SendInfoProvider {
 
   void setRecipientsForBatch(Map<String, double> recipients) {
     _recipientsForBatch = recipients;
+  }
+
+  void setFeeBumptingType(FeeBumpingType? feeBumpingType) {
+    _feeBumpingType = feeBumpingType;
   }
 
   void clear() {

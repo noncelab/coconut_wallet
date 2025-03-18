@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -71,6 +72,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   int get walletId => _walletId;
 
   UtxoTagProvider get tagProvider => _tagProvider;
+
+  FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
     return _nodeProvider.broadcast(signedTx);
@@ -187,7 +190,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
-  bool hasTransactionConfirmedBeforePsbt() {
+  bool hasTransactionConfirmed() {
     TransactionRecord? tx = _txProvider.getTransactionRecord(
         walletId, _txProvider.transaction!.transactionHash);
     if (tx == null || tx.blockHeight! <= 0) return false;

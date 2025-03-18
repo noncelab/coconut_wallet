@@ -1,8 +1,11 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:flutter/material.dart';
 
 class TransactionUtil {
   static TransactionStatus? getStatus(TransactionRecord tx) {
@@ -143,5 +146,29 @@ class TransactionUtil {
     }
 
     return tx.inputs[0].index == 4294967295; // 0xffffffff
+  }
+
+  static Future<void> showTransactionConfirmedDialog(
+      BuildContext context) async {
+    await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          title: t.transaction_fee_bumping_screen.dialog.confirmed_alert_title,
+          description: t.transaction_fee_bumping_screen.dialog
+              .confirmed_alert_description,
+          backgroundColor: CoconutColors.gray800,
+          rightButtonText: t.view_tx_details,
+          rightButtonTextStyle: CoconutTypography.body1_16,
+          rightButtonColor: CoconutColors.white,
+          onTapRight: () {
+            Navigator.popUntil(context, (route) {
+              return route.settings.name == '/transaction-detail';
+            });
+          },
+        );
+      },
+    );
   }
 }

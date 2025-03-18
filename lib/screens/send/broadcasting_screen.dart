@@ -16,6 +16,7 @@ import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
@@ -115,28 +116,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                       context: context, text: ErrorCodes.networkError.message);
                   return;
                 }
-                if (viewModel.hasTransactionConfirmedBeforePsbt()) {
-                  await showDialog<bool>(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) {
-                      return CoconutPopup(
-                        title: t.transaction_fee_bumping_screen.dialog
-                            .confirmed_alert_title,
-                        description: t.transaction_fee_bumping_screen.dialog
-                            .confirmed_alert_description,
-                        backgroundColor: CoconutColors.gray800,
-                        rightButtonText: t.view_tx_details,
-                        rightButtonTextStyle: CoconutTypography.body1_16,
-                        rightButtonColor: CoconutColors.white,
-                        onTapRight: () {
-                          Navigator.popUntil(context, (route) {
-                            return route.settings.name == '/transaction-detail';
-                          });
-                        },
-                      );
-                    },
-                  );
+                if (viewModel.feeBumpingType != null &&
+                    viewModel.hasTransactionConfirmed()) {
+                  await TransactionUtil.showTransactionConfirmedDialog(context);
                   return;
                 }
                 if (viewModel.isInitDone) {
