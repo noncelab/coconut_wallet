@@ -256,7 +256,7 @@ class _TransactionFeeBumpingScreenState
     _feeTextFieldFocusNode.unfocus();
     if (_isEstimatedFeeTooLow) return;
     bool canContinue = await _showConfirmationDialog(context);
-    
+
     if (!canContinue) return;
 
     viewModel
