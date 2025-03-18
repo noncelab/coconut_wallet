@@ -22,7 +22,7 @@ class UtxoItemCard extends StatelessWidget {
     bool isConfirmed = utxo.blockHeight != 0;
     bool isChange = utxo.derivationPath.split('/')[4] == '1';
 
-    final dateString = DateTimeUtil.formatTimeStamp(utxo.timestamp);
+    final dateString = DateTimeUtil.formatTimestamp(utxo.timestamp);
     const borderRadius = CoconutStyles.radius_300;
 
     return ShrinkAnimationButton(
