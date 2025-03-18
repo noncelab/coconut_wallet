@@ -157,7 +157,8 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 controller: _amountController,
                 focusNode: _quantityFocusNode,
                 onChanged: _onAmountChanged,
-                textInputType: TextInputType.number,
+                textInputType: const TextInputType.numberWithOptions(
+                    signed: false, decimal: true),
                 suffix: _amountController.text.isEmpty
                     ? null
                     : IconButton(
