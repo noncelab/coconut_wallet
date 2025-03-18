@@ -324,7 +324,7 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   void _handleWalletListUpdate(List<WalletListItemBase> walletList,
-      Function(int) getWalletBalance, bool isBalanceHidden) {
+      Function(int) getWalletBalance, bool isBalanceHidden) async {
     if (isWalletLoading) return;
 
     isWalletLoading = true;
@@ -338,9 +338,13 @@ class _WalletListScreenState extends State<WalletListScreen>
         insertedIndexes.add(i);
       }
     }
-    for (var index in insertedIndexes) {
-      _walletListKey.currentState?.insertItem(index, duration: _duration);
+    for (var i = 0; i < insertedIndexes.length; i++) {
+      await Future.delayed(Duration(milliseconds: 100 * i), () {
+        _walletListKey.currentState
+            ?.insertItem(insertedIndexes[i], duration: _duration);
+      });
     }
+
     _previousWalletList = List.from(walletList);
     isWalletLoading = false;
   }
@@ -353,7 +357,11 @@ class _WalletListScreenState extends State<WalletListScreen>
       itemBuilder: (context, index, animation) {
         if (index < walletList.length) {
           return _buildWalletItem(
-              walletList, index, animation, getWalletBalance, isBalanceHidden);
+              walletList[index],
+              animation,
+              getWalletBalance,
+              isBalanceHidden,
+              index == walletList.length - 1);
         }
         return Container();
       },
@@ -361,26 +369,20 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   Widget _buildWalletItem(
-      List<WalletListItemBase> walletList,
-      int index,
+      WalletListItemBase wallet,
       Animation<double> animation,
       Function(int) getWalletBalance,
-      bool isBalanceHidden) {
+      bool isBalanceHidden,
+      bool isLastItem) {
     var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
 
     return Column(
       children: [
         SlideTransition(
             position: offsetAnimation,
-            child: _getWalletRowItem(
-                Key(walletList[index].id.toString()),
-                walletList[index],
-                getWalletBalance,
-                isBalanceHidden,
-                index == walletList.length - 1)),
-        walletList.length - 1 == index
-            ? CoconutLayout.spacing_1000h
-            : CoconutLayout.spacing_200h,
+            child: _getWalletRowItem(Key(wallet.id.toString()), wallet,
+                getWalletBalance, isBalanceHidden, isLastItem)),
+        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
       ],
     );
   }
