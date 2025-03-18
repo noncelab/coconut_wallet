@@ -4,6 +4,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -294,13 +295,38 @@ class _TransactionFeeBumpingScreenState
   }
 
   Future<bool> _showConfirmationDialog(BuildContext context) async {
+    if (_viewModel.hasTransactionConfirmedBeforePsbt()) {
+      await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return CoconutPopup(
+            title:
+                t.transaction_fee_bumping_screen.dialog.confirmed_alert_title,
+            description: t.transaction_fee_bumping_screen.dialog
+                .confirmed_alert_description,
+            backgroundColor: CoconutColors.gray800,
+            rightButtonText: t.view_tx_details,
+            rightButtonTextStyle: CoconutTypography.body1_16,
+            rightButtonColor: CoconutColors.white,
+            onTapRight: () {
+              Navigator.popUntil(context, (route) {
+                return route.settings.name == '/transaction-detail';
+              });
+            },
+          );
+        },
+      );
+      return false;
+    }
     if (!_isEstimatedFeeTooHigh) return true;
     return await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
             return CoconutPopup(
-              title: t.transaction_fee_bumping_screen.dialog.title,
-              description: t.transaction_fee_bumping_screen.dialog.description,
+              title: t.transaction_fee_bumping_screen.dialog.fee_alert_title,
+              description:
+                  t.transaction_fee_bumping_screen.dialog.fee_alert_description,
               onTapRight: () {
                 Navigator.pop(context, true);
               },
@@ -318,6 +344,7 @@ class _TransactionFeeBumpingScreenState
     final sendInfoProvider =
         Provider.of<SendInfoProvider>(context, listen: false);
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    final txProvider = Provider.of<TransactionProvider>(context, listen: false);
     final addressRepository =
         Provider.of<AddressRepository>(context, listen: false);
     final utxoRepositry = Provider.of<UtxoRepository>(context, listen: false);
@@ -328,6 +355,7 @@ class _TransactionFeeBumpingScreenState
       widget.walletId,
       nodeProvider,
       sendInfoProvider,
+      txProvider,
       walletProvider,
       addressRepository,
       utxoRepositry,

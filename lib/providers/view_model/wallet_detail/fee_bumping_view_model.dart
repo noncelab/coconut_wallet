@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -28,6 +30,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
+  final TransactionProvider _txProvider;
   final AddressRepository _addressRepository;
   final UtxoRepository _utxoRepository;
   final int _walletId;
@@ -48,6 +51,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._walletId,
     this._nodeProvider,
     this._sendInfoProvider,
+    this._txProvider,
     this._walletProvider,
     this._addressRepository,
     this._utxoRepository,
@@ -75,6 +79,14 @@ class FeeBumpingViewModel extends ChangeNotifier {
   void updateProvider() {
     _onFeeUpdated();
     notifyListeners();
+  }
+
+  // pending상태였던 Tx가 confirmed 되었는지 조회
+  bool hasTransactionConfirmedBeforePsbt() {
+    TransactionRecord? tx =
+        _txProvider.getTransactionRecord(walletId, transaction.transactionHash);
+    if (tx == null || tx.blockHeight! <= 0) return false;
+    return true;
   }
 
   // unsinged psbt 생성

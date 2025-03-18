@@ -202,7 +202,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (_walletProvider.walletItemList.isNotEmpty) {
       _setCurrentBlockHeight();
       _txProvider.initTransaction(_walletId, _txHash);
-
+      TransactionRecord updatedTx = _txProvider.transaction!;
+      TransactionRecord currentTx = transactionList!.first.transaction!;
+      if (updatedTx.blockHeight != currentTx.blockHeight ||
+          updatedTx.transactionHash != currentTx.transactionHash) {
+        _initTransactionList();
+      }
       if (_initViewMoreButtons() == false) {
         _showDialogNotifier.value = true;
       }
