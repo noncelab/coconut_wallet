@@ -78,6 +78,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
       // rbfHistoryList를 역순으로 정렬
       var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
       for (var rbfTx in reversedRbfHistoryList) {
+        if (rbfTx.transactionHash == currentTransaction.transactionHash) {
+          continue;
+        }
         var rbfTxTransaction =
             _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
         _transactionList!.add(TransactionDetail(rbfTxTransaction));

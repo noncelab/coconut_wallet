@@ -526,7 +526,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           color: _viewModel.selectedTransactionIndex == index
                               ? CoconutColors.primary
                               : CoconutColors.gray800,
-                          label: index == 0
+                          label: !isLast
                               ? t.transaction_fee_bumping_screen.new_fee
                               : t.transaction_fee_bumping_screen.existing_fee,
                           labelColor:
