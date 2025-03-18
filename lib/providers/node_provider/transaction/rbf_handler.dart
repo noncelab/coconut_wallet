@@ -78,21 +78,13 @@ class RbfHandler {
         }
 
         // spentTransaction이 존재하고, 해당 트랜잭션이 미확인 상태일 때만 RBF로 간주
-        if (spentTransaction.blockHeight == 0) {
+        if (spentTransaction.blockHeight != null &&
+            spentTransaction.blockHeight! < 1) {
           Logger.log(
               'RBF 조건 충족: $utxoId, spentTx: ${utxo.spentByTransactionHash}');
           isRbf = true;
           spentTxHash = utxo.spentByTransactionHash;
           break;
-        } else {
-          Logger.log(
-              'RBF 조건 불충족: spentTransaction 블록높이가 0이 아님 ${spentTransaction.blockHeight}');
-        }
-      } else {
-        if (utxo.status != UtxoStatus.outgoing) {
-          Logger.log('RBF 조건 불충족: UTXO 상태가 outgoing이 아님 (${utxo.status})');
-        } else if (utxo.spentByTransactionHash == null) {
-          Logger.log('RBF 조건 불충족: spentByTransactionHash가 없음');
         }
       }
     }

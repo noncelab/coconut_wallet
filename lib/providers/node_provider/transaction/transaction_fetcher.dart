@@ -170,6 +170,26 @@ class TransactionFetcher {
             walletItem, cpfpInfoMap, txRecordMap, walletItem.id);
       }
     }
+
+    // 대체되었으나 RBF이력 없이 DB에 존재하는 언컨펌 트랜잭션 내역 삭제
+    final unconfirmedTxs = _transactionRepository
+        .getUnconfirmedTransactionRecordList(walletItem.id);
+
+    final toDeleteTxs = <String>[];
+    for (final tx in unconfirmedTxs) {
+      try {
+        await _electrumService.getTransaction(tx.transactionHash,
+            verbose: true);
+      } catch (e) {
+        // 대체되어 존재하지 않는 트랜잭션은 삭제
+        toDeleteTxs.add(tx.transactionHash);
+      }
+    }
+
+    if (toDeleteTxs.isNotEmpty) {
+      _transactionRepository.deleteTransaction(walletItem.id, toDeleteTxs);
+    }
+
     if (!inBatchProcess) {
       // Transaction 업데이트 완료 state 업데이트
       _stateManager.addWalletCompletedState(
