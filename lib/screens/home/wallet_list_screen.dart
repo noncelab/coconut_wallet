@@ -332,10 +332,6 @@ class _WalletListScreenState extends State<WalletListScreen>
       for (var walletItem in _previousWalletList) walletItem.id: walletItem
     };
 
-    final newWallets = {
-      for (var walletItem in walletList) walletItem.id: walletItem
-    };
-
     final List<int> insertedIndexes = [];
     for (int i = 0; i < walletList.length; i++) {
       if (!oldWallets.containsKey(walletList[i].id)) {
@@ -347,45 +343,6 @@ class _WalletListScreenState extends State<WalletListScreen>
     }
     _previousWalletList = List.from(walletList);
     isWalletLoading = false;
-
-    if (_previousWalletList.length == walletList.length + 1) {
-      // 지갑이 삭제되었을 때
-      bool isRemovingItem = false;
-
-      int removedIndex = -1;
-      for (int i = 0; i < _previousWalletList.length; i++) {
-        if (!newWallets.containsKey(_previousWalletList[i].id)) {
-          removedIndex = i;
-          break;
-        }
-      }
-      if (removedIndex != -1 && !isRemovingItem) {
-        isRemovingItem = true;
-        _walletListKey.currentState?.removeItem(
-          removedIndex,
-          duration: _duration,
-          (context, animation) {
-            if (removedIndex < _previousWalletList.length) {
-              return _buildRemoveWalletItem(
-                _previousWalletList[removedIndex],
-                removedIndex,
-                animation,
-                walletList,
-                getWalletBalance,
-                isBalanceHidden,
-              );
-            }
-            return Container();
-          },
-        );
-
-        Future.delayed(_duration, () {
-          _previousWalletList = List.from(walletList);
-          isRemovingItem = false;
-          isWalletLoading = false;
-        });
-      }
-    }
   }
 
   Widget _buildSliverAnimatedList(List<WalletListItemBase> walletList,
@@ -425,19 +382,6 @@ class _WalletListScreenState extends State<WalletListScreen>
             ? CoconutLayout.spacing_1000h
             : CoconutLayout.spacing_200h,
       ],
-    );
-  }
-
-  Widget _buildRemoveWalletItem(
-      WalletListItemBase wallet,
-      int index,
-      Animation<double> animation,
-      List<WalletListItemBase> walletList,
-      Function(int) getWalletBalance,
-      bool isBalanceHidden) {
-    return Container(
-      child: _getWalletRowItem(Key(wallet.id.toString()), walletList[index],
-          getWalletBalance, isBalanceHidden, index == walletList.length - 1),
     );
   }
 
