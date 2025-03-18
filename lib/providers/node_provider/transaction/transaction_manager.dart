@@ -71,7 +71,7 @@ class TransactionManager {
 
       return Result.success(txHash);
     } catch (e) {
-      return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
+      return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));
     }
   }
 

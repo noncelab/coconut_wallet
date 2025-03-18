@@ -645,6 +645,7 @@ class TranslationsErrorsKr {
   String get realm_not_found => '데이터를 찾을 수 없습니다.';
   String get realm_exception => 'Realm 작업 중 오류가 발생했습니다.';
   String get node_unknown => '노드 연결 중 알 수 없는 오류가 발생했습니다.';
+  String get broadcast_error => '트랜잭션 전송에 실패했습니다.';
   String get network_connect => '네트워크 연결이 없습니다.';
   String get network_not_found => '네트워크가 연결되어 있지 않아요!';
   String get insufficient_balance => '잔액이 부족해요.';
@@ -1482,6 +1483,8 @@ extension on Translations {
         return 'Realm 작업 중 오류가 발생했습니다.';
       case 'errors.node_unknown':
         return '노드 연결 중 알 수 없는 오류가 발생했습니다.';
+      case 'errors.broadcast_error':
+        return '트랜잭션 전송에 실패했습니다.';
       case 'errors.network_connect':
         return '네트워크 연결이 없습니다.';
       case 'errors.network_not_found':
