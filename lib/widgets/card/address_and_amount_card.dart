@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -60,21 +59,21 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
     _amountController = TextEditingController(text: widget.amount);
   }
 
-  Widget _buildCoconutTextField({
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    required ValueChanged<String> onChanged,
-    Widget? suffix,
-    TextInputType? textInputType,
-    String? placeholderText,
-    bool isError = false,
-    String? errorText,
-    EdgeInsets? padding,
-  }) {
+  Widget _buildCoconutTextField(
+      {required TextEditingController controller,
+      required FocusNode focusNode,
+      required ValueChanged<String> onChanged,
+      Widget? suffix,
+      TextInputType? textInputType,
+      String? placeholderText,
+      bool isError = false,
+      String? errorText,
+      EdgeInsets? padding,
+      double? height = 52}) {
     return CoconutTextField(
       controller: controller,
       focusNode: focusNode,
-      height: 52,
+      height: height,
       padding: padding ??
           const EdgeInsets.only(
               left: CoconutLayout.defaultPadding,
@@ -149,8 +148,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 placeholderText: widget.addressPlaceholder,
                 isError: widget.isAddressInvalid,
                 errorText: widget.addressErrorMessage,
-                padding:
-                    const EdgeInsets.only(left: CoconutLayout.defaultPadding)),
+                height: null),
             CoconutLayout.spacing_200h,
             Text(t.amount, style: CoconutTypography.body3_12),
             CoconutLayout.spacing_200h,
@@ -158,7 +156,8 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 controller: _amountController,
                 focusNode: _quantityFocusNode,
                 onChanged: _onAmountChanged,
-                textInputType: TextInputType.number,
+                textInputType: const TextInputType.numberWithOptions(
+                    signed: false, decimal: true),
                 suffix: _amountController.text.isEmpty
                     ? null
                     : IconButton(
@@ -207,6 +206,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
   String _filterAmountInput(String input) {
     String allowedCharsInput = input.replaceAll(RegExp(r'[^0-9.]'), '');
     if (input == '00') return '0';
+    if (input == '.') return '0.';
 
     var splitedInput = allowedCharsInput.split('.');
     if (splitedInput.length > 2) {
@@ -247,7 +247,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
 
   void _showAddressScanner() async {
     final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-    final scannedAddress = await CommonBottomSheets.showBottomSheet_100(
+    final String scannedAddress = await CommonBottomSheets.showBottomSheet_100(
         context: context,
         child: Scaffold(
             backgroundColor: CoconutColors.black,
@@ -269,14 +269,19 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                   ),
                 ],
                 onBackPressed: () {
-                  _qrViewController?.dispose();
-                  _qrViewController = null;
-                  Navigator.of(context).pop();
+                  _disposeQrViewController();
+                  Navigator.of(context).pop<String>('');
                 }),
             body: SendAddressBody(
                 qrKey: qrKey, onQRViewCreated: _onQRViewCreated)));
 
     _addressController.text = scannedAddress;
+    _disposeQrViewController();
     _onAddressChanged(scannedAddress);
+  }
+
+  void _disposeQrViewController() {
+    _qrViewController?.dispose();
+    _qrViewController = null;
   }
 }

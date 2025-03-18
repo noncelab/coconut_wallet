@@ -107,18 +107,20 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                     controller = null;
                     Navigator.of(context).pop();
                   }),
-              body: !_isBatchMode
-                  ? SendAddressBody(
-                      qrKey: qrKey,
-                      onQRViewCreated: _onQRViewCreated,
-                      address: viewModel.address,
-                      pasteAddress: _setClipboardAddressAsRecipient,
-                    )
-                  : SendAddressAmountBodyForBatch(
-                      validateAddress: _viewModel.validateAddress,
-                      checkSendAvailable: (int totalSendAmount) => viewModel
-                          .isSendAmountValid(widget.id, totalSendAmount),
-                      onRecipientsConfirmed: _onRecipientsConfirmed)),
+              body: SafeArea(
+                child: !_isBatchMode
+                    ? SendAddressBody(
+                        qrKey: qrKey,
+                        onQRViewCreated: _onQRViewCreated,
+                        address: viewModel.address,
+                        pasteAddress: _setClipboardAddressAsRecipient,
+                      )
+                    : SendAddressAmountBodyForBatch(
+                        validateAddress: _viewModel.validateAddress,
+                        checkSendAvailable: (int totalSendAmount) => viewModel
+                            .isSendAmountValid(widget.id, totalSendAmount),
+                        onRecipientsConfirmed: _onRecipientsConfirmed),
+              )),
         );
       }),
     );
@@ -227,6 +229,12 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     setState(() {
       _isBatchMode = !_isBatchMode;
     });
+
+    if (_isBatchMode) {
+      controller?.pauseCamera();
+    } else {
+      controller?.resumeCamera();
+    }
   }
 
   void _onRecipientsConfirmed(Map<String, double> recipients) {

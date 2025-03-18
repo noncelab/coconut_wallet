@@ -183,7 +183,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                               child: Column(
                                 children: [
                                   InformationItemCard(
-                                      label: t.recipient,
+                                      label: t.receiver,
                                       value: viewModel.recipientAddresses,
                                       isNumber: true),
                                   const Divider(
