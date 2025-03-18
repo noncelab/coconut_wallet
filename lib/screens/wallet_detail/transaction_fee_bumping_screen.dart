@@ -9,7 +9,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping_vi
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
@@ -87,7 +86,7 @@ class _TransactionFeeBumpingScreenState
               children: [
                 Scaffold(
                   resizeToAvoidBottomInset: true,
-                  backgroundColor: MyColors.black,
+                  backgroundColor: CoconutColors.black,
                   appBar: CoconutAppBar.build(
                     title: _isRbf
                         ? t.transaction_fee_bumping_screen.rbf

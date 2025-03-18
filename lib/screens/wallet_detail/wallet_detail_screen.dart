@@ -7,8 +7,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/body/wallet_detail_body.dart';
@@ -83,7 +81,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               child: Stack(
                 children: [
                   Scaffold(
-                    backgroundColor: MyColors.black,
+                    backgroundColor: CoconutColors.black,
                     appBar: _buildAppBar(context, viewModel),
                     body: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -111,15 +109,27 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         ),
                         // todo: 지갑 업데이트 상태 표기
                         SliverToBoxAdapter(
-                            child: Padding(
-                                key: _tabWidgetKey,
-                                padding: const EdgeInsets.only(
-                                  left: 16.0,
-                                  right: 16.0,
-                                  bottom: 12.0,
-                                  top: 30,
-                                ),
-                                child: Text(t.tx_list, style: Styles.h3))),
+                          child: Padding(
+                            key: _tabWidgetKey,
+                            padding: const EdgeInsets.only(
+                              left: 16.0,
+                              right: 16.0,
+                              bottom: 12.0,
+                              top: 30,
+                            ),
+                            child: Text(
+                              t.tx_list,
+                              style: const TextStyle(
+                                fontFamily: 'Pretendard',
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontStyle: FontStyle.normal,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ),
                         SliverSafeArea(
                           minimum: const EdgeInsets.symmetric(horizontal: 16),
                           sliver: WalletDetailBody(
@@ -163,7 +173,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return CoconutAppBar.build(
       entireWidgetKey: _appBarKey,
       faucetIconKey: _faucetIconKey,
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       title: TextUtils.ellipsisIfLonger(viewModel.walletListBaseItem!.name,
           maxLength: 15),
       context: context,
