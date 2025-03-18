@@ -353,14 +353,22 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Lottie.asset(
-            status == UtxoStatus.incoming
-                ? 'assets/lottie/arrow-down.json'
-                : 'assets/lottie/arrow-up.json',
-            width: 20,
-            height: 20,
+          Container(
+            decoration: BoxDecoration(
+              color: status == UtxoStatus.incoming
+                  ? CoconutColors.cyan.withOpacity(0.2)
+                  : CoconutColors.primary.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Lottie.asset(
+              status == UtxoStatus.incoming
+                  ? 'assets/lottie/arrow-down.json'
+                  : 'assets/lottie/arrow-up.json',
+              width: 20,
+              height: 20,
+            ),
           ),
-          CoconutLayout.spacing_100w,
+          CoconutLayout.spacing_200w,
           Text(
             status == UtxoStatus.incoming
                 ? t.status_receiving
