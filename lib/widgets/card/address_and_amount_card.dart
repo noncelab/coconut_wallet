@@ -207,6 +207,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
   String _filterAmountInput(String input) {
     String allowedCharsInput = input.replaceAll(RegExp(r'[^0-9.]'), '');
     if (input == '00') return '0';
+    if (input == '.') return '0.';
 
     var splitedInput = allowedCharsInput.split('.');
     if (splitedInput.length > 2) {

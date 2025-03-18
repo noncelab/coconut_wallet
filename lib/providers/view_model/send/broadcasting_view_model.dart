@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -129,8 +130,8 @@ class BroadcastingViewModel extends ChangeNotifier {
         }
       }
       _sendingAmount = signedPsbt.sendingAmount;
-      _recipientAddresses
-          .addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value})'));
+      _recipientAddresses.addAll(recipientAmounts.entries
+          .map((e) => '${e.key} (${e.value} ${t.btc})'));
     } else {
       PsbtOutput? output;
       if (outputsToOther.isNotEmpty) {
