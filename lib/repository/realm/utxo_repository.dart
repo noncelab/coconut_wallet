@@ -5,7 +5,6 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/utils/result.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:realm/realm.dart';
 
 class UtxoRepository extends BaseRepository {

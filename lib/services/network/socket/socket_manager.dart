@@ -27,8 +27,8 @@ class SocketManager {
   /// JSON parse
   final StreamController<String> _streamController = StreamController();
   final StringBuffer _buffer = StringBuffer();
-  int _braceCount = 0;
-  bool _inString = false;
+  final int _braceCount = 0;
+  final bool _inString = false;
 
   /// Response
   final Map<int, Completer<dynamic>> _completerMap = {};
