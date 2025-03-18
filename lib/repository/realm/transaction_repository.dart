@@ -9,6 +9,7 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:flutter/foundation.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
@@ -415,14 +416,17 @@ class TransactionRepository extends BaseRepository {
   }
 
   Result<bool> deleteTransaction(int walletId, List<String> transactionHashes) {
-    final realmTransaction = realm.query<RealmTransaction>(
-      r'walletId == $0 AND transactionHash IN $1',
-      [walletId, transactionHashes],
-    ).firstOrNull;
+    final realmTransactions = realm
+        .query<RealmTransaction>(
+          r'walletId == $0 AND transactionHash IN $1',
+          [walletId, transactionHashes],
+        )
+        .where((tx) => tx.replaceByTransactionHash == null)
+        .toList();
 
-    if (realmTransaction != null) {
+    if (realmTransactions.isNotEmpty) {
       realm.write(() {
-        realm.delete(realmTransaction);
+        realm.deleteMany(realmTransactions);
       });
       return Result.success(true);
     }

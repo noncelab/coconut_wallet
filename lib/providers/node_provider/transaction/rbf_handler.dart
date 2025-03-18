@@ -142,6 +142,20 @@ class RbfHandler {
               'RBF 내역 등록: $txHash ← ${rbfInfo.spentTransactionHash} (원본: ${rbfInfo.originalTransactionHash})');
           Logger.log('  - 수수료율: ${txRecord.feeRate}');
 
+          final existingRbfHistory = _transactionRepository.getRbfHistoryList(
+              walletItem.id, txRecord.transactionHash);
+
+          // 최초로 RBF 내역을 등록하는 경우 원본 트랜잭션 내역도 등록
+          if (existingRbfHistory.isEmpty) {
+            rbfHistoryDtos.add(RbfHistoryDto(
+              walletId: walletItem.id,
+              originalTransactionHash: rbfInfo.originalTransactionHash,
+              transactionHash: rbfInfo.originalTransactionHash,
+              feeRate: originalTx.feeRate,
+              timestamp: originalTx.timestamp ?? DateTime.now(),
+            ));
+          }
+
           rbfHistoryDtos.add(RbfHistoryDto(
             walletId: walletItem.id,
             originalTransactionHash: rbfInfo.originalTransactionHash,
