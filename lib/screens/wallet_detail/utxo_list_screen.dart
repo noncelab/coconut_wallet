@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
@@ -378,17 +379,18 @@ class _UtxoListState extends State<UtxoList> {
       _utxoListKey.currentState?.insertItem(index, duration: _duration);
     }
 
-    _previousUtxoList = List.from(utxoList);
+    Future.delayed(_duration, () {
+      _previousUtxoList = List.from(utxoList);
+    });
   }
 
   Widget _buildRemoveUtxoItem(UtxoState utxo, Animation<double> animation) {
+    var offsetAnimation = AnimationUtil.buildSlideOutAnimation(animation);
+
     return FadeTransition(
       opacity: animation,
       child: SlideTransition(
-          position: animation.drive(Tween<Offset>(
-            begin: Offset.zero,
-            end: const Offset(-1.0, 0.0), // 왼쪽으로 사라지는 애니메이션
-          ).chain(CurveTween(curve: Curves.easeInExpo))),
+          position: offsetAnimation,
           child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: UtxoItemCard(
