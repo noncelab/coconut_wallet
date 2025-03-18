@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/result.dart';
 
 class IsolateHandler {
   final SubscriptionManager _subscriptionManager;
@@ -49,6 +50,7 @@ class IsolateHandler {
             newUpdatedWallets: null,
             notify: true,
           );
+          isolateToMainSendPort.send(Result.success(true));
           break;
         case IsolateHandlerMessage.subscribeWallet:
           isolateToMainSendPort

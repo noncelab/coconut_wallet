@@ -27,7 +27,7 @@ import 'package:coconut_wallet/utils/result.dart';
 
 class IsolateManager {
   Isolate? _isolate;
-  SendPort? _isolateToMainSendPort; // isolate 스레드에서 메인스레드로 보내는 포트
+  SendPort? _mainToIsolateSendPort; // isolate 스레드에서 메인스레드로 보내는 포트
   final ReceivePort _mainFromIsolateReceivePort;
   late Completer<void> _isolateReady;
   final _stateController = StreamController<IsolateStateMessage>.broadcast();
@@ -92,7 +92,7 @@ class IsolateManager {
   }
 
   bool get isInitialized =>
-      (_isolateToMainSendPort != null && _isolate != null);
+      (_mainToIsolateSendPort != null && _isolate != null);
 
   IsolateManager() : _mainFromIsolateReceivePort = ReceivePort() {
     _isolateReady = Completer<void>();
@@ -173,7 +173,7 @@ class IsolateManager {
     }
 
     final mainFromIsolateReceivePort = ReceivePort();
-    _isolateToMainSendPort!
+    _mainToIsolateSendPort!
         .send([messageType, mainFromIsolateReceivePort.sendPort, params]);
 
     var result = await mainFromIsolateReceivePort.first;
@@ -232,7 +232,7 @@ class IsolateManager {
     switch (isolateManagerMessage) {
       case IsolateManagerMessage.initialize:
         if (params is SendPort) {
-          _isolateToMainSendPort = params;
+          _mainToIsolateSendPort = params;
           _isolateReady.complete();
         }
         break;
