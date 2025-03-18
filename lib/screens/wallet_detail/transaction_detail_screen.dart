@@ -7,6 +7,7 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
@@ -75,6 +76,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           Provider.of<TransactionProvider>(_, listen: false),
           Provider.of<NodeProvider>(_, listen: false),
           Provider.of<AddressRepository>(_, listen: false),
+          Provider.of<SendInfoProvider>(_, listen: false),
         );
 
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
@@ -714,6 +716,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                 visible: rbfType || feeBumpingHistoryList.length < 2,
                 child: GestureDetector(
                   onTap: () async {
+                    _viewModel.clearSendInfo();
                     Navigator.pushNamed(context, '/transaction-fee-bumping',
                         arguments: {
                           'transaction': tx,

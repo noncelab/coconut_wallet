@@ -56,8 +56,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._utxoRepository,
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
-    _sendInfoProvider.setWalletId(_walletId);
-
     _fetchRecommendedFees(); // 현재 수수료 조회
   }
 
@@ -83,8 +81,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {
-    TransactionRecord? tx =
-        _txProvider.getTransactionRecord(walletId, transaction.transactionHash);
+    TransactionRecord? tx = _txProvider.getTransactionRecord(
+        _walletId, transaction.transactionHash);
     if (tx == null || tx.blockHeight! <= 0) return false;
     return true;
   }
@@ -129,6 +127,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     debugPrint('updateSendInfoProvider');
     bool isMultisig =
         walletListItemBase.walletType == WalletType.multiSignature;
+    _sendInfoProvider.setWalletId(_walletId);
     _sendInfoProvider.setIsMultisig(isMultisig);
     _sendInfoProvider.setFeeRate(newTxFeeRate);
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(

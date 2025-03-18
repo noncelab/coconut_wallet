@@ -85,6 +85,7 @@ class SendInfoProvider {
   void clear() {
     _walletId = _recipientAddress = _amount = _feeRate = _estimatedFee =
         _isMaxMode = _isMultisig = _transaction = _txWaitingForSign =
-            _signedPsbtBase64Encoded = _recipientsForBatch = null;
+            _signedPsbtBase64Encoded =
+                _recipientsForBatch = _feeBumpingType = null;
   }
 }

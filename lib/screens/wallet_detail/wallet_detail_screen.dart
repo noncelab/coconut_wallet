@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
@@ -156,12 +157,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   WalletDetailViewModel _createViewModel(BuildContext context) {
     _viewModel = WalletDetailViewModel(
-      widget.id,
-      Provider.of<WalletProvider>(context, listen: false),
-      Provider.of<TransactionProvider>(context, listen: false),
-      Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<UpbitConnectModel>(context, listen: false),
-    );
+        widget.id,
+        Provider.of<WalletProvider>(context, listen: false),
+        Provider.of<TransactionProvider>(context, listen: false),
+        Provider.of<ConnectivityProvider>(context, listen: false),
+        Provider.of<UpbitConnectModel>(context, listen: false),
+        Provider.of<SendInfoProvider>(context, listen: false));
     return _viewModel;
   }
 
@@ -372,7 +373,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   void _onTapSend() {
     if (!_checkStateAndShowToast()) return;
-
+    _viewModel.clearSendInfo();
     Navigator.pushNamed(context, '/send-address', arguments: {'id': widget.id});
   }
 
