@@ -72,7 +72,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint(
         '(3) rbfHistoryList.length : ${_transactionList!.last.transaction!.rbfHistoryList?.length}');
     // rbfHistory가 존재하면 순차적으로 _transactionList에 추가
-    if (currentTransaction.rbfHistoryList != null &&
+    if (currentTransaction.cpfpHistory == null &&
+        currentTransaction.rbfHistoryList != null &&
         currentTransaction.rbfHistoryList!.isNotEmpty) {
       // rbfHistoryList를 역순으로 정렬
       var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
@@ -82,6 +83,16 @@ class TransactionDetailViewModel extends ChangeNotifier {
         _transactionList!.add(TransactionDetail(rbfTxTransaction));
         debugPrint('(4) rbfHistory::: ${rbfTx.feeRate}');
       }
+    } else if (currentTransaction.cpfpHistory != null) {
+      // cpfpHistory가 존재하면 _transactionList에 추가
+      _transactionList = [
+        TransactionDetail(_txProvider.getTransactionRecord(
+            _walletId, currentTransaction.cpfpHistory!.parentTransactionHash)),
+        TransactionDetail(_txProvider.getTransactionRecord(
+            _walletId, currentTransaction.cpfpHistory!.childTransactionHash)),
+      ];
+
+      debugPrint('(3) cpfpHistoryList.length::: ${_transactionList!.length}');
     }
     debugPrint('(5) _transactionList.length::: ${_transactionList!.length}');
 
