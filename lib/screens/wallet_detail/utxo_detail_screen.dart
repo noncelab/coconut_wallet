@@ -476,11 +476,18 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildBlockHeight() {
     return UnderlineButtonItemCard(
         label: t.block_num,
-        underlineButtonLabel: t.view_mempool,
-        onTapUnderlineButton: () => launchUrl(Uri.parse(
-            "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}")),
+        underlineButtonLabel:
+            widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
+        onTapUnderlineButton: () {
+          widget.utxo.status == UtxoStatus.unspent
+              ? launchUrl(Uri.parse(
+                  "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}"))
+              : ();
+        },
         child: Text(
-          widget.utxo.blockHeight.toString(),
+          widget.utxo.blockHeight != 0
+              ? widget.utxo.blockHeight.toString()
+              : '-',
           style: CoconutTypography.body2_14_Number,
         ));
   }
