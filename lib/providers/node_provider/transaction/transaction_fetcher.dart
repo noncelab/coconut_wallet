@@ -85,7 +85,8 @@ class TransactionFetcher {
 
     final blockTimestampMap = txBlockHeightMap.isEmpty
         ? <int, BlockTimestamp>{}
-        : await getBlocksByHeight(txBlockHeightMap.values.toSet());
+        : await _electrumService
+            .fetchBlocksByHeight(txBlockHeightMap.values.toSet());
 
     // 트랜잭션 상세 정보 조회
     final fetchedTransactions = await fetchTransactions(
@@ -207,22 +208,6 @@ class TransactionFetcher {
       Logger.error('Failed to get fetch transaction responses: $e');
       return [];
     }
-  }
-
-  /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
-  Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
-    final futures = heights.map((height) async {
-      try {
-        final blockTimestamp = await _electrumService.getBlockTimestamp(height);
-        return MapEntry(height, blockTimestamp);
-      } catch (e) {
-        Logger.error('Error fetching block header for height $height: $e');
-        return null;
-      }
-    });
-
-    final results = await Future.wait(futures);
-    return Map.fromEntries(results.whereType<MapEntry<int, BlockTimestamp>>());
   }
 
   /// 트랜잭션 목록을 가져옵니다.

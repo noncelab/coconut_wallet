@@ -63,6 +63,7 @@ class TransactionUtil {
     return valueSelector(list[index]);
   }
 
+  /// confirmed uxto만 사용 가능
   static List<UtxoState> selectOptimalUtxos(List<UtxoState> utxoList,
       int amount, int feeRate, AddressType addressType) {
     int baseVbyte = 72; // 0 input, 2 output
@@ -74,25 +75,44 @@ class TransactionUtil {
       vBytePerInput = 148;
     }
     List<UtxoState> selectedUtxos = [];
+    List<UtxoState> unspentUtxos = utxoList
+        .where((u) => u.status == UtxoStatus.unspent)
+        .toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
+    // List<UtxoState> incomingUtxos = utxoList
+    //     .where((u) => u.status == UtxoStatus.incoming)
+    //     .toList()
+    //   ..sort((a, b) => b.amount.compareTo(a.amount));
+
     int totalAmount = 0;
     int totalVbyte = baseVbyte;
     int finalFee = 0;
-    utxoList.sort((a, b) => b.amount.compareTo(a.amount));
-    for (UtxoState utxo in utxoList) {
-      if (utxo.blockHeight == 0) {
-        // unconfirmed utxo
-        continue;
+
+    void selectFrom(List<UtxoState> source) {
+      for (UtxoState utxo in source) {
+        totalAmount += utxo.amount;
+        selectedUtxos.add(utxo);
+        totalVbyte += vBytePerInput;
+        finalFee = totalVbyte * feeRate;
+        if (totalAmount >= amount + finalFee + dust) {
+          return;
+        }
       }
-      totalAmount += utxo.amount;
-      selectedUtxos.add(utxo);
-      totalVbyte += vBytePerInput;
-      int fee = totalVbyte * feeRate;
-      if (totalAmount >= amount + fee + dust) {
-        return selectedUtxos;
-      }
-      finalFee = fee;
     }
-    throw Exception('Not enough amount for sending. (Fee : $finalFee)');
+
+    // 우선 unspent UTXO 사용
+    selectFrom(unspentUtxos);
+
+    // 부족하면 incoming UTXO 추가
+    // if (totalAmount < amount + finalFee + dust) {
+    //   selectFrom(incomingUtxos);
+    // }
+
+    if (totalAmount < amount + finalFee + dust) {
+      throw Exception('Not enough amount for sending. (Fee : $finalFee)');
+    }
+
+    return selectedUtxos;
   }
 
   static int _getDustThreshold(AddressType addressType) {
