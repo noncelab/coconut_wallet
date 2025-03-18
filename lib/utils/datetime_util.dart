@@ -2,7 +2,7 @@ import 'package:intl/intl.dart';
 
 class DateTimeUtil {
   // ex) "2024-04-12 18:19:26.000" => List<String> ["24.04.12", "18:19"]
-  static List<String> formatTimeStamp(DateTime dateTime) {
+  static List<String> formatTimestamp(DateTime dateTime) {
     DateTime localDateTime = dateTime.toLocal();
 
     String formattedDate =

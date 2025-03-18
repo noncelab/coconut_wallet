@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
@@ -15,96 +16,118 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
 
   late final WalletListItemBase _walletListItemBase;
+  late AddressType _walletAddressType;
   late int _confirmedBalance;
-  late int _unconfirmedBalance;
   late int? _bitcoinPriceKrw;
   late bool _isMultisigWallet;
   late bool _isMaxMode;
   late int _walletId;
   late double _amount;
-  late String _recipientAddress;
+  String? _recipientAddress;
   late bool? _isNetworkOn;
+  late bool _isBatchTx = false;
+  //List<String>? _recipientAddresses;
 
   SendFeeSelectionViewModel(this._sendInfoProvider, this._walletProvider,
       this._nodeProvider, this._bitcoinPriceKrw, this._isNetworkOn) {
     var balance = _walletProvider.getWalletBalance(_sendInfoProvider.walletId!);
     _walletListItemBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
+    _walletAddressType =
+        _walletListItemBase.walletType == WalletType.singleSignature
+            ? AddressType.p2wpkh
+            : AddressType.p2wsh;
     _confirmedBalance = balance.confirmed;
-    _unconfirmedBalance = balance.unconfirmed;
     _isMultisigWallet =
         _walletListItemBase.walletType == WalletType.multiSignature;
     _bitcoinPriceKrw = _bitcoinPriceKrw;
     _walletId = _sendInfoProvider.walletId!;
-    _amount = _sendInfoProvider.amount!;
-    _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_amount);
-    _recipientAddress = _sendInfoProvider.recipientAddress!;
+    if (_sendInfoProvider.recipientsForBatch != null) {
+      _isBatchTx = true;
+      _setBatchTxParams();
+    } else {
+      _setSingleTxParams();
+    }
     _isNetworkOn = isNetworkOn;
-
     _updateSendInfoProvider();
   }
 
   double get amount => _amount;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
-  int get confirmedBalance => _confirmedBalance;
-  bool get isMaxMode => _isMaxMode;
-  bool get isMultisigWallet => _isMultisigWallet;
   bool get isNetworkOn => _isNetworkOn == true;
-  String get recipientAddress => _recipientAddress;
-  int get unconfirmedBalance => _unconfirmedBalance;
-  int get walletId => _walletId;
   WalletProvider get walletProvider => _walletProvider;
   NodeProvider get nodeprovider => _nodeProvider;
 
   int estimateFee(int satsPerVb) {
-    final utxoPool = _walletProvider.getUtxoList(walletId);
-    final wallet = _walletProvider.getWalletById(walletId);
-    final changeAddress = _walletProvider.getChangeAddress(walletId);
-    final amount = UnitUtil.bitcoinToSatoshi(_amount);
-
-    final transaction = _isMaxMode
-        ? Transaction.forSweep(
-            utxoPool, _recipientAddress, satsPerVb, wallet.walletBase)
-        : Transaction.forSinglePayment(
-            TransactionUtil.selectOptimalUtxos(
-                utxoPool,
-                amount,
-                satsPerVb,
-                wallet.walletType == WalletType.singleSignature
-                    ? AddressType.p2wpkh
-                    : AddressType.p2wsh),
-            _recipientAddress,
-            changeAddress.address,
-            amount,
-            satsPerVb,
-            wallet.walletBase);
+    final transaction = _createTransaction(satsPerVb);
 
     if (_isMultisigWallet) {
-      final multisigWallet = wallet.walletBase as MultisignatureWallet;
-      return transaction.estimateFee(satsPerVb, wallet.walletBase.addressType,
+      final multisigWallet =
+          _walletListItemBase.walletBase as MultisignatureWallet;
+      return transaction.estimateFee(satsPerVb, _walletAddressType,
           requiredSignature: multisigWallet.requiredSignature,
           totalSigner: multisigWallet.totalSigner);
     }
 
-    return transaction.estimateFee(satsPerVb, wallet.walletBase.addressType);
+    return transaction.estimateFee(satsPerVb, _walletAddressType);
   }
 
-  double getAmount(int estimatedFee) {
+  Transaction _createTransaction(int satsPerVb) {
+    final utxoPool = _walletProvider.getUtxoList(_walletId);
+    final wallet = _walletProvider.getWalletById(_walletId);
+    final changeAddress = _walletProvider.getChangeAddress(_walletId);
+    final amount = UnitUtil.bitcoinToSatoshi(_amount);
+
+    if (_isBatchTx) {
+      return Transaction.forBatchPayment(
+          TransactionUtil.selectOptimalUtxos(
+              utxoPool, amount, satsPerVb, _walletAddressType),
+          _sendInfoProvider.recipientsForBatch!.map(
+              (key, value) => MapEntry(key, UnitUtil.bitcoinToSatoshi(value))),
+          changeAddress.derivationPath,
+          satsPerVb,
+          _walletListItemBase.walletBase);
+    }
+
     return _isMaxMode
-        ? UnitUtil.satoshiToBitcoin(_confirmedBalance - estimatedFee)
-        : amount;
+        ? Transaction.forSweep(
+            utxoPool, _recipientAddress!, satsPerVb, wallet.walletBase)
+        : Transaction.forSinglePayment(
+            TransactionUtil.selectOptimalUtxos(
+                utxoPool, amount, satsPerVb, _walletAddressType),
+            _recipientAddress!,
+            changeAddress.derivationPath,
+            amount,
+            satsPerVb,
+            _walletListItemBase.walletBase);
   }
+
+  void _setSingleTxParams() {
+    _amount = _sendInfoProvider.amount!;
+    _recipientAddress = _sendInfoProvider.recipientAddress!;
+    _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_amount);
+  }
+
+  void _setBatchTxParams() {
+    _amount = _sendInfoProvider.recipientsForBatch!.values
+        .fold(0, (sum, value) => sum + value);
+    //_recipientAddresses = _sendInfoProvider.recipientsForBatch!.keys.toList();
+    _isMaxMode = false;
+  }
+
+  // double getAmount(int estimatedFee) {
+  //   return _isMaxMode
+  //       ? UnitUtil.satoshiToBitcoin(_confirmedBalance - estimatedFee)
+  //       : amount;
+  // }
 
   bool isBalanceEnough(int? estimatedFee) {
     if (estimatedFee == null || estimatedFee == 0) return false;
-    if (_isMaxMode) return (confirmedBalance - estimatedFee) > dustLimit;
-
+    if (_isMaxMode) return (_confirmedBalance - estimatedFee) > dustLimit;
+    Logger.log(
+        '--> ${UnitUtil.bitcoinToSatoshi(amount)} ${estimatedFee} ${_confirmedBalance}');
     return (UnitUtil.bitcoinToSatoshi(amount) + estimatedFee) <=
-        confirmedBalance;
-  }
-
-  setAmount(double amount) {
-    _sendInfoProvider.setAmount(amount);
+        _confirmedBalance;
   }
 
   void setBitcoinPriceKrw(int price) {
@@ -112,12 +135,14 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  setEstimatedFee(int estimatedFee) {
+  void saveFinalSendInfo(int estimatedFee, int satsPerVb) {
+    double finalAmount = _isMaxMode
+        ? UnitUtil.satoshiToBitcoin(_confirmedBalance - estimatedFee)
+        : _amount;
+    _sendInfoProvider.setAmount(finalAmount);
     _sendInfoProvider.setEstimatedFee(estimatedFee);
-  }
-
-  setFeeRate(int feeRate) {
-    _sendInfoProvider.setFeeRate(feeRate);
+    _sendInfoProvider.setFeeRate(satsPerVb);
+    _sendInfoProvider.setTransaction(_createTransaction(satsPerVb));
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {

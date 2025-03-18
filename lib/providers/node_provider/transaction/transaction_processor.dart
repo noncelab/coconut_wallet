@@ -4,7 +4,7 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/transaction_details.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -13,8 +13,9 @@ import 'package:coconut_wallet/utils/transaction_util.dart';
 /// 트랜잭션을 처리하고 변환하는 클래스
 class TransactionProcessor {
   final ElectrumService _electrumService;
+  final AddressRepository _addressRepository;
 
-  TransactionProcessor(this._electrumService);
+  TransactionProcessor(this._electrumService, this._addressRepository);
 
   /// 이전 트랜잭션을 조회합니다.
   Future<List<Transaction>> getPreviousTransactions(
@@ -81,8 +82,7 @@ class TransactionProcessor {
     WalletListItemBase walletItemBase,
     List<Transaction> txs,
     Map<String, int> txBlockHeightMap,
-    Map<int, BlockTimestamp> blockTimestampMap,
-    WalletProvider walletProvider, {
+    Map<int, BlockTimestamp> blockTimestampMap, {
     List<Transaction> previousTxs = const [],
     Future<String> Function(String)? getTransactionHex,
     DateTime? now,
@@ -93,7 +93,6 @@ class TransactionProcessor {
         tx,
         txBlockHeightMap,
         blockTimestampMap,
-        walletProvider,
         previousTxs: previousTxs,
         getTransactionHex: getTransactionHex,
         now: now,
@@ -106,8 +105,7 @@ class TransactionProcessor {
     WalletListItemBase walletItemBase,
     Transaction tx,
     Map<String, int> txBlockHeightMap,
-    Map<int, BlockTimestamp> blockTimestampMap,
-    WalletProvider walletProvider, {
+    Map<int, BlockTimestamp> blockTimestampMap, {
     List<Transaction> previousTxs = const [],
     Future<String> Function(String)? getTransactionHex,
     DateTime? now,
@@ -122,8 +120,7 @@ class TransactionProcessor {
     }
 
     int blockHeight = txBlockHeightMap[tx.transactionHash] ?? 0;
-    final txDetails =
-        processTransactionDetails(tx, prevTxs, walletItemBase, walletProvider);
+    final txDetails = processTransactionDetails(tx, prevTxs, walletItemBase);
 
     return TransactionRecord.fromTransactions(
       transactionHash: tx.transactionHash,
@@ -143,7 +140,6 @@ class TransactionProcessor {
     Transaction tx,
     List<Transaction> previousTxs,
     WalletListItemBase walletItemBase,
-    WalletProvider walletProvider,
   ) {
     List<TransactionAddress> inputAddressList = [];
     int selfInputCount = 0;
@@ -177,7 +173,7 @@ class TransactionProcessor {
 
       fee += inputAddress.amount;
 
-      if (walletProvider.containsAddress(
+      if (_addressRepository.containsAddress(
           walletItemBase.id, inputAddress.address)) {
         selfInputCount++;
         amount -= inputAddress.amount;
@@ -194,7 +190,7 @@ class TransactionProcessor {
 
       fee -= outputAddress.amount;
 
-      if (walletProvider.containsAddress(
+      if (_addressRepository.containsAddress(
           walletItemBase.id, outputAddress.address)) {
         selfOutputCount++;
         amount += outputAddress.amount;

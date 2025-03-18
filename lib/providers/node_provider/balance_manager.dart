@@ -1,29 +1,26 @@
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/services/isolate_manager.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
+import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 /// NodeProvider의 잔액 관련 기능을 담당하는 매니저 클래스
 class BalanceManager {
   final ElectrumService _electrumService;
-  final NodeStateManager _stateManager;
+  final StateManagerInterface _stateManager;
   final AddressRepository _addressRepository;
   final WalletRepository _walletRepository;
-  final IsolateManager _isolateManager;
 
   BalanceManager(
     this._electrumService,
     this._stateManager,
     this._addressRepository,
     this._walletRepository,
-    this._isolateManager,
   );
 
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
@@ -76,20 +73,15 @@ class BalanceManager {
     try {
       List<AddressBalanceUpdateDto> balanceUpdates = [];
 
-      if (_isolateManager.isInitialized) {
-        balanceUpdates =
-            await _isolateManager.getBalanceBatch(walletItem, scriptStatuses);
-      } else {
-        for (var script in scriptStatuses) {
-          final balanceResponse = await _electrumService.getBalance(
-              walletItem.walletBase.addressType, script.address);
+      for (var script in scriptStatuses) {
+        final balanceResponse = await _electrumService.getBalance(
+            walletItem.walletBase.addressType, script.address);
 
-          balanceUpdates.add(AddressBalanceUpdateDto(
-            scriptStatus: script,
-            confirmed: balanceResponse.confirmed,
-            unconfirmed: balanceResponse.unconfirmed,
-          ));
-        }
+        balanceUpdates.add(AddressBalanceUpdateDto(
+          scriptStatus: script,
+          confirmed: balanceResponse.confirmed,
+          unconfirmed: balanceResponse.unconfirmed,
+        ));
       }
 
       final totalBalanceDiff = _addressRepository.updateAddressBalanceBatch(

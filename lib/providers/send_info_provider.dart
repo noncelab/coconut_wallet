@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:coconut_lib/coconut_lib.dart';
 
 class SendInfoProvider {
@@ -11,6 +13,8 @@ class SendInfoProvider {
   Transaction? _transaction;
   String? _txWaitingForSign;
   String? _signedPsbtBase64Encoded;
+  // batch tx (주소, 수량)
+  Map<String, double>? _recipientsForBatch;
 
   int? get walletId => _walletId;
   String? get recipientAddress => _recipientAddress;
@@ -22,50 +26,57 @@ class SendInfoProvider {
   Transaction? get transaction => _transaction;
   String? get txWaitingForSign => _txWaitingForSign;
   String? get signedPsbt => _signedPsbtBase64Encoded;
+  Map<String, double>? get recipientsForBatch => _recipientsForBatch == null
+      ? null
+      : UnmodifiableMapView(_recipientsForBatch!);
 
-  setWalletId(int id) {
+  void setWalletId(int id) {
     _walletId = id;
   }
 
-  setRecipientAddress(String address) {
+  void setRecipientAddress(String address) {
     _recipientAddress = address;
   }
 
-  setAmount(double amount) {
+  void setAmount(double amount) {
     _amount = amount;
   }
 
-  setFeeRate(int feeRate) {
+  void setFeeRate(int feeRate) {
     _feeRate = feeRate;
   }
 
-  setEstimatedFee(int fee) {
+  void setEstimatedFee(int fee) {
     _estimatedFee = fee;
   }
 
-  setIsMaxMode(bool isMaxMode) {
+  void setIsMaxMode(bool isMaxMode) {
     _isMaxMode = isMaxMode;
   }
 
-  setIsMultisig(bool isMultisig) {
+  void setIsMultisig(bool isMultisig) {
     _isMultisig = isMultisig;
   }
 
-  setTransaction(Transaction transaction) {
+  void setTransaction(Transaction transaction) {
     _transaction = transaction;
   }
 
-  setTxWaitingForSign(String transaction) {
+  void setTxWaitingForSign(String transaction) {
     _txWaitingForSign = transaction;
   }
 
-  setSignedPsbtBase64Encoded(String signedPsbtBase64Encoded) {
+  void setSignedPsbtBase64Encoded(String signedPsbtBase64Encoded) {
     _signedPsbtBase64Encoded = signedPsbtBase64Encoded;
   }
 
-  clear() {
+  void setRecipientsForBatch(Map<String, double> recipients) {
+    _recipientsForBatch = recipients;
+  }
+
+  void clear() {
     _walletId = _recipientAddress = _amount = _feeRate = _estimatedFee =
-        _isMaxMode = _isMultisig =
-            _transaction = _txWaitingForSign = _signedPsbtBase64Encoded = null;
+        _isMaxMode = _isMultisig = _transaction = _txWaitingForSign =
+            _signedPsbtBase64Encoded = _recipientsForBatch = null;
   }
 }

@@ -105,6 +105,21 @@ class ElectrumService {
     );
   }
 
+  /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
+  Future<Map<int, BlockTimestamp>> fetchBlocksByHeight(Set<int> heights) async {
+    final futures = heights.map((height) async {
+      try {
+        final blockTimestamp = await getBlockTimestamp(height);
+        return MapEntry(height, blockTimestamp);
+      } catch (e) {
+        return null;
+      }
+    });
+
+    final results = await Future.wait(futures);
+    return Map.fromEntries(results.whereType<MapEntry<int, BlockTimestamp>>());
+  }
+
   Future<num> estimateFee(int targetConfirmation) async {
     var response = await _call(_BlockchainEstimateFeeReq(targetConfirmation),
         (json, {int? id}) => ElectrumResponse(result: json as num));

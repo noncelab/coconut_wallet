@@ -165,7 +165,7 @@ class UtxoListViewModel extends ChangeNotifier {
     final tx = _txProvider.getTransaction(_walletId, utxo.transactionHash);
     if (tx == null) return [];
 
-    return DateTimeUtil.formatTimeStamp(tx.timestamp!);
+    return DateTimeUtil.formatTimestamp(tx.timestamp!);
   }
 
   @override
