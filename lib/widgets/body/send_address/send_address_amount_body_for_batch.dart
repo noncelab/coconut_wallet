@@ -199,7 +199,7 @@ class _SendAddressAmountBodyForBatchState
                           textStyle: CoconutTypography.body3_12,
                           brightness: Brightness.dark,
                           padding: const EdgeInsets.only(
-                              top: Sizes.size24, bottom: Sizes.size48),
+                              top: Sizes.size24, bottom: Sizes.size96),
                         ),
                       ]);
               }, childCount: _recipients.length + 1)),
@@ -209,7 +209,7 @@ class _SendAddressAmountBodyForBatchState
         Positioned(
             left: CoconutLayout.defaultPadding,
             right: CoconutLayout.defaultPadding,
-            bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size8,
+            bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size4,
             child: CoconutButton(
                 padding: const EdgeInsets.symmetric(vertical: Sizes.size10),
                 onPressed: () => _onComplete(context),
@@ -268,8 +268,6 @@ class _SendAddressAmountBodyForBatchState
     }
 
     if (doubleAmount < UnitUtil.satoshiToBitcoin(dustLimit)) {
-      Logger.log(
-          '-->doubleAmount: $doubleAmount, ${UnitUtil.satoshiToBitcoin(dustLimit)}');
       setState(() {
         _recipients[index].amount = '';
         _recipients[index].isAmountDust = true;
