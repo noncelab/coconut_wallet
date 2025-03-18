@@ -2,7 +2,7 @@ import 'dart:isolate';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_eum.dart';
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 

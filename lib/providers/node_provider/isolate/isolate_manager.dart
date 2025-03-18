@@ -5,7 +5,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_eum.dart';
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
