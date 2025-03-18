@@ -26,11 +26,9 @@ class UtxoListViewModel extends ChangeNotifier {
   late UpdateStatus _prevUpdateStatus;
 
   List<UtxoState> _utxoList = [];
-
   UtxoOrder _selectedUtxoOrder = UtxoOrder.byTimestampDesc;
   bool _isUtxoListLoadComplete = false;
   String _selectedUtxoTagName = t.all;
-
   List<UtxoTag> _utxoTagList = [];
 
   UtxoListViewModel(
@@ -43,7 +41,7 @@ class UtxoListViewModel extends ChangeNotifier {
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     // _prevWalletInitState = _walletProvider.walletInitState;
-    _initUtxoTags();
+    _initUtxoAndTags();
     _prevUpdateStatus = _walletProvider.getWalletUpdateInfo(_walletId).utxo;
     _addChangeListener();
   }
@@ -55,7 +53,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
 
-  bool get isUtxoTagListEmpty => utxoTagList.isEmpty;
+  bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
 
   UtxoOrder get selectedUtxoOrder => _selectedUtxoOrder;
   String get selectedUtxoTagName => _selectedUtxoTagName;
@@ -79,9 +77,11 @@ class UtxoListViewModel extends ChangeNotifier {
   }
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
-    Logger.log('--> 지갑$_walletId 업데이트 체크 (UTXO)');
+    Logger.log('${DateTime.now()}--> 지갑$_walletId 업데이트 체크 (UTXO)');
     if (_prevUpdateStatus != updateInfo.utxo &&
         updateInfo.utxo == UpdateStatus.completed) {
+      Logger.log('_getUtxoAndTagList();');
+
       _getUtxoAndTagList();
       notifyListeners();
     }
@@ -100,6 +100,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void updateProvider() async {
     if (_tagProvider.isUpdatedTagList) {
+      Logger.log('${DateTime.now()} UTXO 태그 업데이트');
       _getUtxoAndTagList();
       _tagProvider.resetUtxoTagsUpdateState();
       notifyListeners();
@@ -145,7 +146,7 @@ class UtxoListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _initUtxoTags() {
+  void _initUtxoAndTags() {
     _isUtxoListLoadComplete = false;
     _utxoList = _walletProvider.getUtxoList(_walletId);
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);

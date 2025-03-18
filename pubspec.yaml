@@ -84,6 +84,7 @@ dependencies:
   slang_flutter: ^4.4.0
   async: ^2.11.0
   decimal: ^3.0.2
+  tuple: ^2.0.2
 
 dev_dependencies:
   flutter_test:

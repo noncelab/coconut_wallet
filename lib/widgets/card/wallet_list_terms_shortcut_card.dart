@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,10 @@ class _WalletListTermsShortcutCardState
             color: _isTapped
                 ? MyColors.transparentWhite_20
                 : MyColors.transparentWhite_12),
-        margin: const EdgeInsets.only(left: 8, right: 8, bottom: 16),
+        margin: const EdgeInsets.only(
+            left: CoconutLayout.defaultPadding,
+            right: CoconutLayout.defaultPadding,
+            bottom: 16),
         padding: const EdgeInsets.only(left: 26, top: 16, bottom: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

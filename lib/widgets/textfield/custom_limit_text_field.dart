@@ -13,17 +13,22 @@ class CustomLimitTextField extends StatelessWidget {
   final int maxLength;
   final Color cursorColor;
   final Widget? prefix;
+  final TextInputType keyboardType;
+  final String placeholder;
+  final bool visibleTextLimit;
 
-  const CustomLimitTextField({
-    super.key,
-    required this.controller,
-    required this.focusNode,
-    required this.onChanged,
-    required this.onClear,
-    this.maxLength = 30,
-    this.cursorColor = Colors.white,
-    this.prefix,
-  });
+  const CustomLimitTextField(
+      {super.key,
+      required this.controller,
+      required this.focusNode,
+      required this.onChanged,
+      required this.onClear,
+      this.maxLength = 30,
+      this.cursorColor = Colors.white,
+      this.prefix,
+      this.keyboardType = TextInputType.text,
+      this.placeholder = '',
+      this.visibleTextLimit = true});
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +46,8 @@ class CustomLimitTextField extends StatelessWidget {
           child: CupertinoTextField(
             focusNode: focusNode,
             controller: controller,
+            keyboardType: keyboardType,
+            placeholder: placeholder,
             padding: EdgeInsets.fromLTRB(prefix != null ? 0 : 16, 20, 16, 20),
             style: Styles.body2,
             cursorColor: cursorColor,
@@ -77,18 +84,21 @@ class CustomLimitTextField extends StatelessWidget {
         ),
 
         // 글자 수 표시
-        Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 4, right: 4),
-            child: Text(
-              '${controller.text.runes.length}/$maxLength',
-              style: TextStyle(
-                color: controller.text.runes.length == maxLength
-                    ? MyColors.white
-                    : MyColors.transparentWhite_50,
-                fontSize: 12,
-                fontFamily: CustomFonts.text.getFontFamily,
+        Visibility(
+          visible: visibleTextLimit,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4, right: 4),
+              child: Text(
+                '${controller.text.runes.length}/$maxLength',
+                style: TextStyle(
+                  color: controller.text.runes.length == maxLength
+                      ? MyColors.white
+                      : MyColors.transparentWhite_50,
+                  fontSize: 12,
+                  fontFamily: CustomFonts.number.getFontFamily,
+                ),
               ),
             ),
           ),
