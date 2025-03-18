@@ -588,34 +588,38 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                 Padding(
                   padding: EdgeInsets.only(left: (20 * index).toDouble()),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Stack(
-                        alignment: Alignment.center,
                         children: [
-                          Column(
-                            children: [
-                              Container(
+                          Padding(
+                            padding: const EdgeInsets.only(left: 2.5),
+                            child: Column(
+                              children: [
+                                Container(
                                   width: 1,
-                                  height: isLast ? 18 : 36,
-                                  color: CoconutColors.gray700),
-                              if (isLast)
+                                  height: 22,
+                                  color: const Color.fromRGBO(81, 81, 96, 1),
+                                ),
                                 Container(
                                   width: 1,
                                   height: 11,
                                   color: Colors.transparent,
                                 ),
-                            ],
-                          ),
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: CoconutColors.gray700,
-                              shape: BoxShape.circle,
+                              ],
                             ),
                           ),
-                          // )
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.5),
+                            child: Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: Color.fromRGBO(81, 81, 96, 1),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          )
                         ],
                       ),
                       CoconutLayout.spacing_100w,
@@ -624,15 +628,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           CoconutChip(
                             color: CoconutColors.gray800,
                             label: index == 0
-                                ? t.transaction_fee_bumping_screen.existing_fee
-                                : t.transaction_fee_bumping_screen.new_fee,
+                                ? t.transaction_fee_bumping_screen.new_fee
+                                : t.transaction_fee_bumping_screen.existing_fee,
                             labelColor: CoconutColors.white,
                           ),
                           CoconutLayout.spacing_200w,
                           Text(
                             t.transaction_fee_bumping_screen
                                 .existing_fee_value(value: feeHistory.feeRate),
-                            style: CoconutTypography.body2_14_Number,
+                            style: CoconutTypography.body2_14_NumberBold,
                           ),
                         ],
                       ),
@@ -706,23 +710,27 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           Expanded(
             child: Align(
               alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () async {
-                  Navigator.pushNamed(context, '/transaction-fee-bumping',
-                      arguments: {
-                        'transaction': tx,
-                        'feeBumpingType':
-                            rbfType ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
-                        'walletId': widget.id,
-                        'walletName': _viewModel.getWalletName(),
-                      });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    rbfType ? t.quick_send : t.quick_receive,
-                    style: CoconutTypography.body2_14.setColor(
-                        rbfType ? CoconutColors.primary : CoconutColors.cyan),
+              child: Visibility(
+                visible: rbfType || feeBumpingHistoryList.length < 2,
+                child: GestureDetector(
+                  onTap: () async {
+                    Navigator.pushNamed(context, '/transaction-fee-bumping',
+                        arguments: {
+                          'transaction': tx,
+                          'feeBumpingType': rbfType
+                              ? FeeBumpingType.rbf
+                              : FeeBumpingType.cpfp,
+                          'walletId': widget.id,
+                          'walletName': _viewModel.getWalletName(),
+                        });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      rbfType ? t.quick_send : t.quick_receive,
+                      style: CoconutTypography.body2_14.setColor(
+                          rbfType ? CoconutColors.primary : CoconutColors.cyan),
+                    ),
                   ),
                 ),
               ),
