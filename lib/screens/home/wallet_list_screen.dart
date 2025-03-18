@@ -5,9 +5,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
-import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
@@ -19,7 +17,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
@@ -56,7 +53,6 @@ class _WalletListScreenState extends State<WalletListScreen>
   ResultOfSyncFromVault? _resultOfSyncFromVault;
 
   late ScrollController _scrollController;
-  List<GlobalKey> _itemKeys = [];
 
   late List<WalletListItemBase> _previousWalletList = [];
   final GlobalKey<SliverAnimatedListState> _walletListKey =
@@ -75,6 +71,8 @@ class _WalletListScreenState extends State<WalletListScreen>
     t.view_app_info,
   ];
   late final List<Future<Object?> Function()> _dropdownActions;
+
+  bool isWalletLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -100,14 +98,12 @@ class _WalletListScreenState extends State<WalletListScreen>
       },
       child: Consumer<WalletListViewModel>(
         builder: (context, viewModel, child) {
-          debugPrint('builder!!!!!!!!!!!');
-          _itemKeys = List.generate(
-              viewModel.walletItemList.length, (index) => GlobalKey());
-          _handleTransactionListUpdate(
+          _handleWalletListUpdate(
             viewModel.walletItemList,
             (id) => viewModel.getWalletBalance(id),
             viewModel.isBalanceHidden,
           );
+
           return PopScope(
             canPop: false,
             onPopInvokedWithResult: (didPop, _) async {
@@ -291,17 +287,6 @@ class _WalletListScreenState extends State<WalletListScreen>
                               ],
                             )),
                             // 지갑 목록
-                            // SliverSafeArea(
-                            //   top: false,
-                            //   minimum: const EdgeInsets.symmetric(horizontal: 8),
-                            //   sliver: SliverList(
-                            //     delegate: SliverChildBuilderDelegate(
-                            //         childCount: viewModel.walletItemList.length,
-                            //         (ctx, index) {
-                            //       return _getWalletRowItem(index, viewModel);
-                            //     }),
-                            //   ),
-                            // ),
                             _buildSliverAnimatedList(
                                 viewModel.walletItemList,
                                 (id) => viewModel.getWalletBalance(id),
@@ -338,62 +323,69 @@ class _WalletListScreenState extends State<WalletListScreen>
     );
   }
 
-  void _handleTransactionListUpdate(List<WalletListItemBase> walletList,
+  void _handleWalletListUpdate(List<WalletListItemBase> walletList,
       Function(int) getWalletBalance, bool isBalanceHidden) {
-    final oldTxMap = {
+    if (isWalletLoading) return;
+
+    isWalletLoading = true;
+    final oldWallets = {
       for (var walletItem in _previousWalletList) walletItem.id: walletItem
     };
 
-    final newTxMap = {
+    final newWallets = {
       for (var walletItem in walletList) walletItem.id: walletItem
     };
 
     final List<int> insertedIndexes = [];
-    int removedIndex = -1;
-
     for (int i = 0; i < walletList.length; i++) {
-      if (!oldTxMap.containsKey(walletList[i].id)) {
+      if (!oldWallets.containsKey(walletList[i].id)) {
         insertedIndexes.add(i);
       }
     }
-    debugPrint('oldTxMap ${oldTxMap.keys}');
-    debugPrint('newTxMap ${newTxMap.keys}');
-
-    for (int i = 0; i < _previousWalletList.length; i++) {
-      if (!newTxMap.containsKey(_previousWalletList[i].id)) {
-        removedIndex = i;
-        break;
-      }
-    }
-    debugPrint('pid ${_previousWalletList.map(
-      (e) => e.id,
-    )}');
-
-    // 삽입된 인덱스 순서대로 추가
     for (var index in insertedIndexes) {
       _walletListKey.currentState?.insertItem(index, duration: _duration);
     }
-
-    if (removedIndex != -1) {
-      _walletListKey.currentState?.removeItem(
-        removedIndex,
-        duration: _duration,
-        (context, animation) {
-          // 이미 삭제된 인덱스 무시
-          if (removedIndex >= _previousWalletList.length) return Container();
-          return _buildRemoveWalletItem(
-            _previousWalletList[removedIndex],
-            removedIndex,
-            animation,
-            walletList,
-            getWalletBalance,
-            isBalanceHidden,
-          );
-        },
-      );
-    }
-
     _previousWalletList = List.from(walletList);
+    isWalletLoading = false;
+
+    if (_previousWalletList.length == walletList.length + 1) {
+      // 지갑이 삭제되었을 때
+      bool isRemovingItem = false;
+
+      int removedIndex = -1;
+      for (int i = 0; i < _previousWalletList.length; i++) {
+        if (!newWallets.containsKey(_previousWalletList[i].id)) {
+          removedIndex = i;
+          break;
+        }
+      }
+      if (removedIndex != -1 && !isRemovingItem) {
+        isRemovingItem = true;
+        _walletListKey.currentState?.removeItem(
+          removedIndex,
+          duration: _duration,
+          (context, animation) {
+            if (removedIndex < _previousWalletList.length) {
+              return _buildRemoveWalletItem(
+                _previousWalletList[removedIndex],
+                removedIndex,
+                animation,
+                walletList,
+                getWalletBalance,
+                isBalanceHidden,
+              );
+            }
+            return Container();
+          },
+        );
+
+        Future.delayed(_duration, () {
+          _previousWalletList = List.from(walletList);
+          isRemovingItem = false;
+          isWalletLoading = false;
+        });
+      }
+    }
   }
 
   Widget _buildSliverAnimatedList(List<WalletListItemBase> walletList,
@@ -402,8 +394,11 @@ class _WalletListScreenState extends State<WalletListScreen>
       key: _walletListKey,
       initialItemCount: walletList.length,
       itemBuilder: (context, index, animation) {
-        return _buildWalletItem(
-            walletList, index, animation, getWalletBalance, isBalanceHidden);
+        if (index < walletList.length) {
+          return _buildWalletItem(
+              walletList, index, animation, getWalletBalance, isBalanceHidden);
+        }
+        return Container();
       },
     );
   }
@@ -485,21 +480,6 @@ class _WalletListScreenState extends State<WalletListScreen>
     );
   }
 
-  Widget _topLoadingIndicatorWidget() {
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-      child: Container(
-        height: null,
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        child: const CupertinoActivityIndicator(
-          color: CoconutColors.white,
-          radius: 14,
-        ),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -513,8 +493,6 @@ class _WalletListScreenState extends State<WalletListScreen>
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false).isBalanceHidden,
-      Provider.of<NodeProvider>(context, listen: false),
-      Provider.of<TransactionProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
     );
 
@@ -541,15 +519,17 @@ class _WalletListScreenState extends State<WalletListScreen>
 
       if (_viewModel.isOnBoardingVisible) {
         Future.delayed(const Duration(milliseconds: 1000)).then((_) {
-          CommonBottomSheets.showBottomSheet_100(
-            context: context,
-            child: const OnboardingBottomSheet(),
-            enableDrag: false,
-            backgroundColor: CoconutColors.gray900,
-            isDismissible: false,
-            isScrollControlled: true,
-            useSafeArea: false,
-          );
+          if (mounted) {
+            CommonBottomSheets.showBottomSheet_100(
+              context: context,
+              child: const OnboardingBottomSheet(),
+              enableDrag: false,
+              backgroundColor: CoconutColors.gray900,
+              isDismissible: false,
+              isScrollControlled: true,
+              useSafeArea: false,
+            );
+          }
         });
       }
 
@@ -601,98 +581,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       signers: signers,
     );
     return walletItemCard;
-
-    // switch (_resultOfSyncFromVault?.result) {
-    // case WalletSyncResult.newWalletAdded:
-    //   if (index == viewModel.walletItemList.length - 1) {
-    //     // todo: balance 업데이트 함수 호출 필요
-    //     Logger.log('newWalletAdded');
-    //     _initializeLeftSlideAnimationController();
-    //     return SlideTransition(
-    //         position: _slideAnimation!, child: walletItemCard);
-    //   }
-    //   break;
-    // case WalletSyncResult.existingWalletUpdated:
-    // if (viewModel.walletItemList[index].id ==
-    //     _resultOfSyncFromVault?.walletId!) {
-    //   Logger.log('existingWalletUpdated');
-    //   _initializeBlinkAnimationController();
-    //   return Stack(
-    //     children: [
-    //       walletItemCard,
-    //       IgnorePointer(
-    //         child: AnimatedBuilder(
-    //           animation: _blinkAnimation!,
-    //           builder: (context, child) {
-    //             return Container(
-    //               decoration: BoxDecoration(
-    //                   color: _blinkAnimation!.value,
-    //                   borderRadius: BorderRadius.circular(28)),
-    //               width: itemCardWidth,
-    //               height: itemCardHeight,
-    //             );
-    //           },
-    //         ),
-    //       )
-    //     ],
-    //   );
-    // }
-    // break;
-    //   default:
-    //     return walletItemCard;
-    // }
   }
-
-  // void _initializeBlinkAnimationController() {
-  //   if (_blinkAnimationController != null && _blinkAnimation != null) {
-  //     return;
-  //   }
-
-  //   _blinkAnimationController = AnimationController(
-  //     vsync: this,
-  //     duration: const Duration(milliseconds: 500),
-  //   );
-
-  //   _blinkAnimation = TweenSequence<Color?>(
-  //     [
-  //       TweenSequenceItem(
-  //         tween: ColorTween(
-  //           begin: Colors.transparent,
-  //           end: CoconutColors.white.withOpacity(0.2),
-  //         ),
-  //         weight: 50,
-  //       ),
-  //       TweenSequenceItem(
-  //         tween: ColorTween(
-  //           begin: CoconutColors.white.withOpacity(0.2),
-  //           end: Colors.transparent,
-  //         ),
-  //         weight: 50,
-  //       ),
-  //     ],
-  //   ).animate(_blinkAnimationController!);
-  // }
-
-  // void _initializeLeftSlideAnimationController() {
-  //   if (_slideAnimationController != null && _slideAnimation != null) {
-  //     return;
-  //   }
-
-  //   _slideAnimationController = AnimationController(
-  //     vsync: this,
-  //     duration: const Duration(milliseconds: 500),
-  //   );
-
-  //   _slideAnimation = Tween<Offset>(
-  //     begin: const Offset(1.0, 0.0),
-  //     end: Offset.zero,
-  //   ).animate(
-  //     CurvedAnimation(
-  //       parent: _slideAnimationController!,
-  //       curve: Curves.easeInOut,
-  //     ),
-  //   );
-  // }
 
   void _onAddScannerPressed() async {
     final ResultOfSyncFromVault? scanResult =
@@ -704,67 +593,5 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
 
     if (_resultOfSyncFromVault == null) return;
-    // WidgetsBinding.instance.addPostFrameCallback((_) async {
-    //   if (_resultOfSyncFromVault!.result == WalletSyncResult.newWalletAdded) {
-    //     await _animateWalletSlideLeft();
-    //   } else {
-    //     await _animateWalletBlink();
-    //   }
-
-    //   _resultOfSyncFromVault = null;
-    // });
-  }
-
-  void _scrollToBottom() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        final maxScrollExtent = _scrollController.position.maxScrollExtent;
-
-        if (maxScrollExtent > 0) {
-          _scrollController.animateTo(
-            maxScrollExtent,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        }
-      }
-    });
-  }
-
-  void _scrollToItem(int index) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients && index < _itemKeys.length) {
-        final context = _itemKeys[index].currentContext;
-        if (context != null) {
-          final box = context.findRenderObject() as RenderBox;
-          var targetOffset = box.localToGlobal(Offset.zero).dy +
-              _scrollController.offset -
-              (MediaQuery.of(context).size.height / 2);
-
-          if (targetOffset >= _scrollController.position.maxScrollExtent) {
-            targetOffset = _scrollController.position.maxScrollExtent;
-          }
-
-          if (targetOffset < 0) {
-            // 음수 값일 때는 스크롤 되면서 ptr 되므로 이를 방지
-            _scrollController.animateTo(
-              _scrollController.position.minScrollExtent,
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeInOut,
-            );
-
-            return;
-          }
-
-          _scrollController.animateTo(
-            targetOffset,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        } else {
-          _scrollToBottom();
-        }
-      }
-    });
   }
 }
