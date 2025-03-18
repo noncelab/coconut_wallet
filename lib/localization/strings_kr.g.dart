@@ -108,6 +108,8 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get status_sent => '보내기 완료';
   String get status_updating => '업데이트 중';
   String get no_status => '상태 없음';
+  String get quick_receive => '빨리 받기';
+  String get quick_send => '빨리 보내기';
   String bitcoin_text({required Object bitcoin}) => '${bitcoin} BTC';
   String apply_item({required Object count}) => '${count}개에 적용';
   String fee_sats({required Object value}) => ' (${value} sats/vb)';
@@ -175,6 +177,9 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
       TranslationsUtxoTagScreenKr.internal(_root);
   late final TranslationsWalletInfoScreenKr wallet_info_screen =
       TranslationsWalletInfoScreenKr.internal(_root);
+  late final TranslationsTransactionFeeBumpingScreenKr
+      transaction_fee_bumping_screen =
+      TranslationsTransactionFeeBumpingScreenKr.internal(_root);
   late final TranslationsWalletListAddGuideCardKr wallet_list_add_guide_card =
       TranslationsWalletListAddGuideCardKr.internal(_root);
   late final TranslationsWalletListTermsShortcutCardKr
@@ -424,7 +429,7 @@ class TranslationsTransactionDetailScreenKr {
 
   // Translations
   String confirmation({required Object height, required Object count}) =>
-      '${height} (${count} 승인)';
+      '${height} (${count}승인)';
 }
 
 // Path: utxo_detail_screen
@@ -458,6 +463,37 @@ class TranslationsWalletInfoScreenKr {
   // Translations
   String title({required Object name}) => '${name} 정보';
   String get view_xpub => '확장 공개키 보기';
+}
+
+// Path: transaction_fee_bumping_screen
+class TranslationsTransactionFeeBumpingScreenKr {
+  TranslationsTransactionFeeBumpingScreenKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get rbf => 'RBF';
+  String get cpfp => 'CPFP';
+  String get existing_fee => '기존 수수료';
+  String existing_fee_value({required Object value}) => '${value} sats/vb';
+  String total_fee({required Object fee, required Object vb}) =>
+      '총 ${fee} sats / ${vb} vb';
+  String get new_fee => '새 수수료';
+  String get sats_vb => 'sats/vb';
+  String recommend_fee({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
+  String get recommend_fee_info_rbf =>
+      '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
+  String get recommend_fee_info_cpfp =>
+      '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = {newTxSize} vb, 추천 수수료율 = {recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = ({originalTxSize} + {newTxSize}) × {recommendedFeeRate} = {totalRequiredFee} sat\n • 새 거래의 수수료 = {totalRequiredFee} - {originalFee} = {newTxFee} sat\n • 새 거래의 수수료율 = {newTxFee} ÷ {newTxSize} {inequalitySign} {newTxFeeRate} sat/vb';
+  String get current_fee => '현재 수수료';
+  String estimated_fee({required Object fee}) => '예상 총 수수료 ${fee} sats';
+  String get estimated_fee_too_high_error => '예상 총 수수료가 0.01 BTC 이상이에요!';
+  String get recommended_fees_fetch_error => '추천 수수료를 조회할 수 없어요!';
+  String get recommended_fees_is_null => '수수료를 조회하는 중이에요';
+  String get recommended_fee_less_than_pending_tx_fee =>
+      '기존 수수료보다 큰 수수료를 지정해 주세요';
+  late final TranslationsTransactionFeeBumpingScreenDialogKr dialog =
+      TranslationsTransactionFeeBumpingScreenDialogKr.internal(_root);
 }
 
 // Path: wallet_list_add_guide_card
@@ -610,6 +646,7 @@ class TranslationsErrorsKr {
   String get realm_not_found => '데이터를 찾을 수 없습니다.';
   String get realm_exception => 'Realm 작업 중 오류가 발생했습니다.';
   String get node_unknown => '노드 연결 중 알 수 없는 오류가 발생했습니다.';
+  String get broadcast_error => '트랜잭션 전송에 실패했습니다.';
   String get network_connect => '네트워크 연결이 없습니다.';
   String get network_not_found => '네트워크가 연결되어 있지 않아요!';
   String get insufficient_balance => '잔액이 부족해요.';
@@ -668,6 +705,9 @@ class TranslationsTooltipKr {
   String multisig_wallet({required Object total, required Object count}) =>
       '${total}개의 키 중 ${count}개로 서명해야 하는\n다중 서명 지갑이에요.';
   String get mfp => '지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요.';
+  String get rbf => '수수료를 올려, 기존 거래를 새로운 거래로 대체하는 기능이에요. (RBF, Replace-By-Fee)';
+  String get cpfp =>
+      '새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)';
 }
 
 // Path: toast
@@ -728,6 +768,19 @@ class TranslationsAlertKr {
       TranslationsAlertRecipientDeleteKr.internal(_root);
   late final TranslationsAlertFaucetKr faucet =
       TranslationsAlertFaucetKr.internal(_root);
+  late final TranslationsAlertFeeBumpingKr fee_bumping =
+      TranslationsAlertFeeBumpingKr.internal(_root);
+}
+
+// Path: transaction_fee_bumping_screen.dialog
+class TranslationsTransactionFeeBumpingScreenDialogKr {
+  TranslationsTransactionFeeBumpingScreenDialogKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get title => '알림';
+  String get description => '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
 }
 
 // Path: errors.fee_selection_error
@@ -957,6 +1010,17 @@ class TranslationsAlertFaucetKr {
   String try_again({required Object count}) => '${count} 후에 다시 시도해 주세요';
 }
 
+// Path: alert.fee_bumping
+class TranslationsAlertFeeBumpingKr {
+  TranslationsAlertFeeBumpingKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String not_enough_amount({required Object bumpingType}) =>
+      '${bumpingType}를 실행하기에 충분한 잔액이 없습니다.\n현재 사용 가능한 잔액을 확인해 주세요.';
+}
+
 /// Flat map(s) containing all translations.
 /// Only for edge cases! For simple maps, use the map function of this library.
 extension on Translations {
@@ -1090,6 +1154,10 @@ extension on Translations {
         return '업데이트 중';
       case 'no_status':
         return '상태 없음';
+      case 'quick_receive':
+        return '빨리 받기';
+      case 'quick_send':
+        return '빨리 보내기';
       case 'bitcoin_text':
         return ({required Object bitcoin}) => '${bitcoin} BTC';
       case 'apply_item':
@@ -1249,7 +1317,7 @@ extension on Translations {
         return '총 잔액';
       case 'transaction_detail_screen.confirmation':
         return ({required Object height, required Object count}) =>
-            '${height} (${count} 승인)';
+            '${height} (${count}승인)';
       case 'utxo_detail_screen.pending':
         return '승인 대기중';
       case 'utxo_detail_screen.address':
@@ -1262,6 +1330,43 @@ extension on Translations {
         return ({required Object name}) => '${name} 정보';
       case 'wallet_info_screen.view_xpub':
         return '확장 공개키 보기';
+      case 'transaction_fee_bumping_screen.rbf':
+        return 'RBF';
+      case 'transaction_fee_bumping_screen.cpfp':
+        return 'CPFP';
+      case 'transaction_fee_bumping_screen.existing_fee':
+        return '기존 수수료';
+      case 'transaction_fee_bumping_screen.existing_fee_value':
+        return ({required Object value}) => '${value} sats/vb';
+      case 'transaction_fee_bumping_screen.total_fee':
+        return ({required Object fee, required Object vb}) =>
+            '총 ${fee} sats / ${vb} vb';
+      case 'transaction_fee_bumping_screen.new_fee':
+        return '새 수수료';
+      case 'transaction_fee_bumping_screen.sats_vb':
+        return 'sats/vb';
+      case 'transaction_fee_bumping_screen.recommend_fee':
+        return ({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
+      case 'transaction_fee_bumping_screen.recommend_fee_info_rbf':
+        return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
+      case 'transaction_fee_bumping_screen.recommend_fee_info_cpfp':
+        return '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = {newTxSize} vb, 추천 수수료율 = {recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = ({originalTxSize} + {newTxSize}) × {recommendedFeeRate} = {totalRequiredFee} sat\n • 새 거래의 수수료 = {totalRequiredFee} - {originalFee} = {newTxFee} sat\n • 새 거래의 수수료율 = {newTxFee} ÷ {newTxSize} {inequalitySign} {newTxFeeRate} sat/vb';
+      case 'transaction_fee_bumping_screen.current_fee':
+        return '현재 수수료';
+      case 'transaction_fee_bumping_screen.estimated_fee':
+        return ({required Object fee}) => '예상 총 수수료 ${fee} sats';
+      case 'transaction_fee_bumping_screen.estimated_fee_too_high_error':
+        return '예상 총 수수료가 0.01 BTC 이상이에요!';
+      case 'transaction_fee_bumping_screen.recommended_fees_fetch_error':
+        return '추천 수수료를 조회할 수 없어요!';
+      case 'transaction_fee_bumping_screen.recommended_fees_is_null':
+        return '수수료를 조회하는 중이에요';
+      case 'transaction_fee_bumping_screen.recommended_fee_less_than_pending_tx_fee':
+        return '기존 수수료보다 큰 수수료를 지정해 주세요';
+      case 'transaction_fee_bumping_screen.dialog.title':
+        return '알림';
+      case 'transaction_fee_bumping_screen.dialog.description':
+        return '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
       case 'wallet_list_add_guide_card.add_watch_only':
         return '보기 전용 지갑을 추가해 주세요';
       case 'wallet_list_add_guide_card.top_right_icon':
@@ -1381,6 +1486,8 @@ extension on Translations {
         return 'Realm 작업 중 오류가 발생했습니다.';
       case 'errors.node_unknown':
         return '노드 연결 중 알 수 없는 오류가 발생했습니다.';
+      case 'errors.broadcast_error':
+        return '트랜잭션 전송에 실패했습니다.';
       case 'errors.network_connect':
         return '네트워크 연결이 없습니다.';
       case 'errors.network_not_found':
@@ -1465,6 +1572,10 @@ extension on Translations {
             '${total}개의 키 중 ${count}개로 서명해야 하는\n다중 서명 지갑이에요.';
       case 'tooltip.mfp':
         return '지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요.';
+      case 'tooltip.rbf':
+        return '수수료를 올려, 기존 거래를 새로운 거래로 대체하는 기능이에요. (RBF, Replace-By-Fee)';
+      case 'tooltip.cpfp':
+        return '새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)';
       case 'toast.back_exit':
         return '뒤로 가기 버튼을 한 번 더 누르면 종료됩니다.';
       case 'toast.min_fee':
@@ -1578,6 +1689,9 @@ extension on Translations {
         return '올바른 주소인지 확인해 주세요';
       case 'alert.faucet.try_again':
         return ({required Object count}) => '${count} 후에 다시 시도해 주세요';
+      case 'alert.fee_bumping.not_enough_amount':
+        return ({required Object bumpingType}) =>
+            '${bumpingType}를 실행하기에 충분한 잔액이 없습니다.\n현재 사용 가능한 잔액을 확인해 주세요.';
       default:
         return null;
     }

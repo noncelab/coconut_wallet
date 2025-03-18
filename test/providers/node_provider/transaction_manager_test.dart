@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/node_provider/transaction/transaction_m
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_processor.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -44,6 +45,7 @@ void main() {
   late MockNodeStateManager stateManager;
   late MockUtxoManager utxoManager;
   late UtxoRepository utxoRepository;
+  late AddressRepository addressRepository;
   late MockWalletProvider walletProvider;
   late TransactionManager transactionManager;
   late TransactionFetcher transactionFetcher;
@@ -59,7 +61,7 @@ void main() {
     realmManager = await setupTestRealmManager();
     transactionRepository = TransactionRepository(realmManager);
     utxoRepository = UtxoRepository(realmManager);
-
+    addressRepository = AddressRepository(realmManager);
     electrumService = MockElectrumService();
     stateManager = MockNodeStateManager();
     utxoManager = MockUtxoManager();
@@ -71,9 +73,11 @@ void main() {
       stateManager,
       transactionRepository,
       utxoManager,
+      addressRepository,
     );
 
-    transactionProcessor = TransactionProcessor(electrumService);
+    transactionProcessor =
+        TransactionProcessor(electrumService, addressRepository);
     transactionFetcher = TransactionFetcher(
       electrumService,
       transactionRepository,
@@ -222,7 +226,6 @@ void main() {
       await transactionManager.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
-        walletProvider,
         now: now,
       );
 
@@ -264,7 +267,6 @@ void main() {
       await transactionManager.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
-        walletProvider,
         now: now,
       );
 
@@ -306,7 +308,6 @@ void main() {
       await transactionManager.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
-        walletProvider,
         now: now,
       );
 
@@ -324,7 +325,6 @@ void main() {
       await transactionManager.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
-        walletProvider,
         now: now,
         inBatchProcess: true,
       );
@@ -395,7 +395,6 @@ void main() {
       await transactionManager.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
-        walletProvider,
         now: now,
       );
 
@@ -740,7 +739,6 @@ void main() {
       await transactionManager.fetchScriptTransaction(
         testWalletItem,
         scriptStatus,
-        walletProvider,
         now: DateTime.now(),
       );
 

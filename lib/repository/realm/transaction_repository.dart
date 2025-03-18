@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart' as lib;
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:flutter/foundation.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
@@ -37,10 +39,18 @@ class TransactionRepository extends BaseRepository {
     return result;
   }
 
-  /// 미확인 트랜잭션 조회
-  RealmResults<RealmTransaction> getUnconfirmedTransactions(int walletId) {
-    return realm.query<RealmTransaction>(
-        r'walletId = $0 AND blockHeight = 0', [walletId]);
+  List<TransactionRecord> getUnconfirmedTransactionRecordList(int walletId) {
+    final realmTxs = realm.query<RealmTransaction>(
+        'walletId == $walletId AND (blockHeight = 0 OR blockHeight = null) SORT(createdAt DESC)');
+
+    if (realmTxs.isEmpty) return [];
+    List<TransactionRecord> result = [];
+
+    for (var t in realmTxs) {
+      result.add(mapRealmTransactionToTransaction(t));
+    }
+
+    return result;
   }
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
@@ -403,6 +413,25 @@ class TransactionRepository extends BaseRepository {
             spentToOriginalTxMap[realmTx.transactionHash];
       }
     });
+  }
+
+  Result<bool> deleteTransaction(int walletId, List<String> transactionHashes) {
+    final realmTransactions = realm
+        .query<RealmTransaction>(
+          r'walletId == $0 AND transactionHash IN $1',
+          [walletId, transactionHashes],
+        )
+        .where((tx) => tx.replaceByTransactionHash == null)
+        .toList();
+
+    if (realmTransactions.isNotEmpty) {
+      realm.write(() {
+        realm.deleteMany(realmTransactions);
+      });
+      return Result.success(true);
+    }
+
+    return Result.failure(ErrorCodes.realmNotFound);
   }
 }
 

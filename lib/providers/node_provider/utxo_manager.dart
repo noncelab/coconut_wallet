@@ -3,17 +3,17 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
+import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 /// NodeProvider의 UTXO 관련 기능을 담당하는 매니저 클래스
 class UtxoManager {
   final ElectrumService _electrumService;
-  final NodeStateManager _stateManager;
+  final StateManagerInterface _stateManager;
   final UtxoRepository _utxoRepository;
 
   UtxoManager(
@@ -37,8 +37,13 @@ class UtxoManager {
     final utxos = await fetchUtxoStateList(
         walletItem.walletBase.addressType, scriptStatus);
 
-    final blockTimestampMap = await fetchBlocksByHeight(
-        utxos.map((utxo) => utxo.blockHeight).toSet());
+    final utxoBlockHeightSet = utxos
+        .map((utxo) => utxo.blockHeight)
+        .where((height) => height > 0)
+        .toSet();
+
+    final blockTimestampMap =
+        await _electrumService.fetchBlocksByHeight(utxoBlockHeightSet);
 
     UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
 
@@ -77,22 +82,6 @@ class UtxoManager {
       Logger.error('Failed to get UTXO list: $e');
       return [];
     }
-  }
-
-  /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
-  Future<Map<int, BlockTimestamp>> fetchBlocksByHeight(Set<int> heights) async {
-    final futures = heights.map((height) async {
-      try {
-        final blockTimestamp = await _electrumService.getBlockTimestamp(height);
-        return MapEntry(height, blockTimestamp);
-      } catch (e) {
-        Logger.error('Error fetching block header for height $height: $e');
-        return null;
-      }
-    });
-
-    final results = await Future.wait(futures);
-    return Map.fromEntries(results.whereType<MapEntry<int, BlockTimestamp>>());
   }
 
   /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.

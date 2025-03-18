@@ -9,7 +9,7 @@
 [![Google Play Badge](./assets/readme/google-play-badge.png)](https://play.google.com/store/apps/details?id=onl.coconut.wallet.regtest)
 
 
-비트코인을 주고 받기 위해 [코코넛 볼트](https://github.com/noncelab/coconut_vault)와 쌍으로 사용하는 모바일 애플리케이션이예요.
+비트코인을 주고 받기 위해 [코코넛 볼트](https://github.com/noncelab/coconut_vault)와 쌍으로 사용하는 모바일 애플리케이션이에요.
 
 현재는 개발팀이 직접 구축한 '로컬 테스트넷 비트코인 네트워크'와 연결해서 사용하실 수 있어요.
 

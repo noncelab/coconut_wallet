@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -59,7 +60,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   late WalletListItemBase _walletBaseItem;
   late final int _walletId;
 
-  List<UtxoState> _confirmedUtxoList = [];
+  List<UtxoState> _availableUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
       RecommendedFeeFetchStatus.fetching;
@@ -100,8 +101,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         ? (_walletBaseItem as MultisigWalletListItem).signers.length
         : null;
 
-    _confirmedUtxoList = _getAllConfirmedUtxoList(_walletBaseItem);
-    _sortConfirmedUtxoList(initialUtxoOrder);
+    _availableUtxoList = _getAvailableUtxoList(_walletBaseItem);
+    _sortAvailableUtxoList(initialUtxoOrder);
     _initUtxoTagMap();
 
     _walletBase = _walletBaseItem.walletBase;
@@ -113,7 +114,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
 
-    _transaction = _createTransaction(_isMaxMode, 1, _walletBaseItem);
+    _transaction =
+        _createTransaction(_availableUtxoList, _isMaxMode, 1, _walletBaseItem);
     _syncSelectedUtxosWithTransaction();
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
@@ -168,7 +170,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   int get confirmedBalance => _confirmedBalance;
 
-  List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
+  List<UtxoState> get availableUtxoList => _availableUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;
   bool get customFeeSelected => _selectedLevel == null;
   ErrorState? get errorState {
@@ -233,7 +235,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void changeUtxoOrder(UtxoOrder orderEnum) async {
-    _sortConfirmedUtxoList(orderEnum);
+    _sortAvailableUtxoList(orderEnum);
     notifyListeners();
   }
 
@@ -301,7 +303,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void selectAllUtxo() {
-    setSelectedUtxoList(List.from(confirmedUtxoList));
+    setSelectedUtxoList(List.from(availableUtxoList));
 
     if (!isMaxMode) {
       _transaction = Transaction.forSinglePayment(
@@ -372,17 +374,16 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Transaction _createTransaction(
-      bool isMaxMode, int feeRate, WalletListItemBase walletListItemBase) {
-    final allUtxos = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
+  Transaction _createTransaction(List<UtxoState> utxos, bool isMaxMode,
+      int feeRate, WalletListItemBase walletListItemBase) {
     if (isMaxMode) {
-      return Transaction.forSweep(allUtxos, _sendInfoProvider.recipientAddress!,
+      return Transaction.forSweep(utxos, _sendInfoProvider.recipientAddress!,
           _sendInfoProvider.feeRate!, walletListItemBase.walletBase);
     }
 
     try {
       final optimalUtxos = TransactionUtil.selectOptimalUtxos(
-          allUtxos, _sendAmount, satsPerVb ?? 1, _walletBase.addressType);
+          utxos, _sendAmount, satsPerVb ?? 1, _walletBase.addressType);
       _selectedUtxoList = optimalUtxos;
       return Transaction.forSinglePayment(
           optimalUtxos,
@@ -395,19 +396,16 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
           walletListItemBase.walletBase);
     } catch (e) {
       if (e.toString().contains('Not enough amount for sending. (Fee')) {
-        return Transaction.forSweep(
-            allUtxos,
-            _sendInfoProvider.recipientAddress!,
-            _sendInfoProvider.feeRate!,
-            walletListItemBase.walletBase);
+        return Transaction.forSweep(utxos, _sendInfoProvider.recipientAddress!,
+            _sendInfoProvider.feeRate!, walletListItemBase.walletBase);
       }
       rethrow;
     }
   }
 
-  List<UtxoState> _getAllConfirmedUtxoList(WalletListItemBase walletItem) {
+  List<UtxoState> _getAvailableUtxoList(WalletListItemBase walletItem) {
     final utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
-    return utxoList.where((utxo) => utxo.blockHeight != 0).toList();
+    return utxoList.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
   }
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
@@ -423,7 +421,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void _initUtxoTagMap() {
-    for (var (element) in _confirmedUtxoList) {
+    for (var (element) in _availableUtxoList) {
       final tags = _tagProvider.getUtxoTagsByUtxoId(
           _sendInfoProvider.walletId!, element.utxoId);
       _utxoTagMap[element.utxoId] = tags;
@@ -477,25 +475,15 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     return updateFeeInfoResult;
   }
 
-  void _sortConfirmedUtxoList(UtxoOrder basis) {
-    if (basis == UtxoOrder.byAmountDesc) {
-      _confirmedUtxoList.sort((a, b) {
-        if (b.amount != a.amount) {
-          return b.amount.compareTo(a.amount);
-        }
-
-        return a.timestamp.compareTo(b.timestamp);
-      });
-    } else {
-      UtxoState.sortUtxo(_confirmedUtxoList, basis);
-    }
+  void _sortAvailableUtxoList(UtxoOrder basis) {
+    UtxoState.sortUtxo(_availableUtxoList, basis);
   }
 
   void _syncSelectedUtxosWithTransaction() {
     var inputs = _transaction.inputs;
     List<UtxoState> result = [];
     for (int i = 0; i < inputs.length; i++) {
-      result.add(_confirmedUtxoList.firstWhere((utxo) =>
+      result.add(_availableUtxoList.firstWhere((utxo) =>
           utxo.transactionHash == inputs[i].transactionHash &&
           utxo.index == inputs[i].index));
     }

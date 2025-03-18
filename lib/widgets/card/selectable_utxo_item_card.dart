@@ -1,9 +1,11 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -34,7 +36,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
     super.initState();
     _isPressing = false;
     // TODO: timestamp
-    dateString = DateTimeUtil.formatTimeStamp(widget.utxo.timestamp);
+    dateString = DateTimeUtil.formatTimestamp(widget.utxo.timestamp);
   }
 
   @override
@@ -80,9 +82,25 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    satoshiToBitcoinString(widget.utxo.amount),
-                    style: Styles.h2Number,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        satoshiToBitcoinString(widget.utxo.amount),
+                        style: Styles.h2Number,
+                      ),
+                      CoconutLayout.spacing_100w,
+                      if (widget.utxo.status == UtxoStatus.incoming)
+                        CustomChip(
+                          text: t.status_receiving,
+                          backgroundColor: CoconutColors.gray500,
+                          borderColor: CoconutColors.gray500,
+                          textStyle: CoconutTypography.caption_10_Bold
+                              .setColor(CoconutColors.black),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                        ),
+                    ],
                   ),
                   const SizedBox(
                     height: 8,

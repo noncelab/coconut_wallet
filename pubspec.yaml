@@ -219,6 +219,8 @@ flutter:
     - assets/svg/circle-arrow-right.svg
     - assets/svg/circle-pick.svg
     - assets/svg/circle-check.svg
+    - assets/svg/circle-info.svg
+    - assets/svg/caret-down.svg
     - assets/svg/row-divider.svg
     - assets/svg/check.svg
     - assets/svg/coins.svg

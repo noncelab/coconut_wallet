@@ -232,8 +232,7 @@ class WalletProvider extends ChangeNotifier {
     _walletSubscriptionState = WalletSubscriptionState.syncing;
     notifyListeners();
 
-    Result<bool> result =
-        await _nodeProvider.subscribeWallets(_walletItemList, this);
+    Result<bool> result = await _nodeProvider.subscribeWallets(_walletItemList);
     if (result.isSuccess) {
       _walletSubscriptionState = WalletSubscriptionState.completed;
     } else {
@@ -325,7 +324,7 @@ class WalletProvider extends ChangeNotifier {
       await Future.delayed(const Duration(seconds: 1));
     }
     if (_walletSubscriptionState != WalletSubscriptionState.failed) {
-      _nodeProvider.subscribeWallet(newWallet, this);
+      _nodeProvider.subscribeWallet(newWallet);
     }
 
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);

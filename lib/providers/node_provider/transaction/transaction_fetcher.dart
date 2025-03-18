@@ -2,26 +2,25 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/cpfp_info.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_processor.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 /// 트랜잭션 조회를 담당하는 클래스
 class TransactionFetcher {
   final ElectrumService _electrumService;
   final TransactionRepository _transactionRepository;
   final TransactionProcessor _transactionProcessor;
-  final NodeStateManager _stateManager;
+  final StateManagerInterface _stateManager;
   final UtxoManager _utxoManager;
   final RbfHandler _rbfHandler;
   final CpfpHandler _cpfpHandler;
@@ -38,8 +37,7 @@ class TransactionFetcher {
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
   Future<void> fetchScriptTransaction(
     WalletListItemBase walletItem,
-    ScriptStatus scriptStatus,
-    WalletProvider walletProvider, {
+    ScriptStatus scriptStatus, {
     DateTime? now,
     bool inBatchProcess = false,
   }) async {
@@ -85,7 +83,8 @@ class TransactionFetcher {
 
     final blockTimestampMap = txBlockHeightMap.isEmpty
         ? <int, BlockTimestamp>{}
-        : await getBlocksByHeight(txBlockHeightMap.values.toSet());
+        : await _electrumService
+            .fetchBlocksByHeight(txBlockHeightMap.values.toSet());
 
     // 트랜잭션 상세 정보 조회
     final fetchedTransactions = await fetchTransactions(
@@ -125,8 +124,6 @@ class TransactionFetcher {
       }
 
       if (confirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
-        Logger.log('확인된 트랜잭션 처리: ${fetchedTx.transactionHash}');
-
         // 컨펌 트랜잭션의 경우 사용된 UTXO 삭제
         _utxoManager.deleteUtxosByTransaction(walletItem.id, fetchedTx);
 
@@ -143,7 +140,6 @@ class TransactionFetcher {
       fetchedTransactions,
       txBlockHeightMap,
       blockTimestampMap,
-      walletProvider,
       getTransactionHex: (txHash) => _electrumService.getTransaction(txHash),
       now: now,
     );
@@ -169,6 +165,26 @@ class TransactionFetcher {
             walletItem, cpfpInfoMap, txRecordMap, walletItem.id);
       }
     }
+
+    // 대체되었으나 RBF이력 없이 DB에 존재하는 언컨펌 트랜잭션 내역 삭제
+    final unconfirmedTxs = _transactionRepository
+        .getUnconfirmedTransactionRecordList(walletItem.id);
+
+    final toDeleteTxs = <String>[];
+    for (final tx in unconfirmedTxs) {
+      try {
+        await _electrumService.getTransaction(tx.transactionHash,
+            verbose: true);
+      } catch (e) {
+        // 대체되어 존재하지 않는 트랜잭션은 삭제
+        toDeleteTxs.add(tx.transactionHash);
+      }
+    }
+
+    if (toDeleteTxs.isNotEmpty) {
+      _transactionRepository.deleteTransaction(walletItem.id, toDeleteTxs);
+    }
+
     if (!inBatchProcess) {
       // Transaction 업데이트 완료 state 업데이트
       _stateManager.addWalletCompletedState(
@@ -207,22 +223,6 @@ class TransactionFetcher {
       Logger.error('Failed to get fetch transaction responses: $e');
       return [];
     }
-  }
-
-  /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
-  Future<Map<int, BlockTimestamp>> getBlocksByHeight(Set<int> heights) async {
-    final futures = heights.map((height) async {
-      try {
-        final blockTimestamp = await _electrumService.getBlockTimestamp(height);
-        return MapEntry(height, blockTimestamp);
-      } catch (e) {
-        Logger.error('Error fetching block header for height $height: $e');
-        return null;
-      }
-    });
-
-    final results = await Future.wait(futures);
-    return Map.fromEntries(results.whereType<MapEntry<int, BlockTimestamp>>());
   }
 
   /// 트랜잭션 목록을 가져옵니다.
