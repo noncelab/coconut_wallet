@@ -268,14 +268,19 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                   ),
                 ],
                 onBackPressed: () {
-                  _qrViewController?.dispose();
-                  _qrViewController = null;
+                  _disposeQrViewController();
                   Navigator.of(context).pop<String>('');
                 }),
             body: SendAddressBody(
                 qrKey: qrKey, onQRViewCreated: _onQRViewCreated)));
 
     _addressController.text = scannedAddress;
+    _disposeQrViewController();
     _onAddressChanged(scannedAddress);
+  }
+
+  void _disposeQrViewController() {
+    _qrViewController?.dispose();
+    _qrViewController = null;
   }
 }
