@@ -165,7 +165,7 @@ class _SendAddressAmountBodyForBatchState
                         padding: const EdgeInsets.only(bottom: Sizes.size12),
                         child: AddressAndAmountCard(
                           key: ValueKey(_recipients[index].key),
-                          title: '받는 사람${index + 1}',
+                          title: '${t.recipient} ${index + 1}',
                           address: _recipients[index].address,
                           amount: _recipients[index].amount,
                           onAddressChanged: (String address) {
@@ -182,7 +182,7 @@ class _SendAddressAmountBodyForBatchState
                           addressPlaceholder:
                               t.send_address_screen.address_placeholder,
                           amountPlaceholder:
-                              t.send_address_screen.amount_placeholder,
+                              '${t.send_address_screen.address_placeholder} (${t.btc})',
                           isAddressInvalid: _recipients[index].isAddressValid ==
                                   false ||
                               _recipients[index].isAddressDuplicated == true,
@@ -209,11 +209,13 @@ class _SendAddressAmountBodyForBatchState
         Positioned(
             left: CoconutLayout.defaultPadding,
             right: CoconutLayout.defaultPadding,
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size8,
             child: CoconutButton(
+                padding: const EdgeInsets.symmetric(vertical: Sizes.size10),
                 onPressed: () => _onComplete(context),
                 text: t.complete,
                 width: MediaQuery.sizeOf(context).width,
+                height: 41,
                 backgroundColor: CoconutColors.primary,
                 foregroundColor: CoconutColors.black,
                 disabledBackgroundColor: CoconutColors.gray800,

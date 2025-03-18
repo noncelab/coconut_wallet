@@ -60,21 +60,21 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
     _amountController = TextEditingController(text: widget.amount);
   }
 
-  Widget _buildCoconutTextField({
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    required ValueChanged<String> onChanged,
-    Widget? suffix,
-    TextInputType? textInputType,
-    String? placeholderText,
-    bool isError = false,
-    String? errorText,
-    EdgeInsets? padding,
-  }) {
+  Widget _buildCoconutTextField(
+      {required TextEditingController controller,
+      required FocusNode focusNode,
+      required ValueChanged<String> onChanged,
+      Widget? suffix,
+      TextInputType? textInputType,
+      String? placeholderText,
+      bool isError = false,
+      String? errorText,
+      EdgeInsets? padding,
+      double? height = 52}) {
     return CoconutTextField(
       controller: controller,
       focusNode: focusNode,
-      height: 52,
+      height: height,
       padding: padding ??
           const EdgeInsets.only(
               left: CoconutLayout.defaultPadding,
@@ -149,8 +149,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 placeholderText: widget.addressPlaceholder,
                 isError: widget.isAddressInvalid,
                 errorText: widget.addressErrorMessage,
-                padding:
-                    const EdgeInsets.only(left: CoconutLayout.defaultPadding)),
+                height: null),
             CoconutLayout.spacing_200h,
             Text(t.amount, style: CoconutTypography.body3_12),
             CoconutLayout.spacing_200h,
