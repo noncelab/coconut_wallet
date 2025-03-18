@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_de
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
@@ -26,7 +25,6 @@ import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_memo_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/shimmer_text.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -99,16 +97,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       },
       child: Consumer<TransactionDetailViewModel>(
         builder: (_, viewModel, child) {
-          if (viewModel.transactionList == null ||
-              viewModel.transactionList!.isEmpty) {
+          final txList = viewModel.transactionList;
+          if (txList == null || txList.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final transactionDetail =
-              viewModel.transactionList![viewModel.selectedTransactionIndex];
+          final tx = viewModel
+              .transactionList![viewModel.selectedTransactionIndex]
+              .transaction!;
 
           return Scaffold(
-              backgroundColor: MyColors.black,
+              backgroundColor: CoconutColors.black,
               appBar: CustomAppBar.build(
                 title: t.view_tx_details,
                 context: context,
@@ -125,73 +124,54 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         HighlightedInfoArea(
-                          textList: DateTimeUtil.formatTimeStamp(
-                            viewModel
-                                .transactionList![
-                                    viewModel.selectedTransactionIndex]
-                                .transaction!
-                                .timestamp!
-                                .toLocal(),
+                          textList: DateTimeUtil.formatTimestamp(
+                            tx.timestamp!.toLocal(),
                           ),
                         ),
-                        const SizedBox(
-                          height: 24,
-                        ),
+                        CoconutLayout.spacing_500h,
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.baseline,
                             textBaseline: TextBaseline.alphabetic,
                             children: [
-                              _amountText(viewModel
-                                  .transactionList![
-                                      _viewModel.selectedTransactionIndex]
-                                  .transaction!),
-                              const SizedBox(
-                                width: 4,
-                              ),
-                              Text(t.btc, style: Styles.body2Number),
+                              _amountText(tx),
+                              CoconutLayout.spacing_100w,
+                              Text(t.btc,
+                                  style: CoconutTypography.body2_14_Number),
                             ],
                           ),
                         ),
-                        const SizedBox(
-                          height: 8,
-                        ),
+                        CoconutLayout.spacing_100h,
                         Center(
+                            // TODO: 머지 후 UpbitConnectModel의 util을 사용하도록 수정, 부호 붙이기
                             child: Selector<UpbitConnectModel, int?>(
                           selector: (context, model) => model.bitcoinPriceKrw,
                           builder: (context, bitcoinPriceKrw, child) {
                             return Text(
                               bitcoinPriceKrw != null
-                                  ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(viewModel.transactionList![_viewModel.selectedTransactionIndex].transaction!.amount!, bitcoinPriceKrw).toDouble().abs())} ${CurrencyCode.KRW.code}'
+                                  ? '${_getPrefix(tx)}${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(tx.amount!, bitcoinPriceKrw).toDouble().abs())} ${CurrencyCode.KRW.code}'
                                   : '',
-                              style: Styles.balance2,
+                              style: CoconutTypography.body3_12_Number
+                                  .setColor(CoconutColors.gray500),
                             );
                           },
                         )),
-                        const SizedBox(height: 20),
+                        CoconutLayout.spacing_400h,
                         if (_isTransactionStatusPending(
-                            viewModel.transactionList!.last.transaction!)) ...{
+                            txList.last.transaction!)) ...{
                           Column(
                             children: [
-                              _pendingWidget(
-                                  viewModel.transactionList!.last.transaction!),
+                              _pendingWidget(txList.last.transaction!),
                               if (rbfType)
-                                (viewModel.transactionList!.last.transaction!
-                                                .rbfHistoryList !=
+                                (txList.last.transaction!.rbfHistoryList !=
                                             null &&
-                                        viewModel
-                                            .transactionList!
-                                            .last
-                                            .transaction!
-                                            .rbfHistoryList!
+                                        txList.last.transaction!.rbfHistoryList!
                                             .isNotEmpty)
                                     ? _rbfHistoryWidget()
                                     : Container()
                               else
-                                viewModel.transactionList!.last.transaction!
-                                            .cpfpHistory !=
-                                        null
+                                txList.last.transaction!.cpfpHistory != null
                                     ? _cpfpHistoryWidget()
                                     : Container(),
                               CoconutLayout.spacing_300h,
@@ -245,26 +225,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         UnderlineButtonItemCard(
                           label: t.block_num,
                           underlineButtonLabel:
-                              transactionDetail.transaction!.blockHeight != 0
-                                  ? t.view_mempool
-                                  : '',
+                              tx.blockHeight != 0 ? t.view_mempool : '',
                           onTapUnderlineButton: () {
-                            transactionDetail.transaction!.blockHeight != 0
+                            tx.blockHeight != 0
                                 ? launchUrl(Uri.parse(
-                                    '${CoconutWalletApp.kMempoolHost}/block/${transactionDetail.transaction!.blockHeight}'))
+                                    '${CoconutWalletApp.kMempoolHost}/block/${tx.blockHeight}'))
                                 : ();
                           },
                           child: Text(
-                            transactionDetail.transaction!.blockHeight != 0
+                            tx.blockHeight != 0
                                 ? t.transaction_detail_screen.confirmation(
-                                    height: transactionDetail
-                                        .transaction!.blockHeight
-                                        .toString(),
+                                    height: tx.blockHeight.toString(),
                                     count: _confirmedCountText(
-                                        transactionDetail.transaction,
-                                        viewModel.currentBlock?.height))
+                                        tx, viewModel.currentBlock?.height))
                                 : '-',
-                            style: Styles.body1Number,
+                            style: CoconutTypography.body1_16_Number,
                           ),
                         ),
                         TransactionDetailScreen._divider,
@@ -273,11 +248,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             underlineButtonLabel: t.view_mempool,
                             onTapUnderlineButton: () {
                               launchUrl(Uri.parse(
-                                  "${CoconutWalletApp.kMempoolHost}/tx/${transactionDetail.transaction!.transactionHash}"));
+                                  "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
                             },
                             child: Text(
-                              transactionDetail.transaction!.transactionHash,
-                              style: Styles.body1Number,
+                              tx.transactionHash,
+                              style: CoconutTypography.body1_16_Number,
                             )),
                         TransactionDetailScreen._divider,
                         UnderlineButtonItemCard(
@@ -288,8 +263,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                 context: context,
                                 isScrollControlled: true,
                                 builder: (context) => MemoBottomSheet(
-                                  originalMemo:
-                                      transactionDetail.transaction!.memo ?? '',
+                                  originalMemo: tx.memo ?? '',
                                   onComplete: (memo) {
                                     if (!viewModel
                                         .updateTransactionMemo(memo)) {
@@ -303,11 +277,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                               );
                             },
                             child: Text(
-                              transactionDetail.transaction!.memo?.isNotEmpty ==
-                                      true
-                                  ? transactionDetail.transaction!.memo!
-                                  : '-',
-                              style: Styles.body1Number,
+                              tx.memo?.isNotEmpty == true ? tx.memo! : '-',
+                              style: CoconutTypography.body1_16_Number,
                             )),
                         const SizedBox(
                           height: 40,
@@ -316,12 +287,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           /// inputOutput 위젯에 들어갈 balance 최대 너비 체크용
                           key: _balanceWidthKey,
                           '0.0000 0000',
-                          style: Styles.body2Number.merge(
-                            const TextStyle(
-                              color: Colors.transparent,
-                              fontSize: 14,
-                              height: 16 / 14,
-                            ),
+                          style: CoconutTypography.body2_14_Number.setColor(
+                            Colors.transparent,
                           ),
                         ),
                       ]),
@@ -793,39 +760,28 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     }
   }
 
-  Widget _amountText(TransactionRecord tx) {
-    String prefix;
-    Color color;
-
+  String _getPrefix(TransactionRecord tx) {
     switch (TransactionUtil.getStatus(tx)) {
       case TransactionStatus.receiving:
       case TransactionStatus.received:
-        prefix = '+';
-        color = MyColors.secondary;
-        break;
+        return '+';
       case TransactionStatus.self:
       case TransactionStatus.selfsending:
       case TransactionStatus.sent:
       case TransactionStatus.sending:
-        prefix = '';
-        color = MyColors.primary;
-        break;
+        return '-';
       default:
-        // 기본 값으로 처리될 수 있도록 한 경우
-        return const SizedBox();
+        return '';
     }
+  }
 
-    return Text(
-      '$prefix${satoshiToBitcoinString(tx.amount!)}',
-      style: Styles.h1Number.merge(
-        TextStyle(
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontSize: 24,
-          height: 1,
-        ),
-      ),
-    );
+  Widget _amountText(TransactionRecord tx) {
+    String prefix = _getPrefix(tx) == '-' ? '' : '+';
+    Color color = prefix == '+' ? CoconutColors.cyan : CoconutColors.primary;
+
+    return Text('$prefix${satoshiToBitcoinString(tx.amount!)}',
+        style: CoconutTypography.heading2_28_NumberBold
+            .copyWith(fontSize: 24, color: color));
   }
 
   String _confirmedCountText(TransactionRecord? tx, int? blockHeight) {

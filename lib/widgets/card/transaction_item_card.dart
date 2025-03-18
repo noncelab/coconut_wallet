@@ -178,7 +178,7 @@ class TransactionItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     List<String>? transactionTimeStamp = tx.getDateTimeToDisplay() == null
         ? ['--.--.--', '--:--']
-        : DateTimeUtil.formatTimeStamp(tx.getDateTimeToDisplay()!.toLocal());
+        : DateTimeUtil.formatTimestamp(tx.getDateTimeToDisplay()!.toLocal());
 
     return ShrinkAnimationButton(
         onPressed: () {
