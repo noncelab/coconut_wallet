@@ -204,4 +204,15 @@ class NodeStateManager implements StateManagerInterface {
       Logger.error('handleIsolateStateMessage 처리 중 에러 발생: $e');
     }
   }
+
+  void unregisterWalletUpdateState(int walletId) {
+    _state.registeredWallets.remove(walletId);
+
+    setState(
+      newUpdatedWallets: {
+        ..._state.registeredWallets,
+      },
+      notify: false,
+    );
+  }
 }
