@@ -103,7 +103,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     List<PsbtOutput> outputToMyChangeAddress = [];
     List<PsbtOutput> outputsToOther = [];
     for (int i = 0; i < outputs.length; i++) {
-      if (outputs[i].derivationPath == null) {
+      if (outputs[i].bip32Derivation == null) {
         outputsToOther.add(outputs[i]);
       } else if (outputs[i].isChange) {
         outputToMyChangeAddress.add(outputs[i]);
@@ -119,22 +119,22 @@ class BroadcastingViewModel extends ChangeNotifier {
       Map<String, double> recipientAmounts = {};
       if (outputsToOther.isNotEmpty) {
         for (var output in outputsToOther) {
-          recipientAmounts[output.getAddress()] =
-              UnitUtil.satoshiToBitcoin(output.amount!);
+          recipientAmounts[output.outAddress] =
+              UnitUtil.satoshiToBitcoin(output.outAmount!);
         }
       }
       if (outputToMyReceivingAddress.isNotEmpty) {
         for (var output in outputToMyReceivingAddress) {
-          recipientAmounts[output.getAddress()] =
-              UnitUtil.satoshiToBitcoin(output.amount!);
+          recipientAmounts[output.outAddress] =
+              UnitUtil.satoshiToBitcoin(output.outAmount!);
         }
         _isSendingToMyAddress = true;
       }
       if (outputToMyChangeAddress.length > 1) {
         for (int i = outputToMyChangeAddress.length - 1; i > 0; i--) {
           var output = outputToMyChangeAddress[i];
-          recipientAmounts[output.getAddress()] =
-              UnitUtil.satoshiToBitcoin(output.amount!);
+          recipientAmounts[output.outAddress] =
+              UnitUtil.satoshiToBitcoin(output.outAmount!);
         }
       }
       _sendingAmount = signedPsbt.sendingAmount;
@@ -154,13 +154,13 @@ class BroadcastingViewModel extends ChangeNotifier {
         // 하지만 coconut_lib에 종속적이므로 coconut_lib에 변경 발생 시 대응 필요
 
         output = outputToMyChangeAddress[0];
-        _sendingAmountWhenAddressIsMyChange = output.amount;
+        _sendingAmountWhenAddressIsMyChange = output.outAmount;
         _isSendingToMyAddress = true;
       }
 
       _sendingAmount = signedPsbt.sendingAmount;
       if (output != null) {
-        _recipientAddresses.add(output.getAddress());
+        _recipientAddresses.add(output.outAddress);
       }
     }
     _fee = signedPsbt.fee;
