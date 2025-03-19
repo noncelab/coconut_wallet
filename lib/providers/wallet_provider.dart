@@ -385,7 +385,7 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
-    _walletRepository.deleteWallet(walletId);
+    await _walletRepository.deleteWallet(walletId);
     _walletItemList = await _fetchWalletListFromDB();
     _utxoRepository.deleteAllUtxoTag(walletId);
     _saveWalletCount(_walletItemList.length);

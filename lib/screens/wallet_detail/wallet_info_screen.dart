@@ -5,6 +5,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
@@ -242,17 +243,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                           child: CustomLoadingOverlay(
                                             child: PinCheckScreen(
                                               onComplete: () async {
-                                                await viewModel.deleteWallet();
-                                                Navigator.popUntil(context,
-                                                    (route) => route.isFirst);
+                                                await _deleteWalletAneGoToWalletList(
+                                                    context, viewModel);
                                               },
                                             ),
                                           ),
                                         );
                                       } else {
-                                        await viewModel.deleteWallet();
-                                        Navigator.popUntil(
-                                            context, (route) => route.isFirst);
+                                        await _deleteWalletAneGoToWalletList(
+                                            context, viewModel);
                                       }
                                     },
                                     onCancel: () {
@@ -330,5 +329,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       _tooltipRemainingTime = 0;
     });
     _tooltipTimer?.cancel();
+  }
+
+  Future<void> _deleteWalletAneGoToWalletList(
+      BuildContext context, WalletInfoViewModel viewModel) async {
+    await viewModel.deleteWallet();
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (BuildContext context) => const WalletListScreen()));
   }
 }

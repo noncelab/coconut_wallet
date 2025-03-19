@@ -7,7 +7,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -64,13 +63,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider4<WalletProvider, TransactionProvider,
-        ConnectivityProvider, UpbitConnectModel, WalletDetailViewModel>(
+    return ChangeNotifierProvider<WalletDetailViewModel>(
       create: (_) => _createViewModel(_),
-      update: (_, walletProvider, txProvider, connectProvider, upbitModel,
-          viewModel) {
-        return viewModel!..updateProvider();
-      },
+      // update: (_, walletProvider, txProvider, connectProvider, upbitModel,
+      //     viewModel) {
+      //   if (viewModel!.existWallet()) {
+      //     return viewModel..updateProvider();
+      //   }
+      //   return viewModel;
+      // },
       child: Consumer<WalletDetailViewModel>(
         builder: (context, viewModel, child) {
           return PopScope(
@@ -278,12 +279,27 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final appBarRenderBox =
-          _appBarKey.currentContext?.findRenderObject() as RenderBox;
-      final headerWidgetRenderBox =
-          _headerWidgetKey.currentContext?.findRenderObject() as RenderBox;
-      _tabWidgetRenderBox =
-          _tabWidgetKey.currentContext?.findRenderObject() as RenderBox;
+      Size topSelectorWidgetSize = const Size(0, 0);
+      Size topHeaderWidgetSize = const Size(0, 0);
+      Size positionedTopWidgetSize = const Size(0, 0);
+
+      if (_appBarKey.currentContext != null) {
+        final appBarRenderBox =
+            _appBarKey.currentContext?.findRenderObject() as RenderBox;
+        _appBarSize = appBarRenderBox.size;
+      }
+
+      if (_headerWidgetKey.currentContext != null) {
+        final headerWidgetRenderBox =
+            _headerWidgetKey.currentContext?.findRenderObject() as RenderBox;
+        topSelectorWidgetSize = headerWidgetRenderBox.size;
+      }
+
+      if (_tabWidgetKey.currentContext != null) {
+        _tabWidgetRenderBox =
+            _tabWidgetKey.currentContext?.findRenderObject() as RenderBox;
+        _tabWidgetRenderBox.size;
+      }
 
       if (_faucetIconKey.currentContext != null) {
         final faucetRenderBox =
@@ -292,14 +308,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _faucetIconSize = faucetRenderBox.size;
       }
 
-      final positionedTopWidgetRenderBox = _stickyHeaderWidgetKey.currentContext
-          ?.findRenderObject() as RenderBox;
-
-      _appBarSize = appBarRenderBox.size;
-      final topSelectorWidgetSize = headerWidgetRenderBox.size;
-      final topHeaderWidgetSize = _tabWidgetRenderBox.size;
-      final positionedTopWidgetSize =
-          positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
+      if (_stickyHeaderWidgetKey.currentContext != null) {
+        final positionedTopWidgetRenderBox =
+            _stickyHeaderWidgetKey.currentContext?.findRenderObject()
+                as RenderBox;
+        positionedTopWidgetSize =
+            positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
+      }
 
       setState(() {
         _topPadding = topSelectorWidgetSize.height +
