@@ -172,7 +172,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           children: [
             _buildInputOutputList(
                 tx.inputAddressList, InputOutputRowType.input),
-            _buildFeeSection(),
+            _buildFeeSection(tx.fee ?? 0),
             _buildInputOutputList(
                 tx.outputAddressList, InputOutputRowType.output),
           ],
@@ -204,13 +204,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  Widget _buildFeeSection() {
+  Widget _buildFeeSection(int fee) {
     return Column(
       children: [
         const SizedBox(height: 8),
         InputOutputDetailRow(
           address: t.fee,
-          balance: 142,
+          balance: fee,
           balanceMaxWidth:
               _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
           rowType: InputOutputRowType.fee,
