@@ -148,10 +148,9 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   // TODO: 필요없을지도 모름.
-  // void updateProvider() async {
-  //   _setReceiveAddress();
-  //   notifyListeners();
-  // }
+  void updateProvider() async {
+    notifyListeners();
+  }
 
   void _checkFaucetRecord() {
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
