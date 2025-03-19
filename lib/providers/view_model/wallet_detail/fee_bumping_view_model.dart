@@ -110,7 +110,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
     if (_bumpingTransaction == null) {
       _generateTransaction(newFeeRate);
     }
-    return (_bumpingTransaction!.getVirtualByte() * newFeeRate).ceil();
+
+    if (_type == FeeBumpingType.rbf) {
+      return (_transaction.vSize * newFeeRate).ceil();
+    } else {
+      return (_bumpingTransaction!.getVirtualByte() * newFeeRate).ceil();
+    }
   }
 
   void _onFeeUpdated() {
