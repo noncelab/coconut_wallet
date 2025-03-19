@@ -62,9 +62,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
 
-  TransactionStatus? status;
-
-  late bool rbfType;
   List<FeeHistory> feeBumpingHistoryList = [];
   @override
   Widget build(BuildContext context) {
@@ -84,14 +81,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
         _viewModel.loadCompletedNotifier.addListener(_loadCompletedListener);
-        _updateAnimation();
-
-        status = TransactionUtil.getStatus(_viewModel
+        _viewModel.setTransactionStatus(TransactionUtil.getStatus(_viewModel
             .transactionList![_viewModel.selectedTransactionIndex]
-            .transaction!);
-        rbfType = status == TransactionStatus.sending ||
-            status == TransactionStatus.selfsending ||
-            status == TransactionStatus.sent;
+            .transaction!));
+        _updateAnimation();
 
         return _viewModel;
       },
@@ -163,11 +156,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         )),
                         CoconutLayout.spacing_400h,
                         if (_isTransactionStatusPending(
-                            txList.last.transaction!)) ...{
+                                txList.last.transaction!) &&
+                            viewModel.isSendType != null) ...{
                           Column(
                             children: [
                               _pendingWidget(txList.first.transaction!),
-                              if (rbfType)
+                              if (viewModel.isSendType!)
                                 (txList.last.transaction!.rbfHistoryList !=
                                             null &&
                                         txList.last.transaction!.rbfHistoryList!
@@ -331,7 +325,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       : 100,
                   rowType: InputOutputRowType.input,
                   isCurrentAddress: _viewModel.isSameAddress(address, index),
-                  transactionStatus: status,
+                  transactionStatus: _viewModel.transactionStatus,
                 ),
                 const SizedBox(height: 8),
               ],
@@ -360,7 +354,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           balanceMaxWidth:
               _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
           rowType: InputOutputRowType.fee,
-          transactionStatus: status,
+          transactionStatus: _viewModel.transactionStatus,
         ),
         const SizedBox(
           height: 8,
@@ -383,7 +377,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       : 100,
                   rowType: InputOutputRowType.output,
                   isCurrentAddress: _viewModel.isSameAddress(address, index),
-                  transactionStatus: status,
+                  transactionStatus: _viewModel.transactionStatus,
                 ),
                 const SizedBox(height: 8),
               ],
@@ -656,7 +650,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   }
 
   Widget _pendingWidget(TransactionRecord tx) {
-    if (status == null) {
+    if (_viewModel.transactionStatus == null || _viewModel.isSendType == null) {
       return Container();
     }
     return Container(
@@ -680,12 +674,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
             height: 24,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: rbfType
+              color: _viewModel.isSendType!
                   ? CoconutColors.primary.withOpacity(0.2)
                   : CoconutColors.cyan.withOpacity(0.2),
             ),
             child: Center(
-              child: rbfType
+              child: _viewModel.isSendType!
                   ? Lottie.asset('assets/lottie/arrow-up.json',
                       fit: BoxFit.fill, repeat: true)
                   : Lottie.asset('assets/lottie/arrow-down.json',
@@ -694,7 +688,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           ),
           Text.rich(
             TextSpan(
-              text: rbfType ? t.status_sending : t.status_receiving,
+              text: _viewModel.isSendType!
+                  ? t.status_sending
+                  : t.status_receiving,
               style: CoconutTypography.body2_14
                   .copyWith(fontWeight: FontWeight.w500),
               children: [
@@ -711,7 +707,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
             child: Align(
               alignment: Alignment.centerRight,
               child: Visibility(
-                visible: rbfType || feeBumpingHistoryList.length < 2,
+                visible:
+                    _viewModel.isSendType! || feeBumpingHistoryList.length < 2,
                 child: GestureDetector(
                   onTap: () async {
                     if (!_viewModel.isNetworkOn) {
@@ -724,7 +721,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                     Navigator.pushNamed(context, '/transaction-fee-bumping',
                         arguments: {
                           'transaction': tx,
-                          'feeBumpingType': rbfType
+                          'feeBumpingType': _viewModel.isSendType!
                               ? FeeBumpingType.rbf
                               : FeeBumpingType.cpfp,
                           'walletId': widget.id,
@@ -734,9 +731,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Text(
-                      rbfType ? t.quick_send : t.quick_receive,
+                      _viewModel.isSendType! ? t.quick_send : t.quick_receive,
                       style: CoconutTypography.body2_14.setColor(
-                          rbfType ? CoconutColors.primary : CoconutColors.cyan),
+                          _viewModel.isSendType!
+                              ? CoconutColors.primary
+                              : CoconutColors.cyan),
                     ),
                   ),
                 ),

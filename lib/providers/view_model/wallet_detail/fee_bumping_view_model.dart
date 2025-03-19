@@ -403,20 +403,16 @@ class FeeBumpingViewModel extends ChangeNotifier {
         cpfpTxSize * recommendedFeeRate;
 
     String inequalitySign = cpfpTxFeeRate % 1 == 0 ? "=" : "≈";
-
-    return t.transaction_fee_bumping_screen.recommend_fee_info_cpfp
-        .replaceAll("{newTxSize}", _formatNumber(cpfpTxSize))
-        .replaceAll("{recommendedFeeRate}",
-            _formatNumber(_getRecommendedFeeRate().toDouble()))
-        .replaceAll(
-            "{originalTxSize}", _formatNumber(_transaction.vSize.toDouble()))
-        .replaceAll(
-            "{originalFee}", _formatNumber((_transaction.fee ?? 0).toDouble()))
-        .replaceAll(
-            "{totalRequiredFee}", _formatNumber(totalRequiredFee.toDouble()))
-        .replaceAll("{newTxFee}", _formatNumber(cpfpTxFee))
-        .replaceAll("{newTxFeeRate}", _formatNumber(cpfpTxFeeRate))
-        .replaceAll("{inequalitySign}", inequalitySign);
+    return t.transaction_fee_bumping_screen.recommend_fee_info_cpfp(
+      newTxSize: _formatNumber(cpfpTxSize),
+      recommendedFeeRate: _formatNumber(_getRecommendedFeeRate().toDouble()),
+      originalTxSize: _formatNumber(_getRecommendedFeeRate().toDouble()),
+      originalFee: _formatNumber((_transaction.fee ?? 0).toDouble()),
+      totalRequiredFee: _formatNumber(totalRequiredFee.toDouble()),
+      newTxFee: _formatNumber(cpfpTxFee),
+      newTxFeeRate: _formatNumber(cpfpTxFeeRate),
+      inequalitySign: inequalitySign,
+    );
   }
 
   String _formatNumber(double value) {

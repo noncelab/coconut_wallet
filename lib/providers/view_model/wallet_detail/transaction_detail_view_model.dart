@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -10,6 +11,39 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
+
+class TransactionDetail {
+  final TransactionRecord? _transaction;
+
+  bool _canSeeMoreInputs = false;
+
+  bool _canSeeMoreOutputs = false;
+  int _inputCountToShow = 0;
+
+  int _outputCountToShow = 0;
+  TransactionDetail(this._transaction);
+  bool get canSeeMoreInputs => _canSeeMoreInputs;
+  bool get canSeeMoreOutputs => _canSeeMoreOutputs;
+  int get inputCountToShow => _inputCountToShow;
+  int get outputCountToShow => _outputCountToShow;
+  TransactionRecord? get transaction => _transaction;
+
+  void setCanSeeMoreInputs(bool value) {
+    _canSeeMoreInputs = value;
+  }
+
+  void setCanSeeMoreOutputs(bool value) {
+    _canSeeMoreOutputs = value;
+  }
+
+  void setInputCountToShow(int value) {
+    _inputCountToShow = value;
+  }
+
+  void setOutputCountToShow(int value) {
+    _outputCountToShow = value;
+  }
+}
 
 class TransactionDetailViewModel extends ChangeNotifier {
   static const int kReceiveInputCount = 3;
@@ -35,18 +69,13 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final ValueNotifier<bool> _loadCompletedNotifier = ValueNotifier(false);
 
   Utxo? _currentUtxo;
-  Utxo? get currentUtxo => _currentUtxo;
-
   List<TransactionDetail>? _transactionList;
-  List<TransactionDetail>? get transactionList => _transactionList;
 
   int _selectedTransactionIndex = 0; // RBF history chip 선택 인덱스
-  int get selectedTransactionIndex => _selectedTransactionIndex;
-
   int _previousTransactionIndex = 0; // 이전 인덱스 (애니메이션 방향 결정용)
-  int get previousTransactionIndex => _previousTransactionIndex;
 
-  bool get isNetworkOn => _connectivityProvider.isNetworkOn == true;
+  TransactionStatus? _transactionStatus = TransactionStatus.receiving;
+  bool _isSendType = false;
 
   TransactionDetailViewModel(
       this._walletId,
@@ -60,10 +89,17 @@ class TransactionDetailViewModel extends ChangeNotifier {
     _initTransactionList();
     _initViewMoreButtons();
   }
-
   BlockTimestamp? get currentBlock => _currentBlock;
 
+  Utxo? get currentUtxo => _currentUtxo;
+  bool get isNetworkOn => _connectivityProvider.isNetworkOn == true;
+  bool? get isSendType => _isSendType;
   ValueNotifier<bool> get loadCompletedNotifier => _loadCompletedNotifier;
+
+  int get previousTransactionIndex => _previousTransactionIndex;
+
+  int get selectedTransactionIndex => _selectedTransactionIndex;
+
   ValueNotifier<bool> get showDialogNotifier => _showDialogNotifier;
 
   DateTime? get timestamp {
@@ -73,8 +109,128 @@ class TransactionDetailViewModel extends ChangeNotifier {
         : null;
   }
 
+  List<TransactionDetail>? get transactionList => _transactionList;
+
+  TransactionStatus? get transactionStatus => _transactionStatus;
+
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
+  }
+
   void clearTransationList() {
     _transactionList?.clear();
+  }
+
+  String getDerivationPath(String address) {
+    return _addressRepository.getDerivationPath(_walletId, address);
+  }
+
+  String getInputAddress(int index) => TransactionUtil.getInputAddress(
+      _transactionList![_selectedTransactionIndex].transaction!, index);
+
+  int getInputAmount(int index) => TransactionUtil.getInputAmount(
+      _transactionList![_selectedTransactionIndex].transaction!, index);
+
+  String getOutputAddress(int index) => TransactionUtil.getOutputAddress(
+      _transactionList![_selectedTransactionIndex].transaction!, index);
+
+  int getOutputAmount(int index) => TransactionUtil.getOutputAmount(
+      _transactionList![_selectedTransactionIndex].transaction!, index);
+
+  String getWalletName() => _walletProvider.getWalletById(_walletId).name;
+
+  // void init() {
+  //   _transactionList![0].setCanSeeMoreInputs(false);
+  //   _transactionList![0].setCanSeeMoreOutputs(false);
+  //   _transactionList![0].setInputCountToShow(0);
+  //   _transactionList![0].setOutputCountToShow(0);
+  // }
+
+  bool isSameAddress(String address, int index) {
+    bool isContainAddress = _walletProvider.containsAddress(_walletId, address);
+
+    if (isContainAddress) {
+      var amount = getInputAmount(index);
+      var derivationPath =
+          _addressRepository.getDerivationPath(_walletId, address);
+      _currentUtxo = Utxo(_txHash, index, amount, derivationPath);
+      return true;
+    }
+    return false;
+  }
+
+  void onTapViewMoreInputs() {
+    // ignore: no_leading_underscores_for_local_identifiers
+    if (transactionList?[selectedTransactionIndex] == null) return;
+    TransactionDetail transactionDetail =
+        _transactionList![selectedTransactionIndex];
+
+    transactionDetail.setInputCountToShow(
+        (transactionDetail.inputCountToShow + kViewMoreCount)
+            .clamp(0, transactionDetail.transaction!.inputAddressList.length));
+    if (transactionDetail.inputCountToShow ==
+        transactionDetail.transaction!.inputAddressList.length) {
+      transactionDetail.setCanSeeMoreInputs(false);
+    }
+    notifyListeners();
+  }
+
+  void onTapViewMoreOutputs() {
+    if (_transactionList?[selectedTransactionIndex] == null) return;
+
+    TransactionDetail transactionDetail =
+        _transactionList![selectedTransactionIndex];
+
+    transactionDetail.setOutputCountToShow(
+        (transactionDetail.outputCountToShow + kViewMoreCount)
+            .clamp(0, transactionDetail.transaction!.outputAddressList.length));
+    if (transactionDetail.outputCountToShow ==
+        transactionDetail.transaction!.outputAddressList.length) {
+      transactionDetail.setCanSeeMoreOutputs(false);
+    }
+    notifyListeners();
+  }
+
+  void setPreviousTransactionIndex() {
+    _previousTransactionIndex = _selectedTransactionIndex;
+  }
+
+  void setSelectedTransactionIndex(int index) {
+    _selectedTransactionIndex = index;
+    notifyListeners();
+  }
+
+  void setTransactionStatus(TransactionStatus? status) {
+    _transactionStatus = status;
+    _setSendType(status);
+    notifyListeners();
+  }
+
+  void updateProvider() {
+    if (_walletProvider.walletItemList.isNotEmpty) {
+      _setCurrentBlockHeight();
+      _txProvider.initTransaction(_walletId, _txHash);
+      TransactionRecord updatedTx = _txProvider.transaction!;
+      TransactionRecord currentTx = transactionList!.first.transaction!;
+      if (updatedTx.blockHeight != currentTx.blockHeight ||
+          updatedTx.transactionHash != currentTx.transactionHash) {
+        _initTransactionList();
+      }
+      if (_initViewMoreButtons() == false) {
+        _showDialogNotifier.value = true;
+      }
+    }
+    notifyListeners();
+  }
+
+  bool updateTransactionMemo(String memo) {
+    final result = _txProvider.updateTransactionMemo(_walletId, _txHash, memo);
+    if (result) {
+      _transactionList![_selectedTransactionIndex] =
+          TransactionDetail(_txProvider.getTransaction(_walletId, _txHash));
+      notifyListeners();
+    }
+    return result;
   }
 
   void _initTransactionList() {
@@ -96,7 +252,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('----------------------------------------');
 
     // rbfHistory가 존재하면 순차적으로 _transactionList에 추가
-    if (currentTransaction.transactionType == 'SENT' &&
+    if ((currentTransaction.transactionType == TransactionType.sent.name ||
+            currentTransaction.transactionType == TransactionType.self.name) &&
         currentTransaction.rbfHistoryList != null &&
         currentTransaction.rbfHistoryList!.isNotEmpty) {
       var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
@@ -108,7 +265,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
             _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
         _transactionList!.add(TransactionDetail(rbfTxTransaction));
       }
-    } else if (currentTransaction.transactionType == 'RECEIVED' &&
+    } else if (currentTransaction.transactionType ==
+            TransactionType.received.name &&
         currentTransaction.cpfpHistory != null) {
       _transactionList = [
         TransactionDetail(_txProvider.getTransactionRecord(
@@ -152,94 +310,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
         '====================================================================');
 
     notifyListeners();
-  }
-
-  // void init() {
-  //   _transactionList![0].setCanSeeMoreInputs(false);
-  //   _transactionList![0].setCanSeeMoreOutputs(false);
-  //   _transactionList![0].setInputCountToShow(0);
-  //   _transactionList![0].setOutputCountToShow(0);
-  // }
-
-  bool isSameAddress(String address, int index) {
-    bool isContainAddress = _walletProvider.containsAddress(_walletId, address);
-
-    if (isContainAddress) {
-      var amount = getInputAmount(index);
-      var derivationPath =
-          _addressRepository.getDerivationPath(_walletId, address);
-      _currentUtxo = Utxo(_txHash, index, amount, derivationPath);
-      return true;
-    }
-    return false;
-  }
-
-  void setSelectedTransactionIndex(int index) {
-    _selectedTransactionIndex = index;
-    notifyListeners();
-  }
-
-  void setPreviousTransactionIndex() {
-    _previousTransactionIndex = _selectedTransactionIndex;
-  }
-
-  void onTapViewMoreInputs() {
-    // ignore: no_leading_underscores_for_local_identifiers
-    if (transactionList?[selectedTransactionIndex] == null) return;
-    TransactionDetail transactionDetail =
-        _transactionList![selectedTransactionIndex];
-
-    transactionDetail.setInputCountToShow(
-        (transactionDetail.inputCountToShow + kViewMoreCount)
-            .clamp(0, transactionDetail.transaction!.inputAddressList.length));
-    if (transactionDetail.inputCountToShow ==
-        transactionDetail.transaction!.inputAddressList.length) {
-      transactionDetail.setCanSeeMoreInputs(false);
-    }
-    notifyListeners();
-  }
-
-  void onTapViewMoreOutputs() {
-    if (_transactionList?[selectedTransactionIndex] == null) return;
-
-    TransactionDetail transactionDetail =
-        _transactionList![selectedTransactionIndex];
-
-    transactionDetail.setOutputCountToShow(
-        (transactionDetail.outputCountToShow + kViewMoreCount)
-            .clamp(0, transactionDetail.transaction!.outputAddressList.length));
-    if (transactionDetail.outputCountToShow ==
-        transactionDetail.transaction!.outputAddressList.length) {
-      transactionDetail.setCanSeeMoreOutputs(false);
-    }
-    notifyListeners();
-  }
-
-  void updateProvider() {
-    if (_walletProvider.walletItemList.isNotEmpty) {
-      _setCurrentBlockHeight();
-      _txProvider.initTransaction(_walletId, _txHash);
-      TransactionRecord updatedTx = _txProvider.transaction!;
-      TransactionRecord currentTx = transactionList!.first.transaction!;
-      if (updatedTx.blockHeight != currentTx.blockHeight ||
-          updatedTx.transactionHash != currentTx.transactionHash) {
-        _initTransactionList();
-      }
-      if (_initViewMoreButtons() == false) {
-        _showDialogNotifier.value = true;
-      }
-    }
-    notifyListeners();
-  }
-
-  bool updateTransactionMemo(String memo) {
-    final result = _txProvider.updateTransactionMemo(_walletId, _txHash, memo);
-    if (result) {
-      _transactionList![_selectedTransactionIndex] =
-          TransactionDetail(_txProvider.getTransaction(_walletId, _txHash));
-      notifyListeners();
-    }
-    return result;
   }
 
   bool _initViewMoreButtons() {
@@ -312,57 +382,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
     }
   }
 
-  String getWalletName() => _walletProvider.getWalletById(_walletId).name;
-
-  String getInputAddress(int index) => TransactionUtil.getInputAddress(
-      _transactionList![_selectedTransactionIndex].transaction!, index);
-
-  String getOutputAddress(int index) => TransactionUtil.getOutputAddress(
-      _transactionList![_selectedTransactionIndex].transaction!, index);
-
-  int getInputAmount(int index) => TransactionUtil.getInputAmount(
-      _transactionList![_selectedTransactionIndex].transaction!, index);
-
-  int getOutputAmount(int index) => TransactionUtil.getOutputAmount(
-      _transactionList![_selectedTransactionIndex].transaction!, index);
-  String getDerivationPath(String address) {
-    return _addressRepository.getDerivationPath(_walletId, address);
-  }
-
-  void clearSendInfo() {
-    _sendInfoProvider.clear();
-  }
-}
-
-class TransactionDetail {
-  final TransactionRecord? _transaction;
-
-  TransactionRecord? get transaction => _transaction;
-
-  bool _canSeeMoreInputs = false;
-  bool _canSeeMoreOutputs = false;
-
-  int _inputCountToShow = 0;
-  int _outputCountToShow = 0;
-  bool get canSeeMoreInputs => _canSeeMoreInputs;
-  bool get canSeeMoreOutputs => _canSeeMoreOutputs;
-  int get inputCountToShow => _inputCountToShow;
-  int get outputCountToShow => _outputCountToShow;
-  TransactionDetail(this._transaction);
-
-  void setCanSeeMoreInputs(bool value) {
-    _canSeeMoreInputs = value;
-  }
-
-  void setCanSeeMoreOutputs(bool value) {
-    _canSeeMoreOutputs = value;
-  }
-
-  void setInputCountToShow(int value) {
-    _inputCountToShow = value;
-  }
-
-  void setOutputCountToShow(int value) {
-    _outputCountToShow = value;
+  void _setSendType(TransactionStatus? status) {
+    _isSendType = status == TransactionStatus.sending ||
+        status == TransactionStatus.selfsending ||
+        status == TransactionStatus.sent;
   }
 }
