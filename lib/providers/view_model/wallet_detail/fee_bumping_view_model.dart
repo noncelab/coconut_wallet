@@ -398,11 +398,21 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return 0;
     }
 
-    if (recommendedFeeRate <= _transaction.feeRate) {
-      return _transaction.feeRate.toDouble() + 1;
+    _generateCpfpTransaction(recommendedFeeRate.toDouble());
+
+    double cpfpTxSize = _estimateVirtualByte(_bumpingTransaction!);
+    double totalFee = (_transaction.vSize + cpfpTxSize) * recommendedFeeRate;
+    double cpfpTxFee = totalFee - _transaction.fee!.toDouble();
+    double cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
+
+    if (recommendedFeeRate < _transaction.feeRate + 0.1) {
+      return _transaction.feeRate + 0.1;
+    }
+    if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
+      return recommendedFeeRate.toDouble();
     }
 
-    return recommendedFeeRate.toDouble();
+    return cpfpTxFeeRate;
   }
 
   double _getRecommendedFeeRateForRbf() {
@@ -451,12 +461,13 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   String _getRecommendedFeeRateDescriptionForCpfp() {
-    final recommendedFeeRate = _feeInfos[1].satsPerVb;
+    final recommendedFeeRate = _feeInfos[1].satsPerVb; // 보통 수수료
 
     if (recommendedFeeRate == null) {
       return t.transaction_fee_bumping_screen.recommended_fees_is_null;
     }
-    if (recommendedFeeRate > _transaction.feeRate) {
+
+    if (recommendedFeeRate < _transaction.feeRate) {
       return t.transaction_fee_bumping_screen
           .recommended_fee_less_than_pending_tx_fee;
     }
@@ -468,6 +479,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
     final cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
     final totalRequiredFee = _transaction.vSize * _transaction.feeRate +
         cpfpTxSize * recommendedFeeRate;
+
+    if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
+      return t
+          .transaction_fee_bumping_screen.recommended_fee_less_than_network_fee;
+    }
 
     String inequalitySign = cpfpTxFeeRate % 1 == 0 ? "=" : "≈";
     return t.transaction_fee_bumping_screen.recommend_fee_info_cpfp(

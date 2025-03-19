@@ -630,7 +630,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           Text(
                             t.transaction_fee_bumping_screen
                                 .existing_fee_value(value: feeHistory.feeRate),
-                            style: CoconutTypography.body2_14_NumberBold,
+                            style: CoconutTypography.body2_14_Number,
                           ),
                         ],
                       ),
