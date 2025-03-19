@@ -243,14 +243,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                           child: CustomLoadingOverlay(
                                             child: PinCheckScreen(
                                               onComplete: () async {
-                                                await _deleteWalletAneGoToWalletList(
+                                                await _deleteWalletAndGoToWalletList(
                                                     context, viewModel);
                                               },
                                             ),
                                           ),
                                         );
                                       } else {
-                                        await _deleteWalletAneGoToWalletList(
+                                        await _deleteWalletAndGoToWalletList(
                                             context, viewModel);
                                       }
                                     },
@@ -331,12 +331,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _tooltipTimer?.cancel();
   }
 
-  Future<void> _deleteWalletAneGoToWalletList(
+  Future<void> _deleteWalletAndGoToWalletList(
       BuildContext context, WalletInfoViewModel viewModel) async {
     await viewModel.deleteWallet();
-    Navigator.pushReplacement(
+    Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-            builder: (BuildContext context) => const WalletListScreen()));
+            builder: (BuildContext context) => const WalletListScreen()),
+        (route) => false);
   }
 }
