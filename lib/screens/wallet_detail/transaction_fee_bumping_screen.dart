@@ -67,7 +67,6 @@ class _TransactionFeeBumpingScreenState
         FeeBumpingViewModel>(
       create: (_) {
         _viewModel = _getViewModel(context);
-        _textEditingController.addListener(_textEditingListener);
         return _viewModel;
       },
       update: (_, nodeProvider, walletProvider, viewModel) {
@@ -191,7 +190,7 @@ class _TransactionFeeBumpingScreenState
                                   t.transaction_fee_bumping_screen
                                       .estimated_fee(
                                     fee: addCommasToIntegerPart(viewModel
-                                        .getTotalEstimatedFee(int.parse(
+                                        .getTotalEstimatedFee(double.parse(
                                             _textEditingController.text))
                                         .toDouble()),
                                   ),
@@ -261,23 +260,28 @@ class _TransactionFeeBumpingScreenState
 
     viewModel
         .generateUnsignedPsbt(
-            int.parse(_textEditingController.text), widget.feeBumpingType)
+            double.parse(_textEditingController.text), widget.feeBumpingType)
         .then((value) {
       Navigator.pushNamed(context, '/unsigned-transaction-qr',
           arguments: {'walletName': widget.walletName});
     });
   }
 
-  void _textEditingListener() {
-    if (_textEditingController.text.isEmpty) {
+  void _onFeeRateChanged(String input) {
+    if (input.isEmpty) {
       setState(() {
         _isEstimatedFeeTooLow = false;
         _isEstimatedFeeTooHigh = false;
       });
+      _textEditingController.clear();
       return;
     }
 
-    int? value = int.tryParse(_textEditingController.text);
+    _textEditingController.text = _getFeeRateText(input);
+    _textEditingController.selection =
+        TextSelection.collapsed(offset: _textEditingController.text.length);
+
+    double? value = double.tryParse(_textEditingController.text);
     if (value == null ||
         value < _viewModel.recommendFeeRate ||
         value == 0 ||
@@ -293,6 +297,23 @@ class _TransactionFeeBumpingScreenState
         _isEstimatedFeeTooLow = false;
       });
     }
+  }
+
+  String _getFeeRateText(String text) {
+    if (text.isEmpty) return text;
+    if (text == '.') return '0.';
+    if (text == '00') return '0';
+
+    var splitedInput = text.split('.');
+
+    if (splitedInput.length > 2) {
+      return '${splitedInput[0]}.${splitedInput[1]}';
+    }
+
+    if (splitedInput.length == 2 && splitedInput[1].length > 2) {
+      return '${splitedInput[0]}.${splitedInput[1].substring(0, 2)}';
+    }
+    return text;
   }
 
   Future<bool> _showConfirmationDialog(BuildContext context) async {
@@ -430,21 +451,22 @@ class _TransactionFeeBumpingScreenState
                 width: 54,
                 child: Center(
                   child: CoconutTextField(
-                      cursorColor: CoconutColors.white,
-                      textInputType: TextInputType.number,
-                      errorColor: CoconutColors.hotPink,
                       controller: _textEditingController,
+                      focusNode: _feeTextFieldFocusNode,
+                      cursorColor: CoconutColors.white,
+                      textInputType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      errorColor: CoconutColors.hotPink,
                       activeColor: CoconutColors.white,
                       backgroundColor: CoconutColors.white.withOpacity(0.15),
                       prefix: null,
                       fontFamily: 'SpaceGrotesk',
                       maxLines: 1,
-                      focusNode: _feeTextFieldFocusNode,
                       padding: const EdgeInsets.symmetric(
                           vertical: 7, horizontal: 5),
                       isLengthVisible: false,
                       textAlign: TextAlign.center,
-                      onChanged: (value) => print(value)),
+                      onChanged: _onFeeRateChanged),
                 ),
               ),
               CoconutLayout.spacing_200w,
@@ -459,7 +481,7 @@ class _TransactionFeeBumpingScreenState
     );
   }
 
-  Widget _buildRecommendFeeWidget(int recommendFeeRate) {
+  Widget _buildRecommendFeeWidget(double recommendFeeRate) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       child: CustomExpansionPanel(
@@ -566,7 +588,7 @@ class _TransactionFeeBumpingScreenState
               CoconutLayout.spacing_200w,
               Text(
                 TransactionFeeLevel.fastest.expectedTime,
-                style: CoconutTypography.body2_14_NumberBold.setColor(
+                style: CoconutTypography.body2_14_Number.setColor(
                   CoconutColors.gray400,
                 ),
               ),
@@ -594,7 +616,7 @@ class _TransactionFeeBumpingScreenState
               CoconutLayout.spacing_200w,
               Text(
                 TransactionFeeLevel.halfhour.expectedTime,
-                style: CoconutTypography.body2_14_NumberBold.setColor(
+                style: CoconutTypography.body2_14_Number.setColor(
                   CoconutColors.gray400,
                 ),
               ),
@@ -622,7 +644,7 @@ class _TransactionFeeBumpingScreenState
               CoconutLayout.spacing_200w,
               Text(
                 TransactionFeeLevel.hour.expectedTime,
-                style: CoconutTypography.body2_14_NumberBold.setColor(
+                style: CoconutTypography.body2_14_Number.setColor(
                   CoconutColors.gray400,
                 ),
               ),
@@ -700,4 +722,33 @@ class _TransactionFeeBumpingScreenState
       _isRecommendFeePannelExpanded = !_isRecommendFeePannelExpanded;
     });
   }
+
+  // void _onFeeRateChanged(String value) {
+  //   debugPrint('::::: onFeeRateChanged $value');
+  //   if (value.isEmpty) {
+  //     setState(() {
+  //       _isEstimatedFeeTooLow = false;
+  //       _isEstimatedFeeTooHigh = false;
+  //     });
+  //     return;
+  //   }
+  //   // . 입력 시 0. 변환
+  //   if (value == '.') {
+  //     value = '0.';
+  //     _textEditingController.text = value;
+  //     _textEditingController.selection =
+  //         TextSelection.collapsed(offset: value.length);
+  //     return;
+  //   }
+
+  //   // 소수점 둘째 자리까지만 허용 (기존 입력을 유지하면서 수정)
+  //   if (!RegExp(r'^\d*\.?\d{0,2}$').hasMatch(value)) {
+  //     value = _textEditingController.text; // 기존 값 유지
+  //   } else {
+  //     _textEditingController.text = value;
+  //   }
+
+  //   _textEditingController.selection =
+  //       TextSelection.collapsed(offset: _textEditingController.text.length);
+  // }
 }

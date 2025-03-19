@@ -64,12 +64,12 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     if (_isMultisigWallet) {
       final multisigWallet =
           _walletListItemBase.walletBase as MultisignatureWallet;
-      return transaction.estimateFee(satsPerVb, _walletAddressType,
+      return transaction.estimateFee(satsPerVb.toDouble(), _walletAddressType,
           requiredSignature: multisigWallet.requiredSignature,
           totalSigner: multisigWallet.totalSigner);
     }
 
-    return transaction.estimateFee(satsPerVb, _walletAddressType);
+    return transaction.estimateFee(satsPerVb.toDouble(), _walletAddressType);
   }
 
   Transaction _createTransaction(int satsPerVb) {
@@ -85,20 +85,20 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
           _sendInfoProvider.recipientsForBatch!.map(
               (key, value) => MapEntry(key, UnitUtil.bitcoinToSatoshi(value))),
           changeAddress.derivationPath,
-          satsPerVb,
+          satsPerVb.toDouble(),
           _walletListItemBase.walletBase);
     }
 
     return _isMaxMode
-        ? Transaction.forSweep(
-            utxoPool, _recipientAddress!, satsPerVb, wallet.walletBase)
+        ? Transaction.forSweep(utxoPool, _recipientAddress!,
+            satsPerVb.toDouble(), wallet.walletBase)
         : Transaction.forSinglePayment(
             TransactionUtil.selectOptimalUtxos(
                 utxoPool, amount, satsPerVb, _walletAddressType),
             _recipientAddress!,
             changeAddress.derivationPath,
             amount,
-            satsPerVb,
+            satsPerVb.toDouble(),
             _walletListItemBase.walletBase);
   }
 
