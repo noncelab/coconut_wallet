@@ -2,27 +2,27 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
-  final List<String> dateString;
   final Function onPressed;
 
   const UtxoItemCard({
     super.key,
     required this.utxo,
-    required this.dateString,
     required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
-    bool isConfirmed = utxo.blockHeight != 0;
     bool isChange = utxo.derivationPath.split('/')[4] == '1';
 
+    final dateString = DateTimeUtil.formatTimestamp(utxo.timestamp);
     const borderRadius = CoconutStyles.radius_300;
 
     return ShrinkAnimationButton(
@@ -72,24 +72,20 @@ class UtxoItemCard extends StatelessWidget {
                         if (isChange)
                           CustomChip(
                             text: t.change,
-                            backgroundColor: isConfirmed
-                                ? CoconutColors.gray500
-                                : CoconutColors.gray700,
-                            borderColor: isConfirmed
-                                ? CoconutColors.gray500
-                                : CoconutColors.gray700,
+                            backgroundColor: CoconutColors.gray500,
+                            borderColor: CoconutColors.gray500,
                             textStyle: CoconutTypography.caption_10_Bold
                                 .setColor(CoconutColors.black),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                           ),
                         CoconutLayout.spacing_100w,
+                        if (utxo.status != UtxoStatus.unspent)
+                          _buildStatus(utxo.status),
                         Text(
                           satoshiToBitcoinString(utxo.amount),
                           style: CoconutTypography.heading4_18_NumberBold
-                              .setColor(isConfirmed
-                                  ? CoconutColors.gray200
-                                  : CoconutColors.gray700),
+                              .setColor(CoconutColors.gray200),
                         ),
                       ],
                     ),
@@ -129,6 +125,30 @@ class UtxoItemCard extends StatelessWidget {
               ),
             ],
           )),
+    );
+  }
+
+  Widget _buildStatus(UtxoStatus status) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: status == UtxoStatus.incoming
+                ? CoconutColors.cyan.withOpacity(0.2)
+                : CoconutColors.primary.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Lottie.asset(
+            status == UtxoStatus.incoming
+                ? 'assets/lottie/arrow-down.json'
+                : 'assets/lottie/arrow-up.json',
+            width: 16,
+            height: 16,
+          ),
+        ),
+        CoconutLayout.spacing_100w,
+      ],
     );
   }
 }

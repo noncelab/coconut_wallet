@@ -3,17 +3,16 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
+import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 /// NodeProvider의 UTXO 관련 기능을 담당하는 매니저 클래스
 class UtxoManager {
   final ElectrumService _electrumService;
-  final NodeStateManager _stateManager;
+  final StateManagerInterface _stateManager;
   final UtxoRepository _utxoRepository;
 
   UtxoManager(

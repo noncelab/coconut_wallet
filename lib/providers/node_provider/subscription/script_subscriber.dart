@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
@@ -28,12 +27,11 @@ class ScriptSubscriber {
   /// 지갑의 스크립트 구독
   Future<List<ScriptStatus>> subscribeWallet(
     WalletListItemBase walletItem,
-    WalletProvider walletProvider,
   ) async {
-    final receiveFutures = _subscribeWallet(
-        walletItem, false, _scriptStatusController, walletProvider);
-    final changeFutures = _subscribeWallet(
-        walletItem, true, _scriptStatusController, walletProvider);
+    final receiveFutures =
+        _subscribeWallet(walletItem, false, _scriptStatusController);
+    final changeFutures =
+        _subscribeWallet(walletItem, true, _scriptStatusController);
 
     final [receiveResult, changeResult] =
         await Future.wait([receiveFutures, changeFutures]);
@@ -97,10 +95,10 @@ class ScriptSubscriber {
   /// 특정 유형(receive/change)의 주소에 대한 구독 처리
   Future<({List<ScriptStatus> scriptStatuses, int lastUsedIndex})>
       _subscribeWallet(
-          WalletListItemBase walletItem,
-          bool isChange,
-          StreamController<SubscribeScriptStreamDto> scriptStatusController,
-          WalletProvider walletProvider) async {
+    WalletListItemBase walletItem,
+    bool isChange,
+    StreamController<SubscribeScriptStreamDto> scriptStatusController,
+  ) async {
     int currentAddressIndex = 0;
     int addressScanLimit = _gapLimit;
     int lastUsedIndex =
@@ -118,7 +116,6 @@ class ScriptSubscriber {
         addressScanLimit,
         isChange,
         scriptStatusController,
-        walletProvider,
       );
 
       // 새로 구독된 스크립트 상태 추가
@@ -162,7 +159,6 @@ class ScriptSubscriber {
     int endIndex,
     bool isChange,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
-    WalletProvider walletProvider,
   ) async {
     Map<int, String> addresses = ElectrumUtil.prepareAddressesMap(
       walletItem.walletBase,
@@ -189,7 +185,6 @@ class ScriptSubscriber {
             entry.value,
             isChange,
             scriptStatusController,
-            walletProvider,
           )),
     );
 
@@ -230,7 +225,6 @@ class ScriptSubscriber {
     String address,
     bool isChange,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
-    WalletProvider walletProvider,
   ) async {
     final script = ElectrumUtil.getScriptForAddress(
         walletItem.walletBase.addressType, address);
@@ -315,8 +309,7 @@ class ScriptSubscriber {
           Logger.log(
               'Triggering extension from onUpdate callback for ${isChange ? "change" : "receive"} index $derivationIndex');
           // 추가 주소 구독이 필요한 경우 비동기로 처리
-          _extendSubscription(
-              walletItem, isChange, scriptStatusController, walletProvider);
+          _extendSubscription(walletItem, isChange, scriptStatusController);
         }
       }
 
@@ -330,7 +323,6 @@ class ScriptSubscriber {
       scriptStatusController.add(SubscribeScriptStreamDto(
         scriptStatus: scriptStatus,
         walletItem: walletItem,
-        walletProvider: walletProvider,
       ));
       // ---------- 콜백 함수 끝 ----------
     });
@@ -357,10 +349,10 @@ class ScriptSubscriber {
 
   /// 스캔 범위 확장을 위한 메서드
   Future<void> _extendSubscription(
-      WalletListItemBase walletItem,
-      bool isChange,
-      StreamController<SubscribeScriptStreamDto> scriptStatusController,
-      WalletProvider walletProvider) async {
+    WalletListItemBase walletItem,
+    bool isChange,
+    StreamController<SubscribeScriptStreamDto> scriptStatusController,
+  ) async {
     final usedIndex =
         isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
     final startIndex = usedIndex + 1;
@@ -383,7 +375,6 @@ class ScriptSubscriber {
       endIndex,
       isChange,
       scriptStatusController,
-      walletProvider,
     );
   }
 

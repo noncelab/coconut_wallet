@@ -27,9 +27,9 @@ class WalletRepository extends BaseRepository {
     List<WalletListItemBase> walletList = [];
 
     var walletBases =
-        realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
+        realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id DESC)');
     var multisigWallets =
-        realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id ASC)');
+        realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id DESC)');
 
     for (var i = 0; i < walletBases.length; i++) {
       String? decryptedDescriptor;

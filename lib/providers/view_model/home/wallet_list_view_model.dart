@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -19,19 +17,15 @@ class WalletListViewModel extends ChangeNotifier {
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
   late WalletSubscriptionState _walletSyncingState;
-  late final NodeProvider _nodeProvider;
-  late final TransactionProvider _transactionProvider;
   late final ConnectivityProvider _connectivityProvider;
   Map<int, int> _walletBalance = {};
-  late StreamSubscription<Map<int, Balance?>> _balanceSubscription;
   late bool? _isNetworkOn;
+  bool _isFirstLoaded = false;
 
   WalletListViewModel(
     this._walletProvider,
     this._visibilityProvider,
     this._isBalanceHidden,
-    this._nodeProvider,
-    this._transactionProvider,
     this._connectivityProvider,
   ) {
     _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
@@ -45,7 +39,8 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
-  bool get shouldShowLoadingIndicator => _walletProvider.isAnyBalanceUpdating;
+  bool get shouldShowLoadingIndicator =>
+      !_isFirstLoaded && _walletProvider.isAnyBalanceUpdating;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
 
@@ -74,6 +69,9 @@ class WalletListViewModel extends ChangeNotifier {
       if (walletProvider.walletSubscriptionState ==
           WalletSubscriptionState.completed) {
         vibrateLight();
+        if (_isFirstLoaded == false) {
+          _isFirstLoaded = true;
+        }
       } else if (walletProvider.walletSubscriptionState ==
           WalletSubscriptionState.failed) {
         vibrateLightDouble();
@@ -103,11 +101,5 @@ class WalletListViewModel extends ChangeNotifier {
   void updateIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _balanceSubscription.cancel();
-    return super.dispose();
   }
 }

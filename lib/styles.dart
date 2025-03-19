@@ -367,7 +367,7 @@ class Paddings {
   static const EdgeInsets container =
       EdgeInsets.symmetric(horizontal: 10, vertical: 20);
   static const EdgeInsets widgetContainer =
-      EdgeInsets.symmetric(horizontal: 20, vertical: 15);
+      EdgeInsets.symmetric(horizontal: 20, vertical: 16);
 }
 
 class BoxDecorations {

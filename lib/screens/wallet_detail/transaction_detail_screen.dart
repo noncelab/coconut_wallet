@@ -4,8 +4,10 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -76,6 +78,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           Provider.of<TransactionProvider>(_, listen: false),
           Provider.of<NodeProvider>(_, listen: false),
           Provider.of<AddressRepository>(_, listen: false),
+          Provider.of<ConnectivityProvider>(_, listen: false),
           Provider.of<SendInfoProvider>(_, listen: false),
         );
 
@@ -716,6 +719,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                 visible: rbfType || feeBumpingHistoryList.length < 2,
                 child: GestureDetector(
                   onTap: () async {
+                    if (!_viewModel.isNetworkOn) {
+                      CustomToast.showWarningToast(
+                          context: context,
+                          text: ErrorCodes.networkError.message);
+                      return;
+                    }
                     _viewModel.clearSendInfo();
                     Navigator.pushNamed(context, '/transaction-fee-bumping',
                         arguments: {

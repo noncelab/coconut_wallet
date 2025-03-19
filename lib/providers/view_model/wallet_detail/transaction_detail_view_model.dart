@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -25,6 +26,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
   final TransactionProvider _txProvider;
   final AddressRepository _addressRepository;
+  final ConnectivityProvider _connectivityProvider;
   final SendInfoProvider _sendInfoProvider;
 
   BlockTimestamp? _currentBlock;
@@ -44,6 +46,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
   int _previousTransactionIndex = 0; // 이전 인덱스 (애니메이션 방향 결정용)
   int get previousTransactionIndex => _previousTransactionIndex;
 
+  bool get isNetworkOn => _connectivityProvider.isNetworkOn == true;
+
   TransactionDetailViewModel(
       this._walletId,
       this._txHash,
@@ -51,6 +55,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       this._txProvider,
       this._nodeProvider,
       this._addressRepository,
+      this._connectivityProvider,
       this._sendInfoProvider) {
     _initTransactionList();
     _initViewMoreButtons();

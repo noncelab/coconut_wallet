@@ -9,7 +9,6 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
-import 'package:flutter/foundation.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 

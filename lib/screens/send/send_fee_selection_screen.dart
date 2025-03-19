@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -212,16 +213,20 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                               CustomUnderlinedButton(
                                 padding: Paddings.widgetContainer,
                                 onTap: () {
-                                  showTextFieldDialog(
-                                      context: context,
-                                      content: t.text_field
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    builder: (context) => TextFieldBottomSheet(
+                                      title: t.input_directly,
+                                      placeholder: t.text_field
                                           .enter_fee_as_natural_number,
-                                      controller: _customFeeController,
-                                      textInputType: TextInputType.number,
-                                      onPressed: () {
-                                        _handleCustomFeeInput(
-                                            _customFeeController.text);
-                                      });
+                                      onComplete: (text) {
+                                        _handleCustomFeeInput(text);
+                                      },
+                                      keyboardType: TextInputType.number,
+                                      visibleTextLimit: false,
+                                    ),
+                                  );
                                 },
                                 text: t.text_field.enter_fee_directly,
                                 fontSize: 14,

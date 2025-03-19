@@ -125,7 +125,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     if (estimatedFee == null || estimatedFee == 0) return false;
     if (_isMaxMode) return (_confirmedBalance - estimatedFee) > dustLimit;
     Logger.log(
-        '--> ${UnitUtil.bitcoinToSatoshi(amount)} ${estimatedFee} ${_confirmedBalance}');
+        '--> ${UnitUtil.bitcoinToSatoshi(amount)} $estimatedFee $_confirmedBalance');
     return (UnitUtil.bitcoinToSatoshi(amount) + estimatedFee) <=
         _confirmedBalance;
   }

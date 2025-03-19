@@ -2,16 +2,18 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/amimation_util.dart';
+import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/body/wallet_detail_body.dart';
-import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
@@ -23,6 +25,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+import 'package:tuple/tuple.dart';
+import 'package:lottie/lottie.dart';
 
 enum Unit { btc, sats }
 
@@ -36,6 +40,181 @@ class WalletDetailScreen extends StatefulWidget {
 }
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
+  bool _isPullToRefreshing = false;
+  Unit _currentUnit = Unit.btc;
+
+  late WalletDetailViewModel _viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+        create: (_) => _viewModel,
+        child: PopScope(
+          canPop: true,
+          onPopInvokedWithResult: (didPop, _) {
+            _viewModel.removeFaucetTooltip();
+          },
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque, // 빈 영역도 감지 가능
+            child: Stack(
+              children: [
+                Scaffold(
+                  backgroundColor: CoconutColors.black,
+                  appBar: _buildAppBar(context),
+                  body: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    controller: _scrollController,
+                    slivers: [
+                      CupertinoSliverRefreshControl(
+                        onRefresh: () async => _onRefresh(),
+                      ),
+                      SliverToBoxAdapter(
+                        child: Selector<WalletDetailViewModel,
+                                Tuple5<int, int, String, int, int>>(
+                            selector: (_, viewModel) => Tuple5(
+                                viewModel.balance,
+                                viewModel.prevBalance,
+                                viewModel.bitcoinPriceKrwInString,
+                                viewModel.sendingAmount,
+                                viewModel.receivingAmount),
+                            builder: (_, data, __) {
+                              return WalletDetailHeader(
+                                key: _headerWidgetKey,
+                                balance: data.item1,
+                                currentUnit: _currentUnit,
+                                prevBalance: data.item2,
+                                btcPriceInKrw: data.item3,
+                                sendingAmount: data.item4,
+                                receivingAmount: data.item5,
+                                onPressedUnitToggle: _toggleUnit,
+                                onTapReceive: _onTapReceive,
+                                onTapSend: _onTapSend,
+                              );
+                            }),
+                      ),
+                      _buildLoadingWidget(),
+                      _buildTxListLabel(),
+                      TransactionList(
+                          currentUnit: _currentUnit, widget: widget),
+                    ],
+                  ),
+                ),
+                _buildFaucetTooltip(),
+                _buildStickyHeader(),
+              ],
+            ),
+          ),
+        ));
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return CoconutAppBar.build(
+      entireWidgetKey: _appBarKey,
+      faucetIconKey: _faucetIconKey,
+      backgroundColor: CoconutColors.black,
+      title: TextUtils.ellipsisIfLonger(_viewModel.walletName, maxLength: 15),
+      context: context,
+      onTitlePressed: () => _navigateToWalletInfo(context),
+      actionButtonList: [
+        IconButton(
+          onPressed: () => _onFaucetIconPressed(),
+          icon:
+              SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
+        ),
+        IconButton(
+          onPressed: () => _navigateToUtxoList(context),
+          icon: SvgPicture.asset('assets/svg/coins.svg', width: 18, height: 18),
+        ),
+      ],
+    );
+  }
+
+  void _navigateToUtxoList(BuildContext context) {
+    Navigator.pushNamed(context, '/utxo-list', arguments: {'id': widget.id});
+  }
+
+  void _navigateToWalletInfo(BuildContext context) async {
+    await Navigator.pushNamed(context, '/wallet-info', arguments: {
+      'id': widget.id,
+      'isMultisig': _viewModel.walletType == WalletType.multiSignature
+    });
+  }
+
+  void _onRefresh() async {
+    _isPullToRefreshing = true;
+    try {
+      if (!_checkStateAndShowToast()) {
+        return;
+      }
+      _viewModel.refreshWallet();
+    } finally {
+      _isPullToRefreshing = false;
+    }
+  }
+
+  Widget _buildStickyHeader() {
+    return WalletDetailStickyHeader(
+        widgetKey: _stickyHeaderWidgetKey,
+        height: _appBarSize.height,
+        isVisible: _stickyHeaderVisible,
+        currentUnit: _currentUnit,
+        balance: _viewModel.balance,
+        onTapReceive: () {
+          _viewModel.removeFaucetTooltip();
+          _onTapReceive();
+        },
+        onTapSend: () {
+          _viewModel.removeFaucetTooltip();
+          _onTapSend();
+        },
+        prevBalance: _viewModel.prevBalance);
+  }
+
+  Selector<WalletDetailViewModel, bool> _buildLoadingWidget() {
+    return Selector<WalletDetailViewModel, bool>(
+      selector: (_, viewModel) => viewModel.isWalletSyncing,
+      builder: (_, isWalletSyncing, __) {
+        return SliverToBoxAdapter(
+            child: SizedBox(
+                height: 32,
+                child: isWalletSyncing
+                    ? Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(t.status_updating,
+                                  style: CoconutTypography.body3_12_Bold
+                                      .setColor(CoconutColors.primary)),
+                              CoconutLayout.spacing_100w,
+                              LottieBuilder.asset(
+                                'assets/files/status_loading.json',
+                                width: 16,
+                                height: 16,
+                              ),
+                            ]),
+                      )
+                    : null));
+      },
+    );
+  }
+
+  Widget _buildTxListLabel() {
+    return SliverToBoxAdapter(
+        child: Padding(
+            key: _txListLabelWidgetKey,
+            padding: const EdgeInsets.only(
+              left: 16.0,
+              right: 16.0,
+              bottom: 12.0,
+            ),
+            child: Text(t.tx_list,
+                style: CoconutTypography.heading4_18_Bold
+                    .setColor(CoconutColors.white))));
+  }
+
+  // 스크롤 시 sticky header 렌더링을 위한 상태 변수들
   final ScrollController _scrollController = ScrollController();
 
   final GlobalKey _appBarKey = GlobalKey();
@@ -52,110 +231,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   RenderBox? _stickyHeaderRenderBox;
   bool _stickyHeaderVisible = false;
 
-  final GlobalKey _tabWidgetKey = GlobalKey();
-  late RenderBox _tabWidgetRenderBox;
-
-  final GlobalKey _txSliverListKey = GlobalKey();
-  bool _isPullToRefreshing = false;
-  Unit _currentUnit = Unit.btc;
-
-  late WalletDetailViewModel _viewModel;
+  final GlobalKey _txListLabelWidgetKey = GlobalKey();
+  late RenderBox _txlistLabelRenderBox;
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider4<WalletProvider, TransactionProvider,
-        ConnectivityProvider, UpbitConnectModel, WalletDetailViewModel>(
-      create: (_) => _createViewModel(_),
-      update: (_, walletProvider, txProvider, connectProvider, upbitModel,
-          viewModel) {
-        return viewModel!..updateProvider();
-      },
-      child: Consumer<WalletDetailViewModel>(
-        builder: (context, viewModel, child) {
-          return PopScope(
-            canPop: true,
-            onPopInvokedWithResult: (didPop, _) {
-              viewModel.removeFaucetTooltip();
-            },
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque, // 빈 영역도 감지 가능
-              child: Stack(
-                children: [
-                  Scaffold(
-                    backgroundColor: CoconutColors.black,
-                    appBar: _buildAppBar(context, viewModel),
-                    body: CustomScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      controller: _scrollController,
-                      slivers: [
-                        if (viewModel.isWalletSyncing)
-                          const SliverToBoxAdapter(child: LoadingIndicator()),
-                        CupertinoSliverRefreshControl(
-                          onRefresh: () async => _onRefresh(
-                              viewModel,
-                              viewModel.balance,
-                              viewModel.isNetworkOn ?? false),
-                        ),
-                        SliverToBoxAdapter(
-                          child: WalletDetailHeader(
-                            key: _headerWidgetKey,
-                            prevBalance: viewModel.prevBalance,
-                            balance: viewModel.balance,
-                            currentUnit: _currentUnit,
-                            btcPriceInKrw: viewModel.bitcoinPriceKrw,
-                            onPressedUnitToggle: _toggleUnit,
-                            onTapReceive: _onTapReceive,
-                            onTapSend: _onTapSend,
-                          ),
-                        ),
-                        // todo: 지갑 업데이트 상태 표기
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            key: _tabWidgetKey,
-                            padding: const EdgeInsets.only(
-                              left: 16.0,
-                              right: 16.0,
-                              bottom: 12.0,
-                              top: 30,
-                            ),
-                            child: Text(
-                              t.tx_list,
-                              style: const TextStyle(
-                                fontFamily: 'Pretendard',
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontStyle: FontStyle.normal,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SliverSafeArea(
-                          minimum: const EdgeInsets.symmetric(horizontal: 16),
-                          sliver: WalletDetailBody(
-                            txSliverListKey: _txSliverListKey,
-                            walletId: widget.id,
-                            walletType: viewModel.walletType,
-                            currentUnit: _currentUnit,
-                            txList: viewModel.txList,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildFaucetTooltip(viewModel),
-                  _buildStickyHeader(viewModel),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+  void initState() {
+    super.initState();
 
-  WalletDetailViewModel _createViewModel(BuildContext context) {
     _viewModel = WalletDetailViewModel(
         widget.id,
         Provider.of<WalletProvider>(context, listen: false),
@@ -163,138 +245,23 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Provider.of<ConnectivityProvider>(context, listen: false),
         Provider.of<UpbitConnectModel>(context, listen: false),
         Provider.of<SendInfoProvider>(context, listen: false));
-    return _viewModel;
-  }
-
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context, WalletDetailViewModel viewModel) {
-    final balance = viewModel.balance;
-    final isNetworkOn = viewModel.isNetworkOn;
-
-    return CoconutAppBar.build(
-      entireWidgetKey: _appBarKey,
-      faucetIconKey: _faucetIconKey,
-      backgroundColor: CoconutColors.black,
-      title: TextUtils.ellipsisIfLonger(viewModel.walletListBaseItem!.name,
-          maxLength: 15),
-      context: context,
-      onTitlePressed: () => _navigateToWalletInfo(context, viewModel),
-      actionButtonList: [
-        IconButton(
-          onPressed: () =>
-              _onFaucetIconPressed(viewModel, balance, isNetworkOn),
-          icon:
-              SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
-        ),
-        IconButton(
-          onPressed: () => Navigator.pushNamed(context, '/utxo-list',
-              arguments: {'id': widget.id}),
-          icon: SvgPicture.asset('assets/svg/coins.svg', width: 18, height: 18),
-        ),
-      ],
-    );
-  }
-
-  void _navigateToWalletInfo(
-      BuildContext context, WalletDetailViewModel viewModel) async {
-    await Navigator.pushNamed(context, '/wallet-info', arguments: {
-      'id': widget.id,
-      'isMultisig': viewModel.walletType == WalletType.multiSignature
-    });
-  }
-
-  void _onRefresh(
-      WalletDetailViewModel viewModel, int balance, bool isNetworkOn) async {
-    _isPullToRefreshing = true;
-    try {
-      if (!_checkStateAndShowToast()) {
-        return;
-      }
-      viewModel.refreshWallet();
-    } finally {
-      _isPullToRefreshing = false;
-    }
-  }
-
-  Widget _buildFaucetTooltip(WalletDetailViewModel viewModel) {
-    return FaucetTooltip(
-      text: t.tooltip.faucet,
-      isVisible: viewModel.faucetTooltipVisible,
-      width: MediaQuery.of(context).size.width,
-      iconPosition: _faucetIconPosition,
-      iconSize: _faucetIconSize,
-      onTapRemove: viewModel.removeFaucetTooltip,
-    );
-  }
-
-  void _onFaucetIconPressed(
-      WalletDetailViewModel viewModel, int balance, bool? isNetworkOn) async {
-    viewModel.removeFaucetTooltip();
-    if (!_checkStateAndShowToast()) {
-      return;
-    }
-    await CommonBottomSheets.showBottomSheet_50(
-        context: context,
-        child: FaucetRequestBottomSheet(
-          // TODO: walletAddressBook
-          // walletAddressBook: const [],
-          walletData: {
-            'wallet_id': viewModel.walletId,
-            'wallet_address': viewModel.receiveAddress,
-            'wallet_name': viewModel.walletName,
-            'wallet_index': viewModel.receiveAddressIndex,
-          },
-          isRequesting: viewModel.isRequesting,
-          onRequest: (address, requestAmount) {
-            if (viewModel.isRequesting) return;
-
-            viewModel.requestTestBitcoin(address, requestAmount,
-                (success, message) {
-              if (success) {
-                Navigator.pop(context);
-                vibrateLight();
-                CustomToast.showToast(context: context, text: message);
-              } else {
-                vibrateMedium();
-                CustomToast.showWarningToast(context: context, text: message);
-              }
-            });
-          },
-          walletProvider: viewModel.walletProvider!,
-          walletItem: viewModel.walletListBaseItem!,
-        ));
-  }
-
-  Widget _buildStickyHeader(WalletDetailViewModel viewModel) {
-    final balance = viewModel.balance;
-    return WalletDetailStickyHeader(
-        widgetKey: _stickyHeaderWidgetKey,
-        height: _appBarSize.height,
-        isVisible: _stickyHeaderVisible,
-        currentUnit: _currentUnit,
-        balance: balance,
-        prevBalance: viewModel.prevBalance,
-        onTapReceive: () {
-          viewModel.removeFaucetTooltip();
-          _onTapReceive();
-        },
-        onTapSend: () {
-          viewModel.removeFaucetTooltip();
-          _onTapSend();
-        });
-  }
-
-  @override
-  void initState() {
-    super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final appBarRenderBox =
-          _appBarKey.currentContext?.findRenderObject() as RenderBox;
-      final headerWidgetRenderBox =
-          _headerWidgetKey.currentContext?.findRenderObject() as RenderBox;
-      _tabWidgetRenderBox =
-          _tabWidgetKey.currentContext?.findRenderObject() as RenderBox;
+      Size topSelectorWidgetSize = const Size(0, 0);
+      Size topHeaderWidgetSize = const Size(0, 0);
+      Size positionedTopWidgetSize = const Size(0, 0);
+
+      if (_appBarKey.currentContext != null) {
+        final appBarRenderBox =
+            _appBarKey.currentContext?.findRenderObject() as RenderBox;
+        _appBarSize = appBarRenderBox.size;
+      }
+
+      if (_headerWidgetKey.currentContext != null) {
+        final headerWidgetRenderBox =
+            _headerWidgetKey.currentContext?.findRenderObject() as RenderBox;
+        topSelectorWidgetSize = headerWidgetRenderBox.size;
+      }
 
       if (_faucetIconKey.currentContext != null) {
         final faucetRenderBox =
@@ -303,14 +270,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _faucetIconSize = faucetRenderBox.size;
       }
 
-      final positionedTopWidgetRenderBox = _stickyHeaderWidgetKey.currentContext
-          ?.findRenderObject() as RenderBox;
-
-      _appBarSize = appBarRenderBox.size;
-      final topSelectorWidgetSize = headerWidgetRenderBox.size;
-      final topHeaderWidgetSize = _tabWidgetRenderBox.size;
-      final positionedTopWidgetSize =
-          positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
+      if (_stickyHeaderWidgetKey.currentContext != null) {
+        final positionedTopWidgetRenderBox =
+            _stickyHeaderWidgetKey.currentContext?.findRenderObject()
+                as RenderBox;
+        positionedTopWidgetSize =
+            positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
+      }
 
       setState(() {
         _topPadding = topSelectorWidgetSize.height +
@@ -381,5 +347,214 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     setState(() {
       _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
     });
+  }
+
+  // Faucet 메서드
+  Widget _buildFaucetTooltip() {
+    return FaucetTooltip(
+      text: t.tooltip.faucet,
+      isVisible: _viewModel.faucetTooltipVisible,
+      width: MediaQuery.of(context).size.width,
+      iconPosition: _faucetIconPosition,
+      iconSize: _faucetIconSize,
+      onTapRemove: _viewModel.removeFaucetTooltip,
+    );
+  }
+
+  void _onFaucetIconPressed() async {
+    _viewModel.removeFaucetTooltip();
+    if (!_checkStateAndShowToast()) {
+      return;
+    }
+    await CommonBottomSheets.showBottomSheet_50(
+        context: context,
+        child: FaucetRequestBottomSheet(
+          // TODO: walletAddressBook
+          // walletAddressBook: const [],
+          walletData: {
+            'wallet_id': _viewModel.walletId,
+            'wallet_address': _viewModel.receiveAddress,
+            'wallet_name': _viewModel.walletName,
+            'wallet_index': _viewModel.receiveAddressIndex,
+          },
+          isRequesting: _viewModel.isRequesting,
+          onRequest: (address, requestAmount) {
+            if (_viewModel.isRequesting) return;
+
+            _viewModel.requestTestBitcoin(address, requestAmount,
+                (success, message) {
+              if (success) {
+                Navigator.pop(context);
+                vibrateLight();
+                CustomToast.showToast(context: context, text: message);
+              } else {
+                vibrateMedium();
+                CustomToast.showWarningToast(context: context, text: message);
+              }
+            });
+          },
+          walletProvider: _viewModel.walletProvider!,
+          walletItem: _viewModel.walletListBaseItem!,
+        ));
+  }
+}
+
+class TransactionList extends StatefulWidget {
+  const TransactionList({
+    super.key,
+    required Unit currentUnit,
+    required this.widget,
+  }) : _currentUnit = currentUnit;
+
+  final Unit _currentUnit;
+  final WalletDetailScreen widget;
+
+  @override
+  State<TransactionList> createState() => _TransactionListState();
+}
+
+class _TransactionListState extends State<TransactionList> {
+  late List<TransactionRecord> _previousTxList = [];
+  final GlobalKey<SliverAnimatedListState> _txListKey =
+      GlobalKey<SliverAnimatedListState>();
+  final Duration _duration = const Duration(milliseconds: 1200);
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<WalletDetailViewModel, List<TransactionRecord>>(
+        selector: (_, viewModel) => viewModel.txList,
+        builder: (_, txList, __) {
+          _handleTransactionListUpdate(txList);
+
+          return txList.isNotEmpty
+              ? _buildSliverAnimatedList(txList)
+              : _buildEmptyState();
+        });
+  }
+
+  void _handleTransactionListUpdate(List<TransactionRecord> txList) {
+    final oldTxMap = {for (var tx in _previousTxList) tx.transactionHash: tx};
+    final newTxMap = {for (var tx in txList) tx.transactionHash: tx};
+
+    final List<int> insertedIndexes = [];
+    final List<int> removedIndexes = [];
+
+    for (int i = 0; i < txList.length; i++) {
+      if (!oldTxMap.containsKey(txList[i].transactionHash)) {
+        insertedIndexes.add(i);
+      }
+    }
+
+    for (int i = 0; i < _previousTxList.length; i++) {
+      if (!newTxMap.containsKey(_previousTxList[i].transactionHash)) {
+        removedIndexes.add(i);
+      }
+    }
+
+    // 마지막 인덱스부터 삭제 (index shift 문제 방지)
+    for (var index in removedIndexes.reversed) {
+      _txListKey.currentState?.removeItem(
+        index,
+        (context, animation) =>
+            _buildRemoveTransactionItem(_previousTxList[index], animation),
+        duration: _duration,
+      );
+    }
+
+    // 삽입된 인덱스 순서대로 추가
+    for (var index in insertedIndexes) {
+      _txListKey.currentState?.insertItem(index, duration: _duration);
+    }
+
+    _previousTxList = List.from(txList);
+  }
+
+  Widget _buildSliverAnimatedList(List<TransactionRecord> txList) {
+    return SliverAnimatedList(
+      key: _txListKey,
+      initialItemCount: txList.length,
+      itemBuilder: (context, index, animation) {
+        return _buildTransactionItem(
+            txList[index], animation, txList.length - 1 == index);
+      },
+    );
+  }
+
+  Widget _buildTransactionItem(
+      TransactionRecord tx, Animation<double> animation, bool isLastItem) {
+    return Column(
+      children: [
+        SlideTransition(
+          position: AnimationUtil.buildSlideInAnimation(animation),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: TransactionItemCard(
+              key: Key(tx.transactionHash),
+              tx: tx,
+              currentUnit: widget._currentUnit,
+              id: widget.widget.id,
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  '/transaction-detail',
+                  arguments: {
+                    'id': widget.widget.id,
+                    'txHash': tx.transactionHash,
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
+      ],
+    );
+  }
+
+  Widget _buildRemoveTransactionItem(
+      TransactionRecord tx, Animation<double> animation) {
+    var offsetAnimation = AnimationUtil.buildSlideOutAnimation(animation);
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: offsetAnimation,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: TransactionItemCard(
+            key: Key(tx.transactionHash),
+            tx: tx,
+            currentUnit: widget._currentUnit,
+            id: widget.widget.id,
+            onPressed: () {
+              Navigator.pushNamed(context, '/transaction-detail', arguments: {
+                'id': widget.widget.id,
+                'txHash': tx.transactionHash
+              });
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return SliverFillRemaining(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 80),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Text(
+            t.tx_not_found,
+            style: CoconutTypography.body1_16,
+          ),
+        ),
+      ),
+    );
   }
 }

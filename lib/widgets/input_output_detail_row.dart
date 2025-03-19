@@ -58,7 +58,8 @@ class InputOutputDetailRow extends StatelessWidget {
                   width: balanceMaxWidth,
                   child: Text(
                     textAlign: TextAlign.end,
-                    satoshiToBitcoinString(balance).normalizeTo11Characters(),
+                    satoshiToBitcoinString(balance.abs())
+                        .normalizeTo11Characters(),
                     style: CoconutTypography.body2_14_Number.copyWith(
                       color: rowProperty.rightItemColor,
                       height: 16 / 14,
@@ -76,7 +77,8 @@ class InputOutputDetailRow extends StatelessWidget {
                 SizedBox(
                   width: balanceMaxWidth,
                   child: Text(
-                    satoshiToBitcoinString(balance).normalizeTo11Characters(),
+                    satoshiToBitcoinString(balance.abs())
+                        .normalizeTo11Characters(),
                     style: CoconutTypography.body2_14_Number.copyWith(
                       color: rowProperty.rightItemColor,
                       height: 16 / 14,

@@ -3,7 +3,6 @@ import 'dart:collection';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -20,8 +19,6 @@ import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
-import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
@@ -199,6 +196,7 @@ class WalletProvider extends ChangeNotifier {
       _walletItemList = await _fetchWalletListFromDB();
       _walletBalance = fetchWalletBalanceMap();
       _walletLoadState = WalletLoadState.loadCompleted;
+      _walletItemList.map((e) => debugPrint(e.name));
     } catch (e) {
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
       // 앱 삭제 후 재설치 했는데 위 에러가 발생하는 경우가 있습니다.
@@ -235,8 +233,7 @@ class WalletProvider extends ChangeNotifier {
     _walletSubscriptionState = WalletSubscriptionState.syncing;
     notifyListeners();
 
-    Result<bool> result =
-        await _nodeProvider.subscribeWallets(_walletItemList, this);
+    Result<bool> result = await _nodeProvider.subscribeWallets(_walletItemList);
     if (result.isSuccess) {
       _walletSubscriptionState = WalletSubscriptionState.completed;
     } else {
@@ -328,7 +325,7 @@ class WalletProvider extends ChangeNotifier {
       await Future.delayed(const Duration(seconds: 1));
     }
     if (_walletSubscriptionState != WalletSubscriptionState.failed) {
-      _nodeProvider.subscribeWallet(newWallet, this);
+      _nodeProvider.subscribeWallet(newWallet);
     }
 
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
@@ -344,7 +341,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
-    updatedList.add(newItem);
+    updatedList.insert(0, newItem); // wallet-list의 지갑 정렬 방식을 최신순으로 하기 위함
     _walletItemList = updatedList;
 
     _saveWalletCount(updatedList.length);
@@ -389,7 +386,7 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
-    _walletRepository.deleteWallet(walletId);
+    await _walletRepository.deleteWallet(walletId);
     _walletItemList = await _fetchWalletListFromDB();
     _utxoRepository.deleteAllUtxoTag(walletId);
     _saveWalletCount(_walletItemList.length);

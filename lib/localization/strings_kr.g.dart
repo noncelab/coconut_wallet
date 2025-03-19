@@ -84,7 +84,8 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get block_num => '블록 번호';
   String get inquiry_details => '문의 내용';
   String get utxo_total => 'UTXO 합계';
-  String get recipient => '보낼 주소';
+  String get receiver => '보낼 주소';
+  String get recipient => '받는 사람';
   String get estimated_fee => '예상 수수료';
   String get total_cost => '총 소요 수량';
   String get input_directly => '직접 입력';
@@ -645,6 +646,7 @@ class TranslationsErrorsKr {
   String get realm_not_found => '데이터를 찾을 수 없습니다.';
   String get realm_exception => 'Realm 작업 중 오류가 발생했습니다.';
   String get node_unknown => '노드 연결 중 알 수 없는 오류가 발생했습니다.';
+  String get broadcast_error => '트랜잭션 전송에 실패했습니다.';
   String get network_connect => '네트워크 연결이 없습니다.';
   String get network_not_found => '네트워크가 연결되어 있지 않아요!';
   String get insufficient_balance => '잔액이 부족해요.';
@@ -808,7 +810,7 @@ class TranslationsErrorsAddressErrorKr {
   String get not_for_testnet => '테스트넷 주소가 아니에요.';
   String get not_for_mainnet => '메인넷 주소가 아니에요.';
   String get not_for_regtest => '레그테스트넷 주소가 아니에요.';
-  String get duplicated => '이미 입력한 주소에요.';
+  String get duplicated => '이미 입력한 주소예요';
 }
 
 // Path: errors.pin_check_error
@@ -1107,8 +1109,10 @@ extension on Translations {
         return '문의 내용';
       case 'utxo_total':
         return 'UTXO 합계';
-      case 'recipient':
+      case 'receiver':
         return '보낼 주소';
+      case 'recipient':
+        return '받는 사람';
       case 'estimated_fee':
         return '예상 수수료';
       case 'total_cost':
@@ -1489,6 +1493,8 @@ extension on Translations {
         return 'Realm 작업 중 오류가 발생했습니다.';
       case 'errors.node_unknown':
         return '노드 연결 중 알 수 없는 오류가 발생했습니다.';
+      case 'errors.broadcast_error':
+        return '트랜잭션 전송에 실패했습니다.';
       case 'errors.network_connect':
         return '네트워크 연결이 없습니다.';
       case 'errors.network_not_found':
@@ -1510,7 +1516,7 @@ extension on Translations {
       case 'errors.address_error.not_for_regtest':
         return '레그테스트넷 주소가 아니에요.';
       case 'errors.address_error.duplicated':
-        return '이미 입력한 주소에요.';
+        return '이미 입력한 주소예요';
       case 'errors.pin_check_error.trial_count':
         return ({required Object count}) => '${count}번 다시 시도할 수 있어요';
       case 'errors.pin_check_error.failed':

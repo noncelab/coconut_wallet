@@ -1,6 +1,6 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
-import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 
 class UtxoOrderDropdown extends StatelessWidget {
@@ -24,7 +24,7 @@ class UtxoOrderDropdown extends StatelessWidget {
             right: 16,
             child: Material(
               borderRadius: BorderRadius.circular(16),
-              child: CustomDropdown(
+              child: CoconutPulldownMenu(
                 buttons: [
                   UtxoOrder.byTimestampDesc.text,
                   UtxoOrder.byTimestampAsc.text,
@@ -32,34 +32,47 @@ class UtxoOrderDropdown extends StatelessWidget {
                   UtxoOrder.byAmountAsc.text,
                 ],
                 dividerColor: Colors.black,
-                onTapButton: (index) {
+                onTap: (index) {
                   switch (index) {
-                    case 0: // 큰 금액순
+                    case 0: // 최신순
                       if (selectedFilter != UtxoOrder.byTimestampDesc) {
                         onSelected(UtxoOrder.byTimestampDesc);
                       }
                       break;
-                    case 1: // 작은 금액순
+                    case 1: // 오래된 순
                       if (selectedFilter != UtxoOrder.byTimestampAsc) {
                         onSelected(UtxoOrder.byTimestampAsc);
                       }
                       break;
-                    case 2: // 최신순
+                    case 2: // 큰 금액순
                       if (selectedFilter != UtxoOrder.byAmountDesc) {
                         onSelected(UtxoOrder.byAmountDesc);
                       }
                       break;
-                    case 3: // 오래된 순
+                    case 3: // 작은 금액순
                       if (selectedFilter != UtxoOrder.byAmountAsc) {
                         onSelected(UtxoOrder.byAmountAsc);
                       }
                       break;
                   }
                 },
-                selectedButton: selectedFilter.text,
+                selectedIndex: _getIndexBySelectedFilter(),
               ),
             ),
           )
         : Container();
+  }
+
+  int _getIndexBySelectedFilter() {
+    switch (selectedFilter) {
+      case UtxoOrder.byTimestampDesc:
+        return 0;
+      case UtxoOrder.byTimestampAsc:
+        return 1;
+      case UtxoOrder.byAmountDesc:
+        return 2;
+      case UtxoOrder.byAmountAsc:
+        return 3;
+    }
   }
 }
