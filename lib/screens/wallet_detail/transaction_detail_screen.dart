@@ -106,7 +106,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           if (txList == null || txList.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-
           final tx = viewModel
               .transactionList![viewModel.selectedTransactionIndex]
               .transaction!;
@@ -167,7 +166,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             txList.last.transaction!)) ...{
                           Column(
                             children: [
-                              _pendingWidget(txList.last.transaction!),
+                              _pendingWidget(txList.first.transaction!),
                               if (rbfType)
                                 (txList.last.transaction!.rbfHistoryList !=
                                             null &&
@@ -418,6 +417,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     // _viewModel.init();
     _viewModel.showDialogNotifier.removeListener(_showDialogListener);
     _viewModel.showDialogNotifier.removeListener(_loadCompletedListener);
+    _viewModel.clearTransationList();
     super.dispose();
   }
 
@@ -453,10 +453,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
             _viewModel.transactionList!.indexOf(transactionDetail),
       );
     }).toList();
-    for (var fee in feeBumpingHistoryList) {
-      debugPrint(
-          'feeHIstoryList[${feeBumpingHistoryList.indexOf(fee)}] ::::: ${fee.feeRate}');
-    }
   }
 
   void _updateAnimation() {
@@ -585,7 +581,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           feeBumpingHistoryList.length,
           (index) {
             final feeHistory = feeBumpingHistoryList[index];
-            bool isLast = index == feeBumpingHistoryList.length - 1;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

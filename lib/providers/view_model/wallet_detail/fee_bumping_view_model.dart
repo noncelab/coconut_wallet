@@ -376,7 +376,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     if (recommendedFeeRate == null) {
       return 0;
     }
-
     if (_transaction.feeRate + 1 > recommendedFeeRate) {
       return _transaction.feeRate.toInt() + 1;
     }

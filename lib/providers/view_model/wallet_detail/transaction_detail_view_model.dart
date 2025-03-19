@@ -73,22 +73,32 @@ class TransactionDetailViewModel extends ChangeNotifier {
         : null;
   }
 
+  void clearTransationList() {
+    _transactionList?.clear();
+  }
+
   void _initTransactionList() {
     final currentTransaction =
         _txProvider.getTransactionRecord(_walletId, _txHash);
     _transactionList = [TransactionDetail(currentTransaction)];
-    debugPrint('_txHash : $_txHash');
+
+    debugPrint('🚀 [Transaction Initialization] 🚀');
+    debugPrint('----------------------------------------');
+    debugPrint('🔹 Transaction Hash: $_txHash');
     debugPrint(
-        '(1) currentTransaction.feerate: ${currentTransaction!.feeRate}');
+        '🔹 Current Transaction FeeRate: ${currentTransaction!.feeRate}');
     debugPrint(
-        '(2) currentTransaction.inputaddress: ${currentTransaction.inputAddressList.map((e) => e.address.toString())}');
+        '🔹 Input Addresses: ${currentTransaction.inputAddressList.map((e) => e.address.toString()).join(", ")}');
     debugPrint(
-        '(3) rbfHistoryList.length : ${_transactionList!.last.transaction!.rbfHistoryList?.length}');
+        '🔹 RBF History Count: ${currentTransaction.rbfHistoryList?.length}');
+    debugPrint(
+        '🔹 CPFP History: ${_transactionList![_selectedTransactionIndex].transaction!.cpfpHistory}');
+    debugPrint('----------------------------------------');
+
     // rbfHistory가 존재하면 순차적으로 _transactionList에 추가
-    if (currentTransaction.cpfpHistory == null &&
+    if (currentTransaction.transactionType == 'SENT' &&
         currentTransaction.rbfHistoryList != null &&
         currentTransaction.rbfHistoryList!.isNotEmpty) {
-      // rbfHistoryList를 역순으로 정렬
       var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
       for (var rbfTx in reversedRbfHistoryList) {
         if (rbfTx.transactionHash == currentTransaction.transactionHash) {
@@ -97,57 +107,51 @@ class TransactionDetailViewModel extends ChangeNotifier {
         var rbfTxTransaction =
             _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
         _transactionList!.add(TransactionDetail(rbfTxTransaction));
-        debugPrint('(4) rbfHistory::: ${rbfTx.feeRate}');
       }
-    } else if (currentTransaction.cpfpHistory != null) {
-      // cpfpHistory가 존재하면 _transactionList에 추가
+    } else if (currentTransaction.transactionType == 'RECEIVED' &&
+        currentTransaction.cpfpHistory != null) {
       _transactionList = [
         TransactionDetail(_txProvider.getTransactionRecord(
             _walletId, currentTransaction.cpfpHistory!.parentTransactionHash)),
         TransactionDetail(_txProvider.getTransactionRecord(
             _walletId, currentTransaction.cpfpHistory!.childTransactionHash)),
       ];
-
-      debugPrint('(3) cpfpHistoryList.length::: ${_transactionList!.length}');
     }
-    debugPrint('(5) _transactionList.length::: ${_transactionList!.length}');
 
     debugPrint(
-        '====================================================================');
+        '📌 Updated Transaction List Length: ${_transactionList!.length}');
+    debugPrint('----------------------------------------');
+
     for (var transaction in _transactionList!) {
-      debugPrint('transaction feeRate: ${transaction._transaction!.feeRate}}');
-      debugPrint('transaction fee: ${transaction._transaction.fee}}');
+      debugPrint('📍 Transaction Details:');
+      debugPrint('  - Fee Rate: ${transaction._transaction!.feeRate}');
+      debugPrint('  - Fee: ${transaction._transaction.fee}');
+      debugPrint('  - Block Height: ${transaction._transaction.blockHeight}');
+      debugPrint('  - Amount: ${transaction._transaction.amount}');
+      debugPrint('  - Created At: ${transaction._transaction.createdAt}');
+      debugPrint('  - Hash: ${transaction._transaction.transactionHash}');
+      debugPrint('  - Type: ${transaction._transaction.transactionType}');
+      debugPrint('  - vSize: ${transaction._transaction.vSize}');
       debugPrint(
-          'transaction blockHeight: ${transaction._transaction.blockHeight}}');
-      debugPrint('transaction amount: ${transaction._transaction.amount}}');
-      debugPrint(
-          'transaction createdAt: ${transaction._transaction.createdAt}}');
-      debugPrint(
-          'transaction transactionHash: ${transaction._transaction.transactionHash}}');
-      debugPrint(
-          'transaction transactionType: ${transaction._transaction.transactionType}}');
-      debugPrint('transaction vSize: ${transaction._transaction.vSize}}');
-      debugPrint(
-          'transaction rbfHistoryList.length: ${transaction._transaction.rbfHistoryList?.length}}');
-      debugPrint(
-          '////////////////////////////////////////////////////////////');
+          '  - RBF History Count: ${transaction._transaction.rbfHistoryList?.length}');
+      debugPrint('----------------------------------------');
+
       if (transaction._transaction.rbfHistoryList != null) {
         for (var a in transaction._transaction.rbfHistoryList!) {
-          debugPrint(
-              'rbfHistory[${transaction._transaction.rbfHistoryList!.indexOf(a)}] feeRate: ${a.feeRate}');
-          debugPrint(
-              'rbfHistory[${transaction._transaction.rbfHistoryList!.indexOf(a)}] timestamp: ${a.timestamp}');
-          debugPrint(
-              'rbfHistory[${transaction._transaction.rbfHistoryList!.indexOf(a)}] transactionHash: ${a.transactionHash}');
-          debugPrint(
-              '-------------------------------------------------------------');
+          debugPrint('🔄 RBF History Entry:');
+          debugPrint('  - Fee Rate: ${a.feeRate}');
+          debugPrint('  - Timestamp: ${a.timestamp}');
+          debugPrint('  - Transaction Hash: ${a.transactionHash}');
+          debugPrint('----------------------------------------');
         }
       }
-      debugPrint(
-          '////////////////////////////////////////////////////////////');
     }
+
+    debugPrint('✅ Transaction Initialization Complete');
     debugPrint(
         '====================================================================');
+
+    notifyListeners();
   }
 
   // void init() {
