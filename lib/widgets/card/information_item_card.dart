@@ -9,6 +9,7 @@ class InformationItemCard extends StatelessWidget {
   final bool showIcon;
   final bool isNumber;
   final Widget? rightIcon;
+  final CrossAxisAlignment crossAxisAlignment;
 
   const InformationItemCard(
       {super.key,
@@ -17,7 +18,8 @@ class InformationItemCard extends StatelessWidget {
       this.onPressed,
       this.showIcon = false,
       this.isNumber = true,
-      this.rightIcon});
+      this.rightIcon,
+      this.crossAxisAlignment = CrossAxisAlignment.center});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +29,7 @@ class InformationItemCard extends StatelessWidget {
             color: Colors.transparent,
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: crossAxisAlignment,
               children: [
                 Text(label, style: Styles.body2Bold),
                 showIcon ? const Spacer() : const SizedBox(width: 32),

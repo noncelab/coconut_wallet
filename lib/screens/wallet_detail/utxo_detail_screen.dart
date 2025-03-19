@@ -114,7 +114,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                   _buildAmount(),
                   if (viewModel.utxoStatus == UtxoStatus.unspent)
                     _buildPrice()
-                  else ...{_buildStatus(viewModel.utxoStatus)},
+                  else ...{_buildPendingStatus(viewModel.utxoStatus)},
                   _buildTxInputOutputSection(viewModel, tx),
                   _buildAddress(),
                   _buildTxMemo(
@@ -333,7 +333,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  Widget _buildStatus(UtxoStatus status) {
+  Widget _buildPendingStatus(UtxoStatus status) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
       child: Row(
@@ -341,10 +341,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         children: [
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10.0),
               color: status == UtxoStatus.incoming
                   ? CoconutColors.cyan.withOpacity(0.2)
                   : CoconutColors.primary.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Lottie.asset(
               status == UtxoStatus.incoming
@@ -462,15 +462,18 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildBlockHeight() {
     return UnderlineButtonItemCard(
         label: t.block_num,
-        underlineButtonLabel: t.view_mempool,
+        underlineButtonLabel:
+            widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
         onTapUnderlineButton: () {
-          if (widget.utxo.blockHeight == 0) return;
-
-          launchUrl(Uri.parse(
-              "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}"));
+          widget.utxo.status == UtxoStatus.unspent
+              ? launchUrl(Uri.parse(
+                  "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}"))
+              : ();
         },
         child: Text(
-          widget.utxo.blockHeight.toString(),
+          widget.utxo.blockHeight != 0
+              ? widget.utxo.blockHeight.toString()
+              : '-',
           style: CoconutTypography.body2_14_Number,
         ));
   }

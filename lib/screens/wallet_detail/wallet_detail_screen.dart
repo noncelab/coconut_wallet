@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
+import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
@@ -246,10 +247,21 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Provider.of<SendInfoProvider>(context, listen: false));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final appBarRenderBox =
-          _appBarKey.currentContext?.findRenderObject() as RenderBox;
-      final headerWidgetRenderBox =
-          _headerWidgetKey.currentContext?.findRenderObject() as RenderBox;
+      Size topSelectorWidgetSize = const Size(0, 0);
+      Size topHeaderWidgetSize = const Size(0, 0);
+      Size positionedTopWidgetSize = const Size(0, 0);
+
+      if (_appBarKey.currentContext != null) {
+        final appBarRenderBox =
+            _appBarKey.currentContext?.findRenderObject() as RenderBox;
+        _appBarSize = appBarRenderBox.size;
+      }
+
+      if (_headerWidgetKey.currentContext != null) {
+        final headerWidgetRenderBox =
+            _headerWidgetKey.currentContext?.findRenderObject() as RenderBox;
+        topSelectorWidgetSize = headerWidgetRenderBox.size;
+      }
 
       if (_faucetIconKey.currentContext != null) {
         final faucetRenderBox =
@@ -258,18 +270,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         _faucetIconSize = faucetRenderBox.size;
       }
 
-      if (_txListLabelWidgetKey.currentContext != null) {
-        _txlistLabelRenderBox = _txListLabelWidgetKey.currentContext
-            ?.findRenderObject() as RenderBox;
+      if (_stickyHeaderWidgetKey.currentContext != null) {
+        final positionedTopWidgetRenderBox =
+            _stickyHeaderWidgetKey.currentContext?.findRenderObject()
+                as RenderBox;
+        positionedTopWidgetSize =
+            positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
       }
-
-      final positionedTopWidgetRenderBox = _stickyHeaderWidgetKey.currentContext
-          ?.findRenderObject() as RenderBox;
-
-      _appBarSize = appBarRenderBox.size;
-      final topSelectorWidgetSize = headerWidgetRenderBox.size;
-      final topHeaderWidgetSize = _txlistLabelRenderBox.size;
-      final positionedTopWidgetSize = positionedTopWidgetRenderBox.size;
 
       setState(() {
         _topPadding = topSelectorWidgetSize.height +

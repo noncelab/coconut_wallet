@@ -124,6 +124,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   // todo: 상태를 반환해주도록 수정되면 좋겠음.
   Future<void> refreshWallet() async {
     _balance = _getBalance();
+    _setReceiveAddress();
     _txProvider.initTxList(_walletId);
     notifyListeners();
   }
@@ -151,6 +152,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     if (_prevWalletUpdateInfo.balance != UpdateStatus.completed &&
         updateInfo.balance == UpdateStatus.completed) {
       _balance = _getBalance();
+      _setReceiveAddress();
       notifyListeners();
       Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.');
     }
@@ -224,7 +226,6 @@ class WalletDetailViewModel extends ChangeNotifier {
       Function(bool, String) onResult) async {
     _isRequesting = true;
     notifyListeners();
-
     try {
       final response = await _faucetService
           .getTestCoin(FaucetRequest(address: address, amount: requestAmount));
@@ -243,6 +244,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       _isRequesting = false;
+      _setReceiveAddress();
       notifyListeners();
     }
   }
@@ -253,6 +255,11 @@ class WalletDetailViewModel extends ChangeNotifier {
     if (faucetHistory.count < 3) {
       _faucetTooltipVisible = true;
     }
+    notifyListeners();
+  }
+
+  // TODO: 필요없을지도 모름.
+  void updateProvider() async {
     notifyListeners();
   }
 

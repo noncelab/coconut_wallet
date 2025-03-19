@@ -19,7 +19,6 @@ class WalletListViewModel extends ChangeNotifier {
   late WalletSubscriptionState _walletSyncingState;
   late final ConnectivityProvider _connectivityProvider;
   Map<int, int> _walletBalance = {};
-  late StreamSubscription<Map<int, Balance?>> _balanceSubscription;
   late bool? _isNetworkOn;
   bool _isFirstLoaded = false;
 
@@ -102,11 +101,5 @@ class WalletListViewModel extends ChangeNotifier {
   void updateIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _balanceSubscription.cancel();
-    return super.dispose();
   }
 }

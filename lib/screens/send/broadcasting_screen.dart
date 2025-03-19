@@ -192,7 +192,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                                   InformationItemCard(
                                       label: t.receiver,
                                       value: viewModel.recipientAddresses,
-                                      isNumber: true),
+                                      isNumber: true,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start),
                                   const Divider(
                                       color: MyColors.transparentWhite_12,
                                       height: 1),

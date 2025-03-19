@@ -106,9 +106,12 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                               child: Column(
                                 children: [
                                   InformationItemCard(
-                                      label: t.receiver,
-                                      value: viewModel.addresses,
-                                      isNumber: true),
+                                    label: t.receiver,
+                                    value: viewModel.addresses,
+                                    isNumber: true,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                  ),
                                   const Divider(
                                       color: MyColors.transparentWhite_12,
                                       height: 1),
