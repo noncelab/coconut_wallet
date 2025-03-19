@@ -125,7 +125,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                 _buildAmount(),
                 if (viewModel.utxoStatus == UtxoStatus.unspent)
                   _buildPrice()
-                else ...{_buildStatus(viewModel.utxoStatus)},
+                else ...{_buildPendingStatus(viewModel.utxoStatus)},
                 _buildTxInputOutputSection(viewModel, tx),
                 _buildAddress(),
                 _buildTxMemo(
@@ -347,7 +347,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  Widget _buildStatus(UtxoStatus status) {
+  Widget _buildPendingStatus(UtxoStatus status) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
       child: Row(
