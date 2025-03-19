@@ -230,8 +230,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   // rbf 트랜잭션 만들기
-  void _generateRbfTransaction(double newFeeFate) {
-    debugPrint('original fee: ${transaction.fee}');
+  void _generateRbfTransaction(double newFeeRate) {
     var changeAddress = '';
     var recipientAddress = '';
     var amount = 0;
@@ -262,40 +261,55 @@ class FeeBumpingViewModel extends ChangeNotifier {
     List<Utxo> utxoList =
         _getUtxoListForRbf(transaction.inputAddressList); // pending tx의 input
 
-    // changeAddress가 없는 경우 amount가 가장 작은 utxo를 골라 utxoList에 추가
-    if (changeAddress.isEmpty) {
-      final utxoStateList =
-          _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
-      if (utxoStateList.isNotEmpty) {
-        utxoStateList.sort((a, b) => a.amount.compareTo(b.amount));
-        final utxo = utxoStateList[0];
-        utxoList.add(Utxo(
-          utxo.transactionHash,
-          utxo.index,
-          utxo.amount,
-          _addressRepository.getDerivationPath(_walletId, utxo.to),
-        ));
-        debugPrint('utxo 추가됨 ${utxo.amount}');
+    double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+    double outputSum = amount + _transaction.vSize * newFeeRate;
+
+    if (inputSum < outputSum) {
+      // recipient가 내 주소인 경우 amount 조정
+      if (_walletProvider.containsAddress(_walletId, recipientAddress)) {
+        amount = (inputSum - _transaction.vSize * newFeeRate).toInt();
+        debugPrint('amount 조정됨 $amount');
       } else {
-        debugPrint('사용할 수 있는 utxo가 없어서 rbf 트랜잭션 생성 불가');
+        // repicient가 다른 주소인 경우 utxo 추가
+        final utxoStateList =
+            _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
+        if (utxoStateList.isNotEmpty) {
+          utxoStateList.sort((a, b) => a.amount.compareTo(b.amount));
+          final utxo = utxoStateList[0];
+          utxoList.add(Utxo(
+            utxo.transactionHash,
+            utxo.index,
+            utxo.amount,
+            _addressRepository.getDerivationPath(_walletId, utxo.to),
+          ));
+          debugPrint('utxo 추가됨 : utxo id${utxo.transactionHash}:${utxo.index}');
+          changeAddress = _walletProvider.getChangeAddress(_walletId).address;
+        }
       }
     }
 
-    // transaction type에 따라 트랜잭션
+    if (_getTransactionType() == TransactionType.forSweep &&
+        changeAddress.isEmpty) {
+      _bumpingTransaction = Transaction.forSweep(utxoList, recipientAddress,
+          newFeeRate, walletListItemBase.walletBase);
+      _sendInfoProvider.setRecipientAddress(recipientAddress);
+      _sendInfoProvider.setIsMaxMode(true);
+      return;
+    }
+
+    if (changeAddress.isEmpty) {
+      changeAddress = _walletProvider.getChangeAddress(_walletId).address;
+    }
+
     switch (_getTransactionType()) {
       case TransactionType.forSweep:
-        _bumpingTransaction = Transaction.forSweep(utxoList, recipientAddress,
-            newFeeFate, walletListItemBase.walletBase);
-        _sendInfoProvider.setRecipientAddress(recipientAddress);
-        _sendInfoProvider.setIsMaxMode(true);
-        break;
       case TransactionType.forSinglePayment:
         _bumpingTransaction = Transaction.forSinglePayment(
             utxoList,
             recipientAddress,
             _addressRepository.getDerivationPath(_walletId, changeAddress),
             amount,
-            newFeeFate,
+            newFeeRate,
             walletListItemBase.walletBase);
         _sendInfoProvider.setRecipientAddress(recipientAddress);
         _sendInfoProvider.setIsMaxMode(false);
@@ -305,7 +319,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
             _createPaymentMapForRbfBatchTx(transaction.outputAddressList);
 
         _bumpingTransaction = Transaction.forBatchPayment(utxoList, paymentMap,
-            changeAddress, newFeeFate, walletListItemBase.walletBase);
+            changeAddress, newFeeRate, walletListItemBase.walletBase);
 
         _sendInfoProvider.setRecipientsForBatch(
             paymentMap.map((key, value) => MapEntry(key, value.toDouble())));

@@ -442,8 +442,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     feeBumpingHistoryList =
         _viewModel.transactionList!.map((transactionDetail) {
       return FeeHistory(
-        feeRate: transactionDetail.transaction!.feeRate.toInt(),
-        isSlected: _viewModel.selectedTransactionIndex ==
+        feeRate: transactionDetail.transaction!.feeRate,
+        isSelected: _viewModel.selectedTransactionIndex ==
             _viewModel.transactionList!.indexOf(transactionDetail),
       );
     }).toList();
@@ -484,7 +484,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
               children: [
                 // 타임라인 선
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Stack(
                       alignment: Alignment.center,
@@ -493,12 +492,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           children: [
                             Container(
                                 width: 1,
-                                height: isLast ? 18 : 36,
+                                height: isLast ? 16 : 33,
                                 color: CoconutColors.gray700),
                             if (isLast)
                               Container(
                                 width: 1,
-                                height: 11,
+                                height: 16,
                                 color: Colors.transparent,
                               ),
                           ],
@@ -516,6 +515,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                     ),
                     CoconutLayout.spacing_100w,
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         CoconutChip(
                           color: _viewModel.selectedTransactionIndex == index
@@ -538,7 +538,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         Text(
                           t.transaction_fee_bumping_screen
                               .existing_fee_value(value: feeHistory.feeRate),
-                          style: CoconutTypography.body2_14_NumberBold,
+                          style: CoconutTypography.body2_14_Number,
                         ),
                       ],
                     ),
@@ -834,11 +834,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 }
 
 class FeeHistory {
-  final int feeRate;
-  final bool isSlected;
+  final double feeRate;
+  final bool isSelected;
 
   FeeHistory({
     required this.feeRate,
-    this.isSlected = false,
+    this.isSelected = false,
   });
 }

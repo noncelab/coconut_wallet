@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
 class TransactionDetail {
@@ -251,13 +252,16 @@ class TransactionDetailViewModel extends ChangeNotifier {
         '🔹 CPFP History: ${_transactionList![_selectedTransactionIndex].transaction!.cpfpHistory}');
     debugPrint('----------------------------------------');
 
-    // rbfHistory가 존재하면 순차적으로 _transactionList에 추가
+    // rbfHistory가 존재하면 높은 fee rate부터 _transactionList에 추가
     if ((currentTransaction.transactionType == TransactionType.sent.name ||
             currentTransaction.transactionType == TransactionType.self.name) &&
         currentTransaction.rbfHistoryList != null &&
         currentTransaction.rbfHistoryList!.isNotEmpty) {
       var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
-      for (var rbfTx in reversedRbfHistoryList) {
+      List<RbfHistory> sortedList = reversedRbfHistoryList.toList()
+        ..sort((a, b) => b.feeRate.compareTo(a.feeRate));
+
+      for (var rbfTx in sortedList) {
         if (rbfTx.transactionHash == currentTransaction.transactionHash) {
           continue;
         }
