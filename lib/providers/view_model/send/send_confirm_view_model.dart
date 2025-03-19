@@ -13,6 +13,7 @@ class SendConfirmViewModel extends ChangeNotifier {
   late final WalletProvider _walletProvider;
   late WalletListItemBase _walletListItemBase;
   late int? _bitcoinPriceKrw;
+  late int _estimatedFee;
   late int _totalUsedAmount;
 
   late double _amount;
@@ -23,6 +24,7 @@ class SendConfirmViewModel extends ChangeNotifier {
       this._sendInfoProvider, this._walletProvider, this._bitcoinPriceKrw) {
     _walletListItemBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
+    _estimatedFee = _sendInfoProvider.estimatedFee!;
     if (_sendInfoProvider.recipientsForBatch != null) {
       _setBatchTxParams();
     } else {
@@ -36,14 +38,14 @@ class SendConfirmViewModel extends ChangeNotifier {
       ? null
       : UnmodifiableMapView(_recipientsForBatch!);
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
-  int get estimatedFee => _sendInfoProvider.estimatedFee!;
+  int get estimatedFee => _estimatedFee;
   String get walletName => _walletListItemBase.name;
   int get totalUsedAmount => _totalUsedAmount;
 
   void _setSingleTxParams() {
     _amount = _sendInfoProvider.amount!;
     _addresses = [_sendInfoProvider.recipientAddress!];
-    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + estimatedFee;
+    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + _estimatedFee;
   }
 
   void _setBatchTxParams() {
@@ -56,7 +58,7 @@ class SendConfirmViewModel extends ChangeNotifier {
     });
     _amount = totalSendAmount;
     _addresses = addresses;
-    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + estimatedFee;
+    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + _estimatedFee;
   }
 
   Future<String> generateUnsignedPsbt() async {
