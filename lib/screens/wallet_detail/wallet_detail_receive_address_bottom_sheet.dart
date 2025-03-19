@@ -1,7 +1,7 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
@@ -22,7 +22,7 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
     List<String> paths = derivationPath.split('/');
     String index = paths[paths.length - 1];
     return Scaffold(
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       appBar: CustomAppBar.build(
         title: t.receive,
         context: context,
@@ -32,7 +32,10 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Container(
-            padding: Paddings.container,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 20,
+            ),
             child: Column(
               children: [
                 QRCodeInfo(
@@ -47,12 +50,12 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
                           children: [
                             Text(
                               '주소 - $index',
-                              style: Styles.body1,
+                              style: CoconutTypography.body1_16,
                             ),
                             Text(
                               derivationPath,
-                              style: Styles.body2.copyWith(
-                                color: MyColors.transparentWhite_70,
+                              style: CoconutTypography.body2_14.setColor(
+                                CoconutColors.white.withOpacity(0.7),
                               ),
                             ),
                           ],
@@ -72,12 +75,11 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
                                 horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
-                              color: MyColors.transparentWhite_15,
+                              color: CoconutColors.white.withOpacity(0.15),
                             ),
-                            child: Text(
+                            child: const Text(
                               '전체 주소 보기',
-                              style: Styles.caption.copyWith(
-                                  fontFamily: CustomFonts.text.getFontFamily),
+                              style: CoconutTypography.body3_12,
                             ),
                           ),
                         ),

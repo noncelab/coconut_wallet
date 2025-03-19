@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -5,6 +6,7 @@ import 'package:coconut_wallet/model/error/app_error.dart'; // FIXME: remove mod
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
@@ -14,6 +16,7 @@ import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
@@ -107,13 +110,17 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               title: t.broadcasting_screen.title,
               context: context,
               isActive: viewModel.isInitDone,
-              onNextPressed: () {
+              onNextPressed: () async {
                 if (viewModel.isNetworkOn == false) {
                   CustomToast.showWarningToast(
                       context: context, text: ErrorCodes.networkError.message);
                   return;
                 }
-
+                if (viewModel.feeBumpingType != null &&
+                    viewModel.hasTransactionConfirmed()) {
+                  await TransactionUtil.showTransactionConfirmedDialog(context);
+                  return;
+                }
                 if (viewModel.isInitDone) {
                   broadcast();
                 }
@@ -235,13 +242,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   void initState() {
     super.initState();
     _viewModel = BroadcastingViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<UtxoTagProvider>(context, listen: false),
-        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
-        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
-        Provider.of<NodeProvider>(context, listen: false));
-
+      Provider.of<SendInfoProvider>(context, listen: false),
+      Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<UtxoTagProvider>(context, listen: false),
+      Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+      Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
+      Provider.of<NodeProvider>(context, listen: false),
+      Provider.of<TransactionProvider>(context, listen: false),
+    );
     WidgetsBinding.instance.addPostFrameCallback((duration) {
       setOverlayLoading(true);
 

@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -26,6 +27,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final TransactionProvider _txProvider;
   final AddressRepository _addressRepository;
   final ConnectivityProvider _connectivityProvider;
+  final SendInfoProvider _sendInfoProvider;
 
   BlockTimestamp? _currentBlock;
 
@@ -53,7 +55,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
       this._txProvider,
       this._nodeProvider,
       this._addressRepository,
-      this._connectivityProvider) {
+      this._connectivityProvider,
+      this._sendInfoProvider) {
     _initTransactionList();
     _initViewMoreButtons();
   }
@@ -82,16 +85,30 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint(
         '(3) rbfHistoryList.length : ${_transactionList!.last.transaction!.rbfHistoryList?.length}');
     // rbfHistory가 존재하면 순차적으로 _transactionList에 추가
-    if (currentTransaction.rbfHistoryList != null &&
+    if (currentTransaction.cpfpHistory == null &&
+        currentTransaction.rbfHistoryList != null &&
         currentTransaction.rbfHistoryList!.isNotEmpty) {
       // rbfHistoryList를 역순으로 정렬
       var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
       for (var rbfTx in reversedRbfHistoryList) {
+        if (rbfTx.transactionHash == currentTransaction.transactionHash) {
+          continue;
+        }
         var rbfTxTransaction =
             _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
         _transactionList!.add(TransactionDetail(rbfTxTransaction));
         debugPrint('(4) rbfHistory::: ${rbfTx.feeRate}');
       }
+    } else if (currentTransaction.cpfpHistory != null) {
+      // cpfpHistory가 존재하면 _transactionList에 추가
+      _transactionList = [
+        TransactionDetail(_txProvider.getTransactionRecord(
+            _walletId, currentTransaction.cpfpHistory!.parentTransactionHash)),
+        TransactionDetail(_txProvider.getTransactionRecord(
+            _walletId, currentTransaction.cpfpHistory!.childTransactionHash)),
+      ];
+
+      debugPrint('(3) cpfpHistoryList.length::: ${_transactionList!.length}');
     }
     debugPrint('(5) _transactionList.length::: ${_transactionList!.length}');
 
@@ -198,7 +215,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (_walletProvider.walletItemList.isNotEmpty) {
       _setCurrentBlockHeight();
       _txProvider.initTransaction(_walletId, _txHash);
-
+      TransactionRecord updatedTx = _txProvider.transaction!;
+      TransactionRecord currentTx = transactionList!.first.transaction!;
+      if (updatedTx.blockHeight != currentTx.blockHeight ||
+          updatedTx.transactionHash != currentTx.transactionHash) {
+        _initTransactionList();
+      }
       if (_initViewMoreButtons() == false) {
         _showDialogNotifier.value = true;
       }
@@ -301,6 +323,10 @@ class TransactionDetailViewModel extends ChangeNotifier {
       _transactionList![_selectedTransactionIndex].transaction!, index);
   String getDerivationPath(String address) {
     return _addressRepository.getDerivationPath(_walletId, address);
+  }
+
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
   }
 }
 

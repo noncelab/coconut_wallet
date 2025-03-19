@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
@@ -8,7 +9,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_text_field.dart';
 import 'package:flutter/cupertino.dart';
@@ -128,14 +128,14 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.close, color: MyColors.white),
+                    icon: const Icon(Icons.close, color: CoconutColors.white),
                     onPressed: () {
                       Navigator.pop(context);
                     },
                   ),
                   Text(
                     t.faucet_request_bottom_sheet.title,
-                    style: Styles.body1,
+                    style: CoconutTypography.body1_16,
                   ),
                   Visibility(
                     visible: false,
@@ -145,7 +145,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                     maintainSemantics: false,
                     maintainInteractivity: false,
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: MyColors.white),
+                      icon: const Icon(Icons.close, color: CoconutColors.white),
                       onPressed: () {
                         Navigator.pop(context);
                       },
@@ -164,7 +164,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                   const SizedBox(height: 30),
                   Text(
                     t.faucet_request_bottom_sheet.recipient,
-                    style: Styles.body1Bold,
+                    style: CoconutTypography.body1_16_Bold,
                   ),
                   const SizedBox(height: 10),
                   CustomTextField(
@@ -174,8 +174,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                         _validateAddress(text.toLowerCase());
                       },
                       maxLines: 2,
-                      style: Styles.body1.merge(TextStyle(
-                          fontFamily: CustomFonts.number.getFontFamily))),
+                      style: CoconutTypography.body1_16_Number),
                   const SizedBox(height: 2),
                   const SizedBox(height: 2),
                   Visibility(
@@ -190,7 +189,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                       child: Text(
                         t.faucet_request_bottom_sheet
                             .my_address(name: _walletName, index: _walletIndex),
-                        style: Styles.body2Number,
+                        style: CoconutTypography.body2_14_Number,
                       ),
                     ),
                   ),
@@ -201,40 +200,41 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
             IgnorePointer(
               ignoring: !canRequestFaucet(),
               child: CupertinoButton(
-                  onPressed: () {
-                    widget.onRequest.call(_walletAddress, _requestAmount);
-                    FocusScope.of(context).unfocus();
-                  },
-                  borderRadius: BorderRadius.circular(8.0),
-                  padding: EdgeInsets.zero,
-                  color: canRequestFaucet()
-                      ? MyColors.white
-                      : MyColors.transparentWhite_30,
-                  child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 28, vertical: 12),
-                      child: _state == _AvailabilityState.checking
-                          ? const SizedBox(
-                              height: 28,
-                              width: 28,
-                              child: CircularProgressIndicator(
-                                color: MyColors.white,
-                              ),
-                            )
-                          : Text(
-                              _isRequesting
-                                  ? t.faucet_request_bottom_sheet.requesting
-                                  : t.faucet_request_bottom_sheet
-                                      .request_amount(
-                                          bitcoin:
-                                              formatNumber(_requestAmount)),
-                              style: Styles.label.merge(TextStyle(
-                                  color: (canRequestFaucet())
-                                      ? MyColors.black
-                                      : MyColors.transparentBlack_50,
+                onPressed: () {
+                  widget.onRequest.call(_walletAddress, _requestAmount);
+                  FocusScope.of(context).unfocus();
+                },
+                borderRadius: BorderRadius.circular(8.0),
+                padding: EdgeInsets.zero,
+                color: canRequestFaucet()
+                    ? CoconutColors.white
+                    : CoconutColors.white.withOpacity(0.3),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  child: _state == _AvailabilityState.checking
+                      ? const SizedBox(
+                          height: 28,
+                          width: 28,
+                          child: CircularProgressIndicator(
+                            color: CoconutColors.white,
+                          ),
+                        )
+                      : Text(
+                          _isRequesting
+                              ? t.faucet_request_bottom_sheet.requesting
+                              : t.faucet_request_bottom_sheet.request_amount(
+                                  bitcoin: formatNumber(_requestAmount)),
+                          style: CoconutTypography.body2_14
+                              .setColor((canRequestFaucet())
+                                  ? CoconutColors.black
+                                  : CoconutColors.black.withOpacity(0.5))
+                              .merge(const TextStyle(
                                   letterSpacing: -0.1,
                                   fontWeight: FontWeight.w600)),
-                            ))),
+                        ),
+                ),
+              ),
             ),
             const SizedBox(height: 4),
             if (_state == _AvailabilityState.bad) ...{
@@ -315,7 +315,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   Widget _buildWarningMessage(String message) {
     return Text(
       message,
-      style: Styles.warning,
+      style: CoconutTypography.body3_12.setColor(CoconutColors.red),
     );
   }
 

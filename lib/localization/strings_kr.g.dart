@@ -779,8 +779,11 @@ class TranslationsTransactionFeeBumpingScreenDialogKr {
   final Translations _root; // ignore: unused_field
 
   // Translations
-  String get title => '알림';
-  String get description => '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
+  String get fee_alert_title => '알림';
+  String get fee_alert_description =>
+      '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
+  String get confirmed_alert_title => '거래 완료';
+  String get confirmed_alert_description => '처리 대기 중이던 거래가 완료되었어요.';
 }
 
 // Path: errors.fee_selection_error
@@ -1363,10 +1366,14 @@ extension on Translations {
         return '수수료를 조회하는 중이에요';
       case 'transaction_fee_bumping_screen.recommended_fee_less_than_pending_tx_fee':
         return '기존 수수료보다 큰 수수료를 지정해 주세요';
-      case 'transaction_fee_bumping_screen.dialog.title':
+      case 'transaction_fee_bumping_screen.dialog.fee_alert_title':
         return '알림';
-      case 'transaction_fee_bumping_screen.dialog.description':
+      case 'transaction_fee_bumping_screen.dialog.fee_alert_description':
         return '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
+      case 'transaction_fee_bumping_screen.dialog.confirmed_alert_title':
+        return '거래 완료';
+      case 'transaction_fee_bumping_screen.dialog.confirmed_alert_description':
+        return '처리 대기 중이던 거래가 완료되었어요.';
       case 'wallet_list_add_guide_card.add_watch_only':
         return '보기 전용 지갑을 추가해 주세요';
       case 'wallet_list_add_guide_card.top_right_icon':

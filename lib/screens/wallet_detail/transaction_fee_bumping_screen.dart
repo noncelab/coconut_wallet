@@ -4,12 +4,13 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:flutter/material.dart';
@@ -86,7 +87,7 @@ class _TransactionFeeBumpingScreenState
               children: [
                 Scaffold(
                   resizeToAvoidBottomInset: true,
-                  backgroundColor: MyColors.black,
+                  backgroundColor: CoconutColors.black,
                   appBar: CoconutAppBar.build(
                     title: _isRbf
                         ? t.transaction_fee_bumping_screen.rbf
@@ -259,7 +260,8 @@ class _TransactionFeeBumpingScreenState
     if (!canContinue) return;
 
     viewModel
-        .generateUnsignedPsbt(int.parse(_textEditingController.text))
+        .generateUnsignedPsbt(
+            int.parse(_textEditingController.text), widget.feeBumpingType)
         .then((value) {
       Navigator.pushNamed(context, '/unsigned-transaction-qr',
           arguments: {'walletName': widget.walletName});
@@ -294,13 +296,18 @@ class _TransactionFeeBumpingScreenState
   }
 
   Future<bool> _showConfirmationDialog(BuildContext context) async {
+    if (_viewModel.hasTransactionConfirmed()) {
+      await TransactionUtil.showTransactionConfirmedDialog(context);
+      return false;
+    }
     if (!_isEstimatedFeeTooHigh) return true;
     return await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
             return CoconutPopup(
-              title: t.transaction_fee_bumping_screen.dialog.title,
-              description: t.transaction_fee_bumping_screen.dialog.description,
+              title: t.transaction_fee_bumping_screen.dialog.fee_alert_title,
+              description:
+                  t.transaction_fee_bumping_screen.dialog.fee_alert_description,
               onTapRight: () {
                 Navigator.pop(context, true);
               },
@@ -318,6 +325,7 @@ class _TransactionFeeBumpingScreenState
     final sendInfoProvider =
         Provider.of<SendInfoProvider>(context, listen: false);
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    final txProvider = Provider.of<TransactionProvider>(context, listen: false);
     final addressRepository =
         Provider.of<AddressRepository>(context, listen: false);
     final utxoRepositry = Provider.of<UtxoRepository>(context, listen: false);
@@ -328,6 +336,7 @@ class _TransactionFeeBumpingScreenState
       widget.walletId,
       nodeProvider,
       sendInfoProvider,
+      txProvider,
       walletProvider,
       addressRepository,
       utxoRepositry,

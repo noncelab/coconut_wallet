@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -28,6 +29,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
+  final TransactionProvider _txProvider;
   final AddressRepository _addressRepository;
   final UtxoRepository _utxoRepository;
   final int _walletId;
@@ -48,12 +50,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._walletId,
     this._nodeProvider,
     this._sendInfoProvider,
+    this._txProvider,
     this._walletProvider,
     this._addressRepository,
     this._utxoRepository,
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
-    _sendInfoProvider.setWalletId(_walletId);
     _fetchRecommendedFees(); // 현재 수수료 조회
   }
 
@@ -77,11 +79,20 @@ class FeeBumpingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // pending상태였던 Tx가 confirmed 되었는지 조회
+  bool hasTransactionConfirmed() {
+    TransactionRecord? tx = _txProvider.getTransactionRecord(
+        _walletId, transaction.transactionHash);
+    if (tx == null || tx.blockHeight! <= 0) return false;
+    return true;
+  }
+
   // unsinged psbt 생성
-  Future<String> generateUnsignedPsbt(int newTxFeeRate) async {
+  Future<String> generateUnsignedPsbt(
+      int newTxFeeRate, FeeBumpingType feeBumpingType) async {
     _generateTransaction(newTxFeeRate);
     if (_bumpingTransaction != null) {
-      _updateSendInfoProvider(newTxFeeRate);
+      _updateSendInfoProvider(newTxFeeRate, feeBumpingType);
 
       return Psbt.fromTransaction(
               _bumpingTransaction!, walletListItemBase.walletBase)
@@ -111,15 +122,18 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
   }
 
-  void _updateSendInfoProvider(int newTxFeeRate) {
+  void _updateSendInfoProvider(
+      int newTxFeeRate, FeeBumpingType feeBumpingType) {
     debugPrint('updateSendInfoProvider');
     bool isMultisig =
         walletListItemBase.walletType == WalletType.multiSignature;
+    _sendInfoProvider.setWalletId(_walletId);
     _sendInfoProvider.setIsMultisig(isMultisig);
     _sendInfoProvider.setFeeRate(newTxFeeRate);
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(
             _bumpingTransaction!, walletListItemBase.walletBase)
         .serialize());
+    _sendInfoProvider.setFeeBumptingType(feeBumpingType);
 
     if (_type == FeeBumpingType.rbf) {
       _sendInfoProvider.setAmount(_transaction.amount!.toDouble());
@@ -165,6 +179,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // 새 수수료로 트랜잭션 생성
   void _generateTransaction(int newFeeRate) {
+    if (hasTransactionConfirmed()) return;
     if (_type == FeeBumpingType.cpfp) {
       _generateCpfpTransaction(newFeeRate);
     } else if (_type == FeeBumpingType.rbf) {

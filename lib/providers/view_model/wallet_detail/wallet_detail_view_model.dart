@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
@@ -25,6 +26,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final TransactionProvider _txProvider;
   final ConnectivityProvider _connectProvider;
   final UpbitConnectModel _upbitConnectModel;
+  final SendInfoProvider _sendInfoProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   late WalletListItemBase _walletListBaseItem;
@@ -59,7 +61,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   int get sendingAmount => _sendingAmount;
 
   WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
-      this._connectProvider, this._upbitConnectModel) {
+      this._connectProvider, this._upbitConnectModel, this._sendInfoProvider) {
     // 지갑 상세 초기화
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
@@ -286,4 +288,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     _saveFaucetRecordToSharedPrefs();
   }
   // <------ Faucet 메소드 끝
+
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
+  }
 }

@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
@@ -78,6 +79,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           Provider.of<NodeProvider>(_, listen: false),
           Provider.of<AddressRepository>(_, listen: false),
           Provider.of<ConnectivityProvider>(_, listen: false),
+          Provider.of<SendInfoProvider>(_, listen: false),
         );
 
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
@@ -443,7 +445,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
         _viewModel.transactionList!.isEmpty) {
       return;
     }
-
     feeBumpingHistoryList =
         _viewModel.transactionList!.map((transactionDetail) {
       return FeeHistory(
@@ -530,7 +531,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           color: _viewModel.selectedTransactionIndex == index
                               ? CoconutColors.primary
                               : CoconutColors.gray800,
-                          label: index == 0
+                          label: !isLast
                               ? t.transaction_fee_bumping_screen.new_fee
                               : t.transaction_fee_bumping_screen.existing_fee,
                           labelColor:
@@ -584,6 +585,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           feeBumpingHistoryList.length,
           (index) {
             final feeHistory = feeBumpingHistoryList[index];
+            bool isLast = index == feeBumpingHistoryList.length - 1;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -713,30 +715,34 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           Expanded(
             child: Align(
               alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () async {
-                  if (!_viewModel.isNetworkOn) {
-                    CustomToast.showWarningToast(
-                        context: context,
-                        text: ErrorCodes.networkError.message);
-                    return;
-                  }
-
-                  Navigator.pushNamed(context, '/transaction-fee-bumping',
-                      arguments: {
-                        'transaction': tx,
-                        'feeBumpingType':
-                            rbfType ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
-                        'walletId': widget.id,
-                        'walletName': _viewModel.getWalletName(),
-                      });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    rbfType ? t.quick_send : t.quick_receive,
-                    style: CoconutTypography.body2_14.setColor(
-                        rbfType ? CoconutColors.primary : CoconutColors.cyan),
+              child: Visibility(
+                visible: rbfType || feeBumpingHistoryList.length < 2,
+                child: GestureDetector(
+                  onTap: () async {
+                    if (!_viewModel.isNetworkOn) {
+                      CustomToast.showWarningToast(
+                          context: context,
+                          text: ErrorCodes.networkError.message);
+                      return;
+                    }
+                    _viewModel.clearSendInfo();
+                    Navigator.pushNamed(context, '/transaction-fee-bumping',
+                        arguments: {
+                          'transaction': tx,
+                          'feeBumpingType': rbfType
+                              ? FeeBumpingType.rbf
+                              : FeeBumpingType.cpfp,
+                          'walletId': widget.id,
+                          'walletName': _viewModel.getWalletName(),
+                        });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      rbfType ? t.quick_send : t.quick_receive,
+                      style: CoconutTypography.body2_14.setColor(
+                          rbfType ? CoconutColors.primary : CoconutColors.cyan),
+                    ),
                   ),
                 ),
               ),

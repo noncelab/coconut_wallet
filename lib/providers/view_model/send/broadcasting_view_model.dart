@@ -2,10 +2,13 @@ import 'dart:collection';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -16,6 +19,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   late final WalletProvider _walletProvider;
   late final UtxoTagProvider _tagProvider;
   late final NodeProvider _nodeProvider;
+  late final TransactionProvider _txProvider;
   late final WalletBase _walletBase;
   late final int _walletId;
   late bool? _isNetworkOn;
@@ -30,12 +34,14 @@ class BroadcastingViewModel extends ChangeNotifier {
   late int? _bitcoinPriceKrw;
 
   BroadcastingViewModel(
-      this._sendInfoProvider,
-      this._walletProvider,
-      this._tagProvider,
-      this._isNetworkOn,
-      this._bitcoinPriceKrw,
-      this._nodeProvider) {
+    this._sendInfoProvider,
+    this._walletProvider,
+    this._tagProvider,
+    this._isNetworkOn,
+    this._bitcoinPriceKrw,
+    this._nodeProvider,
+    this._txProvider,
+  ) {
     _walletBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
@@ -67,6 +73,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   int get walletId => _walletId;
 
   UtxoTagProvider get tagProvider => _tagProvider;
+
+  FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
     return _nodeProvider.broadcast(signedTx);
@@ -180,6 +188,14 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
 
     return false;
+  }
+
+  // pending상태였던 Tx가 confirmed 되었는지 조회
+  bool hasTransactionConfirmed() {
+    TransactionRecord? tx = _txProvider.getTransactionRecord(
+        walletId, _txProvider.transaction!.transactionHash);
+    if (tx == null || tx.blockHeight! <= 0) return false;
+    return true;
   }
 
   Future<void> updateTagsOfUsedUtxos(String signedTx) async {
