@@ -55,6 +55,7 @@ class _WalletListScreenState extends State<WalletListScreen>
   late ScrollController _scrollController;
 
   late List<WalletListItemBase> _previousWalletList = [];
+  late Map<int, int> _previousWalletBalance = {};
   final GlobalKey<SliverAnimatedListState> _walletListKey =
       GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
@@ -98,11 +99,17 @@ class _WalletListScreenState extends State<WalletListScreen>
       },
       child: Consumer<WalletListViewModel>(
         builder: (context, viewModel, child) {
-          _handleWalletListUpdate(
-            viewModel.walletItemList,
-            (id) => viewModel.getWalletBalance(id),
-            viewModel.isBalanceHidden,
-          );
+          if (viewModel.isWalletListChanged(
+              _previousWalletList,
+              viewModel.walletItemList,
+              _previousWalletBalance,
+              (id) => viewModel.getWalletBalance(id))) {
+            _handleWalletListUpdate(
+              viewModel.walletItemList,
+              (id) => viewModel.getWalletBalance(id),
+              viewModel.isBalanceHidden,
+            );
+          }
 
           return PopScope(
             canPop: false,
@@ -326,8 +333,8 @@ class _WalletListScreenState extends State<WalletListScreen>
   void _handleWalletListUpdate(List<WalletListItemBase> walletList,
       Function(int) getWalletBalance, bool isBalanceHidden) async {
     if (isWalletLoading) return;
-
     isWalletLoading = true;
+
     final oldWallets = {
       for (var walletItem in _previousWalletList) walletItem.id: walletItem
     };
@@ -338,6 +345,7 @@ class _WalletListScreenState extends State<WalletListScreen>
         insertedIndexes.add(i);
       }
     }
+
     for (var i = 0; i < insertedIndexes.length; i++) {
       await Future.delayed(Duration(milliseconds: 100 * i), () {
         _walletListKey.currentState
@@ -346,6 +354,11 @@ class _WalletListScreenState extends State<WalletListScreen>
     }
 
     _previousWalletList = List.from(walletList);
+    _previousWalletBalance = {
+      for (var walletId in walletList)
+        walletId.id: getWalletBalance(walletId.id) ?? 0
+    };
+
     isWalletLoading = false;
   }
 
