@@ -90,10 +90,13 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   // unsinged psbt 생성
-  void generateUnsignedPsbt(
+  bool generateUnsignedPsbt(
       double newTxFeeRate, FeeBumpingType feeBumpingType) {
-    _generateBumpingTransaction(newTxFeeRate.toDouble());
-    _updateSendInfoProvider(newTxFeeRate, feeBumpingType);
+    if (_generateBumpingTransaction(newTxFeeRate)) {
+      _updateSendInfoProvider(newTxFeeRate, feeBumpingType);
+      return true;
+    }
+    return false;
   }
 
   // 수수료 입력 시 예상 총 수수료 계산
