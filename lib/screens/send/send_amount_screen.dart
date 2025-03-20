@@ -4,6 +4,7 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -62,7 +63,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                               alignment: Alignment.center,
                               child: Column(children: [
                                 const SizedBox(height: 16),
-                                if (viewModel.unconfirmedBalance > 0)
+                                if (viewModel.incomingBalance > 0)
                                   CustomTooltip(
                                       backgroundColor:
                                           MyColors.white.withOpacity(0.9),
@@ -70,7 +71,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                           text: TextSpan(
                                         text: t.tooltip.amount_to_be_sent(
                                             bitcoin: satoshiToBitcoinString(
-                                                viewModel.unconfirmedBalance)),
+                                                viewModel.incomingBalance)),
                                         style: const TextStyle(
                                           fontFamily: 'Pretendard',
                                           fontWeight: FontWeight.normal,
@@ -249,6 +250,9 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     }
 
     _viewModel.setAmountWithInput();
-    Navigator.pushNamed(context, routeName);
+    _viewModel.removeWalletUpdateListener();
+    Navigator.pushNamed(context, routeName).then((_) {
+      _viewModel.addWalletUpdateListner();
+    });
   }
 }

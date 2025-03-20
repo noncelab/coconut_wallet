@@ -36,7 +36,7 @@ class SendConfirmViewModel extends ChangeNotifier {
       ? null
       : UnmodifiableMapView(_recipientsForBatch!);
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
-  int get estimatedFee => _sendInfoProvider.estimatedFee!;
+  int get estimatedFee => _sendInfoProvider.estimatedFee ?? 0;
   String get walletName => _walletListItemBase.name;
   int get totalUsedAmount => _totalUsedAmount;
 

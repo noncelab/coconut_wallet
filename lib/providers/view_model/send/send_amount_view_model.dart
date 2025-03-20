@@ -1,5 +1,8 @@
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -10,18 +13,19 @@ class SendAmountViewModel extends ChangeNotifier {
   late final WalletProvider _walletProvider;
   late bool? _isNetworkOn;
   late int _confirmedBalance;
-  late int _unconfirmedBalance;
+  late int _incomingBalance;
   late String _input;
   late bool _isNextButtonEnabled;
   int? _errorIndex;
+  bool _isUtxoUpdating = false;
 
   SendAmountViewModel(
       this._sendInfoProvider, this._walletProvider, this._isNetworkOn) {
-    var balance = _walletProvider.getWalletBalance(_sendInfoProvider.walletId!);
-    _confirmedBalance = balance.confirmed;
-    _unconfirmedBalance = balance.unconfirmed;
+    _initBalances(); // _confirmedBalance, _incomingBalance
     _input = '';
     _isNextButtonEnabled = false;
+
+    addWalletUpdateListner();
   }
 
   int get confirmedBalance => _confirmedBalance;
@@ -29,7 +33,7 @@ class SendAmountViewModel extends ChangeNotifier {
   String get input => _input;
   bool get isNetworkOn => _isNetworkOn == true;
   bool get isNextButtonEnabled => _isNextButtonEnabled;
-  int get unconfirmedBalance => _unconfirmedBalance;
+  int get incomingBalance => _incomingBalance;
 
   // TODO: 추후 반환 타입 변경
   void checkGoingNextAvailable() {
@@ -114,5 +118,52 @@ class SendAmountViewModel extends ChangeNotifier {
     _isNextButtonEnabled = true;
 
     notifyListeners();
+  }
+
+  void _initBalances() {
+    List<UtxoState> utxos =
+        _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
+
+    int unspentBalance = 0, incomingBalance = 0;
+    for (UtxoState utxo in utxos) {
+      if (utxo.status == UtxoStatus.unspent) {
+        unspentBalance += utxo.amount;
+      } else if (utxo.status == UtxoStatus.incoming) {
+        incomingBalance += utxo.amount;
+      }
+    }
+
+    _confirmedBalance = unspentBalance;
+    _incomingBalance = incomingBalance;
+  }
+
+  void _onWalletUpdated(WalletUpdateInfo walletUpdateInfo) {
+    if (walletUpdateInfo.utxo == UpdateStatus.syncing) {
+      _isUtxoUpdating = true;
+    } else if (walletUpdateInfo.utxo == UpdateStatus.completed &&
+        _isUtxoUpdating) {
+      _isUtxoUpdating = false;
+      _initBalances();
+      notifyListeners();
+    }
+  }
+
+  // pending tx가 완료되었을 때 잔액을 업데이트 하기 위해
+  void addWalletUpdateListner() {
+    _walletProvider.addWalletUpdateListener(
+        _sendInfoProvider.walletId!, _onWalletUpdated);
+  }
+
+  void removeWalletUpdateListener() {
+    _walletProvider.removeWalletUpdateListener(
+        _sendInfoProvider.walletId!, _onWalletUpdated);
+  }
+
+  @override
+  void dispose() {
+    if (_sendInfoProvider.walletId != null) {
+      removeWalletUpdateListener();
+    }
+    super.dispose();
   }
 }
