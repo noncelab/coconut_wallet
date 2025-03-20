@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:dio/dio.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/endpoints.dart';
@@ -69,6 +70,11 @@ class DioClient {
       Logger.log("[ERROR] : $e");
       throw e.toString();
     }
+  }
+
+  Future<RecommendedFee> getRecommendedFee() async {
+    final response = await _dio.get('/fee/recommended');
+    return RecommendedFee.fromJson(response.data);
   }
 }
 

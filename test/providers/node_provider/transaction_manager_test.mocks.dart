@@ -889,10 +889,7 @@ class MockWalletProvider extends _i1.Mock implements _i6.WalletProvider {
       ) as _i13.Future<dynamic>);
 
   @override
-  bool containsAddress(
-    int? walletId,
-    String? address,
-  ) =>
+  bool containsAddress(int? walletId, String? address, {bool? isChange}) =>
       (super.noSuchMethod(
         Invocation.method(
           #containsAddress,

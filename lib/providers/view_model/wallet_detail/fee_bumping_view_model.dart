@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/services/dio_client.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -171,14 +172,16 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // 노드 프로바이더에서 추천 수수료 조회
   Future<void> _fetchRecommendedFees() async {
-    final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
-    if (recommendedFeesResult.isFailure) {
-      _didFetchRecommendedFeesSuccessfully = false;
-      notifyListeners();
-      return;
-    }
+    // TODO: 테스트 후 원래 코드로 원복해야 함
+    // final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
+    // if (recommendedFeesResult.isFailure) {
+    //   _didFetchRecommendedFeesSuccessfully = false;
+    //   notifyListeners();
+    //   return;
+    // }
 
-    final recommendedFees = recommendedFeesResult.value;
+    // final recommendedFees = recommendedFeesResult.value;
+    final recommendedFees = await DioClient().getRecommendedFee();
 
     _feeInfos[0].satsPerVb = recommendedFees.fastestFee;
     _feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
