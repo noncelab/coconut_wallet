@@ -36,15 +36,17 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BroadcastingViewModel _viewModel;
 
   void broadcast() async {
-    setOverlayLoading(true);
+    if (context.loaderOverlay.visible) return;
+    _setOverlayLoading(true);
+    await Future.delayed(const Duration(seconds: 1));
+
     Psbt psbt = Psbt.parse(_viewModel.signedTransaction);
     Transaction signedTx =
         psbt.getSignedTransaction(_viewModel.walletAddressType);
 
     try {
       Result<String> result = await _viewModel.broadcast(signedTx);
-
-      setOverlayLoading(false);
+      _setOverlayLoading(false);
 
       if (result.isFailure) {
         vibrateMedium();
@@ -71,7 +73,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       }
     } catch (_) {
       Logger.log(">>>>> broadcast error: $_");
-      setOverlayLoading(false);
+      _setOverlayLoading(false);
       String message =
           t.alert.error_send.broadcasting_failed(error: _.toString());
       if (_.toString().contains('min relay fee not met')) {
@@ -253,7 +255,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       Provider.of<TransactionProvider>(context, listen: false),
     );
     WidgetsBinding.instance.addPostFrameCallback((duration) {
-      setOverlayLoading(true);
+      _setOverlayLoading(true);
 
       try {
         _viewModel.setTxInfo();
@@ -263,11 +265,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             context: context, content: t.alert.error_tx.not_parsed(error: e));
       }
 
-      setOverlayLoading(false);
+      _setOverlayLoading(false);
     });
   }
 
-  void setOverlayLoading(bool value) {
+  void _setOverlayLoading(bool value) {
     if (value) {
       context.loaderOverlay.show();
     } else {
