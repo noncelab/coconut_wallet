@@ -180,7 +180,7 @@ class UtxoRepository extends BaseRepository {
     );
 
     final existingUtxoMap = Map<String, RealmUtxo>.fromEntries(
-      existingUtxos.map((e) => MapEntry(e.id, e)),
+      existingUtxos.map((realmUtxo) => MapEntry(realmUtxo.id, realmUtxo)),
     );
 
     final newUtxos = utxos
@@ -287,6 +287,20 @@ class UtxoRepository extends BaseRepository {
     final utxosToDelete = realm.query<RealmUtxo>(
       r'walletId == $0 AND id IN $1',
       [walletId, utxoIds],
+    );
+
+    if (utxosToDelete.isEmpty) return;
+
+    realm.write(() {
+      realm.deleteMany(utxosToDelete);
+    });
+  }
+
+  void deleteUtxosByReplacedTransactionHashSet(
+      int walletId, Set<String> replacedTxHashSet) {
+    final utxosToDelete = realm.query<RealmUtxo>(
+      r'walletId == $0 AND transactionHash IN $1',
+      [walletId, replacedTxHashSet],
     );
 
     if (utxosToDelete.isEmpty) return;
