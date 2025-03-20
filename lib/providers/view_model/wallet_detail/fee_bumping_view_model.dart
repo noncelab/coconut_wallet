@@ -149,13 +149,21 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   TransactionType? _getTransactionType() {
-    int inputCount = transaction.inputAddressList.length;
-    int outputCount = transaction.outputAddressList.length;
+    int inputCount = _transaction.inputAddressList.length;
+    int outputCount = _transaction.outputAddressList.length;
 
     if (inputCount >= 1 && outputCount == 1) {
       return TransactionType.forSweep; // 여러 개의 UTXO를 하나의 주소로 보내는 경우
     } else if (inputCount >= 1 && outputCount == 2) {
-      return TransactionType.forSinglePayment; // 하나의 수신자 + 잔돈 주소
+      String firstOutAddress = _transaction.outputAddressList.first.address;
+      String secondOutAddress = _transaction.outputAddressList.last.address;
+      if (_walletProvider.containsAddress(_walletId, firstOutAddress,
+              isChange: true) ||
+          _walletProvider.containsAddress(_walletId, secondOutAddress,
+              isChange: true)) {
+        return TransactionType.forSinglePayment; // 하나의 수신자 + 잔돈 주소
+      }
+      return TransactionType.forBatchPayment; // 두개의 수신자 (내 주소가 없는 경우)
     } else if (inputCount >= 1 && outputCount > 2) {
       return TransactionType.forBatchPayment; // 여러 개의 수신자가 있는 경우
     }
