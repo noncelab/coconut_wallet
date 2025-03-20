@@ -345,7 +345,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       }
 
       selectedUtxoList.remove(utxo);
-      if (estimatedFee != null && _isSelectedUtxoEnough()) {
+      if (estimatedFee != null &&
+          _isSelectedUtxoEnough() &&
+          satsPerVb != null) {
         setEstimatedFee(estimateFee(satsPerVb!));
       }
     } else {
