@@ -271,6 +271,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
         debugPrint('amount 조정됨 $amount');
       } else {
         // repicient가 다른 주소인 경우 utxo 추가
+        // todo: utxo lock 기능 추가 시 utxo 제외 로직 필요
         final utxoStateList =
             _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
         if (utxoStateList.isNotEmpty) {
