@@ -622,8 +622,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           CoconutChip(
                             color: CoconutColors.gray800,
                             label: index == 0
-                                ? t.transaction_fee_bumping_screen.new_fee
-                                : t.transaction_fee_bumping_screen.existing_fee,
+                                ? t.transaction_fee_bumping_screen.existing_fee
+                                : t.transaction_fee_bumping_screen.new_fee,
                             labelColor: CoconutColors.white,
                           ),
                           CoconutLayout.spacing_200w,
