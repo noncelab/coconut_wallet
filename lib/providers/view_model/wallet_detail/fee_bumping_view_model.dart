@@ -368,7 +368,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
             derivationPath,
           );
 
-          debugPrint('utxo add!!');
           utxoList.add(utxo);
         }
       }
@@ -431,21 +430,20 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return 0;
     }
 
-    double temporalFeeRate = _transaction.feeRate + 1;
-
-    _generateRbfTransaction(temporalFeeRate); // 임시 최소 수수료율로 트랜잭션 생성
+    _generateRbfTransaction(recommendedFeeRate.toDouble()); // 추천 수수료율로 트랜잭션 생성
 
     double estimatedVirtualByte = _estimateVirtualByte(_bumpingTransaction!);
-    double expectedFee = _transaction.fee!.toDouble() + estimatedVirtualByte;
+    // 최소 수수료 = (이전 트랜잭션 보다 1 sat/vbyte 높은 fee
+    double minimumRequiredFee =
+        _transaction.fee!.toDouble() + estimatedVirtualByte;
+    double recommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
-    double requiredFee = estimatedVirtualByte * temporalFeeRate;
-
-    if (requiredFee < expectedFee) {
+    if (recommendedFee < minimumRequiredFee) {
       return double.parse(
-          (expectedFee / estimatedVirtualByte).toStringAsFixed(2));
+          (minimumRequiredFee / estimatedVirtualByte).toStringAsFixed(2));
     }
 
-    return double.parse(temporalFeeRate.toStringAsFixed(2));
+    return double.parse(recommendedFee.toStringAsFixed(2));
   }
 
   double _estimateVirtualByte(Transaction transaction) {
@@ -477,8 +475,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     // 추천 수수료가 현재 수수료보다 작은 경우
-    // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 발생하지 않는 상황이지만,
-    // regtest에서 임의로 마이닝을 중지하는 경우 발생할 수 있음.
+    // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 발생하지 않는 상황
+    // 하지만, regtest에서 임의로 마이닝을 중지하는 경우 발생하여 예외 처리
     // 예) (pending tx fee rate) = 4 s/vb, (recommended fee rate) = 1 s/vb
     if (recommendedFeeRate < _transaction.feeRate) {
       return t.transaction_fee_bumping_screen
