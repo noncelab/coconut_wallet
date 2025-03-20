@@ -476,6 +476,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return t.transaction_fee_bumping_screen.recommended_fees_is_null;
     }
 
+    // 추천 수수료가 현재 수수료보다 작은 경우
+    // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 발생하지 않는 상황이지만,
+    // regtest에서 임의로 마이닝을 중지하는 경우 발생할 수 있음.
+    // 예) (pending tx fee rate) = 4 s/vb, (recommended fee rate) = 1 s/vb
     if (recommendedFeeRate < _transaction.feeRate) {
       return t.transaction_fee_bumping_screen
           .recommended_fee_less_than_pending_tx_fee;
