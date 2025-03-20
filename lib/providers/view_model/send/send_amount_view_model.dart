@@ -31,6 +31,13 @@ class SendAmountViewModel extends ChangeNotifier {
   bool get isNextButtonEnabled => _isNextButtonEnabled;
   int get unconfirmedBalance => _unconfirmedBalance;
 
+  // TODO: 추후 반환 타입 변경
+  void checkGoingNextAvailable() {
+    if (_isNetworkOn != true) {
+      throw ErrorCodes.networkError.message;
+    }
+  }
+
   void onKeyTap(String newInput) {
     if (newInput == '<') {
       if (_input.isNotEmpty) {
@@ -107,12 +114,5 @@ class SendAmountViewModel extends ChangeNotifier {
     _isNextButtonEnabled = true;
 
     notifyListeners();
-  }
-
-  // TODO: 추후 반환 타입 변경
-  void checkGoingNextAvailable() {
-    if (_isNetworkOn != true) {
-      throw ErrorCodes.networkError.message;
-    }
   }
 }
