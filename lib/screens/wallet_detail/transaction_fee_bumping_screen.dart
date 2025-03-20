@@ -258,13 +258,13 @@ class _TransactionFeeBumpingScreenState
 
     if (!canContinue) return;
 
-    viewModel
-        .generateUnsignedPsbt(
-            double.parse(_textEditingController.text), widget.feeBumpingType)
-        .then((value) {
+    viewModel.generateUnsignedPsbt(
+        double.parse(_textEditingController.text), widget.feeBumpingType);
+
+    if (mounted) {
       Navigator.pushNamed(context, '/unsigned-transaction-qr',
           arguments: {'walletName': widget.walletName});
-    });
+    }
   }
 
   void _onFeeRateChanged(String input) {

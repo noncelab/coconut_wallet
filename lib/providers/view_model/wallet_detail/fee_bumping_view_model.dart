@@ -90,18 +90,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   // unsinged psbt 생성
-  Future<String> generateUnsignedPsbt(
-      double newTxFeeRate, FeeBumpingType feeBumpingType) async {
+  void generateUnsignedPsbt(
+      double newTxFeeRate, FeeBumpingType feeBumpingType) {
     _generateBumpingTransaction(newTxFeeRate.toDouble());
-    if (_bumpingTransaction != null) {
-      _updateSendInfoProvider(newTxFeeRate, feeBumpingType);
-
-      return Psbt.fromTransaction(
-              _bumpingTransaction!, walletListItemBase.walletBase)
-          .serialize();
-    }
-
-    return '';
+    _updateSendInfoProvider(newTxFeeRate, feeBumpingType);
   }
 
   // 수수료 입력 시 예상 총 수수료 계산
