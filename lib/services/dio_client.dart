@@ -73,7 +73,7 @@ class DioClient {
   }
 
   Future<RecommendedFee> getRecommendedFee() async {
-    final response = await _dio.get('/fee/recommended');
+    final response = await _dio.get('/mocking/recommended-fee');
     return RecommendedFee.fromJson(response.data);
   }
 }
