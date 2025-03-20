@@ -446,7 +446,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
           (minimumRequiredFee / estimatedVirtualByte).toStringAsFixed(2));
     }
 
-    return double.parse(recommendedFee.toStringAsFixed(2));
+    return double.parse(
+        (recommendedFee / estimatedVirtualByte).toStringAsFixed(2));
   }
 
   double _estimateVirtualByte(Transaction transaction) {
