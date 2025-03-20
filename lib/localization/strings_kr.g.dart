@@ -494,7 +494,7 @@ class TranslationsTransactionFeeBumpingScreenKr {
           required Object newTxFeeRate}) =>
       '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vb, 추천 수수료율 = ${recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb';
   String get current_fee => '현재 수수료';
-  String estimated_fee({required Object fee}) => '예상 총 수수료 ${fee} sats';
+  String estimated_fee({required Object fee}) => '예상 총 수수료 약 ${fee} sats';
   String get estimated_fee_too_high_error => '예상 총 수수료가 0.01 BTC 이상이에요!';
   String get recommended_fees_fetch_error => '추천 수수료를 조회할 수 없어요!';
   String get recommended_fees_is_null => '수수료를 조회하는 중이에요';
@@ -1375,7 +1375,7 @@ extension on Translations {
       case 'transaction_fee_bumping_screen.current_fee':
         return '현재 수수료';
       case 'transaction_fee_bumping_screen.estimated_fee':
-        return ({required Object fee}) => '예상 총 수수료 ${fee} sats';
+        return ({required Object fee}) => '예상 총 수수료 약 ${fee} sats';
       case 'transaction_fee_bumping_screen.estimated_fee_too_high_error':
         return '예상 총 수수료가 0.01 BTC 이상이에요!';
       case 'transaction_fee_bumping_screen.recommended_fees_fetch_error':

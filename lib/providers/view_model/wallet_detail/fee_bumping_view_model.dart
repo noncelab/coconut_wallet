@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -91,7 +92,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   // unsinged psbt 생성
   Future<String> generateUnsignedPsbt(
       double newTxFeeRate, FeeBumpingType feeBumpingType) async {
-    _generateTransaction(newTxFeeRate.toDouble());
+    _generateBumpingTransaction(newTxFeeRate.toDouble());
     if (_bumpingTransaction != null) {
       _updateSendInfoProvider(newTxFeeRate, feeBumpingType);
 
@@ -108,19 +109,21 @@ class FeeBumpingViewModel extends ChangeNotifier {
     if (newFeeRate == 0) {
       return 0;
     }
-    if (_bumpingTransaction == null) {
-      _generateTransaction(newFeeRate.toDouble());
-    }
 
-    double estimatedVirtualByte = _estimateVirtualByte(_bumpingTransaction!);
+    _bumpingTransaction ??=
+        _generateBumpingTransaction(newFeeRate) ? _bumpingTransaction : null;
 
-    return (estimatedVirtualByte * newFeeRate).ceil();
+    return _bumpingTransaction != null
+        ? (_estimateVirtualByte(_bumpingTransaction!) * newFeeRate)
+            .ceil()
+            .toInt()
+        : 0;
   }
 
   void _onFeeUpdated() {
     if (feeInfos[1].satsPerVb != null) {
       Logger.log('현재 수수료(보통) 업데이트 됨 >> ${feeInfos[1].satsPerVb}');
-      _generateTransaction(feeInfos[1].satsPerVb!.toDouble());
+      _generateBumpingTransaction(feeInfos[1].satsPerVb!.toDouble());
     } else {
       _fetchRecommendedFees();
     }
@@ -186,18 +189,20 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
     _feeInfos[2].satsPerVb = recommendedFees.hourFee;
     _didFetchRecommendedFeesSuccessfully = true;
-    _generateTransaction(_feeInfos[1].satsPerVb!.toDouble());
+    _generateBumpingTransaction(_feeInfos[1].satsPerVb!.toDouble());
     notifyListeners();
   }
 
   // 새 수수료로 트랜잭션 생성
-  void _generateTransaction(double newFeeRate) {
-    if (hasTransactionConfirmed()) return;
+  bool _generateBumpingTransaction(double newFeeRate) {
+    if (hasTransactionConfirmed()) return false;
+
     if (_type == FeeBumpingType.cpfp) {
       _generateCpfpTransaction(newFeeRate);
     } else if (_type == FeeBumpingType.rbf) {
       _generateRbfTransaction(newFeeRate);
     }
+    return true;
   }
 
   // cpfp 트랜잭션 만들기
@@ -413,8 +418,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double cpfpTxFee = totalFee - _transaction.fee!.toDouble();
     double cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
 
-    if (recommendedFeeRate < _transaction.feeRate + 0.1) {
-      return _transaction.feeRate + 0.1;
+    if (recommendedFeeRate < _transaction.feeRate) {
+      return _transaction.feeRate;
     }
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
       return recommendedFeeRate.toDouble();
@@ -500,7 +505,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return t.transaction_fee_bumping_screen.recommend_fee_info_cpfp(
       newTxSize: _formatNumber(cpfpTxSize),
       recommendedFeeRate: _formatNumber(_getRecommendedFeeRate().toDouble()),
-      originalTxSize: _formatNumber(_getRecommendedFeeRate().toDouble()),
+      originalTxSize: _formatNumber(_transaction.vSize.toDouble()),
       originalFee: _formatNumber((_transaction.fee ?? 0).toDouble()),
       totalRequiredFee: _formatNumber(totalRequiredFee.toDouble()),
       newTxFee: _formatNumber(cpfpTxFee),
