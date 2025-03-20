@@ -454,8 +454,12 @@ class WalletProvider extends ChangeNotifier {
     await _realmManager.decrypt();
   }
 
-  bool containsAddress(int walletId, String address) {
-    return _addressRepository.containsAddress(walletId, address);
+  bool containsAddress(int walletId, String address, {bool isChange = false}) {
+    return _addressRepository.containsAddress(
+      walletId,
+      address,
+      isChange: isChange,
+    );
   }
 
   List<WalletAddress> filterChangeAddressesFromList(

@@ -179,9 +179,11 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 주소가 이미 존재하는지 확인
-  bool containsAddress(int walletId, String address) {
+  bool containsAddress(int walletId, String address, {bool isChange = false}) {
     final realmWalletAddress = realm.query<RealmWalletAddress>(
-      r'walletId == $0 AND address == $1',
+      isChange
+          ? r'walletId == $0 AND address == $1 AND isChange == true'
+          : r'walletId == $0 AND address == $1',
       [walletId, address],
     );
     return realmWalletAddress.isNotEmpty;

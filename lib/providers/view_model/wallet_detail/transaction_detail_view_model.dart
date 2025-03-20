@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -9,7 +10,41 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+
+class TransactionDetail {
+  final TransactionRecord? _transaction;
+
+  bool _canSeeMoreInputs = false;
+
+  bool _canSeeMoreOutputs = false;
+  int _inputCountToShow = 0;
+
+  int _outputCountToShow = 0;
+  TransactionDetail(this._transaction);
+  bool get canSeeMoreInputs => _canSeeMoreInputs;
+  bool get canSeeMoreOutputs => _canSeeMoreOutputs;
+  int get inputCountToShow => _inputCountToShow;
+  int get outputCountToShow => _outputCountToShow;
+  TransactionRecord? get transaction => _transaction;
+
+  void setCanSeeMoreInputs(bool value) {
+    _canSeeMoreInputs = value;
+  }
+
+  void setCanSeeMoreOutputs(bool value) {
+    _canSeeMoreOutputs = value;
+  }
+
+  void setInputCountToShow(int value) {
+    _inputCountToShow = value;
+  }
+
+  void setOutputCountToShow(int value) {
+    _outputCountToShow = value;
+  }
+}
 
 class TransactionDetailViewModel extends ChangeNotifier {
   static const int kReceiveInputCount = 3;
@@ -35,18 +70,13 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final ValueNotifier<bool> _loadCompletedNotifier = ValueNotifier(false);
 
   Utxo? _currentUtxo;
-  Utxo? get currentUtxo => _currentUtxo;
-
   List<TransactionDetail>? _transactionList;
-  List<TransactionDetail>? get transactionList => _transactionList;
 
   int _selectedTransactionIndex = 0; // RBF history chip 선택 인덱스
-  int get selectedTransactionIndex => _selectedTransactionIndex;
-
   int _previousTransactionIndex = 0; // 이전 인덱스 (애니메이션 방향 결정용)
-  int get previousTransactionIndex => _previousTransactionIndex;
 
-  bool get isNetworkOn => _connectivityProvider.isNetworkOn == true;
+  TransactionStatus? _transactionStatus = TransactionStatus.receiving;
+  bool _isSendType = false;
 
   TransactionDetailViewModel(
       this._walletId,
@@ -60,10 +90,17 @@ class TransactionDetailViewModel extends ChangeNotifier {
     _initTransactionList();
     _initViewMoreButtons();
   }
-
   BlockTimestamp? get currentBlock => _currentBlock;
 
+  Utxo? get currentUtxo => _currentUtxo;
+  bool get isNetworkOn => _connectivityProvider.isNetworkOn == true;
+  bool? get isSendType => _isSendType;
   ValueNotifier<bool> get loadCompletedNotifier => _loadCompletedNotifier;
+
+  int get previousTransactionIndex => _previousTransactionIndex;
+
+  int get selectedTransactionIndex => _selectedTransactionIndex;
+
   ValueNotifier<bool> get showDialogNotifier => _showDialogNotifier;
 
   DateTime? get timestamp {
@@ -73,82 +110,35 @@ class TransactionDetailViewModel extends ChangeNotifier {
         : null;
   }
 
-  void _initTransactionList() {
-    final currentTransaction =
-        _txProvider.getTransactionRecord(_walletId, _txHash);
-    _transactionList = [TransactionDetail(currentTransaction)];
-    debugPrint('_txHash : $_txHash');
-    debugPrint(
-        '(1) currentTransaction.feerate: ${currentTransaction!.feeRate}');
-    debugPrint(
-        '(2) currentTransaction.inputaddress: ${currentTransaction.inputAddressList.map((e) => e.address.toString())}');
-    debugPrint(
-        '(3) rbfHistoryList.length : ${_transactionList!.last.transaction!.rbfHistoryList?.length}');
-    // rbfHistory가 존재하면 순차적으로 _transactionList에 추가
-    if (currentTransaction.cpfpHistory == null &&
-        currentTransaction.rbfHistoryList != null &&
-        currentTransaction.rbfHistoryList!.isNotEmpty) {
-      // rbfHistoryList를 역순으로 정렬
-      var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
-      for (var rbfTx in reversedRbfHistoryList) {
-        if (rbfTx.transactionHash == currentTransaction.transactionHash) {
-          continue;
-        }
-        var rbfTxTransaction =
-            _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
-        _transactionList!.add(TransactionDetail(rbfTxTransaction));
-        debugPrint('(4) rbfHistory::: ${rbfTx.feeRate}');
-      }
-    } else if (currentTransaction.cpfpHistory != null) {
-      // cpfpHistory가 존재하면 _transactionList에 추가
-      _transactionList = [
-        TransactionDetail(_txProvider.getTransactionRecord(
-            _walletId, currentTransaction.cpfpHistory!.parentTransactionHash)),
-        TransactionDetail(_txProvider.getTransactionRecord(
-            _walletId, currentTransaction.cpfpHistory!.childTransactionHash)),
-      ];
+  List<TransactionDetail>? get transactionList => _transactionList;
 
-      debugPrint('(3) cpfpHistoryList.length::: ${_transactionList!.length}');
-    }
-    debugPrint('(5) _transactionList.length::: ${_transactionList!.length}');
+  TransactionStatus? get transactionStatus => _transactionStatus;
 
-    debugPrint(
-        '====================================================================');
-    for (var transaction in _transactionList!) {
-      debugPrint('transaction feeRate: ${transaction._transaction!.feeRate}}');
-      debugPrint('transaction fee: ${transaction._transaction.fee}}');
-      debugPrint(
-          'transaction blockHeight: ${transaction._transaction.blockHeight}}');
-      debugPrint('transaction amount: ${transaction._transaction.amount}}');
-      debugPrint(
-          'transaction createdAt: ${transaction._transaction.createdAt}}');
-      debugPrint(
-          'transaction transactionHash: ${transaction._transaction.transactionHash}}');
-      debugPrint(
-          'transaction transactionType: ${transaction._transaction.transactionType}}');
-      debugPrint('transaction vSize: ${transaction._transaction.vSize}}');
-      debugPrint(
-          'transaction rbfHistoryList.length: ${transaction._transaction.rbfHistoryList?.length}}');
-      debugPrint(
-          '////////////////////////////////////////////////////////////');
-      if (transaction._transaction.rbfHistoryList != null) {
-        for (var a in transaction._transaction.rbfHistoryList!) {
-          debugPrint(
-              'rbfHistory[${transaction._transaction.rbfHistoryList!.indexOf(a)}] feeRate: ${a.feeRate}');
-          debugPrint(
-              'rbfHistory[${transaction._transaction.rbfHistoryList!.indexOf(a)}] timestamp: ${a.timestamp}');
-          debugPrint(
-              'rbfHistory[${transaction._transaction.rbfHistoryList!.indexOf(a)}] transactionHash: ${a.transactionHash}');
-          debugPrint(
-              '-------------------------------------------------------------');
-        }
-      }
-      debugPrint(
-          '////////////////////////////////////////////////////////////');
-    }
-    debugPrint(
-        '====================================================================');
+  void clearSendInfo() {
+    _sendInfoProvider.clear();
   }
+
+  void clearTransationList() {
+    _transactionList?.clear();
+  }
+
+  String getDerivationPath(String address) {
+    return _addressRepository.getDerivationPath(_walletId, address);
+  }
+
+  String getInputAddress(int index) => TransactionUtil.getInputAddress(
+      _transactionList![_selectedTransactionIndex].transaction!, index);
+
+  int getInputAmount(int index) => TransactionUtil.getInputAmount(
+      _transactionList![_selectedTransactionIndex].transaction!, index);
+
+  String getOutputAddress(int index) => TransactionUtil.getOutputAddress(
+      _transactionList![_selectedTransactionIndex].transaction!, index);
+
+  int getOutputAmount(int index) => TransactionUtil.getOutputAmount(
+      _transactionList![_selectedTransactionIndex].transaction!, index);
+
+  String getWalletName() => _walletProvider.getWalletById(_walletId).name;
 
   // void init() {
   //   _transactionList![0].setCanSeeMoreInputs(false);
@@ -168,15 +158,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
       return true;
     }
     return false;
-  }
-
-  void setSelectedTransactionIndex(int index) {
-    _selectedTransactionIndex = index;
-    notifyListeners();
-  }
-
-  void setPreviousTransactionIndex() {
-    _previousTransactionIndex = _selectedTransactionIndex;
   }
 
   void onTapViewMoreInputs() {
@@ -211,6 +192,21 @@ class TransactionDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setPreviousTransactionIndex() {
+    _previousTransactionIndex = _selectedTransactionIndex;
+  }
+
+  void setSelectedTransactionIndex(int index) {
+    _selectedTransactionIndex = index;
+    notifyListeners();
+  }
+
+  void setTransactionStatus(TransactionStatus? status) {
+    _transactionStatus = status;
+    _setSendType(status);
+    notifyListeners();
+  }
+
   void updateProvider() {
     if (_walletProvider.walletItemList.isNotEmpty) {
       _setCurrentBlockHeight();
@@ -236,6 +232,88 @@ class TransactionDetailViewModel extends ChangeNotifier {
       notifyListeners();
     }
     return result;
+  }
+
+  void _initTransactionList() {
+    final currentTransaction =
+        _txProvider.getTransactionRecord(_walletId, _txHash);
+    _transactionList = [TransactionDetail(currentTransaction)];
+
+    debugPrint('🚀 [Transaction Initialization] 🚀');
+    debugPrint('----------------------------------------');
+    debugPrint('🔹 Transaction Hash: $_txHash');
+    debugPrint(
+        '🔹 Current Transaction FeeRate: ${currentTransaction!.feeRate}');
+    debugPrint(
+        '🔹 Input Addresses: ${currentTransaction.inputAddressList.map((e) => e.address.toString()).join(", ")}');
+    debugPrint(
+        '🔹 RBF History Count: ${currentTransaction.rbfHistoryList?.length}');
+    debugPrint(
+        '🔹 CPFP History: ${_transactionList![_selectedTransactionIndex].transaction!.cpfpHistory}');
+    debugPrint('----------------------------------------');
+
+    // rbfHistory가 존재하면 높은 fee rate부터 _transactionList에 추가
+    if ((currentTransaction.transactionType == TransactionType.sent.name ||
+            currentTransaction.transactionType == TransactionType.self.name) &&
+        currentTransaction.rbfHistoryList != null &&
+        currentTransaction.rbfHistoryList!.isNotEmpty) {
+      var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
+      List<RbfHistory> sortedList = reversedRbfHistoryList.toList()
+        ..sort((a, b) => b.feeRate.compareTo(a.feeRate));
+
+      for (var rbfTx in sortedList) {
+        if (rbfTx.transactionHash == currentTransaction.transactionHash) {
+          continue;
+        }
+        var rbfTxTransaction =
+            _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
+        _transactionList!.add(TransactionDetail(rbfTxTransaction));
+      }
+    } else if (currentTransaction.transactionType ==
+            TransactionType.received.name &&
+        currentTransaction.cpfpHistory != null) {
+      _transactionList = [
+        TransactionDetail(_txProvider.getTransactionRecord(
+            _walletId, currentTransaction.cpfpHistory!.parentTransactionHash)),
+        TransactionDetail(_txProvider.getTransactionRecord(
+            _walletId, currentTransaction.cpfpHistory!.childTransactionHash)),
+      ];
+    }
+
+    debugPrint(
+        '📌 Updated Transaction List Length: ${_transactionList!.length}');
+    debugPrint('----------------------------------------');
+
+    for (var transaction in _transactionList!) {
+      debugPrint('📍 Transaction Details:');
+      debugPrint('  - Fee Rate: ${transaction._transaction!.feeRate}');
+      debugPrint('  - Fee: ${transaction._transaction.fee}');
+      debugPrint('  - Block Height: ${transaction._transaction.blockHeight}');
+      debugPrint('  - Amount: ${transaction._transaction.amount}');
+      debugPrint('  - Created At: ${transaction._transaction.createdAt}');
+      debugPrint('  - Hash: ${transaction._transaction.transactionHash}');
+      debugPrint('  - Type: ${transaction._transaction.transactionType}');
+      debugPrint('  - vSize: ${transaction._transaction.vSize}');
+      debugPrint(
+          '  - RBF History Count: ${transaction._transaction.rbfHistoryList?.length}');
+      debugPrint('----------------------------------------');
+
+      if (transaction._transaction.rbfHistoryList != null) {
+        for (var a in transaction._transaction.rbfHistoryList!) {
+          debugPrint('🔄 RBF History Entry:');
+          debugPrint('  - Fee Rate: ${a.feeRate}');
+          debugPrint('  - Timestamp: ${a.timestamp}');
+          debugPrint('  - Transaction Hash: ${a.transactionHash}');
+          debugPrint('----------------------------------------');
+        }
+      }
+    }
+
+    debugPrint('✅ Transaction Initialization Complete');
+    debugPrint(
+        '====================================================================');
+
+    notifyListeners();
   }
 
   bool _initViewMoreButtons() {
@@ -308,57 +386,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
     }
   }
 
-  String getWalletName() => _walletProvider.getWalletById(_walletId).name;
-
-  String getInputAddress(int index) => TransactionUtil.getInputAddress(
-      _transactionList![_selectedTransactionIndex].transaction!, index);
-
-  String getOutputAddress(int index) => TransactionUtil.getOutputAddress(
-      _transactionList![_selectedTransactionIndex].transaction!, index);
-
-  int getInputAmount(int index) => TransactionUtil.getInputAmount(
-      _transactionList![_selectedTransactionIndex].transaction!, index);
-
-  int getOutputAmount(int index) => TransactionUtil.getOutputAmount(
-      _transactionList![_selectedTransactionIndex].transaction!, index);
-  String getDerivationPath(String address) {
-    return _addressRepository.getDerivationPath(_walletId, address);
-  }
-
-  void clearSendInfo() {
-    _sendInfoProvider.clear();
-  }
-}
-
-class TransactionDetail {
-  final TransactionRecord? _transaction;
-
-  TransactionRecord? get transaction => _transaction;
-
-  bool _canSeeMoreInputs = false;
-  bool _canSeeMoreOutputs = false;
-
-  int _inputCountToShow = 0;
-  int _outputCountToShow = 0;
-  bool get canSeeMoreInputs => _canSeeMoreInputs;
-  bool get canSeeMoreOutputs => _canSeeMoreOutputs;
-  int get inputCountToShow => _inputCountToShow;
-  int get outputCountToShow => _outputCountToShow;
-  TransactionDetail(this._transaction);
-
-  void setCanSeeMoreInputs(bool value) {
-    _canSeeMoreInputs = value;
-  }
-
-  void setCanSeeMoreOutputs(bool value) {
-    _canSeeMoreOutputs = value;
-  }
-
-  void setInputCountToShow(int value) {
-    _inputCountToShow = value;
-  }
-
-  void setOutputCountToShow(int value) {
-    _outputCountToShow = value;
+  void _setSendType(TransactionStatus? status) {
+    _isSendType = status == TransactionStatus.sending ||
+        status == TransactionStatus.selfsending ||
+        status == TransactionStatus.sent;
   }
 }

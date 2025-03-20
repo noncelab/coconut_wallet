@@ -483,15 +483,24 @@ class TranslationsTransactionFeeBumpingScreenKr {
   String recommend_fee({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
   String get recommend_fee_info_rbf =>
       '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
-  String get recommend_fee_info_cpfp =>
-      '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = {newTxSize} vb, 추천 수수료율 = {recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = ({originalTxSize} + {newTxSize}) × {recommendedFeeRate} = {totalRequiredFee} sat\n • 새 거래의 수수료 = {totalRequiredFee} - {originalFee} = {newTxFee} sat\n • 새 거래의 수수료율 = {newTxFee} ÷ {newTxSize} {inequalitySign} {newTxFeeRate} sat/vb';
+  String recommend_fee_info_cpfp(
+          {required Object newTxSize,
+          required Object recommendedFeeRate,
+          required Object originalTxSize,
+          required Object totalRequiredFee,
+          required Object originalFee,
+          required Object newTxFee,
+          required Object inequalitySign,
+          required Object newTxFeeRate}) =>
+      '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vb, 추천 수수료율 = ${recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb';
   String get current_fee => '현재 수수료';
-  String estimated_fee({required Object fee}) => '예상 총 수수료 ${fee} sats';
+  String estimated_fee({required Object fee}) => '예상 총 수수료 약 ${fee} sats';
   String get estimated_fee_too_high_error => '예상 총 수수료가 0.01 BTC 이상이에요!';
   String get recommended_fees_fetch_error => '추천 수수료를 조회할 수 없어요!';
   String get recommended_fees_is_null => '수수료를 조회하는 중이에요';
   String get recommended_fee_less_than_pending_tx_fee =>
       '기존 수수료보다 큰 수수료를 지정해 주세요';
+  String get recommended_fee_less_than_network_fee => '추천 수수료 이상으로 지정해 주세요';
   late final TranslationsTransactionFeeBumpingScreenDialogKr dialog =
       TranslationsTransactionFeeBumpingScreenDialogKr.internal(_root);
 }
@@ -1353,11 +1362,20 @@ extension on Translations {
       case 'transaction_fee_bumping_screen.recommend_fee_info_rbf':
         return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
       case 'transaction_fee_bumping_screen.recommend_fee_info_cpfp':
-        return '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = {newTxSize} vb, 추천 수수료율 = {recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = ({originalTxSize} + {newTxSize}) × {recommendedFeeRate} = {totalRequiredFee} sat\n • 새 거래의 수수료 = {totalRequiredFee} - {originalFee} = {newTxFee} sat\n • 새 거래의 수수료율 = {newTxFee} ÷ {newTxSize} {inequalitySign} {newTxFeeRate} sat/vb';
+        return (
+                {required Object newTxSize,
+                required Object recommendedFeeRate,
+                required Object originalTxSize,
+                required Object totalRequiredFee,
+                required Object originalFee,
+                required Object newTxFee,
+                required Object inequalitySign,
+                required Object newTxFeeRate}) =>
+            '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vb, 추천 수수료율 = ${recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb';
       case 'transaction_fee_bumping_screen.current_fee':
         return '현재 수수료';
       case 'transaction_fee_bumping_screen.estimated_fee':
-        return ({required Object fee}) => '예상 총 수수료 ${fee} sats';
+        return ({required Object fee}) => '예상 총 수수료 약 ${fee} sats';
       case 'transaction_fee_bumping_screen.estimated_fee_too_high_error':
         return '예상 총 수수료가 0.01 BTC 이상이에요!';
       case 'transaction_fee_bumping_screen.recommended_fees_fetch_error':
@@ -1366,6 +1384,8 @@ extension on Translations {
         return '수수료를 조회하는 중이에요';
       case 'transaction_fee_bumping_screen.recommended_fee_less_than_pending_tx_fee':
         return '기존 수수료보다 큰 수수료를 지정해 주세요';
+      case 'transaction_fee_bumping_screen.recommended_fee_less_than_network_fee':
+        return '추천 수수료 이상으로 지정해 주세요';
       case 'transaction_fee_bumping_screen.dialog.fee_alert_title':
         return '알림';
       case 'transaction_fee_bumping_screen.dialog.fee_alert_description':
