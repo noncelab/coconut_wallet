@@ -79,20 +79,23 @@ class _WalletListScreenState extends State<WalletListScreen>
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider4<WalletProvider, PreferenceProvider,
         VisibilityProvider, ConnectivityProvider, WalletListViewModel>(
-      create: (_) => _viewModel,
+      create: (_) => _createViewModel(),
       update: (BuildContext context,
           WalletProvider walletProvider,
           PreferenceProvider preferenceProvider,
           VisibilityProvider visibilityProvider,
           ConnectivityProvider connectivityProvider,
           WalletListViewModel? previous) {
-        if (previous!.isBalanceHidden != preferenceProvider.isBalanceHidden) {
+        previous ??= _createViewModel();
+
+        if (previous.isBalanceHidden != preferenceProvider.isBalanceHidden) {
           previous.setIsBalanceHidden(preferenceProvider.isBalanceHidden);
         }
 
         if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
           previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
         }
+
         debugPrint('update!!!!!!!!!!!!');
         // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
         return previous..onWalletProviderUpdated(walletProvider);
@@ -448,12 +451,6 @@ class _WalletListScreenState extends State<WalletListScreen>
   @override
   void initState() {
     super.initState();
-    _viewModel = WalletListViewModel(
-      Provider.of<WalletProvider>(context, listen: false),
-      Provider.of<VisibilityProvider>(context, listen: false),
-      Provider.of<PreferenceProvider>(context, listen: false).isBalanceHidden,
-      Provider.of<ConnectivityProvider>(context, listen: false),
-    );
 
     _scrollController = ScrollController();
 
@@ -511,6 +508,16 @@ class _WalletListScreenState extends State<WalletListScreen>
         });
       }
     });
+  }
+
+  WalletListViewModel _createViewModel() {
+    _viewModel = WalletListViewModel(
+      Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<VisibilityProvider>(context, listen: false),
+      Provider.of<PreferenceProvider>(context, listen: false).isBalanceHidden,
+      Provider.of<ConnectivityProvider>(context, listen: false),
+    );
+    return _viewModel;
   }
 
   Widget? _getWalletRowItem(Key key, WalletListItemBase walletItem,
