@@ -1,7 +1,4 @@
-import 'dart:math';
-
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -75,6 +72,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
   int get walletId => _walletId;
 
   WalletListItemBase get walletListItemBase => _walletListItemBase;
+
+  bool _insufficientUtxos = false;
+  bool get insufficientUtxos => _insufficientUtxos;
 
   void updateProvider() {
     _onFeeUpdated();
@@ -189,6 +189,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     final myAddressList = _getMyOutputs();
+    int amount = myAddressList.fold(0, (sum, output) => sum + output.amount);
     final List<Utxo> utxoList = [];
     // 내 주소와 일치하는 utxo 찾기
     for (var address in myAddressList) {
@@ -210,31 +211,29 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     // Transaction 생성
     final recipient = _walletProvider.getReceiveAddress(_walletId).address;
-    _bumpingTransaction = Transaction.forSweep(
-        utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
+    double estimatedVSize;
+    try {
+      _bumpingTransaction = Transaction.forSweep(
+          utxoList, recipient, 10, walletListItemBase.walletBase);
+      estimatedVSize = _estimateVirtualByte(_bumpingTransaction!);
+    } catch (e) {
+      // insufficient utxo for sweep
+      double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+      estimatedVSize = _transaction.vSize.toDouble();
+      double outputSum = amount + estimatedVSize * newFeeRate;
 
-    double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    double estimatedVSize = _estimateVirtualByte(_bumpingTransaction!);
-    double outputSum =
-        _bumpingTransaction!.outputs[0].amount + estimatedVSize * newFeeRate;
-
-    while (inputSum < outputSum) {
-      final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
-      if (additionalUtxos.isEmpty) {
+      debugPrint(
+          '😇 CPFP utxo (${utxoList.length})개 input: $inputSum / output: $outputSum / 👉🏻 입력한 fee rate: $newFeeRate');
+      if (!_ensureSufficientUtxos(
+          utxoList, outputSum, estimatedVSize.ceil(), newFeeRate, amount)) {
         debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
         return;
       }
-
-      utxoList.addAll(additionalUtxos);
-      debugPrint('😇 CPFP utxo 추가됨 (${additionalUtxos.length})개');
-      _bumpingTransaction = Transaction.forSweep(
-          utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
-      estimatedVSize = _estimateVirtualByte(_bumpingTransaction!);
-
-      inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-      outputSum =
-          _bumpingTransaction!.outputs[0].amount + estimatedVSize * newFeeRate;
     }
+
+    debugPrint('😇 CPFP utxo (${utxoList.length})개');
+    _bumpingTransaction = Transaction.forSweep(
+        utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
 
     _sendInfoProvider.setRecipientAddress(recipient);
     _sendInfoProvider.setIsMaxMode(true);
@@ -244,18 +243,16 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   void _generateRbfTransaction(double newFeeRate) {
     final type = _getPaymentType();
-    if (type == null) {
-      return;
-    }
+    if (type == null) return;
 
-    var changeAddress = '';
-    var amount = 0;
     final externalOutputs = _getExternalOutputs();
-    amount = externalOutputs.fold(0, (sum, output) => sum + output.amount);
-    changeAddress = _transaction.outputAddressList
-        .map((e) => e.address)
-        .firstWhere(
-            (address) => _walletProvider.containsAddress(_walletId, address));
+    var amount = externalOutputs.fold(0, (sum, output) => sum + output.amount);
+    var changeAddress =
+        _transaction.outputAddressList.map((e) => e.address).firstWhere(
+              (address) => _walletProvider.containsAddress(_walletId, address,
+                  isChange: true),
+              orElse: () => '',
+            );
 
     //input 정보 추출
     List<Utxo> utxoList = _getUtxoListForRbf(_transaction.inputAddressList);
@@ -268,24 +265,20 @@ class FeeBumpingViewModel extends ChangeNotifier {
       if (externalOutputs.any((output) =>
           _walletProvider.containsAddress(_walletId, output.address))) {
         amount = (inputSum - _transaction.vSize * newFeeRate).toInt();
+        if (amount < 0) {
+          debugPrint('❌ input 합계가 output 합계보다 작음!');
+          if (!_ensureSufficientUtxos(
+              utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
+            return;
+          }
+        }
         debugPrint('amount 조정됨 $amount');
       } else {
         // repicient가 남의 주소인 경우 utxo 추가
-        while (inputSum < outputSum) {
-          // input이 부족한 경우 utxo 계속 추가
-          final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
-          if (additionalUtxos.isEmpty) {
-            debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
-            return;
-          }
-          debugPrint('🧸 RBF utxo 추가됨 (${additionalUtxos.length})개');
-          utxoList.addAll(additionalUtxos);
-          estimatedVSize += _getVSizeIncreasement() * additionalUtxos.length;
-
-          inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-          outputSum = amount + estimatedVSize * newFeeRate;
+        if (!_ensureSufficientUtxos(
+            utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
+          return;
         }
-
         changeAddress = _walletProvider.getChangeAddress(_walletId).address;
       }
     }
@@ -332,6 +325,26 @@ class FeeBumpingViewModel extends ChangeNotifier {
       default:
         break;
     }
+  }
+
+  bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
+      int estimatedVSize, double newFeeRate, int amount) {
+    double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+    while (inputSum < outputSum) {
+      final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
+      if (additionalUtxos.isEmpty) {
+        debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
+        _insufficientUtxos = true;
+        notifyListeners();
+        return false;
+      }
+      utxoList.addAll(additionalUtxos);
+      estimatedVSize += _getVSizeIncreasement() * additionalUtxos.length;
+
+      inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+      outputSum = amount + estimatedVSize * newFeeRate;
+    }
+    return true;
   }
 
   int _getVSizeIncreasement() {
