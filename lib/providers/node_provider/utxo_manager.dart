@@ -143,4 +143,10 @@ class UtxoManager {
     }
     Logger.log('---------------- utxoStateList end ----------------');
   }
+
+  void deleteUtxosByReplacedTransactionHashSet(
+      int walletId, Set<String> replacedTxHashs) {
+    _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
+        walletId, replacedTxHashs);
+  }
 }

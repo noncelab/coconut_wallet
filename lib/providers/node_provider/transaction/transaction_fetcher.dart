@@ -158,6 +158,13 @@ class TransactionFetcher {
             walletItem, rbfInfoMap, txRecordMap, walletItem.id);
 
         _transactionRepository.markAsRbfReplaced(walletItem.id, rbfInfoMap);
+
+        // 대체되어 사라지는 트랜잭션의 UTXO 삭제
+        _utxoManager.deleteUtxosByReplacedTransactionHashSet(
+            walletItem.id,
+            rbfInfoMap.values
+                .map((rbfInfo) => rbfInfo.spentTransactionHash)
+                .toSet());
       }
 
       if (cpfpInfoMap.isNotEmpty) {
