@@ -709,6 +709,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
               child: Visibility(
                 visible:
                     _viewModel.isSendType! || feeBumpingHistoryList.length < 2,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
                 child: GestureDetector(
                   onTap: () async {
                     if (!_viewModel.isNetworkOn) {
