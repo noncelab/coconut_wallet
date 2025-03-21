@@ -171,7 +171,7 @@ class RbfHandler {
 
     // 일괄 저장
     if (rbfHistoryDtos.isNotEmpty) {
-      await _transactionRepository.addAllRbfHistory(rbfHistoryDtos);
+      _transactionRepository.addAllRbfHistory(rbfHistoryDtos);
       Logger.log('RBF 내역 ${rbfHistoryDtos.length}개 저장 완료');
     }
   }

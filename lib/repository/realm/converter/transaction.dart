@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 
 // TransactionRecord -> _RealmTransaction 변환 함수
 RealmTransaction mapTransactionToRealmTransaction(
@@ -69,4 +70,29 @@ Map<String, dynamic> addressToJson(TransactionAddress address) {
 
 TransactionAddress jsonToAddress(Map<String, dynamic> json) {
   return TransactionAddress(json['address'], json['amount']);
+}
+
+RealmCpfpHistory mapCpfpHistoryToRealmCpfpHistory(CpfpHistoryDto cpfpHistory) {
+  return RealmCpfpHistory(
+    cpfpHistory.id,
+    cpfpHistory.walletId,
+    cpfpHistory.parentTransactionHash,
+    cpfpHistory.childTransactionHash,
+    cpfpHistory.originalFee,
+    cpfpHistory.newFee,
+    cpfpHistory.timestamp,
+  );
+}
+
+RealmRbfHistory mapRbfHistoryToRealmRbfHistory(
+    RbfHistoryDto rbfHistory, int order) {
+  return RealmRbfHistory(
+    rbfHistory.id,
+    rbfHistory.walletId,
+    rbfHistory.originalTransactionHash,
+    rbfHistory.transactionHash,
+    order,
+    rbfHistory.feeRate,
+    rbfHistory.timestamp,
+  );
 }
