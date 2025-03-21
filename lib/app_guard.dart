@@ -82,6 +82,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
           if (_upbitConnectModel.upbitWebSocketService == null) {
             _upbitConnectModel.initUpbitWebSocketService();
           }
+          _nodeProvider.reconnect();
         }
         break;
       case AppLifecycleState.hidden:
@@ -90,7 +91,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
         _isPause = true;
-        _nodeProvider.dispose();
+        _nodeProvider.closeConnection();
         _upbitConnectModel.disposeUpbitWebSocketService();
         break;
     }
