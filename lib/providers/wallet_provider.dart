@@ -391,6 +391,7 @@ class WalletProvider extends ChangeNotifier {
     _utxoRepository.deleteAllUtxoTag(walletId);
     _saveWalletCount(_walletItemList.length);
     _nodeProvider.unregisterWalletUpdateState(walletId);
+    _walletBalance.remove(walletId);
     notifyListeners();
   }
 
