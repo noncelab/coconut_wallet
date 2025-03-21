@@ -348,7 +348,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       if (estimatedFee != null &&
           _isSelectedUtxoEnough() &&
           satsPerVb != null) {
-        setEstimatedFee(estimateFee(satsPerVb!));
+        setEstimatedFee(estimateFee(satsPerVb ?? 1));
       }
     } else {
       if (!_isMaxMode) {
