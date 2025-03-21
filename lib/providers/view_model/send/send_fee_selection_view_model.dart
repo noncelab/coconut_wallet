@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -30,14 +31,20 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
 
   SendFeeSelectionViewModel(this._sendInfoProvider, this._walletProvider,
       this._nodeProvider, this._bitcoinPriceKrw, this._isNetworkOn) {
-    var balance = _walletProvider.getWalletBalance(_sendInfoProvider.walletId!);
     _walletListItemBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _walletAddressType =
         _walletListItemBase.walletType == WalletType.singleSignature
             ? AddressType.p2wpkh
             : AddressType.p2wsh;
-    _confirmedBalance = balance.confirmed;
+    _confirmedBalance = _walletProvider
+        .getUtxoList(_sendInfoProvider.walletId!)
+        .fold<int>(0, (sum, utxo) {
+      if (utxo.status == UtxoStatus.unspent) {
+        return sum + utxo.amount;
+      }
+      return sum;
+    });
     _isMultisigWallet =
         _walletListItemBase.walletType == WalletType.multiSignature;
     _bitcoinPriceKrw = _bitcoinPriceKrw;
