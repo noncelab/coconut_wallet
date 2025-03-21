@@ -342,7 +342,6 @@ class _TransactionFeeBumpingScreenState
   }
 
   FeeBumpingViewModel _getViewModel(BuildContext context) {
-    final nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     final sendInfoProvider =
         Provider.of<SendInfoProvider>(context, listen: false);
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
@@ -355,7 +354,6 @@ class _TransactionFeeBumpingScreenState
       widget.feeBumpingType,
       widget.transaction,
       widget.walletId,
-      nodeProvider,
       sendInfoProvider,
       txProvider,
       walletProvider,

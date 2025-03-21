@@ -305,6 +305,7 @@ class TranslationsBroadcastingScreenKr {
   String get title => '최종 확인';
   String get description => '아래 정보로 송금할게요';
   String get self_sending => '내 지갑으로 보내는 트랜잭션입니다.';
+  String get error_popup_title => '브로드캐스팅 실패';
 }
 
 // Path: send_address_screen
@@ -1264,6 +1265,8 @@ extension on Translations {
         return '아래 정보로 송금할게요';
       case 'broadcasting_screen.self_sending':
         return '내 지갑으로 보내는 트랜잭션입니다.';
+      case 'broadcasting_screen.error_popup_title':
+        return '브로드캐스팅 실패';
       case 'send_address_screen.text1':
         return 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
       case 'send_address_screen.text2':

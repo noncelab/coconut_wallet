@@ -1,3 +1,5 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -10,56 +12,22 @@ void showAlertDialog(
   showCupertinoModalPopup<void>(
     context: context,
     barrierDismissible: dismissible,
-    builder: (BuildContext context) => CupertinoAlertDialog(
-      title: title != null ? Text(title) : null,
-      content: content != null ? Text(content) : null,
-      actions: <CupertinoDialogAction>[
-        CupertinoDialogAction(
-          /// This parameter indicates this action is the default,
-          /// and turns the action's text to bold text.
-          isDefaultAction: true,
-          onPressed: () {
-            if (onClosed != null) onClosed();
-            Navigator.pop(context);
-          },
-          child: const Text('확인'),
-        ),
-      ],
-    ),
+    builder: (BuildContext context) => CoconutPopup(
+        title: title ?? '',
+        description: content ?? '',
+        backgroundColor: CoconutColors.gray800,
+        rightButtonText: t.confirm,
+        rightButtonTextStyle: CoconutTypography.body1_16,
+        rightButtonColor: CoconutColors.white,
+        onTapRight: () {
+          if (onClosed != null) onClosed();
+          Navigator.pop(context);
+        }),
   );
 }
 
-// void showConfirmDialog(BuildContext context) {
-//   showCupertinoModalPopup<void>(
-//     context: context,
-//     builder: (BuildContext context) => CupertinoAlertDialog(
-//       title: const Text('Alert'),
-//       content: const Text('Proceed with destructive action?'),
-//       actions: <CupertinoDialogAction>[
-//         CupertinoDialogAction(
-//           /// This parameter indicates this action is the default,
-//           /// and turns the action's text to bold text.
-//           isDefaultAction: true,
-//           onPressed: () {
-//             Navigator.pop(context);
-//           },
-//           child: const Text('No'),
-//         ),
-//         CupertinoDialogAction(
-//           /// This parameter indicates the action would perform
-//           /// a destructive action such as deletion, and turns
-//           /// the action's text color to red.
-//           isDestructiveAction: true,
-//           onPressed: () {
-//             Navigator.pop(context);
-//           },
-//           child: const Text('Yes'),
-//         ),
-//       ],
-//     ),
-//   );
-// }
-
+// todo : cds에 맞게 수정 후 삭제 예정
+// send_fee_selection_screen.dart > showModalBottomSheet 부분 확인
 void showTextFieldDialog(
     {required BuildContext context,
     String? title,
@@ -97,7 +65,7 @@ void showTextFieldDialog(
               onPressed();
               Navigator.pop(context);
             },
-            child: const Text('확인'),
+            child: Text(t.confirm),
           ),
         ],
       );

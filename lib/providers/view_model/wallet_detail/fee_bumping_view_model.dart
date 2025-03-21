@@ -7,7 +7,6 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -29,7 +28,6 @@ enum TransactionType {
 class FeeBumpingViewModel extends ChangeNotifier {
   final FeeBumpingType _type;
   final TransactionRecord _transaction;
-  final NodeProvider _nodeProvider;
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
   final TransactionProvider _txProvider;
@@ -37,7 +35,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final UtxoRepository _utxoRepository;
   final int _walletId;
   late Transaction? _bumpingTransaction;
-  final int _sendAmount = 0;
+  late WalletListItemBase _walletListItemBase;
 
   final List<FeeInfoWithLevel> _feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
@@ -47,12 +45,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool _didFetchRecommendedFeesSuccessfully =
       true; // 화면이 전환되는 시점에 순간적으로 수수료 조회 실패가 뜨는것 처럼 보이기 때문에 기본값을 true 설정
 
-  late WalletListItemBase _walletListItemBase;
   FeeBumpingViewModel(
     this._type,
     this._transaction,
     this._walletId,
-    this._nodeProvider,
     this._sendInfoProvider,
     this._txProvider,
     this._walletProvider,
@@ -299,9 +295,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
             amount,
             newFeeRate,
             walletListItemBase.walletBase);
-        debugPrint("********* $amount");
-        // fixme: transaction.amount는 sat 단위 _sendInfoProvider.setAmount는 btc 단위 의도
-        // 문제가 없는 것으로 보아 send flow에서 사용되지 않는 것으로 추측됨
         _sendInfoProvider.setAmount(UnitUtil.satoshiToBitcoin(amount));
         _sendInfoProvider.setIsMaxMode(false);
         break;
@@ -422,10 +415,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return _transaction.feeRate;
     }
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
-      return recommendedFeeRate.toDouble();
+      return (recommendedFeeRate * 100).ceilToDouble() / 100;
     }
 
-    return (cpfpTxFeeRate * 100).ceil() / 100;
+    return (cpfpTxFeeRate * 100).ceilToDouble() / 100;
   }
 
   double _getRecommendedFeeRateForRbf() {
@@ -444,14 +437,14 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double recommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
     if (recommendedFee < minimumRequiredFee) {
-      // fixme: 소수점 올림하여 반환
-      return double.parse(
-          (minimumRequiredFee / estimatedVirtualByte).toString());
+      double feePerVByte = minimumRequiredFee / estimatedVirtualByte;
+      double roundedFee = (feePerVByte * 100).ceilToDouble() / 100;
+      return double.parse((roundedFee).toStringAsFixed(2));
     }
 
-    // fixme: 소수점 올림하여 반환
-    return double.parse(
-        (recommendedFee / estimatedVirtualByte).toStringAsFixed(2));
+    recommendedFee = minimumRequiredFee / estimatedVirtualByte;
+    double roundedFee = (recommendedFee * 100).ceilToDouble() / 100;
+    return double.parse(roundedFee.toStringAsFixed(2));
   }
 
   double _estimateVirtualByte(Transaction transaction) {
