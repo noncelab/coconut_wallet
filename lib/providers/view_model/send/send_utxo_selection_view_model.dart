@@ -519,7 +519,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMaxMode(isMaxMode);
     _sendInfoProvider.setIsMultisig(_requiredSignature != null);
     _sendInfoProvider.setTransaction(_transaction);
-    _sendInfoProvider.setFeeBumptingType(null);
+    _sendInfoProvider.setFeeBumpfingType(null);
   }
 
   @override

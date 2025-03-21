@@ -15,6 +15,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/dio_client.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +37,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final UtxoRepository _utxoRepository;
   final int _walletId;
   late Transaction? _bumpingTransaction;
+  final int _sendAmount = 0;
 
   final List<FeeInfoWithLevel> _feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
@@ -134,16 +136,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(
             _bumpingTransaction!, walletListItemBase.walletBase)
         .serialize());
-    _sendInfoProvider.setFeeBumptingType(feeBumpingType);
-
-    // fixme: transaction.amount는 sat 단위 _sendInfoProvider.setAmount는 btc 단위 의도
-    // 문제가 없는 것으로 보아 send flow에서 사용되지 않는 것으로 추측됨
-    if (_type == FeeBumpingType.rbf) {
-      _sendInfoProvider.setAmount(_transaction.amount!.toDouble());
-    } else {
-      _sendInfoProvider
-          .setAmount(_bumpingTransaction!.outputs[0].amount.toDouble());
-    }
+    _sendInfoProvider.setFeeBumpfingType(feeBumpingType);
   }
 
   TransactionType? _getTransactionType() {
@@ -216,6 +209,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
         utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
     _sendInfoProvider.setRecipientAddress(recipient);
     _sendInfoProvider.setIsMaxMode(true);
+    _sendInfoProvider
+        .setAmount(_bumpingTransaction!.outputs[0].amount.toDouble());
   }
 
   // rbf 트랜잭션 만들기
@@ -252,6 +247,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     double outputSum = amount + _transaction.vSize * newFeeRate;
+
+    debugPrint('inputSum: $inputSum');
+    debugPrint('input length: ${utxoList.length}');
 
     if (inputSum < outputSum) {
       // recipient가 내 주소인 경우 amount 조정
@@ -301,7 +299,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
             amount,
             newFeeRate,
             walletListItemBase.walletBase);
-        _sendInfoProvider.setRecipientAddress(recipientAddress);
+        debugPrint("********* $amount");
+        // fixme: transaction.amount는 sat 단위 _sendInfoProvider.setAmount는 btc 단위 의도
+        // 문제가 없는 것으로 보아 send flow에서 사용되지 않는 것으로 추측됨
+        _sendInfoProvider.setAmount(UnitUtil.satoshiToBitcoin(amount));
         _sendInfoProvider.setIsMaxMode(false);
         break;
       case TransactionType.forBatchPayment:
@@ -443,10 +444,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double recommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
     if (recommendedFee < minimumRequiredFee) {
+      // fixme: 소수점 올림하여 반환
       return double.parse(
-          (minimumRequiredFee / estimatedVirtualByte).toStringAsFixed(2));
+          (minimumRequiredFee / estimatedVirtualByte).toString());
     }
 
+    // fixme: 소수점 올림하여 반환
     return double.parse(
         (recommendedFee / estimatedVirtualByte).toStringAsFixed(2));
   }
