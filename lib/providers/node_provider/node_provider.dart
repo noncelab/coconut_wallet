@@ -17,62 +17,69 @@ class NodeProvider extends ChangeNotifier {
   final String _host;
   final int _port;
   final bool _ssl;
-  late final NodeStateManager _stateManager;
+  NodeStateManager? _stateManager;
   StreamSubscription<IsolateStateMessage>? _stateSubscription;
 
   Completer<void>? _initCompleter;
 
-  NodeProviderState get state => _stateManager.state;
+  NodeProviderState get state =>
+      _stateManager?.state ?? NodeProviderState.initial();
 
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
   String get host => _host;
   int get port => _port;
   bool get ssl => _ssl;
 
+  bool _needSubscribeWallets = false;
+
+  bool get needSubscribe => _needSubscribeWallets;
+
   NodeProvider(this._host, this._port, this._ssl,
       {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
-    _stateManager = NodeStateManager(() => notifyListeners());
     initialize();
-    _subscribeToStateChanges();
+  }
+
+  void _createStateManager() {
+    _stateManager ??= NodeStateManager(() => notifyListeners());
   }
 
   Future<void> initialize() async {
     try {
       _initCompleter = Completer<void>();
+      _createStateManager();
       await _isolateManager.initialize(host, port, ssl);
       _initCompleter?.complete();
+      _subscribeToStateChanges();
+      notifyListeners();
     } catch (e) {
       _initCompleter?.completeError(e);
-      rethrow;
-    } finally {
-      notifyListeners();
+      Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
     }
   }
 
   void _subscribeToStateChanges() {
     try {
-      // 스트림 구독 설정
+      _stateSubscription?.cancel();
+      _stateSubscription = null;
       _stateSubscription = _isolateManager.stateStream.listen(
         (message) {
           _handleStateMessage(message);
         },
         onError: (error) {
-          Logger.error('NodeProvider: Error in state stream: $error');
+          Logger.log('NodeProvider: 상태 스트림 오류: $error');
         },
       );
-
-      // 콜백 등록
-      _isolateManager.registerStateCallback(_handleStateMessage);
     } catch (e) {
-      Logger.error('NodeProvider: Error setting up state change handling: $e');
+      Logger.log('NodeProvider: 상태 변경 처리 설정 중 오류: $e');
     }
   }
 
-  // 상태 메시지 처리 메서드
   void _handleStateMessage(IsolateStateMessage message) {
     try {
-      _stateManager.handleIsolateStateMessage(message);
+      if (_stateManager != null) {
+        _stateManager!.handleIsolateStateMessage(message);
+      }
     } catch (e) {
       Logger.error('NodeProvider: Error processing state message: $e');
     }
@@ -81,6 +88,7 @@ class NodeProvider extends ChangeNotifier {
   Future<Result<bool>> subscribeWallets(
     List<WalletListItemBase> walletItems,
   ) async {
+    _needSubscribeWallets = false;
     return await _isolateManager.subscribeWallets(walletItems);
   }
 
@@ -113,14 +121,40 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void unregisterWalletUpdateState(int walletId) {
-    _stateManager.unregisterWalletUpdateState(walletId);
+    _stateManager?.unregisterWalletUpdateState(walletId);
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-    _stateSubscription?.cancel();
-    _isolateManager.unregisterStateCallback();
-    _isolateManager.dispose();
+  Future<void> reconnect() async {
+    try {
+      _needSubscribeWallets = true;
+      if (isInitialized && _isolateManager.isInitialized) {
+        return;
+      }
+
+      _stateSubscription?.cancel();
+      _stateSubscription = null;
+
+      await initialize();
+    } catch (e) {
+      Logger.log('NodeProvider: 재연결 중 오류 발생: $e');
+      _initCompleter = null;
+    }
+  }
+
+  /// 완전한 dispose 없이 연결만 중단하는 메서드
+  Future<void> closeConnection() async {
+    try {
+      // 스트림 구독 취소
+      _stateSubscription?.cancel();
+      _stateSubscription = null;
+
+      // Isolate 정리
+      await _isolateManager.closeIsolate();
+      _initCompleter = null;
+
+      notifyListeners();
+    } catch (e) {
+      Logger.log('NodeProvider: 연결 종료 중 오류 발생: $e');
+    }
   }
 }

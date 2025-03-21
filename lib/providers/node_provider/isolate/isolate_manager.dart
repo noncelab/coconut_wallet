@@ -28,22 +28,19 @@ import 'package:coconut_wallet/utils/result.dart';
 class IsolateManager {
   Isolate? _isolate;
   SendPort? _mainToIsolateSendPort; // isolate 스레드에서 메인스레드로 보내는 포트
-  final ReceivePort _mainFromIsolateReceivePort;
+  ReceivePort? _mainFromIsolateReceivePort;
   late Completer<void> _isolateReady;
-  final _stateController = StreamController<IsolateStateMessage>.broadcast();
-  Stream<IsolateStateMessage> get stateStream => _stateController.stream;
+  StreamController<IsolateStateMessage>? _stateController;
+  Stream<IsolateStateMessage>? _stateStream;
+  bool _receivePortListening = false;
 
-  // 콜백 함수 등록을 위한 변수 추가
-  void Function(IsolateStateMessage)? _stateMessageCallback;
-
-  // 콜백 등록 메서드
-  void registerStateCallback(void Function(IsolateStateMessage) callback) {
-    _stateMessageCallback = callback;
-  }
-
-  // 콜백 제거 메서드
-  void unregisterStateCallback() {
-    _stateMessageCallback = null;
+  // 매번 새로운 스트림을 생성하도록 getter 추가
+  Stream<IsolateStateMessage> get stateStream {
+    if (_stateController == null || _stateController!.isClosed) {
+      _stateController = StreamController<IsolateStateMessage>.broadcast();
+      _stateStream = _stateController!.stream;
+    }
+    return _stateStream!;
   }
 
   static IsolateHandler entryInitialize(
@@ -94,32 +91,93 @@ class IsolateManager {
   bool get isInitialized =>
       (_mainToIsolateSendPort != null && _isolate != null);
 
-  IsolateManager() : _mainFromIsolateReceivePort = ReceivePort() {
+  IsolateManager() {
     _isolateReady = Completer<void>();
+  }
+
+  void _createReceivePort() {
+    if (_mainFromIsolateReceivePort != null) {
+      _mainFromIsolateReceivePort!.close();
+    }
+    _mainFromIsolateReceivePort = ReceivePort('mainFromIsolateReceivePort');
+    _receivePortListening = false;
   }
 
   Future<void> initialize(String host, int port, bool ssl) async {
     try {
-      final isolateToMainSendPort = _mainFromIsolateReceivePort.sendPort;
+      Logger.log('IsolateManager: initializing with $host:$port, ssl=$ssl');
+
+      // 기존 자원 정리
+      if (_isolate != null) {
+        Logger.log('IsolateManager: killing existing isolate');
+        _isolate!.kill(priority: Isolate.immediate);
+        _isolate = null;
+      }
+      _mainToIsolateSendPort = null;
+      _createReceivePort();
+      _closeStateController();
+      _isolateReady = Completer<void>();
+
+      final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
       final data = IsolateConnectorData(isolateToMainSendPort, host, port, ssl);
 
+      Logger.log('IsolateManager: spawning new isolate');
       _isolate = await Isolate.spawn<IsolateConnectorData>(_isolateEntry, data);
 
-      _mainFromIsolateReceivePort.listen(
+      // ReceivePort가 이미 리스닝 중인지 확인
+      _setUpReceivePortListener();
+
+      await _isolateReady.future.timeout(const Duration(seconds: 10));
+      Logger.log('IsolateManager: initialization completed successfully');
+    } catch (e) {
+      Logger.error('IsolateManager: Failed to initialize isolate: $e');
+      throw Exception('Failed to initialize isolate: $e');
+    }
+  }
+
+  // StreamController를 안전하게 닫기 위한 메서드
+  void _closeStateController() {
+    if (_stateController != null && !_stateController!.isClosed) {
+      try {
+        _stateController!.close();
+      } catch (e) {
+        Logger.error('IsolateManager: Error closing state controller: $e');
+      }
+      _stateController = null;
+      _stateStream = null;
+    }
+  }
+
+  // ReceivePort 리스너 설정을 별도 메서드로 분리
+  void _setUpReceivePortListener() {
+    // 이미 리스닝 중인 경우 처리하지 않음
+    if (_receivePortListening || _mainFromIsolateReceivePort == null) {
+      return;
+    }
+
+    _receivePortListening = true;
+
+    try {
+      _mainFromIsolateReceivePort!.listen(
         (message) {
           if (message is List && message.length > 1) {
             _handleIsolateManagerMessage(message);
           }
         },
         onError: (error) {
-          _isolateReady.completeError(Exception('Receive port error: $error'));
+          if (!_isolateReady.isCompleted) {
+            _isolateReady
+                .completeError(Exception('Receive port error: $error'));
+          }
         },
-        cancelOnError: true,
+        cancelOnError: false, // 오류가 발생해도 리스너 유지
       );
-
-      await _isolateReady.future;
     } catch (e) {
-      throw Exception('Failed to initialize isolate: $e');
+      _receivePortListening = false;
+      if (!_isolateReady.isCompleted) {
+        _isolateReady.completeError(
+            Exception('Failed to set up ReceivePort listener: $e'));
+      }
     }
   }
 
@@ -128,7 +186,8 @@ class IsolateManager {
     // TODO: 메인넷/테스트넷 설정을 isolate 스레드에서도 적용해야 함. (환경변수로 등록하면 좋을듯)
     NetworkType.setNetworkType(NetworkType.regtest);
 
-    final isolateFromMainReceivePort = ReceivePort();
+    final isolateFromMainReceivePort =
+        ReceivePort('isolateFromMainReceivePort');
 
     // 초기화 됐음을 알리는 목적으로 사용
     try {
@@ -168,22 +227,44 @@ class IsolateManager {
 
   Future<T> _send<T>(
       IsolateHandlerMessage messageType, List<dynamic> params) async {
-    if (!isInitialized) {
-      throw ErrorCodes.nodeIsolateError;
+    // 초기화가 진행 중인지 확인하고 완료될 때까지 대기
+    try {
+      if (!isInitialized) {
+        // 초기화가 진행 중인 경우 (isolateReady가 완료되지 않은 경우)
+        if (!_isolateReady.isCompleted) {
+          // 초기화가 완료될 때까지 최대 3초간 대기
+          await _isolateReady.future.timeout(const Duration(seconds: 3));
+        } else {
+          // 초기화가 완료되지 않았고 진행 중이지도 않음 (실패한 상태)
+          // 재연결이 비동기로 실행되어 VM의 eventListener에서 먼저 호출되는 가능성이 있어 1초 대기
+          await _isolateReady.future.timeout(const Duration(seconds: 1));
+        }
+      }
+
+      // 여전히 초기화되지 않았으면 에러 발생
+      if (!isInitialized) {
+        throw ErrorCodes.nodeIsolateError;
+      }
+
+      final mainFromIsolateReceivePort = ReceivePort(messageType.name);
+      _mainToIsolateSendPort!
+          .send([messageType, mainFromIsolateReceivePort.sendPort, params]);
+
+      var result = await mainFromIsolateReceivePort.first;
+      mainFromIsolateReceivePort.close();
+
+      if (result is Exception) {
+        throw result;
+      }
+
+      return result;
+    } catch (e) {
+      Logger.error('IsolateManager: Error in _send: $e');
+      if (e is TimeoutException) {
+        throw ErrorCodes.nodeIsolateError;
+      }
+      rethrow;
     }
-
-    final mainFromIsolateReceivePort = ReceivePort();
-    _mainToIsolateSendPort!
-        .send([messageType, mainFromIsolateReceivePort.sendPort, params]);
-
-    var result = await mainFromIsolateReceivePort.first;
-    mainFromIsolateReceivePort.close();
-
-    if (result is Exception) {
-      throw result;
-    }
-
-    return result;
   }
 
   Future<Result<bool>> subscribeWallets(
@@ -233,7 +314,9 @@ class IsolateManager {
       case IsolateManagerMessage.initialize:
         if (params is SendPort) {
           _mainToIsolateSendPort = params;
-          _isolateReady.complete();
+          if (!_isolateReady.isCompleted) {
+            _isolateReady.complete();
+          }
         }
         break;
 
@@ -256,21 +339,27 @@ class IsolateManager {
         // stateMessage가 생성되었으면 콜백과 스트림으로 전달
         if (stateMessage != null) {
           // 스트림으로 전달
-          _stateController.add(stateMessage);
-
-          // 콜백으로 전달
-          if (_stateMessageCallback != null) {
-            _stateMessageCallback!(stateMessage);
+          if (_stateController != null && !_stateController!.isClosed) {
+            _stateController!.add(stateMessage);
           }
         }
         break;
     }
   }
 
-  void dispose() {
-    _isolate?.kill(priority: Isolate.immediate);
-    _mainFromIsolateReceivePort.close();
-    _stateController.close();
-    _stateMessageCallback = null;
+  /// isolate 연결만 종료하는 메서드 (완전 dispose는 아님)
+  Future<void> closeIsolate() async {
+    Logger.log('IsolateManager: Closing isolate');
+
+    try {
+      // isolate 종료
+      if (_isolate != null) {
+        _isolate!.kill(priority: Isolate.immediate);
+        _isolate = null;
+      }
+      _mainToIsolateSendPort = null;
+    } catch (e) {
+      Logger.error('IsolateManager: Error closing isolate: $e');
+    }
   }
 }

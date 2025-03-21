@@ -11,6 +11,14 @@ class NodeProviderState {
     required this.registeredWallets,
   });
 
+  // 초기 상태를 생성하는 팩토리 생성자 추가
+  factory NodeProviderState.initial() {
+    return const NodeProviderState(
+      connectionState: MainClientState.waiting,
+      registeredWallets: {},
+    );
+  }
+
   NodeProviderState copyWith({
     MainClientState? newConnectionState,
     Map<int, WalletUpdateInfo>? newUpdatedWallets,
