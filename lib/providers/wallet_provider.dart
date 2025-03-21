@@ -129,6 +129,11 @@ class WalletProvider extends ChangeNotifier {
       _subscribeNodeProvider();
     }
 
+    // 화면 이탈 후 재연결 시 재구독이 필요한 상황
+    if (_nodeProvider.needSubscribe) {
+      _subscribeNodeProvider();
+    }
+
     // NodeProvider 상태 출력
     _printWalletStatus();
 
