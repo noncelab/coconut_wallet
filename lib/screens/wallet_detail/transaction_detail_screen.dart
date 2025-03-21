@@ -472,7 +472,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
   Widget _rbfHistoryWidget() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         children: List.generate(
           feeBumpingHistoryList.length,
@@ -577,7 +577,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
   Widget _cpfpHistoryWidget() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         children: List.generate(
           feeBumpingHistoryList.length,
