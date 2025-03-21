@@ -214,16 +214,26 @@ class FeeBumpingViewModel extends ChangeNotifier {
         utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
 
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    final outputSum = _bumpingTransaction!.outputs[0].amount +
-        _estimateVirtualByte(_bumpingTransaction!) * newFeeRate;
+    double estimatedVSize = _estimateVirtualByte(_bumpingTransaction!);
+    double outputSum =
+        _bumpingTransaction!.outputs[0].amount + estimatedVSize * newFeeRate;
 
-    if (inputSum < outputSum) {
-      final addtionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
-      utxoList.addAll(addtionalUtxos);
+    while (inputSum < outputSum) {
+      final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
+      if (additionalUtxos.isEmpty) {
+        debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
+        return;
+      }
 
-      debugPrint('CPFP utxo 추가됨 (${addtionalUtxos.length})개');
+      utxoList.addAll(additionalUtxos);
+      debugPrint('😇 CPFP utxo 추가됨 (${additionalUtxos.length})개');
       _bumpingTransaction = Transaction.forSweep(
           utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
+      estimatedVSize = _estimateVirtualByte(_bumpingTransaction!);
+
+      inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+      outputSum =
+          _bumpingTransaction!.outputs[0].amount + estimatedVSize * newFeeRate;
     }
 
     _sendInfoProvider.setRecipientAddress(recipient);
