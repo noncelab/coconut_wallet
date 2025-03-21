@@ -326,7 +326,7 @@ class _UtxoListState extends State<UtxoList> {
       List<UtxoState> utxoList, String selectedUtxoTagName) {
     return SliverAnimatedList(
       key: _utxoListKey,
-      initialItemCount: _previousUtxoList.length,
+      initialItemCount: utxoList.length,
       itemBuilder: (context, index, animation) {
         final isSelected = selectedUtxoTagName == t.all ||
             (utxoList[index].tags != null &&
