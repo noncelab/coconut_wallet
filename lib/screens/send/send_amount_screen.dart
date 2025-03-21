@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.dart';
@@ -242,17 +243,15 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   }
 
   void _goNextScreen(String routeName) {
-    try {
-      _viewModel.checkGoingNextAvailable();
-    } catch (e) {
-      CustomToast.showWarningToast(context: context, text: e.toString());
+    if (_viewModel.isNetworkOn != true) {
+      CustomToast.showWarningToast(
+          context: context, text: ErrorCodes.networkError.message);
       return;
     }
 
-    _viewModel.setAmountWithInput();
-    _viewModel.removeWalletUpdateListener();
+    _viewModel.onBeforeGoNextScreen();
     Navigator.pushNamed(context, routeName).then((_) {
-      _viewModel.addWalletUpdateListner();
+      _viewModel.onBackFromNextScreen();
     });
   }
 }

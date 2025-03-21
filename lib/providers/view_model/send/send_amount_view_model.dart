@@ -25,7 +25,7 @@ class SendAmountViewModel extends ChangeNotifier {
     _input = '';
     _isNextButtonEnabled = false;
 
-    addWalletUpdateListner();
+    _addWalletUpdateListner();
   }
 
   int get confirmedBalance => _confirmedBalance;
@@ -35,11 +35,13 @@ class SendAmountViewModel extends ChangeNotifier {
   bool get isNextButtonEnabled => _isNextButtonEnabled;
   int get incomingBalance => _incomingBalance;
 
-  // TODO: 추후 반환 타입 변경
-  void checkGoingNextAvailable() {
-    if (_isNetworkOn != true) {
-      throw ErrorCodes.networkError.message;
-    }
+  void onBeforeGoNextScreen() {
+    _setAmountWithInput();
+    _removeWalletUpdateListener();
+  }
+
+  void onBackFromNextScreen() {
+    _addWalletUpdateListner();
   }
 
   void onKeyTap(String newInput) {
@@ -97,7 +99,7 @@ class SendAmountViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setAmountWithInput() {
+  void _setAmountWithInput() {
     _sendInfoProvider.setAmount(double.parse(_input));
   }
 
@@ -149,12 +151,12 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   // pending tx가 완료되었을 때 잔액을 업데이트 하기 위해
-  void addWalletUpdateListner() {
+  void _addWalletUpdateListner() {
     _walletProvider.addWalletUpdateListener(
         _sendInfoProvider.walletId!, _onWalletUpdated);
   }
 
-  void removeWalletUpdateListener() {
+  void _removeWalletUpdateListener() {
     _walletProvider.removeWalletUpdateListener(
         _sendInfoProvider.walletId!, _onWalletUpdated);
   }
@@ -162,7 +164,7 @@ class SendAmountViewModel extends ChangeNotifier {
   @override
   void dispose() {
     if (_sendInfoProvider.walletId != null) {
-      removeWalletUpdateListener();
+      _removeWalletUpdateListener();
     }
     super.dispose();
   }
