@@ -482,6 +482,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (index == 0)
+                  SizedBox(
+                      width: 7,
+                      child: Center(
+                          child: Container(
+                              width: 1,
+                              height: 4,
+                              color: CoconutColors.gray700))),
                 // 타임라인 선
                 Row(
                   children: [
