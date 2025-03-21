@@ -54,14 +54,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = UtxoListViewModel(
-      widget.id,
-      Provider.of<WalletProvider>(context, listen: false),
-      Provider.of<TransactionProvider>(context, listen: false),
-      Provider.of<UtxoTagProvider>(context, listen: false),
-      Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<UpbitConnectModel>(context, listen: false),
-    );
+    _viewModel = _createViewModel();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appBarRenderBox =
@@ -91,13 +84,25 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     super.dispose();
   }
 
+  UtxoListViewModel _createViewModel() {
+    return UtxoListViewModel(
+      widget.id,
+      Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<TransactionProvider>(context, listen: false),
+      Provider.of<UtxoTagProvider>(context, listen: false),
+      Provider.of<ConnectivityProvider>(context, listen: false),
+      Provider.of<UpbitConnectModel>(context, listen: false),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, UtxoTagProvider,
             UtxoListViewModel>(
-        create: (_) => _viewModel,
+        create: (_) => _createViewModel(),
         update: (_, walletProvider, utxoTagProvider, viewModel) {
-          return viewModel!..updateProvider();
+          viewModel ??= _createViewModel();
+          return viewModel..updateProvider();
         },
         child: PopScope(
           canPop: true,
