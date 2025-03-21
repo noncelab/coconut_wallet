@@ -14,7 +14,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/services/dio_client.dart';
 import 'package:coconut_wallet/utils/derivation_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -167,25 +167,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     return null;
-  }
-
-  // 노드 프로바이더에서 추천 수수료 조회
-  Future<void> _fetchRecommendedFees() async {
-    final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
-    if (recommendedFeesResult.isFailure) {
-      _didFetchRecommendedFeesSuccessfully = false;
-      notifyListeners();
-      return;
-    }
-
-    final recommendedFees = recommendedFeesResult.value;
-
-    _feeInfos[0].satsPerVb = recommendedFees.fastestFee;
-    _feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
-    _feeInfos[2].satsPerVb = recommendedFees.hourFee;
-    _didFetchRecommendedFeesSuccessfully = true;
-    _generateBumpingTransaction(_feeInfos[1].satsPerVb!.toDouble());
-    notifyListeners();
   }
 
   // 새 수수료로 트랜잭션 생성
@@ -391,6 +372,29 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
   }
 
+  // 노드 프로바이더에서 추천 수수료 조회
+  Future<void> _fetchRecommendedFees() async {
+    // TODO: 테스트 후 원래 코드로 원복해야 함
+    // final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
+    // if (recommendedFeesResult.isFailure) {
+    //   _didFetchRecommendedFeesSuccessfully = false;
+    //   notifyListeners();
+    //   return;
+    // }
+
+    // final recommendedFees = recommendedFeesResult.value;
+
+    // TODO: 추천수수료 mock 테스트 후 원래 코드로 원복해야 함
+    final recommendedFees = await DioClient().getRecommendedFee();
+
+    _feeInfos[0].satsPerVb = recommendedFees.fastestFee;
+    _feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
+    _feeInfos[2].satsPerVb = recommendedFees.hourFee;
+    _didFetchRecommendedFeesSuccessfully = true;
+    _generateBumpingTransaction(_feeInfos[1].satsPerVb!.toDouble());
+    notifyListeners();
+  }
+
   // 추천 수수료
   double _getRecommendedFeeRate() {
     if (_type == FeeBumpingType.cpfp) {
@@ -420,7 +424,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return recommendedFeeRate.toDouble();
     }
 
-    return cpfpTxFeeRate;
+    return (cpfpTxFeeRate * 100).ceil() / 100;
   }
 
   double _getRecommendedFeeRateForRbf() {
@@ -469,11 +473,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   String _getRecommendedFeeRateDescriptionForCpfp() {
-    final recommendedFeeRate = _feeInfos[1].satsPerVb; // 보통 수수료
-
-    if (recommendedFeeRate == null) {
-      return t.transaction_fee_bumping_screen.recommended_fees_is_null;
-    }
+    final recommendedFeeRate = _getRecommendedFeeRateForCpfp();
 
     // 추천 수수료가 현재 수수료보다 작은 경우
     // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 발생하지 않는 상황
@@ -500,7 +500,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     String inequalitySign = cpfpTxFeeRate % 1 == 0 ? "=" : "≈";
     return t.transaction_fee_bumping_screen.recommend_fee_info_cpfp(
       newTxSize: _formatNumber(cpfpTxSize),
-      recommendedFeeRate: _formatNumber(_getRecommendedFeeRate().toDouble()),
+      recommendedFeeRate: _formatNumber(recommendedFeeRate),
       originalTxSize: _formatNumber(_transaction.vSize.toDouble()),
       originalFee: _formatNumber((_transaction.fee ?? 0).toDouble()),
       totalRequiredFee: _formatNumber(totalRequiredFee.toDouble()),
