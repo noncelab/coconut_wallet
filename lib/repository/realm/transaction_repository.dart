@@ -224,99 +224,76 @@ class TransactionRepository extends BaseRepository {
   /// RBF 내역을 일괄 저장합니다.
   ///
   /// 중복 체크를 수행하여 이미 저장된 내역은 다시 저장하지 않습니다.
-  Future<void> addAllRbfHistory(List<RbfHistoryDto> rbfHistoryList) async {
+  void addAllRbfHistory(List<RbfHistoryDto> rbfHistoryList) {
     if (rbfHistoryList.isEmpty) return;
 
-    // 중복 체크를 위한 기존 ID 목록 생성
-    final existingIds = <int>{};
-    for (final dto in rbfHistoryList) {
-      final id = Object.hash(
-          dto.walletId, dto.originalTransactionHash, dto.transactionHash);
+    try {
+      // 중복 체크를 위한 기존 ID 목록 생성
+      final existingIds = <int>{};
+      final idsToAdd = rbfHistoryList.map((dto) => dto.id).toList();
+      final existingRbfHistory =
+          realm.query<RealmRbfHistory>(r'id IN $0', [idsToAdd]);
 
-      // 이미 존재하는지 확인
-      final existing = realm.find<RealmRbfHistory>(id);
-      if (existing != null) {
-        existingIds.add(id);
+      if (existingRbfHistory.isNotEmpty) {
+        existingIds.addAll(existingRbfHistory.map((rbf) => rbf.id));
       }
-    }
 
-    // 새로 추가할 RBF 내역 생성
-    final newRbfHistories = <RealmRbfHistory>[];
+      // feeRate 순서대로 정렬
+      final existingRbfHistoryList = getRbfHistoryList(
+          rbfHistoryList.first.walletId,
+          rbfHistoryList.first.originalTransactionHash);
 
-    for (final dto in rbfHistoryList) {
-      final id = Object.hash(
-          dto.walletId, dto.originalTransactionHash, dto.transactionHash);
+      final maxOrder = existingRbfHistoryList.isNotEmpty
+          ? existingRbfHistoryList
+              .map((e) => e.order)
+              .reduce((a, b) => a > b ? a : b)
+          : 0;
+      int order = maxOrder + 1;
+      rbfHistoryList.sort((a, b) => a.feeRate.compareTo(b.feeRate));
 
-      // 이미 존재하는 내역은 건너뜀
-      if (existingIds.contains(id)) continue;
+      // 새로 추가할 RBF 내역 생성
+      final newRbfHistories = rbfHistoryList
+          .where((dto) => !existingIds.contains(dto.id))
+          .map((dto) => mapRbfHistoryToRealmRbfHistory(dto, order++))
+          .toList();
 
-      // 순서 계산
-      final existingRbfHistoryList =
-          getRbfHistoryList(dto.walletId, dto.originalTransactionHash);
-      int order = existingRbfHistoryList.length + 1;
-
-      newRbfHistories.add(RealmRbfHistory(
-        id,
-        dto.walletId,
-        dto.originalTransactionHash,
-        dto.transactionHash,
-        order,
-        dto.feeRate,
-        dto.timestamp,
-      ));
-    }
-
-    // 일괄 저장
-    if (newRbfHistories.isNotEmpty) {
-      await realm.writeAsync(() {
-        realm.addAll<RealmRbfHistory>(newRbfHistories);
-      });
+      // 일괄 저장
+      if (newRbfHistories.isNotEmpty) {
+        realm.write(() {
+          realm.addAll<RealmRbfHistory>(newRbfHistories);
+        });
+      }
+    } catch (e, stackTrace) {
+      Logger.error('addAllRbfHistory error: $e');
+      Logger.error('stackTrace: $stackTrace');
     }
   }
 
   /// CPFP 내역을 일괄 저장합니다.
   ///
   /// 중복 체크를 수행하여 이미 저장된 내역은 다시 저장하지 않습니다.
-  Future<void> addAllCpfpHistory(List<CpfpHistoryDto> cpfpHistoryList) async {
+  void addAllCpfpHistory(List<CpfpHistoryDto> cpfpHistoryList) {
     if (cpfpHistoryList.isEmpty) return;
 
     // 중복 체크를 위한 기존 ID 목록 생성
     final existingIds = <int>{};
-    for (final dto in cpfpHistoryList) {
-      final id = Object.hash(
-          dto.walletId, dto.parentTransactionHash, dto.childTransactionHash);
+    final idsToAdd = cpfpHistoryList.map((dto) => dto.id).toList();
+    final existingCpfpHistory =
+        realm.query<RealmCpfpHistory>(r'id IN $0', [idsToAdd]);
 
-      // 이미 존재하는지 확인
-      final existing = realm.find<RealmCpfpHistory>(id);
-      if (existing != null) {
-        existingIds.add(id);
-      }
+    if (existingCpfpHistory.isNotEmpty) {
+      existingIds.addAll(existingCpfpHistory.map((cpfp) => cpfp.id));
     }
 
     // 새로 추가할 CPFP 내역 생성
-    final newCpfpHistories = <RealmCpfpHistory>[];
-
-    for (final dto in cpfpHistoryList) {
-      final id = Object.hash(
-          dto.walletId, dto.parentTransactionHash, dto.childTransactionHash);
-
-      // 이미 존재하는 내역은 건너뜀
-      if (existingIds.contains(id)) continue;
-
-      newCpfpHistories.add(RealmCpfpHistory(
-        id,
-        dto.walletId,
-        dto.parentTransactionHash,
-        dto.childTransactionHash,
-        dto.originalFee,
-        dto.newFee,
-        dto.timestamp,
-      ));
-    }
+    final newCpfpHistories = cpfpHistoryList
+        .where((dto) => !existingIds.contains(dto.id))
+        .map((dto) => mapCpfpHistoryToRealmCpfpHistory(dto))
+        .toList();
 
     // 일괄 저장
     if (newCpfpHistories.isNotEmpty) {
-      await realm.writeAsync(() {
+      realm.write(() {
         realm.addAll<RealmCpfpHistory>(newCpfpHistories);
       });
     }
@@ -436,11 +413,14 @@ class TransactionRepository extends BaseRepository {
 
 /// RBF 내역 일괄 저장을 위한 DTO 클래스
 class RbfHistoryDto {
+  final int _id;
   final int walletId;
   final String originalTransactionHash;
   final String transactionHash;
   final double feeRate;
   final DateTime timestamp;
+
+  int get id => _id;
 
   RbfHistoryDto({
     required this.walletId,
@@ -448,17 +428,24 @@ class RbfHistoryDto {
     required this.transactionHash,
     required this.feeRate,
     required this.timestamp,
-  });
+  }) : _id = Object.hash(
+          walletId,
+          originalTransactionHash,
+          transactionHash,
+        );
 }
 
 /// CPFP 내역 일괄 저장을 위한 DTO 클래스
 class CpfpHistoryDto {
+  final int _id;
   final int walletId;
   final String parentTransactionHash;
   final String childTransactionHash;
   final double originalFee;
   final double newFee;
   final DateTime timestamp;
+
+  int get id => _id;
 
   CpfpHistoryDto({
     required this.walletId,
@@ -467,5 +454,9 @@ class CpfpHistoryDto {
     required this.originalFee,
     required this.newFee,
     required this.timestamp,
-  });
+  }) : _id = Object.hash(
+          walletId,
+          parentTransactionHash,
+          childTransactionHash,
+        );
 }

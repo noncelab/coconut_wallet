@@ -83,7 +83,7 @@ class CpfpHandler {
 
     // 일괄 저장
     if (cpfpHistoryDtos.isNotEmpty) {
-      await _transactionRepository.addAllCpfpHistory(cpfpHistoryDtos);
+      _transactionRepository.addAllCpfpHistory(cpfpHistoryDtos);
       Logger.log('Saved ${cpfpHistoryDtos.length} CPFP histories in batch');
     }
   }
