@@ -1,7 +1,8 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:flutter/cupertino.dart';
 
 class WalletDetailStickyHeader extends StatefulWidget {
@@ -30,59 +31,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
       _WalletDetailStickyHeaderState();
 }
 
-class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _balanceAnimController;
-  late Animation<double> _balanceAnimation;
-  double _currentBalance = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _balanceAnimController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-
-    _initializeAnimation();
-  }
-
-  void _initializeAnimation() {
-    double startBalance = widget.prevBalance?.toDouble() ?? 0.0;
-    double endBalance = widget.balance?.toDouble() ?? 0.0;
-
-    _balanceAnimation =
-        Tween<double>(begin: startBalance, end: endBalance).animate(
-      CurvedAnimation(
-          parent: _balanceAnimController, curve: Curves.easeOutCubic),
-    )..addListener(() {
-            setState(() {
-              _currentBalance = _balanceAnimation.value;
-            });
-          });
-
-    if (startBalance != endBalance) {
-      _balanceAnimController.forward(
-          from: 0.0); // 애니메이션의 진행도를 처음부터 다시 시작하기 위함(부드럽게)
-    } else {
-      _currentBalance = endBalance;
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant WalletDetailStickyHeader oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.balance != oldWidget.balance) {
-      _initializeAnimation();
-    }
-  }
-
-  @override
-  void dispose() {
-    _balanceAnimController.dispose();
-    super.dispose();
-  }
-
+class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
   @override
   Widget build(BuildContext context) {
     return Positioned(
@@ -106,31 +55,34 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader>
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          text: widget.balance != null
-                              ? (widget.currentUnit == Unit.btc
-                                  ? satoshiToBitcoinString(
-                                      _currentBalance.toInt())
-                                  : addCommasToIntegerPart(_currentBalance))
-                              : '-',
-                          style: Styles.h2Number,
-                          children: [
-                            TextSpan(
-                              text: widget.balance != null
-                                  ? widget.currentUnit == Unit.btc
-                                      ? ' ${t.btc}'
-                                      : ' ${t.sats}'
-                                  : '',
-                              style: Styles.label.merge(
-                                TextStyle(
-                                  fontFamily: CustomFonts.number.getFontFamily,
-                                  color: MyColors.white,
+                      child: Row(
+                        children: [
+                          if (widget.balance == null)
+                            Text(
+                              '-',
+                              style: CoconutTypography.heading1_32_NumberBold,
+                            )
+                          else
+                            AnimatedBalance(
+                              prevValue: widget.prevBalance ?? 0,
+                              value: widget.balance!,
+                              isBtcUnit: widget.currentUnit == Unit.btc,
+                              textStyle:
+                                  CoconutTypography.body1_16_NumberBold.merge(
+                                const TextStyle(
+                                  fontSize: 18,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          Text(
+                            widget.balance != null
+                                ? widget.currentUnit == Unit.btc
+                                    ? ' ${t.btc}'
+                                    : ' ${t.sats}'
+                                : '',
+                            style: CoconutTypography.body2_14_Number,
+                          ),
+                        ],
                       ),
                     ),
                     CupertinoButton(

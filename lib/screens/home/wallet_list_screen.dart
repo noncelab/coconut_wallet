@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
@@ -376,12 +377,20 @@ class _WalletListScreenState extends State<WalletListScreen>
       bool isLastItem) {
     var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
 
+    RecentBalance? recentBalance = getWalletBalance(wallet.id);
+
     return Column(
       children: [
         SlideTransition(
-            position: offsetAnimation,
-            child: _getWalletRowItem(Key(wallet.id.toString()), wallet,
-                getWalletBalance, isBalanceHidden, isLastItem)),
+          position: offsetAnimation,
+          child: _getWalletRowItem(
+            Key(wallet.id.toString()),
+            wallet,
+            recentBalance,
+            isBalanceHidden,
+            isLastItem,
+          ),
+        ),
         isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
       ],
     );
@@ -501,15 +510,13 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   Widget? _getWalletRowItem(Key key, WalletListItemBase walletItem,
-      Function(int) getWalletBalance, bool isBalanceHidden, bool isLastItem) {
+      RecentBalance? recentBalance, bool isBalanceHidden, bool isLastItem) {
     final WalletListItemBase(
       id: id,
       name: name,
       iconIndex: iconIndex,
       colorIndex: colorIndex,
     ) = walletItem;
-    final int? balance = getWalletBalance(id);
-
     List<MultisigSigner>? signers;
     if (walletItem.walletType == WalletType.multiSignature) {
       signers = (walletItem as MultisigWalletListItem).signers;
@@ -519,7 +526,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       key: key,
       id: id,
       name: name,
-      balance: balance,
+      recentBalance: recentBalance,
       iconIndex: iconIndex,
       colorIndex: colorIndex,
       isLastItem: isLastItem,

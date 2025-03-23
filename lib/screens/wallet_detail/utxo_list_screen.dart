@@ -53,14 +53,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = UtxoListViewModel(
-      widget.id,
-      Provider.of<WalletProvider>(context, listen: false),
-      Provider.of<TransactionProvider>(context, listen: false),
-      Provider.of<UtxoTagProvider>(context, listen: false),
-      Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<UpbitConnectModel>(context, listen: false),
-    );
+    _viewModel = _createViewModel();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appBarRenderBox =
@@ -89,13 +82,25 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     super.dispose();
   }
 
+  UtxoListViewModel _createViewModel() {
+    return UtxoListViewModel(
+      widget.id,
+      Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<TransactionProvider>(context, listen: false),
+      Provider.of<UtxoTagProvider>(context, listen: false),
+      Provider.of<ConnectivityProvider>(context, listen: false),
+      Provider.of<UpbitConnectModel>(context, listen: false),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, UtxoTagProvider,
             UtxoListViewModel>(
         create: (_) => _viewModel,
         update: (_, walletProvider, utxoTagProvider, viewModel) {
-          return viewModel!..updateProvider();
+          viewModel ??= _createViewModel();
+          return viewModel..updateProvider();
         },
         child: PopScope(
           canPop: true,
@@ -201,6 +206,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         key: ValueKey(viewModel.utxoTagListKey),
         dropdownGlobalKey: _headerDropdownKey,
         balance: viewModel.balance,
+        prevBalance: viewModel.prevBalance,
         selectedFilter: viewModel.selectedUtxoOrder.text,
         utxoTagList: viewModel.utxoTagList,
         selectedUtxoTagName: viewModel.selectedUtxoTagName,
@@ -243,26 +249,32 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   Widget _buildStickyHeader() {
-    return UtxoListStickyHeader(
-      key: ValueKey(_viewModel.utxoTagListKey),
-      dropdownGlobalKey: _stickyHeaderDropdownKey,
-      height: _appBarSize.height,
-      isVisible: _stickyHeaderVisible,
-      balance: _viewModel.balance,
-      totalCount: _viewModel.utxoList.length,
-      selectedFilter: _viewModel.selectedUtxoOrder.text,
-      onTapDropdown: () {
-        setState(() {
-          _scrollController.jumpTo(_scrollController.offset);
-          if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
-            _isStickyHeaderDropdownVisible = false;
-          } else {
-            _isStickyHeaderDropdownVisible = true;
-          }
-        });
-      },
-      removePopup: () {
-        _removeFilterDropdown();
+    return Selector<UtxoListViewModel, int>(
+      selector: (_, viewModel) => viewModel.balance,
+      builder: (context, balance, child) {
+        return UtxoListStickyHeader(
+          key: ValueKey(_viewModel.utxoTagListKey),
+          dropdownGlobalKey: _stickyHeaderDropdownKey,
+          height: _appBarSize.height,
+          isVisible: _stickyHeaderVisible,
+          balance: _viewModel.balance,
+          prevBalance: _viewModel.prevBalance,
+          totalCount: _viewModel.utxoList.length,
+          selectedFilter: _viewModel.selectedUtxoOrder.text,
+          onTapDropdown: () {
+            setState(() {
+              _scrollController.jumpTo(_scrollController.offset);
+              if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
+                _isStickyHeaderDropdownVisible = false;
+              } else {
+                _isStickyHeaderDropdownVisible = true;
+              }
+            });
+          },
+          removePopup: () {
+            _removeFilterDropdown();
+          },
+        );
       },
     );
   }

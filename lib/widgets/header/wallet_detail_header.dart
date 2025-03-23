@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lottie/lottie.dart';
 
@@ -33,59 +34,7 @@ class WalletDetailHeader extends StatefulWidget {
   State<WalletDetailHeader> createState() => _WalletDetailHeaderState();
 }
 
-class _WalletDetailHeaderState extends State<WalletDetailHeader>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _balanceAnimController;
-  late Animation<double> _balanceAnimation;
-  double _currentBalance = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _balanceAnimController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-
-    _initializeAnimation();
-  }
-
-  void _initializeAnimation() {
-    double startBalance = widget.prevBalance?.toDouble() ?? 0.0;
-    double endBalance = widget.balance?.toDouble() ?? 0.0;
-
-    _balanceAnimation =
-        Tween<double>(begin: startBalance, end: endBalance).animate(
-      CurvedAnimation(
-          parent: _balanceAnimController, curve: Curves.easeOutCubic),
-    )..addListener(() {
-            setState(() {
-              _currentBalance = _balanceAnimation.value;
-            });
-          });
-
-    if (startBalance != endBalance) {
-      _balanceAnimController.forward(
-          from: 0.0); // 애니메이션의 진행도를 처음부터 다시 시작하기 위함(부드럽게)
-    } else {
-      _currentBalance = endBalance;
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant WalletDetailHeader oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.balance != oldWidget.balance) {
-      _initializeAnimation();
-    }
-  }
-
-  @override
-  void dispose() {
-    _balanceAnimController.dispose();
-    super.dispose();
-  }
-
+class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -135,14 +84,17 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            widget.balance == null
-                ? '-'
-                : widget.currentUnit == Unit.btc
-                    ? satoshiToBitcoinString(widget.balance!)
-                    : addCommasToIntegerPart(widget.balance!.toDouble()),
-            style: CoconutTypography.heading1_32_NumberBold,
-          ),
+          if (widget.balance == null)
+            Text(
+              '-',
+              style: CoconutTypography.heading1_32_NumberBold,
+            )
+          else
+            AnimatedBalance(
+              prevValue: widget.prevBalance ?? 0,
+              value: widget.balance!,
+              isBtcUnit: widget.currentUnit == Unit.btc,
+            ),
           const SizedBox(width: 4.0),
           Text(
             widget.currentUnit == Unit.btc ? t.btc : t.sats,

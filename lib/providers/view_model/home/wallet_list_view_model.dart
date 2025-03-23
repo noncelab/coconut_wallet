@@ -18,8 +18,8 @@ class WalletListViewModel extends ChangeNotifier {
   late final bool _isReviewScreenVisible;
   late WalletSubscriptionState _walletSyncingState;
   late final ConnectivityProvider _connectivityProvider;
-  Map<int, int> _walletBalance = {};
   late bool? _isNetworkOn;
+  Map<int, RecentBalance> _walletBalance = {};
   bool _isFirstLoaded = false;
 
   WalletListViewModel(
@@ -56,8 +56,13 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void _updateBalance(Map<int, Balance> balanceMap) {
-    _walletBalance =
-        balanceMap.map((key, balance) => MapEntry(key, balance.total));
+    _walletBalance = balanceMap.map((key, balance) {
+      final prev = _walletBalance[key]?.currentBalance;
+      return MapEntry(
+        key,
+        RecentBalance(balance.total, prev),
+      );
+    });
   }
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
@@ -89,9 +94,8 @@ class WalletListViewModel extends ChangeNotifier {
     await AppReviewService.increaseAppRunningCountIfRejected();
   }
 
-  int? getWalletBalance(int id) {
+  RecentBalance? getWalletBalance(int id) {
     return _walletBalance[id];
-    //return _walletProvider.getWalletBalance(id);
   }
 
   void onNodeProviderUpdated() {

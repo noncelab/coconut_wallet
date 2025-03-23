@@ -153,21 +153,26 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   Widget _buildStickyHeader() {
-    return WalletDetailStickyHeader(
-        widgetKey: _stickyHeaderWidgetKey,
-        height: _appBarSize.height,
-        isVisible: _stickyHeaderVisible,
-        currentUnit: _currentUnit,
-        balance: _viewModel.balance,
-        onTapReceive: () {
-          _viewModel.removeFaucetTooltip();
-          _onTapReceive();
-        },
-        onTapSend: () {
-          _viewModel.removeFaucetTooltip();
-          _onTapSend();
-        },
-        prevBalance: _viewModel.prevBalance);
+    return Selector<WalletDetailViewModel, int>(
+      selector: (_, viewModel) => viewModel.balance,
+      builder: (context, balance, child) {
+        return WalletDetailStickyHeader(
+            widgetKey: _stickyHeaderWidgetKey,
+            height: _appBarSize.height,
+            isVisible: _stickyHeaderVisible,
+            currentUnit: _currentUnit,
+            balance: _viewModel.balance,
+            onTapReceive: () {
+              _viewModel.removeFaucetTooltip();
+              _onTapReceive();
+            },
+            onTapSend: () {
+              _viewModel.removeFaucetTooltip();
+              _onTapSend();
+            },
+            prevBalance: _viewModel.prevBalance);
+      },
+    );
   }
 
   Selector<WalletDetailViewModel, bool> _buildLoadingWidget() {

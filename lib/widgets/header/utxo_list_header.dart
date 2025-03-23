@@ -4,7 +4,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 class UtxoListHeader extends StatefulWidget {
   final GlobalKey dropdownGlobalKey;
   final int? balance;
+  final int? prevBalance;
   final String selectedFilter;
   final Function onTapDropdown;
   final List<UtxoTag> utxoTagList;
@@ -23,6 +24,7 @@ class UtxoListHeader extends StatefulWidget {
       {super.key,
       required this.dropdownGlobalKey,
       required this.balance,
+      required this.prevBalance,
       required this.selectedFilter,
       required this.onTapDropdown,
       required this.utxoTagList,
@@ -59,12 +61,32 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        // Expanded(
+                        //   child:
+                        //   child: Text(
+                        //     widget.balance != null
+                        //         ? satoshiToBitcoinString(widget.balance!)
+                        //         : t.fetch_balance_failed,
+                        //     style: CoconutTypography.heading1_32_NumberBold,
+                        //   ),
+                        // ),
                         Expanded(
-                          child: Text(
-                            widget.balance != null
-                                ? satoshiToBitcoinString(widget.balance!)
-                                : t.fetch_balance_failed,
-                            style: CoconutTypography.heading1_32_NumberBold,
+                          child: Row(
+                            children: [
+                              if (widget.balance == null)
+                                Text(
+                                  t.fetch_balance_failed,
+                                  style:
+                                      CoconutTypography.heading1_32_NumberBold,
+                                )
+                              else
+                                AnimatedBalance(
+                                    prevValue: widget.prevBalance ?? 0,
+                                    value: widget.balance!,
+                                    isBtcUnit: true,
+                                    textStyle: CoconutTypography
+                                        .heading1_32_NumberBold),
+                            ],
                           ),
                         ),
                         CoconutLayout.spacing_100w,

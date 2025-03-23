@@ -1,18 +1,19 @@
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 
 class WalletItemCard extends StatelessWidget {
   final int id;
-  final int? balance;
+  final RecentBalance? recentBalance;
   final String name;
   final int iconIndex;
   final int colorIndex;
@@ -23,7 +24,7 @@ class WalletItemCard extends StatelessWidget {
   const WalletItemCard({
     super.key,
     required this.id,
-    required this.balance,
+    required this.recentBalance,
     required this.name,
     required this.iconIndex,
     required this.colorIndex,
@@ -88,12 +89,24 @@ class WalletItemCard extends StatelessWidget {
                             child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    balance != null
-                                        ? satoshiToBitcoinString(balance!)
-                                        : '0',
-                                    style: Styles.h3Number,
-                                  ),
+                                  if (recentBalance != null) ...[
+                                    if (recentBalance?.currentBalance == null)
+                                      Text(
+                                        '0',
+                                        style: CoconutTypography
+                                            .heading3_21_NumberBold,
+                                      )
+                                    else
+                                      AnimatedBalance(
+                                        prevValue:
+                                            recentBalance!.previousBalance ?? 0,
+                                        value:
+                                            recentBalance!.currentBalance ?? 0,
+                                        isBtcUnit: true,
+                                        textStyle: CoconutTypography
+                                            .heading4_18_NumberBold,
+                                      ),
+                                  ],
                                   const Text(" BTC", style: Styles.unitSmall),
                                 ]),
                           )),
