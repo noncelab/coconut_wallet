@@ -472,7 +472,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
   Widget _rbfHistoryWidget() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         children: List.generate(
           feeBumpingHistoryList.length,
@@ -482,6 +482,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (index == 0)
+                  SizedBox(
+                      width: 7,
+                      child: Center(
+                          child: Container(
+                              width: 1,
+                              height: 4,
+                              color: CoconutColors.gray700))),
                 // 타임라인 선
                 Row(
                   children: [
@@ -569,7 +577,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
   Widget _cpfpHistoryWidget() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         children: List.generate(
           feeBumpingHistoryList.length,
@@ -709,6 +717,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
               child: Visibility(
                 visible:
                     _viewModel.isSendType! || feeBumpingHistoryList.length < 2,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
                 child: GestureDetector(
                   onTap: () async {
                     if (!_viewModel.isNetworkOn) {

@@ -165,7 +165,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader>
               : '',
           CoconutColors.primary.withOpacity(0.2),
         ),
-        CoconutLayout.spacing_50h,
+        CoconutLayout.spacing_100h,
         _buildPendingAmountRow(
           widget.receivingAmount != 0,
           'assets/lottie/arrow-down.json',
@@ -183,16 +183,16 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader>
     if (!condition) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 20,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10.0),
               color: color,
             ),
-            child: Lottie.asset(animationPath, width: 20, height: 20),
+            child: Lottie.asset(animationPath, width: 12, height: 12),
           ),
           CoconutLayout.spacing_200w,
           Text(
