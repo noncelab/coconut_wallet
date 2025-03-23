@@ -277,11 +277,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               ),
           '/transaction-fee-bumping': (context) => buildScreenWithArguments(
                 context,
-                (args) => TransactionFeeBumpingScreen(
-                  transaction: args['transaction'],
-                  feeBumpingType: args['feeBumpingType'],
-                  walletId: args['walletId'],
-                  walletName: args['walletName'],
+                (args) => CustomLoadingOverlay(
+                  child: TransactionFeeBumpingScreen(
+                    transaction: args['transaction'],
+                    feeBumpingType: args['feeBumpingType'],
+                    walletId: args['walletId'],
+                    walletName: args['walletName'],
+                  ),
                 ),
               ),
           '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
