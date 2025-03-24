@@ -129,191 +129,186 @@ class _WalletListScreenState extends State<WalletListScreen>
               body: SafeArea(
                 top: false,
                 bottom: false,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapDown: (details) {
-                    setState(() {
-                      _isDropdownMenuVisible = false;
-                    });
-                  },
-                  child: Stack(
-                    children: [
-                      CustomScrollView(
-                          controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          semanticChildCount: viewModel.walletItemList.length,
-                          slivers: <Widget>[
-                            // Appbar
-                            CoconutAppBar.buildHomeAppbar(
-                              context: context,
-                              leadingSvgAsset: SvgPicture.asset(
-                                  'assets/svg/coconut.svg',
-                                  colorFilter: const ColorFilter.mode(
-                                      CoconutColors.white, BlendMode.srcIn),
-                                  width: 24),
-                              appTitle: t.wallet,
-                              actionButtonList: [
-                                Container(
-                                  height: 40,
-                                  width: 40,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  child: IconButton(
-                                    icon: SvgPicture.asset(
-                                      'assets/svg/book.svg',
-                                      width: 18,
-                                      height: 18,
-                                      colorFilter: const ColorFilter.mode(
-                                          CoconutColors.white, BlendMode.srcIn),
-                                    ),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return CoconutPopup(
-                                            title: t.alert.tutorial.title,
-                                            description:
-                                                t.alert.tutorial.description,
-                                            onTapRight: () async {
-                                              launchURL(
-                                                TUTORIAL_URL,
-                                                defaultMode: false,
-                                              );
-                                              Navigator.of(context).pop();
-                                            },
-                                            onTapLeft: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                            rightButtonText:
-                                                t.alert.tutorial.btn_view,
-                                            rightButtonColor:
-                                                CoconutColors.cyan,
-                                            leftButtonText: t.close,
-                                          );
-                                        },
-                                      );
-                                    },
-                                    color: CoconutColors.white,
-                                  ),
+                child: Stack(
+                  children: [
+                    CustomScrollView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        semanticChildCount: viewModel.walletItemList.length,
+                        slivers: <Widget>[
+                          // Appbar
+                          CoconutAppBar.buildHomeAppbar(
+                            context: context,
+                            leadingSvgAsset: SvgPicture.asset(
+                                'assets/svg/coconut.svg',
+                                colorFilter: const ColorFilter.mode(
+                                    CoconutColors.white, BlendMode.srcIn),
+                                width: 24),
+                            appTitle: t.wallet,
+                            actionButtonList: [
+                              Container(
+                                height: 40,
+                                width: 40,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(30),
                                 ),
-                                SizedBox(
-                                  height: 40,
-                                  width: 40,
-                                  child: IconButton(
-                                    icon: const Icon(
-                                      Icons.add_rounded,
-                                    ),
-                                    onPressed: () {
-                                      _onAddScannerPressed();
-                                    },
-                                    color: CoconutColors.white,
+                                child: IconButton(
+                                  icon: SvgPicture.asset(
+                                    'assets/svg/book.svg',
+                                    width: 18,
+                                    height: 18,
+                                    colorFilter: const ColorFilter.mode(
+                                        CoconutColors.white, BlendMode.srcIn),
                                   ),
-                                ),
-                                SizedBox(
-                                  key: _dropdownButtonKey,
-                                  height: 40,
-                                  width: 40,
-                                  child: IconButton(
-                                    icon: const Icon(CupertinoIcons.ellipsis,
-                                        size: 18),
-                                    onPressed: () {
-                                      setState(() {
-                                        _isDropdownMenuVisible = true;
-                                      });
-                                    },
-                                    color: CoconutColors.white,
-                                  ),
-                                ),
-                              ],
-                              bottomWidget: PreferredSize(
-                                preferredSize: const Size.fromHeight(20),
-                                child: _topNetworkAlertWidget(
-                                    isNetworkOn:
-                                        viewModel.isNetworkOn == null ||
-                                            viewModel.isNetworkOn == true),
-                              ),
-                              appBarInnerMargin: viewModel.isNetworkOn == false
-                                  ? const EdgeInsets.symmetric(
-                                      vertical: 30,
-                                    )
-                                  : const EdgeInsets.only(
-                                      top: 30,
-                                    ),
-                            ),
-                            CupertinoSliverRefreshControl(
-                              onRefresh: viewModel.refreshWallets,
-                            ),
-                            // loading indicator with animation
-                            SliverToBoxAdapter(
-                                child: AnimatedSwitcher(
-                              transitionBuilder: (child, animation) =>
-                                  FadeTransition(
-                                opacity: animation,
-                                child: SizeTransition(
-                                  sizeFactor: animation,
-                                  child: child,
-                                ),
-                              ),
-                              duration: const Duration(milliseconds: 300),
-                              child: viewModel.shouldShowLoadingIndicator
-                                  ? const Center(
-                                      child: Padding(
-                                        key: ValueKey("loading"),
-                                        padding: EdgeInsets.only(bottom: 20.0),
-                                        child: LoadingIndicator(),
-                                      ),
-                                    )
-                                  : null,
-                            )),
-                            // 용어집, 바로 추가하기
-                            SliverToBoxAdapter(
-                                child: Column(
-                              children: [
-                                if (!viewModel.shouldShowLoadingIndicator) ...{
-                                  if (viewModel.isTermsShortcutVisible)
-                                    WalletListTermsShortcutCard(
-                                      onTap: () {
-                                        CommonBottomSheets.showBottomSheet_90(
-                                            context: context,
-                                            child: const TermsBottomSheet());
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return CoconutPopup(
+                                          title: t.alert.tutorial.title,
+                                          description:
+                                              t.alert.tutorial.description,
+                                          onTapRight: () async {
+                                            launchURL(
+                                              TUTORIAL_URL,
+                                              defaultMode: false,
+                                            );
+                                            Navigator.of(context).pop();
+                                          },
+                                          onTapLeft: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                          rightButtonText:
+                                              t.alert.tutorial.btn_view,
+                                          rightButtonColor: CoconutColors.cyan,
+                                          leftButtonText: t.close,
+                                        );
                                       },
-                                      onCloseTap: viewModel.hideTermsShortcut,
-                                    ),
-                                  if (viewModel.walletItemList.isEmpty)
-                                    WalletListAddGuideCard(
-                                        onPressed: _onAddScannerPressed)
-                                },
-                              ],
-                            )),
-                            // 지갑 목록
-                            _buildSliverAnimatedList(
-                                viewModel.walletItemList,
-                                (id) => viewModel.getWalletBalance(id),
-                                viewModel.isBalanceHidden),
-                          ]),
-                      Positioned(
-                        top: _dropdownButtonPosition.dy +
-                            _dropdownButtonSize.height,
-                        right: 20,
-                        child: Visibility(
-                          visible: _isDropdownMenuVisible,
-                          child: CoconutPulldownMenu(
-                            shadowColor: CoconutColors.gray800,
-                            dividerColor: CoconutColors.gray800,
-                            buttons: _dropdownButtons,
-                            dividerHeight: 1,
-                            onTap: ((index) {
-                              setState(() {
-                                _isDropdownMenuVisible = false;
-                              });
-                              _dropdownActions[index].call();
-                            }),
+                                    );
+                                  },
+                                  color: CoconutColors.white,
+                                ),
+                              ),
+                              SizedBox(
+                                height: 40,
+                                width: 40,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.add_rounded,
+                                  ),
+                                  onPressed: () {
+                                    _onAddScannerPressed();
+                                  },
+                                  color: CoconutColors.white,
+                                ),
+                              ),
+                              SizedBox(
+                                key: _dropdownButtonKey,
+                                height: 40,
+                                width: 40,
+                                child: IconButton(
+                                  icon: const Icon(CupertinoIcons.ellipsis,
+                                      size: 18),
+                                  onPressed: () {
+                                    _setPulldownMenuVisiblility(true);
+                                  },
+                                  color: CoconutColors.white,
+                                ),
+                              ),
+                            ],
+                            bottomWidget: PreferredSize(
+                              preferredSize: const Size.fromHeight(20),
+                              child: _topNetworkAlertWidget(
+                                  isNetworkOn: viewModel.isNetworkOn == null ||
+                                      viewModel.isNetworkOn == true),
+                            ),
+                            appBarInnerMargin: viewModel.isNetworkOn == false
+                                ? const EdgeInsets.symmetric(
+                                    vertical: 30,
+                                  )
+                                : const EdgeInsets.only(
+                                    top: 30,
+                                  ),
                           ),
+                          CupertinoSliverRefreshControl(
+                            onRefresh: viewModel.refreshWallets,
+                          ),
+                          // loading indicator with animation
+                          SliverToBoxAdapter(
+                              child: AnimatedSwitcher(
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                              opacity: animation,
+                              child: SizeTransition(
+                                sizeFactor: animation,
+                                child: child,
+                              ),
+                            ),
+                            duration: const Duration(milliseconds: 300),
+                            child: viewModel.shouldShowLoadingIndicator
+                                ? const Center(
+                                    child: Padding(
+                                      key: ValueKey("loading"),
+                                      padding: EdgeInsets.only(bottom: 20.0),
+                                      child: LoadingIndicator(),
+                                    ),
+                                  )
+                                : null,
+                          )),
+                          // 용어집, 바로 추가하기
+                          SliverToBoxAdapter(
+                              child: Column(
+                            children: [
+                              if (!viewModel.shouldShowLoadingIndicator) ...{
+                                if (viewModel.isTermsShortcutVisible)
+                                  WalletListTermsShortcutCard(
+                                    onTap: () {
+                                      CommonBottomSheets.showBottomSheet_90(
+                                          context: context,
+                                          child: const TermsBottomSheet());
+                                    },
+                                    onCloseTap: viewModel.hideTermsShortcut,
+                                  ),
+                                if (viewModel.walletItemList.isEmpty)
+                                  WalletListAddGuideCard(
+                                      onPressed: _onAddScannerPressed)
+                              },
+                            ],
+                          )),
+                          // 지갑 목록
+                          _buildSliverAnimatedList(
+                              viewModel.walletItemList,
+                              (id) => viewModel.getWalletBalance(id),
+                              viewModel.isBalanceHidden),
+                        ]),
+                    if (_isDropdownMenuVisible)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: () {
+                            _setPulldownMenuVisiblility(false);
+                          },
                         ),
-                      )
-                    ],
-                  ),
+                      ),
+                    Positioned(
+                      top: _dropdownButtonPosition.dy +
+                          _dropdownButtonSize.height,
+                      right: 20,
+                      child: Visibility(
+                        visible: _isDropdownMenuVisible,
+                        child: CoconutPulldownMenu(
+                          shadowColor: CoconutColors.gray800,
+                          dividerColor: CoconutColors.gray800,
+                          buttons: _dropdownButtons,
+                          dividerHeight: 1,
+                          onTap: ((index) {
+                            _setPulldownMenuVisiblility(false);
+                            _dropdownActions[index].call();
+                          }),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -321,6 +316,12 @@ class _WalletListScreenState extends State<WalletListScreen>
         },
       ),
     );
+  }
+
+  void _setPulldownMenuVisiblility(bool value) {
+    setState(() {
+      _isDropdownMenuVisible = value;
+    });
   }
 
   void _handleWalletListUpdate(List<WalletListItemBase> walletList,
