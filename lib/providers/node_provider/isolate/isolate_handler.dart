@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_man
 import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
@@ -14,8 +15,9 @@ class IsolateHandler {
   final TransactionManager _transactionManager;
   final NetworkManager _networkManager;
   final IsolateStateManager _isolateStateManager;
+  final ElectrumService _electrumService;
   IsolateHandler(this._subscriptionManager, this._transactionManager,
-      this._networkManager, this._isolateStateManager);
+      this._networkManager, this._isolateStateManager, this._electrumService);
 
   Future<void> handleMessage(IsolateHandlerMessage messageType,
       SendPort isolateToMainSendPort, List params) async {
@@ -78,6 +80,9 @@ class IsolateHandler {
         case IsolateHandlerMessage.getRecommendedFees:
           isolateToMainSendPort
               .send(await _networkManager.getRecommendedFees());
+          break;
+        case IsolateHandlerMessage.getSocketConnectionStatus:
+          isolateToMainSendPort.send(_electrumService.connectionStatus);
           break;
       }
     } catch (e, stack) {

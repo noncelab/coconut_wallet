@@ -91,7 +91,6 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
         _isPause = true;
-        _nodeProvider.closeConnection();
         _upbitConnectModel.disposeUpbitWebSocketService();
         break;
     }

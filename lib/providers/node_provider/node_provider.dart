@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
@@ -134,7 +135,12 @@ class NodeProvider extends ChangeNotifier {
       _stateSubscription?.cancel();
       _stateSubscription = null;
 
-      await initialize();
+      final socketConnectionStatus =
+          await _isolateManager.getSocketConnectionStatus();
+
+      if (socketConnectionStatus != SocketConnectionStatus.connected) {
+        await initialize();
+      }
     } catch (e) {
       Logger.log('NodeProvider: 재연결 중 오류 발생: $e');
       _initCompleter = null;
@@ -151,6 +157,9 @@ class NodeProvider extends ChangeNotifier {
       // Isolate 정리
       await _isolateManager.closeIsolate();
       _initCompleter = null;
+
+      // StateManager 초기화
+      _stateManager = null;
 
       notifyListeners();
     } catch (e) {
