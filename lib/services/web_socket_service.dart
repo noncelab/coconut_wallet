@@ -77,14 +77,11 @@ class WebSocketService {
 
   void _onError(error) {
     Logger.log('WebSocket error: $error');
-    _tickerController.add(null);
     _reconnect();
   }
 
   void _onDone() {
     Logger.log('WebSocket closed');
-    _tickerController.add(null);
-    _reconnect();
   }
 
   void _sendPing(Timer timer) {
