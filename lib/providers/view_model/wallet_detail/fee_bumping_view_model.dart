@@ -213,9 +213,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     final recipient = _walletProvider.getReceiveAddress(_walletId).address;
     double estimatedVSize;
     try {
-      // FIXME: feeRate 10으로 고정되어있음
       _bumpingTransaction = Transaction.forSweep(
-          utxoList, recipient, 10, walletListItemBase.walletBase);
+          utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
       estimatedVSize = _estimateVirtualByte(_bumpingTransaction!);
     } catch (e) {
       // insufficient utxo for sweep
