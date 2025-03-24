@@ -154,6 +154,7 @@ class _SendAddressAmountBodyForBatchState
           semanticChildCount: 1,
           slivers: [
             SliverSafeArea(
+              bottom: false,
               minimum: const EdgeInsets.symmetric(
                   horizontal: CoconutLayout.defaultPadding,
                   vertical: Sizes.size28),
@@ -206,15 +207,38 @@ class _SendAddressAmountBodyForBatchState
           ],
         ),
         Positioned(
+          left: 0,
+          right: 0,
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          child: IgnorePointer(
+            ignoring: true,
+            child: Container(
+              padding: const EdgeInsets.only(
+                  left: 16, right: 16, bottom: 40, top: 110),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    CoconutColors.black,
+                  ],
+                  stops: [0.0, 1.0], // 0%에서 투명, 100%에서 블랙
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
             left: CoconutLayout.defaultPadding,
             right: CoconutLayout.defaultPadding,
-            bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size4,
+            bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size40,
             child: CoconutButton(
                 padding: const EdgeInsets.symmetric(vertical: Sizes.size10),
                 onPressed: () => _onComplete(context),
                 text: t.complete,
                 width: MediaQuery.sizeOf(context).width,
-                height: 41,
+                height: 50,
                 backgroundColor: CoconutColors.primary,
                 foregroundColor: CoconutColors.black,
                 disabledBackgroundColor: CoconutColors.gray800,
