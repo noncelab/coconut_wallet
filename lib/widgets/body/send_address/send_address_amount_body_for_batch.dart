@@ -232,9 +232,8 @@ class _SendAddressAmountBodyForBatchState
         Positioned(
             left: CoconutLayout.defaultPadding,
             right: CoconutLayout.defaultPadding,
-            bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size40,
+            bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size30,
             child: CoconutButton(
-                padding: const EdgeInsets.symmetric(vertical: Sizes.size10),
                 onPressed: () => _onComplete(context),
                 text: t.complete,
                 width: MediaQuery.sizeOf(context).width,

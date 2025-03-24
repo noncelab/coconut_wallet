@@ -169,7 +169,7 @@ class _TransactionFeeBumpingScreenState
                 Positioned(
                   left: 16,
                   right: 16,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 30,
                   child: Column(
                     children: [
                       _textEditingController.text.isEmpty ||
