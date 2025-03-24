@@ -155,7 +155,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           },
                         )),
                         CoconutLayout.spacing_400h,
-                        if (true) ...{
+                        if (_isTransactionStatusPending(
+                                txList.last.transaction!) &&
+                            viewModel.isSendType != null) ...{
                           Column(
                             children: [
                               _pendingWidget(txList.first.transaction!),
