@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
@@ -43,6 +44,9 @@ class IsolateManager {
     return _stateStream!;
   }
 
+  // 현재 활성 상태인 ReceivePort를 추적하기 위한 Set
+  final Set<ReceivePort> _activeReceivePorts = {};
+
   static IsolateHandler entryInitialize(
     SendPort sendPort,
     ElectrumService electrumService,
@@ -82,6 +86,7 @@ class IsolateManager {
       transactionManager,
       networkManager,
       isolateStateManager,
+      electrumService,
     );
 
     Logger.log("IsolateManager.entryInitialize: Handler created successfully");
@@ -247,11 +252,27 @@ class IsolateManager {
       }
 
       final mainFromIsolateReceivePort = ReceivePort(messageType.name);
+
+      // 활성 ReceivePort 집합에 추가
+      _activeReceivePorts.add(mainFromIsolateReceivePort);
+
       _mainToIsolateSendPort!
           .send([messageType, mainFromIsolateReceivePort.sendPort, params]);
 
-      var result = await mainFromIsolateReceivePort.first;
-      mainFromIsolateReceivePort.close();
+      T result;
+      try {
+        // 타임아웃 설정으로 무한 대기 방지
+        result = await mainFromIsolateReceivePort.first.timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            throw TimeoutException('Isolate response timeout');
+          },
+        );
+      } finally {
+        // 응답을 받았거나 예외가 발생했을 때 ReceivePort 정리
+        mainFromIsolateReceivePort.close();
+        _activeReceivePorts.remove(mainFromIsolateReceivePort);
+      }
 
       if (result is Exception) {
         throw result;
@@ -347,17 +368,49 @@ class IsolateManager {
     }
   }
 
+  Future<SocketConnectionStatus> getSocketConnectionStatus() async {
+    try {
+      return await _send(IsolateHandlerMessage.getSocketConnectionStatus, []);
+    } catch (e) {
+      Logger.error('IsolateManager: Error in getSocketConnectionStatus: $e');
+      return SocketConnectionStatus.terminated;
+    }
+  }
+
   /// isolate 연결만 종료하는 메서드 (완전 dispose는 아님)
   Future<void> closeIsolate() async {
     Logger.log('IsolateManager: Closing isolate');
 
     try {
+      // 모든 활성 ReceivePort 닫기
+      for (final port in _activeReceivePorts) {
+        try {
+          port.close();
+        } catch (e) {
+          Logger.error('IsolateManager: Error closing ReceivePort: $e');
+        }
+      }
+      _activeReceivePorts.clear();
+
       // isolate 종료
       if (_isolate != null) {
         _isolate!.kill(priority: Isolate.immediate);
         _isolate = null;
       }
+
+      // 메인 ReceivePort 닫기
+      if (_mainFromIsolateReceivePort != null) {
+        _mainFromIsolateReceivePort!.close();
+        _mainFromIsolateReceivePort = null;
+      }
+
       _mainToIsolateSendPort = null;
+
+      // isolateReady가 완료되지 않았다면 에러로 완료 처리
+      if (!_isolateReady.isCompleted) {
+        _isolateReady.completeError(
+            Exception('Isolate was closed before initialization completed'));
+      }
     } catch (e) {
       Logger.error('IsolateManager: Error closing isolate: $e');
     }

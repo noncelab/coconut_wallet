@@ -34,6 +34,10 @@ class ElectrumService {
 
   Future<void> connect(String host, int port, {bool ssl = true}) async {
     await _socketManager.connect(host, port, ssl: ssl);
+
+    _pingTimer = Timer.periodic(const Duration(seconds: 20), (timer) async {
+      ping();
+    });
   }
 
   Future<ElectrumResponse<T>> _call<T>(_ElectrumRequest request,

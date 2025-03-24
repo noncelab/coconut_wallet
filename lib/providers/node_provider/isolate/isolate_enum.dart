@@ -7,6 +7,7 @@ enum IsolateHandlerMessage {
   getLatestBlock,
   getTransaction,
   getRecommendedFees,
+  getSocketConnectionStatus,
 }
 
 enum IsolateStateMethod {
