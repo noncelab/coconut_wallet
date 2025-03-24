@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -69,13 +68,8 @@ class _TransactionFeeBumpingScreenState
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<NodeProvider, WalletProvider,
-        FeeBumpingViewModel>(
+    return ChangeNotifierProvider<FeeBumpingViewModel>(
       create: (_) => _viewModel,
-      update: (_, nodeProvider, walletProvider, viewModel) {
-        viewModel ??= _getViewModel(context);
-        return viewModel;
-      },
       child: Consumer<FeeBumpingViewModel>(
         builder: (_, viewModel, child) {
           if (viewModel.insufficientUtxos) {
@@ -240,15 +234,17 @@ class _TransactionFeeBumpingScreenState
     _viewModel = _getViewModel(context);
     _viewModel.initialize().onError((e, _) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        CustomDialogs.showCustomAlertDialog(
-          context,
-          title: t.alert.error_occurs,
-          message: t.alert.contact_admin(error: e.toString()),
-          onConfirm: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pop();
-          },
-        );
+        if (mounted) {
+          CustomDialogs.showCustomAlertDialog(
+            context,
+            title: t.alert.error_occurs,
+            message: t.alert.contact_admin(error: e.toString()),
+            onConfirm: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+            },
+          );
+        }
       });
     }).whenComplete(() {
       if (mounted) {
