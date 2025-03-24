@@ -567,7 +567,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     }
 
     setState(() {
-      _viewModel.setPreviousTransactionIndex();
+      _viewModel.updatePreviousTransactionIndexFromSelected();
       _viewModel.setSelectedTransactionIndex(newIndex);
       _updateAnimation();
     });
