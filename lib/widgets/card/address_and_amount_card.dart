@@ -247,7 +247,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
 
   void _showAddressScanner() async {
     final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-    final String scannedAddress = await CommonBottomSheets.showBottomSheet_100(
+    final String? scannedAddress = await CommonBottomSheets.showBottomSheet_100(
         context: context,
         child: Scaffold(
             backgroundColor: CoconutColors.black,
@@ -274,10 +274,11 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 }),
             body: SendAddressBody(
                 qrKey: qrKey, onQRViewCreated: _onQRViewCreated)));
-
-    _addressController.text = scannedAddress;
+    if (scannedAddress != null) {
+      _addressController.text = scannedAddress;
+      _onAddressChanged(scannedAddress);
+    }
     _disposeQrViewController();
-    _onAddressChanged(scannedAddress);
   }
 
   void _disposeQrViewController() {
