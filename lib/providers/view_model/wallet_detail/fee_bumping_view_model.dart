@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -15,7 +16,6 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/dio_client.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 enum PaymentType {
@@ -28,6 +28,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final FeeBumpingType _type;
   final TransactionRecord _parentTx;
   final WalletProvider _walletProvider;
+  final NodeProvider _nodeProvider;
   final SendInfoProvider _sendInfoProvider;
   final TransactionProvider _txProvider;
   final AddressRepository _addressRepository;
@@ -53,6 +54,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._sendInfoProvider,
     this._txProvider,
     this._walletProvider,
+    this._nodeProvider,
     this._addressRepository,
     this._utxoRepository,
   ) {
@@ -254,7 +256,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     int estimatedVSize = _parentTx.vSize;
     double outputSum = amount + estimatedVSize * newFeeRate;
 
-    if (inputSum < outputSum) {
+    if (inputSum <= outputSum) {
       // output에 내 주소가 있는 경우 amount 조정
       if (externalOutputs.any((output) =>
           _walletProvider.containsAddress(_walletId, output.address))) {
@@ -324,7 +326,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
       int estimatedVSize, double newFeeRate, int amount) {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    while (inputSum < outputSum) {
+    while (inputSum <= outputSum) {
       final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
       if (additionalUtxos.isEmpty) {
         debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
@@ -419,17 +421,18 @@ class FeeBumpingViewModel extends ChangeNotifier {
   // 노드 프로바이더에서 추천 수수료 조회
   Future<void> _fetchRecommendedFees() async {
     // TODO: 테스트 후 원래 코드로 원복해야 함
-    // final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
-    // if (recommendedFeesResult.isFailure) {
-    //   _didFetchRecommendedFeesSuccessfully = false;
-    //   notifyListeners();
-    //   return;
-    // }
+    // ※ 주의 Node Provider 관련 import 문, 변수 등 지우지 말 것!
+    final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
+    if (recommendedFeesResult.isFailure) {
+      _isFeeFetchSuccess = false;
+      notifyListeners();
+      return;
+    }
 
-    // final recommendedFees = recommendedFeesResult.value;
+    final recommendedFees = recommendedFeesResult.value;
 
-    // TODO: 추천수수료 mock 테스트 후 원래 코드로 원복해야 함
-    final recommendedFees = await DioClient().getRecommendedFee();
+    // TODO: 추천수수료 mock 테스트 코드!
+    // final recommendedFees = await DioClient().getRecommendedFee();
 
     _feeInfos[0].satsPerVb = recommendedFees.fastestFee;
     _feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
@@ -479,13 +482,15 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double estimatedVirtualByte = _estimateVirtualByte(transaction);
     double minimumRequiredFee =
         _parentTx.fee!.toDouble() + estimatedVirtualByte;
-    double recommendedFee = estimatedVirtualByte * recommendedFeeRate;
+    double mempoolRecommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
-    if (recommendedFee < minimumRequiredFee) {
+    if (mempoolRecommendedFee < minimumRequiredFee) {
       double feePerVByte = minimumRequiredFee / estimatedVirtualByte;
       double roundedFee = (feePerVByte * 100).ceilToDouble() / 100;
+
+      // 계산된 추천 수수료가 현재 멤풀 수수료보다 작은 경우, 기존 수수료보다 1s/vb 높은 수수료로 설정
+      // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 거의 발생 확률이 낮음
       if (feePerVByte < _parentTx.feeRate) {
-        // 추천 수수료가 현재 수수료보다 작은 경우 1s/vb 높은 수수료로 설정
         roundedFee = ((_parentTx.feeRate + 1) * 100).ceilToDouble() / 100;
       }
       return double.parse((roundedFee).toStringAsFixed(2));

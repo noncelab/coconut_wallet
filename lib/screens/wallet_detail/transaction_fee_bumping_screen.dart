@@ -347,8 +347,9 @@ class _TransactionFeeBumpingScreenState
   FeeBumpingViewModel _getViewModel(BuildContext context) {
     final sendInfoProvider =
         Provider.of<SendInfoProvider>(context, listen: false);
-    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
     final txProvider = Provider.of<TransactionProvider>(context, listen: false);
+    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    final nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     final addressRepository =
         Provider.of<AddressRepository>(context, listen: false);
     final utxoRepositry = Provider.of<UtxoRepository>(context, listen: false);
@@ -360,6 +361,7 @@ class _TransactionFeeBumpingScreenState
       sendInfoProvider,
       txProvider,
       walletProvider,
+      nodeProvider,
       addressRepository,
       utxoRepositry,
     );
