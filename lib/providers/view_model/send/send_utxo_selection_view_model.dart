@@ -63,7 +63,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   late final int _walletId;
 
-  List<UtxoState> _availableUtxoList = [];
+  final List<UtxoState> _availableUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
       RecommendedFeeFetchStatus.fetching;
@@ -358,8 +358,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       }
 
       selectedUtxoList.remove(utxo);
-      if (estimatedFee != null && _isSelectedUtxoEnough()) {
-        setEstimatedFee(estimateFee(satsPerVb!));
+      if (estimatedFee != null &&
+          _isSelectedUtxoEnough() &&
+          satsPerVb != null) {
+        setEstimatedFee(estimateFee(satsPerVb ?? 1));
       }
     } else {
       if (!_isMaxMode) {
