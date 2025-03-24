@@ -28,9 +28,9 @@ enum TransactionType {
 class FeeBumpingViewModel extends ChangeNotifier {
   final FeeBumpingType _type;
   final TransactionRecord _transaction;
-  final NodeProvider _nodeProvider;
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
+  final NodeProvider _nodeProvider;
   final TransactionProvider _txProvider;
   final AddressRepository _addressRepository;
   final UtxoRepository _utxoRepository;
@@ -50,8 +50,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._type,
     this._transaction,
     this._walletId,
-    this._nodeProvider,
     this._sendInfoProvider,
+    this._nodeProvider,
     this._txProvider,
     this._walletProvider,
     this._addressRepository,
