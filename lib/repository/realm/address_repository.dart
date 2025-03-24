@@ -368,8 +368,8 @@ class AddressRepository extends BaseRepository {
   /// @param walletId 지갑 ID
   /// @param updateDataList 업데이트할 DTO 객체 목록
   /// @return 전체 잔액 변화량
-  Balance updateAddressBalanceBatch(
-      int walletId, List<AddressBalanceUpdateDto> updateDataList) {
+  Future<Balance> updateAddressBalanceBatch(
+      int walletId, List<AddressBalanceUpdateDto> updateDataList) async {
     if (updateDataList.isEmpty) {
       return Balance(0, 0);
     }
@@ -415,7 +415,7 @@ class AddressRepository extends BaseRepository {
     }
 
     // 계산이 완료된 후 Realm 트랜잭션에서 실제 DB 업데이트만 수행
-    realm.write(() {
+    await realm.writeAsync(() {
       for (var result in calculationResults) {
         final realmAddress = result.realmAddress;
         realmAddress.confirmed = result.newConfirmed;

@@ -112,8 +112,8 @@ class NodeProvider extends ChangeNotifier {
     return await _isolateManager.getRecommendedFees();
   }
 
-  void stopFetching() {
-    dispose();
+  void unregisterWalletUpdateState(int walletId) {
+    _stateManager.unregisterWalletUpdateState(walletId);
   }
 
   @override

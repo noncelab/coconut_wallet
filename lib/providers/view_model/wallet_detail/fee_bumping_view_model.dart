@@ -134,7 +134,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(
             _bumpingTransaction!, walletListItemBase.walletBase)
         .serialize());
-    _sendInfoProvider.setFeeBumptingType(feeBumpingType);
+    _sendInfoProvider.setFeeBumpfingType(feeBumpingType);
 
     // fixme: transaction.amount는 sat 단위 _sendInfoProvider.setAmount는 btc 단위 의도
     // 문제가 없는 것으로 보아 send flow에서 사용되지 않는 것으로 추측됨
