@@ -190,19 +190,14 @@ class FeeBumpingViewModel extends ChangeNotifier {
   void _initializeCpfpTransaction(double newFeeRate) {
     final myAddressList = _getMyOutputs();
     int amount = myAddressList.fold(0, (sum, output) => sum + output.amount);
-    final List<Utxo> utxoList = [];
+    final List<UtxoState> utxoList = [];
     // 내 주소와 일치하는 utxo 찾기
     for (var myAddress in myAddressList) {
-      final utxoStateList = _utxoRepository.getUtxoStateList(_walletId);
+      final utxoStateList =
+          _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.incoming);
       for (var utxoState in utxoStateList) {
         if (myAddress.address == utxoState.to) {
-          var utxo = Utxo(
-            utxoState.transactionHash,
-            utxoState.index,
-            utxoState.amount,
-            _addressRepository.getDerivationPath(_walletId, myAddress.address),
-          );
-          utxoList.add(utxo);
+          utxoList.add(utxoState);
         }
       }
     }
