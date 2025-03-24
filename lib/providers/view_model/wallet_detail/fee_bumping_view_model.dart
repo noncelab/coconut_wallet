@@ -78,7 +78,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     await _fetchRecommendedFees(); // _isFeeFetchSuccess로 성공 여부 기록함
     if (_isFeeFetchSuccess == true) {
-      _initializeBumpingTransaction(_feeInfos[1].satsPerVb!.toDouble());
+      _initializeBumpingTransaction(_feeInfos[2].satsPerVb!.toDouble());
       _recommendedFeeRate = _getRecommendedFeeRate(_bumpingTransaction!);
       _recommendedFeeRateDescription = _type == FeeBumpingType.cpfp
           ? _getRecommendedFeeRateDescriptionForCpfp()
@@ -107,7 +107,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   bool prepareToSend(double newTxFeeRate) {
     assert(_bumpingTransaction != null);
-
     try {
       _initializeBumpingTransaction(newTxFeeRate);
       _updateSendInfoProvider(newTxFeeRate, _type);
@@ -447,10 +446,13 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   double _getRecommendedFeeRateForCpfp(Transaction transaction) {
-    final recommendedFeeRate = _feeInfos[1].satsPerVb; // 보통 수수료
+    final recommendedFeeRate = _feeInfos[2].satsPerVb; // 느린 수수료
 
     if (recommendedFeeRate == null) {
       return 0;
+    }
+    if (recommendedFeeRate < _parentTx.feeRate) {
+      return _parentTx.feeRate;
     }
 
     double cpfpTxSize = _estimateVirtualByte(transaction);
@@ -458,9 +460,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double cpfpTxFee = totalFee - _parentTx.fee!.toDouble();
     double cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
 
-    if (recommendedFeeRate < _parentTx.feeRate) {
-      return _parentTx.feeRate;
-    }
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
       return (recommendedFeeRate * 100).ceilToDouble() / 100;
     }
@@ -468,6 +467,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return (cpfpTxFeeRate * 100).ceilToDouble() / 100;
   }
 
+  /// 새로운 트랜잭션이 기존 트랜잭션보다 추가 지불하는 수수료양이 "새로운 트랜잭션 크기"이상이어야 합니다.
+  /// 그렇지 않으면 브로드캐스팅 실패합니다.
   double _getRecommendedFeeRateForRbf(Transaction transaction) {
     final recommendedFeeRate = _feeInfos[2].satsPerVb; // 느린 수수료
 
@@ -476,7 +477,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     double estimatedVirtualByte = _estimateVirtualByte(transaction);
-    // 최소 수수료 = (이전 트랜잭션 보다 1 sat/vbyte 높은 fee
     double minimumRequiredFee =
         _parentTx.fee!.toDouble() + estimatedVirtualByte;
     double recommendedFee = estimatedVirtualByte * recommendedFeeRate;
@@ -491,9 +491,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return double.parse((roundedFee).toStringAsFixed(2));
     }
 
-    recommendedFee = minimumRequiredFee / estimatedVirtualByte;
-    double roundedFee = (recommendedFee * 100).ceilToDouble() / 100;
-    return double.parse(roundedFee.toStringAsFixed(2));
+    return recommendedFeeRate.toDouble();
   }
 
   double _estimateVirtualByte(Transaction transaction) {
@@ -556,6 +554,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   String _formatNumber(double value) {
-    return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1);
+    return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
   }
 }

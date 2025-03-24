@@ -42,7 +42,7 @@ class TransactionRecord {
   int get vSize => _vSize;
 
   /// Get the fee rate of this transaction.
-  double get feeRate => _fee != null ? (_fee! / _vSize * 100).floor() / 100 : 0;
+  double get feeRate => _fee != null ? (_fee! / _vSize * 100).ceil() / 100 : 0;
 
   /// Get the input address list of this transaction.
   List<TransactionAddress> get inputAddressList => _inputAddressList;
