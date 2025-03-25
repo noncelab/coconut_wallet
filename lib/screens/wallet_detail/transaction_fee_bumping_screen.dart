@@ -291,7 +291,7 @@ class _TransactionFeeBumpingScreenState
     }
   }
 
-  void _onFeeRateChanged(String input) {
+  void _onFeeRateChanged(String input) async {
     if (_viewModel.isInitializedSuccess == false) {
       return;
     }
@@ -311,7 +311,7 @@ class _TransactionFeeBumpingScreenState
     double? value = double.tryParse(_textEditingController.text);
 
     if (value != null && value != 0) {
-      _viewModel.initializeBumpingTransaction(value).then((_) {
+      await _viewModel.initializeBumpingTransaction(value).then((_) {
         if (_viewModel.insufficientUtxos) {
           if (mounted) {
             _showInsufficientUtxoToast(context);

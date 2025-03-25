@@ -340,19 +340,14 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
       int estimatedVSize, double newFeeRate, int amount) {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    while (inputSum <= outputSum) {
-      final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
-      if (additionalUtxos.isEmpty) {
-        debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
-        _setInsufficientUtxo(true);
-        return false;
-      }
-      utxoList.addAll(additionalUtxos);
-      estimatedVSize += _getVSizeIncreasement() * additionalUtxos.length;
-
-      inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-      outputSum = amount + estimatedVSize * newFeeRate;
+    final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
+    if (additionalUtxos.isEmpty) {
+      debugPrint('❌ 사용할 수 있는 추가 UTXO가 없거나 부족함!');
+      _setInsufficientUtxo(true);
+      return false;
     }
+    utxoList.addAll(additionalUtxos);
+    estimatedVSize += _getVSizeIncreasement() * additionalUtxos.length;
     _setInsufficientUtxo(false);
 
     return true;
@@ -382,9 +377,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
     List<Utxo> additionalUtxos = [];
     List<UtxoState> utxoStateList =
         _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
+    double sum = 0;
     if (utxoStateList.isNotEmpty) {
       utxoStateList.sort((a, b) => a.amount.compareTo(b.amount));
-      double sum = 0;
       for (var utxo in utxoStateList) {
         sum += utxo.amount;
         additionalUtxos.add(Utxo(
@@ -398,6 +393,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
         }
       }
     }
+
+    if (sum < requiredAmount) {
+      return [];
+    }
+
     return additionalUtxos;
   }
 
