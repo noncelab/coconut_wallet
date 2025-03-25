@@ -89,24 +89,21 @@ class WalletItemCard extends StatelessWidget {
                             child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  if (recentBalance != null) ...[
-                                    if (recentBalance?.currentBalance == null)
-                                      Text(
-                                        '0',
-                                        style: CoconutTypography
-                                            .heading3_21_NumberBold,
-                                      )
-                                    else
-                                      AnimatedBalance(
-                                        prevValue:
-                                            recentBalance!.previousBalance ?? 0,
-                                        value:
-                                            recentBalance!.currentBalance ?? 0,
-                                        isBtcUnit: true,
-                                        textStyle: CoconutTypography
-                                            .heading4_18_NumberBold,
-                                      ),
-                                  ],
+                                  if (recentBalance?.currentBalance == null)
+                                    Text(
+                                      '0',
+                                      style: CoconutTypography
+                                          .heading3_21_NumberBold,
+                                    )
+                                  else
+                                    AnimatedBalance(
+                                      prevValue:
+                                          recentBalance!.previousBalance ?? 0,
+                                      value: recentBalance!.currentBalance ?? 0,
+                                      isBtcUnit: true,
+                                      textStyle: CoconutTypography
+                                          .heading4_18_NumberBold,
+                                    ),
                                   const Text(" BTC", style: Styles.unitSmall),
                                 ]),
                           )),
