@@ -99,8 +99,8 @@ class WalletListViewModel extends ChangeNotifier {
     await AppReviewService.increaseAppRunningCountIfRejected();
   }
 
-  AnimatedBalanceData? getWalletBalance(int id) {
-    return _walletBalance[id];
+  AnimatedBalanceData getWalletBalance(int id) {
+    return _walletBalance[id] ?? AnimatedBalanceData(0, 0);
   }
 
   void onNodeProviderUpdated() {

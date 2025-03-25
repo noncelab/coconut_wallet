@@ -107,7 +107,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               _previousWalletList,
               viewModel.walletItemList,
               _previousWalletBalance,
-              (id) => viewModel.getWalletBalance(id)?.current)) {
+              (id) => viewModel.getWalletBalance(id).current)) {
             _handleWalletListUpdate(
               viewModel.walletItemList,
               (id) => viewModel.getWalletBalance(id),
@@ -361,7 +361,7 @@ class _WalletListScreenState extends State<WalletListScreen>
     _previousWalletList = List.from(walletList);
     _previousWalletBalance = {
       for (var walletId in walletList)
-        walletId.id: getWalletBalance(walletId.id) ?? 0
+        walletId.id: getWalletBalance(walletId.id).previous
     };
 
     isWalletLoading = false;
