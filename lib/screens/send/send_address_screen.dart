@@ -108,6 +108,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                     Navigator.of(context).pop();
                   }),
               body: SafeArea(
+                bottom: false,
                 child: !_isBatchMode
                     ? SendAddressBody(
                         qrKey: qrKey,
