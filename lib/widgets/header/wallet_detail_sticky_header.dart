@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -45,7 +44,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
           child: Column(
             children: [
               Container(
-                color: MyColors.black,
+                color: CoconutColors.black,
                 padding: const EdgeInsets.only(
                   left: 16.0,
                   right: 16,
@@ -93,17 +92,17 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                         vertical: 10,
                       ),
                       minSize: 0,
-                      color: MyColors.white,
+                      color: CoconutColors.white,
                       child: SizedBox(
                         width: 35,
                         child: Center(
                           child: Text(
                             t.receive,
-                            style: Styles.caption.merge(
+                            style: CoconutTypography.body3_12.merge(
                               const TextStyle(
-                                  color: MyColors.black,
-                                  fontFamily: 'Pretendard',
-                                  fontWeight: FontWeight.w600),
+                                color: CoconutColors.black,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -120,17 +119,17 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                         vertical: 10,
                       ),
                       minSize: 0,
-                      color: MyColors.primary,
+                      color: CoconutColors.primary,
                       child: SizedBox(
                         width: 35,
                         child: Center(
                           child: Text(
                             '보내기',
-                            style: Styles.caption.merge(
+                            style: CoconutTypography.body3_12.merge(
                               const TextStyle(
-                                  color: MyColors.black,
-                                  fontFamily: 'Pretendard',
-                                  fontWeight: FontWeight.w600),
+                                color: CoconutColors.black,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -148,7 +147,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                         padding: const EdgeInsets.only(
                             top: 10, left: 16, right: 16, bottom: 9),
                         decoration: const BoxDecoration(
-                          color: MyColors.black,
+                          color: CoconutColors.black,
                           boxShadow: [
                             BoxShadow(
                               color: Color.fromRGBO(255, 255, 255, 0.2),
