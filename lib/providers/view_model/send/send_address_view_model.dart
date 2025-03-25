@@ -22,7 +22,7 @@ class SendAddressViewModel extends ChangeNotifier {
 
   bool get isNetworkOn => _isNetworkOn == true;
 
-  clearSendInfoProvider() {
+  void clearSendInfoProvider() {
     _sendInfoProvider.clear();
   }
 
@@ -40,12 +40,12 @@ class SendAddressViewModel extends ChangeNotifier {
     }
   }
 
-  saveWalletIdAndRecipientAddress(int id, String address) {
+  void saveWalletIdAndRecipientAddress(int id, String address) {
     _sendInfoProvider.setWalletId(id);
     _sendInfoProvider.setRecipientAddress(address);
   }
 
-  setIsNetworkOn(bool? isNetworkOn) {
+  void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
   }
 

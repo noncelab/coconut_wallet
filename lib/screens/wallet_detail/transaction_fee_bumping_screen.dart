@@ -280,8 +280,8 @@ class _TransactionFeeBumpingScreenState
 
     if (!canContinue) return;
 
-    bool success =
-        viewModel.prepareToSend(double.parse(_textEditingController.text));
+    bool success = await viewModel
+        .prepareToSend(double.parse(_textEditingController.text));
 
     if (success && mounted) {
       Navigator.pushNamed(context, '/unsigned-transaction-qr',

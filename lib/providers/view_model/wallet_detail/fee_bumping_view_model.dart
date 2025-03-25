@@ -107,10 +107,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return true;
   }
 
-  bool prepareToSend(double newTxFeeRate) {
+  Future<bool> prepareToSend(double newTxFeeRate) async {
     assert(_bumpingTransaction != null);
     try {
-      _initializeBumpingTransaction(newTxFeeRate);
+      await _initializeBumpingTransaction(newTxFeeRate);
       _updateSendInfoProvider(newTxFeeRate, _type);
       return true;
     } catch (e) {
@@ -135,10 +135,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   void _updateSendInfoProvider(
       double newTxFeeRate, FeeBumpingType feeBumpingType) {
-    bool isMultisig =
-        walletListItemBase.walletType == WalletType.multiSignature;
     _sendInfoProvider.setWalletId(_walletId);
-    _sendInfoProvider.setIsMultisig(isMultisig);
+    _sendInfoProvider.setIsMultisig(
+        walletListItemBase.walletType == WalletType.multiSignature);
     _sendInfoProvider.setFeeRate(newTxFeeRate.toInt()); // fixme
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(
             _bumpingTransaction!, walletListItemBase.walletBase)
