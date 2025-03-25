@@ -16,6 +16,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/dio_client.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 enum PaymentType {
@@ -80,7 +81,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     await _fetchRecommendedFees(); // _isFeeFetchSuccess로 성공 여부 기록함
     if (_isFeeFetchSuccess == true) {
-      await _initializeBumpingTransaction(_feeInfos[2].satsPerVb!.toDouble());
+      await initializeBumpingTransaction(_feeInfos[2].satsPerVb!.toDouble());
+      if (_bumpingTransaction == null) {
+        _isInitializedSuccess = false;
+        return;
+      }
       _recommendedFeeRate = _getRecommendedFeeRate(_bumpingTransaction!);
       _recommendedFeeRateDescription = _type == FeeBumpingType.cpfp
           ? _getRecommendedFeeRateDescriptionForCpfp()
@@ -110,7 +115,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   Future<bool> prepareToSend(double newTxFeeRate) async {
     assert(_bumpingTransaction != null);
     try {
-      await _initializeBumpingTransaction(newTxFeeRate);
+      await initializeBumpingTransaction(newTxFeeRate);
       _updateSendInfoProvider(newTxFeeRate, _type);
       return true;
     } catch (e) {
@@ -178,7 +183,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   // 새 수수료로 트랜잭션 생성
-  Future<void> _initializeBumpingTransaction(double newFeeRate) async {
+  Future<void> initializeBumpingTransaction(double newFeeRate) async {
     if (_type == FeeBumpingType.cpfp) {
       _initializeCpfpTransaction(newFeeRate);
     } else if (_type == FeeBumpingType.rbf) {
@@ -237,6 +242,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMaxMode(true);
     _sendInfoProvider
         .setAmount(_bumpingTransaction!.outputs[0].amount.toDouble());
+    _setInsufficientUtxo(false);
   }
 
   Future<void> _initializeRbfTransaction(double newFeeRate) async {
@@ -289,6 +295,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
           walletListItemBase.walletBase);
       _sendInfoProvider.setRecipientAddress(externalOutputs[0].address);
       _sendInfoProvider.setIsMaxMode(true);
+      _setInsufficientUtxo(false);
+
       return;
     }
 
@@ -308,6 +316,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
             walletListItemBase.walletBase);
         _sendInfoProvider.setAmount(UnitUtil.satoshiToBitcoin(amount));
         _sendInfoProvider.setIsMaxMode(false);
+        _setInsufficientUtxo(false);
+
         break;
       case PaymentType.forBatchPayment:
         Map<String, int> paymentMap =
@@ -319,6 +329,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
         _sendInfoProvider.setRecipientsForBatch(
             paymentMap.map((key, value) => MapEntry(key, value.toDouble())));
         _sendInfoProvider.setIsMaxMode(false);
+        _setInsufficientUtxo(false);
+
         break;
       default:
         break;
@@ -332,8 +344,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
       if (additionalUtxos.isEmpty) {
         debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
-        _insufficientUtxos = true;
-        notifyListeners();
+        _setInsufficientUtxo(true);
         return false;
       }
       utxoList.addAll(additionalUtxos);
@@ -342,7 +353,14 @@ class FeeBumpingViewModel extends ChangeNotifier {
       inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
       outputSum = amount + estimatedVSize * newFeeRate;
     }
+    _setInsufficientUtxo(false);
+
     return true;
+  }
+
+  void _setInsufficientUtxo(bool value) {
+    _insufficientUtxos = value;
+    notifyListeners();
   }
 
   int _getVSizeIncreasement() {
@@ -361,8 +379,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // todo: utxo lock 기능 추가 시 utxo 제외 로직 필요
   List<Utxo> _getAdditionalUtxos(double requiredAmount) {
+    return [];
     List<Utxo> additionalUtxos = [];
-    final utxoStateList =
+    List<UtxoState> utxoStateList =
         _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
     if (utxoStateList.isNotEmpty) {
       utxoStateList.sort((a, b) => a.amount.compareTo(b.amount));
