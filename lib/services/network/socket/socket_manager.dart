@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/network/socket/socket_factory.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -27,8 +28,6 @@ class SocketManager {
   /// JSON parse
   final StreamController<String> _streamController = StreamController();
   final StringBuffer _buffer = StringBuffer();
-  final int _braceCount = 0;
-  final bool _inString = false;
 
   /// Response
   final Map<int, Completer<dynamic>> _completerMap = {};
@@ -43,8 +42,8 @@ class SocketManager {
   /// [reconnectDelaySeconds]: 재연결 주기, default: 10 (s) <br/>
   SocketManager(
       {SocketFactory? factory,
-      maxConnectionAttempts = 30,
-      reconnectDelaySeconds = 10})
+      int maxConnectionAttempts = kSocketMaxConnectionAttempts,
+      int reconnectDelaySeconds = kSocketReconnectDelaySeconds})
       : socketFactory = factory ?? DefaultSocketFactory(),
         _maxConnectionAttempts = maxConnectionAttempts,
         _reconnectDelaySeconds = reconnectDelaySeconds {
@@ -257,25 +256,6 @@ class SocketManager {
       }
     } catch (e) {
       Logger.log('JSON 객체 처리 중 오류 발생: $e, 객체: $jsonObject');
-    }
-  }
-
-  Future<dynamic> sendRequest(String requestJson, int id,
-      {Duration timeout = const Duration(seconds: 30)}) async {
-    final completer = Completer<dynamic>();
-    setCompleter(id, completer);
-
-    try {
-      await send(requestJson);
-
-      return await completer.future.timeout(timeout, onTimeout: () {
-        Logger.log('ID: $id 요청이 타임아웃되었습니다.');
-        _completerMap.remove(id);
-        throw TimeoutException('요청 처리 타임아웃: ID $id');
-      });
-    } catch (e) {
-      _completerMap.remove(id);
-      rethrow;
     }
   }
 }
