@@ -345,6 +345,9 @@ class WalletProvider extends ChangeNotifier {
       newItem = await _walletRepository.addSinglesigWallet(wallet);
     }
 
+    // 지갑 추가 후 receive, change 주소 각각 1개씩 생성
+    await _addressRepository.ensureAddressesInit(walletItemBase: newItem);
+
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
     updatedList.insert(0, newItem); // wallet-list의 지갑 정렬 방식을 최신순으로 하기 위함
     _walletItemList = updatedList;
