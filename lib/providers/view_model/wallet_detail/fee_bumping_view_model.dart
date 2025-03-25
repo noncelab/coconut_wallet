@@ -52,9 +52,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._parentTx,
     this._walletId,
     this._sendInfoProvider,
+    this._nodeProvider,
     this._txProvider,
     this._walletProvider,
-    this._nodeProvider,
     this._addressRepository,
     this._utxoRepository,
   ) {

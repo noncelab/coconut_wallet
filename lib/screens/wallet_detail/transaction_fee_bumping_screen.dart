@@ -359,9 +359,9 @@ class _TransactionFeeBumpingScreenState
       widget.transaction,
       widget.walletId,
       sendInfoProvider,
+      nodeProvider,
       txProvider,
       walletProvider,
-      nodeProvider,
       addressRepository,
       utxoRepositry,
     );

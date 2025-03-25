@@ -48,7 +48,7 @@ class BalanceManager {
       balance: addressBalance,
     );
 
-    _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
+    await _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
 
     if (!inBatchProcess) {
       // 하나의 트랜잭션으로 여러 스크립트에 대한 이벤트가 발생할 경우에 오류 발생.
@@ -90,13 +90,14 @@ class BalanceManager {
         ));
       }
 
-      final totalBalanceDiff = _addressRepository.updateAddressBalanceBatch(
+      final totalBalanceDiff =
+          await _addressRepository.updateAddressBalanceBatch(
         walletItem.id,
         balanceUpdates,
       );
 
       // 지갑 잔액에 변화량 반영
-      _walletRepository.accumulateWalletBalance(
+      await _walletRepository.accumulateWalletBalance(
           walletItem.id, totalBalanceDiff);
 
       // 동기화 완료 state 업데이트
