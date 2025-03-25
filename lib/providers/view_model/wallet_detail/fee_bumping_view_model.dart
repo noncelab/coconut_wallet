@@ -194,7 +194,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   void _initializeCpfpTransaction(double newFeeRate) {
     final myAddressList = _getMyOutputs();
     int amount = myAddressList.fold(0, (sum, output) => sum + output.amount);
-    final List<UtxoState> utxoList = [];
+    final List<Utxo> utxoList = [];
     // 내 주소와 일치하는 utxo 찾기
     for (var myAddress in myAddressList) {
       final utxoStateList =

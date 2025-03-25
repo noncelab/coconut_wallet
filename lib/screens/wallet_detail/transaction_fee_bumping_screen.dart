@@ -310,28 +310,28 @@ class _TransactionFeeBumpingScreenState
 
     double? value = double.tryParse(_textEditingController.text);
 
-    if (value != null && value != 0) {
-      await _viewModel.initializeBumpingTransaction(value).then((_) {
-        if (_viewModel.insufficientUtxos) {
-          if (mounted) {
-            _showInsufficientUtxoToast(context);
-          }
-        }
-      });
-    }
-
     if (value == null || _viewModel.isFeeRateTooLow(value)) {
       setState(() {
         _isEstimatedFeeTooLow = true;
         _isEstimatedFeeTooHigh = false;
       });
-    } else {
-      setState(() {
-        _isEstimatedFeeTooHigh =
-            _viewModel.getTotalEstimatedFee(value) >= 1000000;
-        _isEstimatedFeeTooLow = false;
-      });
+
+      return;
     }
+
+    await _viewModel.initializeBumpingTransaction(value).then((_) {
+      if (_viewModel.insufficientUtxos) {
+        if (mounted) {
+          _showInsufficientUtxoToast(context);
+        }
+      }
+    });
+
+    setState(() {
+      _isEstimatedFeeTooHigh =
+          _viewModel.getTotalEstimatedFee(value) >= 1000000;
+      _isEstimatedFeeTooLow = false;
+    });
   }
 
   Future<bool> _showConfirmationDialog(BuildContext context) async {
