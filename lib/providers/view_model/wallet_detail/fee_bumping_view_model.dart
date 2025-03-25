@@ -81,9 +81,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     await _fetchRecommendedFees(); // _isFeeFetchSuccess로 성공 여부 기록함
     if (_isFeeFetchSuccess == true) {
-      // TODO:
-      //await initializeBumpingTransaction(_feeInfos[2].satsPerVb!.toDouble());
-      await initializeBumpingTransaction(1000000000000);
+      await initializeBumpingTransaction(_feeInfos[2].satsPerVb!.toDouble());
       if (_bumpingTransaction == null) {
         _isInitializedSuccess = false;
         return;
@@ -381,8 +379,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // todo: utxo lock 기능 추가 시 utxo 제외 로직 필요
   List<Utxo> _getAdditionalUtxos(double requiredAmount) {
-    // TODO: remove
-    return [];
     List<Utxo> additionalUtxos = [];
     List<UtxoState> utxoStateList =
         _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);

@@ -292,6 +292,10 @@ class _TransactionFeeBumpingScreenState
   }
 
   void _onFeeRateChanged(String input) {
+    if (_viewModel.isInitializedSuccess == false) {
+      return;
+    }
+
     if (input.isEmpty) {
       setState(() {
         _isEstimatedFeeTooLow = false;
