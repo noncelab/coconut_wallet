@@ -7,7 +7,6 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -15,11 +14,11 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/dio_client.dart';
-import 'package:coconut_wallet/utils/derivation_path_util.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
-enum TransactionType {
+enum PaymentType {
   forSweep,
   forSinglePayment,
   forBatchPayment,
@@ -28,7 +27,6 @@ enum TransactionType {
 class FeeBumpingViewModel extends ChangeNotifier {
   final FeeBumpingType _type;
   final TransactionRecord _transaction;
-  final NodeProvider _nodeProvider;
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
   final TransactionProvider _txProvider;
@@ -36,6 +34,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final UtxoRepository _utxoRepository;
   final int _walletId;
   late Transaction? _bumpingTransaction;
+  late WalletListItemBase _walletListItemBase;
 
   final List<FeeInfoWithLevel> _feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
@@ -45,12 +44,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool _didFetchRecommendedFeesSuccessfully =
       true; // 화면이 전환되는 시점에 순간적으로 수수료 조회 실패가 뜨는것 처럼 보이기 때문에 기본값을 true 설정
 
-  late WalletListItemBase _walletListItemBase;
   FeeBumpingViewModel(
     this._type,
     this._transaction,
     this._walletId,
-    this._nodeProvider,
     this._sendInfoProvider,
     this._txProvider,
     this._walletProvider,
@@ -75,6 +72,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
   int get walletId => _walletId;
 
   WalletListItemBase get walletListItemBase => _walletListItemBase;
+
+  bool _insufficientUtxos = false;
+  bool get insufficientUtxos => _insufficientUtxos;
 
   void updateProvider() {
     _onFeeUpdated();
@@ -134,36 +134,38 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(
             _bumpingTransaction!, walletListItemBase.walletBase)
         .serialize());
-    _sendInfoProvider.setFeeBumptingType(feeBumpingType);
-
-    // fixme: transaction.amount는 sat 단위 _sendInfoProvider.setAmount는 btc 단위 의도
-    // 문제가 없는 것으로 보아 send flow에서 사용되지 않는 것으로 추측됨
-    if (_type == FeeBumpingType.rbf) {
-      _sendInfoProvider.setAmount(_transaction.amount!.toDouble());
-    } else {
-      _sendInfoProvider
-          .setAmount(_bumpingTransaction!.outputs[0].amount.toDouble());
-    }
+    _sendInfoProvider.setFeeBumpfingType(feeBumpingType);
   }
 
-  TransactionType? _getTransactionType() {
+  List<TransactionAddress> _getExternalOutputs() =>
+      _transaction.outputAddressList
+          .where((output) => !_walletProvider
+              .containsAddress(_walletId, output.address, isChange: true))
+          .toList();
+
+  List<TransactionAddress> _getMyOutputs() => _transaction.outputAddressList
+      .where((output) =>
+          _walletProvider.containsAddress(_walletId, output.address))
+      .toList();
+
+  PaymentType? _getPaymentType() {
     int inputCount = _transaction.inputAddressList.length;
     int outputCount = _transaction.outputAddressList.length;
 
-    if (inputCount >= 1 && outputCount == 1) {
-      return TransactionType.forSweep; // 여러 개의 UTXO를 하나의 주소로 보내는 경우
-    } else if (inputCount >= 1 && outputCount == 2) {
-      String firstOutAddress = _transaction.outputAddressList.first.address;
-      String secondOutAddress = _transaction.outputAddressList.last.address;
-      if (_walletProvider.containsAddress(_walletId, firstOutAddress,
-              isChange: true) ||
-          _walletProvider.containsAddress(_walletId, secondOutAddress,
-              isChange: true)) {
-        return TransactionType.forSinglePayment; // 하나의 수신자 + 잔돈 주소
-      }
-      return TransactionType.forBatchPayment; // 두개의 수신자 (내 주소가 없는 경우)
-    } else if (inputCount >= 1 && outputCount > 2) {
-      return TransactionType.forBatchPayment; // 여러 개의 수신자가 있는 경우
+    if (inputCount == 0 || outputCount == 0) {
+      return null; // wrong tx
+    }
+
+    final externalOutputs = _getExternalOutputs();
+    switch (outputCount) {
+      case 1:
+        return PaymentType.forSweep;
+      case 2:
+        if (externalOutputs.length == 1) {
+          return PaymentType.forSinglePayment;
+        }
+      default:
+        return PaymentType.forBatchPayment;
     }
 
     return null;
@@ -181,18 +183,15 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return true;
   }
 
-  // cpfp 트랜잭션 만들기
   void _generateCpfpTransaction(double newFeeRate) {
     if (newFeeRate == 0) {
       newFeeRate = _getRecommendedFeeRate();
     }
 
-    // output에서 내 주소 찾기
-    final myAddressList = _transaction.outputAddressList.where(
-        (output) => _walletProvider.containsAddress(_walletId, output.address));
-
+    final myAddressList = _getMyOutputs();
+    int amount = myAddressList.fold(0, (sum, output) => sum + output.amount);
+    final List<Utxo> utxoList = [];
     // 내 주소와 일치하는 utxo 찾기
-    List<Utxo> utxoList = [];
     for (var address in myAddressList) {
       final utxoStateList = _utxoRepository.getUtxoStateList(_walletId);
       for (var utxoState in utxoStateList) {
@@ -212,77 +211,85 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     // Transaction 생성
     final recipient = _walletProvider.getReceiveAddress(_walletId).address;
-    _bumpingTransaction = Transaction.forSweep(
-        utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
-    _sendInfoProvider.setRecipientAddress(recipient);
-    _sendInfoProvider.setIsMaxMode(true);
-  }
+    double estimatedVSize;
+    try {
+      _bumpingTransaction = Transaction.forSweep(
+          utxoList, recipient, 10, walletListItemBase.walletBase);
+      estimatedVSize = _estimateVirtualByte(_bumpingTransaction!);
+    } catch (e) {
+      // insufficient utxo for sweep
+      double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+      estimatedVSize = _transaction.vSize.toDouble();
+      double outputSum = amount + estimatedVSize * newFeeRate;
 
-  // rbf 트랜잭션 만들기
-  void _generateRbfTransaction(double newFeeRate) {
-    var changeAddress = '';
-    var recipientAddress = '';
-    var amount = 0;
-
-    // output 정보 추출
-    if (_transaction.transactionType == 'SELF') {
-      _extractSelfTxData(transaction.outputAddressList,
-          onChangeAddressFound: (address) => changeAddress = address,
-          onRecipientAddressAndAmountFound: (transactionAddress) {
-            recipientAddress = transactionAddress.address;
-            amount = transactionAddress.amount;
-          });
-    } else {
-      recipientAddress = transaction.outputAddressList
-          .map((e) => e.address)
-          .firstWhere((address) =>
-              !_walletProvider.containsAddress(_walletId, address));
-      amount = transaction.outputAddressList
-          .firstWhere((output) => output.address == recipientAddress)
-          .amount;
-      changeAddress = transaction.outputAddressList
-          .map((e) => e.address)
-          .firstWhere(
-              (address) => _walletProvider.containsAddress(_walletId, address));
-    }
-
-    // input 정보 추출
-    List<Utxo> utxoList =
-        _getUtxoListForRbf(transaction.inputAddressList); // pending tx의 input
-
-    double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    double outputSum = amount + _transaction.vSize * newFeeRate;
-
-    if (inputSum < outputSum) {
-      // recipient가 내 주소인 경우 amount 조정
-      if (_walletProvider.containsAddress(_walletId, recipientAddress)) {
-        amount = (inputSum - _transaction.vSize * newFeeRate).toInt();
-        debugPrint('amount 조정됨 $amount');
-      } else {
-        // repicient가 다른 주소인 경우 utxo 추가
-        // todo: utxo lock 기능 추가 시 utxo 제외 로직 필요
-        final utxoStateList =
-            _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
-        if (utxoStateList.isNotEmpty) {
-          utxoStateList.sort((a, b) => a.amount.compareTo(b.amount));
-          final utxo = utxoStateList[0];
-          utxoList.add(Utxo(
-            utxo.transactionHash,
-            utxo.index,
-            utxo.amount,
-            _addressRepository.getDerivationPath(_walletId, utxo.to),
-          ));
-          debugPrint('utxo 추가됨 : utxo id${utxo.transactionHash}:${utxo.index}');
-          changeAddress = _walletProvider.getChangeAddress(_walletId).address;
-        }
+      debugPrint(
+          '😇 CPFP utxo (${utxoList.length})개 input: $inputSum / output: $outputSum / 👉🏻 입력한 fee rate: $newFeeRate');
+      if (!_ensureSufficientUtxos(
+          utxoList, outputSum, estimatedVSize.ceil(), newFeeRate, amount)) {
+        debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
+        return;
       }
     }
 
-    if (_getTransactionType() == TransactionType.forSweep &&
-        changeAddress.isEmpty) {
-      _bumpingTransaction = Transaction.forSweep(utxoList, recipientAddress,
-          newFeeRate, walletListItemBase.walletBase);
-      _sendInfoProvider.setRecipientAddress(recipientAddress);
+    debugPrint('😇 CPFP utxo (${utxoList.length})개');
+    _bumpingTransaction = Transaction.forSweep(
+        utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
+
+    _sendInfoProvider.setRecipientAddress(recipient);
+    _sendInfoProvider.setIsMaxMode(true);
+    _sendInfoProvider
+        .setAmount(_bumpingTransaction!.outputs[0].amount.toDouble());
+  }
+
+  void _generateRbfTransaction(double newFeeRate) {
+    final type = _getPaymentType();
+    if (type == null) return;
+
+    final externalOutputs = _getExternalOutputs();
+    var amount = externalOutputs.fold(0, (sum, output) => sum + output.amount);
+    var changeAddress =
+        _transaction.outputAddressList.map((e) => e.address).firstWhere(
+              (address) => _walletProvider.containsAddress(_walletId, address,
+                  isChange: true),
+              orElse: () => '',
+            );
+
+    //input 정보 추출
+    List<Utxo> utxoList = _getUtxoListForRbf(_transaction.inputAddressList);
+    double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+    int estimatedVSize = _transaction.vSize;
+    double outputSum = amount + estimatedVSize * newFeeRate;
+
+    if (inputSum < outputSum) {
+      // output에 내 주소가 있는 경우 amount 조정
+      if (externalOutputs.any((output) =>
+          _walletProvider.containsAddress(_walletId, output.address))) {
+        amount = (inputSum - _transaction.vSize * newFeeRate).toInt();
+        if (amount < 0) {
+          debugPrint('❌ input 합계가 output 합계보다 작음!');
+          if (!_ensureSufficientUtxos(
+              utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
+            return;
+          }
+        }
+        debugPrint('amount 조정됨 $amount');
+      } else {
+        // repicient가 남의 주소인 경우 utxo 추가
+        if (!_ensureSufficientUtxos(
+            utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
+          return;
+        }
+        changeAddress = _walletProvider.getChangeAddress(_walletId).address;
+      }
+    }
+
+    if (type == PaymentType.forSweep && changeAddress.isEmpty) {
+      _bumpingTransaction = Transaction.forSweep(
+          utxoList,
+          externalOutputs[0].address,
+          newFeeRate,
+          walletListItemBase.walletBase);
+      _sendInfoProvider.setRecipientAddress(externalOutputs[0].address);
       _sendInfoProvider.setIsMaxMode(true);
       return;
     }
@@ -291,20 +298,20 @@ class FeeBumpingViewModel extends ChangeNotifier {
       changeAddress = _walletProvider.getChangeAddress(_walletId).address;
     }
 
-    switch (_getTransactionType()) {
-      case TransactionType.forSweep:
-      case TransactionType.forSinglePayment:
+    switch (type) {
+      case PaymentType.forSweep:
+      case PaymentType.forSinglePayment:
         _bumpingTransaction = Transaction.forSinglePayment(
             utxoList,
-            recipientAddress,
+            externalOutputs[0].address,
             _addressRepository.getDerivationPath(_walletId, changeAddress),
             amount,
             newFeeRate,
             walletListItemBase.walletBase);
-        _sendInfoProvider.setRecipientAddress(recipientAddress);
+        _sendInfoProvider.setAmount(UnitUtil.satoshiToBitcoin(amount));
         _sendInfoProvider.setIsMaxMode(false);
         break;
-      case TransactionType.forBatchPayment:
+      case PaymentType.forBatchPayment:
         Map<String, int> paymentMap =
             _createPaymentMapForRbfBatchTx(transaction.outputAddressList);
 
@@ -318,6 +325,64 @@ class FeeBumpingViewModel extends ChangeNotifier {
       default:
         break;
     }
+  }
+
+  bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
+      int estimatedVSize, double newFeeRate, int amount) {
+    double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+    while (inputSum < outputSum) {
+      final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
+      if (additionalUtxos.isEmpty) {
+        debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
+        _insufficientUtxos = true;
+        notifyListeners();
+        return false;
+      }
+      utxoList.addAll(additionalUtxos);
+      estimatedVSize += _getVSizeIncreasement() * additionalUtxos.length;
+
+      inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+      outputSum = amount + estimatedVSize * newFeeRate;
+    }
+    return true;
+  }
+
+  int _getVSizeIncreasement() {
+    switch (walletListItemBase.walletType) {
+      case WalletType.singleSignature:
+        return 68;
+      case WalletType.multiSignature:
+        final wallet = walletListItemBase.walletBase as MultisignatureWallet;
+        final m = wallet.requiredSignature;
+        final n = wallet.totalSigner;
+        return 1 + (m * 73) + (n * 34) + 2;
+      default:
+        return 68;
+    }
+  }
+
+  // todo: utxo lock 기능 추가 시 utxo 제외 로직 필요
+  List<Utxo> _getAdditionalUtxos(double requiredAmount) {
+    List<Utxo> additionalUtxos = [];
+    final utxoStateList =
+        _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
+    if (utxoStateList.isNotEmpty) {
+      utxoStateList.sort((a, b) => a.amount.compareTo(b.amount));
+      double sum = 0;
+      for (var utxo in utxoStateList) {
+        sum += utxo.amount;
+        additionalUtxos.add(Utxo(
+          utxo.transactionHash,
+          utxo.index,
+          utxo.amount,
+          _addressRepository.getDerivationPath(_walletId, utxo.to),
+        ));
+        if (sum >= requiredAmount) {
+          break;
+        }
+      }
+    }
+    return additionalUtxos;
   }
 
   Map<String, int> _createPaymentMapForRbfBatchTx(
@@ -355,21 +420,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     return utxoList;
-  }
-
-  void _extractSelfTxData(List<TransactionAddress> outputs,
-      {required Function(String) onChangeAddressFound,
-      required Function(TransactionAddress) onRecipientAddressAndAmountFound}) {
-    for (var address in outputs.where(
-        (addr) => _walletProvider.containsAddress(walletId, addr.address))) {
-      bool isChange = DerivationPathUtil.isChangeAddress(
-          _addressRepository.getDerivationPath(_walletId, address.address));
-      if (isChange) {
-        onChangeAddressFound(address.address);
-      } else {
-        onRecipientAddressAndAmountFound(address);
-      }
-    }
   }
 
   // 노드 프로바이더에서 추천 수수료 조회
@@ -421,10 +471,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return _transaction.feeRate;
     }
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
-      return recommendedFeeRate.toDouble();
+      return (recommendedFeeRate * 100).ceilToDouble() / 100;
     }
 
-    return (cpfpTxFeeRate * 100).ceil() / 100;
+    return (cpfpTxFeeRate * 100).ceilToDouble() / 100;
   }
 
   double _getRecommendedFeeRateForRbf() {
@@ -443,12 +493,18 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double recommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
     if (recommendedFee < minimumRequiredFee) {
-      return double.parse(
-          (minimumRequiredFee / estimatedVirtualByte).toStringAsFixed(2));
+      double feePerVByte = minimumRequiredFee / estimatedVirtualByte;
+      double roundedFee = (feePerVByte * 100).ceilToDouble() / 100;
+      if (feePerVByte < _transaction.feeRate) {
+        // 추천 수수료가 현재 수수료보다 작은 경우 1s/vb 높은 수수료로 설정
+        roundedFee = ((_transaction.feeRate + 1) * 100).ceilToDouble() / 100;
+      }
+      return double.parse((roundedFee).toStringAsFixed(2));
     }
 
-    return double.parse(
-        (recommendedFee / estimatedVirtualByte).toStringAsFixed(2));
+    recommendedFee = minimumRequiredFee / estimatedVirtualByte;
+    double roundedFee = (recommendedFee * 100).ceilToDouble() / 100;
+    return double.parse(roundedFee.toStringAsFixed(2));
   }
 
   double _estimateVirtualByte(Transaction transaction) {

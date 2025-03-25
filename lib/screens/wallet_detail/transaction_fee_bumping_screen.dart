@@ -13,6 +13,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
+import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -76,6 +77,10 @@ class _TransactionFeeBumpingScreenState
       },
       child: Consumer<FeeBumpingViewModel>(
         builder: (_, viewModel, child) {
+          if (viewModel.insufficientUtxos) {
+            _showToast(context);
+          }
+
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
@@ -228,6 +233,7 @@ class _TransactionFeeBumpingScreenState
   @override
   void initState() {
     super.initState();
+    _textEditingController.clear();
     _isRbf = widget.feeBumpingType == FeeBumpingType.rbf;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -342,7 +348,6 @@ class _TransactionFeeBumpingScreenState
   }
 
   FeeBumpingViewModel _getViewModel(BuildContext context) {
-    final nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     final sendInfoProvider =
         Provider.of<SendInfoProvider>(context, listen: false);
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
@@ -355,7 +360,6 @@ class _TransactionFeeBumpingScreenState
       widget.feeBumpingType,
       widget.transaction,
       widget.walletId,
-      nodeProvider,
       sendInfoProvider,
       txProvider,
       walletProvider,
@@ -721,6 +725,14 @@ class _TransactionFeeBumpingScreenState
     setState(() {
       _isRecommendFeePannelExpanded = !_isRecommendFeePannelExpanded;
     });
+  }
+
+  void _showToast(BuildContext context) {
+    CustomToast.showToast(
+        context: context,
+        text: t.transaction_fee_bumping_screen.toast.insufficient_utxo,
+        seconds: 10);
+    return;
   }
 
   // void _onFeeRateChanged(String value) {

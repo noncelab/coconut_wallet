@@ -78,7 +78,7 @@ class SendInfoProvider {
     _recipientsForBatch = recipients;
   }
 
-  void setFeeBumptingType(FeeBumpingType? feeBumpingType) {
+  void setFeeBumpfingType(FeeBumpingType? feeBumpingType) {
     _feeBumpingType = feeBumpingType;
   }
 
