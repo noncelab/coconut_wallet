@@ -102,6 +102,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           final tx = viewModel
               .transactionList![viewModel.selectedTransactionIndex]
               .transaction!;
+          // final txMemo = viewModel.transactionList![0].transaction!.memo;
+          final txMemo = viewModel.fetchTransactionMemo();
 
           return Scaffold(
               backgroundColor: CoconutColors.black,
@@ -261,7 +263,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                 context: context,
                                 isScrollControlled: true,
                                 builder: (context) => MemoBottomSheet(
-                                  originalMemo: tx.memo ?? '',
+                                  originalMemo: txMemo ?? '',
                                   onComplete: (memo) {
                                     if (!viewModel
                                         .updateTransactionMemo(memo)) {
@@ -275,7 +277,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                               );
                             },
                             child: Text(
-                              tx.memo?.isNotEmpty == true ? tx.memo! : '-',
+                              txMemo?.isNotEmpty == true ? txMemo! : '-',
                               style: CoconutTypography.body1_16_Number,
                             )),
                         const SizedBox(
