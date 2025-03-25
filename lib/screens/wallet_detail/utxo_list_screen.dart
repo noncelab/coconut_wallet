@@ -47,20 +47,14 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   bool _stickyHeaderVisible = false;
   bool _isStickyHeaderDropdownVisible = false;
   bool _isPullToRefreshing = false;
+  bool _isAnimating = false;
 
   late UtxoListViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _viewModel = UtxoListViewModel(
-      widget.id,
-      Provider.of<WalletProvider>(context, listen: false),
-      Provider.of<TransactionProvider>(context, listen: false),
-      Provider.of<UtxoTagProvider>(context, listen: false),
-      Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<UpbitConnectModel>(context, listen: false),
-    );
+    _viewModel = _createViewModel();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appBarRenderBox =
@@ -71,6 +65,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       _updateHeaderDropdownPosition();
 
       _scrollController.addListener(() {
+        if (_isAnimating) return; // 애니메이션이 진행중일 때는 setState를 방지합니다.
         if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
           _removeFilterDropdown();
         }
@@ -89,13 +84,25 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     super.dispose();
   }
 
+  UtxoListViewModel _createViewModel() {
+    return UtxoListViewModel(
+      widget.id,
+      Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<TransactionProvider>(context, listen: false),
+      Provider.of<UtxoTagProvider>(context, listen: false),
+      Provider.of<ConnectivityProvider>(context, listen: false),
+      Provider.of<UpbitConnectModel>(context, listen: false),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, UtxoTagProvider,
             UtxoListViewModel>(
         create: (_) => _viewModel,
         update: (_, walletProvider, utxoTagProvider, viewModel) {
-          return viewModel!..updateProvider();
+          viewModel ??= _createViewModel();
+          return viewModel..updateProvider();
         },
         child: PopScope(
           canPop: true,
@@ -137,8 +144,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                         ),
                         SliverToBoxAdapter(child: _buildHeader(viewModel)),
                         UtxoList(
-                            widget: widget,
-                            onRemoveDropdown: _removeFilterDropdown),
+                          widget: widget,
+                          onRemoveDropdown: _removeFilterDropdown,
+                          onAnimatingStateChanged: changeAnimatingState,
+                        ),
                       ],
                     );
                   }),
@@ -194,6 +203,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       _isHeaderDropdownVisible = false;
       _isStickyHeaderDropdownVisible = false;
     });
+  }
+
+  void changeAnimatingState(bool isAnimating) {
+    _isAnimating = isAnimating;
   }
 
   Widget _buildHeader(UtxoListViewModel viewModel) {
@@ -269,10 +282,16 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 }
 
 class UtxoList extends StatefulWidget {
-  const UtxoList({super.key, required this.widget, this.onRemoveDropdown});
+  const UtxoList({
+    super.key,
+    required this.widget,
+    required this.onAnimatingStateChanged,
+    this.onRemoveDropdown,
+  });
 
   final UtxoListScreen widget;
   final Function? onRemoveDropdown;
+  final Function(bool) onAnimatingStateChanged;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -314,7 +333,7 @@ class _UtxoListState extends State<UtxoList> {
                     .tags!
                     .any((e) => e.name == selectedUtxoTagName));
 
-        return isSelected
+        return isSelected && index < utxoList.length
             ? _buildUtxoItem(
                 utxoList[index], animation, index == utxoList.length - 1)
             : const SizedBox();
@@ -365,6 +384,10 @@ class _UtxoListState extends State<UtxoList> {
       }
     }
 
+    if (removedIndexes.isNotEmpty || insertedIndexes.isNotEmpty) {
+      widget.onAnimatingStateChanged(true);
+    }
+
     for (var index in removedIndexes.reversed) {
       _utxoListKey.currentState?.removeItem(
         index,
@@ -380,6 +403,7 @@ class _UtxoListState extends State<UtxoList> {
     }
 
     Future.delayed(_duration, () {
+      widget.onAnimatingStateChanged(false);
       _previousUtxoList = List.from(utxoList);
     });
   }
