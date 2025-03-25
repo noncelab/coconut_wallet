@@ -9,6 +9,9 @@ import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 
+typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
+typedef BalanceGetter = int Function(int id);
+
 class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
   late WalletProvider _walletProvider;
@@ -116,7 +119,7 @@ class WalletListViewModel extends ChangeNotifier {
       List<WalletListItemBase> oldList,
       List<WalletListItemBase> newList,
       Map<int, int> previousWalletBalance,
-      int? Function(dynamic id) newWalletBalance) {
+      BalanceGetter getUpdatedBalance) {
     if (oldList.length != newList.length) return true;
 
     return oldList.asMap().entries.any((entry) {
@@ -125,7 +128,7 @@ class WalletListViewModel extends ChangeNotifier {
         }) ||
         previousWalletBalance.entries.any((entry) {
           int id = entry.key;
-          return entry.value != newWalletBalance(id);
+          return entry.value != getUpdatedBalance(id);
         });
   }
 }

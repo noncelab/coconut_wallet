@@ -336,7 +336,7 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   void _handleWalletListUpdate(List<WalletListItemBase> walletList,
-      Function(int) getWalletBalance, bool isBalanceHidden) async {
+      AnimatedBalanceDataGetter getWalletBalance, bool isBalanceHidden) async {
     if (isWalletLoading) return;
     isWalletLoading = true;
 
@@ -368,7 +368,7 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   Widget _buildSliverAnimatedList(List<WalletListItemBase> walletList,
-      Function(int) getWalletBalance, bool isBalanceHidden) {
+      AnimatedBalanceDataGetter getWalletBalance, bool isBalanceHidden) {
     return SliverAnimatedList(
       key: _walletListKey,
       initialItemCount: walletList.length,
@@ -377,7 +377,7 @@ class _WalletListScreenState extends State<WalletListScreen>
           return _buildWalletItem(
               walletList[index],
               animation,
-              getWalletBalance,
+              getWalletBalance(walletList[index].id),
               isBalanceHidden,
               index == walletList.length - 1);
         }
@@ -389,12 +389,10 @@ class _WalletListScreenState extends State<WalletListScreen>
   Widget _buildWalletItem(
       WalletListItemBase wallet,
       Animation<double> animation,
-      Function(int) getWalletBalance,
+      AnimatedBalanceData animatedBalanceData,
       bool isBalanceHidden,
       bool isLastItem) {
     var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
-
-    AnimatedBalanceData animatedBalanceData = getWalletBalance(wallet.id);
 
     return Column(
       children: [
