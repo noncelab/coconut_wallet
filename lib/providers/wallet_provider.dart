@@ -494,6 +494,10 @@ class WalletProvider extends ChangeNotifier {
     return _utxoRepository.getUtxoStateList(walletId);
   }
 
+  List<UtxoState> getUtxoListByStatus(int walletId, UtxoStatus utxoStatus) {
+    return _utxoRepository.getUtxosByStatus(walletId, utxoStatus);
+  }
+
   List<TransactionRecord> getTransactionRecordList(int walletId) {
     return _transactionRepository.getTransactionRecordList(walletId);
   }

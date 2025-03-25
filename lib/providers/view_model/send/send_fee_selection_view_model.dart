@@ -79,7 +79,8 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   }
 
   Transaction _createTransaction(int satsPerVb) {
-    final utxoPool = _walletProvider.getUtxoList(_walletId);
+    final utxoPool =
+        _walletProvider.getUtxoListByStatus(_walletId, UtxoStatus.unspent);
     final wallet = _walletProvider.getWalletById(_walletId);
     final changeAddress = _walletProvider.getChangeAddress(_walletId);
     final amount = UnitUtil.bitcoinToSatoshi(_amount);
