@@ -26,7 +26,6 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   String? _recipientAddress;
   late bool? _isNetworkOn;
   late bool _isBatchTx = false;
-  //List<String>? _recipientAddresses;
 
   SendFeeSelectionViewModel(this._sendInfoProvider, this._walletProvider,
       this._nodeProvider, this._bitcoinPriceKrw, this._isNetworkOn) {

@@ -483,7 +483,7 @@ class TranslationsTransactionFeeBumpingScreenKr {
   String get sats_vb => 'sats/vb';
   String recommend_fee({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
   String get recommend_fee_info_rbf =>
-      '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 1 sat/vb 미만으로 보일 수 있어요.';
+      '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vb 미만으로 보일 수 있어요.';
   String recommend_fee_info_cpfp(
           {required Object newTxSize,
           required Object recommendedFeeRate,
@@ -1375,7 +1375,7 @@ extension on Translations {
       case 'transaction_fee_bumping_screen.recommend_fee':
         return ({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
       case 'transaction_fee_bumping_screen.recommend_fee_info_rbf':
-        return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 1 sat/vb 미만으로 보일 수 있어요.';
+        return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vb 미만으로 보일 수 있어요.';
       case 'transaction_fee_bumping_screen.recommend_fee_info_cpfp':
         return (
                 {required Object newTxSize,

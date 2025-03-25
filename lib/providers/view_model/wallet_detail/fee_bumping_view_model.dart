@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -15,7 +16,6 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/dio_client.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 enum PaymentType {
@@ -26,8 +26,9 @@ enum PaymentType {
 
 class FeeBumpingViewModel extends ChangeNotifier {
   final FeeBumpingType _type;
-  final TransactionRecord _transaction;
+  final TransactionRecord _parentTx;
   final WalletProvider _walletProvider;
+  final NodeProvider _nodeProvider;
   final SendInfoProvider _sendInfoProvider;
   final TransactionProvider _txProvider;
   final AddressRepository _addressRepository;
@@ -41,34 +42,34 @@ class FeeBumpingViewModel extends ChangeNotifier {
     FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
     FeeInfoWithLevel(level: TransactionFeeLevel.hour),
   ];
-  bool _didFetchRecommendedFeesSuccessfully =
-      true; // 화면이 전환되는 시점에 순간적으로 수수료 조회 실패가 뜨는것 처럼 보이기 때문에 기본값을 true 설정
+  bool? _isFeeFetchSuccess;
+  bool? _isInitializedSuccess;
+  double? _recommendedFeeRate;
+  String? _recommendedFeeRateDescription;
 
   FeeBumpingViewModel(
     this._type,
-    this._transaction,
+    this._parentTx,
     this._walletId,
     this._sendInfoProvider,
     this._txProvider,
     this._walletProvider,
+    this._nodeProvider,
     this._addressRepository,
     this._utxoRepository,
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
-    _fetchRecommendedFees(); // 현재 수수료 조회
   }
 
-  double get recommendFeeRate => _getRecommendedFeeRate();
-  String get recommendFeeRateDescription => _type == FeeBumpingType.cpfp
-      ? _getRecommendedFeeRateDescriptionForCpfp()
-      : t.transaction_fee_bumping_screen.recommend_fee_info_rbf;
+  double? get recommendFeeRate => _recommendedFeeRate;
+  String? get recommendFeeRateDescription => _recommendedFeeRateDescription;
 
   // Utxo? get currentUtxo => _currentUtxo;
   List<FeeInfoWithLevel> get feeInfos => _feeInfos;
-  bool get didFetchRecommendedFeesSuccessfully =>
-      _didFetchRecommendedFeesSuccessfully;
+  bool? get didFetchRecommendedFeesSuccessfully => _isFeeFetchSuccess;
+  bool? get isInitializedSuccess => _isInitializedSuccess;
 
-  TransactionRecord get transaction => _transaction;
+  TransactionRecord get transaction => _parentTx;
   int get walletId => _walletId;
 
   WalletListItemBase get walletListItemBase => _walletListItemBase;
@@ -76,9 +77,26 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool _insufficientUtxos = false;
   bool get insufficientUtxos => _insufficientUtxos;
 
-  void updateProvider() {
-    _onFeeUpdated();
+  Future<void> initialize() async {
+    await _fetchRecommendedFees(); // _isFeeFetchSuccess로 성공 여부 기록함
+    if (_isFeeFetchSuccess == true) {
+      await _initializeBumpingTransaction(_feeInfos[2].satsPerVb!.toDouble());
+      _recommendedFeeRate = _getRecommendedFeeRate(_bumpingTransaction!);
+      _recommendedFeeRateDescription = _type == FeeBumpingType.cpfp
+          ? _getRecommendedFeeRateDescriptionForCpfp()
+          : t.transaction_fee_bumping_screen.recommend_fee_info_rbf;
+      _isInitializedSuccess = true;
+    } else {
+      _isInitializedSuccess = false;
+    }
     notifyListeners();
+  }
+
+  bool isFeeRateTooLow(double feeRate) {
+    assert(_isInitializedSuccess == true);
+    assert(_recommendedFeeRate != null);
+
+    return feeRate < _recommendedFeeRate! || feeRate < _parentTx.feeRate;
   }
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
@@ -89,24 +107,24 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return true;
   }
 
-  // unsinged psbt 생성
-  bool generateUnsignedPsbt(
-      double newTxFeeRate, FeeBumpingType feeBumpingType) {
-    if (_generateBumpingTransaction(newTxFeeRate)) {
-      _updateSendInfoProvider(newTxFeeRate, feeBumpingType);
+  Future<bool> prepareToSend(double newTxFeeRate) async {
+    assert(_bumpingTransaction != null);
+    try {
+      await _initializeBumpingTransaction(newTxFeeRate);
+      _updateSendInfoProvider(newTxFeeRate, _type);
       return true;
+    } catch (e) {
+      return false;
     }
-    return false;
   }
 
   // 수수료 입력 시 예상 총 수수료 계산
   int getTotalEstimatedFee(double newFeeRate) {
+    assert(_bumpingTransaction != null);
+
     if (newFeeRate == 0) {
       return 0;
     }
-
-    _bumpingTransaction ??=
-        _generateBumpingTransaction(newFeeRate) ? _bumpingTransaction : null;
 
     return _bumpingTransaction != null
         ? (_estimateVirtualByte(_bumpingTransaction!) * newFeeRate)
@@ -115,21 +133,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
         : 0;
   }
 
-  void _onFeeUpdated() {
-    if (feeInfos[1].satsPerVb != null) {
-      Logger.log('현재 수수료(보통) 업데이트 됨 >> ${feeInfos[1].satsPerVb}');
-      _generateBumpingTransaction(feeInfos[1].satsPerVb!.toDouble());
-    } else {
-      _fetchRecommendedFees();
-    }
-  }
-
   void _updateSendInfoProvider(
       double newTxFeeRate, FeeBumpingType feeBumpingType) {
-    bool isMultisig =
-        walletListItemBase.walletType == WalletType.multiSignature;
     _sendInfoProvider.setWalletId(_walletId);
-    _sendInfoProvider.setIsMultisig(isMultisig);
+    _sendInfoProvider.setIsMultisig(
+        walletListItemBase.walletType == WalletType.multiSignature);
     _sendInfoProvider.setFeeRate(newTxFeeRate.toInt()); // fixme
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(
             _bumpingTransaction!, walletListItemBase.walletBase)
@@ -137,20 +145,19 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setFeeBumpfingType(feeBumpingType);
   }
 
-  List<TransactionAddress> _getExternalOutputs() =>
-      _transaction.outputAddressList
-          .where((output) => !_walletProvider
-              .containsAddress(_walletId, output.address, isChange: true))
-          .toList();
+  List<TransactionAddress> _getExternalOutputs() => _parentTx.outputAddressList
+      .where((output) => !_walletProvider
+          .containsAddress(_walletId, output.address, isChange: true))
+      .toList();
 
-  List<TransactionAddress> _getMyOutputs() => _transaction.outputAddressList
+  List<TransactionAddress> _getMyOutputs() => _parentTx.outputAddressList
       .where((output) =>
           _walletProvider.containsAddress(_walletId, output.address))
       .toList();
 
   PaymentType? _getPaymentType() {
-    int inputCount = _transaction.inputAddressList.length;
-    int outputCount = _transaction.outputAddressList.length;
+    int inputCount = _parentTx.inputAddressList.length;
+    int outputCount = _parentTx.outputAddressList.length;
 
     if (inputCount == 0 || outputCount == 0) {
       return null; // wrong tx
@@ -172,37 +179,29 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   // 새 수수료로 트랜잭션 생성
-  bool _generateBumpingTransaction(double newFeeRate) {
-    if (hasTransactionConfirmed()) return false;
-
+  Future<void> _initializeBumpingTransaction(double newFeeRate) async {
     if (_type == FeeBumpingType.cpfp) {
-      _generateCpfpTransaction(newFeeRate);
+      _initializeCpfpTransaction(newFeeRate);
     } else if (_type == FeeBumpingType.rbf) {
-      _generateRbfTransaction(newFeeRate);
+      await _initializeRbfTransaction(newFeeRate);
     }
-    return true;
   }
 
-  void _generateCpfpTransaction(double newFeeRate) {
-    if (newFeeRate == 0) {
-      newFeeRate = _getRecommendedFeeRate();
-    }
-
+  void _initializeCpfpTransaction(double newFeeRate) {
     final myAddressList = _getMyOutputs();
     int amount = myAddressList.fold(0, (sum, output) => sum + output.amount);
-    final List<Utxo> utxoList = [];
+    final List<UtxoState> utxoList = [];
     // 내 주소와 일치하는 utxo 찾기
-    for (var address in myAddressList) {
-      final utxoStateList = _utxoRepository.getUtxoStateList(_walletId);
+    for (var myAddress in myAddressList) {
+      final utxoStateList =
+          _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.incoming);
       for (var utxoState in utxoStateList) {
-        if (address.address == utxoState.to) {
-          var utxo = Utxo(
-            utxoState.transactionHash,
-            utxoState.index,
-            utxoState.amount,
-            _addressRepository.getDerivationPath(_walletId, address.address),
-          );
-          utxoList.add(utxo);
+        if (myAddress.address == utxoState.to &&
+            myAddress.amount == utxoState.amount &&
+            _parentTx.transactionHash == utxoState.transactionHash &&
+            _parentTx.outputAddressList[utxoState.index].address ==
+                utxoState.to) {
+          utxoList.add(utxoState);
         }
       }
     }
@@ -214,12 +213,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double estimatedVSize;
     try {
       _bumpingTransaction = Transaction.forSweep(
-          utxoList, recipient, 10, walletListItemBase.walletBase);
+          utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
       estimatedVSize = _estimateVirtualByte(_bumpingTransaction!);
     } catch (e) {
       // insufficient utxo for sweep
       double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-      estimatedVSize = _transaction.vSize.toDouble();
+      estimatedVSize = _parentTx.vSize.toDouble();
       double outputSum = amount + estimatedVSize * newFeeRate;
 
       debugPrint(
@@ -241,30 +240,30 @@ class FeeBumpingViewModel extends ChangeNotifier {
         .setAmount(_bumpingTransaction!.outputs[0].amount.toDouble());
   }
 
-  void _generateRbfTransaction(double newFeeRate) {
+  Future<void> _initializeRbfTransaction(double newFeeRate) async {
     final type = _getPaymentType();
     if (type == null) return;
 
     final externalOutputs = _getExternalOutputs();
     var amount = externalOutputs.fold(0, (sum, output) => sum + output.amount);
     var changeAddress =
-        _transaction.outputAddressList.map((e) => e.address).firstWhere(
+        _parentTx.outputAddressList.map((e) => e.address).firstWhere(
               (address) => _walletProvider.containsAddress(_walletId, address,
                   isChange: true),
               orElse: () => '',
             );
 
     //input 정보 추출
-    List<Utxo> utxoList = _getUtxoListForRbf(_transaction.inputAddressList);
+    List<Utxo> utxoList = await _getUtxoListForRbf();
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    int estimatedVSize = _transaction.vSize;
+    int estimatedVSize = _parentTx.vSize;
     double outputSum = amount + estimatedVSize * newFeeRate;
 
-    if (inputSum < outputSum) {
+    if (inputSum <= outputSum) {
       // output에 내 주소가 있는 경우 amount 조정
       if (externalOutputs.any((output) =>
           _walletProvider.containsAddress(_walletId, output.address))) {
-        amount = (inputSum - _transaction.vSize * newFeeRate).toInt();
+        amount = (inputSum - _parentTx.vSize * newFeeRate).toInt();
         if (amount < 0) {
           debugPrint('❌ input 합계가 output 합계보다 작음!');
           if (!_ensureSufficientUtxos(
@@ -330,7 +329,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
       int estimatedVSize, double newFeeRate, int amount) {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    while (inputSum < outputSum) {
+    while (inputSum <= outputSum) {
       final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
       if (additionalUtxos.isEmpty) {
         debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
@@ -396,26 +395,24 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return paymentMap;
   }
 
-  List<Utxo> _getUtxoListForRbf(List<TransactionAddress> inputAddressList) {
+  Future<List<Utxo>> _getUtxoListForRbf() async {
+    final txResult =
+        await _nodeProvider.getTransaction(_parentTx.transactionHash);
+    if (txResult.isFailure) {
+      debugPrint('❌ 트랜잭션 조회 실패');
+      return [];
+    }
+
+    final tx = txResult.value;
+    final inputList = Transaction.parse(tx).inputs;
+
     List<Utxo> utxoList = [];
-
-    for (var inputAddress in inputAddressList) {
-      var derivationPath =
-          _addressRepository.getDerivationPath(_walletId, inputAddress.address);
-
-      final utxoStateList = _utxoRepository.getUtxoStateList(_walletId);
-      for (var utxoState in utxoStateList) {
-        if (inputAddress.address == utxoState.to &&
-            inputAddress.amount == utxoState.amount) {
-          Utxo utxo = Utxo(
-            utxoState.transactionHash,
-            utxoState.index,
-            utxoState.amount,
-            derivationPath,
-          );
-
-          utxoList.add(utxo);
-        }
+    for (var input in inputList) {
+      var utxo = _utxoRepository.getUtxoState(
+          _walletId, '${input.transactionHash}${input.index}');
+      if (utxo != null && utxo.status == UtxoStatus.outgoing) {
+        utxoList.add(Utxo(utxo.transactionHash, utxo.index, utxo.amount,
+            utxo.derivationPath));
       }
     }
 
@@ -425,51 +422,48 @@ class FeeBumpingViewModel extends ChangeNotifier {
   // 노드 프로바이더에서 추천 수수료 조회
   Future<void> _fetchRecommendedFees() async {
     // TODO: 테스트 후 원래 코드로 원복해야 함
-    // final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
-    // if (recommendedFeesResult.isFailure) {
-    //   _didFetchRecommendedFeesSuccessfully = false;
-    //   notifyListeners();
-    //   return;
-    // }
+    // ※ 주의 Node Provider 관련 import 문, 변수 등 지우지 말 것!
+    final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
+    if (recommendedFeesResult.isFailure) {
+      _isFeeFetchSuccess = false;
+      notifyListeners();
+      return;
+    }
 
-    // final recommendedFees = recommendedFeesResult.value;
+    final recommendedFees = recommendedFeesResult.value;
 
-    // TODO: 추천수수료 mock 테스트 후 원래 코드로 원복해야 함
-    final recommendedFees = await DioClient().getRecommendedFee();
+    // TODO: 추천수수료 mock 테스트 코드!
+    // final recommendedFees = await DioClient().getRecommendedFee();
 
     _feeInfos[0].satsPerVb = recommendedFees.fastestFee;
     _feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
     _feeInfos[2].satsPerVb = recommendedFees.hourFee;
-    _didFetchRecommendedFeesSuccessfully = true;
-    _generateBumpingTransaction(_feeInfos[1].satsPerVb!.toDouble());
-    notifyListeners();
+    _isFeeFetchSuccess = true;
   }
 
   // 추천 수수료
-  double _getRecommendedFeeRate() {
+  double _getRecommendedFeeRate(Transaction transaction) {
     if (_type == FeeBumpingType.cpfp) {
-      return _getRecommendedFeeRateForCpfp();
+      return _getRecommendedFeeRateForCpfp(transaction);
     }
-    return _getRecommendedFeeRateForRbf();
+    return _getRecommendedFeeRateForRbf(transaction);
   }
 
-  double _getRecommendedFeeRateForCpfp() {
-    final recommendedFeeRate = _feeInfos[1].satsPerVb; // 보통 수수료
+  double _getRecommendedFeeRateForCpfp(Transaction transaction) {
+    final recommendedFeeRate = _feeInfos[2].satsPerVb; // 느린 수수료
 
     if (recommendedFeeRate == null) {
       return 0;
     }
+    if (recommendedFeeRate < _parentTx.feeRate) {
+      return _parentTx.feeRate;
+    }
 
-    _generateCpfpTransaction(recommendedFeeRate.toDouble());
-
-    double cpfpTxSize = _estimateVirtualByte(_bumpingTransaction!);
-    double totalFee = (_transaction.vSize + cpfpTxSize) * recommendedFeeRate;
-    double cpfpTxFee = totalFee - _transaction.fee!.toDouble();
+    double cpfpTxSize = _estimateVirtualByte(transaction);
+    double totalFee = (_parentTx.vSize + cpfpTxSize) * recommendedFeeRate;
+    double cpfpTxFee = totalFee - _parentTx.fee!.toDouble();
     double cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
 
-    if (recommendedFeeRate < _transaction.feeRate) {
-      return _transaction.feeRate;
-    }
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
       return (recommendedFeeRate * 100).ceilToDouble() / 100;
     }
@@ -477,34 +471,33 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return (cpfpTxFeeRate * 100).ceilToDouble() / 100;
   }
 
-  double _getRecommendedFeeRateForRbf() {
+  /// 새로운 트랜잭션이 기존 트랜잭션보다 추가 지불하는 수수료양이 "새로운 트랜잭션 크기"이상이어야 합니다.
+  /// 그렇지 않으면 브로드캐스팅 실패합니다.
+  double _getRecommendedFeeRateForRbf(Transaction transaction) {
     final recommendedFeeRate = _feeInfos[2].satsPerVb; // 느린 수수료
 
     if (recommendedFeeRate == null) {
       return 0;
     }
 
-    _generateRbfTransaction(recommendedFeeRate.toDouble()); // 추천 수수료율로 트랜잭션 생성
-
-    double estimatedVirtualByte = _estimateVirtualByte(_bumpingTransaction!);
-    // 최소 수수료 = (이전 트랜잭션 보다 1 sat/vbyte 높은 fee
+    double estimatedVirtualByte = _estimateVirtualByte(transaction);
     double minimumRequiredFee =
-        _transaction.fee!.toDouble() + estimatedVirtualByte;
-    double recommendedFee = estimatedVirtualByte * recommendedFeeRate;
+        _parentTx.fee!.toDouble() + estimatedVirtualByte;
+    double mempoolRecommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
-    if (recommendedFee < minimumRequiredFee) {
+    if (mempoolRecommendedFee < minimumRequiredFee) {
       double feePerVByte = minimumRequiredFee / estimatedVirtualByte;
       double roundedFee = (feePerVByte * 100).ceilToDouble() / 100;
-      if (feePerVByte < _transaction.feeRate) {
-        // 추천 수수료가 현재 수수료보다 작은 경우 1s/vb 높은 수수료로 설정
-        roundedFee = ((_transaction.feeRate + 1) * 100).ceilToDouble() / 100;
+
+      // 계산된 추천 수수료가 현재 멤풀 수수료보다 작은 경우, 기존 수수료보다 1s/vb 높은 수수료로 설정
+      // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 거의 발생 확률이 낮음
+      if (feePerVByte < _parentTx.feeRate) {
+        roundedFee = ((_parentTx.feeRate + 1) * 100).ceilToDouble() / 100;
       }
       return double.parse((roundedFee).toStringAsFixed(2));
     }
 
-    recommendedFee = minimumRequiredFee / estimatedVirtualByte;
-    double roundedFee = (recommendedFee * 100).ceilToDouble() / 100;
-    return double.parse(roundedFee.toStringAsFixed(2));
+    return recommendedFeeRate.toDouble();
   }
 
   double _estimateVirtualByte(Transaction transaction) {
@@ -529,24 +522,24 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   String _getRecommendedFeeRateDescriptionForCpfp() {
-    final recommendedFeeRate = _getRecommendedFeeRateForCpfp();
+    assert(_recommendedFeeRate != null);
+    assert(_bumpingTransaction != null);
 
+    final recommendedFeeRate = _recommendedFeeRate!;
     // 추천 수수료가 현재 수수료보다 작은 경우
     // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 발생하지 않는 상황
     // 하지만, regtest에서 임의로 마이닝을 중지하는 경우 발생하여 예외 처리
     // 예) (pending tx fee rate) = 4 s/vb, (recommended fee rate) = 1 s/vb
-    if (recommendedFeeRate < _transaction.feeRate) {
+    if (recommendedFeeRate < _parentTx.feeRate) {
       return t.transaction_fee_bumping_screen
           .recommended_fee_less_than_pending_tx_fee;
     }
 
-    _generateCpfpTransaction(recommendedFeeRate.toDouble());
-
     final cpfpTxSize = _estimateVirtualByte(_bumpingTransaction!);
     final cpfpTxFee = cpfpTxSize * recommendedFeeRate;
     final cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
-    final totalRequiredFee = _transaction.vSize * _transaction.feeRate +
-        cpfpTxSize * recommendedFeeRate;
+    final totalRequiredFee =
+        _parentTx.vSize * _parentTx.feeRate + cpfpTxSize * recommendedFeeRate;
 
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
       return t
@@ -557,8 +550,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return t.transaction_fee_bumping_screen.recommend_fee_info_cpfp(
       newTxSize: _formatNumber(cpfpTxSize),
       recommendedFeeRate: _formatNumber(recommendedFeeRate),
-      originalTxSize: _formatNumber(_transaction.vSize.toDouble()),
-      originalFee: _formatNumber((_transaction.fee ?? 0).toDouble()),
+      originalTxSize: _formatNumber(_parentTx.vSize.toDouble()),
+      originalFee: _formatNumber((_parentTx.fee ?? 0).toDouble()),
       totalRequiredFee: _formatNumber(totalRequiredFee.toDouble()),
       newTxFee: _formatNumber(cpfpTxFee),
       newTxFeeRate: _formatNumber(cpfpTxFeeRate),
@@ -567,6 +560,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   String _formatNumber(double value) {
-    return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1);
+    return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
   }
 }
