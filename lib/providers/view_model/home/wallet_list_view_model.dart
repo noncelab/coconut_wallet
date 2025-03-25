@@ -62,7 +62,7 @@ class WalletListViewModel extends ChangeNotifier {
     //     ).toList()}');
 
     _walletBalance = balanceMap.map((key, balance) {
-      final prev = _walletBalance[key]?.current;
+      final prev = _walletBalance[key]?.current ?? 0;
       return MapEntry(
         key,
         AnimatedBalanceData(balance.total, prev),

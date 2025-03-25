@@ -55,8 +55,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   Widget _buildBalanceInfo() {
     return GestureDetector(
       onTap: () {
-        if (widget.animatedBalanceData.current != null)
-          widget.onPressedUnitToggle();
+        widget.onPressedUnitToggle();
       },
       child: Column(
         children: [
@@ -71,7 +70,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
     return SizedBox(
       height: 20,
       child: Text(
-        widget.animatedBalanceData.current != null ? widget.btcPriceInKrw : '-',
+        widget.animatedBalanceData.current != 0 ? widget.btcPriceInKrw : '-',
         style:
             CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
       ),
@@ -84,17 +83,11 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (widget.animatedBalanceData.current == null)
-            Text(
-              '-',
-              style: CoconutTypography.heading1_32_NumberBold,
-            )
-          else
-            AnimatedBalance(
-              prevValue: widget.animatedBalanceData.previous ?? 0,
-              value: widget.animatedBalanceData.current!,
-              isBtcUnit: widget.currentUnit == Unit.btc,
-            ),
+          AnimatedBalance(
+            prevValue: widget.animatedBalanceData.previous,
+            value: widget.animatedBalanceData.current,
+            isBtcUnit: widget.currentUnit == Unit.btc,
+          ),
           const SizedBox(width: 4.0),
           Text(
             widget.currentUnit == Unit.btc ? t.btc : t.sats,

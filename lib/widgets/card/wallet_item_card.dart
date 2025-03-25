@@ -12,7 +12,7 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 
 class WalletItemCard extends StatelessWidget {
   final int id;
-  final AnimatedBalanceData? animatedBalanceData;
+  final AnimatedBalanceData animatedBalanceData;
   final String name;
   final int iconIndex;
   final int colorIndex;
@@ -87,33 +87,19 @@ class WalletItemCard extends StatelessWidget {
                             child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  if (animatedBalanceData?.current == null)
-                                    Text(
-                                      '0',
-                                      style: CoconutTypography
-                                          .heading3_21_NumberBold
-                                          .merge(
-                                        const TextStyle(
-                                          fontSize: 22,
-                                          letterSpacing: 0.2,
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    AnimatedBalance(
-                                      prevValue:
-                                          animatedBalanceData!.previous ?? 0,
-                                      value: animatedBalanceData!.current ?? 0,
-                                      isBtcUnit: true,
-                                      textStyle: CoconutTypography
-                                          .heading3_21_NumberBold
-                                          .merge(
-                                        const TextStyle(
-                                          fontSize: 22,
-                                          letterSpacing: 0.2,
-                                        ),
+                                  AnimatedBalance(
+                                    prevValue: animatedBalanceData.previous,
+                                    value: animatedBalanceData.current,
+                                    isBtcUnit: true,
+                                    textStyle: CoconutTypography
+                                        .heading3_21_NumberBold
+                                        .merge(
+                                      const TextStyle(
+                                        fontSize: 22,
+                                        letterSpacing: 0.2,
                                       ),
                                     ),
+                                  ),
                                   Text(
                                     " BTC",
                                     style:

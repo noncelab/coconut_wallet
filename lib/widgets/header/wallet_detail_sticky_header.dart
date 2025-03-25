@@ -55,30 +55,21 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                     Expanded(
                       child: Row(
                         children: [
-                          if (widget.animatedBalanceData.current == null)
-                            Text(
-                              '-',
-                              style: CoconutTypography.heading1_32_NumberBold,
-                            )
-                          else
-                            AnimatedBalance(
-                              prevValue:
-                                  widget.animatedBalanceData.previous ?? 0,
-                              value: widget.animatedBalanceData.current!,
-                              isBtcUnit: widget.currentUnit == Unit.btc,
-                              textStyle:
-                                  CoconutTypography.body1_16_NumberBold.merge(
-                                const TextStyle(
-                                  fontSize: 18,
-                                ),
+                          AnimatedBalance(
+                            prevValue: widget.animatedBalanceData.previous,
+                            value: widget.animatedBalanceData.current,
+                            isBtcUnit: widget.currentUnit == Unit.btc,
+                            textStyle:
+                                CoconutTypography.body1_16_NumberBold.merge(
+                              const TextStyle(
+                                fontSize: 18,
                               ),
                             ),
+                          ),
                           Text(
-                            widget.animatedBalanceData.current != null
-                                ? widget.currentUnit == Unit.btc
-                                    ? ' ${t.btc}'
-                                    : ' ${t.sats}'
-                                : '',
+                            widget.currentUnit == Unit.btc
+                                ? ' ${t.btc}'
+                                : ' ${t.sats}',
                             style: CoconutTypography.body2_14_Number,
                           ),
                         ],

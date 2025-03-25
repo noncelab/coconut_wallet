@@ -60,33 +60,16 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Expanded(
-                        //   child:
-                        //   child: Text(
-                        //     widget.balance != null
-                        //         ? satoshiToBitcoinString(widget.balance!)
-                        //         : t.fetch_balance_failed,
-                        //     style: CoconutTypography.heading1_32_NumberBold,
-                        //   ),
-                        // ),
                         Expanded(
                           child: Row(
                             children: [
-                              if (widget.animatedBalanceData.current == null)
-                                Text(
-                                  t.fetch_balance_failed,
-                                  style:
-                                      CoconutTypography.heading1_32_NumberBold,
-                                )
-                              else
-                                AnimatedBalance(
-                                    prevValue:
-                                        widget.animatedBalanceData.previous ??
-                                            0,
-                                    value: widget.animatedBalanceData.current!,
-                                    isBtcUnit: true,
-                                    textStyle: CoconutTypography
-                                        .heading1_32_NumberBold),
+                              AnimatedBalance(
+                                  prevValue:
+                                      widget.animatedBalanceData.previous,
+                                  value: widget.animatedBalanceData.current,
+                                  isBtcUnit: true,
+                                  textStyle:
+                                      CoconutTypography.heading1_32_NumberBold),
                             ],
                           ),
                         ),
@@ -99,14 +82,13 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     ),
                   ),
                   CoconutLayout.spacing_50h,
-                  if (widget.animatedBalanceData.current != null)
-                    Consumer<UpbitConnectModel>(
-                        builder: (context, viewModel, child) => Text(
-                            viewModel.getFiatPrice(
-                                widget.animatedBalanceData.current!,
-                                CurrencyCode.KRW),
-                            style: CoconutTypography.body2_14_Number
-                                .setColor(CoconutColors.gray500))),
+                  Consumer<UpbitConnectModel>(
+                      builder: (context, viewModel, child) => Text(
+                          viewModel.getFiatPrice(
+                              widget.animatedBalanceData.current,
+                              CurrencyCode.KRW),
+                          style: CoconutTypography.body2_14_Number
+                              .setColor(CoconutColors.gray500))),
                   CoconutLayout.spacing_400h,
                   Row(
                     children: [

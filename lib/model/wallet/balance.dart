@@ -29,13 +29,13 @@ class Balance {
 
 /// 지갑의 현재 잔액과 이전 잔액(AnimatedBalance 용도)
 class AnimatedBalanceData {
-  final int? _current;
-  final int? _previous;
+  final int _current;
+  final int _previous;
 
-  AnimatedBalanceData(this._current, this._previous);
+  AnimatedBalanceData([this._current = 0, this._previous = 0]);
 
-  int? get current => _current;
-  int? get previous => _previous;
+  int get current => _current;
+  int get previous => _previous;
 }
 
 /// 특정 인덱스를 가진 주소의 잔액

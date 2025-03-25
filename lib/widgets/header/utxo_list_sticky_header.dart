@@ -75,19 +75,13 @@ class UtxoListStickyHeader extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            if (animatedBalanceData.current == null)
-                              Text(
-                                t.fetch_balance_failed,
-                                style: CoconutTypography.heading4_18_NumberBold,
-                              )
-                            else
-                              AnimatedBalance(
-                                prevValue: animatedBalanceData.previous ?? 0,
-                                value: animatedBalanceData.current!,
-                                isBtcUnit: true,
-                                textStyle:
-                                    CoconutTypography.heading4_18_NumberBold,
-                              ),
+                            AnimatedBalance(
+                              prevValue: animatedBalanceData.previous,
+                              value: animatedBalanceData.current,
+                              isBtcUnit: true,
+                              textStyle:
+                                  CoconutTypography.heading4_18_NumberBold,
+                            ),
                             CoconutLayout.spacing_100w,
                             Text(
                               t.btc,
