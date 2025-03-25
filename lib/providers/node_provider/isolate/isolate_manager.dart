@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -132,7 +133,7 @@ class IsolateManager {
       // ReceivePort가 이미 리스닝 중인지 확인
       _setUpReceivePortListener();
 
-      await _isolateReady.future.timeout(const Duration(seconds: 10));
+      await _isolateReady.future.timeout(kIsolateInitTimeout);
       Logger.log('IsolateManager: initialization completed successfully');
     } catch (e) {
       Logger.error('IsolateManager: Failed to initialize isolate: $e');
@@ -237,12 +238,12 @@ class IsolateManager {
       if (!isInitialized) {
         // 초기화가 진행 중인 경우 (isolateReady가 완료되지 않은 경우)
         if (!_isolateReady.isCompleted) {
-          // 초기화가 완료될 때까지 최대 3초간 대기
-          await _isolateReady.future.timeout(const Duration(seconds: 3));
+          // 초기화가 완료될 때까지 대기
+          await _isolateReady.future.timeout(kIsolateInitTimeout);
         } else {
           // 초기화가 완료되지 않았고 진행 중이지도 않음 (실패한 상태)
-          // 재연결이 비동기로 실행되어 VM의 eventListener에서 먼저 호출되는 가능성이 있어 1초 대기
-          await _isolateReady.future.timeout(const Duration(seconds: 1));
+          // 재연결이 비동기로 실행되어 VM의 eventListener에서 먼저 호출되는 가능성이 있어 대기
+          await _isolateReady.future.timeout(kIsolateInitTimeout);
         }
       }
 
@@ -263,7 +264,7 @@ class IsolateManager {
       try {
         // 타임아웃 설정으로 무한 대기 방지
         result = await mainFromIsolateReceivePort.first.timeout(
-          const Duration(seconds: 30),
+          kIsolateResponseTimeout,
           onTimeout: () {
             throw TimeoutException('Isolate response timeout');
           },
