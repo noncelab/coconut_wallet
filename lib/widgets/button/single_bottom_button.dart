@@ -11,6 +11,7 @@ class SingleBottomButton extends StatefulWidget {
     this.buttonHeight,
     this.horizontalPadding = CoconutLayout.defaultPadding,
     this.bottomPadding = Sizes.size30,
+    this.gradientPadding,
     this.subWidget,
     this.backgroundColor = CoconutColors.primary,
   });
@@ -22,6 +23,7 @@ class SingleBottomButton extends StatefulWidget {
   final double? buttonHeight;
   final double horizontalPadding;
   final double bottomPadding;
+  final EdgeInsets? gradientPadding;
   final Widget? subWidget;
   final Color backgroundColor;
 
@@ -44,8 +46,9 @@ class _SingleBottomButtonState extends State<SingleBottomButton> {
               child: IgnorePointer(
                 ignoring: true,
                 child: Container(
-                  padding: const EdgeInsets.only(
-                      left: 16, right: 16, bottom: 40, top: 150),
+                  padding: widget.gradientPadding ??
+                      const EdgeInsets.only(
+                          left: 16, right: 16, bottom: 40, top: 150),
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
