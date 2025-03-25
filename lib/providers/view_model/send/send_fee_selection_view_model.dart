@@ -147,7 +147,6 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
         : _amount;
     _sendInfoProvider.setAmount(finalAmount);
     _sendInfoProvider.setEstimatedFee(estimatedFee);
-    _sendInfoProvider.setFeeRate(satsPerVb);
     _sendInfoProvider.setTransaction(_createTransaction(satsPerVb));
     _sendInfoProvider.setFeeBumpfingType(null);
   }

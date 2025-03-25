@@ -529,7 +529,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void saveSendInfo() {
     _sendInfoProvider.setEstimatedFee(_estimatedFee!);
-    _sendInfoProvider.setFeeRate(satsPerVb!);
     _sendInfoProvider.setIsMaxMode(isMaxMode);
     _sendInfoProvider.setIsMultisig(_requiredSignature != null);
     _sendInfoProvider.setTransaction(_transaction);

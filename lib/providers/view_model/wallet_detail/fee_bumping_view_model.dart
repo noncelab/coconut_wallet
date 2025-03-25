@@ -138,7 +138,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(_walletId);
     _sendInfoProvider.setIsMultisig(
         walletListItemBase.walletType == WalletType.multiSignature);
-    _sendInfoProvider.setFeeRate(newTxFeeRate.toInt()); // fixme
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(
             _bumpingTransaction!, walletListItemBase.walletBase)
         .serialize());
