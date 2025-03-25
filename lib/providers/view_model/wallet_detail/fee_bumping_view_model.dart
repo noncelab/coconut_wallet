@@ -340,14 +340,31 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
       int estimatedVSize, double newFeeRate, int amount) {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    final additionalUtxos = _getAdditionalUtxos(outputSum - inputSum);
-    if (additionalUtxos.isEmpty) {
-      debugPrint('❌ 사용할 수 있는 추가 UTXO가 없거나 부족함!');
+    List<UtxoState> unspentUtxos =
+        _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
+    unspentUtxos.sort((a, b) => a.amount.compareTo(b.amount));
+    int sublistIndex = 0; // for unspentUtxos
+    while (inputSum <= outputSum && sublistIndex < unspentUtxos.length) {
+      final additionalUtxos = _getAdditionalUtxos(
+          unspentUtxos.sublist(sublistIndex), outputSum - inputSum);
+      if (additionalUtxos.isEmpty) {
+        debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
+        _setInsufficientUtxo(true);
+        return false;
+      }
+      utxoList.addAll(additionalUtxos);
+      sublistIndex += additionalUtxos.length;
+
+      int additionalVSize = _getVSizeIncreasement() * additionalUtxos.length;
+      outputSum = amount + (estimatedVSize + additionalVSize) * newFeeRate;
+      inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
+    }
+
+    if (inputSum <= outputSum) {
       _setInsufficientUtxo(true);
       return false;
     }
-    utxoList.addAll(additionalUtxos);
-    estimatedVSize += _getVSizeIncreasement() * additionalUtxos.length;
+
     _setInsufficientUtxo(false);
 
     return true;
@@ -373,21 +390,14 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   // todo: utxo lock 기능 추가 시 utxo 제외 로직 필요
-  List<Utxo> _getAdditionalUtxos(double requiredAmount) {
+  List<Utxo> _getAdditionalUtxos(
+      List<Utxo> unspentUtxo, double requiredAmount) {
     List<Utxo> additionalUtxos = [];
-    List<UtxoState> utxoStateList =
-        _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
     double sum = 0;
-    if (utxoStateList.isNotEmpty) {
-      utxoStateList.sort((a, b) => a.amount.compareTo(b.amount));
-      for (var utxo in utxoStateList) {
+    if (unspentUtxo.isNotEmpty) {
+      for (var utxo in unspentUtxo) {
         sum += utxo.amount;
-        additionalUtxos.add(Utxo(
-          utxo.transactionHash,
-          utxo.index,
-          utxo.amount,
-          _addressRepository.getDerivationPath(_walletId, utxo.to),
-        ));
+        additionalUtxos.add(utxo);
         if (sum >= requiredAmount) {
           break;
         }
