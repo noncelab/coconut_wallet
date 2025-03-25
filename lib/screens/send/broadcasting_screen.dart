@@ -162,18 +162,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                             style: Styles.balance1,
                           ),
                         )),
-                    Selector<BroadcastingViewModel, int?>(
-                      selector: (context, model) => model.amountValueInKrw,
-                      builder: (context, amountValueInKrw, child) {
-                        if (amountValueInKrw != null) {
-                          return Text(
-                              '${addCommasToIntegerPart(amountValueInKrw.toDouble())} ${CurrencyCode.KRW.code}',
-                              style: Styles.label.merge(TextStyle(
-                                  fontFamily:
-                                      CustomFonts.number.getFontFamily)));
-                        } else {
-                          return const SizedBox();
-                        }
+                    Consumer<UpbitConnectModel>(
+                      builder: (context, upbitConnectModel, child) {
+                        return Text(
+                            upbitConnectModel.getFiatPrice(
+                                viewModel.amount ?? 0, CurrencyCode.KRW),
+                            style: Styles.label.merge(TextStyle(
+                                fontFamily: CustomFonts.number.getFontFamily)));
                       },
                     ),
                     const SizedBox(

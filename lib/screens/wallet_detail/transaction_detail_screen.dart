@@ -18,7 +18,6 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -102,7 +101,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           final tx = viewModel
               .transactionList![viewModel.selectedTransactionIndex]
               .transaction!;
-          // final txMemo = viewModel.transactionList![0].transaction!.memo;
           final txMemo = viewModel.fetchTransactionMemo();
 
           return Scaffold(
@@ -142,14 +140,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           ),
                         ),
                         CoconutLayout.spacing_100h,
-                        Center(
-                            // TODO: 머지 후 UpbitConnectModel의 util을 사용하도록 수정, 부호 붙이기
-                            child: Selector<UpbitConnectModel, int?>(
-                          selector: (context, model) => model.bitcoinPriceKrw,
-                          builder: (context, bitcoinPriceKrw, child) {
+                        Center(child: Consumer<UpbitConnectModel>(
+                          builder: (context, upbitConnectModel, child) {
                             return Text(
-                              bitcoinPriceKrw != null
-                                  ? '${_getPrefix(tx)}${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(tx.amount!, bitcoinPriceKrw).toDouble().abs())} ${CurrencyCode.KRW.code}'
+                              tx.amount != null
+                                  ? upbitConnectModel.getFiatPrice(
+                                      tx.amount!.abs(), CurrencyCode.KRW)
                                   : '',
                               style: CoconutTypography.body3_12_Number
                                   .setColor(CoconutColors.gray500),
