@@ -93,7 +93,13 @@ class WalletItemCard extends StatelessWidget {
                                     Text(
                                       '0',
                                       style: CoconutTypography
-                                          .heading3_21_NumberBold,
+                                          .heading3_21_NumberBold
+                                          .merge(
+                                        const TextStyle(
+                                          fontSize: 22,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
                                     )
                                   else
                                     AnimatedBalance(
@@ -102,7 +108,13 @@ class WalletItemCard extends StatelessWidget {
                                       value: recentBalance!.currentBalance ?? 0,
                                       isBtcUnit: true,
                                       textStyle: CoconutTypography
-                                          .heading4_18_NumberBold,
+                                          .heading3_21_NumberBold
+                                          .merge(
+                                        const TextStyle(
+                                          fontSize: 22,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
                                     ),
                                   const Text(" BTC", style: Styles.unitSmall),
                                 ]),
