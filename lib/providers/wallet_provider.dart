@@ -141,7 +141,12 @@ class WalletProvider extends ChangeNotifier {
     _updateIsSyncingIfNeeded(_nodeProvider.state);
     if (_isAnyBalanceUpdating) {
       _walletBalance = fetchWalletBalanceMap();
-      notifyListeners();
+
+      /// TODO: NodeProvider의 이벤트 리스너에 대해서 동시성 제어 후 지연 로직 제거
+      /// BalanceManager의 fetchScriptBalance 함수 참고
+      Future.delayed(const Duration(milliseconds: 300), () {
+        notifyListeners();
+      });
     }
     _updateIsAnyBalanceUpdatingIfNeeded(_nodeProvider.state);
     for (var key in _nodeProvider.state.registeredWallets.keys) {
@@ -345,6 +350,9 @@ class WalletProvider extends ChangeNotifier {
       newItem = await _walletRepository.addSinglesigWallet(wallet);
     }
 
+    // 지갑 추가 후 receive, change 주소 각각 1개씩 생성
+    await _addressRepository.ensureAddressesInit(walletItemBase: newItem);
+
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
     updatedList.insert(0, newItem); // wallet-list의 지갑 정렬 방식을 최신순으로 하기 위함
     _walletItemList = updatedList;
@@ -396,6 +404,7 @@ class WalletProvider extends ChangeNotifier {
     _utxoRepository.deleteAllUtxoTag(walletId);
     _saveWalletCount(_walletItemList.length);
     _nodeProvider.unregisterWalletUpdateState(walletId);
+    _walletBalance.remove(walletId);
     notifyListeners();
   }
 

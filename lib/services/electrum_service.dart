@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -13,7 +14,6 @@ part 'model/request/electrum_request_types.dart';
 
 class ElectrumService {
   // static final ElectrumClient _instance = ElectrumClient._();
-  final int _timeout = 30;
   int _idCounter = 0;
   SocketManager _socketManager;
   Timer? _pingTimer;
@@ -34,6 +34,10 @@ class ElectrumService {
 
   Future<void> connect(String host, int port, {bool ssl = true}) async {
     await _socketManager.connect(host, port, ssl: ssl);
+
+    _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
+      ping();
+    });
   }
 
   Future<ElectrumResponse<T>> _call<T>(_ElectrumRequest request,
@@ -54,7 +58,7 @@ class ElectrumService {
     final completer = Completer<Map>();
     _socketManager.setCompleter(requestId, completer);
 
-    Map res = await completer.future.timeout(Duration(seconds: _timeout));
+    Map res = await completer.future.timeout(kElectrumResponseTimeout);
 
     if (res['error'] != null) {
       throw res['error'];

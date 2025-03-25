@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -58,9 +59,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   late int? _requiredSignature;
   late int? _totalSigner;
   late WalletListItemBase _walletBaseItem;
+  late int _confirmedBalance;
+
   late final int _walletId;
 
-  List<UtxoState> _availableUtxoList = [];
+  final List<UtxoState> _availableUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
       RecommendedFeeFetchStatus.fetching;
@@ -69,7 +72,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   RecommendedFee? _recommendedFees;
 
   FeeInfo? _customFeeInfo;
-  int _confirmedBalance = 0;
   int? _estimatedFee = 0;
 
   List<FeeInfoWithLevel> feeInfos = [
@@ -101,12 +103,19 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         ? (_walletBaseItem as MultisigWalletListItem).signers.length
         : null;
 
-    _availableUtxoList = _getAvailableUtxoList(_walletBaseItem);
+    _confirmedBalance = _walletProvider
+        .getUtxoList(_sendInfoProvider.walletId!)
+        .fold<int>(0, (sum, utxo) {
+      if (utxo.status == UtxoStatus.unspent) {
+        _availableUtxoList.add(utxo);
+        return sum + utxo.amount;
+      }
+      return sum;
+    });
     _sortAvailableUtxoList(initialUtxoOrder);
     _initUtxoTagMap();
 
     _walletBase = _walletBaseItem.walletBase;
-    _confirmedBalance = _walletProvider.getWalletBalance(_walletId).confirmed;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
     _changeAddressDerivationPath =
         _walletProvider.getChangeAddress(_walletId).derivationPath;
@@ -135,12 +144,22 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
 
   int? get change {
+    if (_sendInfoProvider.walletId == null) {
+      // 이미 보내기 과정 완료 후 호출 될 때를 대비
+      // FIXME: proxyProvider 제거 가능한지 확인
+      return null;
+    }
+
     if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) {
       return null;
     }
 
     if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
         _customFeeInfo == null) {
+      return null;
+    }
+
+    if (_sendInfoProvider.walletId == null) {
       return null;
     }
 
@@ -171,8 +190,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
     return _isSelectedUtxoEnough() ? changeAmount : null;
   }
-
-  int get confirmedBalance => _confirmedBalance;
 
   List<UtxoState> get availableUtxoList => _availableUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;
@@ -346,7 +363,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
       selectedUtxoList.remove(utxo);
       if (estimatedFee != null && _isSelectedUtxoEnough()) {
-        setEstimatedFee(estimateFee(satsPerVb!));
+        setEstimatedFee(estimateFee(satsPerVb ?? 1));
       }
     } else {
       if (!_isMaxMode) {
@@ -379,12 +396,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       int feeRate, WalletListItemBase walletListItemBase) {
     if (isMaxMode) {
       return Transaction.forSweep(utxos, _sendInfoProvider.recipientAddress!,
-          _sendInfoProvider.feeRate!.toDouble(), walletListItemBase.walletBase);
+          feeRate.toDouble(), walletListItemBase.walletBase);
     }
 
     try {
       final optimalUtxos = TransactionUtil.selectOptimalUtxos(
-          utxos, _sendAmount, satsPerVb ?? 1, _walletBase.addressType);
+          utxos, _sendAmount, feeRate, _walletBase.addressType);
       _selectedUtxoList = optimalUtxos;
       return Transaction.forSinglePayment(
           optimalUtxos,
@@ -397,11 +414,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
           walletListItemBase.walletBase);
     } catch (e) {
       if (e.toString().contains('Not enough amount for sending. (Fee')) {
-        return Transaction.forSweep(
-            utxos,
-            _sendInfoProvider.recipientAddress!,
-            _sendInfoProvider.feeRate!.toDouble(),
-            walletListItemBase.walletBase);
+        return Transaction.forSweep(utxos, _sendInfoProvider.recipientAddress!,
+            feeRate.toDouble(), walletListItemBase.walletBase);
       }
       rethrow;
     }
@@ -515,11 +529,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void saveSendInfo() {
     _sendInfoProvider.setEstimatedFee(_estimatedFee!);
-    _sendInfoProvider.setFeeRate(satsPerVb!);
     _sendInfoProvider.setIsMaxMode(isMaxMode);
     _sendInfoProvider.setIsMultisig(_requiredSignature != null);
     _sendInfoProvider.setTransaction(_transaction);
-    _sendInfoProvider.setFeeBumptingType(null);
+    _sendInfoProvider.setFeeBumpfingType(null);
   }
 
   @override

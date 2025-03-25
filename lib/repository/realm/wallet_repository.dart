@@ -209,11 +209,11 @@ class WalletRepository extends BaseRepository {
     return realmWalletBalance;
   }
 
-  RealmWalletBalance accumulateWalletBalance(
-      int walletId, Balance balanceDiff) {
+  Future<RealmWalletBalance> accumulateWalletBalance(
+      int walletId, Balance balanceDiff) async {
     final realmWalletBalance = getWalletBalance(walletId);
 
-    realm.write(() {
+    await realm.writeAsync(() {
       realmWalletBalance.total += balanceDiff.total;
       realmWalletBalance.confirmed += balanceDiff.confirmed;
       realmWalletBalance.unconfirmed += balanceDiff.unconfirmed;

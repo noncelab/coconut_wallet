@@ -334,10 +334,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   void _onTapReceive() {
     CommonBottomSheets.showBottomSheet_90(
       context: context,
-      child: ReceiveAddressBottomSheet(
-        id: widget.id,
-        address: _viewModel.receiveAddress,
-        derivationPath: _viewModel.derivationPath,
+      child: ChangeNotifierProvider.value(
+        value: _viewModel,
+        child: ReceiveAddressBottomSheet(
+          id: widget.id,
+        ),
       ),
     );
   }

@@ -154,7 +154,7 @@ void main() {
       ];
 
       // RBF 내역 일괄 추가
-      await transactionRepository.addAllRbfHistory(rbfDtoList);
+      transactionRepository.addAllRbfHistory(rbfDtoList);
 
       // RBF 내역 조회
       final rbfHistory1 = transactionRepository.getRbfHistoryList(
@@ -198,7 +198,7 @@ void main() {
       ];
 
       // RBF 내역 일괄 추가
-      await transactionRepository.addAllRbfHistory(rbfDtoList);
+      transactionRepository.addAllRbfHistory(rbfDtoList);
 
       // RBF 내역 조회
       final rbfHistory = transactionRepository.getRbfHistoryList(
@@ -225,10 +225,10 @@ void main() {
         timestamp: DateTime.now(),
       );
 
-      await transactionRepository.addAllRbfHistory([rbfDto]);
+      transactionRepository.addAllRbfHistory([rbfDto]);
 
       // 동일한 내역 다시 추가
-      await transactionRepository.addAllRbfHistory([rbfDto]);
+      transactionRepository.addAllRbfHistory([rbfDto]);
 
       // RBF 내역 조회
       final rbfHistory =
@@ -262,7 +262,7 @@ void main() {
       ];
 
       // CPFP 내역 일괄 추가
-      await transactionRepository.addAllCpfpHistory(cpfpDtoList);
+      transactionRepository.addAllCpfpHistory(cpfpDtoList);
 
       // CPFP 내역 조회
       final cpfpHistory1 = transactionRepository.getCpfpHistory(
@@ -290,10 +290,10 @@ void main() {
         timestamp: DateTime.now(),
       );
 
-      await transactionRepository.addAllCpfpHistory([cpfpDto]);
+      transactionRepository.addAllCpfpHistory([cpfpDto]);
 
       // 동일한 내역 다시 추가
-      await transactionRepository.addAllCpfpHistory([cpfpDto]);
+      transactionRepository.addAllCpfpHistory([cpfpDto]);
 
       // CPFP 내역 조회
       final allCpfpHistories = realmManager.realm.all<RealmCpfpHistory>();

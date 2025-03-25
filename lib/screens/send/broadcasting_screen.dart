@@ -1,4 +1,3 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -53,6 +52,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         if (!mounted) return;
         showAlertDialog(
             context: context,
+            title: t.broadcasting_screen.error_popup_title,
             content: t.alert.error_send
                 .broadcasting_failed(error: result.error.message));
         return;

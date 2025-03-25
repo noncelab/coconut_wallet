@@ -106,9 +106,6 @@ class ScriptSubscriber {
     List<ScriptStatus> scriptStatuses = [];
 
     while (currentAddressIndex < addressScanLimit) {
-      Logger.log(
-          'currentAddressIndex: $currentAddressIndex, addressScanLimit: $addressScanLimit, lastUsedIndex: $lastUsedIndex');
-
       // 주소 범위에 대한 구독 처리
       final result = await _subscribeAddressRange(
         walletItem,
@@ -187,8 +184,6 @@ class ScriptSubscriber {
             scriptStatusController,
           )),
     );
-
-    Logger.log('Subscribed addresses count: ${results.length}');
 
     for (var result in results) {
       final (:scriptStatus, :isSubscribed) = result;

@@ -181,7 +181,7 @@ class _SendAddressAmountBodyForBatchState
                           addressPlaceholder:
                               t.send_address_screen.address_placeholder,
                           amountPlaceholder:
-                              '${t.send_address_screen.address_placeholder} (${t.btc})',
+                              '${t.send_address_screen.amount_placeholder} (${t.btc})',
                           isAddressInvalid: _recipients[index].isAddressValid ==
                                   false ||
                               _recipients[index].isAddressDuplicated == true,

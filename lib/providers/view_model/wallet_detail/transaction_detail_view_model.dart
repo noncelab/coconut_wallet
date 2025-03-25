@@ -192,7 +192,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPreviousTransactionIndex() {
+  void updatePreviousTransactionIndexFromSelected() {
     _previousTransactionIndex = _selectedTransactionIndex;
   }
 
@@ -238,6 +238,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
     final currentTransaction =
         _txProvider.getTransactionRecord(_walletId, _txHash);
     _transactionList = [TransactionDetail(currentTransaction)];
+    setSelectedTransactionIndex(0);
+    updatePreviousTransactionIndexFromSelected();
 
     debugPrint('🚀 [Transaction Initialization] 🚀');
     debugPrint('----------------------------------------');
