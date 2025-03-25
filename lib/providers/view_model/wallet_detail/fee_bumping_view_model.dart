@@ -197,7 +197,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
       final utxoStateList =
           _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.incoming);
       for (var utxoState in utxoStateList) {
-        if (myAddress.address == utxoState.to) {
+        if (myAddress.address == utxoState.to &&
+            myAddress.amount == utxoState.amount &&
+            _parentTx.transactionHash == utxoState.transactionHash &&
+            _parentTx.outputAddressList[utxoState.index].address ==
+                utxoState.to) {
           utxoList.add(utxoState);
         }
       }
