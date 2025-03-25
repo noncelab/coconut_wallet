@@ -141,7 +141,12 @@ class WalletProvider extends ChangeNotifier {
     _updateIsSyncingIfNeeded(_nodeProvider.state);
     if (_isAnyBalanceUpdating) {
       _walletBalance = fetchWalletBalanceMap();
-      notifyListeners();
+
+      /// TODO: NodeProvider의 이벤트 리스너에 대해서 동시성 제어 후 지연 로직 제거
+      /// BalanceManager의 fetchScriptBalance 함수 참고
+      Future.delayed(const Duration(milliseconds: 300), () {
+        notifyListeners();
+      });
     }
     _updateIsAnyBalanceUpdatingIfNeeded(_nodeProvider.state);
     for (var key in _nodeProvider.state.registeredWallets.keys) {
