@@ -80,7 +80,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     await _fetchRecommendedFees(); // _isFeeFetchSuccess로 성공 여부 기록함
     if (_isFeeFetchSuccess == true) {
-      _initializeBumpingTransaction(_feeInfos[2].satsPerVb!.toDouble());
+      await _initializeBumpingTransaction(_feeInfos[2].satsPerVb!.toDouble());
       _recommendedFeeRate = _getRecommendedFeeRate(_bumpingTransaction!);
       _recommendedFeeRateDescription = _type == FeeBumpingType.cpfp
           ? _getRecommendedFeeRateDescriptionForCpfp()
@@ -180,11 +180,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   // 새 수수료로 트랜잭션 생성
-  void _initializeBumpingTransaction(double newFeeRate) {
+  Future<void> _initializeBumpingTransaction(double newFeeRate) async {
     if (_type == FeeBumpingType.cpfp) {
       _initializeCpfpTransaction(newFeeRate);
     } else if (_type == FeeBumpingType.rbf) {
-      _initializeRbfTransaction(newFeeRate);
+      await _initializeRbfTransaction(newFeeRate);
     }
   }
 
@@ -241,7 +241,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
         .setAmount(_bumpingTransaction!.outputs[0].amount.toDouble());
   }
 
-  void _initializeRbfTransaction(double newFeeRate) {
+  Future<void> _initializeRbfTransaction(double newFeeRate) async {
     final type = _getPaymentType();
     if (type == null) return;
 
@@ -255,7 +255,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
             );
 
     //input 정보 추출
-    List<Utxo> utxoList = _getUtxoListForRbf(_parentTx.inputAddressList);
+    List<Utxo> utxoList = await _getUtxoListForRbf();
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     int estimatedVSize = _parentTx.vSize;
     double outputSum = amount + estimatedVSize * newFeeRate;
@@ -396,26 +396,24 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return paymentMap;
   }
 
-  List<Utxo> _getUtxoListForRbf(List<TransactionAddress> inputAddressList) {
+  Future<List<Utxo>> _getUtxoListForRbf() async {
+    final txResult =
+        await _nodeProvider.getTransaction(_parentTx.transactionHash);
+    if (txResult.isFailure) {
+      debugPrint('❌ 트랜잭션 조회 실패');
+      return [];
+    }
+
+    final tx = txResult.value;
+    final inputList = Transaction.parse(tx).inputs;
+
     List<Utxo> utxoList = [];
-
-    for (var inputAddress in inputAddressList) {
-      var derivationPath =
-          _addressRepository.getDerivationPath(_walletId, inputAddress.address);
-
-      final utxoStateList = _utxoRepository.getUtxoStateList(_walletId);
-      for (var utxoState in utxoStateList) {
-        if (inputAddress.address == utxoState.to &&
-            inputAddress.amount == utxoState.amount) {
-          Utxo utxo = Utxo(
-            utxoState.transactionHash,
-            utxoState.index,
-            utxoState.amount,
-            derivationPath,
-          );
-
-          utxoList.add(utxo);
-        }
+    for (var input in inputList) {
+      var utxo = _utxoRepository.getUtxoState(
+          _walletId, '${input.transactionHash}${input.index}');
+      if (utxo != null && utxo.status == UtxoStatus.outgoing) {
+        utxoList.add(Utxo(utxo.transactionHash, utxo.index, utxo.amount,
+            utxo.derivationPath));
       }
     }
 
