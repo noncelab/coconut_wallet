@@ -12,6 +12,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
+import 'package:coconut_wallet/widgets/button/single_bottom_button.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -143,78 +144,42 @@ class _TransactionFeeBumpingScreenState
                     ),
                   ),
                 ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                  child: IgnorePointer(
-                    ignoring: true,
-                    child: Container(
-                      padding: const EdgeInsets.only(
-                          left: 16, right: 16, bottom: 40, top: 150),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            CoconutColors.black,
-                          ],
-                          stops: [0.0, 1.0], // 0%에서 투명, 100%에서 블랙
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 30,
-                  child: Column(
-                    children: [
-                      _textEditingController.text.isEmpty ||
-                              _textEditingController.text == '0'
-                          ? Container()
-                          : Column(
-                              children: [
-                                if (_isEstimatedFeeTooHigh) ...[
-                                  Text(
-                                    t.transaction_fee_bumping_screen
-                                        .estimated_fee_too_high_error,
-                                    style: CoconutTypography.body2_14
-                                        .setColor(CoconutColors.hotPink),
-                                  ),
-                                  CoconutLayout.spacing_100h
-                                ],
-                                Text(
-                                  t.transaction_fee_bumping_screen
-                                      .estimated_fee(
-                                    fee: addCommasToIntegerPart(viewModel
-                                        .getTotalEstimatedFee(double.parse(
-                                            _textEditingController.text))
-                                        .toDouble()),
-                                  ),
-                                  style: CoconutTypography.body2_14,
-                                ),
-                              ],
+                SingleBottomButton(
+                  onButtonClicked: () async {
+                    _onCompleteButtonPressed(context, viewModel);
+                  },
+                  text: t.complete,
+                  backgroundColor: _getNewFeeTextColor(),
+                  showGradient: true,
+                  gradientPadding: const EdgeInsets.only(
+                      left: 16, right: 16, bottom: 40, top: 150),
+                  isActive: !_isEstimatedFeeTooLow &&
+                      _textEditingController.text.isNotEmpty,
+                  subWidget: _textEditingController.text.isEmpty ||
+                          _textEditingController.text == '0'
+                      ? Container()
+                      : Column(
+                          children: [
+                            if (_isEstimatedFeeTooHigh) ...[
+                              Text(
+                                t.transaction_fee_bumping_screen
+                                    .estimated_fee_too_high_error,
+                                style: CoconutTypography.body2_14
+                                    .setColor(CoconutColors.hotPink),
+                              ),
+                              CoconutLayout.spacing_100h
+                            ],
+                            Text(
+                              t.transaction_fee_bumping_screen.estimated_fee(
+                                fee: addCommasToIntegerPart(viewModel
+                                    .getTotalEstimatedFee(double.parse(
+                                        _textEditingController.text))
+                                    .toDouble()),
+                              ),
+                              style: CoconutTypography.body2_14,
                             ),
-                      CoconutLayout.spacing_300h,
-                      CoconutButton(
-                          onPressed: () async {
-                            _onCompleteButtonPressed(context, viewModel);
-                          },
-                          width: MediaQuery.sizeOf(context).width,
-                          disabledBackgroundColor: CoconutColors.gray800,
-                          disabledForegroundColor: CoconutColors.gray700,
-                          isActive: !_isEstimatedFeeTooLow &&
-                              _textEditingController.text.isNotEmpty,
-                          height: 50,
-                          backgroundColor: _getNewFeeTextColor(),
-                          foregroundColor: CoconutColors.black,
-                          pressedTextColor: CoconutColors.black,
-                          text: t.complete),
-                    ],
-                  ),
+                          ],
+                        ),
                 ),
                 if (_isTooltipVisible) _buildTooltip(context),
               ],

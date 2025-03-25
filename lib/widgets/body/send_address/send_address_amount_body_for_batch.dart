@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/button/single_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/address_and_amount_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -206,43 +207,15 @@ class _SendAddressAmountBodyForBatchState
             ),
           ],
         ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          child: IgnorePointer(
-            ignoring: true,
-            child: Container(
-              padding: const EdgeInsets.only(
-                  left: 16, right: 16, bottom: 40, top: 110),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    CoconutColors.black,
-                  ],
-                  stops: [0.0, 1.0], // 0%에서 투명, 100%에서 블랙
-                ),
-              ),
-            ),
-          ),
+        SingleBottomButton(
+          onButtonClicked: () => _onComplete(context),
+          text: t.complete,
+          showGradient: true,
+          gradientPadding:
+              const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
+          isActive: isCompleteButtonEnabled,
+          backgroundColor: CoconutColors.primary,
         ),
-        Positioned(
-            left: CoconutLayout.defaultPadding,
-            right: CoconutLayout.defaultPadding,
-            bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size30,
-            child: CoconutButton(
-                onPressed: () => _onComplete(context),
-                text: t.complete,
-                width: MediaQuery.sizeOf(context).width,
-                height: 50,
-                backgroundColor: CoconutColors.primary,
-                foregroundColor: CoconutColors.black,
-                disabledBackgroundColor: CoconutColors.gray800,
-                disabledForegroundColor: CoconutColors.gray700,
-                isActive: isCompleteButtonEnabled))
       ],
     );
   }

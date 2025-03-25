@@ -1,6 +1,6 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:coconut_wallet/styles.dart';
 
 class CustomLoadingOverlay extends StatelessWidget {
   final Widget child;
@@ -10,12 +10,10 @@ class CustomLoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LoaderOverlay(
-      useDefaultLoading: false,
+      overlayColor: CoconutColors.black.withOpacity(0.5),
       overlayWidgetBuilder: (_) {
         return const Center(
-          child: CircularProgressIndicator(
-            color: MyColors.white,
-          ),
+          child: CoconutCircularIndicator(),
         );
       },
       child: child,
