@@ -72,10 +72,6 @@ class _TransactionFeeBumpingScreenState
       create: (_) => _viewModel,
       child: Consumer<FeeBumpingViewModel>(
         builder: (_, viewModel, child) {
-          if (viewModel.insufficientUtxos) {
-            _showToast(context);
-          }
-
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () {
@@ -206,7 +202,8 @@ class _TransactionFeeBumpingScreenState
                           width: MediaQuery.sizeOf(context).width,
                           disabledBackgroundColor: CoconutColors.gray800,
                           disabledForegroundColor: CoconutColors.gray700,
-                          isActive: !_isEstimatedFeeTooLow &&
+                          isActive: !viewModel.insufficientUtxos &&
+                              !_isEstimatedFeeTooLow &&
                               _textEditingController.text.isNotEmpty,
                           height: 50,
                           backgroundColor: _getNewFeeTextColor(),
@@ -249,6 +246,11 @@ class _TransactionFeeBumpingScreenState
     }).whenComplete(() {
       if (mounted) {
         context.loaderOverlay.hide();
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (_viewModel.insufficientUtxos) {
+            _showInsufficientUtxoToast(context);
+          }
+        });
       }
     });
 
@@ -290,12 +292,15 @@ class _TransactionFeeBumpingScreenState
   }
 
   void _onFeeRateChanged(String input) {
+    if (_viewModel.isInitializedSuccess == false) {
+      return;
+    }
+
     if (input.isEmpty) {
       setState(() {
         _isEstimatedFeeTooLow = false;
         _isEstimatedFeeTooHigh = false;
       });
-      Logger.log('??? ${_textEditingController.text}');
       return;
     }
 
@@ -304,6 +309,16 @@ class _TransactionFeeBumpingScreenState
         TextSelection.collapsed(offset: _textEditingController.text.length);
 
     double? value = double.tryParse(_textEditingController.text);
+
+    if (value != null && value != 0) {
+      _viewModel.initializeBumpingTransaction(value).then((_) {
+        if (_viewModel.insufficientUtxos) {
+          if (mounted) {
+            _showInsufficientUtxoToast(context);
+          }
+        }
+      });
+    }
 
     if (value == null || _viewModel.isFeeRateTooLow(value)) {
       setState(() {
@@ -445,8 +460,9 @@ class _TransactionFeeBumpingScreenState
         children: [
           Text(
             t.transaction_fee_bumping_screen.new_fee,
-            style: CoconutTypography.body2_14_Bold
-                .setColor(_getNewFeeTextColor(isError: _isEstimatedFeeTooLow)),
+            style: CoconutTypography.body2_14_Bold.setColor(_getNewFeeTextColor(
+                isError:
+                    _isEstimatedFeeTooLow || _viewModel.insufficientUtxos)),
           ),
           Row(
             children: [
@@ -729,40 +745,11 @@ class _TransactionFeeBumpingScreenState
     });
   }
 
-  void _showToast(BuildContext context) {
+  void _showInsufficientUtxoToast(BuildContext context) {
     CustomToast.showToast(
         context: context,
         text: t.transaction_fee_bumping_screen.toast.insufficient_utxo,
         seconds: 10);
     return;
   }
-
-  // void _onFeeRateChanged(String value) {
-  //   debugPrint('::::: onFeeRateChanged $value');
-  //   if (value.isEmpty) {
-  //     setState(() {
-  //       _isEstimatedFeeTooLow = false;
-  //       _isEstimatedFeeTooHigh = false;
-  //     });
-  //     return;
-  //   }
-  //   // . 입력 시 0. 변환
-  //   if (value == '.') {
-  //     value = '0.';
-  //     _textEditingController.text = value;
-  //     _textEditingController.selection =
-  //         TextSelection.collapsed(offset: value.length);
-  //     return;
-  //   }
-
-  //   // 소수점 둘째 자리까지만 허용 (기존 입력을 유지하면서 수정)
-  //   if (!RegExp(r'^\d*\.?\d{0,2}$').hasMatch(value)) {
-  //     value = _textEditingController.text; // 기존 값 유지
-  //   } else {
-  //     _textEditingController.text = value;
-  //   }
-
-  //   _textEditingController.selection =
-  //       TextSelection.collapsed(offset: _textEditingController.text.length);
-  // }
 }
