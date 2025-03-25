@@ -377,7 +377,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       bool isLastItem) {
     var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
 
-    RecentBalance? recentBalance = getWalletBalance(wallet.id);
+    AnimatedBalanceData? animatedBalanceData = getWalletBalance(wallet.id);
 
     return Column(
       children: [
@@ -386,7 +386,7 @@ class _WalletListScreenState extends State<WalletListScreen>
           child: _getWalletRowItem(
             Key(wallet.id.toString()),
             wallet,
-            recentBalance,
+            animatedBalanceData,
             isBalanceHidden,
             isLastItem,
           ),
@@ -509,8 +509,12 @@ class _WalletListScreenState extends State<WalletListScreen>
     });
   }
 
-  Widget? _getWalletRowItem(Key key, WalletListItemBase walletItem,
-      RecentBalance? recentBalance, bool isBalanceHidden, bool isLastItem) {
+  Widget? _getWalletRowItem(
+      Key key,
+      WalletListItemBase walletItem,
+      AnimatedBalanceData? animatedBalanceData,
+      bool isBalanceHidden,
+      bool isLastItem) {
     final WalletListItemBase(
       id: id,
       name: name,
@@ -526,7 +530,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       key: key,
       id: id,
       name: name,
-      recentBalance: recentBalance,
+      animatedBalanceData: animatedBalanceData,
       iconIndex: iconIndex,
       colorIndex: colorIndex,
       isLastItem: isLastItem,

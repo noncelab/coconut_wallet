@@ -13,7 +13,7 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 
 class WalletItemCard extends StatelessWidget {
   final int id;
-  final RecentBalance? recentBalance;
+  final AnimatedBalanceData? animatedBalanceData;
   final String name;
   final int iconIndex;
   final int colorIndex;
@@ -24,7 +24,7 @@ class WalletItemCard extends StatelessWidget {
   const WalletItemCard({
     super.key,
     required this.id,
-    required this.recentBalance,
+    required this.animatedBalanceData,
     required this.name,
     required this.iconIndex,
     required this.colorIndex,
@@ -89,7 +89,7 @@ class WalletItemCard extends StatelessWidget {
                             child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  if (recentBalance?.currentBalance == null)
+                                  if (animatedBalanceData?.current == null)
                                     Text(
                                       '0',
                                       style: CoconutTypography
@@ -104,8 +104,8 @@ class WalletItemCard extends StatelessWidget {
                                   else
                                     AnimatedBalance(
                                       prevValue:
-                                          recentBalance!.previousBalance ?? 0,
-                                      value: recentBalance!.currentBalance ?? 0,
+                                          animatedBalanceData!.previous ?? 0,
+                                      value: animatedBalanceData!.current ?? 0,
                                       isBtcUnit: true,
                                       textStyle: CoconutTypography
                                           .heading3_21_NumberBold

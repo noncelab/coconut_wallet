@@ -19,7 +19,7 @@ class WalletListViewModel extends ChangeNotifier {
   late WalletSubscriptionState _walletSyncingState;
   late final ConnectivityProvider _connectivityProvider;
   late bool? _isNetworkOn;
-  Map<int, RecentBalance> _walletBalance = {};
+  Map<int, AnimatedBalanceData> _walletBalance = {};
   bool _isFirstLoaded = false;
 
   WalletListViewModel(
@@ -57,10 +57,10 @@ class WalletListViewModel extends ChangeNotifier {
 
   void _updateBalance(Map<int, Balance> balanceMap) {
     _walletBalance = balanceMap.map((key, balance) {
-      final prev = _walletBalance[key]?.currentBalance;
+      final prev = _walletBalance[key]?.current;
       return MapEntry(
         key,
-        RecentBalance(balance.total, prev),
+        AnimatedBalanceData(balance.total, prev),
       );
     });
   }
@@ -94,7 +94,7 @@ class WalletListViewModel extends ChangeNotifier {
     await AppReviewService.increaseAppRunningCountIfRejected();
   }
 
-  RecentBalance? getWalletBalance(int id) {
+  AnimatedBalanceData? getWalletBalance(int id) {
     return _walletBalance[id];
   }
 
