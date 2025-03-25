@@ -99,7 +99,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, UtxoTagProvider,
             UtxoListViewModel>(
-        create: (_) => _createViewModel(),
+        create: (_) => _viewModel,
         update: (_, walletProvider, utxoTagProvider, viewModel) {
           viewModel ??= _createViewModel();
           return viewModel..updateProvider();
@@ -146,9 +146,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                         UtxoList(
                           widget: widget,
                           onRemoveDropdown: _removeFilterDropdown,
-                          onAnimatingStateChanged: (status) {
-                            changeAnimatingState(status);
-                          },
+                          onAnimatingStateChanged: changeAnimatingState,
                         ),
                       ],
                     );
@@ -207,8 +205,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     });
   }
 
-  void changeAnimatingState(bool status) {
-    _isAnimating = status;
+  void changeAnimatingState(bool isAnimating) {
+    _isAnimating = isAnimating;
   }
 
   Widget _buildHeader(UtxoListViewModel viewModel) {
