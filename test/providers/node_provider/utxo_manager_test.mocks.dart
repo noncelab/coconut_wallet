@@ -9,6 +9,8 @@ import 'package:coconut_lib/coconut_lib.dart' as _i9;
 import 'package:coconut_wallet/enums/network_enums.dart' as _i6;
 import 'package:coconut_wallet/model/node/node_provider_state.dart' as _i4;
 import 'package:coconut_wallet/model/node/wallet_update_info.dart' as _i11;
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart'
+    as _i12;
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart'
     as _i10;
 import 'package:coconut_wallet/services/electrum_service.dart' as _i5;
@@ -195,6 +197,18 @@ class MockElectrumService extends _i1.Mock implements _i5.ElectrumService {
           ),
         )),
       ) as _i7.Future<_i3.BlockTimestamp>);
+
+  @override
+  _i7.Future<Map<int, _i3.BlockTimestamp>> fetchBlocksByHeight(
+          Set<int>? heights) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #fetchBlocksByHeight,
+          [heights],
+        ),
+        returnValue: _i7.Future<Map<int, _i3.BlockTimestamp>>.value(
+            <int, _i3.BlockTimestamp>{}),
+      ) as _i7.Future<Map<int, _i3.BlockTimestamp>>);
 
   @override
   _i7.Future<num> estimateFee(int? targetConfirmation) => (super.noSuchMethod(
@@ -471,6 +485,25 @@ class MockNodeStateManager extends _i1.Mock implements _i10.NodeStateManager {
   void addWalletCompletedAllStates(int? walletId) => super.noSuchMethod(
         Invocation.method(
           #addWalletCompletedAllStates,
+          [walletId],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void handleIsolateStateMessage(_i12.IsolateStateMessage? message) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #handleIsolateStateMessage,
+          [message],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void unregisterWalletUpdateState(int? walletId) => super.noSuchMethod(
+        Invocation.method(
+          #unregisterWalletUpdateState,
           [walletId],
         ),
         returnValueForMissingStub: null,
