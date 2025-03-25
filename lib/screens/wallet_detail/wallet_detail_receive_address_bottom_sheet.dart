@@ -7,6 +7,7 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:provider/provider.dart';
+import 'package:tuple/tuple.dart';
 
 class ReceiveAddressBottomSheet extends StatelessWidget {
   final int id;
@@ -18,10 +19,13 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<WalletDetailViewModel>(
-      builder: (context, viewModel, _) {
-        List<String> paths = viewModel.derivationPath.split('/');
-        String index = paths[paths.length - 1];
+    return Selector<WalletDetailViewModel, Tuple3<String, String, String>>(
+      selector: (_, viewModel) => Tuple3(viewModel.derivationPath,
+          viewModel.receiveAddressIndex, viewModel.receiveAddress),
+      builder: (context, data, _) {
+        final derivationPath = data.item1;
+        final index = data.item2;
+        final receivingAddress = data.item3;
 
         return Scaffold(
           backgroundColor: CoconutColors.black,
@@ -51,11 +55,12 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '주소 - $index',
+                                  t.address_list_screen
+                                      .address_index(index: index),
                                   style: CoconutTypography.body1_16,
                                 ),
                                 Text(
-                                  viewModel.derivationPath,
+                                  derivationPath,
                                   style: CoconutTypography.body2_14.setColor(
                                     CoconutColors.white.withOpacity(0.7),
                                   ),
@@ -79,8 +84,8 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                   color: CoconutColors.white.withOpacity(0.15),
                                 ),
-                                child: const Text(
-                                  '전체 주소 보기',
+                                child: Text(
+                                  t.view_all_addresses,
                                   style: CoconutTypography.body3_12,
                                 ),
                               ),
@@ -88,7 +93,7 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
                           ],
                         ),
                       ),
-                      qrData: viewModel.receiveAddress,
+                      qrData: receivingAddress,
                     )
                   ],
                 ),
