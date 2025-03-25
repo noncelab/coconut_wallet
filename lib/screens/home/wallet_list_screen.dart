@@ -107,7 +107,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               _previousWalletList,
               viewModel.walletItemList,
               _previousWalletBalance,
-              (id) => viewModel.getWalletBalance(id))) {
+              (id) => viewModel.getWalletBalance(id)?.current)) {
             _handleWalletListUpdate(
               viewModel.walletItemList,
               (id) => viewModel.getWalletBalance(id),
