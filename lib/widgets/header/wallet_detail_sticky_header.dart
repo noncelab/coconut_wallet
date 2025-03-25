@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
@@ -10,8 +11,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
   final double height;
   final bool isVisible;
   final Unit currentUnit;
-  final int? balance;
-  final int? prevBalance;
+  final AnimatedBalanceData animatedBalanceData;
   final Function() onTapReceive;
   final Function() onTapSend;
 
@@ -20,8 +20,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
     required this.height,
     required this.isVisible,
     required this.currentUnit,
-    required this.balance,
-    required this.prevBalance,
+    required this.animatedBalanceData,
     required this.onTapReceive,
     required this.onTapSend,
   }) : super(key: widgetKey);
@@ -57,15 +56,16 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                     Expanded(
                       child: Row(
                         children: [
-                          if (widget.balance == null)
+                          if (widget.animatedBalanceData.current == null)
                             Text(
                               '-',
                               style: CoconutTypography.heading1_32_NumberBold,
                             )
                           else
                             AnimatedBalance(
-                              prevValue: widget.prevBalance ?? 0,
-                              value: widget.balance!,
+                              prevValue:
+                                  widget.animatedBalanceData.previous ?? 0,
+                              value: widget.animatedBalanceData.current!,
                               isBtcUnit: widget.currentUnit == Unit.btc,
                               textStyle:
                                   CoconutTypography.body1_16_NumberBold.merge(
@@ -75,7 +75,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                               ),
                             ),
                           Text(
-                            widget.balance != null
+                            widget.animatedBalanceData.current != null
                                 ? widget.currentUnit == Unit.btc
                                     ? ' ${t.btc}'
                                     : ' ${t.sats}'

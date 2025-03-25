@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
@@ -12,8 +13,7 @@ import 'package:provider/provider.dart';
 
 class UtxoListHeader extends StatefulWidget {
   final GlobalKey dropdownGlobalKey;
-  final int? balance;
-  final int? prevBalance;
+  final AnimatedBalanceData animatedBalanceData;
   final String selectedFilter;
   final Function onTapDropdown;
   final List<UtxoTag> utxoTagList;
@@ -23,8 +23,7 @@ class UtxoListHeader extends StatefulWidget {
   const UtxoListHeader(
       {super.key,
       required this.dropdownGlobalKey,
-      required this.balance,
-      required this.prevBalance,
+      required this.animatedBalanceData,
       required this.selectedFilter,
       required this.onTapDropdown,
       required this.utxoTagList,
@@ -73,7 +72,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                         Expanded(
                           child: Row(
                             children: [
-                              if (widget.balance == null)
+                              if (widget.animatedBalanceData.current == null)
                                 Text(
                                   t.fetch_balance_failed,
                                   style:
@@ -81,8 +80,10 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                                 )
                               else
                                 AnimatedBalance(
-                                    prevValue: widget.prevBalance ?? 0,
-                                    value: widget.balance!,
+                                    prevValue:
+                                        widget.animatedBalanceData.previous ??
+                                            0,
+                                    value: widget.animatedBalanceData.current!,
                                     isBtcUnit: true,
                                     textStyle: CoconutTypography
                                         .heading1_32_NumberBold),
@@ -98,11 +99,12 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     ),
                   ),
                   CoconutLayout.spacing_50h,
-                  if (widget.balance != null)
+                  if (widget.animatedBalanceData.current != null)
                     Consumer<UpbitConnectModel>(
                         builder: (context, viewModel, child) => Text(
                             viewModel.getFiatPrice(
-                                widget.balance!, CurrencyCode.KRW),
+                                widget.animatedBalanceData.current!,
+                                CurrencyCode.KRW),
                             style: CoconutTypography.body2_14_Number
                                 .setColor(CoconutColors.gray500))),
                   CoconutLayout.spacing_400h,

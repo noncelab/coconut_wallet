@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -205,8 +206,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     return UtxoListHeader(
         key: ValueKey(viewModel.utxoTagListKey),
         dropdownGlobalKey: _headerDropdownKey,
-        balance: viewModel.balance,
-        prevBalance: viewModel.prevBalance,
+        animatedBalanceData:
+            AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
         selectedFilter: viewModel.selectedUtxoOrder.text,
         utxoTagList: viewModel.utxoTagList,
         selectedUtxoTagName: viewModel.selectedUtxoTagName,
@@ -257,8 +258,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
           dropdownGlobalKey: _stickyHeaderDropdownKey,
           height: _appBarSize.height,
           isVisible: _stickyHeaderVisible,
-          balance: _viewModel.balance,
-          prevBalance: _viewModel.prevBalance,
+          animatedBalanceData:
+              AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
           totalCount: _viewModel.utxoList.length,
           selectedFilter: _viewModel.selectedUtxoOrder.text,
           onTapDropdown: () {

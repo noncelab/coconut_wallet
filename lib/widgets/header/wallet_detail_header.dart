@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
@@ -7,8 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:lottie/lottie.dart';
 
 class WalletDetailHeader extends StatefulWidget {
-  final int? balance;
-  final int? prevBalance;
+  final AnimatedBalanceData animatedBalanceData;
   final Unit currentUnit;
   final String btcPriceInKrw;
   final int sendingAmount;
@@ -19,8 +19,7 @@ class WalletDetailHeader extends StatefulWidget {
 
   const WalletDetailHeader({
     super.key,
-    required this.balance,
-    required this.prevBalance,
+    required this.animatedBalanceData,
     required this.currentUnit,
     required this.btcPriceInKrw,
     required this.sendingAmount,
@@ -56,7 +55,8 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   Widget _buildBalanceInfo() {
     return GestureDetector(
       onTap: () {
-        if (widget.balance != null) widget.onPressedUnitToggle();
+        if (widget.animatedBalanceData.current != null)
+          widget.onPressedUnitToggle();
       },
       child: Column(
         children: [
@@ -71,7 +71,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
     return SizedBox(
       height: 20,
       child: Text(
-        widget.balance != null ? widget.btcPriceInKrw : '-',
+        widget.animatedBalanceData.current != null ? widget.btcPriceInKrw : '-',
         style:
             CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
       ),
@@ -84,15 +84,15 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (widget.balance == null)
+          if (widget.animatedBalanceData.current == null)
             Text(
               '-',
               style: CoconutTypography.heading1_32_NumberBold,
             )
           else
             AnimatedBalance(
-              prevValue: widget.prevBalance ?? 0,
-              value: widget.balance!,
+              prevValue: widget.animatedBalanceData.previous ?? 0,
+              value: widget.animatedBalanceData.current!,
               isBtcUnit: widget.currentUnit == Unit.btc,
             ),
           const SizedBox(width: 4.0),
