@@ -142,7 +142,6 @@ class TransactionRepository extends BaseRepository {
     final existingTxs = realm.query<RealmTransaction>('walletId == $walletId');
     final existingTxMap = {for (var tx in existingTxs) tx.transactionHash: tx};
 
-    final now = DateTime.now();
     int lastId = getLastId(realm, (RealmTransaction).toString());
 
     // 새 트랜잭션과 업데이트할 트랜잭션을 분리
@@ -159,9 +158,8 @@ class TransactionRepository extends BaseRepository {
           tx,
           walletId,
           ++lastId,
-          now,
         ));
-      } else if (existingTx.blockHeight == 0 && (tx.blockHeight ?? 0) > 0) {
+      } else if (existingTx.blockHeight == 0 && tx.blockHeight > 0) {
         // 미확인 -> 확인 상태로 변경된 트랜잭션 - 업데이트
         txsToUpdate.add(MapEntry(existingTx, tx));
       }

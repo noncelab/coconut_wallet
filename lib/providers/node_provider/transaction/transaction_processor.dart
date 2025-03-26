@@ -131,7 +131,7 @@ class TransactionProcessor {
       transactionType: txDetails.txType.name,
       amount: txDetails.amount,
       fee: txDetails.fee,
-      vSize: tx.getVirtualByte().ceil(),
+      vSize: tx.getVirtualByte(),
     );
   }
 

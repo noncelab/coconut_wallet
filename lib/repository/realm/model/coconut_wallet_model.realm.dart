@@ -22,8 +22,6 @@ class RealmWalletBase extends _RealmWalletBase
     int usedChangeIndex = -1,
     int generatedReceiveIndex = -1,
     int generatedChangeIndex = -1,
-    int? balance,
-    int? txCount,
     bool isLatestTxBlockHeightZero = false,
   }) {
     if (!_defaultsSet) {
@@ -45,8 +43,6 @@ class RealmWalletBase extends _RealmWalletBase
     RealmObjectBase.set(this, 'usedChangeIndex', usedChangeIndex);
     RealmObjectBase.set(this, 'generatedReceiveIndex', generatedReceiveIndex);
     RealmObjectBase.set(this, 'generatedChangeIndex', generatedChangeIndex);
-    RealmObjectBase.set(this, 'balance', balance);
-    RealmObjectBase.set(this, 'txCount', txCount);
     RealmObjectBase.set(
         this, 'isLatestTxBlockHeightZero', isLatestTxBlockHeightZero);
   }
@@ -116,16 +112,6 @@ class RealmWalletBase extends _RealmWalletBase
       RealmObjectBase.set(this, 'generatedChangeIndex', value);
 
   @override
-  int? get balance => RealmObjectBase.get<int>(this, 'balance') as int?;
-  @override
-  set balance(int? value) => RealmObjectBase.set(this, 'balance', value);
-
-  @override
-  int? get txCount => RealmObjectBase.get<int>(this, 'txCount') as int?;
-  @override
-  set txCount(int? value) => RealmObjectBase.set(this, 'txCount', value);
-
-  @override
   bool get isLatestTxBlockHeightZero =>
       RealmObjectBase.get<bool>(this, 'isLatestTxBlockHeightZero') as bool;
   @override
@@ -157,8 +143,6 @@ class RealmWalletBase extends _RealmWalletBase
       'usedChangeIndex': usedChangeIndex.toEJson(),
       'generatedReceiveIndex': generatedReceiveIndex.toEJson(),
       'generatedChangeIndex': generatedChangeIndex.toEJson(),
-      'balance': balance.toEJson(),
-      'txCount': txCount.toEJson(),
       'isLatestTxBlockHeightZero': isLatestTxBlockHeightZero.toEJson(),
     };
   }
@@ -190,8 +174,6 @@ class RealmWalletBase extends _RealmWalletBase
               fromEJson(ejson['generatedReceiveIndex'], defaultValue: -1),
           generatedChangeIndex:
               fromEJson(ejson['generatedChangeIndex'], defaultValue: -1),
-          balance: fromEJson(ejson['balance']),
-          txCount: fromEJson(ejson['txCount']),
           isLatestTxBlockHeightZero: fromEJson(
               ejson['isLatestTxBlockHeightZero'],
               defaultValue: false),
@@ -215,8 +197,6 @@ class RealmWalletBase extends _RealmWalletBase
       SchemaProperty('usedChangeIndex', RealmPropertyType.int),
       SchemaProperty('generatedReceiveIndex', RealmPropertyType.int),
       SchemaProperty('generatedChangeIndex', RealmPropertyType.int),
-      SchemaProperty('balance', RealmPropertyType.int, optional: true),
-      SchemaProperty('txCount', RealmPropertyType.int, optional: true),
       SchemaProperty('isLatestTxBlockHeightZero', RealmPropertyType.bool),
     ]);
   }();
@@ -333,17 +313,17 @@ class RealmTransaction extends _RealmTransaction
     int id,
     String transactionHash,
     int walletId,
-    int vSize, {
-    DateTime? timestamp,
-    int? blockHeight,
-    String? transactionType,
+    DateTime timestamp,
+    int blockHeight,
+    String transactionType,
+    int amount,
+    int fee,
+    double vSize,
+    DateTime createdAt, {
     String? memo,
-    int? amount,
-    int? fee,
     Iterable<String> inputAddressList = const [],
     Iterable<String> outputAddressList = const [],
     String? note,
-    DateTime? createdAt,
     String? replaceByTransactionHash,
   }) {
     RealmObjectBase.set(this, 'id', id);
@@ -386,23 +366,22 @@ class RealmTransaction extends _RealmTransaction
   set walletId(int value) => RealmObjectBase.set(this, 'walletId', value);
 
   @override
-  DateTime? get timestamp =>
-      RealmObjectBase.get<DateTime>(this, 'timestamp') as DateTime?;
+  DateTime get timestamp =>
+      RealmObjectBase.get<DateTime>(this, 'timestamp') as DateTime;
   @override
-  set timestamp(DateTime? value) =>
+  set timestamp(DateTime value) =>
       RealmObjectBase.set(this, 'timestamp', value);
 
   @override
-  int? get blockHeight => RealmObjectBase.get<int>(this, 'blockHeight') as int?;
+  int get blockHeight => RealmObjectBase.get<int>(this, 'blockHeight') as int;
   @override
-  set blockHeight(int? value) =>
-      RealmObjectBase.set(this, 'blockHeight', value);
+  set blockHeight(int value) => RealmObjectBase.set(this, 'blockHeight', value);
 
   @override
-  String? get transactionType =>
-      RealmObjectBase.get<String>(this, 'transactionType') as String?;
+  String get transactionType =>
+      RealmObjectBase.get<String>(this, 'transactionType') as String;
   @override
-  set transactionType(String? value) =>
+  set transactionType(String value) =>
       RealmObjectBase.set(this, 'transactionType', value);
 
   @override
@@ -411,19 +390,19 @@ class RealmTransaction extends _RealmTransaction
   set memo(String? value) => RealmObjectBase.set(this, 'memo', value);
 
   @override
-  int? get amount => RealmObjectBase.get<int>(this, 'amount') as int?;
+  int get amount => RealmObjectBase.get<int>(this, 'amount') as int;
   @override
-  set amount(int? value) => RealmObjectBase.set(this, 'amount', value);
+  set amount(int value) => RealmObjectBase.set(this, 'amount', value);
 
   @override
-  int? get fee => RealmObjectBase.get<int>(this, 'fee') as int?;
+  int get fee => RealmObjectBase.get<int>(this, 'fee') as int;
   @override
-  set fee(int? value) => RealmObjectBase.set(this, 'fee', value);
+  set fee(int value) => RealmObjectBase.set(this, 'fee', value);
 
   @override
-  int get vSize => RealmObjectBase.get<int>(this, 'vSize') as int;
+  double get vSize => RealmObjectBase.get<double>(this, 'vSize') as double;
   @override
-  set vSize(int value) => RealmObjectBase.set(this, 'vSize', value);
+  set vSize(double value) => RealmObjectBase.set(this, 'vSize', value);
 
   @override
   RealmList<String> get inputAddressList =>
@@ -447,10 +426,10 @@ class RealmTransaction extends _RealmTransaction
   set note(String? value) => RealmObjectBase.set(this, 'note', value);
 
   @override
-  DateTime? get createdAt =>
-      RealmObjectBase.get<DateTime>(this, 'createdAt') as DateTime?;
+  DateTime get createdAt =>
+      RealmObjectBase.get<DateTime>(this, 'createdAt') as DateTime;
   @override
-  set createdAt(DateTime? value) =>
+  set createdAt(DateTime value) =>
       RealmObjectBase.set(this, 'createdAt', value);
 
   @override
@@ -501,23 +480,29 @@ class RealmTransaction extends _RealmTransaction
         'id': EJsonValue id,
         'transactionHash': EJsonValue transactionHash,
         'walletId': EJsonValue walletId,
+        'timestamp': EJsonValue timestamp,
+        'blockHeight': EJsonValue blockHeight,
+        'transactionType': EJsonValue transactionType,
+        'amount': EJsonValue amount,
+        'fee': EJsonValue fee,
         'vSize': EJsonValue vSize,
+        'createdAt': EJsonValue createdAt,
       } =>
         RealmTransaction(
           fromEJson(id),
           fromEJson(transactionHash),
           fromEJson(walletId),
+          fromEJson(timestamp),
+          fromEJson(blockHeight),
+          fromEJson(transactionType),
+          fromEJson(amount),
+          fromEJson(fee),
           fromEJson(vSize),
-          timestamp: fromEJson(ejson['timestamp']),
-          blockHeight: fromEJson(ejson['blockHeight']),
-          transactionType: fromEJson(ejson['transactionType']),
+          fromEJson(createdAt),
           memo: fromEJson(ejson['memo']),
-          amount: fromEJson(ejson['amount']),
-          fee: fromEJson(ejson['fee']),
           inputAddressList: fromEJson(ejson['inputAddressList']),
           outputAddressList: fromEJson(ejson['outputAddressList']),
           note: fromEJson(ejson['note']),
-          createdAt: fromEJson(ejson['createdAt']),
           replaceByTransactionHash:
               fromEJson(ejson['replaceByTransactionHash']),
         ),
@@ -536,20 +521,19 @@ class RealmTransaction extends _RealmTransaction
       SchemaProperty('walletId', RealmPropertyType.int,
           indexType: RealmIndexType.regular),
       SchemaProperty('timestamp', RealmPropertyType.timestamp,
-          optional: true, indexType: RealmIndexType.regular),
-      SchemaProperty('blockHeight', RealmPropertyType.int, optional: true),
-      SchemaProperty('transactionType', RealmPropertyType.string,
-          optional: true),
+          indexType: RealmIndexType.regular),
+      SchemaProperty('blockHeight', RealmPropertyType.int),
+      SchemaProperty('transactionType', RealmPropertyType.string),
       SchemaProperty('memo', RealmPropertyType.string, optional: true),
-      SchemaProperty('amount', RealmPropertyType.int, optional: true),
-      SchemaProperty('fee', RealmPropertyType.int, optional: true),
-      SchemaProperty('vSize', RealmPropertyType.int),
+      SchemaProperty('amount', RealmPropertyType.int),
+      SchemaProperty('fee', RealmPropertyType.int),
+      SchemaProperty('vSize', RealmPropertyType.double),
       SchemaProperty('inputAddressList', RealmPropertyType.string,
           collectionType: RealmCollectionType.list),
       SchemaProperty('outputAddressList', RealmPropertyType.string,
           collectionType: RealmCollectionType.list),
       SchemaProperty('note', RealmPropertyType.string, optional: true),
-      SchemaProperty('createdAt', RealmPropertyType.timestamp, optional: true),
+      SchemaProperty('createdAt', RealmPropertyType.timestamp),
       SchemaProperty('replaceByTransactionHash', RealmPropertyType.string,
           optional: true),
     ]);

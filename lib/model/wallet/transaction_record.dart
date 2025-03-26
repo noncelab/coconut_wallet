@@ -3,16 +3,16 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 
 class TransactionRecord {
   final String _transactionHash;
-  final DateTime? _timestamp;
-  final int? _blockHeight;
-  String? _transactionType;
+  final DateTime _timestamp;
+  final int _blockHeight;
+  String _transactionType;
   String? _memo;
-  int? _amount;
-  int? _fee;
+  int _amount;
+  int _fee;
   List<TransactionAddress> _inputAddressList;
   List<TransactionAddress> _outputAddressList;
-  DateTime? createdAt;
-  int _vSize;
+  DateTime createdAt;
+  double _vSize;
   List<RbfHistory>? _rbfHistoryList;
   CpfpHistory? _cpfpHistory;
 
@@ -20,29 +20,29 @@ class TransactionRecord {
   String get transactionHash => _transactionHash;
 
   /// Get the timestamp of this transaction.
-  DateTime? get timestamp => _timestamp;
+  DateTime get timestamp => _timestamp;
 
   /// Get the block height of this transaction.
-  int? get blockHeight => _blockHeight;
+  int get blockHeight => _blockHeight;
 
   /// Get the transaction type of this transaction. (RECEIVED, SEND, SELF, UNKNOWN)
   /// [TransactionType]
-  String? get transactionType => _transactionType;
+  String get transactionType => _transactionType;
 
   /// Get the memo of this transaction.
   String? get memo => _memo;
 
   /// Get the amount of this transaction.
-  int? get amount => _amount;
+  int get amount => _amount;
 
   /// Get the fee of this transaction.
-  int? get fee => _fee;
+  int get fee => _fee;
 
   /// Get the vSize of this transaction.
-  int get vSize => _vSize;
+  double get vSize => _vSize;
 
   /// Get the fee rate of this transaction.
-  double get feeRate => _fee != null ? (_fee! / _vSize * 100).ceil() / 100 : 0;
+  double get feeRate => (_fee / _vSize * 100).ceil() / 100;
 
   /// Get the input address list of this transaction.
   List<TransactionAddress> get inputAddressList => _inputAddressList;
@@ -83,7 +83,7 @@ class TransactionRecord {
     required int fee,
     required List<TransactionAddress> inputAddressList,
     required List<TransactionAddress> outputAddressList,
-    required int vSize,
+    required double vSize,
     String? memo,
   }) {
     return TransactionRecord(

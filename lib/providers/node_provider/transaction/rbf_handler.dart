@@ -78,8 +78,7 @@ class RbfHandler {
         }
 
         // spentTransaction이 존재하고, 해당 트랜잭션이 미확인 상태일 때만 RBF로 간주
-        if (spentTransaction.blockHeight != null &&
-            spentTransaction.blockHeight! < 1) {
+        if (spentTransaction.blockHeight < 1) {
           Logger.log(
               'RBF 조건 충족: $utxoId, spentTx: ${utxo.spentByTransactionHash}');
           isRbf = true;
@@ -152,7 +151,7 @@ class RbfHandler {
               originalTransactionHash: rbfInfo.originalTransactionHash,
               transactionHash: rbfInfo.originalTransactionHash,
               feeRate: originalTx.feeRate,
-              timestamp: originalTx.timestamp ?? DateTime.now(),
+              timestamp: originalTx.timestamp,
             ));
           }
 

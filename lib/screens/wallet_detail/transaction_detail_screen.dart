@@ -122,7 +122,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       children: [
                         HighlightedInfoArea(
                           textList: DateTimeUtil.formatTimestamp(
-                            tx.timestamp!.toLocal(),
+                            tx.timestamp.toLocal(),
                           ),
                         ),
                         CoconutLayout.spacing_500h,
@@ -147,7 +147,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           builder: (context, bitcoinPriceKrw, child) {
                             return Text(
                               bitcoinPriceKrw != null
-                                  ? '${_getPrefix(tx)}${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(tx.amount!, bitcoinPriceKrw).toDouble().abs())} ${CurrencyCode.KRW.code}'
+                                  ? '${_getPrefix(tx)}${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(tx.amount, bitcoinPriceKrw).toDouble().abs())} ${CurrencyCode.KRW.code}'
                                   : '',
                               style: CoconutTypography.body3_12_Number
                                   .setColor(CoconutColors.gray500),
@@ -764,7 +764,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     }
 
     DateTime? timeStamp =
-        _viewModel.transactionList?.last.transaction!.timestamp!;
+        _viewModel.transactionList?.last.transaction!.timestamp;
     if (timeStamp == null) return '';
 
     DateTime now = DateTime.now();
@@ -800,7 +800,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     String prefix = _getPrefix(tx) == '-' ? '' : '+';
     Color color = prefix == '+' ? CoconutColors.cyan : CoconutColors.primary;
 
-    return Text('$prefix${satoshiToBitcoinString(tx.amount!)}',
+    return Text('$prefix${satoshiToBitcoinString(tx.amount)}',
         style: CoconutTypography.heading2_28_NumberBold
             .copyWith(fontSize: 24, color: color));
   }
@@ -810,8 +810,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       return '';
     }
 
-    if (tx.blockHeight != null && tx.blockHeight != 0 && blockHeight != 0) {
-      final confirmationCount = blockHeight - tx.blockHeight! + 1;
+    if (tx.blockHeight != 0 && blockHeight != 0) {
+      final confirmationCount = blockHeight - tx.blockHeight + 1;
       if (confirmationCount > 0) {
         return '$confirmationCount ';
       }

@@ -189,10 +189,8 @@ void main() {
       expect(updatedTx!.blockHeight, blockHeight);
       expect(updatedTx.timestamp, isNotNull);
       final updatedTimestamp = updatedTx.timestamp;
-      if (updatedTimestamp != null) {
-        expect(updatedTimestamp.millisecondsSinceEpoch ~/ 1000,
-            blockTimestamp.millisecondsSinceEpoch ~/ 1000);
-      }
+      expect(updatedTimestamp.millisecondsSinceEpoch ~/ 1000,
+          blockTimestamp.millisecondsSinceEpoch ~/ 1000);
     });
   });
 

@@ -438,8 +438,8 @@ class _TransactionFeeBumpingScreenState
             children: [
               Text(
                 t.transaction_fee_bumping_screen.total_fee(
-                  fee: addCommasToIntegerPart(
-                      widget.transaction.fee!.toDouble()),
+                  fee:
+                      addCommasToIntegerPart(widget.transaction.fee.toDouble()),
                   vb: addCommasToIntegerPart(
                       widget.transaction.vSize.toDouble()),
                 ),
