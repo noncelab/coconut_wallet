@@ -764,7 +764,6 @@ void _addRbfHistory(TestRealmManager realmManager, int walletId, String txHash,
       walletId, // walletId
       originalTxHash, // originalTransactionHash
       txHash, // transactionHash
-      1, // order
       5.0, // feeRate
       DateTime.now(), // timestamp
     );

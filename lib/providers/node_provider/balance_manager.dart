@@ -48,12 +48,18 @@ class BalanceManager {
       balance: addressBalance,
     );
 
-    _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
+    await _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
 
     if (!inBatchProcess) {
-      // 동기화 완료 state 업데이트
-      _stateManager.addWalletCompletedState(
-          walletItem.id, UpdateElement.balance);
+      // 하나의 트랜잭션으로 여러 스크립트에 대한 이벤트가 발생할 경우에 오류 발생.
+      // 이벤트 리스너 함수들이 모두 완료되지 않은 상태로 state가 업데이트됨.
+      // 결과적으로 화면에서 잔액이 제대로 변경되지 않는 오류가 있음.
+      // 임시로 지연을 통해 이벤트 리스너가 모두 실행되기 전에 동기화 완료 state가 업데이트되는 것을 방지함.
+      // TODO: 이벤트 리스너에 대해서 동시성 제어 필요함
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _stateManager.addWalletCompletedState(
+            walletItem.id, UpdateElement.balance);
+      });
     }
   }
 
@@ -84,13 +90,14 @@ class BalanceManager {
         ));
       }
 
-      final totalBalanceDiff = _addressRepository.updateAddressBalanceBatch(
+      final totalBalanceDiff =
+          await _addressRepository.updateAddressBalanceBatch(
         walletItem.id,
         balanceUpdates,
       );
 
       // 지갑 잔액에 변화량 반영
-      _walletRepository.accumulateWalletBalance(
+      await _walletRepository.accumulateWalletBalance(
           walletItem.id, totalBalanceDiff);
 
       // 동기화 완료 state 업데이트

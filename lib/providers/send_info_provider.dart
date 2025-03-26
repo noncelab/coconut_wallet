@@ -7,7 +7,6 @@ class SendInfoProvider {
   int? _walletId;
   String? _recipientAddress;
   double? _amount;
-  int? _feeRate;
   int? _estimatedFee;
   bool? _isMaxMode;
   bool? _isMultisig;
@@ -22,7 +21,6 @@ class SendInfoProvider {
   int? get walletId => _walletId;
   String? get recipientAddress => _recipientAddress;
   double? get amount => _amount;
-  int? get feeRate => _feeRate;
   int? get estimatedFee => _estimatedFee;
   bool? get isMaxMode => _isMaxMode;
   bool? get isMultisig => _isMultisig;
@@ -44,10 +42,6 @@ class SendInfoProvider {
 
   void setAmount(double amount) {
     _amount = amount;
-  }
-
-  void setFeeRate(int feeRate) {
-    _feeRate = feeRate;
   }
 
   void setEstimatedFee(int fee) {
@@ -78,13 +72,13 @@ class SendInfoProvider {
     _recipientsForBatch = recipients;
   }
 
-  void setFeeBumptingType(FeeBumpingType? feeBumpingType) {
+  void setFeeBumpfingType(FeeBumpingType? feeBumpingType) {
     _feeBumpingType = feeBumpingType;
   }
 
   void clear() {
-    _walletId = _recipientAddress = _amount = _feeRate = _estimatedFee =
-        _isMaxMode = _isMultisig = _transaction = _txWaitingForSign =
+    _walletId = _recipientAddress = _amount = _estimatedFee = _isMaxMode =
+        _isMultisig = _transaction = _txWaitingForSign =
             _signedPsbtBase64Encoded =
                 _recipientsForBatch = _feeBumpingType = null;
   }

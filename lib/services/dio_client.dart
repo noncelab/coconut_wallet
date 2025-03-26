@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:dio/dio.dart';
 import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/constants/endpoints.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
@@ -16,10 +16,8 @@ class DioClient {
       : _dio = Dio(
           BaseOptions(
             baseUrl: CoconutWalletApp.kFaucetHost,
-            connectTimeout:
-                const Duration(milliseconds: Endpoints.connectionTimeout),
-            receiveTimeout:
-                const Duration(milliseconds: Endpoints.receiveTimeout),
+            connectTimeout: kHttpConnectionTimeout,
+            receiveTimeout: kHttpReceiveTimeout,
             responseType: ResponseType.json,
             validateStatus: (status) {
               return status != null && (status < 400 || status == 429);

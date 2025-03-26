@@ -27,7 +27,6 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   String? _recipientAddress;
   late bool? _isNetworkOn;
   late bool _isBatchTx = false;
-  //List<String>? _recipientAddresses;
 
   SendFeeSelectionViewModel(this._sendInfoProvider, this._walletProvider,
       this._nodeProvider, this._bitcoinPriceKrw, this._isNetworkOn) {
@@ -80,7 +79,8 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   }
 
   Transaction _createTransaction(int satsPerVb) {
-    final utxoPool = _walletProvider.getUtxoList(_walletId);
+    final utxoPool =
+        _walletProvider.getUtxoListByStatus(_walletId, UtxoStatus.unspent);
     final wallet = _walletProvider.getWalletById(_walletId);
     final changeAddress = _walletProvider.getChangeAddress(_walletId);
     final amount = UnitUtil.bitcoinToSatoshi(_amount);
@@ -148,9 +148,8 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
         : _amount;
     _sendInfoProvider.setAmount(finalAmount);
     _sendInfoProvider.setEstimatedFee(estimatedFee);
-    _sendInfoProvider.setFeeRate(satsPerVb);
     _sendInfoProvider.setTransaction(_createTransaction(satsPerVb));
-    _sendInfoProvider.setFeeBumptingType(null);
+    _sendInfoProvider.setFeeBumpfingType(null);
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {

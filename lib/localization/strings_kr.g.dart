@@ -305,6 +305,7 @@ class TranslationsBroadcastingScreenKr {
   String get title => '최종 확인';
   String get description => '아래 정보로 송금할게요';
   String get self_sending => '내 지갑으로 보내는 트랜잭션입니다.';
+  String get error_popup_title => '브로드캐스팅 실패';
 }
 
 // Path: send_address_screen
@@ -482,7 +483,7 @@ class TranslationsTransactionFeeBumpingScreenKr {
   String get sats_vb => 'sats/vb';
   String recommend_fee({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
   String get recommend_fee_info_rbf =>
-      '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
+      '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vb 미만으로 보일 수 있어요.';
   String recommend_fee_info_cpfp(
           {required Object newTxSize,
           required Object recommendedFeeRate,
@@ -503,6 +504,8 @@ class TranslationsTransactionFeeBumpingScreenKr {
   String get recommended_fee_less_than_network_fee => '추천 수수료 이상으로 지정해 주세요';
   late final TranslationsTransactionFeeBumpingScreenDialogKr dialog =
       TranslationsTransactionFeeBumpingScreenDialogKr.internal(_root);
+  late final TranslationsTransactionFeeBumpingScreenToastKr toast =
+      TranslationsTransactionFeeBumpingScreenToastKr.internal(_root);
 }
 
 // Path: wallet_list_add_guide_card
@@ -793,6 +796,16 @@ class TranslationsTransactionFeeBumpingScreenDialogKr {
       '설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?';
   String get confirmed_alert_title => '거래 완료';
   String get confirmed_alert_description => '처리 대기 중이던 거래가 완료되었어요.';
+}
+
+// Path: transaction_fee_bumping_screen.toast
+class TranslationsTransactionFeeBumpingScreenToastKr {
+  TranslationsTransactionFeeBumpingScreenToastKr.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+  String get insufficient_utxo => '잔액이 부족하여 새 거래를 생성할 수 없어요';
 }
 
 // Path: errors.fee_selection_error
@@ -1264,6 +1277,8 @@ extension on Translations {
         return '아래 정보로 송금할게요';
       case 'broadcasting_screen.self_sending':
         return '내 지갑으로 보내는 트랜잭션입니다.';
+      case 'broadcasting_screen.error_popup_title':
+        return '브로드캐스팅 실패';
       case 'send_address_screen.text1':
         return 'QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요';
       case 'send_address_screen.text2':
@@ -1360,7 +1375,7 @@ extension on Translations {
       case 'transaction_fee_bumping_screen.recommend_fee':
         return ({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
       case 'transaction_fee_bumping_screen.recommend_fee_info_rbf':
-        return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.';
+        return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vb 미만으로 보일 수 있어요.';
       case 'transaction_fee_bumping_screen.recommend_fee_info_cpfp':
         return (
                 {required Object newTxSize,
@@ -1394,6 +1409,8 @@ extension on Translations {
         return '거래 완료';
       case 'transaction_fee_bumping_screen.dialog.confirmed_alert_description':
         return '처리 대기 중이던 거래가 완료되었어요.';
+      case 'transaction_fee_bumping_screen.toast.insufficient_utxo':
+        return '잔액이 부족하여 새 거래를 생성할 수 없어요';
       case 'wallet_list_add_guide_card.add_watch_only':
         return '보기 전용 지갑을 추가해 주세요';
       case 'wallet_list_add_guide_card.top_right_icon':

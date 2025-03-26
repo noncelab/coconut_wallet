@@ -71,6 +71,32 @@ class AddressRepository extends BaseRepository {
         : realmWalletBase.generatedReceiveIndex;
   }
 
+  Future<void> ensureAddressesInit({
+    required WalletListItemBase walletItemBase,
+  }) async {
+    final realmWalletBase = realm.find<RealmWalletBase>(walletItemBase.id);
+    if (realmWalletBase == null) {
+      throw StateError('[getWalletAddressList] Wallet not found');
+    }
+    final List<WalletAddress> addressesToAdd = [];
+
+    if (realmWalletBase.generatedReceiveIndex < 0) {
+      addressesToAdd.add(
+        _generateAddress(walletItemBase.walletBase, 0, false),
+      );
+    }
+
+    if (realmWalletBase.generatedChangeIndex < 0) {
+      addressesToAdd.add(
+        _generateAddress(walletItemBase.walletBase, 0, true),
+      );
+    }
+
+    if (addressesToAdd.isNotEmpty) {
+      await _addAllAddressList(realmWalletBase, addressesToAdd);
+    }
+  }
+
   /// 필요한 경우 새로운 주소를 생성하고 저장
   Future<void> ensureAddressesExist({
     required WalletListItemBase walletItemBase,
@@ -100,7 +126,7 @@ class AddressRepository extends BaseRepository {
           isChange: isChange,
         );
 
-        await _addAllAddressList(realmWalletBase, addresses, isChange);
+        await _addAllAddressList(realmWalletBase, addresses);
       }
     }
   }
@@ -120,33 +146,41 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 주소를 DB에 저장
-  Future<void> _addAllAddressList(RealmWalletBase realmWalletBase,
-      List<WalletAddress> addresses, bool isChange) async {
-    final realmAddresses = addresses
-        .map(
-          (address) => RealmWalletAddress(
-            Object.hash(realmWalletBase.id, address.index, address.address),
-            realmWalletBase.id,
-            address.address,
-            address.index,
-            isChange,
-            address.derivationPath,
-            address.isUsed,
-            address.confirmed,
-            address.unconfirmed,
-            address.total,
-          ),
-        )
-        .toList();
+  Future<void> _addAllAddressList(
+      RealmWalletBase realmWalletBase, List<WalletAddress> addresses) async {
+    int maxReceiveIndex = 0;
+    int maxChangeIndex = 0;
+    final realmAddresses = addresses.map(
+      (address) {
+        if (address.isChange) {
+          maxChangeIndex = max(maxChangeIndex, address.index);
+        } else {
+          maxReceiveIndex = max(maxReceiveIndex, address.index);
+        }
+        return RealmWalletAddress(
+          Object.hash(realmWalletBase.id, address.index, address.address),
+          realmWalletBase.id,
+          address.address,
+          address.index,
+          address.isChange,
+          address.derivationPath,
+          address.isUsed,
+          address.confirmed,
+          address.unconfirmed,
+          address.total,
+        );
+      },
+    ).toList();
 
     await realm.writeAsync(() {
       realm.addAll<RealmWalletAddress>(realmAddresses);
 
       // 생성된 주소 인덱스 업데이트
-      if (isChange) {
-        realmWalletBase.generatedChangeIndex = realmAddresses.last.index;
-      } else {
-        realmWalletBase.generatedReceiveIndex = realmAddresses.last.index;
+      if (maxChangeIndex > realmWalletBase.generatedChangeIndex) {
+        realmWalletBase.generatedChangeIndex = maxChangeIndex;
+      }
+      if (maxReceiveIndex > realmWalletBase.generatedReceiveIndex) {
+        realmWalletBase.generatedReceiveIndex = maxReceiveIndex;
       }
     });
   }
@@ -161,6 +195,7 @@ class AddressRepository extends BaseRepository {
       address,
       derivationPath,
       index,
+      isChange,
       false,
       0,
       0,
@@ -368,8 +403,8 @@ class AddressRepository extends BaseRepository {
   /// @param walletId 지갑 ID
   /// @param updateDataList 업데이트할 DTO 객체 목록
   /// @return 전체 잔액 변화량
-  Balance updateAddressBalanceBatch(
-      int walletId, List<AddressBalanceUpdateDto> updateDataList) {
+  Future<Balance> updateAddressBalanceBatch(
+      int walletId, List<AddressBalanceUpdateDto> updateDataList) async {
     if (updateDataList.isEmpty) {
       return Balance(0, 0);
     }
@@ -415,7 +450,7 @@ class AddressRepository extends BaseRepository {
     }
 
     // 계산이 완료된 후 Realm 트랜잭션에서 실제 DB 업데이트만 수행
-    realm.write(() {
+    await realm.writeAsync(() {
       for (var result in calculationResults) {
         final realmAddress = result.realmAddress;
         realmAddress.confirmed = result.newConfirmed;

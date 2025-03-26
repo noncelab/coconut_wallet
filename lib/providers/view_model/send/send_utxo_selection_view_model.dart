@@ -159,6 +159,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       return null;
     }
 
+    if (_sendInfoProvider.walletId == null) {
+      return null;
+    }
+
     // 트랜잭션 출력 주소 중 change 주소를 모두 조회
     final changeAddresses = _walletProvider.filterChangeAddressesFromList(
         _sendInfoProvider.walletId!,
@@ -358,9 +362,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       }
 
       selectedUtxoList.remove(utxo);
-      if (estimatedFee != null &&
-          _isSelectedUtxoEnough() &&
-          satsPerVb != null) {
+      if (estimatedFee != null && _isSelectedUtxoEnough()) {
         setEstimatedFee(estimateFee(satsPerVb ?? 1));
       }
     } else {
@@ -527,11 +529,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void saveSendInfo() {
     _sendInfoProvider.setEstimatedFee(_estimatedFee!);
-    _sendInfoProvider.setFeeRate(satsPerVb!);
     _sendInfoProvider.setIsMaxMode(isMaxMode);
     _sendInfoProvider.setIsMultisig(_requiredSignature != null);
     _sendInfoProvider.setTransaction(_transaction);
-    _sendInfoProvider.setFeeBumptingType(null);
+    _sendInfoProvider.setFeeBumpfingType(null);
   }
 
   @override

@@ -56,6 +56,11 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void _updateBalance(Map<int, Balance> balanceMap) {
+    // todo: remove debug print
+    // debugPrint('뷰모델!! _updateBalance: ${balanceMap.entries.map(
+    //       (e) => '${e.key}: ${e.value.total}',
+    //     ).toList()}');
+
     _walletBalance =
         balanceMap.map((key, balance) => MapEntry(key, balance.total));
   }
@@ -101,5 +106,22 @@ class WalletListViewModel extends ChangeNotifier {
   void updateIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
+  }
+
+  bool isWalletListChanged(
+      List<WalletListItemBase> oldList,
+      List<WalletListItemBase> newList,
+      Map<int, int> previousWalletBalance,
+      int? Function(dynamic id) newWalletBalance) {
+    if (oldList.length != newList.length) return true;
+
+    return oldList.asMap().entries.any((entry) {
+          int index = entry.key;
+          return entry.value.toString() != newList[index].toString();
+        }) ||
+        previousWalletBalance.entries.any((entry) {
+          int id = entry.key;
+          return entry.value != newWalletBalance(id);
+        });
   }
 }
