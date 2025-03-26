@@ -162,6 +162,11 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
+
+    if (Platform.isAndroid && !_isBatchMode) {
+      controller.resumeCamera();
+    }
+
     controller.scannedDataStream.listen((scanData) {
       if (_isProcessing || scanData.code == null || scanData.code!.isEmpty) {
         return;
@@ -218,17 +223,17 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   }
 
   /// --- batch transaction
-  void _changeIsBatchMode() async {
+  void _changeIsBatchMode() {
     _viewModel.clearSendInfoProvider();
-    if (!_isBatchMode) {
-      controller?.dispose();
-    } else {
-      await controller?.resumeCamera();
-    }
     if (mounted) {
       setState(() {
         _isBatchMode = !_isBatchMode;
       });
+    }
+    if (_isBatchMode) {
+      controller?.dispose();
+    } else if (Platform.isIOS) {
+      controller?.resumeCamera();
     }
   }
 
