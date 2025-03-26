@@ -106,10 +106,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {
-    TransactionRecord? tx = _txProvider.getTransactionRecord(
+    return _txProvider.hasTransactionConfirmed(
         _walletId, transaction.transactionHash);
-    if (tx == null || tx.blockHeight == 0) return false;
-    return true;
   }
 
   Future<bool> prepareToSend(double newTxFeeRate) async {

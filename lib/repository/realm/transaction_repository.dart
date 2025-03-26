@@ -219,6 +219,19 @@ class TransactionRepository extends BaseRepository {
     return mapRealmTransactionToTransaction(realmTransaction);
   }
 
+  bool hasTransactionConfirmed(int walletId, String transactionHash) {
+    final realmTransaction = realm.query<RealmTransaction>(
+      r'walletId == $0 AND transactionHash == $1',
+      [walletId, transactionHash],
+    ).firstOrNull;
+
+    if (realmTransaction == null) {
+      return false;
+    }
+
+    return realmTransaction.blockHeight > 0;
+  }
+
   /// RBF 내역을 일괄 저장합니다.
   ///
   /// 중복 체크를 수행하여 이미 저장된 내역은 다시 저장하지 않습니다.
