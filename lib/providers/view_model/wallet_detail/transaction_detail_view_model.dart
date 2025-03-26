@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
 class TransactionDetail {

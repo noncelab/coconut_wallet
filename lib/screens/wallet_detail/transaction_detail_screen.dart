@@ -102,7 +102,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           final tx = viewModel
               .transactionList![viewModel.selectedTransactionIndex]
               .transaction!;
-          // final txMemo = viewModel.transactionList![0].transaction!.memo;
           final txMemo = viewModel.fetchTransactionMemo();
 
           return Scaffold(
@@ -251,7 +250,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                   "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
                             },
                             child: Text(
-                              tx.transactionHash,
+                              viewModel.isSendType!
+                                  ? tx.transactionHash
+                                  : widget.txHash,
                               style: CoconutTypography.body1_16_Number,
                             )),
                         TransactionDetailScreen._divider,
