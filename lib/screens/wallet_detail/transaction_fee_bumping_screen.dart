@@ -144,7 +144,7 @@ class _TransactionFeeBumpingScreenState
                     ),
                   ),
                 ),
-                SingleBottomButton(
+                FixedBottomButton(
                   onButtonClicked: () async {
                     _onCompleteButtonPressed(context, viewModel);
                   },

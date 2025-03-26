@@ -1,8 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 
-class SingleBottomButton extends StatefulWidget {
-  const SingleBottomButton({
+class FixedBottomButton extends StatefulWidget {
+  const FixedBottomButton({
     super.key,
     required this.onButtonClicked,
     required this.text,
@@ -28,10 +28,10 @@ class SingleBottomButton extends StatefulWidget {
   final Color backgroundColor;
 
   @override
-  State<SingleBottomButton> createState() => _SingleBottomButtonState();
+  State<FixedBottomButton> createState() => _FixedBottomButtonState();
 }
 
-class _SingleBottomButtonState extends State<SingleBottomButton> {
+class _FixedBottomButtonState extends State<FixedBottomButton> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(

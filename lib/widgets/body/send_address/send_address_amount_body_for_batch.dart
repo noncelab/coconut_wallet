@@ -207,7 +207,7 @@ class _SendAddressAmountBodyForBatchState
             ),
           ],
         ),
-        SingleBottomButton(
+        FixedBottomButton(
           onButtonClicked: () => _onComplete(context),
           text: t.complete,
           showGradient: true,
