@@ -313,13 +313,6 @@ class TransactionRepository extends BaseRepository {
       }
     }
 
-    Logger.log(
-        '🔍 DB에 저장된 내역 수: ${realmRbfHistoryList.length}개, 중복 제거된 RBF 내역 수: ${uniqueRbfHistoryList.length}개');
-    if (uniqueRbfHistoryList.length != realmRbfHistoryList.length) {
-      Logger.log(
-          '🔍 ${realmRbfHistoryList.length - uniqueRbfHistoryList.length}개 차이남.');
-    }
-
     return uniqueRbfHistoryList;
   }
 
