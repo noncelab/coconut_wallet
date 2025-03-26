@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
@@ -106,7 +107,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               _previousWalletList,
               viewModel.walletItemList,
               _previousWalletBalance,
-              (id) => viewModel.getWalletBalance(id))) {
+              (id) => viewModel.getWalletBalance(id).current)) {
             _handleWalletListUpdate(
               viewModel.walletItemList,
               (id) => viewModel.getWalletBalance(id),
@@ -335,7 +336,7 @@ class _WalletListScreenState extends State<WalletListScreen>
   }
 
   void _handleWalletListUpdate(List<WalletListItemBase> walletList,
-      Function(int) getWalletBalance, bool isBalanceHidden) async {
+      AnimatedBalanceDataGetter getWalletBalance, bool isBalanceHidden) async {
     if (isWalletLoading) return;
     isWalletLoading = true;
 
@@ -360,14 +361,14 @@ class _WalletListScreenState extends State<WalletListScreen>
     _previousWalletList = List.from(walletList);
     _previousWalletBalance = {
       for (var walletId in walletList)
-        walletId.id: getWalletBalance(walletId.id) ?? 0
+        walletId.id: getWalletBalance(walletId.id).previous
     };
 
     isWalletLoading = false;
   }
 
   Widget _buildSliverAnimatedList(List<WalletListItemBase> walletList,
-      Function(int) getWalletBalance, bool isBalanceHidden) {
+      AnimatedBalanceDataGetter getWalletBalance, bool isBalanceHidden) {
     return SliverAnimatedList(
       key: _walletListKey,
       initialItemCount: walletList.length,
@@ -376,7 +377,7 @@ class _WalletListScreenState extends State<WalletListScreen>
           return _buildWalletItem(
               walletList[index],
               animation,
-              getWalletBalance,
+              getWalletBalance(walletList[index].id),
               isBalanceHidden,
               index == walletList.length - 1);
         }
@@ -388,7 +389,7 @@ class _WalletListScreenState extends State<WalletListScreen>
   Widget _buildWalletItem(
       WalletListItemBase wallet,
       Animation<double> animation,
-      Function(int) getWalletBalance,
+      AnimatedBalanceData animatedBalanceData,
       bool isBalanceHidden,
       bool isLastItem) {
     var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
@@ -396,9 +397,15 @@ class _WalletListScreenState extends State<WalletListScreen>
     return Column(
       children: [
         SlideTransition(
-            position: offsetAnimation,
-            child: _getWalletRowItem(Key(wallet.id.toString()), wallet,
-                getWalletBalance, isBalanceHidden, isLastItem)),
+          position: offsetAnimation,
+          child: _getWalletRowItem(
+            Key(wallet.id.toString()),
+            wallet,
+            animatedBalanceData,
+            isBalanceHidden,
+            isLastItem,
+          ),
+        ),
         isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
       ],
     );
@@ -521,16 +528,18 @@ class _WalletListScreenState extends State<WalletListScreen>
     return _viewModel;
   }
 
-  Widget? _getWalletRowItem(Key key, WalletListItemBase walletItem,
-      Function(int) getWalletBalance, bool isBalanceHidden, bool isLastItem) {
+  Widget? _getWalletRowItem(
+      Key key,
+      WalletListItemBase walletItem,
+      AnimatedBalanceData animatedBalanceData,
+      bool isBalanceHidden,
+      bool isLastItem) {
     final WalletListItemBase(
       id: id,
       name: name,
       iconIndex: iconIndex,
       colorIndex: colorIndex,
     ) = walletItem;
-    final int? balance = getWalletBalance(id);
-
     List<MultisigSigner>? signers;
     if (walletItem.walletType == WalletType.multiSignature) {
       signers = (walletItem as MultisigWalletListItem).signers;
@@ -540,7 +549,7 @@ class _WalletListScreenState extends State<WalletListScreen>
       key: key,
       id: id,
       name: name,
-      balance: balance,
+      animatedBalanceData: animatedBalanceData,
       iconIndex: iconIndex,
       colorIndex: colorIndex,
       isLastItem: isLastItem,

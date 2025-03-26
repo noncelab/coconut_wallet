@@ -1,7 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
@@ -11,7 +12,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   final GlobalKey dropdownGlobalKey;
   final double height;
   final bool isVisible;
-  final int? balance;
+  final AnimatedBalanceData animatedBalanceData;
   final int? totalCount;
   final String selectedFilter;
   final Function onTapDropdown;
@@ -21,7 +22,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.dropdownGlobalKey,
     required this.height,
     required this.isVisible,
-    required this.balance,
+    required this.animatedBalanceData,
     required this.totalCount,
     required this.selectedFilter,
     required this.onTapDropdown,
@@ -74,12 +75,13 @@ class UtxoListStickyHeader extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
-                                balance != null
-                                    ? satoshiToBitcoinString(balance!)
-                                    : t.fetch_balance_failed,
-                                style:
-                                    CoconutTypography.heading4_18_NumberBold),
+                            AnimatedBalance(
+                              prevValue: animatedBalanceData.previous,
+                              value: animatedBalanceData.current,
+                              isBtcUnit: true,
+                              textStyle:
+                                  CoconutTypography.heading4_18_NumberBold,
+                            ),
                             CoconutLayout.spacing_100w,
                             Text(
                               t.btc,
