@@ -58,6 +58,7 @@ class TransactionFetcher {
         knownTransactionHashes);
 
     final unconfirmedFetchedTxHashes = txFetchResults
+        // 언컨펌 UTXO가 사용된 트랜잭션은 블록 높이가 -1로 조회되어 '0이하' 조건이 필요함
         .where((tx) => tx.height <= 0)
         .map((tx) => tx.transactionHash)
         .toSet();

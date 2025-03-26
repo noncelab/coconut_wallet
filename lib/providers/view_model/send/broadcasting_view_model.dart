@@ -194,7 +194,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool hasTransactionConfirmed() {
     TransactionRecord? tx = _txProvider.getTransactionRecord(
         walletId, _txProvider.transaction!.transactionHash);
-    if (tx == null || tx.blockHeight <= 0) return false;
+    if (tx == null || tx.blockHeight == 0) return false;
     return true;
   }
 
