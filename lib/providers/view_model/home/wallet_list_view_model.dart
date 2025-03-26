@@ -90,6 +90,11 @@ class WalletListViewModel extends ChangeNotifier {
         vibrateLightDouble();
       }
       _walletSyncingState = walletProvider.walletSubscriptionState;
+    } else if (_walletSyncingState == WalletSubscriptionState.completed &&
+        walletProvider.walletSubscriptionState ==
+            WalletSubscriptionState.completed &&
+        _isFirstLoaded == false) {
+      _isFirstLoaded = true;
     }
   }
 
