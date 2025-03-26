@@ -175,6 +175,8 @@ class ElectrumService {
     return response.result;
   }
 
+  /// 일렉트럼 프로토콜에 존재하지만 Electrs 구현체에서 지원하지 않는 메서드
+  @Deprecated('This method is not supported by Electrs implementation.')
   Future<List<GetMempoolRes>> getMempool(
       AddressType addressType, String address) async {
     var reversedScriptHash =
