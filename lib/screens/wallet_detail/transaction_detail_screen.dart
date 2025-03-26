@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -11,7 +10,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -22,6 +20,7 @@ import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
+import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
@@ -140,18 +139,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           ),
                         ),
                         CoconutLayout.spacing_100h,
-                        Center(child: Consumer<UpbitConnectModel>(
-                          builder: (context, upbitConnectModel, child) {
-                            return Text(
-                              tx.amount != null
-                                  ? upbitConnectModel.getFiatPrice(
-                                      tx.amount!.abs(), CurrencyCode.KRW)
-                                  : '',
-                              style: CoconutTypography.body3_12_Number
-                                  .setColor(CoconutColors.gray500),
-                            );
-                          },
-                        )),
+                        Center(
+                            child: FiatPrice(
+                                satoshiAmount: tx.amount!.abs(),
+                                textStyle: CoconutTypography.body2_14_Number
+                                    .setColor(CoconutColors.gray500))),
                         CoconutLayout.spacing_400h,
                         if (_isTransactionStatusPending(
                                 txList.last.transaction!) &&

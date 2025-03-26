@@ -1,14 +1,12 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class SendUtxoStickyHeader extends StatelessWidget {
   final ErrorState? errorState;
@@ -47,184 +45,6 @@ class SendUtxoStickyHeader extends StatelessWidget {
         _buildChangeRow(),
       ],
     );
-    // return Column(
-    //   children: [
-    //     Row(
-    //       crossAxisAlignment: CrossAxisAlignment.start,
-    //       children: [
-    //         Text(
-    //           t.send_amount,
-    //           style: CoconutTypography.body2_14_Bold,
-    //         ),
-    //         Expanded(
-    //           child: Row(
-    //             mainAxisAlignment: MainAxisAlignment.end,
-    //             children: [
-    //               Visibility(
-    //                 visible: isMaxMode,
-    //                 child: Container(
-    //                   padding: const EdgeInsets.only(bottom: 2),
-    //                   margin: const EdgeInsets.only(right: 4, bottom: 16),
-    //                   height: 24,
-    //                   width: 34,
-    //                   decoration: BoxDecoration(
-    //                     color: CoconutColors.gray700,
-    //                     borderRadius: BorderRadius.circular(16),
-    //                   ),
-    //                   child: Center(
-    //                     child: Text(t.max, style: CoconutTypography.caption_10),
-    //                   ),
-    //                 ),
-    //               ),
-    //               Column(
-    //                 crossAxisAlignment: CrossAxisAlignment.end,
-    //                 children: [
-    //                   Text(
-    //                     '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
-    //                     style: CoconutTypography.body2_14_Number,
-    //                   ),
-    //                   Consumer<UpbitConnectModel>(
-    //                       builder: (context, viewModel, child) {
-    //                     return Text(
-    //                         viewModel.getFiatPrice(
-    //                             sendAmount, CurrencyCode.KRW),
-    //                         style: CoconutTypography.body3_12_Number
-    //                             .setColor(CoconutColors.gray400));
-    //                   }),
-    //                 ],
-    //               ),
-    //             ],
-    //           ),
-    //         ),
-    //       ],
-    //     ),
-    //     divider(
-    //         padding: const EdgeInsets.only(
-    //       top: 12,
-    //       bottom: 16,
-    //     )),
-    //     Row(
-    //       crossAxisAlignment: CrossAxisAlignment.start,
-    //       children: [
-    //         Row(
-    //           crossAxisAlignment: CrossAxisAlignment.start,
-    //           children: [
-    //             Text(t.fee, style: CoconutTypography.body2_14_Bold),
-    //             CustomUnderlinedButton(
-    //               text: t.modify,
-    //               padding: const EdgeInsets.only(
-    //                 left: 8,
-    //                 top: 4,
-    //                 bottom: 8,
-    //                 right: 8,
-    //               ),
-    //               isEnable: recommendedFeeFetchStatus !=
-    //                   RecommendedFeeFetchStatus.fetching,
-    //               onTap: () {
-    //                 onTapFeeButton();
-    //               },
-    //             ),
-    //           ],
-    //         ),
-    //         Expanded(
-    //             child: recommendedFeeFetchStatus ==
-    //                         RecommendedFeeFetchStatus.failed &&
-    //                     !customFeeSelected
-    //                 ? Row(
-    //                     mainAxisAlignment: MainAxisAlignment.end,
-    //                     children: [
-    //                       Text(
-    //                         '- ',
-    //                         style: Styles.body2Bold.merge(const TextStyle(
-    //                             color: MyColors.transparentWhite_40)),
-    //                       ),
-    //                       Text(
-    //                         'BTC',
-    //                         style: Styles.body2Number.merge(
-    //                           const TextStyle(
-    //                             color: MyColors.transparentWhite_40,
-    //                           ),
-    //                         ),
-    //                       ),
-    //                     ],
-    //                   )
-    //                 : recommendedFeeFetchStatus ==
-    //                             RecommendedFeeFetchStatus.succeed ||
-    //                         customFeeSelected
-    //                     ? Column(
-    //                         crossAxisAlignment: CrossAxisAlignment.end,
-    //                         children: [
-    //                           Text(
-    //                             estimatedFee != null
-    //                                 ? '${satoshiToBitcoinString(estimatedFee!).toString()} BTC'
-    //                                 : '0 BTC',
-    //                             style: Styles.body2Number,
-    //                           ),
-    //                           if (satsPerVb != null) ...{
-    //                             Text(
-    //                               '${selectedLevel?.expectedTime ?? ''} ($satsPerVb sats/vb)',
-    //                               style: Styles.caption,
-    //                             ),
-    //                           },
-    //                         ],
-    //                       )
-    //                     : const Row(
-    //                         mainAxisAlignment: MainAxisAlignment.end,
-    //                         children: [
-    //                           SizedBox(
-    //                             width: 15,
-    //                             height: 15,
-    //                             child: CircularProgressIndicator(
-    //                               color: MyColors.white,
-    //                               strokeWidth: 2,
-    //                             ),
-    //                           ),
-    //                         ],
-    //                       )),
-    //       ],
-    //     ),
-    //     divider(
-    //       padding: const EdgeInsets.only(
-    //         top: 10,
-    //         bottom: 16,
-    //       ),
-    //     ),
-    //     Row(
-    //       crossAxisAlignment: CrossAxisAlignment.start,
-    //       children: [
-    //         Text(
-    //           t.change,
-    //           style: change != null
-    //               ? (change! >= 0
-    //                   ? CoconutTypography.body2_14_Bold
-    //                   : CoconutTypography.body2_14_Bold
-    //                       .setColor(CoconutColors.hotPink))
-    //               : CoconutTypography.body2_14_Bold
-    //                   .setColor(CoconutColors.gray500),
-    //         ),
-    //         Expanded(
-    //           child: Column(
-    //             crossAxisAlignment: CrossAxisAlignment.end,
-    //             children: [
-    //               Text(
-    //                 change != null
-    //                     ? '${satoshiToBitcoinString(change!)} BTC'
-    //                     : '- BTC',
-    //                 style: change != null
-    //                     ? (change! >= 0
-    //                         ? CoconutTypography.body2_14_Number
-    //                         : CoconutTypography.body2_14_Number
-    //                             .setColor(CoconutColors.hotPink))
-    //                     : CoconutTypography.body2_14_Number
-    //                         .setColor(CoconutColors.gray500),
-    //               ),
-    //             ],
-    //           ),
-    //         ),
-    //       ],
-    //     ),
-    //   ],
-    // );
   }
 
   Widget _buildAmountRow(BuildContext context) {
@@ -268,14 +88,10 @@ class SendUtxoStickyHeader extends StatelessWidget {
         Text(
             '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
             style: CoconutTypography.body2_14_Number),
-        Consumer<UpbitConnectModel>(
-          builder: (context, viewModel, child) {
-            return Text(
-              viewModel.getFiatPrice(sendAmount, CurrencyCode.KRW),
-              style: CoconutTypography.body3_12_Number
-                  .setColor(CoconutColors.gray400),
-            );
-          },
+        FiatPrice(
+          satoshiAmount: sendAmount,
+          textStyle: CoconutTypography.body3_12_Number,
+          textColor: CoconutColors.gray500,
         ),
       ],
     );
@@ -332,7 +148,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
           Text(
               '${selectedLevel?.expectedTime ?? ''} ($satsPerVb ${satsPerVb == 1 ? 'sat' : 'sats'}/vb)',
               style: CoconutTypography.body3_12_Number
-                  .setColor(CoconutColors.gray400)),
+                  .setColor(CoconutColors.gray500)),
       ],
     );
   }
