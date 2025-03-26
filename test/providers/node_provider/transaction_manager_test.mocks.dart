@@ -999,6 +999,22 @@ class MockWalletProvider extends _i1.Mock implements _i6.WalletProvider {
       ) as List<_i19.UtxoState>);
 
   @override
+  List<_i19.UtxoState> getUtxoListByStatus(
+    int? walletId,
+    _i19.UtxoStatus? utxoStatus,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUtxoListByStatus,
+          [
+            walletId,
+            utxoStatus,
+          ],
+        ),
+        returnValue: <_i19.UtxoState>[],
+      ) as List<_i19.UtxoState>);
+
+  @override
   List<_i21.TransactionRecord> getTransactionRecordList(int? walletId) =>
       (super.noSuchMethod(
         Invocation.method(
