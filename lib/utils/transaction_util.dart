@@ -9,19 +9,19 @@ import 'package:flutter/material.dart';
 
 class TransactionUtil {
   static TransactionStatus? getStatus(TransactionRecord tx) {
-    if (tx.transactionType == TransactionType.received.name) {
+    if (tx.transactionType == TransactionType.received) {
       if (tx.blockHeight == 0) {
         return TransactionStatus.receiving;
       }
       return TransactionStatus.received;
     }
-    if (tx.transactionType == TransactionType.sent.name) {
+    if (tx.transactionType == TransactionType.sent) {
       if (tx.blockHeight == 0) {
         return TransactionStatus.sending;
       }
       return TransactionStatus.sent;
     }
-    if (tx.transactionType == TransactionType.self.name) {
+    if (tx.transactionType == TransactionType.self) {
       if (tx.blockHeight == 0) {
         return TransactionStatus.selfsending;
       }

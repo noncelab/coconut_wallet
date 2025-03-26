@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -14,7 +15,7 @@ RealmTransaction mapTransactionToRealmTransaction(
     walletId,
     transaction.timestamp,
     transaction.blockHeight,
-    transaction.transactionType,
+    transaction.transactionType.name,
     transaction.amount,
     transaction.fee,
     transaction.vSize,
@@ -38,7 +39,7 @@ TransactionRecord mapRealmTransactionToTransaction(
       realmTransaction.transactionHash,
       realmTransaction.timestamp,
       realmTransaction.blockHeight,
-      realmTransaction.transactionType,
+      TransactionTypeExtension.fromString(realmTransaction.transactionType),
       realmTransaction.memo,
       realmTransaction.amount,
       realmTransaction.fee,

@@ -128,7 +128,7 @@ class TransactionProcessor {
       blockHeight: blockHeight,
       inputAddressList: txDetails.inputAddressList,
       outputAddressList: txDetails.outputAddressList,
-      transactionType: txDetails.txType.name,
+      transactionType: txDetails.txType,
       amount: txDetails.amount,
       fee: txDetails.fee,
       vSize: tx.getVirtualByte(),

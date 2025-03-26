@@ -22,7 +22,7 @@ class TransactionMock {
       transactionHash ?? testTxHash,
       timestamp ?? DateTime.now(),
       blockHeight ?? 0,
-      transactionType.name,
+      transactionType,
       memo,
       amount,
       fee,

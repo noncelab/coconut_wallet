@@ -5,7 +5,7 @@ class TransactionRecord {
   final String _transactionHash;
   final DateTime _timestamp;
   final int _blockHeight;
-  String _transactionType;
+  TransactionType _transactionType;
   String? _memo;
   int _amount;
   int _fee;
@@ -27,7 +27,7 @@ class TransactionRecord {
 
   /// Get the transaction type of this transaction. (RECEIVED, SEND, SELF, UNKNOWN)
   /// [TransactionType]
-  String get transactionType => _transactionType;
+  TransactionType get transactionType => _transactionType;
 
   /// Get the memo of this transaction.
   String? get memo => _memo;
@@ -78,7 +78,7 @@ class TransactionRecord {
     required String transactionHash,
     required DateTime timestamp,
     required int blockHeight,
-    required String transactionType,
+    required TransactionType transactionType,
     required int amount,
     required int fee,
     required List<TransactionAddress> inputAddressList,

@@ -188,11 +188,11 @@ class WalletDetailViewModel extends ChangeNotifier {
     for (var tx in _txProvider.txList) {
       if (tx.blockHeight == 0) {
         switch (tx.transactionType) {
-          case 'SENT':
-          case 'SELF':
+          case TransactionType.sent:
+          case TransactionType.self:
             sending += tx.amount.abs();
             break;
-          case 'RECEIVED':
+          case TransactionType.received:
             receiving += tx.amount;
             break;
           default:

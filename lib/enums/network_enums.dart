@@ -1,5 +1,3 @@
-enum UtxoOrder { byAmountDesc, byAmountAsc, byTimestampDesc, byTimestampAsc }
-
 enum TransactionType {
   received('RECEIVED'),
   sent('SENT'),
@@ -9,6 +7,15 @@ enum TransactionType {
   const TransactionType(this.name);
 
   final String name;
+}
+
+extension TransactionTypeExtension on TransactionType {
+  static TransactionType fromString(String name) {
+    return TransactionType.values.firstWhere(
+      (type) => type.name == name,
+      orElse: () => TransactionType.unknown,
+    );
+  }
 }
 
 enum SocketConnectionStatus { reconnecting, connecting, connected, terminated }

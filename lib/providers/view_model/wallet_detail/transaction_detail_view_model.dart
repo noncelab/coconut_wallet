@@ -255,8 +255,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('----------------------------------------');
 
     // rbfHistory가 존재하면 높은 fee rate부터 _transactionList에 추가
-    if ((currentTransaction.transactionType == TransactionType.sent.name ||
-            currentTransaction.transactionType == TransactionType.self.name) &&
+    if ((currentTransaction.transactionType == TransactionType.sent ||
+            currentTransaction.transactionType == TransactionType.self) &&
         currentTransaction.rbfHistoryList != null &&
         currentTransaction.rbfHistoryList!.isNotEmpty) {
       var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
@@ -271,8 +271,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
             _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
         _transactionList!.add(TransactionDetail(rbfTxTransaction));
       }
-    } else if (currentTransaction.transactionType ==
-            TransactionType.received.name &&
+    } else if (currentTransaction.transactionType == TransactionType.received &&
         currentTransaction.cpfpHistory != null) {
       _transactionList = [
         TransactionDetail(_txProvider.getTransactionRecord(
@@ -294,7 +293,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       debugPrint('  - Amount: ${transaction._transaction.amount}');
       debugPrint('  - Created At: ${transaction._transaction.createdAt}');
       debugPrint('  - Hash: ${transaction._transaction.transactionHash}');
-      debugPrint('  - Type: ${transaction._transaction.transactionType}');
+      debugPrint('  - Type: ${transaction._transaction.transactionType.name}');
       debugPrint('  - vSize: ${transaction._transaction.vSize}');
       debugPrint(
           '  - RBF History Count: ${transaction._transaction.rbfHistoryList?.length}');
