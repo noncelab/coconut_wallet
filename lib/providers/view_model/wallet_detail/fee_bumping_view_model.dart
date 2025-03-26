@@ -232,12 +232,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
         debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
         return;
       }
+
+      _bumpingTransaction = Transaction.forSweep(
+          utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
     }
 
     debugPrint('😇 CPFP utxo (${utxoList.length})개');
-    _bumpingTransaction = Transaction.forSweep(
-        utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
-
     _sendInfoProvider.setRecipientAddress(recipient);
     _sendInfoProvider.setIsMaxMode(true);
     _sendInfoProvider
@@ -366,7 +366,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     _setInsufficientUtxo(false);
-
     return true;
   }
 
