@@ -95,12 +95,27 @@ class _SendAddressAmountBodyForBatchState
                                   false ||
                               _recipients[index].isAddressDuplicated == true,
                           isAmountDust: _recipients[index].isAmountDust == true,
+                          isLastItem: index == _recipients.length - 1,
                           addressErrorMessage:
                               _recipients[index].isAddressDuplicated == true
                                   ? t.errors.address_error.duplicated
                                   : null,
-                          onFocusRequested: () {
+                          onFocusRequested: () async {
+                            await Future.delayed(
+                                const Duration(milliseconds: 500));
+                            if (!mounted) return;
+                            if (index == _recipients.length - 1) {
+                              _scrollToBottom();
+                              return;
+                            }
                             _scrollToIndex(index);
+                          },
+                          onFocusAfterScanned: () async {
+                            await Future.delayed(
+                                const Duration(milliseconds: 700));
+                            if (mounted) {
+                              _scrollToBottom();
+                            }
                           },
                         ),
                       )
@@ -134,21 +149,23 @@ class _SendAddressAmountBodyForBatchState
   }
 
   void _scrollToBottom() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    if (mounted && _scrollController.hasClients) {
-      await _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    }
+    await Future.delayed(const Duration(milliseconds: 500));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted && _scrollController.hasClients) {
+        await _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   void _scrollToIndex(int index) {
     final position = index * _addressAndAmountCardHeight;
     _scrollController.animateTo(
       position,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
     );
   }

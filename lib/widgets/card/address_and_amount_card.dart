@@ -20,10 +20,12 @@ class AddressAndAmountCard extends StatefulWidget {
   final void Function(String amount) onAmountChanged;
   final void Function(bool isContentEmpty) onDeleted;
   final VoidCallback? onFocusRequested;
+  final VoidCallback? onFocusAfterScanned;
   final Future<void> Function(String address) validateAddress;
   final bool isRemovable;
   final bool isAddressInvalid;
   final bool isAmountDust;
+  final bool isLastItem;
   final String? addressErrorMessage;
 
   const AddressAndAmountCard(
@@ -38,7 +40,9 @@ class AddressAndAmountCard extends StatefulWidget {
       required this.isRemovable,
       required this.isAddressInvalid,
       required this.isAmountDust,
+      required this.isLastItem,
       this.onFocusRequested,
+      this.onFocusAfterScanned,
       this.addressPlaceholder,
       this.amountPlaceholder,
       this.addressErrorMessage});
@@ -272,6 +276,11 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
       _addressController.text = scannedAddress;
       _onAddressChanged(scannedAddress);
       _quantityFocusNode.requestFocus();
+
+      if (widget.isLastItem) {
+        // 마지막 아이템만 화면 복귀 후 스크롤이 되지 않아 추가 처리합니다.
+        widget.onFocusAfterScanned?.call();
+      }
     }
     _disposeQrViewController();
   }
