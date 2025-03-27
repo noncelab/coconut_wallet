@@ -86,8 +86,9 @@ void main() {
       utxoManager,
     );
 
-    rbfDetector = RbfHandler(transactionRepository, utxoManager);
-    cpfpDetector = CpfpHandler(transactionRepository);
+    rbfDetector =
+        RbfHandler(transactionRepository, utxoManager, electrumService);
+    cpfpDetector = CpfpHandler(transactionRepository, utxoManager);
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
@@ -458,7 +459,7 @@ void main() {
       });
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
@@ -477,7 +478,7 @@ void main() {
           mockOriginalTxHash);
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
@@ -513,7 +514,7 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
@@ -559,7 +560,7 @@ void main() {
           realmManager, testWalletId, mockSpentTxHash, mockOriginalTxHash);
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
@@ -608,7 +609,7 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         multiInputTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(

@@ -48,18 +48,19 @@ class IsolateManager {
   // 현재 활성 상태인 ReceivePort를 추적하기 위한 Set
   final Set<ReceivePort> _activeReceivePorts = {};
 
-  static IsolateHandler entryInitialize(
+  static Future<IsolateHandler> entryInitialize(
     SendPort sendPort,
     ElectrumService electrumService,
-  ) {
-    final realmManager = RealmManager();
+  ) async {
+    // TODO: isSetPin, 핀 설정/해제할 때 isolate에서도 인지할 수 있는 로직 추가
+    final realmManager = RealmManager()..init(false);
     final addressRepository = AddressRepository(realmManager);
     final walletRepository = WalletRepository(realmManager);
     final utxoRepository = UtxoRepository(realmManager);
     final transactionRepository = TransactionRepository(realmManager);
     final subscribeRepository = SubscriptionRepository(realmManager);
 
-    // IsolateStateManager 초기화 - 중요: 올바른 SendPort 전달
+    // IsolateStateManager 초기화
     final isolateStateManager = IsolateStateManager(sendPort);
     final BalanceManager balanceManager = BalanceManager(electrumService,
         isolateStateManager, addressRepository, walletRepository);
@@ -215,7 +216,7 @@ class IsolateManager {
 
     // IsolateStateManager에 올바른 SendPort 전달
     final isolateHandler =
-        entryInitialize(data.isolateToMainSendPort, electrumService);
+        await entryInitialize(data.isolateToMainSendPort, electrumService);
 
     isolateFromMainReceivePort.listen((message) async {
       if (message is List && message.length == 3) {

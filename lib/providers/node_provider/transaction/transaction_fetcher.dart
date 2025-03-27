@@ -33,7 +33,7 @@ class TransactionFetcher {
     this._utxoManager,
   )   : _rbfHandler =
             RbfHandler(_transactionRepository, _utxoManager, _electrumService),
-        _cpfpHandler = CpfpHandler(_transactionRepository);
+        _cpfpHandler = CpfpHandler(_transactionRepository, _utxoManager);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
   Future<void> fetchScriptTransaction(
