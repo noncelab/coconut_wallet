@@ -102,6 +102,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           final tx = viewModel
               .transactionList![viewModel.selectedTransactionIndex]
               .transaction!;
+          final txMemo = viewModel.fetchTransactionMemo();
 
           return Scaffold(
               backgroundColor: CoconutColors.black,
@@ -249,7 +250,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                   "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
                             },
                             child: Text(
-                              tx.transactionHash,
+                              viewModel.isSendType!
+                                  ? tx.transactionHash
+                                  : widget.txHash,
                               style: CoconutTypography.body1_16_Number,
                             )),
                         TransactionDetailScreen._divider,
@@ -261,7 +264,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                 context: context,
                                 isScrollControlled: true,
                                 builder: (context) => MemoBottomSheet(
-                                  originalMemo: tx.memo ?? '',
+                                  originalMemo: txMemo ?? '',
                                   onComplete: (memo) {
                                     if (!viewModel
                                         .updateTransactionMemo(memo)) {
@@ -275,7 +278,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                               );
                             },
                             child: Text(
-                              tx.memo?.isNotEmpty == true ? tx.memo! : '-',
+                              txMemo?.isNotEmpty == true ? txMemo! : '-',
                               style: CoconutTypography.body1_16_Number,
                             )),
                         const SizedBox(

@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
 class TransactionDetail {
@@ -227,11 +226,21 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool updateTransactionMemo(String memo) {
     final result = _txProvider.updateTransactionMemo(_walletId, _txHash, memo);
     if (result) {
-      _transactionList![_selectedTransactionIndex] =
+      _transactionList![0] =
           TransactionDetail(_txProvider.getTransaction(_walletId, _txHash));
       notifyListeners();
     }
     return result;
+  }
+
+  String? fetchTransactionMemo() {
+    for (var transaction in _transactionList!) {
+      // transactionList를 순회하면서 가장 최근의 txMemo값을 반환
+      if (transaction._transaction!.memo != null) {
+        return transaction._transaction.memo!;
+      }
+    }
+    return null;
   }
 
   void _initTransactionList() {

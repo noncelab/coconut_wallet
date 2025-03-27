@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -213,7 +214,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     return UtxoListHeader(
         key: ValueKey(viewModel.utxoTagListKey),
         dropdownGlobalKey: _headerDropdownKey,
-        balance: viewModel.balance,
+        animatedBalanceData:
+            AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
         selectedFilter: viewModel.selectedUtxoOrder.text,
         utxoTagList: viewModel.utxoTagList,
         selectedUtxoTagName: viewModel.selectedUtxoTagName,
@@ -256,26 +258,32 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   Widget _buildStickyHeader() {
-    return UtxoListStickyHeader(
-      key: ValueKey(_viewModel.utxoTagListKey),
-      dropdownGlobalKey: _stickyHeaderDropdownKey,
-      height: _appBarSize.height,
-      isVisible: _stickyHeaderVisible,
-      balance: _viewModel.balance,
-      totalCount: _viewModel.utxoList.length,
-      selectedFilter: _viewModel.selectedUtxoOrder.text,
-      onTapDropdown: () {
-        setState(() {
-          _scrollController.jumpTo(_scrollController.offset);
-          if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
-            _isStickyHeaderDropdownVisible = false;
-          } else {
-            _isStickyHeaderDropdownVisible = true;
-          }
-        });
-      },
-      removePopup: () {
-        _removeFilterDropdown();
+    return Selector<UtxoListViewModel, int>(
+      selector: (_, viewModel) => viewModel.balance,
+      builder: (context, balance, child) {
+        return UtxoListStickyHeader(
+          key: ValueKey(_viewModel.utxoTagListKey),
+          dropdownGlobalKey: _stickyHeaderDropdownKey,
+          height: _appBarSize.height,
+          isVisible: _stickyHeaderVisible,
+          animatedBalanceData:
+              AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
+          totalCount: _viewModel.utxoList.length,
+          selectedFilter: _viewModel.selectedUtxoOrder.text,
+          onTapDropdown: () {
+            setState(() {
+              _scrollController.jumpTo(_scrollController.offset);
+              if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
+                _isStickyHeaderDropdownVisible = false;
+              } else {
+                _isStickyHeaderDropdownVisible = true;
+              }
+            });
+          },
+          removePopup: () {
+            _removeFilterDropdown();
+          },
+        );
       },
     );
   }

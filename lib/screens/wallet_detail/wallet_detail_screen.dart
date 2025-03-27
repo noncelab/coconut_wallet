@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -10,7 +11,6 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
@@ -70,22 +70,21 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       ),
                       SliverToBoxAdapter(
                         child: Selector<WalletDetailViewModel,
-                                Tuple5<int, int, String, int, int>>(
-                            selector: (_, viewModel) => Tuple5(
-                                viewModel.balance,
-                                viewModel.prevBalance,
+                                Tuple4<AnimatedBalanceData, String, int, int>>(
+                            selector: (_, viewModel) => Tuple4(
+                                AnimatedBalanceData(
+                                    viewModel.balance, viewModel.prevBalance),
                                 viewModel.bitcoinPriceKrwInString,
                                 viewModel.sendingAmount,
                                 viewModel.receivingAmount),
                             builder: (_, data, __) {
                               return WalletDetailHeader(
                                 key: _headerWidgetKey,
-                                balance: data.item1,
+                                animatedBalanceData: data.item1,
                                 currentUnit: _currentUnit,
-                                prevBalance: data.item2,
-                                btcPriceInKrw: data.item3,
-                                sendingAmount: data.item4,
-                                receivingAmount: data.item5,
+                                btcPriceInKrw: data.item2,
+                                sendingAmount: data.item3,
+                                receivingAmount: data.item4,
                                 onPressedUnitToggle: _toggleUnit,
                                 onTapReceive: _onTapReceive,
                                 onTapSend: _onTapSend,
@@ -153,21 +152,27 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   Widget _buildStickyHeader() {
-    return WalletDetailStickyHeader(
-        widgetKey: _stickyHeaderWidgetKey,
-        height: _appBarSize.height,
-        isVisible: _stickyHeaderVisible,
-        currentUnit: _currentUnit,
-        balance: _viewModel.balance,
-        onTapReceive: () {
-          _viewModel.removeFaucetTooltip();
-          _onTapReceive();
-        },
-        onTapSend: () {
-          _viewModel.removeFaucetTooltip();
-          _onTapSend();
-        },
-        prevBalance: _viewModel.prevBalance);
+    return Selector<WalletDetailViewModel, int>(
+      selector: (_, viewModel) => viewModel.balance,
+      builder: (context, balance, child) {
+        return WalletDetailStickyHeader(
+          widgetKey: _stickyHeaderWidgetKey,
+          height: _appBarSize.height,
+          isVisible: _stickyHeaderVisible,
+          currentUnit: _currentUnit,
+          animatedBalanceData:
+              AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
+          onTapReceive: () {
+            _viewModel.removeFaucetTooltip();
+            _onTapReceive();
+          },
+          onTapSend: () {
+            _viewModel.removeFaucetTooltip();
+            _onTapSend();
+          },
+        );
+      },
+    );
   }
 
   Selector<WalletDetailViewModel, bool> _buildLoadingWidget() {
