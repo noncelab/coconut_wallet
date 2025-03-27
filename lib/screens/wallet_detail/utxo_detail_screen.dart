@@ -1,17 +1,18 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
+import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
@@ -320,9 +321,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildPrice() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
-      child: Center(
-          child: FiatPrice(
-        satoshiAmount: widget.utxo.amount,
+      child: Center(child: Consumer<UpbitConnectModel>(
+        builder: (context, viewModel, child) {
+          return Text(
+            viewModel.getFiatPrice(widget.utxo.amount, CurrencyCode.KRW),
+            style: CoconutTypography.body2_14_Number
+                .copyWith(color: CoconutColors.gray500),
+          );
+        },
       )),
     );
   }

@@ -1,10 +1,9 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:flutter/cupertino.dart';
 
 class FeeSelectionItemCard extends StatelessWidget {
@@ -12,6 +11,7 @@ class FeeSelectionItemCard extends StatelessWidget {
   final bool isSelected;
   final bool isLoading;
   final FeeInfoWithLevel feeInfo;
+  final int? bitcoinPriceKrw;
 
   const FeeSelectionItemCard({
     super.key,
@@ -19,6 +19,7 @@ class FeeSelectionItemCard extends StatelessWidget {
     this.isLoading = false,
     this.isSelected = false,
     required this.feeInfo,
+    this.bitcoinPriceKrw,
   });
 
   @override
@@ -65,8 +66,7 @@ class FeeSelectionItemCard extends StatelessWidget {
                           ),
                           if (feeInfo.satsPerVb != null)
                             TextSpan(
-                              text:
-                                  " (${feeInfo.satsPerVb} ${feeInfo.satsPerVb == 1 ? 'sat' : 'sats'}/vb)",
+                              text: " (${feeInfo.satsPerVb} sats/vb)",
                             ),
                         ],
                       ),
@@ -101,21 +101,23 @@ class FeeSelectionItemCard extends StatelessWidget {
                     const SizedBox(
                       height: 5,
                     ),
-                    FiatPrice(
-                        satoshiAmount: feeInfo.estimatedFee ?? 0,
-                        textStyle: CoconutTypography.body3_12_Number
-                            .setColor(CoconutColors.gray500)),
+                    Text(
+                      bitcoinPriceKrw != null
+                          ? "${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(feeInfo.estimatedFee!, bitcoinPriceKrw!).toDouble())} ${CurrencyCode.KRW.code}"
+                          : '',
+                      style: Styles.caption,
+                    )
                   ],
                 ),
               ),
             if (feeInfo.failedEstimation)
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      t.fetch_fee_failed,
+                      "수수료 조회 실패",
                       style: Styles.warning,
                     ),
                   ],

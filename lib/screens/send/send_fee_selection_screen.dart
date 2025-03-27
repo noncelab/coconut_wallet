@@ -1,4 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -17,7 +17,6 @@ import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +47,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   bool _customSelected = false;
   String? _selectedFeeLevel = TransactionFeeLevel.halfhour.text;
   int? _estimatedFee = 0;
+  int? _fiatValue = 0;
   FeeInfo? _customFeeInfo;
   bool? _isRecommendedFeeFetchSuccess;
   late SendFeeSelectionViewModel _viewModel;
@@ -135,10 +135,16 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                 ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
                                 : '',
                             style: Styles.fee),
-                        FiatPrice(
-                            satoshiAmount: _estimatedFee ?? 0,
-                            textStyle: CoconutTypography.body2_14_Number
-                                .setColor(CoconutColors.gray400)),
+                        Selector<UpbitConnectModel, int?>(
+                          selector: (context, model) => model.bitcoinPriceKrw,
+                          builder: (context, bitcoinPriceKrw, child) {
+                            return Text(
+                                _fiatValue != null && bitcoinPriceKrw != null
+                                    ? '${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(_estimatedFee!, bitcoinPriceKrw).toDouble())} ${CurrencyCode.KRW.code}'
+                                    : '',
+                                style: Styles.balance2);
+                          },
+                        ),
                         const SizedBox(height: 32),
                       ])),
 
@@ -189,6 +195,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                           ? false
                                           : _selectedLevel ==
                                               feeInfos[index].level,
+                                      bitcoinPriceKrw:
+                                          viewModel.bitcoinPriceKrw,
                                       onPressed: () {
                                         setState(() {
                                           _selectedLevel =
@@ -197,6 +205,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                               feeInfos[index].level.text;
                                           _estimatedFee =
                                               feeInfos[index].estimatedFee;
+                                          _fiatValue =
+                                              feeInfos[index].fiatValue;
                                           _customSelected = false;
                                         });
                                       })),
@@ -365,12 +375,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
     if (feeInfo is FeeInfoWithLevel && feeInfo.level == _selectedLevel) {
       _estimatedFee = estimatedFee;
+      _fiatValue = feeInfo.fiatValue;
       return;
     }
 
     if (feeInfo is! FeeInfoWithLevel) {
       _selectedFeeLevel = t.input_directly;
       _estimatedFee = estimatedFee;
+      _fiatValue = _customFeeInfo?.fiatValue;
       _customSelected = true;
     }
   }

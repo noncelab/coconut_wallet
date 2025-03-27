@@ -135,8 +135,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _scrollController.addListener(() {
         double threshold = _headerTopContainerSize.height + 24;
         double offset = _scrollController.offset;
-        if ((_isOrderDropdownVisible || _isScrolledOrderDropdownVisible) &&
-            offset > 0) {
+        if (_isOrderDropdownVisible || _isScrolledOrderDropdownVisible) {
           _removeUtxoOrderDropdown();
         }
         setState(() {
@@ -441,11 +440,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   Widget _utxoOrderDropdownMenu() {
     return Material(
       borderRadius: BorderRadius.circular(16),
-      child: CoconutPulldownMenu(
+      child: CustomDropdown(
         buttons: _utxoOrderOptions.map((order) => order.text).toList(),
-        shadowColor: CoconutColors.gray800,
-        dividerColor: CoconutColors.gray800,
-        onTap: (index) async {
+        dividerColor: Colors.black,
+        onTapButton: (index) async {
           bool isChanged = _selectedUtxoOrder != _utxoOrderOptions[index];
           setState(() {
             if (isChanged) {
@@ -460,22 +458,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
             _viewModel.changeUtxoOrder(_utxoOrderOptions[index]);
           }
         },
-        selectedIndex: _getIndexBySelectedFilter(),
+        selectedButton: _selectedUtxoOrder.text,
       ),
     );
-  }
-
-  int _getIndexBySelectedFilter() {
-    switch (_selectedUtxoOrder) {
-      case UtxoOrder.byAmountDesc:
-        return 0;
-      case UtxoOrder.byAmountAsc:
-        return 1;
-      case UtxoOrder.byTimestampDesc:
-        return 2;
-      case UtxoOrder.byTimestampAsc:
-        return 3;
-    }
   }
 
   Widget _buildStickyHeader(SendUtxoSelectionViewModel viewModel) {
@@ -518,7 +503,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return Positioned(
         top: _orderDropdownButtonPosition.dy -
             _scrollController.offset -
-            MediaQuery.of(context).padding.top,
+            MediaQuery.of(context).padding.top -
+            20,
         left: 16,
         child: _utxoOrderDropdownMenu(),
       );
@@ -529,7 +515,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       return Positioned(
         top: _scrolledOrderDropdownButtonPosition.dy -
             MediaQuery.of(context).padding.top -
-            55,
+            65,
         left: 16,
         child: _utxoOrderDropdownMenu(),
       );
@@ -626,6 +612,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 isMaxMode: viewModel.isMaxMode,
                 customFeeSelected: viewModel.customFeeSelected,
                 sendAmount: viewModel.sendAmount,
+                bitcoinPriceKrw: viewModel.bitcoinPriceKrw,
                 estimatedFee: viewModel.estimatedFee,
                 satsPerVb: viewModel.satsPerVb,
                 change: viewModel.change,
