@@ -56,58 +56,58 @@ class _SettingsScreen extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _category(t.security),
-                      ButtonGroup(buttons: [
-                        SingleButton(
-                            title: t.settings_screen.set_password,
-                            rightElement: CupertinoSwitch(
-                                value: viewModel.isSetPin,
-                                activeColor: MyColors.primary,
-                                onChanged: (isOn) {
-                                  if (isOn) {
-                                    CommonBottomSheets.showBottomSheet_90<bool>(
-                                      context: context,
-                                      child: const CustomLoadingOverlay(
-                                        child: PinSettingScreen(
-                                            useBiometrics: true),
-                                      ),
-                                    );
-                                  } else {
-                                    viewModel.deletePin();
-                                  }
-                                })),
-                        if (viewModel.canCheckBiometrics && viewModel.isSetPin)
-                          SingleButton(
-                            title: t.settings_screen.use_biometric,
-                            rightElement: CupertinoSwitch(
-                                value: viewModel.isSetBiometrics,
-                                activeColor: MyColors.primary,
-                                onChanged: (isOn) async {
-                                  if (isOn) {
-                                    viewModel.authenticateWithBiometrics(
-                                        isSave: true);
-                                  } else {
-                                    viewModel.saveIsSetBiometrics(false);
-                                  }
-                                }),
-                          ),
-                        if (viewModel.isSetPin)
-                          SingleButton(
-                              title: t.settings_screen.change_password,
-                              onPressed: () async {
-                                final bool? result =
-                                    await CommonBottomSheets.showBottomSheet_90(
-                                        context: context,
-                                        child: const CustomLoadingOverlay(
-                                            child: PinCheckScreen()));
-                                if (result == true) {
-                                  await CommonBottomSheets.showBottomSheet_90(
-                                      context: context,
-                                      child: const CustomLoadingOverlay(
-                                          child: PinSettingScreen()));
-                                }
-                              }),
-                      ]),
-                      const SizedBox(height: 16),
+                      // ButtonGroup(buttons: [
+                      //   SingleButton(
+                      //       title: t.settings_screen.set_password,
+                      //       rightElement: CupertinoSwitch(
+                      //           value: viewModel.isSetPin,
+                      //           activeColor: MyColors.primary,
+                      //           onChanged: (isOn) {
+                      //             if (isOn) {
+                      //               CommonBottomSheets.showBottomSheet_90<bool>(
+                      //                 context: context,
+                      //                 child: const CustomLoadingOverlay(
+                      //                   child: PinSettingScreen(
+                      //                       useBiometrics: true),
+                      //                 ),
+                      //               );
+                      //             } else {
+                      //               viewModel.deletePin();
+                      //             }
+                      //           })),
+                      //   if (viewModel.canCheckBiometrics && viewModel.isSetPin)
+                      //     SingleButton(
+                      //       title: t.settings_screen.use_biometric,
+                      //       rightElement: CupertinoSwitch(
+                      //           value: viewModel.isSetBiometrics,
+                      //           activeColor: MyColors.primary,
+                      //           onChanged: (isOn) async {
+                      //             if (isOn) {
+                      //               viewModel.authenticateWithBiometrics(
+                      //                   isSave: true);
+                      //             } else {
+                      //               viewModel.saveIsSetBiometrics(false);
+                      //             }
+                      //           }),
+                      //     ),
+                      //   if (viewModel.isSetPin)
+                      //     SingleButton(
+                      //         title: t.settings_screen.change_password,
+                      //         onPressed: () async {
+                      //           final bool? result =
+                      //               await CommonBottomSheets.showBottomSheet_90(
+                      //                   context: context,
+                      //                   child: const CustomLoadingOverlay(
+                      //                       child: PinCheckScreen()));
+                      //           if (result == true) {
+                      //             await CommonBottomSheets.showBottomSheet_90(
+                      //                 context: context,
+                      //                 child: const CustomLoadingOverlay(
+                      //                     child: PinSettingScreen()));
+                      //           }
+                      //         }),
+                      // ]),
+                      // const SizedBox(height: 16),
                       ButtonContainer(
                           child: SingleButton(
                         title: t.settings_screen.hide_balance,
