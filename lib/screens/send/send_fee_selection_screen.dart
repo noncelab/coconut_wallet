@@ -221,9 +221,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                 text: t.text_field.enter_fee_directly,
                                 fontSize: 14,
                                 lineHeight: 21,
-                                defaultColor: _customSelected
-                                    ? MyColors.white
-                                    : MyColors.transparentWhite_70,
+                                defaultColor: CoconutColors.gray200,
                               ),
                             ],
                           )),

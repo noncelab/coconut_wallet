@@ -4,6 +4,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -161,13 +162,19 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 20, vertical: 16),
                                 onTap: () {
-                                  showTextFieldDialog(
+                                  showModalBottomSheet(
                                     context: context,
-                                    content: t
-                                        .text_field.enter_fee_as_natural_number,
-                                    controller: _customFeeController,
-                                    textInputType: TextInputType.number,
-                                    onPressed: _onCustomFeeRateInput,
+                                    isScrollControlled: true,
+                                    builder: (context) => TextFieldBottomSheet(
+                                      title: t.input_directly,
+                                      placeholder: t.text_field
+                                          .enter_fee_as_natural_number,
+                                      onComplete: (text) {
+                                        _onCustomFeeRateInput(text);
+                                      },
+                                      keyboardType: TextInputType.number,
+                                      visibleTextLimit: false,
+                                    ),
                                   );
                                 },
                                 text: t.text_field.enter_fee_directly,
@@ -201,15 +208,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
         .firstWhere((feeInfo) => feeInfo.level == transactionFeeLevel);
   }
 
-  // double? get fiatValueInKrw {
-  //   if (_estimatedFee != null && _bitcoinPriceKrw != null) {
-  //     return FiatUtil.calculateFiatAmount(_estimatedFee!, _bitcoinPriceKrw!)
-  //         .toDouble();
-  //   }
-
-  //   return null;
-  // }
-
   Future<void> _onChangedNetworkStatus(bool? isNetworkOn) async {
     debugPrint('isNetworkOn = $isNetworkOn _isNetworkOn = $_isNetworkOn');
 
@@ -220,12 +218,16 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
     });
   }
 
-  void _onCustomFeeRateInput() async {
-    if (_customFeeController.text.isEmpty) {
+  void _onCustomFeeRateInput(String input) async {
+    if (input.isEmpty) {
       return;
     }
 
-    int customSatsPerVb = int.parse(_customFeeController.text);
+    // if (_customFeeController.text.isEmpty) {
+    //   return;
+    // }
+
+    int customSatsPerVb = int.parse(input);
     if (widget.networkMinimumFeeRate != null &&
         customSatsPerVb < widget.networkMinimumFeeRate!) {
       CustomToast.showToast(
@@ -245,11 +247,13 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
         });
       }
     } catch (e) {
-      CustomToast.showWarningToast(
-          context: context,
-          text: ErrorCodes.withMessage(
-                  ErrorCodes.feeEstimationError, e.toString())
-              .message);
+      if (mounted) {
+        CustomToast.showWarningToast(
+            context: context,
+            text: ErrorCodes.withMessage(
+                    ErrorCodes.feeEstimationError, e.toString())
+                .message);
+      }
     } finally {
       _customFeeController.clear();
     }
