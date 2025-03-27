@@ -182,16 +182,17 @@ class _TransactionFeeBumpingScreenState
                                   ),
                                   CoconutLayout.spacing_100h
                                 ],
-                                Text(
-                                  t.transaction_fee_bumping_screen
-                                      .estimated_fee(
-                                    fee: addCommasToIntegerPart(viewModel
-                                        .getTotalEstimatedFee(double.parse(
-                                            _textEditingController.text))
-                                        .toDouble()),
+                                if (!_viewModel.insufficientUtxos)
+                                  Text(
+                                    t.transaction_fee_bumping_screen
+                                        .estimated_fee(
+                                      fee: addCommasToIntegerPart(viewModel
+                                          .getTotalEstimatedFee(double.parse(
+                                              _textEditingController.text))
+                                          .toDouble()),
+                                    ),
+                                    style: CoconutTypography.body2_14,
                                   ),
-                                  style: CoconutTypography.body2_14,
-                                ),
                               ],
                             ),
                       CoconutLayout.spacing_300h,
