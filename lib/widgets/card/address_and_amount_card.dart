@@ -19,6 +19,7 @@ class AddressAndAmountCard extends StatefulWidget {
   final void Function(String address) onAddressChanged;
   final void Function(String amount) onAmountChanged;
   final void Function(bool isContentEmpty) onDeleted;
+  final VoidCallback? onFocusRequested;
   final Future<void> Function(String address) validateAddress;
   final bool isRemovable;
   final bool isAddressInvalid;
@@ -37,6 +38,7 @@ class AddressAndAmountCard extends StatefulWidget {
       required this.isRemovable,
       required this.isAddressInvalid,
       required this.isAmountDust,
+      this.onFocusRequested,
       this.addressPlaceholder,
       this.amountPlaceholder,
       this.addressErrorMessage});
@@ -64,6 +66,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
       {required TextEditingController controller,
       required FocusNode focusNode,
       required ValueChanged<String> onChanged,
+      void Function(String)? onSubmitted,
       Widget? suffix,
       TextInputType? textInputType,
       String? placeholderText,
@@ -71,6 +74,11 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
       String? errorText,
       EdgeInsets? padding,
       double? height = 52}) {
+    focusNode.addListener(() {
+      if (focusNode.hasFocus) {
+        widget.onFocusRequested?.call();
+      }
+    });
     return CoconutTextField(
       controller: controller,
       focusNode: focusNode,
@@ -80,6 +88,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
               left: CoconutLayout.defaultPadding,
               top: CoconutLayout.defaultPadding,
               bottom: CoconutLayout.defaultPadding),
+      textInputAction: TextInputAction.done,
       activeColor: CoconutColors.gray100,
       cursorColor: CoconutColors.gray100,
       placeholderColor: CoconutColors.gray600,
@@ -129,6 +138,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 controller: _addressController,
                 focusNode: _addressFocusNode,
                 onChanged: _onAddressChanged,
+                onSubmitted: (_) {},
                 suffix: IconButton(
                   iconSize: 14,
                   padding: EdgeInsets.zero,
@@ -261,6 +271,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
     if (scannedAddress != null) {
       _addressController.text = scannedAddress;
       _onAddressChanged(scannedAddress);
+      _quantityFocusNode.requestFocus();
     }
     _disposeQrViewController();
   }
