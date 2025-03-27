@@ -14,9 +14,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
-import 'package:coconut_wallet/services/dio_client.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 enum PaymentType {

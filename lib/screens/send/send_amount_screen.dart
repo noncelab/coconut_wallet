@@ -5,7 +5,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';

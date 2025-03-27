@@ -61,45 +61,28 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                   title: t.send,
                   context: context,
                   actionButtonList: [
-                    Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: IconButton(
-                          icon: SvgPicture.asset(_isBatchMode
-                              ? 'assets/svg/user.svg'
-                              : 'assets/svg/users-group.svg'),
-                          onPressed: _changeIsBatchMode,
-                          padding: const EdgeInsets.all(0),
-                        ),
-                      ),
+                    IconButton(
+                      icon: SvgPicture.asset(_isBatchMode
+                          ? 'assets/svg/user.svg'
+                          : 'assets/svg/users-group.svg'),
+                      onPressed: _changeIsBatchMode,
                     ),
-                    CoconutLayout.spacing_200w,
-                    Padding(
-                      padding: const EdgeInsets.all(2.0),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: IconButton(
-                          iconSize: 24,
-                          icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
-                              colorFilter: ColorFilter.mode(
-                                _isBatchMode
-                                    ? CoconutColors.gray800
-                                    : CoconutColors.white,
-                                BlendMode.srcIn,
-                              )),
-                          onPressed: _isBatchMode
-                              ? null
-                              : () {
-                                  if (controller != null) {
-                                    controller!.flipCamera();
-                                  }
-                                },
-                          padding: const EdgeInsets.all(0),
-                        ),
-                      ),
+                    IconButton(
+                      iconSize: 24,
+                      icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
+                          colorFilter: ColorFilter.mode(
+                            _isBatchMode
+                                ? CoconutColors.gray800
+                                : CoconutColors.white,
+                            BlendMode.srcIn,
+                          )),
+                      onPressed: _isBatchMode
+                          ? null
+                          : () {
+                              if (controller != null) {
+                                controller!.flipCamera();
+                              }
+                            },
                     )
                   ],
                   onBackPressed: () {
@@ -108,8 +91,10 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                     Navigator.of(context).pop();
                   }),
               body: SafeArea(
+                bottom: false,
                 child: !_isBatchMode
                     ? SendAddressBody(
+                        key: const ValueKey('qr_body'),
                         qrKey: qrKey,
                         onQRViewCreated: _onQRViewCreated,
                         address: viewModel.address,
@@ -177,23 +162,37 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
+
+    // if (Platform.isAndroid && !_isBatchMode) {
+    //   controller.resumeCamera();
+    // }
+
     controller.scannedDataStream.listen((scanData) {
-      if (_isProcessing || scanData.code == null) return;
-      if (scanData.code!.isEmpty) return;
+      if (_isProcessing || scanData.code == null || scanData.code!.isEmpty) {
+        return;
+      }
 
       _isProcessing = true;
 
       _viewModel.validateAddress(scanData.code!).then((_) {
         _viewModel.saveWalletIdAndRecipientAddress(widget.id, scanData.code!);
         if (_viewModel.isNetworkOn) {
-          _goNext();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _goNext(); // Navigator.push 호출은 메인 스레드에서 실행
+          });
         } else {
-          CustomToast.showWarningToast(
-              context: context, text: ErrorCodes.networkError.message);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            CustomToast.showWarningToast(
+              context: context,
+              text: ErrorCodes.networkError.message,
+            );
+          });
           _isProcessing = false;
         }
       }).catchError((e) {
-        CustomToast.showToast(context: context, text: e.toString());
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          CustomToast.showToast(context: context, text: e.toString());
+        });
         _isProcessing = false;
       });
     });
@@ -226,13 +225,14 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   /// --- batch transaction
   void _changeIsBatchMode() {
     _viewModel.clearSendInfoProvider();
-    setState(() {
-      _isBatchMode = !_isBatchMode;
-    });
-
+    if (mounted) {
+      setState(() {
+        _isBatchMode = !_isBatchMode;
+      });
+    }
     if (_isBatchMode) {
-      controller?.pauseCamera();
-    } else {
+      controller?.dispose();
+    } else if (Platform.isIOS) {
       controller?.resumeCamera();
     }
   }
