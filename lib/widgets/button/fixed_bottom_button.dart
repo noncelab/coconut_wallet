@@ -74,7 +74,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                 CoconutLayout.spacing_300h,
                 CoconutButton(
                   onPressed: () {
-                    widget.onButtonClicked;
+                    widget.onButtonClicked();
                   },
                   width: MediaQuery.sizeOf(context).width,
                   disabledBackgroundColor: CoconutColors.gray800,

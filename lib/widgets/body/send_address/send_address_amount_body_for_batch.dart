@@ -2,7 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/button/single_bottom_button.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/address_and_amount_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -208,7 +208,9 @@ class _SendAddressAmountBodyForBatchState
           ],
         ),
         FixedBottomButton(
-          onButtonClicked: () => _onComplete(context),
+          onButtonClicked: () {
+            _onComplete(context);
+          },
           text: t.complete,
           showGradient: true,
           gradientPadding:
