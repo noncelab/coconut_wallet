@@ -114,21 +114,6 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  /// walletId 로 조회된 태그 전체 삭제
-  Result<bool> deleteAllUtxoTag(int walletId) {
-    return handleRealm<bool>(() {
-      final tags = realm.query<RealmUtxoTag>("walletId == '$walletId'");
-
-      if (tags.isEmpty) {
-        throw ErrorCodes.realmNotFound;
-      }
-
-      realm.deleteMany(tags);
-
-      return true;
-    });
-  }
-
   /// utxoIdList 변경
   /// - [walletId] 목록 검색
   /// - [utxoId] Utxo Id
