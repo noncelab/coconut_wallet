@@ -397,6 +397,11 @@ class _UtxoListState extends State<UtxoList> {
     }
 
     for (var index in removedIndexes.reversed) {
+      if (index >= _previousUtxoList.length) {
+        debugPrint('❌ 리스트를 초과하는 인덱스 $index < ${_previousUtxoList.length}');
+        continue;
+      }
+
       _utxoListKey.currentState?.removeItem(
         index,
         (context, animation) =>
