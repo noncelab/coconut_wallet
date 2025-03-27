@@ -26,7 +26,6 @@ class _FiatPriceState extends State<FiatPrice> {
     return Consumer<UpbitConnectModel>(builder: (context, viewModel, child) {
       final defaultStyle = CoconutTypography.body2_14_Number
           .copyWith(color: CoconutColors.gray500);
-
       final appliedStyle = widget.textStyle
               ?.copyWith(color: widget.textColor ?? defaultStyle.color) ??
           defaultStyle.copyWith(color: widget.textColor ?? defaultStyle.color);
