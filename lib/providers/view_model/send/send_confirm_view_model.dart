@@ -12,7 +12,6 @@ class SendConfirmViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
   late WalletListItemBase _walletListItemBase;
-  late int? _bitcoinPriceKrw;
   late int _estimatedFee;
   late int _totalUsedAmount;
 
@@ -20,8 +19,7 @@ class SendConfirmViewModel extends ChangeNotifier {
   late List<String> _addresses;
   Map<String, double>? _recipientsForBatch;
 
-  SendConfirmViewModel(
-      this._sendInfoProvider, this._walletProvider, this._bitcoinPriceKrw) {
+  SendConfirmViewModel(this._sendInfoProvider, this._walletProvider) {
     _walletListItemBase =
         _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _estimatedFee = _sendInfoProvider.estimatedFee!;
@@ -37,7 +35,7 @@ class SendConfirmViewModel extends ChangeNotifier {
   Map<String, double>? get recipientsForBatch => _recipientsForBatch == null
       ? null
       : UnmodifiableMapView(_recipientsForBatch!);
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
+
   int get estimatedFee => _estimatedFee;
   String get walletName => _walletListItemBase.name;
   int get totalUsedAmount => _totalUsedAmount;
@@ -70,10 +68,5 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   void setTxWaitingForSign(String transaction) {
     _sendInfoProvider.setTxWaitingForSign(transaction);
-  }
-
-  void updateBitcoinPriceKrw(int btcPriceInKrw) {
-    _bitcoinPriceKrw = btcPriceInKrw;
-    notifyListeners();
   }
 }

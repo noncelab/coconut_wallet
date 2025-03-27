@@ -1,7 +1,6 @@
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -9,6 +8,7 @@ import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
+import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -25,19 +25,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<WalletProvider, UpbitConnectModel,
-        SendConfirmViewModel>(
+    return ChangeNotifierProvider<SendConfirmViewModel>(
       create: (_) => _viewModel,
-      update: (_, walletProvider, upbitConnectModel, viewModel) {
-        if (upbitConnectModel.bitcoinPriceKrw != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            viewModel!
-                .updateBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
-          });
-        }
-
-        return viewModel!;
-      },
       child: Consumer<SendConfirmViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
@@ -51,6 +40,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                     viewModel.generateUnsignedPsbt().then((value) {
                       viewModel.setTxWaitingForSign(value);
                       context.loaderOverlay.hide();
+
                       Navigator.pushNamed(context, '/unsigned-transaction-qr',
                           arguments: {'walletName': viewModel.walletName});
                     }).catchError((error) {
@@ -79,20 +69,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                             style: Styles.balance1,
                           ),
                         )),
-                    // fiatValue
-                    Selector<SendConfirmViewModel, int?>(
-                      selector: (context, model) => model.bitcoinPriceKrw,
-                      builder: (context, bitcoinPriceKrw, child) {
-                        return Container(
-                            margin: const EdgeInsets.only(bottom: 40),
-                            child: Center(
-                                child: Text(
-                                    bitcoinPriceKrw != null
-                                        ? '${addCommasToIntegerPart(viewModel.amount * bitcoinPriceKrw)} ${CurrencyCode.KRW.code}'
-                                        : '',
-                                    style: Styles.balance2)));
-                      },
+                    FiatPrice(
+                      satoshiAmount:
+                          UnitUtil.bitcoinToSatoshi(viewModel.amount),
                     ),
+                    CoconutLayout.spacing_1000h,
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Container(
@@ -151,7 +132,6 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
 
     _viewModel = SendConfirmViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw);
+        Provider.of<WalletProvider>(context, listen: false));
   }
 }
