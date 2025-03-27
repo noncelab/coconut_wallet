@@ -222,13 +222,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   ),
                                 ),
                                 onPressed: () {
-                                  if (viewModel.isDbSyncing) {
-                                    CustomToast.showToast(
-                                      context: context,
-                                      text: t.toast.fetching_onchain_data,
-                                    );
-                                    return;
-                                  }
+                                  // TODO: 동기화 중 삭제 테스트 후 주석 해제
+                                  // if (viewModel.isDbSyncing) {
+                                  //   CustomToast.showToast(
+                                  //     context: context,
+                                  //     text: t.toast.fetching_onchain_data,
+                                  //   );
+                                  //   return;
+                                  // }
                                   _removeTooltip();
                                   CustomDialogs.showCustomAlertDialog(
                                     context,
