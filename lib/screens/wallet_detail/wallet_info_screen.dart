@@ -19,6 +19,7 @@ import 'package:coconut_wallet/widgets/overlays/custom_tooltip.dart';
 import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 class WalletInfoScreen extends StatefulWidget {
@@ -222,14 +223,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   ),
                                 ),
                                 onPressed: () {
-                                  // TODO: 동기화 중 삭제 테스트 후 주석 해제
-                                  // if (viewModel.isDbSyncing) {
-                                  //   CustomToast.showToast(
-                                  //     context: context,
-                                  //     text: t.toast.fetching_onchain_data,
-                                  //   );
-                                  //   return;
-                                  // }
                                   _removeTooltip();
                                   CustomDialogs.showCustomAlertDialog(
                                     context,
@@ -306,6 +299,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeTooltipPosition();
+      _setOverlayLoading(false);
     });
   }
 
@@ -334,11 +328,22 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   Future<void> _deleteWalletAndGoToWalletList(
       BuildContext context, WalletInfoViewModel viewModel) async {
+    Navigator.of(context).pop();
+    _setOverlayLoading(true);
     await viewModel.deleteWallet();
+    _setOverlayLoading(false);
     Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
             builder: (BuildContext context) => const WalletListScreen()),
         (route) => false);
+  }
+
+  void _setOverlayLoading(bool value) {
+    if (value) {
+      context.loaderOverlay.show();
+    } else {
+      context.loaderOverlay.hide();
+    }
   }
 }
