@@ -2,14 +2,17 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/cpfp_info.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 
 /// CPFP(Child-Pays-For-Parent) 트랜잭션 처리를 담당하는 클래스
 class CpfpHandler {
   final TransactionRepository _transactionRepository;
+  final UtxoManager _utxoManager;
 
-  CpfpHandler(this._transactionRepository);
+  CpfpHandler(this._transactionRepository, this._utxoManager);
 
   /// CPFP 트랜잭션을 감지합니다.
   ///
@@ -33,13 +36,19 @@ class CpfpHandler {
 
     for (final input in tx.inputs) {
       // 입력으로 사용된 트랜잭션이 미확인 상태인지 확인
-      final parentTx = _transactionRepository.getTransactionRecord(
+      final parentTxRecord = _transactionRepository.getTransactionRecord(
           walletId, input.transactionHash);
-      if (parentTx != null && parentTx.blockHeight == 0) {
-        isCpfp = true;
-        parentTxHash = parentTx.transactionHash;
-        originalFee = parentTx.feeRate;
-        break;
+      // 입력 트랜잭션이 언컨펌이면서
+      if (parentTxRecord != null && parentTxRecord.blockHeight == 0) {
+        final utxo = _utxoManager.getUtxoState(
+            walletId, makeUtxoId(input.transactionHash, input.index));
+        // 입력 트랜잭션에 사용된 UTXO가 내 UTXO라면 CPFP로 간주
+        if (utxo != null) {
+          isCpfp = true;
+          parentTxHash = parentTxRecord.transactionHash;
+          originalFee = parentTxRecord.feeRate;
+          break;
+        }
       }
     }
 

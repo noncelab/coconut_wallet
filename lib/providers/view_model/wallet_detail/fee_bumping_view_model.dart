@@ -154,7 +154,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   List<TransactionAddress> _getMyOutputs() => _parentTx.outputAddressList
       .where((output) =>
-          _walletProvider.containsAddress(_walletId, output.address))
+          _walletProvider.containsAddress(_walletId, output.address) ||
+          _walletProvider.containsAddress(_walletId, output.address,
+              isChange: true))
       .toList();
 
   PaymentType? _getPaymentType() {
@@ -204,6 +206,16 @@ class FeeBumpingViewModel extends ChangeNotifier {
             _parentTx.outputAddressList[utxoState.index].address ==
                 utxoState.to) {
           utxoList.add(utxoState);
+        } else {
+          // 어떤 값이 다른지 로그로 다 출력
+          debugPrint(
+              '${myAddress.address != utxoState.to ? '❌' : '✅'} 주소: myAddress.address: ${myAddress.address} / utxoState.to: ${utxoState.to}');
+          debugPrint(
+              '${myAddress.amount != utxoState.amount ? '❌' : '✅'} 금액: myAddress.amount: ${myAddress.amount} / utxoState.amount: ${utxoState.amount}');
+          debugPrint(
+              '${_parentTx.transactionHash != utxoState.transactionHash ? '❌' : '✅'} 트랜잭션 해시: _parentTx.transactionHash: ${_parentTx.transactionHash} / utxoState.transactionHash: ${utxoState.transactionHash}');
+          debugPrint(
+              '${_parentTx.outputAddressList[utxoState.index].address != utxoState.to ? '❌' : '✅'} 출력 주소: _parentTx.outputAddressList[utxoState.index].address: ${_parentTx.outputAddressList[utxoState.index].address} / utxoState.to: ${utxoState.to}');
         }
       }
     }

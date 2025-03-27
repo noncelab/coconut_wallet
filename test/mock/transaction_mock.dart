@@ -104,7 +104,6 @@ class TransactionMock {
     return RbfInfo(
       originalTransactionHash: originalTransactionHash,
       spentTransactionHash: spentTransactionHash,
-      previousTransactions: previousTransactions ?? [],
     );
   }
 

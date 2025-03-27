@@ -173,36 +173,40 @@ class UtxoRepository extends BaseRepository {
   }
 
   /// 모든 UTXO 추가
-  void addAllUtxos(int walletId, List<UtxoState> utxos) {
-    final existingUtxos = realm.query<RealmUtxo>(
-      r'walletId == $0',
-      [walletId],
-    );
+  Result<bool> addAllUtxos(int walletId, List<UtxoState> utxos) {
+    return handleRealm<bool>(() {
+      final existingUtxos = realm.query<RealmUtxo>(
+        r'walletId == $0',
+        [walletId],
+      );
 
-    final existingUtxoMap = Map<String, RealmUtxo>.fromEntries(
-      existingUtxos.map((realmUtxo) => MapEntry(realmUtxo.id, realmUtxo)),
-    );
+      final existingUtxoMap = Map<String, RealmUtxo>.fromEntries(
+        existingUtxos.map((realmUtxo) => MapEntry(realmUtxo.id, realmUtxo)),
+      );
 
-    final newUtxos = utxos
-        .where((utxo) => !existingUtxoMap.containsKey(utxo.utxoId))
-        .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
-        .toList();
+      final newUtxos = utxos
+          .where((utxo) => !existingUtxoMap.containsKey(utxo.utxoId))
+          .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
+          .toList();
 
-    final toUpdateUtxos = utxos
-        .where((utxo) => existingUtxoMap.containsKey(utxo.utxoId))
-        .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
-        .toList();
+      final toUpdateUtxos = utxos
+          .where((utxo) => existingUtxoMap.containsKey(utxo.utxoId))
+          .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
+          .toList();
 
-    realm.write(() {
-      for (final toUpdateUtxo in toUpdateUtxos) {
-        final existingUtxo = existingUtxoMap[toUpdateUtxo.id];
-        if (existingUtxo != null) {
-          existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
-          existingUtxo.timestamp = toUpdateUtxo.timestamp;
-          existingUtxo.status = toUpdateUtxo.status;
+      realm.write(() {
+        for (final toUpdateUtxo in toUpdateUtxos) {
+          final existingUtxo = existingUtxoMap[toUpdateUtxo.id];
+          if (existingUtxo != null) {
+            existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
+            existingUtxo.timestamp = toUpdateUtxo.timestamp;
+            existingUtxo.status = toUpdateUtxo.status;
+          }
         }
-      }
-      realm.addAll<RealmUtxo>(newUtxos);
+        realm.addAll<RealmUtxo>(newUtxos);
+      });
+
+      return true;
     });
   }
 
