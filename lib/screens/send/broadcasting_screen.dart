@@ -1,5 +1,5 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart'; // FIXME: remove model import
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -19,6 +19,7 @@ import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
+import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -136,49 +137,33 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(
-                      height: 40,
-                    ),
+                    CoconutLayout.spacing_1000h,
                     Text(
                       t.broadcasting_screen.description,
                       style: Styles.h3,
                     ),
-                    Container(
-                        margin: const EdgeInsets.only(top: 40),
-                        child: Center(
-                          child: Text.rich(
-                            TextSpan(
-                                text: viewModel.amount != null
-                                    ? satoshiToBitcoinString(viewModel
-                                                .sendingAmountWhenAddressIsMyChange !=
-                                            null
-                                        ? viewModel.sendingAmountWhenAddressIsMyChange!
-                                        : viewModel.amount!)
-                                    : "",
-                                children: <TextSpan>[
-                                  TextSpan(
-                                      text: ' ${t.btc}', style: Styles.unit)
-                                ]),
-                            style: Styles.balance1,
-                          ),
-                        )),
-                    Selector<BroadcastingViewModel, int?>(
-                      selector: (context, model) => model.amountValueInKrw,
-                      builder: (context, amountValueInKrw, child) {
-                        if (amountValueInKrw != null) {
-                          return Text(
-                              '${addCommasToIntegerPart(amountValueInKrw.toDouble())} ${CurrencyCode.KRW.code}',
-                              style: Styles.label.merge(TextStyle(
-                                  fontFamily:
-                                      CustomFonts.number.getFontFamily)));
-                        } else {
-                          return const SizedBox();
-                        }
-                      },
+                    CoconutLayout.spacing_400h,
+                    Center(
+                      child: Text.rich(
+                        TextSpan(
+                            text: viewModel.amount != null
+                                ? satoshiToBitcoinString(viewModel
+                                            .sendingAmountWhenAddressIsMyChange !=
+                                        null
+                                    ? viewModel.sendingAmountWhenAddressIsMyChange!
+                                    : viewModel.amount!)
+                                : "",
+                            children: <TextSpan>[
+                              TextSpan(text: ' ${t.btc}', style: Styles.unit)
+                            ]),
+                        style: Styles.balance1,
+                      ),
                     ),
-                    const SizedBox(
-                      height: 40,
-                    ),
+                    FiatPrice(
+                        satoshiAmount: viewModel.amount ?? 0,
+                        textStyle: CoconutTypography.body2_14_Number
+                            .setColor(CoconutColors.gray400)),
+                    CoconutLayout.spacing_1000h,
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Container(

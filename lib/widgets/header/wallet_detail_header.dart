@@ -4,6 +4,7 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lottie/lottie.dart';
 
@@ -59,20 +60,9 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       },
       child: Column(
         children: [
-          _buildFiatPriceInfo(),
+          FiatPrice(satoshiAmount: widget.animatedBalanceData.current ?? 0),
           _buildBtcBalance(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFiatPriceInfo() {
-    return SizedBox(
-      height: 20,
-      child: Text(
-        widget.animatedBalanceData.current != 0 ? widget.btcPriceInKrw : '-',
-        style:
-            CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
       ),
     );
   }

@@ -1,11 +1,10 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/svg.dart';
@@ -82,13 +81,8 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     ),
                   ),
                   CoconutLayout.spacing_50h,
-                  Consumer<UpbitConnectModel>(
-                      builder: (context, viewModel, child) => Text(
-                          viewModel.getFiatPrice(
-                              widget.animatedBalanceData.current,
-                              CurrencyCode.KRW),
-                          style: CoconutTypography.body2_14_Number
-                              .setColor(CoconutColors.gray500))),
+                  FiatPrice(
+                      satoshiAmount: widget.animatedBalanceData.current ?? 0),
                   CoconutLayout.spacing_400h,
                   Row(
                     children: [
