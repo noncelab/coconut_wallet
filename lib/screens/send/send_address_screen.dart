@@ -163,9 +163,9 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
 
-    if (Platform.isAndroid && !_isBatchMode) {
-      controller.resumeCamera();
-    }
+    // if (Platform.isAndroid && !_isBatchMode) {
+    //   controller.resumeCamera();
+    // }
 
     controller.scannedDataStream.listen((scanData) {
       if (_isProcessing || scanData.code == null || scanData.code!.isEmpty) {
