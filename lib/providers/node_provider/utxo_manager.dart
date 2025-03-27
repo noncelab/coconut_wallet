@@ -149,4 +149,8 @@ class UtxoManager {
     _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
         walletId, replacedTxHashs);
   }
+
+  List<UtxoState> getIncomingUtxoList(int walletId) {
+    return _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.incoming);
+  }
 }

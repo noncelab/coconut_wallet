@@ -31,7 +31,8 @@ class TransactionFetcher {
     this._transactionProcessor,
     this._stateManager,
     this._utxoManager,
-  )   : _rbfHandler = RbfHandler(_transactionRepository, _utxoManager),
+  )   : _rbfHandler =
+            RbfHandler(_transactionRepository, _utxoManager, _electrumService),
         _cpfpHandler = CpfpHandler(_transactionRepository);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
@@ -91,7 +92,8 @@ class TransactionFetcher {
         txFetchResults.map((tx) => tx.transactionHash).toSet());
 
     // RBF 및 CPFP 감지 결과를 저장할 맵
-    Map<String, RbfInfo> rbfInfoMap = {};
+    Map<String, RbfInfo> sendingRbfInfoMap = {};
+    Set<String> receivingRbfTxHashSet = {};
     Map<String, CpfpInfo> cpfpInfoMap = {};
 
     // 각 트랜잭션에 대해 사용된 UTXO 상태 업데이트
@@ -99,14 +101,26 @@ class TransactionFetcher {
       // 언컨펌 트랜잭션의 경우 새로 브로드캐스트된 트랜잭션이므로 사용된 UTXO 상태 업데이트
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
         // RBF 및 CPFP 감지
-        final rbfInfo = await _rbfHandler.detectRbfTransaction(
+        final sendingRbfInfo = await _rbfHandler.detectSendingRbfTransaction(
           walletItem.id,
           fetchedTx,
           _transactionProcessor.getPreviousTransactions,
         );
-        if (rbfInfo != null) {
-          rbfInfoMap[fetchedTx.transactionHash] = rbfInfo;
-          Logger.log('RBF 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
+        if (sendingRbfInfo != null) {
+          sendingRbfInfoMap[fetchedTx.transactionHash] = sendingRbfInfo;
+          Logger.log(
+              '[${walletItem.name}] 보내는 RBF 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
+        }
+
+        final receivingRbfTxHash =
+            await _rbfHandler.detectReceivingRbfTransaction(
+          walletItem.id,
+          fetchedTx,
+        );
+        if (receivingRbfTxHash != null) {
+          receivingRbfTxHashSet.add(receivingRbfTxHash);
+          Logger.log(
+              '[${walletItem.name}] 받는 RBF 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
         }
 
         final cpfpInfo = await _cpfpHandler.detectCpfpTransaction(
@@ -147,24 +161,32 @@ class TransactionFetcher {
     _transactionRepository.addAllTransactions(walletItem.id, txRecords);
 
     // RBF/CPFP 내역 저장
-    if (rbfInfoMap.isNotEmpty || cpfpInfoMap.isNotEmpty) {
+    if (sendingRbfInfoMap.isNotEmpty ||
+        receivingRbfTxHashSet.isNotEmpty ||
+        cpfpInfoMap.isNotEmpty) {
       // 트랜잭션 해시와 레코드를 매핑하는 맵 생성
       final txRecordMap = {
         for (var record in txRecords) record.transactionHash: record
       };
 
-      if (rbfInfoMap.isNotEmpty) {
+      if (sendingRbfInfoMap.isNotEmpty) {
         await _rbfHandler.saveRbfHistoryMap(
-            walletItem, rbfInfoMap, txRecordMap, walletItem.id);
+            walletItem, sendingRbfInfoMap, txRecordMap, walletItem.id);
 
-        _transactionRepository.markAsRbfReplaced(walletItem.id, rbfInfoMap);
+        _transactionRepository.markAsRbfReplaced(
+            walletItem.id, sendingRbfInfoMap);
 
         // 대체되어 사라지는 트랜잭션의 UTXO 삭제
         _utxoManager.deleteUtxosByReplacedTransactionHashSet(
             walletItem.id,
-            rbfInfoMap.values
+            sendingRbfInfoMap.values
                 .map((rbfInfo) => rbfInfo.spentTransactionHash)
                 .toSet());
+      }
+
+      if (receivingRbfTxHashSet.isNotEmpty) {
+        _utxoManager.deleteUtxosByReplacedTransactionHashSet(
+            walletItem.id, receivingRbfTxHashSet);
       }
 
       if (cpfpInfoMap.isNotEmpty) {
