@@ -77,6 +77,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
+    debugPrint('signedTx: ${signedTx.serialize()}');
     return _nodeProvider.broadcast(signedTx);
   }
 

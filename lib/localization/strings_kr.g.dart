@@ -53,6 +53,7 @@ class Translations implements BaseTranslations<AppLocale, Translations> {
   String get testnet => '테스트넷';
   String get address => '주소';
   String get fee => '수수료';
+  String get fee_rate => '수수료율';
   String get send => '보내기';
   String get receive => '받기';
   String get paste => '붙여넣기';
@@ -1069,6 +1070,8 @@ extension on Translations {
         return '주소';
       case 'fee':
         return '수수료';
+      case 'fee_rate':
+        return '수수료율';
       case 'send':
         return '보내기';
       case 'receive':

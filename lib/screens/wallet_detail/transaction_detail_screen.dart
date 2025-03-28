@@ -231,6 +231,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           ),
                         ),
                         TransactionDetailScreen._divider,
+                        const SizedBox(height: 12),
+                        UnderlineButtonItemCard(
+                          label: t.fee_rate,
+                          underlineButtonLabel: '',
+                          onTapUnderlineButton: () {},
+                          child: Text(
+                            '${tx.feeRate.toStringAsFixed(2)} sats/vb',
+                            style: CoconutTypography.body1_16_Number,
+                          ),
+                        ),
+                        TransactionDetailScreen._divider,
                         UnderlineButtonItemCard(
                             label: t.tx_id,
                             underlineButtonLabel: t.view_mempool,
