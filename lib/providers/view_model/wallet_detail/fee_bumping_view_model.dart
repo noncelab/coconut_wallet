@@ -250,7 +250,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     if (type == null) return;
 
     final externalOutputs = _getExternalOutputs();
-    var amount = externalOutputs.fold(0, (sum, output) => sum + output.amount);
+    var externalSendingAmount =
+        externalOutputs.fold(0, (sum, output) => sum + output.amount);
 
     final int changeOutputIndex =
         _pendingTx.outputAddressList.lastIndexWhere((output) {
@@ -272,7 +273,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
         : _bumpingTransaction!
             .estimateVirtualByte(_walletListItemBase.walletBase.addressType);
     double newFee = estimatedVSize * newFeeRate;
-    double outputSum = amount + newFee;
+    double outputSum = externalSendingAmount + newFee;
 
     // 내 주소가 output에 있는지 확인
     final selfOutputs = externalOutputs
@@ -313,12 +314,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
           debugPrint('RBF:: 1.1.3. Change > newFee >>> 싱글 트잭');
           _generateSinglePayment(utxoList, externalOutputs[0].address,
-              changeAddress, newFeeRate, amount);
+              changeAddress, newFeeRate, externalSendingAmount);
           return;
         } else {
           debugPrint('RBF:: 2️⃣ Change 있지만 부족함');
-          if (!_ensureSufficientUtxos(
-              utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
+          if (!_ensureSufficientUtxos(utxoList, outputSum, estimatedVSize,
+              newFeeRate, externalSendingAmount)) {
             return;
           }
         }
@@ -358,40 +359,41 @@ class FeeBumpingViewModel extends ChangeNotifier {
               utxoList, paymentMap, changeAddress, newFeeRate);
           return;
         }
-        //2. 싱글 또는 스윕이었던 경우
-        debugPrint('RBF:: 싱글 또는 스윕 >> amount 조정 $amount');
-        int adjustedAmount = amount - newFee.toInt();
-        debugPrint('RBF::                        조정 후 $adjustedAmount');
+        //2. 내 주소로 보내는 싱글 또는 스윕이었던 경우
+        final myOutputAmount = selfOutputs[0].amount;
+        debugPrint('RBF:: 싱글 또는 스윕 >> amount 조정 $externalSendingAmount');
+        int adjustedMyOuputAmount =
+            myOutputAmount - (newFee - _pendingTx.fee!).toInt();
+        debugPrint('RBF::                        조정 후 $adjustedMyOuputAmount');
 
-        if (adjustedAmount == 0) {
+        if (adjustedMyOuputAmount == 0) {
           debugPrint('RBF:: 조정해서 내가 받을 금액 0 - 남의 주소에게 보내는 스윕 트잭');
-          _generateSweepPayment(
-              utxoList, externalOutputs[0].address, newFeeRate);
+          _generateSweepPayment(utxoList, selfOutputs[0].address, newFeeRate);
           return;
         }
 
-        if (adjustedAmount > 0 && adjustedAmount > dustLimit) {
-          debugPrint('RBF:: 금액 조정 - $adjustedAmount');
+        if (adjustedMyOuputAmount > 0 && adjustedMyOuputAmount > dustLimit) {
+          debugPrint('RBF:: 금액 조정 - $adjustedMyOuputAmount');
           changeAddress = _walletProvider.getChangeAddress(_walletId).address;
-          _generateSinglePayment(utxoList, externalOutputs[0].address,
-              changeAddress, newFeeRate, adjustedAmount);
+          _generateSinglePayment(utxoList, selfOutputs[0].address,
+              changeAddress, newFeeRate, adjustedMyOuputAmount);
           return;
         }
 
         debugPrint('RBF:: ❌ amount 조정해도 안됨 > utxo 추가 - amount 조정 없이 utxo 추가');
-        if (!_ensureSufficientUtxos(
-            utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
+        if (!_ensureSufficientUtxos(utxoList, outputSum, estimatedVSize,
+            newFeeRate, externalSendingAmount)) {
           return;
         }
-        debugPrint('RBF:: ✅ utxo 추가 완료 보낼 수량 $amount');
+        debugPrint('RBF:: ✅ utxo 추가 완료 보낼 수량 $externalSendingAmount');
         changeAddress = _walletProvider.getChangeAddress(_walletId).address;
         _generateSinglePayment(utxoList, externalOutputs[0].address,
-            changeAddress, newFeeRate, amount);
+            changeAddress, newFeeRate, externalSendingAmount);
         return;
       } else {
         debugPrint('RBF:: 4️⃣ change도 없고, 내 아웃풋도 없음 >>> utxo 추가!');
-        if (!_ensureSufficientUtxos(
-            utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
+        if (!_ensureSufficientUtxos(utxoList, outputSum, estimatedVSize,
+            newFeeRate, externalSendingAmount)) {
           return;
         }
         changeAddress = _walletProvider.getChangeAddress(_walletId).address;
@@ -409,7 +411,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       case PaymentType.sweep:
       case PaymentType.singlePayment:
         _generateSinglePayment(utxoList, externalOutputs[0].address,
-            changeAddress, newFeeRate, amount);
+            changeAddress, newFeeRate, externalSendingAmount);
         break;
       case PaymentType.batchPayment:
         Map<String, int> paymentMap =
