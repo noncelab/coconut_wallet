@@ -142,9 +142,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
       double newTxFeeRate, FeeBumpingType feeBumpingType) {
     _sendInfoProvider.setWalletId(_walletId);
     _sendInfoProvider.setIsMultisig(
-        walletListItemBase.walletType == WalletType.multiSignature);
+        _walletListItemBase.walletType == WalletType.multiSignature);
     _sendInfoProvider.setTxWaitingForSign(Psbt.fromTransaction(
-            _bumpingTransaction!, walletListItemBase.walletBase)
+            _bumpingTransaction!, _walletListItemBase.walletBase)
         .serialize());
     _sendInfoProvider.setFeeBumpfingType(feeBumpingType);
   }
@@ -281,6 +281,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
         .toList();
     final containsSelfOutputs = selfOutputs.isNotEmpty;
 
+    List<TransactionAddress> newOutputList = changeOutputIndex == -1
+        ? _pendingTx.outputAddressList
+        : List.from(_pendingTx.outputAddressList)
+      ..removeAt(changeOutputIndex);
+
     debugPrint('RBF:: $inputSum $outputSum');
     if (inputSum < outputSum) {
       debugPrint('RBF:: ❌ input 합계가 output 합계보다 작음!');
@@ -292,7 +297,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
             debugPrint('RBF:: 1.1.1. 배치 트잭');
             _generateBatchTransation(
                 utxoList,
-                _createPaymentMapForRbfBatchTx(_pendingTx.outputAddressList),
+                _createPaymentMapForRbfBatchTx(newOutputList),
                 changeAddress,
                 newFeeRate);
             return;
@@ -325,7 +330,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
           debugPrint('RBF:: 배치 트랜잭션임');
           Map<String, int> paymentMap = {};
           int remainingFee = newFee.toInt();
-          for (var output in _pendingTx.outputAddressList) {
+          for (var output in newOutputList) {
             if (selfOutputs
                 .any((selfOutput) => selfOutput.address == output.address)) {
               int deduction = remainingFee > output.amount
@@ -407,7 +412,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
         break;
       case PaymentType.batchPayment:
         Map<String, int> paymentMap =
-            _createPaymentMapForRbfBatchTx(_pendingTx.outputAddressList);
+            _createPaymentMapForRbfBatchTx(newOutputList);
 
         _generateBatchTransation(
             utxoList, paymentMap, changeAddress, newFeeRate);
@@ -429,7 +434,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setAmount(UnitUtil.satoshiToBitcoin(amount));
     _sendInfoProvider.setIsMaxMode(false);
     _setInsufficientUtxo(false);
-    debugPrint('RBF::    ▶️ 싱글 트잭 생성');
+    debugPrint('RBF::    ▶️ 싱글 트잭 생성(fee rate: $feeRate)');
   }
 
   void _generateSweepPayment(
@@ -439,7 +444,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setRecipientAddress(recipient);
     _sendInfoProvider.setIsMaxMode(true);
     _setInsufficientUtxo(false);
-    debugPrint('RBF::    ▶️ 스윕 트잭 생성');
+    debugPrint('RBF::    ▶️ 스윕 트잭 생성(fee rate: $feeRate)');
   }
 
   void _generateBatchTransation(List<Utxo> inputs, Map<String, int> paymentMap,
@@ -454,7 +459,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
         paymentMap.map((key, value) => MapEntry(key, value.toDouble())));
     _sendInfoProvider.setIsMaxMode(false);
     _setInsufficientUtxo(false);
-    debugPrint('RBF::    ▶️ 배치 트잭 생성');
+    debugPrint('RBF::    ▶️ 배치 트잭 생성(fee rate: $feeRate)');
   }
 
   bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
