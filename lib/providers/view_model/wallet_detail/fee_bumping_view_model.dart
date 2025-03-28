@@ -269,7 +269,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     int estimatedVSize = _bumpingTransaction == null
         ? _pendingTx.vSize
-        : _bumpingTransaction!.getVirtualByte().toInt();
+        : _bumpingTransaction!
+            .estimateVirtualByte(_walletListItemBase.walletBase.addressType)
+            .toInt();
     double newFee = estimatedVSize * newFeeRate;
     double outputSum = amount + newFee;
 
