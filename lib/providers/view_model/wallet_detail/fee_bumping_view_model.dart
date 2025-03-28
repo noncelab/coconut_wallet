@@ -407,6 +407,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return;
     }
 
+    if (changeAddress.isEmpty) {
+      changeAddress = _walletProvider.getChangeAddress(_walletId).address;
+    }
+
     switch (type) {
       case PaymentType.sweep:
       case PaymentType.singlePayment:
