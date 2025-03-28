@@ -281,10 +281,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
         .toList();
     final containsSelfOutputs = selfOutputs.isNotEmpty;
 
-    List<TransactionAddress> newOutputList = changeOutputIndex == -1
-        ? _pendingTx.outputAddressList
-        : List.from(_pendingTx.outputAddressList)
-      ..removeAt(changeOutputIndex);
+    List<TransactionAddress> newOutputList =
+        List.from(_pendingTx.outputAddressList);
+    if (changeOutputIndex != -1) {
+      newOutputList.removeAt(changeOutputIndex);
+    }
 
     debugPrint('RBF:: $inputSum $outputSum');
     if (inputSum < outputSum) {
