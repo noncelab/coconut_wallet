@@ -321,8 +321,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
         Map<String, int> paymentMap =
             _createPaymentMapForRbfBatchTx(transaction.outputAddressList);
 
-        _bumpingTransaction = Transaction.forBatchPayment(utxoList, paymentMap,
-            changeAddress, newFeeRate, walletListItemBase.walletBase);
+        _bumpingTransaction = Transaction.forBatchPayment(
+            utxoList,
+            paymentMap,
+            _addressRepository.getDerivationPath(_walletId, changeAddress),
+            newFeeRate,
+            walletListItemBase.walletBase);
 
         _sendInfoProvider.setRecipientsForBatch(
             paymentMap.map((key, value) => MapEntry(key, value.toDouble())));
