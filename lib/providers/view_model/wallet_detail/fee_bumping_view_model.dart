@@ -228,7 +228,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       debugPrint(
           '😇 CPFP utxo (${utxoList.length})개 input: $inputSum / output: $outputSum / 👉🏻 입력한 fee rate: $newFeeRate');
       if (!_ensureSufficientUtxos(
-          utxoList, outputSum, estimatedVSize.ceil(), newFeeRate, amount)) {
+          utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
         debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
         return;
       }
@@ -267,11 +267,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
     //input 정보 추출
     List<Utxo> utxoList = await _getUtxoListForRbf();
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    int estimatedVSize = _bumpingTransaction == null
-        ? _pendingTx.vSize
+    double estimatedVSize = _bumpingTransaction == null
+        ? _pendingTx.vSize.toDouble()
         : _bumpingTransaction!
-            .estimateVirtualByte(_walletListItemBase.walletBase.addressType)
-            .toInt();
+            .estimateVirtualByte(_walletListItemBase.walletBase.addressType);
     double newFee = estimatedVSize * newFeeRate;
     double outputSum = amount + newFee;
 
@@ -455,7 +454,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
-      int estimatedVSize, double newFeeRate, int amount) {
+      double estimatedVSize, double newFeeRate, int amount) {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     List<UtxoState> unspentUtxos =
         _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
