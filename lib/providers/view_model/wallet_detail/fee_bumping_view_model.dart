@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -15,17 +16,18 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 enum PaymentType {
-  forSweep,
-  forSinglePayment,
-  forBatchPayment,
+  sweep,
+  singlePayment,
+  batchPayment,
 }
 
 class FeeBumpingViewModel extends ChangeNotifier {
   final FeeBumpingType _type;
-  final TransactionRecord _parentTx;
+  final TransactionRecord _pendingTx;
   final WalletProvider _walletProvider;
   final NodeProvider _nodeProvider;
   final SendInfoProvider _sendInfoProvider;
@@ -48,7 +50,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   FeeBumpingViewModel(
     this._type,
-    this._parentTx,
+    this._pendingTx,
     this._walletId,
     this._sendInfoProvider,
     this._nodeProvider,
@@ -68,7 +70,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool? get didFetchRecommendedFeesSuccessfully => _isFeeFetchSuccess;
   bool? get isInitializedSuccess => _isInitializedSuccess;
 
-  TransactionRecord get transaction => _parentTx;
+  TransactionRecord get transaction => _pendingTx;
   int get walletId => _walletId;
 
   WalletListItemBase get walletListItemBase => _walletListItemBase;
@@ -99,7 +101,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     assert(_isInitializedSuccess == true);
     assert(_recommendedFeeRate != null);
 
-    return feeRate < _recommendedFeeRate! || feeRate < _parentTx.feeRate;
+    return feeRate < _recommendedFeeRate! || feeRate < _pendingTx.feeRate;
   }
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
@@ -147,19 +149,19 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setFeeBumpfingType(feeBumpingType);
   }
 
-  List<TransactionAddress> _getExternalOutputs() => _parentTx.outputAddressList
+  List<TransactionAddress> _getExternalOutputs() => _pendingTx.outputAddressList
       .where((output) => !_walletProvider
           .containsAddress(_walletId, output.address, isChange: true))
       .toList();
 
-  List<TransactionAddress> _getMyOutputs() => _parentTx.outputAddressList
+  List<TransactionAddress> _getMyOutputs() => _pendingTx.outputAddressList
       .where((output) =>
           _walletProvider.containsAddress(_walletId, output.address))
       .toList();
 
   PaymentType? _getPaymentType() {
-    int inputCount = _parentTx.inputAddressList.length;
-    int outputCount = _parentTx.outputAddressList.length;
+    int inputCount = _pendingTx.inputAddressList.length;
+    int outputCount = _pendingTx.outputAddressList.length;
 
     if (inputCount == 0 || outputCount == 0) {
       return null; // wrong tx
@@ -168,13 +170,13 @@ class FeeBumpingViewModel extends ChangeNotifier {
     final externalOutputs = _getExternalOutputs();
     switch (outputCount) {
       case 1:
-        return PaymentType.forSweep;
+        return PaymentType.sweep;
       case 2:
         if (externalOutputs.length == 1) {
-          return PaymentType.forSinglePayment;
+          return PaymentType.singlePayment;
         }
       default:
-        return PaymentType.forBatchPayment;
+        return PaymentType.batchPayment;
     }
 
     return null;
@@ -200,8 +202,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
       for (var utxoState in utxoStateList) {
         if (myAddress.address == utxoState.to &&
             myAddress.amount == utxoState.amount &&
-            _parentTx.transactionHash == utxoState.transactionHash &&
-            _parentTx.outputAddressList[utxoState.index].address ==
+            _pendingTx.transactionHash == utxoState.transactionHash &&
+            _pendingTx.outputAddressList[utxoState.index].address ==
                 utxoState.to) {
           utxoList.add(utxoState);
         }
@@ -220,7 +222,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     } catch (e) {
       // insufficient utxo for sweep
       double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-      estimatedVSize = _parentTx.vSize.toDouble();
+      estimatedVSize = _pendingTx.vSize.toDouble();
       double outputSum = amount + estimatedVSize * newFeeRate;
 
       debugPrint(
@@ -249,34 +251,134 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     final externalOutputs = _getExternalOutputs();
     var amount = externalOutputs.fold(0, (sum, output) => sum + output.amount);
-    var changeAddress =
-        _parentTx.outputAddressList.map((e) => e.address).firstWhere(
-              (address) => _walletProvider.containsAddress(_walletId, address,
-                  isChange: true),
-              orElse: () => '',
-            );
+
+    final int changeOutputIndex =
+        _pendingTx.outputAddressList.lastIndexWhere((output) {
+      return _walletProvider.containsAddress(_walletId, output.address,
+          isChange: true);
+    });
+    TransactionAddress changeTxAddress = changeOutputIndex == -1
+        ? TransactionAddress('', 0)
+        : _pendingTx.outputAddressList[changeOutputIndex];
+    var changeAddress = changeTxAddress.address;
+    var changeAmount = changeTxAddress.amount;
+    final bool hasChange = changeAddress.isNotEmpty && changeAmount > 0;
 
     //input 정보 추출
     List<Utxo> utxoList = await _getUtxoListForRbf();
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    int estimatedVSize = _parentTx.vSize;
-    double outputSum = amount + estimatedVSize * newFeeRate;
+    int estimatedVSize = _bumpingTransaction == null
+        ? _pendingTx.vSize
+        : _bumpingTransaction!.getVirtualByte().toInt();
+    double newFee = estimatedVSize * newFeeRate;
+    double outputSum = amount + newFee;
 
-    if (inputSum <= outputSum) {
-      // output에 내 주소가 있는 경우 amount 조정
-      if (externalOutputs.any((output) =>
-          _walletProvider.containsAddress(_walletId, output.address))) {
-        amount = (inputSum - _parentTx.vSize * newFeeRate).toInt();
-        if (amount < 0) {
-          debugPrint('❌ input 합계가 output 합계보다 작음!');
+    // 내 주소가 output에 있는지 확인
+    final selfOutputs = externalOutputs
+        .where((output) =>
+            _walletProvider.containsAddress(_walletId, output.address))
+        .toList();
+    final containsSelfOutputs = selfOutputs.isNotEmpty;
+
+    debugPrint('RBF:: $inputSum $outputSum');
+    if (inputSum < outputSum) {
+      debugPrint('RBF:: ❌ input 합계가 output 합계보다 작음!');
+      // 1. 충분한 잔돈이 있음 - singlePayment or batchPayment
+      if (hasChange) {
+        if (changeAmount >= newFee) {
+          debugPrint('RBF:: 1️⃣ 충분한 Change 있음');
+          if (type == PaymentType.batchPayment) {
+            debugPrint('RBF:: 1.1.1. 배치 트잭');
+            _generateBatchTransation(
+                utxoList,
+                _createPaymentMapForRbfBatchTx(_pendingTx.outputAddressList),
+                changeAddress,
+                newFeeRate);
+            return;
+          }
+
+          if (changeAmount == newFee) {
+            debugPrint('RBF:: 1.1.2. Change = newFee >>> 스윕 트잭');
+            _generateSweepPayment(
+                utxoList, externalOutputs[0].address, newFeeRate);
+            return;
+          }
+
+          debugPrint('RBF:: 1.1.3. Change > newFee >>> 싱글 트잭');
+          _generateSinglePayment(utxoList, externalOutputs[0].address,
+              changeAddress, newFeeRate, amount);
+          return;
+        } else {
+          debugPrint('RBF:: 2️⃣ Change 있지만 부족함');
           if (!_ensureSufficientUtxos(
               utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
             return;
           }
         }
-        debugPrint('amount 조정됨 $amount');
+      }
+      // 2. output에 내 주소가 있는 경우 amount 조정
+      else if (containsSelfOutputs) {
+        debugPrint('RBF:: 3️⃣ 내 아웃풋이 있음!');
+        // 1. 배치 트랜잭션인 경우
+        if (type == PaymentType.batchPayment) {
+          debugPrint('RBF:: 배치 트랜잭션임');
+          Map<String, int> paymentMap = {};
+          int remainingFee = newFee.toInt();
+          for (var output in _pendingTx.outputAddressList) {
+            if (selfOutputs
+                .any((selfOutput) => selfOutput.address == output.address)) {
+              int deduction = remainingFee > output.amount
+                  ? output.amount.toInt()
+                  : remainingFee.toInt();
+
+              if (output.amount - deduction > 0) {
+                paymentMap[output.address] = output.amount - deduction;
+              }
+              remainingFee -= deduction;
+            } else {
+              paymentMap[output.address] = output.amount;
+            }
+          }
+
+          if (remainingFee > 0) {
+            if (!_ensureSufficientUtxos(utxoList, outputSum, estimatedVSize,
+                newFeeRate, paymentMap.values.reduce((a, b) => a + b))) {
+              return;
+            }
+          }
+
+          _generateBatchTransation(
+              utxoList, paymentMap, changeAddress, newFeeRate);
+          return;
+        }
+        //2. 싱글 또는 스윕이었던 경우
+        debugPrint('RBF:: 싱글 또는 스윕 >> amount 조정 $amount');
+        int adjustedAmount = amount - newFee.toInt();
+        debugPrint('RBF::                        조정 후 $adjustedAmount');
+
+        if (adjustedAmount == 0) {
+          debugPrint('RBF:: 조정해서 내가 받을 금액 0 - 남의 주소에게 보내는 스윕 트잭');
+          _generateSweepPayment(
+              utxoList, externalOutputs[0].address, newFeeRate);
+          return;
+        }
+
+        if (adjustedAmount < 0 ||
+            adjustedAmount > 0 && adjustedAmount < dustLimit) {
+          debugPrint('RBF:: ❌ amount 조정해도 안됨 > utxo 추가 - amount 조정 없이 utxo 추가');
+          if (!_ensureSufficientUtxos(
+              utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
+            return;
+          }
+        }
+
+        debugPrint('RBF:: ✅ utxo 추가 완료 수량 유지 $amount');
+        changeAddress = _walletProvider.getChangeAddress(_walletId).address;
+        _generateSinglePayment(utxoList, externalOutputs[0].address,
+            changeAddress, newFeeRate, amount);
+        return;
       } else {
-        // repicient가 남의 주소인 경우 utxo 추가
+        debugPrint('RBF:: 4️⃣ change도 없고, 내 아웃풋도 없음 >>> utxo 추가!');
         if (!_ensureSufficientUtxos(
             utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
           return;
@@ -285,58 +387,69 @@ class FeeBumpingViewModel extends ChangeNotifier {
       }
     }
 
-    if (type == PaymentType.forSweep && changeAddress.isEmpty) {
-      _bumpingTransaction = Transaction.forSweep(
-          utxoList,
-          externalOutputs[0].address,
-          newFeeRate,
-          walletListItemBase.walletBase);
-      _sendInfoProvider.setRecipientAddress(externalOutputs[0].address);
-      _sendInfoProvider.setIsMaxMode(true);
-      _setInsufficientUtxo(false);
-
+    debugPrint(
+        'RBF:: $inputSum 합계 > $outputSum 합계 OR if (inputSum < outputSum) 문 빠져나옴!!');
+    if (type == PaymentType.sweep && changeAddress.isEmpty) {
+      _generateSweepPayment(utxoList, externalOutputs[0].address, newFeeRate);
       return;
     }
 
-    if (changeAddress.isEmpty) {
-      changeAddress = _walletProvider.getChangeAddress(_walletId).address;
-    }
-
     switch (type) {
-      case PaymentType.forSweep:
-      case PaymentType.forSinglePayment:
-        _bumpingTransaction = Transaction.forSinglePayment(
-            utxoList,
-            externalOutputs[0].address,
-            _addressRepository.getDerivationPath(_walletId, changeAddress),
-            amount,
-            newFeeRate,
-            walletListItemBase.walletBase);
-        _sendInfoProvider.setAmount(UnitUtil.satoshiToBitcoin(amount));
-        _sendInfoProvider.setIsMaxMode(false);
-        _setInsufficientUtxo(false);
-
+      case PaymentType.sweep:
+      case PaymentType.singlePayment:
+        _generateSinglePayment(utxoList, externalOutputs[0].address,
+            changeAddress, newFeeRate, amount);
         break;
-      case PaymentType.forBatchPayment:
+      case PaymentType.batchPayment:
         Map<String, int> paymentMap =
-            _createPaymentMapForRbfBatchTx(transaction.outputAddressList);
+            _createPaymentMapForRbfBatchTx(_pendingTx.outputAddressList);
 
-        _bumpingTransaction = Transaction.forBatchPayment(
-            utxoList,
-            paymentMap,
-            _addressRepository.getDerivationPath(_walletId, changeAddress),
-            newFeeRate,
-            walletListItemBase.walletBase);
-
-        _sendInfoProvider.setRecipientsForBatch(
-            paymentMap.map((key, value) => MapEntry(key, value.toDouble())));
-        _sendInfoProvider.setIsMaxMode(false);
-        _setInsufficientUtxo(false);
-
+        _generateBatchTransation(
+            utxoList, paymentMap, changeAddress, newFeeRate);
         break;
       default:
         break;
     }
+  }
+
+  void _generateSinglePayment(List<Utxo> inputs, String recipient,
+      String changeAddress, double feeRate, int amount) {
+    _bumpingTransaction = Transaction.forSinglePayment(
+        inputs,
+        recipient,
+        _addressRepository.getDerivationPath(_walletId, changeAddress),
+        amount,
+        feeRate,
+        walletListItemBase.walletBase);
+    _sendInfoProvider.setAmount(UnitUtil.satoshiToBitcoin(amount));
+    _sendInfoProvider.setIsMaxMode(false);
+    _setInsufficientUtxo(false);
+    debugPrint('RBF::    ▶️ 싱글 트잭 생성');
+  }
+
+  void _generateSweepPayment(
+      List<Utxo> inputs, String recipient, double feeRate) {
+    _bumpingTransaction = Transaction.forSweep(
+        inputs, recipient, feeRate, _walletListItemBase.walletBase);
+    _sendInfoProvider.setRecipientAddress(recipient);
+    _sendInfoProvider.setIsMaxMode(true);
+    _setInsufficientUtxo(false);
+    debugPrint('RBF::    ▶️ 스윕 트잭 생성');
+  }
+
+  void _generateBatchTransation(List<Utxo> inputs, Map<String, int> paymentMap,
+      String changeAddress, double feeRate) {
+    _bumpingTransaction = Transaction.forBatchPayment(
+        inputs,
+        paymentMap,
+        _addressRepository.getDerivationPath(_walletId, changeAddress),
+        feeRate,
+        _walletListItemBase.walletBase);
+    _sendInfoProvider.setRecipientsForBatch(
+        paymentMap.map((key, value) => MapEntry(key, value.toDouble())));
+    _sendInfoProvider.setIsMaxMode(false);
+    _setInsufficientUtxo(false);
+    debugPrint('RBF::    ▶️ 배치 트잭 생성');
   }
 
   bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
@@ -425,7 +538,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   Future<List<Utxo>> _getUtxoListForRbf() async {
     final txResult =
-        await _nodeProvider.getTransaction(_parentTx.transactionHash);
+        await _nodeProvider.getTransaction(_pendingTx.transactionHash);
     if (txResult.isFailure) {
       debugPrint('❌ 트랜잭션 조회 실패');
       return [];
@@ -437,8 +550,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     List<Utxo> utxoList = [];
     for (var input in inputList) {
       var utxo = _utxoRepository.getUtxoState(
-          _walletId, '${input.transactionHash}${input.index}');
-      if (utxo != null && utxo.status == UtxoStatus.outgoing) {
+          _walletId, makeUtxoId(input.transactionHash, input.index));
+      if (utxo != null) {
         utxoList.add(Utxo(utxo.transactionHash, utxo.index, utxo.amount,
             utxo.derivationPath));
       }
@@ -483,13 +596,13 @@ class FeeBumpingViewModel extends ChangeNotifier {
     if (recommendedFeeRate == null) {
       return 0;
     }
-    if (recommendedFeeRate < _parentTx.feeRate) {
-      return _parentTx.feeRate;
+    if (recommendedFeeRate < _pendingTx.feeRate) {
+      return _pendingTx.feeRate;
     }
 
     double cpfpTxSize = _estimateVirtualByte(transaction);
-    double totalFee = (_parentTx.vSize + cpfpTxSize) * recommendedFeeRate;
-    double cpfpTxFee = totalFee - _parentTx.fee!.toDouble();
+    double totalFee = (_pendingTx.vSize + cpfpTxSize) * recommendedFeeRate;
+    double cpfpTxFee = totalFee - _pendingTx.fee!.toDouble();
     double cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
 
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
@@ -510,22 +623,22 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     double estimatedVirtualByte = _estimateVirtualByte(transaction);
     double minimumRequiredFee =
-        _parentTx.fee!.toDouble() + estimatedVirtualByte;
-    double mempoolRecommendedFee = estimatedVirtualByte * recommendedFeeRate;
+        _pendingTx.fee!.toDouble() + estimatedVirtualByte;
+    // double mempoolRecommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
-    if (mempoolRecommendedFee < minimumRequiredFee) {
-      double feePerVByte = minimumRequiredFee / estimatedVirtualByte;
-      double roundedFee = (feePerVByte * 100).ceilToDouble() / 100;
+    // if (mempoolRecommendedFee < minimumRequiredFee) {
+    double feePerVByte = minimumRequiredFee / estimatedVirtualByte;
+    double roundedFee = (feePerVByte * 100).ceilToDouble() / 100;
 
-      // 계산된 추천 수수료가 현재 멤풀 수수료보다 작은 경우, 기존 수수료보다 1s/vb 높은 수수료로 설정
-      // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 거의 발생 확률이 낮음
-      if (feePerVByte < _parentTx.feeRate) {
-        roundedFee = ((_parentTx.feeRate + 1) * 100).ceilToDouble() / 100;
-      }
-      return double.parse((roundedFee).toStringAsFixed(2));
-    }
+    // 계산된 추천 수수료가 현재 멤풀 수수료보다 작은 경우, 기존 수수료보다 1s/vb 높은 수수료로 설정
+    // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 거의 발생 확률이 낮음
+    // if (feePerVByte < _pendingTx.feeRate) {
+    // roundedFee = ((_pendingTx.feeRate + 1) * 100).ceilToDouble() / 100;
+    // }
+    return double.parse((roundedFee).toStringAsFixed(2));
+    // }
 
-    return recommendedFeeRate.toDouble();
+    // return recommendedFeeRate.toDouble();
   }
 
   double _estimateVirtualByte(Transaction transaction) {
@@ -558,7 +671,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 발생하지 않는 상황
     // 하지만, regtest에서 임의로 마이닝을 중지하는 경우 발생하여 예외 처리
     // 예) (pending tx fee rate) = 4 s/vb, (recommended fee rate) = 1 s/vb
-    if (recommendedFeeRate < _parentTx.feeRate) {
+    if (recommendedFeeRate < _pendingTx.feeRate) {
       return t.transaction_fee_bumping_screen
           .recommended_fee_less_than_pending_tx_fee;
     }
@@ -567,7 +680,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     final cpfpTxFee = cpfpTxSize * recommendedFeeRate;
     final cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
     final totalRequiredFee =
-        _parentTx.vSize * _parentTx.feeRate + cpfpTxSize * recommendedFeeRate;
+        _pendingTx.vSize * _pendingTx.feeRate + cpfpTxSize * recommendedFeeRate;
 
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
       return t
@@ -578,8 +691,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return t.transaction_fee_bumping_screen.recommend_fee_info_cpfp(
       newTxSize: _formatNumber(cpfpTxSize),
       recommendedFeeRate: _formatNumber(recommendedFeeRate),
-      originalTxSize: _formatNumber(_parentTx.vSize.toDouble()),
-      originalFee: _formatNumber((_parentTx.fee ?? 0).toDouble()),
+      originalTxSize: _formatNumber(_pendingTx.vSize.toDouble()),
+      originalFee: _formatNumber((_pendingTx.fee ?? 0).toDouble()),
       totalRequiredFee: _formatNumber(totalRequiredFee.toDouble()),
       newTxFee: _formatNumber(cpfpTxFee),
       newTxFeeRate: _formatNumber(cpfpTxFeeRate),

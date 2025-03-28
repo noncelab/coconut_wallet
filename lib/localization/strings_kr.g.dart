@@ -481,7 +481,7 @@ class TranslationsTransactionFeeBumpingScreenKr {
       '총 ${fee} sats / ${vb} vb';
   String get new_fee => '새 수수료';
   String get sats_vb => 'sats/vb';
-  String recommend_fee({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
+  String recommend_fee({required Object fee}) => '최소 수수료: ${fee} sats/vb 이상';
   String get recommend_fee_info_rbf =>
       '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vb 미만으로 보일 수 있어요.';
   String recommend_fee_info_cpfp(
@@ -494,7 +494,7 @@ class TranslationsTransactionFeeBumpingScreenKr {
           required Object inequalitySign,
           required Object newTxFeeRate}) =>
       '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vb, 추천 수수료율 = ${recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb';
-  String get current_fee => '현재 수수료';
+  String get current_fee => '추천 수수료';
   String estimated_fee({required Object fee}) => '예상 총 수수료 약 ${fee} sats';
   String get estimated_fee_too_high_error => '예상 총 수수료가 0.01 BTC 이상이에요!';
   String get recommended_fees_fetch_error => '추천 수수료를 조회할 수 없어요!';
@@ -1373,7 +1373,7 @@ extension on Translations {
       case 'transaction_fee_bumping_screen.sats_vb':
         return 'sats/vb';
       case 'transaction_fee_bumping_screen.recommend_fee':
-        return ({required Object fee}) => '추천 수수료: ${fee} sats/vb 이상';
+        return ({required Object fee}) => '최소 수수료: ${fee} sats/vb 이상';
       case 'transaction_fee_bumping_screen.recommend_fee_info_rbf':
         return '기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vb 미만으로 보일 수 있어요.';
       case 'transaction_fee_bumping_screen.recommend_fee_info_cpfp':
@@ -1388,7 +1388,7 @@ extension on Translations {
                 required Object newTxFeeRate}) =>
             '새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vb, 추천 수수료율 = ${recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb';
       case 'transaction_fee_bumping_screen.current_fee':
-        return '현재 수수료';
+        return '추천 수수료';
       case 'transaction_fee_bumping_screen.estimated_fee':
         return ({required Object fee}) => '예상 총 수수료 약 ${fee} sats';
       case 'transaction_fee_bumping_screen.estimated_fee_too_high_error':
