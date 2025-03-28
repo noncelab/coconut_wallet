@@ -344,7 +344,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     List<UtxoState> unspentUtxos =
         _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
-    unspentUtxos.sort((a, b) => a.amount.compareTo(b.amount));
+    unspentUtxos.sort((a, b) => b.amount.compareTo(a.amount));
     int sublistIndex = 0; // for unspentUtxos
     while (inputSum <= outputSum && sublistIndex < unspentUtxos.length) {
       final additionalUtxos = _getAdditionalUtxos(
