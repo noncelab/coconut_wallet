@@ -364,16 +364,20 @@ class FeeBumpingViewModel extends ChangeNotifier {
           return;
         }
 
-        if (adjustedAmount < 0 ||
-            adjustedAmount > 0 && adjustedAmount < dustLimit) {
-          debugPrint('RBF:: ❌ amount 조정해도 안됨 > utxo 추가 - amount 조정 없이 utxo 추가');
-          if (!_ensureSufficientUtxos(
-              utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
-            return;
-          }
+        if (adjustedAmount > 0 && adjustedAmount > dustLimit) {
+          debugPrint('RBF:: 금액 조정 - $adjustedAmount');
+          changeAddress = _walletProvider.getChangeAddress(_walletId).address;
+          _generateSinglePayment(utxoList, externalOutputs[0].address,
+              changeAddress, newFeeRate, adjustedAmount);
+          return;
         }
 
-        debugPrint('RBF:: ✅ utxo 추가 완료 수량 유지 $amount');
+        debugPrint('RBF:: ❌ amount 조정해도 안됨 > utxo 추가 - amount 조정 없이 utxo 추가');
+        if (!_ensureSufficientUtxos(
+            utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
+          return;
+        }
+        debugPrint('RBF:: ✅ utxo 추가 완료 보낼 수량 $amount');
         changeAddress = _walletProvider.getChangeAddress(_walletId).address;
         _generateSinglePayment(utxoList, externalOutputs[0].address,
             changeAddress, newFeeRate, amount);
