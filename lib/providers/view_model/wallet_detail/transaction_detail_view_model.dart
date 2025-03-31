@@ -273,11 +273,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
       debugPrint(
           '🔹 RBF History Count: ${currentTransaction.rbfHistoryList?.length}');
       debugPrint('----------------------------------------');
-      var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
-      List<RbfHistory> sortedList = reversedRbfHistoryList.toList()
-        ..sort((a, b) => b.feeRate.compareTo(a.feeRate));
 
-      for (var rbfTx in reversedRbfHistoryList) {
+      for (var rbfTx in currentTransaction.rbfHistoryList!) {
         if (rbfTx.transactionHash == currentTransaction.transactionHash) {
           continue;
         }
@@ -286,9 +283,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
         _transactionList!.add(TransactionDetail(rbfTxTransaction));
       }
 
-      transactionList!.sort(
+      _transactionList!.sort(
           (a, b) => b.transaction!.feeRate.compareTo(a.transaction!.feeRate));
-      debugPrint('🚨 sortedList : ${sortedList.map((s) => s.feeRate)}');
       debugPrint(
           '🚨 _transactionList : ${_transactionList!.map((s) => s.transaction!.feeRate)}');
     } else if (currentTransaction.transactionType ==
