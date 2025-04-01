@@ -89,14 +89,12 @@ RealmCpfpHistory mapCpfpHistoryToRealmCpfpHistory(CpfpHistoryDto cpfpHistory) {
   );
 }
 
-RealmRbfHistory mapRbfHistoryToRealmRbfHistory(
-    RbfHistoryDto rbfHistory, int order) {
+RealmRbfHistory mapRbfHistoryToRealmRbfHistory(RbfHistoryDto rbfHistory) {
   return RealmRbfHistory(
     rbfHistory.id,
     rbfHistory.walletId,
     rbfHistory.originalTransactionHash,
     rbfHistory.transactionHash,
-    order,
     rbfHistory.feeRate,
     rbfHistory.timestamp,
   );

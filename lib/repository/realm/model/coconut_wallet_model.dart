@@ -157,7 +157,6 @@ class _RealmRbfHistory {
   late String originalTransactionHash;
   @Indexed()
   late String transactionHash;
-  late int order;
   late double feeRate;
   late DateTime timestamp;
 }

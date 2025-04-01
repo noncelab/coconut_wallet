@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 
@@ -12,35 +13,27 @@ import 'package:coconut_wallet/utils/utxo_util.dart';
 class RbfHandler {
   final TransactionRepository _transactionRepository;
   final UtxoManager _utxoManager;
+  final ElectrumService _electrumService;
 
-  RbfHandler(this._transactionRepository, this._utxoManager);
+  RbfHandler(
+      this._transactionRepository, this._utxoManager, this._electrumService);
 
-  /// RBF 트랜잭션을 감지합니다.
-  ///
-  /// RBF는 같은 UTXO를 소비하는 새로운 트랜잭션이 발생했을 때 감지됩니다.
-  /// 이 메서드는 새로운 트랜잭션이 기존의 outgoing 상태인 UTXO를 소비하는지 확인합니다.
-  Future<RbfInfo?> detectRbfTransaction(
+  /// RBF를 보내는 지갑 관점에서 이미 소비한 UTXO를 다시 소비하는지 확인
+  Future<RbfInfo?> detectSendingRbfTransaction(
       int walletId,
       Transaction tx,
       Future<List<Transaction>> Function(Transaction, List<Transaction>)
           getPreviousTransactions) async {
-    Logger.log('===== RBF 감지 프로세스 시작 =====');
-    Logger.log('트랜잭션 확인: ${tx.transactionHash}');
-
     // 이미 RBF 내역이 있는지 확인
     final existingRbfHistory =
         _transactionRepository.getRbfHistoryList(walletId, tx.transactionHash);
     if (existingRbfHistory.isNotEmpty) {
-      Logger.log('이미 RBF 내역이 있는 트랜잭션: ${tx.transactionHash}');
-      Logger.log('===== RBF 감지 프로세스 종료 (중복 내역) =====');
       return null; // 이미 RBF로 등록된 트랜잭션
     }
 
-    // 트랜잭션의 입력이 outgoing 상태인 UTXO를 사용하는지 확인
     bool isRbf = false;
     String? spentTxHash; // 이 트랜잭션이 대체하는 직전 트랜잭션
 
-    Logger.log('입력 UTXO 분석 시작 (입력 개수: ${tx.inputs.length})');
     for (final input in tx.inputs) {
       final utxoId = makeUtxoId(input.transactionHash, input.index);
       final utxo = _utxoManager.getUtxoState(walletId, utxoId);
@@ -51,7 +44,6 @@ class RbfHandler {
 
         // 자기 참조 케이스 확인 (spentByTransactionHash가 현재 트랜잭션과 동일한 경우는 무시)
         if (utxo.spentByTransactionHash == tx.transactionHash) {
-          Logger.log('자기 참조 케이스 감지: spentByTransactionHash가 현재 트랜잭션과 동일함');
           continue;
         }
       } else {
@@ -97,25 +89,37 @@ class RbfHandler {
       if (previousRbfHistory.isNotEmpty) {
         // 이미 RBF 내역이 있는 경우, 기존 originalTransactionHash 사용
         originalTxHash = previousRbfHistory.first.originalTransactionHash;
-        Logger.log('연속된 RBF 감지: 원본 트랜잭션 해시 유지 $originalTxHash');
       } else {
         // 첫 번째 RBF인 경우, 대체되는 트랜잭션이 originalTransactionHash
         originalTxHash = spentTxHash;
-        Logger.log('첫 번째 RBF 감지: 원본 트랜잭션 해시 설정 $originalTxHash');
       }
-
-      // 수수료 계산을 위한 정보 수집
-      final prevTxs = await getPreviousTransactions(tx, []);
-
-      Logger.log('===== RBF 감지 프로세스 종료 (RBF 감지됨) =====');
       return RbfInfo(
         originalTransactionHash: originalTxHash,
         spentTransactionHash: spentTxHash,
-        previousTransactions: prevTxs,
       );
     }
+    return null;
+  }
 
-    Logger.log('===== RBF 감지 프로세스 종료 (RBF 감지 안됨) =====');
+  /// RBF를 받는 지갑 관점에서 Incoming 상태의 UTXO 트랜잭션이 유효한지 확인,
+  /// RBF 발견 시 대체된 트랜잭션의 해시를 반환
+  Future<String?> detectReceivingRbfTransaction(
+    int walletId,
+    Transaction tx,
+  ) async {
+    final incomingUtxoList = _utxoManager.getIncomingUtxoList(walletId);
+
+    for (final utxo in incomingUtxoList) {
+      try {
+        // 대체된 트랜잭션인지 확인, 대체된 트랜잭션은 mempool에 존재하지 않아 예외 발생
+        // mempool에 존재하지 않는 트랜잭션을 확인하려면 verbose: true 옵션으로 조회해야 함
+        await _electrumService.getTransaction(utxo.transactionHash,
+            verbose: true);
+      } catch (e) {
+        // 대체되어 없어진 경우이며 RBF가 발생한 것으로 판단
+        return utxo.transactionHash;
+      }
+    }
     return null;
   }
 

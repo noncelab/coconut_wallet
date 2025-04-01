@@ -206,13 +206,13 @@ class NodeStateManager implements StateManagerInterface {
   }
 
   void unregisterWalletUpdateState(int walletId) {
-    _state.registeredWallets.remove(walletId);
+    final updatedWallets =
+        Map<int, WalletUpdateInfo>.from(_state.registeredWallets);
+    updatedWallets.remove(walletId);
 
     setState(
-      newUpdatedWallets: {
-        ..._state.registeredWallets,
-      },
-      notify: false,
+      newUpdatedWallets: updatedWallets,
+      notify: true,
     );
   }
 }

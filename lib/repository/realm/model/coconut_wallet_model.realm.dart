@@ -1444,7 +1444,6 @@ class RealmRbfHistory extends _RealmRbfHistory
     int walletId,
     String originalTransactionHash,
     String transactionHash,
-    int order,
     double feeRate,
     DateTime timestamp,
   ) {
@@ -1453,7 +1452,6 @@ class RealmRbfHistory extends _RealmRbfHistory
     RealmObjectBase.set(
         this, 'originalTransactionHash', originalTransactionHash);
     RealmObjectBase.set(this, 'transactionHash', transactionHash);
-    RealmObjectBase.set(this, 'order', order);
     RealmObjectBase.set(this, 'feeRate', feeRate);
     RealmObjectBase.set(this, 'timestamp', timestamp);
   }
@@ -1483,11 +1481,6 @@ class RealmRbfHistory extends _RealmRbfHistory
   @override
   set transactionHash(String value) =>
       RealmObjectBase.set(this, 'transactionHash', value);
-
-  @override
-  int get order => RealmObjectBase.get<int>(this, 'order') as int;
-  @override
-  set order(int value) => RealmObjectBase.set(this, 'order', value);
 
   @override
   double get feeRate => RealmObjectBase.get<double>(this, 'feeRate') as double;
@@ -1520,7 +1513,6 @@ class RealmRbfHistory extends _RealmRbfHistory
       'walletId': walletId.toEJson(),
       'originalTransactionHash': originalTransactionHash.toEJson(),
       'transactionHash': transactionHash.toEJson(),
-      'order': order.toEJson(),
       'feeRate': feeRate.toEJson(),
       'timestamp': timestamp.toEJson(),
     };
@@ -1535,7 +1527,6 @@ class RealmRbfHistory extends _RealmRbfHistory
         'walletId': EJsonValue walletId,
         'originalTransactionHash': EJsonValue originalTransactionHash,
         'transactionHash': EJsonValue transactionHash,
-        'order': EJsonValue order,
         'feeRate': EJsonValue feeRate,
         'timestamp': EJsonValue timestamp,
       } =>
@@ -1544,7 +1535,6 @@ class RealmRbfHistory extends _RealmRbfHistory
           fromEJson(walletId),
           fromEJson(originalTransactionHash),
           fromEJson(transactionHash),
-          fromEJson(order),
           fromEJson(feeRate),
           fromEJson(timestamp),
         ),
@@ -1564,7 +1554,6 @@ class RealmRbfHistory extends _RealmRbfHistory
           indexType: RealmIndexType.regular),
       SchemaProperty('transactionHash', RealmPropertyType.string,
           indexType: RealmIndexType.regular),
-      SchemaProperty('order', RealmPropertyType.int),
       SchemaProperty('feeRate', RealmPropertyType.double),
       SchemaProperty('timestamp', RealmPropertyType.timestamp),
     ]);

@@ -12,8 +12,17 @@ class CustomLoadingOverlay extends StatelessWidget {
     return LoaderOverlay(
       overlayColor: CoconutColors.black.withOpacity(0.5),
       overlayWidgetBuilder: (_) {
-        return const Center(
-          child: CoconutCircularIndicator(),
+        return const Stack(
+          children: [
+            // 🛑 클릭 차단을 위한 ModalBarrier 추가
+            ModalBarrier(
+              dismissible: false,
+              color: Colors.transparent, // 투명하게 유지
+            ),
+            Center(
+              child: CoconutCircularIndicator(),
+            ),
+          ],
         );
       },
       child: child,

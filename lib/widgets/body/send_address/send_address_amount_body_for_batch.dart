@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/address_and_amount_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -28,6 +29,9 @@ class _SendAddressAmountBodyForBatchState
     extends State<SendAddressAmountBodyForBatch> {
   final ScrollController _scrollController = ScrollController();
   late final List<_RecipientInfo> _recipients;
+  late final List<GlobalKey> _cardKeys;
+  double _addressAndAmountCardHeight = 0;
+
   // MAX 제한은 현재 없음
   bool get isCompleteButtonEnabled =>
       _recipients.length >= 2 &&
@@ -40,109 +44,13 @@ class _SendAddressAmountBodyForBatchState
   void initState() {
     super.initState();
     _recipients = [_getDefaultRecipientData(), _getDefaultRecipientData()];
-    // TODO: for test
-    // _recipients = [
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qlc9kcmyx6e3kwtwqmxu4wlel3pc02r6e8er7eh2ynp38p9l54w5q7326pc'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1q93xjhmf73tm6lh5u2rqwyadn2whw3gfkuwgqf9x6kknxx90488kq6skjhv'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qyvfvzme5khvcmu3dtts0m0fjkxwkh7uz2aaclvsgzdf7c3glgzeq3v0ezs'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qfwfh4zujux2rngpzcm0wahf5hdmgwlcrw35lkymetchsy88fps8qzugted'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qctqkvm3e4tgpcvdc0g5fn3dhh9dq0xsc3lszr2m4zltaqfwc2xgssa6y7d'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qmrjk4yg6qj4afr85zdyc9fkry38va5g6pu4p8d6uuljglu8kczkq36spcc'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1q292el3m6yd9m3jprrdeue4xl0ht4ywuv8xd9r3ytkehyl86k3f4s4ysm32'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qnu9r52v8mthrgrc3qpev9sz5gra0k48ay05kdg265dg6jpgjfgtqrvtldj'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1q6q8wtr3xl85m9ynfgr3eju9rfrzjwv8qmxwwxgk8xkxt2g9ueqeq97u4cr'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qpvm9enveccwj3hcvt530r5qu4ug5rxz67r8f2mhezcrjfjzfcphsw7s553'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qkxrprv0wxq0ku8ptw85ykc39km9m3a2h722m2dgsyv2d2pl3p24sc0mykr'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qu9patke3pgaq49csf2mtmzf4vushqjn2dz53ul8ajswqn8p8tgpsrp20gs'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qh0ypcrkd20ysljw5awug5ey4wqtn9xt9q4pj0ypvkt82ywhwyrxsq4yvlt'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1q8a2we9yvqz7rylm2366qd4g5v7n0mlhgawq2ahrmewqrc4rpwc4stjn0te'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qmdlmtwu6wyc6vfdk0sruc0heu4q7g72yq5l7zjuzngjlyj3xvpnqggmthh'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qsswd8z623d8hkfedgmdq87d8j3p90f8qxfxd0wsd6sc0n5pd0y5stnywz4'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qgjqjpek8suvhdfr453vs8wkgsukg0k26zk3v9lcgt8uzqhs7jrcscelh2w'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qp98gcqxfvh4hd770mhkeeag0rcdhm3rdg2fdw2p674e324hejs2sdqgun7'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1qc3qy5smzaxlqzmejlsdj8zawt7k6f43hmhjzew5qhd5gdzfz5jjs3z7cez'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //   _getDefaultRecipientData()
-    //     ..address =
-    //         'bcrt1ql7ll4v6t6326yxcytnapu30aama7dn2qxux8vszzsrp7gadfs9rs8pn6g8'
-    //     ..amount = '0.0001'
-    //     ..isAddressValid = true,
-    //];
+    _cardKeys = List.generate(_recipients.length, (_) => GlobalKey());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final RenderBox renderBox =
+          _cardKeys[0].currentContext?.findRenderObject() as RenderBox;
+      _addressAndAmountCardHeight = renderBox.size.height;
+    });
   }
 
   @override
@@ -154,6 +62,7 @@ class _SendAddressAmountBodyForBatchState
           semanticChildCount: 1,
           slivers: [
             SliverSafeArea(
+              bottom: false,
               minimum: const EdgeInsets.symmetric(
                   horizontal: CoconutLayout.defaultPadding,
                   vertical: Sizes.size28),
@@ -163,7 +72,7 @@ class _SendAddressAmountBodyForBatchState
                     ? Padding(
                         padding: const EdgeInsets.only(bottom: Sizes.size12),
                         child: AddressAndAmountCard(
-                          key: ValueKey(_recipients[index].key),
+                          key: _cardKeys[index],
                           title: '${t.recipient} ${index + 1}',
                           address: _recipients[index].address,
                           amount: _recipients[index].amount,
@@ -186,11 +95,30 @@ class _SendAddressAmountBodyForBatchState
                                   false ||
                               _recipients[index].isAddressDuplicated == true,
                           isAmountDust: _recipients[index].isAmountDust == true,
+                          isLastItem: index == _recipients.length - 1,
                           addressErrorMessage:
                               _recipients[index].isAddressDuplicated == true
                                   ? t.errors.address_error.duplicated
                                   : null,
-                        ))
+                          onFocusRequested: () async {
+                            await Future.delayed(
+                                const Duration(milliseconds: 500));
+                            if (!mounted) return;
+                            if (index == _recipients.length - 1) {
+                              _scrollToBottom();
+                              return;
+                            }
+                            _scrollToIndex(index);
+                          },
+                          onFocusAfterScanned: () async {
+                            await Future.delayed(
+                                const Duration(milliseconds: 700));
+                            if (mounted) {
+                              _scrollToBottom();
+                            }
+                          },
+                        ),
+                      )
                     : Column(children: [
                         CoconutUnderlinedButton(
                           text: t.send_address_screen.add_recipient,
@@ -205,22 +133,40 @@ class _SendAddressAmountBodyForBatchState
             ),
           ],
         ),
-        Positioned(
-            left: CoconutLayout.defaultPadding,
-            right: CoconutLayout.defaultPadding,
-            bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size4,
-            child: CoconutButton(
-                padding: const EdgeInsets.symmetric(vertical: Sizes.size10),
-                onPressed: () => _onComplete(context),
-                text: t.complete,
-                width: MediaQuery.sizeOf(context).width,
-                height: 41,
-                backgroundColor: CoconutColors.primary,
-                foregroundColor: CoconutColors.black,
-                disabledBackgroundColor: CoconutColors.gray800,
-                disabledForegroundColor: CoconutColors.gray700,
-                isActive: isCompleteButtonEnabled))
+        FixedBottomButton(
+          onButtonClicked: () {
+            _onComplete(context);
+          },
+          text: t.complete,
+          showGradient: true,
+          gradientPadding:
+              const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
+          isActive: isCompleteButtonEnabled,
+          backgroundColor: CoconutColors.primary,
+        ),
       ],
+    );
+  }
+
+  void _scrollToBottom() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted && _scrollController.hasClients) {
+        await _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _scrollToIndex(int index) {
+    final position = index * _addressAndAmountCardHeight;
+    _scrollController.animateTo(
+      position,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
     );
   }
 
@@ -280,10 +226,13 @@ class _SendAddressAmountBodyForBatchState
     });
   }
 
-  void _addAddressAndQuantityCard() {
+  void _addAddressAndQuantityCard() async {
     setState(() {
       _recipients.add(_getDefaultRecipientData());
+      _cardKeys.add(GlobalKey());
     });
+
+    _scrollToBottom();
   }
 
   _RecipientInfo _getDefaultRecipientData() {
@@ -310,6 +259,7 @@ class _SendAddressAmountBodyForBatchState
   void _deleteRecipient(int index) {
     setState(() {
       _recipients.removeAt(index);
+      _cardKeys.removeAt(index);
     });
   }
 

@@ -249,23 +249,10 @@ class TransactionRepository extends BaseRepository {
         existingIds.addAll(existingRbfHistory.map((rbf) => rbf.id));
       }
 
-      // feeRate 순서대로 정렬
-      final existingRbfHistoryList = getRbfHistoryList(
-          rbfHistoryList.first.walletId,
-          rbfHistoryList.first.originalTransactionHash);
-
-      final maxOrder = existingRbfHistoryList.isNotEmpty
-          ? existingRbfHistoryList
-              .map((e) => e.order)
-              .reduce((a, b) => a > b ? a : b)
-          : 0;
-      int order = maxOrder + 1;
-      rbfHistoryList.sort((a, b) => a.feeRate.compareTo(b.feeRate));
-
       // 새로 추가할 RBF 내역 생성
       final newRbfHistories = rbfHistoryList
           .where((dto) => !existingIds.contains(dto.id))
-          .map((dto) => mapRbfHistoryToRealmRbfHistory(dto, order++))
+          .map((dto) => mapRbfHistoryToRealmRbfHistory(dto))
           .toList();
 
       // 일괄 저장
@@ -322,11 +309,22 @@ class TransactionRepository extends BaseRepository {
     }
 
     final realmRbfHistoryList = realm.query<RealmRbfHistory>(
-      r'walletId == $0 AND originalTransactionHash == $1 SORT(order ASC)',
+      r'walletId == $0 AND originalTransactionHash == $1 SORT(feeRate DESC)',
       [walletId, realmRbfHistory.originalTransactionHash],
     ).toList();
 
-    return realmRbfHistoryList;
+    // transactionHash를 기준으로 중복 제거
+    final uniqueTransactionHashes = <String>{};
+    final uniqueRbfHistoryList = <RealmRbfHistory>[];
+
+    for (final rbfHistory in realmRbfHistoryList) {
+      if (!uniqueTransactionHashes.contains(rbfHistory.transactionHash)) {
+        uniqueTransactionHashes.add(rbfHistory.transactionHash);
+        uniqueRbfHistoryList.add(rbfHistory);
+      }
+    }
+
+    return uniqueRbfHistoryList;
   }
 
   RealmCpfpHistory? getCpfpHistory(int walletId, String transactionHash) {

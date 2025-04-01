@@ -14,9 +14,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
-import 'package:coconut_wallet/services/dio_client.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 enum PaymentType {
@@ -230,12 +228,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
         debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
         return;
       }
+
+      _bumpingTransaction = Transaction.forSweep(
+          utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
     }
 
     debugPrint('😇 CPFP utxo (${utxoList.length})개');
-    _bumpingTransaction = Transaction.forSweep(
-        utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
-
     _sendInfoProvider.setRecipientAddress(recipient);
     _sendInfoProvider.setIsMaxMode(true);
     _sendInfoProvider
@@ -321,8 +319,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
         Map<String, int> paymentMap =
             _createPaymentMapForRbfBatchTx(transaction.outputAddressList);
 
-        _bumpingTransaction = Transaction.forBatchPayment(utxoList, paymentMap,
-            changeAddress, newFeeRate, walletListItemBase.walletBase);
+        _bumpingTransaction = Transaction.forBatchPayment(
+            utxoList,
+            paymentMap,
+            _addressRepository.getDerivationPath(_walletId, changeAddress),
+            newFeeRate,
+            walletListItemBase.walletBase);
 
         _sendInfoProvider.setRecipientsForBatch(
             paymentMap.map((key, value) => MapEntry(key, value.toDouble())));
@@ -340,7 +342,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     List<UtxoState> unspentUtxos =
         _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
-    unspentUtxos.sort((a, b) => a.amount.compareTo(b.amount));
+    unspentUtxos.sort((a, b) => b.amount.compareTo(a.amount));
     int sublistIndex = 0; // for unspentUtxos
     while (inputSum <= outputSum && sublistIndex < unspentUtxos.length) {
       final additionalUtxos = _getAdditionalUtxos(
@@ -364,7 +366,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     _setInsufficientUtxo(false);
-
     return true;
   }
 

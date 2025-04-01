@@ -1,17 +1,16 @@
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
+import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +46,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   late int? _estimatedFee;
   bool? _isNetworkOn;
   int? _customSatsPerVb;
-  int? _bitcoinPriceKrw;
 
   TransactionFeeLevel? _selectedFeeLevel;
 
@@ -63,7 +61,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
             _onChangedNetworkStatus(isNetworkOn);
           });
           return Scaffold(
-              backgroundColor: MyColors.black,
+              backgroundColor: CoconutColors.black,
               appBar: CustomAppBar.buildWithNext(
                   title: t.fee,
                   context: context,
@@ -92,30 +90,22 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                             horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
-                            color: MyColors.transparentWhite_06,
+                            color: CoconutColors.gray800,
                             border: Border.all(
-                                color: MyColors.transparentWhite_12, width: 1)),
+                                color: CoconutColors.gray500, width: 1)),
                         child: Text(
                             _selectedFeeLevel == null
                                 ? t.input_directly
                                 : _selectedFeeLevel!.text,
-                            style: Styles.caption),
+                            style: CoconutTypography.caption_10),
                       ),
                       Text(
                           _estimatedFee != null
                               ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
                               : '',
-                          style: Styles.fee),
-                      Selector<UpbitConnectModel, int?>(
-                        selector: (context, model) => model.bitcoinPriceKrw,
-                        builder: (context, bitcoinPriceKrw, child) {
-                          _bitcoinPriceKrw = bitcoinPriceKrw;
-                          return Text(
-                              fiatValueInKrw != null
-                                  ? '${addCommasToIntegerPart(fiatValueInKrw!)} ${CurrencyCode.KRW.code}'
-                                  : '',
-                              style: Styles.balance2);
-                        },
+                          style: CoconutTypography.heading3_21_NumberBold),
+                      FiatPrice(
+                        satoshiAmount: _estimatedFee ?? 0,
                       ),
                       const SizedBox(height: 32),
                     ])),
@@ -156,7 +146,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                     feeInfo: widget.feeInfos[index],
                                     isSelected: _selectedFeeLevel ==
                                         widget.feeInfos[index].level,
-                                    bitcoinPriceKrw: _bitcoinPriceKrw,
                                     onPressed: () {
                                       setState(() {
                                         _selectedFeeLevel =
@@ -166,28 +155,32 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                         _customSatsPerVb = null;
 
                                         debugPrint(
-                                            'selectedFeeLevel : ${widget.selectedFeeLevel}');
+                                            'selectedFeeLevel : ${widget.selectedFeeLevel} $_estimatedFee');
                                       });
                                     })),
                             CustomUnderlinedButton(
-                              padding: Paddings.widgetContainer,
-                              onTap: () {
-                                showTextFieldDialog(
-                                  context: context,
-                                  content:
-                                      t.text_field.enter_fee_as_natural_number,
-                                  controller: _customFeeController,
-                                  textInputType: TextInputType.number,
-                                  onPressed: _onCustomFeeRateInput,
-                                );
-                              },
-                              text: t.text_field.enter_fee_directly,
-                              fontSize: 14,
-                              lineHeight: 21,
-                              defaultColor: _selectedFeeLevel == null
-                                  ? MyColors.white
-                                  : MyColors.transparentWhite_70,
-                            ),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 16),
+                                onTap: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    builder: (context) => TextFieldBottomSheet(
+                                      title: t.input_directly,
+                                      placeholder: t.text_field
+                                          .enter_fee_as_natural_number,
+                                      onComplete: (text) {
+                                        _onCustomFeeRateInput(text);
+                                      },
+                                      keyboardType: TextInputType.number,
+                                      visibleTextLimit: false,
+                                    ),
+                                  );
+                                },
+                                text: t.text_field.enter_fee_directly,
+                                fontSize: 14,
+                                lineHeight: 21,
+                                defaultColor: CoconutColors.gray200),
                           ],
                         )),
                   ],
@@ -215,15 +208,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
         .firstWhere((feeInfo) => feeInfo.level == transactionFeeLevel);
   }
 
-  double? get fiatValueInKrw {
-    if (_estimatedFee != null && _bitcoinPriceKrw != null) {
-      return FiatUtil.calculateFiatAmount(_estimatedFee!, _bitcoinPriceKrw!)
-          .toDouble();
-    }
-
-    return null;
-  }
-
   Future<void> _onChangedNetworkStatus(bool? isNetworkOn) async {
     debugPrint('isNetworkOn = $isNetworkOn _isNetworkOn = $_isNetworkOn');
 
@@ -234,12 +218,16 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
     });
   }
 
-  void _onCustomFeeRateInput() async {
-    if (_customFeeController.text.isEmpty) {
+  void _onCustomFeeRateInput(String input) async {
+    if (input.isEmpty) {
       return;
     }
 
-    int customSatsPerVb = int.parse(_customFeeController.text);
+    // if (_customFeeController.text.isEmpty) {
+    //   return;
+    // }
+
+    int customSatsPerVb = int.parse(input);
     if (widget.networkMinimumFeeRate != null &&
         customSatsPerVb < widget.networkMinimumFeeRate!) {
       CustomToast.showToast(
@@ -259,11 +247,13 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
         });
       }
     } catch (e) {
-      CustomToast.showWarningToast(
-          context: context,
-          text: ErrorCodes.withMessage(
-                  ErrorCodes.feeEstimationError, e.toString())
-              .message);
+      if (mounted) {
+        CustomToast.showWarningToast(
+            context: context,
+            text: ErrorCodes.withMessage(
+                    ErrorCodes.feeEstimationError, e.toString())
+                .message);
+      }
     } finally {
       _customFeeController.clear();
     }
@@ -276,7 +266,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
           (_selectedFeeLevel == null && _customSatsPerVb != null)
               ? FeeInfo(
                   estimatedFee: _estimatedFee,
-                  fiatValue: fiatValueInKrw?.toInt(),
+                  // fiatValue: fiatValueInKrw?.toInt(),
                   satsPerVb: _customSatsPerVb)
               : _findFeeInfoWithLevel(_selectedFeeLevel!),
     };

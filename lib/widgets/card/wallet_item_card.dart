@@ -1,18 +1,18 @@
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 
 class WalletItemCard extends StatelessWidget {
   final int id;
-  final int? balance;
+  final AnimatedBalanceData animatedBalanceData;
   final String name;
   final int iconIndex;
   final int colorIndex;
@@ -23,7 +23,7 @@ class WalletItemCard extends StatelessWidget {
   const WalletItemCard({
     super.key,
     required this.id,
-    required this.balance,
+    required this.animatedBalanceData,
     required this.name,
     required this.iconIndex,
     required this.colorIndex,
@@ -55,13 +55,15 @@ class WalletItemCard extends StatelessWidget {
                 Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: BackgroundColorPalette[colorIndex],
+                      color:
+                          CoconutColors.backgroundColorPaletteDark[colorIndex],
                       borderRadius: BorderRadius.circular(16.0),
                     ),
                     child: SvgPicture.asset(
                         CustomIcons.getPathByIndex(iconIndex),
                         colorFilter: ColorFilter.mode(
-                            ColorPalette[colorIndex], BlendMode.srcIn),
+                            CoconutColors.colorPalette[colorIndex],
+                            BlendMode.srcIn),
                         width: 20.0)),
                 const SizedBox(width: 8.0),
                 Expanded(
@@ -70,12 +72,9 @@ class WalletItemCard extends StatelessWidget {
                     children: [
                       Text(
                         name,
-                        style: const TextStyle(
-                            fontFamily: 'Pretendard',
-                            fontSize: 12.0,
-                            fontWeight: FontWeight.w400,
-                            color: MyColors.transparentWhite_70,
-                            letterSpacing: 0.2),
+                        style: CoconutTypography.body3_12.merge(TextStyle(
+                            color: CoconutColors.white.withOpacity(0.7),
+                            letterSpacing: 0.2)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -88,13 +87,30 @@ class WalletItemCard extends StatelessWidget {
                             child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    balance != null
-                                        ? satoshiToBitcoinString(balance!)
-                                        : '0',
-                                    style: Styles.h3Number,
+                                  AnimatedBalance(
+                                    prevValue: animatedBalanceData.previous,
+                                    value: animatedBalanceData.current,
+                                    isBtcUnit: true,
+                                    textStyle: CoconutTypography
+                                        .heading3_21_NumberBold
+                                        .merge(
+                                      const TextStyle(
+                                        fontSize: 22,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
                                   ),
-                                  const Text(" BTC", style: Styles.unitSmall),
+                                  Text(
+                                    " BTC",
+                                    style:
+                                        CoconutTypography.body3_12_Number.merge(
+                                      TextStyle(
+                                          fontSize: 13,
+                                          color: CoconutColors.white
+                                              .withOpacity(0.7),
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ),
                                 ]),
                           )),
                     ],
@@ -105,8 +121,8 @@ class WalletItemCard extends StatelessWidget {
                 ),
                 SvgPicture.asset('assets/svg/arrow-right.svg',
                     width: 24,
-                    colorFilter:
-                        const ColorFilter.mode(MyColors.white, BlendMode.srcIn))
+                    colorFilter: const ColorFilter.mode(
+                        CoconutColors.white, BlendMode.srcIn))
               ]))),
     );
 

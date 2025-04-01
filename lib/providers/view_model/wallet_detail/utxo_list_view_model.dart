@@ -26,6 +26,9 @@ class UtxoListViewModel extends ChangeNotifier {
   // WalletInitState _prevWalletInitState = WalletInitState.never;
   late UpdateStatus _prevUpdateStatus;
 
+  // balance 애니메이션을 위한 이전 잔액을 담는 변수
+  late int _prevBalance;
+
   List<UtxoState> _utxoList = [];
   UtxoOrder _selectedUtxoOrder = UtxoOrder.byTimestampDesc;
   bool _isUtxoListLoadComplete = false;
@@ -45,10 +48,12 @@ class UtxoListViewModel extends ChangeNotifier {
     _initUtxoAndTags();
     _prevUpdateStatus = _walletProvider.getWalletUpdateInfo(_walletId).utxo;
     _addChangeListener();
+    _prevBalance = balance;
   }
 
   int get balance =>
       _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
+  int get prevBalance => _prevBalance;
   int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
   bool? get isNetworkOn => _connectProvider.isNetworkOn;
 

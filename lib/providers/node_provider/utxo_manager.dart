@@ -88,7 +88,6 @@ class UtxoManager {
     int walletId,
     Transaction transaction,
   ) {
-    Logger.log('UTXO 상태 업데이트 (outgoing): ${transaction.transactionHash}');
     // 트랜잭션 입력을 순회하며 사용된 UTXO를 pending 상태로 변경
     for (var input in transaction.inputs) {
       // UTXO 소유 지갑 ID 찾기
@@ -97,7 +96,6 @@ class UtxoManager {
 
       // UTXO가 자기 자신을 참조하지 않는지 확인
       if (utxo?.spentByTransactionHash == transaction.transactionHash) {
-        Logger.log('자기 참조 UTXO 감지: $utxoId는 현재 트랜잭션에 의해 사용됨');
         continue;
       }
 
@@ -111,8 +109,6 @@ class UtxoManager {
         utxoId,
         transaction.transactionHash,
       );
-      Logger.log(
-          'UTXO를 outgoing으로 표시: $utxoId (spentBy: ${transaction.transactionHash})');
     }
   }
 
@@ -148,5 +144,9 @@ class UtxoManager {
       int walletId, Set<String> replacedTxHashs) {
     _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
         walletId, replacedTxHashs);
+  }
+
+  List<UtxoState> getIncomingUtxoList(int walletId) {
+    return _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.incoming);
   }
 }

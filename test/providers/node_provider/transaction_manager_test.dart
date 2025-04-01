@@ -86,8 +86,9 @@ void main() {
       utxoManager,
     );
 
-    rbfDetector = RbfHandler(transactionRepository, utxoManager);
-    cpfpDetector = CpfpHandler(transactionRepository);
+    rbfDetector =
+        RbfHandler(transactionRepository, utxoManager, electrumService);
+    cpfpDetector = CpfpHandler(transactionRepository, utxoManager);
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
@@ -456,7 +457,7 @@ void main() {
       });
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
@@ -475,7 +476,7 @@ void main() {
           mockOriginalTxHash);
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
@@ -511,7 +512,7 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
@@ -557,7 +558,7 @@ void main() {
           realmManager, testWalletId, mockSpentTxHash, mockOriginalTxHash);
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
@@ -606,7 +607,7 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await rbfDetector.detectRbfTransaction(
+      final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         multiInputTx,
         (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
@@ -762,7 +763,6 @@ void _addRbfHistory(TestRealmManager realmManager, int walletId, String txHash,
       walletId, // walletId
       originalTxHash, // originalTransactionHash
       txHash, // transactionHash
-      1, // order
       5.0, // feeRate
       DateTime.now(), // timestamp
     );

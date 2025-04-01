@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -11,18 +10,17 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
+import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/highlighted_Info_area.dart';
@@ -102,6 +100,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           final tx = viewModel
               .transactionList![viewModel.selectedTransactionIndex]
               .transaction!;
+          final txMemo = viewModel.fetchTransactionMemo();
 
           return Scaffold(
               backgroundColor: CoconutColors.black,
@@ -141,19 +140,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         ),
                         CoconutLayout.spacing_100h,
                         Center(
-                            // TODO: 머지 후 UpbitConnectModel의 util을 사용하도록 수정, 부호 붙이기
-                            child: Selector<UpbitConnectModel, int?>(
-                          selector: (context, model) => model.bitcoinPriceKrw,
-                          builder: (context, bitcoinPriceKrw, child) {
-                            return Text(
-                              bitcoinPriceKrw != null
-                                  ? '${_getPrefix(tx)}${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(tx.amount, bitcoinPriceKrw).toDouble().abs())} ${CurrencyCode.KRW.code}'
-                                  : '',
-                              style: CoconutTypography.body3_12_Number
-                                  .setColor(CoconutColors.gray500),
-                            );
-                          },
-                        )),
+                            child: FiatPrice(
+                                satoshiAmount: tx.amount!.abs(),
+                                textStyle: CoconutTypography.body2_14_Number
+                                    .setColor(CoconutColors.gray500))),
                         CoconutLayout.spacing_400h,
                         if (_isTransactionStatusPending(
                                 txList.last.transaction!) &&
@@ -249,7 +239,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                   "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
                             },
                             child: Text(
-                              tx.transactionHash,
+                              viewModel.isSendType!
+                                  ? tx.transactionHash
+                                  : widget.txHash,
                               style: CoconutTypography.body1_16_Number,
                             )),
                         TransactionDetailScreen._divider,
@@ -261,7 +253,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                 context: context,
                                 isScrollControlled: true,
                                 builder: (context) => MemoBottomSheet(
-                                  originalMemo: tx.memo ?? '',
+                                  originalMemo: txMemo ?? '',
                                   onComplete: (memo) {
                                     if (!viewModel
                                         .updateTransactionMemo(memo)) {
@@ -275,7 +267,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                               );
                             },
                             child: Text(
-                              tx.memo?.isNotEmpty == true ? tx.memo! : '-',
+                              txMemo?.isNotEmpty == true ? txMemo! : '-',
                               style: CoconutTypography.body1_16_Number,
                             )),
                         const SizedBox(
