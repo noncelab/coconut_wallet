@@ -20,8 +20,6 @@ class UtxoItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool isChange = utxo.derivationPath.split('/')[4] == '1';
-
     final dateString = DateTimeUtil.formatTimestamp(utxo.timestamp);
     const borderRadius = CoconutStyles.radius_300;
 
@@ -69,7 +67,7 @@ class UtxoItemCard extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (isChange)
+                        if (utxo.isChange)
                           CustomChip(
                             text: t.change,
                             backgroundColor: CoconutColors.gray500,
