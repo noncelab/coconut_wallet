@@ -1,30 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPrefsRepository {
-  // TODO: lib/contants/shared_pref_keys.dart로 옮긴 것을 사용하기
-  static const String kSharedIsBalanceHidden = "SHARED_IS_BALANCE_HIDDEN";
-  static const String lastUpdateTime = "LAST_UPDATE_TIME";
-  static const String kFaucetHistories = "FAUCET_HISTORIES";
-  static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
-  static const String kIsNotEmptyWalletList = "IS_NOT_EMPTY_WALLET_LIST";
-  static const String kCanCheckBiometrics = "CAN_CHECK_BIOMETRICS";
-  static const String kIsSetBiometrics = "IS_SET_BIOMETRICS";
-  static const String kIsSetPin = "IS_SET_PIN";
-  static const String kWalletTxListId = "WALLET_TX_LIST_ID";
-  static const String kNextVersionUpdateDialogDate =
-      "NEXT_VERSION_UPDATE_DIALOG_DATE";
-  static const String kIsOpenTermsScreen = "IS_OPEN_TERMS_SCREEN";
-
-  /// 리뷰 요청 관련
-  static const String kHaveSent = 'HAVE_SENT';
-  static const String kHaveReviewed = 'HAVE_REVIEWED';
-  static const String kAppRunCountAfterRejectReview =
-      'APP_RUN_COUNT_AFTER_REJECT_REVIEW';
-
   late SharedPreferences _sharedPrefs;
   SharedPreferences get sharedPrefs => _sharedPrefs;
 
@@ -111,30 +92,17 @@ class SharedPrefsRepository {
   Future<void> _saveFaucetHistories(Map<int, FaucetRecord> histories) async {
     final String encodedData = json.encode(histories
         .map((key, value) => MapEntry(key.toString(), value.toJson())));
-    await _sharedPrefs.setString(kFaucetHistories, encodedData);
+    await _sharedPrefs.setString(SharedPrefKeys.kFaucetHistories, encodedData);
   }
 
   Map<int, FaucetRecord> _getFaucetHistories() {
-    final String? encodedData = _sharedPrefs.getString(kFaucetHistories);
+    final String? encodedData =
+        _sharedPrefs.getString(SharedPrefKeys.kFaucetHistories);
     if (encodedData == null) {
       return {};
     }
     final Map<String, dynamic> decodedData = json.decode(encodedData);
     return decodedData.map(
         (key, value) => MapEntry(int.parse(key), FaucetRecord.fromJson(value)));
-  }
-
-  /// TxList--------------------------------------------------------------
-  Future setTxList(int walletId, String value) async {
-    await _sharedPrefs.setString(
-        '$kWalletTxListId${walletId.toString()}', value);
-  }
-
-  String? getTxList(int walletId) {
-    return _sharedPrefs.getString('$kWalletTxListId${walletId.toString()}');
-  }
-
-  Future removeTxList(int walletId) async {
-    await _sharedPrefs.remove('$kWalletTxListId${walletId.toString()}');
   }
 }

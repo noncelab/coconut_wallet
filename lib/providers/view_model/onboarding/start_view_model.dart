@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/services/model/response/app_version_response.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
@@ -65,7 +66,7 @@ class StartViewModel extends ChangeNotifier {
 
   Future<void> setNextUpdateDialogDate() async {
     final nextShowDate = DateTime.now().add(const Duration(days: 7));
-    _sharedPrefs.setString(SharedPrefsRepository.kNextVersionUpdateDialogDate,
+    _sharedPrefs.setString(SharedPrefKeys.kNextVersionUpdateDialogDate,
         nextShowDate.toIso8601String());
   }
 
@@ -105,8 +106,8 @@ class StartViewModel extends ChangeNotifier {
 
   /// 업데이트 다이얼로그 표시 여부 결정
   Future<bool> _shouldShowUpdateDialog() async {
-    final nextShowDateString = _sharedPrefs
-        .getString(SharedPrefsRepository.kNextVersionUpdateDialogDate);
+    final nextShowDateString =
+        _sharedPrefs.getString(SharedPrefKeys.kNextVersionUpdateDialogDate);
 
     if (nextShowDateString.isEmpty) return true;
 

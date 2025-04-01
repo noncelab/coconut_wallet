@@ -122,17 +122,10 @@ class AuthProvider extends ChangeNotifier {
     return savedPin == hashedInput;
   }
 
-  /// 비밀번호 초기화
-  /// TODO: 비밀번호 초기화 시 호출했던 함수. pin_check_screen의 _showDialog() 함수에서 나머지 초기화 처리 필요
   Future<void> resetPassword() async {
     _isSetBiometrics = false;
     _canCheckBiometrics = false;
-    // _isNotEmptyWalletList = false;
     _isSetPin = false;
-    // _isBalanceHidden = false;
-    // _lastUpdateTime = 0;
-
-    // WalletDataManager().reset();
 
     await SecureStorageRepository().deleteAll();
     await SharedPrefsRepository().clearSharedPref();
