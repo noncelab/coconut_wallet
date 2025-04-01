@@ -218,6 +218,14 @@ class TransactionDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _setPreviousTransactionIndex(int newIndex) {
+    _previousTransactionIndex = newIndex;
+  }
+
+  void _setSelectedTransactionIndex(int newIndex) {
+    _selectedTransactionIndex = newIndex;
+  }
+
   void setPreviousTransactionDetail() {
     _previousTransactionDetail =
         TransactionDetail.copy(_transactionList![selectedTransactionIndex]);
@@ -235,6 +243,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
       if (updatedTx.blockHeight != currentTx.blockHeight ||
           updatedTx.transactionHash != currentTx.transactionHash) {
         _initTransactionList();
+        _setPreviousTransactionIndex(0);
+        _setSelectedTransactionIndex(0);
       }
       if (_initViewMoreButtons() == false) {
         _showDialogNotifier.value = true;

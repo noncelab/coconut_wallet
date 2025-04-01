@@ -428,11 +428,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       _loadCompletedListener();
       _animationController.value = 1.0;
     });
-    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
   }
 
   void _updateAnimation() {
@@ -639,7 +634,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   }
 
   bool _isTransactionStatusPending(TransactionRecord tx) {
-    return tx.blockHeight == 0;
+    if (tx.blockHeight != 0) {
+      _timer?.cancel();
+      if (_timer != null) {
+        _timer == null;
+      }
+      return false;
+    } else {
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+      return true;
+    }
   }
 
   Widget _pendingWidget(TransactionRecord tx) {
