@@ -141,8 +141,8 @@ class TransactionItemCard extends StatelessWidget {
       case TransactionStatus.received:
         return Text(
           currentUnit == Unit.btc
-              ? '+${satoshiToBitcoinString(tx.amount!)}'
-              : '+${addCommasToIntegerPart(tx.amount!.toDouble())}',
+              ? '+${satoshiToBitcoinString(tx.amount)}'
+              : '+${addCommasToIntegerPart(tx.amount.toDouble())}',
           style: Styles.body1Number.merge(
             const TextStyle(
               color: MyColors.white,
@@ -157,8 +157,8 @@ class TransactionItemCard extends StatelessWidget {
       case TransactionStatus.sending:
         return Text(
           currentUnit == Unit.btc
-              ? satoshiToBitcoinString(tx.amount!)
-              : addCommasToIntegerPart(tx.amount!.toDouble()),
+              ? satoshiToBitcoinString(tx.amount)
+              : addCommasToIntegerPart(tx.amount.toDouble()),
           style: Styles.body1Number.merge(
             const TextStyle(
               color: MyColors.white,

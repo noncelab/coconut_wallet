@@ -72,6 +72,10 @@ class TransactionProvider extends ChangeNotifier {
     return _transactionRepository.getTransactionRecord(walletId, txHash);
   }
 
+  bool hasTransactionConfirmed(int walletId, String txHash) {
+    return _transactionRepository.hasTransactionConfirmed(walletId, txHash);
+  }
+
   void resetData() {
     _transaction = null;
     _txList.clear();

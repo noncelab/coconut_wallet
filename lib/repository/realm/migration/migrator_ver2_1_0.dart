@@ -93,9 +93,7 @@ class MigratorVer2_1_0 {
             wallet[iconField],
             descriptor,
             wallet[nameField],
-            wallet[typeField] ?? WalletType.singleSignature.name,
-            balance: wallet[balanceField],
-            txCount: 0));
+            wallet[typeField] ?? WalletType.singleSignature.name));
 
         if (wallet[typeField] == WalletType.multiSignature.name) {
           migratedMultisigWallets.add(RealmMultisigWallet(

@@ -104,10 +104,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {
-    TransactionRecord? tx = _txProvider.getTransactionRecord(
+    return _txProvider.hasTransactionConfirmed(
         _walletId, transaction.transactionHash);
-    if (tx == null || tx.blockHeight! <= 0) return false;
-    return true;
   }
 
   Future<bool> prepareToSend(double newTxFeeRate) async {
@@ -226,7 +224,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       debugPrint(
           '😇 CPFP utxo (${utxoList.length})개 input: $inputSum / output: $outputSum / 👉🏻 입력한 fee rate: $newFeeRate');
       if (!_ensureSufficientUtxos(
-          utxoList, outputSum, estimatedVSize.ceil(), newFeeRate, amount)) {
+          utxoList, outputSum, estimatedVSize, newFeeRate, amount)) {
         debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
         return;
       }
@@ -259,7 +257,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     //input 정보 추출
     List<Utxo> utxoList = await _getUtxoListForRbf();
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    int estimatedVSize = _parentTx.vSize;
+    double estimatedVSize = _parentTx.vSize;
     double outputSum = amount + estimatedVSize * newFeeRate;
 
     if (inputSum <= outputSum) {
@@ -340,7 +338,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   bool _ensureSufficientUtxos(List<Utxo> utxoList, double outputSum,
-      int estimatedVSize, double newFeeRate, int amount) {
+      double estimatedVSize, double newFeeRate, int amount) {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     List<UtxoState> unspentUtxos =
         _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
@@ -489,7 +487,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     double cpfpTxSize = _estimateVirtualByte(transaction);
     double totalFee = (_parentTx.vSize + cpfpTxSize) * recommendedFeeRate;
-    double cpfpTxFee = totalFee - _parentTx.fee!.toDouble();
+    double cpfpTxFee = totalFee - _parentTx.fee.toDouble();
     double cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
 
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
@@ -509,8 +507,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     double estimatedVirtualByte = _estimateVirtualByte(transaction);
-    double minimumRequiredFee =
-        _parentTx.fee!.toDouble() + estimatedVirtualByte;
+    double minimumRequiredFee = _parentTx.fee.toDouble() + estimatedVirtualByte;
     double mempoolRecommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
     if (mempoolRecommendedFee < minimumRequiredFee) {
@@ -579,7 +576,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       newTxSize: _formatNumber(cpfpTxSize),
       recommendedFeeRate: _formatNumber(recommendedFeeRate),
       originalTxSize: _formatNumber(_parentTx.vSize.toDouble()),
-      originalFee: _formatNumber((_parentTx.fee ?? 0).toDouble()),
+      originalFee: _formatNumber((_parentTx.fee).toDouble()),
       totalRequiredFee: _formatNumber(totalRequiredFee.toDouble()),
       newTxFee: _formatNumber(cpfpTxFee),
       newTxFeeRate: _formatNumber(cpfpTxFeeRate),

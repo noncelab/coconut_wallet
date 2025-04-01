@@ -15,14 +15,14 @@ class TransactionMock {
     String? memo,
     int amount = 1000000,
     int fee = 10000,
-    int vSize = 250,
+    double vSize = 250,
     DateTime? createdAt,
   }) {
     return TransactionRecord(
       transactionHash ?? testTxHash,
       timestamp ?? DateTime.now(),
       blockHeight ?? 0,
-      transactionType.name,
+      transactionType,
       memo,
       amount,
       fee,

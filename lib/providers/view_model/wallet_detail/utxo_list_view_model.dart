@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -174,7 +175,7 @@ class UtxoListViewModel extends ChangeNotifier {
     final tx = _txProvider.getTransaction(_walletId, utxo.transactionHash);
     if (tx == null) return [];
 
-    return DateTimeUtil.formatTimestamp(tx.timestamp!);
+    return DateTimeUtil.formatTimestamp(tx.timestamp);
   }
 
   @override

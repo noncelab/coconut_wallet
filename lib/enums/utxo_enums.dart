@@ -1,5 +1,6 @@
-import 'network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+
+enum UtxoOrder { byAmountDesc, byAmountAsc, byTimestampDesc, byTimestampAsc }
 
 extension UtxoOrderEnumExtension on UtxoOrder {
   String get text {

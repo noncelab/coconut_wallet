@@ -15,8 +15,6 @@ class _RealmWalletBase {
   int usedChangeIndex = -1;
   int generatedReceiveIndex = -1;
   int generatedChangeIndex = -1;
-  int? balance;
-  int? txCount;
   bool isLatestTxBlockHeightZero = false;
 }
 
@@ -39,17 +37,17 @@ class _RealmTransaction {
   @Indexed()
   late int walletId;
   @Indexed()
-  DateTime? timestamp;
-  int? blockHeight;
-  String? transactionType;
+  late DateTime timestamp;
+  late int blockHeight;
+  late String transactionType;
   String? memo;
-  int? amount;
-  int? fee;
-  late int vSize;
+  late int amount;
+  late int fee;
+  late double vSize;
   late List<String> inputAddressList;
   late List<String> outputAddressList;
   String? note;
-  DateTime? createdAt;
+  late DateTime createdAt;
   String? replaceByTransactionHash;
 }
 
