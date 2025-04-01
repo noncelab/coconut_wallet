@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/constants/app_info.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -29,25 +30,25 @@ class AppReviewService {
   /// 비트코인 전송을 완료한 적이 있는지 여부를 반환한다.
   static bool? _hasCompletedBitcoinTransaction() {
     final sharedPrefs = SharedPrefsRepository();
-    return sharedPrefs.sharedPrefs.getBool(SharedPrefsRepository.kHaveSent);
+    return sharedPrefs.sharedPrefs.getBool(SharedPrefKeys.kHaveSent);
   }
 
   static Future _setCompletedBitcoinTransaction() async {
     await SharedPrefsRepository()
         .sharedPrefs
-        .setBool(SharedPrefsRepository.kHaveSent, true);
+        .setBool(SharedPrefKeys.kHaveSent, true);
   }
 
   /// 리뷰를 남긴 적이 있는지 여부를 반환한다.
   static bool? _hasReviewed() {
     final sharedPrefs = SharedPrefsRepository();
-    return sharedPrefs.sharedPrefs.getBool(SharedPrefsRepository.kHaveReviewed);
+    return sharedPrefs.sharedPrefs.getBool(SharedPrefKeys.kHaveReviewed);
   }
 
   static Future setHasReviewed() async {
     await SharedPrefsRepository()
         .sharedPrefs
-        .setBool(SharedPrefsRepository.kHaveReviewed, true);
+        .setBool(SharedPrefKeys.kHaveReviewed, true);
   }
 
   /// 비트코인 전송 첫 성공 후 앱 실행 횟수를 반환한다.
@@ -55,7 +56,7 @@ class AppReviewService {
   static int? _getAppRunningCountAfterRejectReview() {
     final sharedPrefs = SharedPrefsRepository();
     return sharedPrefs.sharedPrefs
-        .getInt(SharedPrefsRepository.kAppRunCountAfterRejectReview);
+        .getInt(SharedPrefKeys.kAppRunCountAfterRejectReview);
   }
 
   /// 비트코인 전송을 완료한 적이 있고, 리뷰를 남긴 적이 없으면, 앱 실행 시 마다 count를 1씩 증가시켜 저장한다.
@@ -63,10 +64,10 @@ class AppReviewService {
     final sharedPrefs = SharedPrefsRepository();
     if (_hasCompletedBitcoinTransaction() == true && _hasReviewed() != true) {
       final count = sharedPrefs.sharedPrefs
-              .getInt(SharedPrefsRepository.kAppRunCountAfterRejectReview) ??
+              .getInt(SharedPrefKeys.kAppRunCountAfterRejectReview) ??
           0;
-      await sharedPrefs.sharedPrefs.setInt(
-          SharedPrefsRepository.kAppRunCountAfterRejectReview, count + 1);
+      await sharedPrefs.sharedPrefs
+          .setInt(SharedPrefKeys.kAppRunCountAfterRejectReview, count + 1);
     }
   }
 

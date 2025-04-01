@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -32,10 +33,9 @@ void main() {
 
       final encodedData = json.encode(histories
           .map((key, value) => MapEntry(key.toString(), value.toJson())));
-      when(mockPrefs.setString(
-              SharedPrefsRepository.kFaucetHistories, encodedData))
+      when(mockPrefs.setString(SharedPrefKeys.kFaucetHistories, encodedData))
           .thenAnswer((_) async => true);
-      when(mockPrefs.getString(SharedPrefsRepository.kFaucetHistories))
+      when(mockPrefs.getString(SharedPrefKeys.kFaucetHistories))
           .thenReturn(encodedData);
 
       await sharedPrefs.saveFaucetHistory(histories[1]!);
@@ -48,15 +48,14 @@ void main() {
     });
 
     test('IS_BALANCE_HIDDEN boolean must be saved and imported', () async {
-      when(mockPrefs.setBool(SharedPrefsRepository.kIsBalanceHidden, true))
+      when(mockPrefs.setBool(SharedPrefKeys.kIsBalanceHidden, true))
           .thenAnswer((_) async => true);
-      when(mockPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden))
-          .thenReturn(true);
+      when(mockPrefs.getBool(SharedPrefKeys.kIsBalanceHidden)).thenReturn(true);
 
       await sharedPrefs.sharedPrefs
-          .setBool(SharedPrefsRepository.kIsBalanceHidden, true);
-      final result = sharedPrefs.sharedPrefs
-          .getBool(SharedPrefsRepository.kIsBalanceHidden);
+          .setBool(SharedPrefKeys.kIsBalanceHidden, true);
+      final result =
+          sharedPrefs.sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
 
       expect(result, true);
     });

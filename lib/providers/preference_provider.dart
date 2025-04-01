@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:flutter/material.dart';
 
@@ -9,14 +10,13 @@ class PreferenceProvider extends ChangeNotifier {
   bool get isBalanceHidden => _isBalanceHidden;
 
   PreferenceProvider() {
-    _isBalanceHidden =
-        _sharedPrefs.getBool(SharedPrefsRepository.kIsBalanceHidden);
+    _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
   }
 
   /// 홈 화면 잔액 숨기기
   Future<void> changeIsBalanceHidden(bool isOn) async {
     _isBalanceHidden = isOn;
-    await _sharedPrefs.setBool(SharedPrefsRepository.kIsBalanceHidden, isOn);
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsBalanceHidden, isOn);
     notifyListeners();
   }
 }
