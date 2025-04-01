@@ -22,7 +22,15 @@ class TransactionDetail {
   int _inputCountToShow = 0;
 
   int _outputCountToShow = 0;
+
   TransactionDetail(this._transaction);
+  TransactionDetail.copy(TransactionDetail original)
+      : _transaction = original._transaction,
+        _canSeeMoreInputs = original._canSeeMoreInputs,
+        _canSeeMoreOutputs = original._canSeeMoreOutputs,
+        _inputCountToShow = original._inputCountToShow,
+        _outputCountToShow = original._outputCountToShow;
+
   bool get canSeeMoreInputs => _canSeeMoreInputs;
   bool get canSeeMoreOutputs => _canSeeMoreOutputs;
   int get inputCountToShow => _inputCountToShow;
@@ -72,6 +80,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
   Utxo? _currentUtxo;
   List<TransactionDetail>? _transactionList;
   List<FeeHistory> _feeBumpingHistoryList = [];
+  TransactionDetail?
+      _previousTransactionDetail; // CoconutChip을 선택할 때 이전 선택했던 transactionDetail을 보관
 
   int _selectedTransactionIndex = 0; // RBF history chip 선택 인덱스
   int _previousTransactionIndex = 0; // 이전 인덱스 (애니메이션 방향 결정용)
@@ -113,6 +123,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   List<TransactionDetail>? get transactionList => _transactionList;
   List<FeeHistory>? get feeBumpingHistoryList => _feeBumpingHistoryList;
+  TransactionDetail? get previousTransactionDetail =>
+      _previousTransactionDetail;
 
   TransactionStatus? get transactionStatus => _transactionStatus;
 
@@ -206,6 +218,11 @@ class TransactionDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setPreviousTransactionDetail() {
+    _previousTransactionDetail =
+        TransactionDetail.copy(_transactionList![selectedTransactionIndex]);
+  }
+
   void updateProvider() {
     if (_walletProvider.walletItemList.isNotEmpty) {
       _setCurrentBlockHeight();
@@ -223,7 +240,29 @@ class TransactionDetailViewModel extends ChangeNotifier {
         _showDialogNotifier.value = true;
       }
     }
+    _restoreTransactionDetailCountValue();
     notifyListeners();
+  }
+
+  void _restoreTransactionDetailCountValue() {
+    final currentDetail = _transactionList![selectedTransactionIndex];
+    final previous = _previousTransactionDetail;
+
+    if (previous == null) return;
+
+    final hasEnoughInputs =
+        currentDetail.transaction!.inputAddressList.length >=
+            previous.inputCountToShow;
+    final hasEnoughOutputs =
+        currentDetail.transaction!.outputAddressList.length >=
+            previous.outputCountToShow;
+
+    if (!hasEnoughInputs || !hasEnoughOutputs) return;
+
+    currentDetail.setInputCountToShow(previous.inputCountToShow);
+    currentDetail.setOutputCountToShow(previous.outputCountToShow);
+    currentDetail.setCanSeeMoreInputs(previous.canSeeMoreInputs);
+    currentDetail.setCanSeeMoreOutputs(previous.canSeeMoreOutputs);
   }
 
   bool updateTransactionMemo(String memo) {
@@ -287,8 +326,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
           (a, b) => b.transaction!.feeRate.compareTo(a.transaction!.feeRate));
       debugPrint(
           '🚨 _transactionList : ${_transactionList!.map((s) => s.transaction!.feeRate)}');
-    } else if (currentTransaction.transactionType ==
-            TransactionType.received.name &&
+    } else if (currentTransaction.transactionType == TransactionType.received &&
         currentTransaction.cpfpHistory != null) {
       debugPrint(
           '🔹 CPFP History: ${_transactionList?[_selectedTransactionIndex].transaction!.cpfpHistory}');
