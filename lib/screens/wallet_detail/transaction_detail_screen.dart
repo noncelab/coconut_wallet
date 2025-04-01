@@ -60,7 +60,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
 
-  List<FeeHistory> feeBumpingHistoryList = [];
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, TransactionProvider,
@@ -82,12 +81,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
         _viewModel.setTransactionStatus(TransactionUtil.getStatus(_viewModel
             .transactionList![_viewModel.selectedTransactionIndex]
             .transaction!));
-        _updateAnimation();
 
+        _updateAnimation();
         return _viewModel;
       },
       update: (_, walletProvider, txProvider, viewModel) {
-        _syncFeeHistoryList();
         viewModel!.updateProvider();
         return viewModel;
       },
@@ -227,6 +225,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                     count: _confirmedCountText(
                                         tx, viewModel.currentBlock?.height))
                                 : '-',
+                            style: CoconutTypography.body1_16_Number,
+                          ),
+                        ),
+                        TransactionDetailScreen._divider,
+                        const SizedBox(height: 12),
+                        UnderlineButtonItemCard(
+                          label: t.fee_rate,
+                          underlineButtonLabel: '',
+                          onTapUnderlineButton: () {},
+                          child: Text(
+                            '${tx.feeRate.toStringAsFixed(2)} sats/vb',
                             style: CoconutTypography.body1_16_Number,
                           ),
                         ),
@@ -426,21 +435,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     });
   }
 
-  void _syncFeeHistoryList() {
-    if (_viewModel.transactionList == null ||
-        _viewModel.transactionList!.isEmpty) {
-      return;
-    }
-    feeBumpingHistoryList =
-        _viewModel.transactionList!.map((transactionDetail) {
-      return FeeHistory(
-        feeRate: transactionDetail.transaction!.feeRate,
-        isSelected: _viewModel.selectedTransactionIndex ==
-            _viewModel.transactionList!.indexOf(transactionDetail),
-      );
-    }).toList();
-  }
-
   void _updateAnimation() {
     final bool slideRight = _viewModel.selectedTransactionIndex >
         _viewModel.previousTransactionIndex;
@@ -467,10 +461,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         children: List.generate(
-          feeBumpingHistoryList.length,
+          _viewModel.feeBumpingHistoryList!.length,
           (index) {
-            final feeHistory = feeBumpingHistoryList[index];
-            bool isLast = index == feeBumpingHistoryList.length - 1;
+            final feeHistory = _viewModel.feeBumpingHistoryList![index];
+            bool isLast = index == _viewModel.feeBumpingHistoryList!.length - 1;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -559,8 +553,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     }
 
     setState(() {
-      _viewModel.updatePreviousTransactionIndexFromSelected();
-      _viewModel.setSelectedTransactionIndex(newIndex);
+      _viewModel.updateTransactionIndex(newIndex);
       _updateAnimation();
     });
 
@@ -572,9 +565,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         children: List.generate(
-          feeBumpingHistoryList.length,
+          _viewModel.feeBumpingHistoryList!.length,
           (index) {
-            final feeHistory = feeBumpingHistoryList[index];
+            final feeHistory = _viewModel.feeBumpingHistoryList![index];
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -707,8 +700,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
             child: Align(
               alignment: Alignment.centerRight,
               child: Visibility(
-                visible:
-                    _viewModel.isSendType! || feeBumpingHistoryList.length < 2,
+                visible: _viewModel.isSendType! ||
+                    (_viewModel.feeBumpingHistoryList?.length ?? 0) < 2,
                 maintainSize: true,
                 maintainAnimation: true,
                 maintainState: true,

@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
@@ -70,6 +71,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   Utxo? _currentUtxo;
   List<TransactionDetail>? _transactionList;
+  List<FeeHistory> _feeBumpingHistoryList = [];
 
   int _selectedTransactionIndex = 0; // RBF history chip 선택 인덱스
   int _previousTransactionIndex = 0; // 이전 인덱스 (애니메이션 방향 결정용)
@@ -110,6 +112,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   }
 
   List<TransactionDetail>? get transactionList => _transactionList;
+  List<FeeHistory>? get feeBumpingHistoryList => _feeBumpingHistoryList;
 
   TransactionStatus? get transactionStatus => _transactionStatus;
 
@@ -191,12 +194,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updatePreviousTransactionIndexFromSelected() {
+  void updateTransactionIndex(int newIndex) {
     _previousTransactionIndex = _selectedTransactionIndex;
-  }
-
-  void setSelectedTransactionIndex(int index) {
-    _selectedTransactionIndex = index;
+    _selectedTransactionIndex = newIndex;
     notifyListeners();
   }
 
@@ -250,8 +250,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
     final currentTransaction =
         _txProvider.getTransactionRecord(_walletId, _txHash);
     _transactionList = [TransactionDetail(currentTransaction)];
-    setSelectedTransactionIndex(0);
-    updatePreviousTransactionIndexFromSelected();
 
     if (currentTransaction == null) {
       debugPrint('❌ currentTransaction IS NULL');
@@ -262,25 +260,21 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('----------------------------------------');
     debugPrint('🔹 Transaction Hash: $_txHash');
     debugPrint(
-        '🔹 Current Transaction FeeRate: ${currentTransaction!.feeRate}');
+        '🔹 currentTransaction transactionType: ${currentTransaction.transactionType}');
+    debugPrint('🔹 Current Transaction FeeRate: ${currentTransaction.feeRate}');
     debugPrint(
         '🔹 Input Addresses: ${currentTransaction.inputAddressList.map((e) => e.address.toString()).join(", ")}');
-    debugPrint(
-        '🔹 RBF History Count: ${currentTransaction.rbfHistoryList?.length}');
-    debugPrint(
-        '🔹 CPFP History: ${_transactionList![_selectedTransactionIndex].transaction!.cpfpHistory}');
-    debugPrint('----------------------------------------');
 
     // rbfHistory가 존재하면 높은 fee rate부터 _transactionList에 추가
     if ((currentTransaction.transactionType == TransactionType.sent ||
             currentTransaction.transactionType == TransactionType.self) &&
         currentTransaction.rbfHistoryList != null &&
         currentTransaction.rbfHistoryList!.isNotEmpty) {
-      var reversedRbfHistoryList = currentTransaction.rbfHistoryList!.reversed;
-      List<RbfHistory> sortedList = reversedRbfHistoryList.toList()
-        ..sort((a, b) => b.feeRate.compareTo(a.feeRate));
+      debugPrint(
+          '🔹 RBF History Count: ${currentTransaction.rbfHistoryList?.length}');
+      debugPrint('----------------------------------------');
 
-      for (var rbfTx in sortedList) {
+      for (var rbfTx in currentTransaction.rbfHistoryList!) {
         if (rbfTx.transactionHash == currentTransaction.transactionHash) {
           continue;
         }
@@ -288,8 +282,17 @@ class TransactionDetailViewModel extends ChangeNotifier {
             _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
         _transactionList!.add(TransactionDetail(rbfTxTransaction));
       }
-    } else if (currentTransaction.transactionType == TransactionType.received &&
+
+      _transactionList!.sort(
+          (a, b) => b.transaction!.feeRate.compareTo(a.transaction!.feeRate));
+      debugPrint(
+          '🚨 _transactionList : ${_transactionList!.map((s) => s.transaction!.feeRate)}');
+    } else if (currentTransaction.transactionType ==
+            TransactionType.received.name &&
         currentTransaction.cpfpHistory != null) {
+      debugPrint(
+          '🔹 CPFP History: ${_transactionList?[_selectedTransactionIndex].transaction!.cpfpHistory}');
+      debugPrint('----------------------------------------');
       _transactionList = [
         TransactionDetail(_txProvider.getTransactionRecord(
             _walletId, currentTransaction.cpfpHistory!.parentTransactionHash)),
@@ -330,8 +333,22 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('✅ Transaction Initialization Complete');
     debugPrint(
         '====================================================================');
+    _syncFeeHistoryList();
 
     notifyListeners();
+  }
+
+  void _syncFeeHistoryList() {
+    if (transactionList == null || transactionList!.isEmpty) {
+      return;
+    }
+    _feeBumpingHistoryList = transactionList!.map((transactionDetail) {
+      return FeeHistory(
+        feeRate: transactionDetail.transaction!.feeRate,
+        isSelected: selectedTransactionIndex ==
+            transactionList!.indexOf(transactionDetail),
+      );
+    }).toList();
   }
 
   bool _initViewMoreButtons() {

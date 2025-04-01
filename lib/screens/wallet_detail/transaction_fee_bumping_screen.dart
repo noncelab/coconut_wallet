@@ -148,7 +148,8 @@ class _TransactionFeeBumpingScreenState
                   showGradient: true,
                   gradientPadding: const EdgeInsets.only(
                       left: 16, right: 16, bottom: 40, top: 150),
-                  isActive: !_isEstimatedFeeTooLow &&
+                  isActive: !viewModel.insufficientUtxos &&
+                      !_isEstimatedFeeTooLow &&
                       _textEditingController.text.isNotEmpty,
                   subWidget: _textEditingController.text.isEmpty ||
                           _textEditingController.text == '0'
