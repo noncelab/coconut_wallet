@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -81,12 +80,12 @@ class _AddressListScreenState extends State<AddressListScreen> {
               children: [
                 Scaffold(
                     extendBodyBehindAppBar: true,
-                    backgroundColor: MyColors.black,
+                    backgroundColor: CoconutColors.black,
                     appBar: AppBar(
                       scrolledUnderElevation: 0,
                       backgroundColor: _isScrollOverTitleHeight
-                          ? MyColors.transparentBlack_50
-                          : MyColors.black,
+                          ? CoconutColors.black.withOpacity(0.5)
+                          : CoconutColors.black,
                       toolbarHeight: kToolbarHeight + 30,
                       leading: IconButton(
                           onPressed: () {
@@ -95,14 +94,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           icon: SvgPicture.asset('assets/svg/back.svg',
                               width: 24,
                               colorFilter: const ColorFilter.mode(
-                                  MyColors.white, BlendMode.srcIn))),
+                                  CoconutColors.white, BlendMode.srcIn))),
                       flexibleSpace: _isScrollOverTitleHeight
                           ? ClipRect(
                               child: BackdropFilter(
                                 filter:
                                     ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                                 child: Container(
-                                  color: MyColors.transparentWhite_06,
+                                  color: CoconutColors.white.withOpacity(0.6),
                                 ),
                               ),
                             )
@@ -110,7 +109,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       title: Text(
                         t.address_list_screen
                             .wallet_name(name: viewModel.walletBaseItem!.name),
-                        style: Styles.appbarTitle,
+                        style: CoconutTypography.heading4_18,
                       ),
                       centerTitle: true,
                       bottom: PreferredSize(
@@ -143,10 +142,17 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                                         qrcodeTopWidget: Text(
                                                           addressList[index]
                                                               .derivationPath,
-                                                          style: Styles.body2.merge(
-                                                              const TextStyle(
-                                                                  color: MyColors
-                                                                      .transparentWhite_70)),
+                                                          style:
+                                                              CoconutTypography
+                                                                  .body2_14
+                                                                  .merge(
+                                                            TextStyle(
+                                                              color: CoconutColors
+                                                                  .white
+                                                                  .withOpacity(
+                                                                      0.7),
+                                                            ),
+                                                          ),
                                                         ),
                                                         qrData:
                                                             addressList[index]
@@ -173,7 +179,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                             padding: const EdgeInsets.all(30),
                                             child: const Center(
                                               child: CircularProgressIndicator(
-                                                  color: MyColors.white),
+                                                  color: CoconutColors.white),
                                             ),
                                           ),
                                         ),
@@ -237,7 +243,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: MyColors.transparentWhite_15,
+          color: CoconutColors.white.withOpacity(0.15),
         ),
         child: Row(
           children: [
@@ -295,75 +301,73 @@ class _AddressListScreenState extends State<AddressListScreen> {
           _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
 
       return Positioned(
-          top: widget.isFullScreen
-              ? _depositTooltipIconPosition.dy +
-                  _depositTooltipIconRenderBox.size.height
-              : _depositTooltipIconPosition.dy - 70,
-          left: _depositTooltipIconPosition.dx - 30,
-          right: MediaQuery.of(context).size.width -
-              _depositTooltipIconPosition.dx -
-              150,
-          child: GestureDetector(
-            onTap: () => _removeTooltip(),
-            child: ClipPath(
-              clipper: LeftTriangleBubbleClipper(),
-              child: Container(
-                padding: const EdgeInsets.only(
-                  top: 25,
-                  left: 18,
-                  right: 18,
-                  bottom: 10,
-                ),
-                color: MyColors.white,
-                child: Text(
-                  t.tooltip.address_receiving,
-                  style: Styles.caption.merge(TextStyle(
-                    height: 1.3,
-                    fontFamily: CustomFonts.text.getFontFamily,
-                    color: MyColors.darkgrey,
-                  )),
-                ),
-              ),
+        top: widget.isFullScreen
+            ? _depositTooltipIconPosition.dy +
+                _depositTooltipIconRenderBox.size.height
+            : _depositTooltipIconPosition.dy - 70,
+        left: _depositTooltipIconPosition.dx - 30,
+        right: MediaQuery.of(context).size.width -
+            _depositTooltipIconPosition.dx -
+            150,
+        child: CoconutToolTip(
+          onTapRemove: () => _removeTooltip(),
+          width: MediaQuery.sizeOf(context).width,
+          isPlacementTooltipVisible: _depositTooltipVisible,
+          isBubbleClipperSideLeft: true,
+          backgroundColor: CoconutColors.white,
+          tooltipType: CoconutTooltipType.placement,
+          brightness: Brightness.light,
+          richText: RichText(
+            text: TextSpan(
+              text: t.tooltip.address_receiving,
+              style: CoconutTypography.body3_12
+                  .setColor(CoconutColors.black)
+                  .merge(
+                    const TextStyle(
+                      height: 1.3,
+                    ),
+                  ),
             ),
-          ));
+          ),
+        ),
+      );
     } else if (_changeTooltipVisible) {
       _changeTooltipIconRenderBox =
           _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
       _changeTooltipIconPosition =
           _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
       return Positioned(
-          top: widget.isFullScreen
-              ? _changeTooltipIconPosition.dy +
-                  _changeTooltipIconRenderBox.size.height
-              : _changeTooltipIconPosition.dy - 70,
-          left: _changeTooltipIconPosition.dx - 150,
-          right: MediaQuery.of(context).size.width -
-              _changeTooltipIconPosition.dx +
-              (_changeTooltipIconRenderBox.size.width) -
-              46,
-          child: GestureDetector(
-            onTap: () => _removeTooltip(),
-            child: ClipPath(
-              clipper: RightTriangleBubbleClipper(),
-              child: Container(
-                padding: const EdgeInsets.only(
-                  top: 25,
-                  left: 18,
-                  right: 18,
-                  bottom: 10,
-                ),
-                color: MyColors.white,
-                child: Text(
-                  t.tooltip.address_change,
-                  style: Styles.caption.merge(TextStyle(
-                    height: 1.3,
-                    fontFamily: CustomFonts.text.getFontFamily,
-                    color: MyColors.darkgrey,
-                  )),
-                ),
-              ),
+        top: widget.isFullScreen
+            ? _changeTooltipIconPosition.dy +
+                _changeTooltipIconRenderBox.size.height
+            : _changeTooltipIconPosition.dy - 70,
+        left: _changeTooltipIconPosition.dx - 150,
+        right: MediaQuery.of(context).size.width -
+            _changeTooltipIconPosition.dx +
+            (_changeTooltipIconRenderBox.size.width) -
+            46,
+        child: CoconutToolTip(
+          onTapRemove: () => _removeTooltip(),
+          width: MediaQuery.sizeOf(context).width,
+          isPlacementTooltipVisible: _changeTooltipVisible,
+          isBubbleClipperSideLeft: false,
+          backgroundColor: CoconutColors.white,
+          tooltipType: CoconutTooltipType.placement,
+          brightness: Brightness.light,
+          richText: RichText(
+            text: TextSpan(
+              text: t.tooltip.address_change,
+              style: CoconutTypography.body3_12
+                  .setColor(CoconutColors.black)
+                  .merge(
+                    const TextStyle(
+                      height: 1.3,
+                    ),
+                  ),
             ),
-          ));
+          ),
+        ),
+      );
     }
     return Container();
   }

@@ -70,6 +70,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
+  coconut_design_system: ^0.7.1
   coconut_lib:
     git:
       url: https://github.com/noncelab/coconut_lib.git
@@ -81,7 +82,6 @@ dependencies:
   async: ^2.11.0
   decimal: ^3.0.2
   tuple: ^2.0.2
-  coconut_design_system: ^0.7.0
 
 dev_dependencies:
   flutter_test:
