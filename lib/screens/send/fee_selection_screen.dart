@@ -5,14 +5,12 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
-import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -111,31 +109,27 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                     ])),
 
                     if (_isNetworkOn == false)
-                      CustomTooltip(
+                      _buildFixedTooltip(
                           richText: RichText(
                               text: TextSpan(
                                   text: ErrorCodes.networkError.message)),
-                          showIcon: true,
-                          type: TooltipType.warning),
+                          tooltipState: CoconutTooltipState.warning),
                     if (_isNetworkOn == true &&
                         widget.isRecommendedFeeFetchSuccess == false)
-                      CustomTooltip(
+                      _buildFixedTooltip(
                           richText: RichText(
                               text: TextSpan(
                                   text: t.errors.fee_selection_error
                                       .recommended_fee_unavailable)),
-                          showIcon: true,
-                          type: TooltipType.error),
+                          tooltipState: CoconutTooltipState.error),
                     if (_estimatedFee != null && _estimatedFee! >= kMaxFeeLimit)
-                      CustomTooltip(
+                      _buildFixedTooltip(
                           richText: RichText(
                               text: TextSpan(
                                   text: t.tooltip.recommended_fee2(
                                       bitcoin: UnitUtil.satoshiToBitcoin(
                                           kMaxFeeLimit)))),
-                          showIcon: true,
-                          type: TooltipType.warning),
-
+                          tooltipState: CoconutTooltipState.warning),
                     Padding(
                         padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
                         child: Column(
@@ -272,5 +266,19 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
     };
 
     Navigator.pop(context, returnData);
+  }
+
+  Widget _buildFixedTooltip(
+      {required RichText richText,
+      CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
+    return Padding(
+        padding: const EdgeInsets.symmetric(
+            vertical: 8, horizontal: CoconutLayout.defaultPadding),
+        child: CoconutToolTip(
+          richText: richText,
+          showIcon: true,
+          tooltipType: CoconutTooltipType.fixed,
+          tooltipState: tooltipState,
+        ));
   }
 }

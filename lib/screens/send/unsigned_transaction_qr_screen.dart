@@ -1,10 +1,10 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
-import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -43,45 +43,51 @@ class _UnsignedTransactionQrScreenState
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CustomTooltip(
-                    backgroundColor: MyColors.white.withOpacity(0.9),
-                    richText: RichText(
-                      text: TextSpan(
-                        text: '[1] ',
-                        style: const TextStyle(
-                          fontFamily: 'Pretendard',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          height: 1.4,
-                          letterSpacing: 0.5,
-                          color: MyColors.black,
+                Padding(
+                  padding: const EdgeInsets.only(
+                      top: 8,
+                      left: CoconutLayout.defaultPadding,
+                      right: CoconutLayout.defaultPadding),
+                  child: CoconutToolTip(
+                      baseBackgroundColor: MyColors.white.withOpacity(0.95),
+                      tooltipType: CoconutTooltipType.fixed,
+                      richText: RichText(
+                        text: TextSpan(
+                          text: '[1] ',
+                          style: const TextStyle(
+                            fontFamily: 'Pretendard',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            height: 1.4,
+                            letterSpacing: 0.5,
+                            color: MyColors.black,
+                          ),
+                          children: <TextSpan>[
+                            TextSpan(
+                              text: t.tooltip.unsigned_tx_qr.in_vault,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                            TextSpan(
+                              text:
+                                  ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} '
+                                  '\'${_isMultisig ? t.sign_multisig : t.sign}\'',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(
+                              text: t.tooltip.unsigned_tx_qr.scan_qr_below,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                          ],
                         ),
-                        children: <TextSpan>[
-                          TextSpan(
-                            text: t.tooltip.unsigned_tx_qr.in_vault,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                          TextSpan(
-                            text:
-                                ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} '
-                                '\'${_isMultisig ? t.sign_multisig : t.sign}\'',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextSpan(
-                            text: t.tooltip.unsigned_tx_qr.scan_qr_below,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.normal,
-                            ),
-                          ),
-                        ],
                       ),
-                    ),
-                    showIcon: true,
-                    type: TooltipType.info),
+                      showIcon: true),
+                ),
                 Container(
                     margin: const EdgeInsets.only(top: 40),
                     padding: const EdgeInsets.all(4),
