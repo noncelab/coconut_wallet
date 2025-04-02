@@ -105,10 +105,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
           return Scaffold(
               backgroundColor: CoconutColors.black,
-              appBar: CustomAppBar.build(
+              appBar: CoconutAppBar.build(
                 title: t.view_tx_details,
                 context: context,
-                hasRightIcon: false,
               ),
               body: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
