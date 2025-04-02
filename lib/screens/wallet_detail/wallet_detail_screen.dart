@@ -112,6 +112,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       faucetIconKey: _faucetIconKey,
       backgroundColor: CoconutColors.black,
       title: TextUtils.ellipsisIfLonger(_viewModel.walletName, maxLength: 15),
+      titlePadding: const EdgeInsets.all(8),
       context: context,
       onTitlePressed: () => _navigateToWalletInfo(context),
       actionButtonList: [

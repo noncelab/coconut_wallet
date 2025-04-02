@@ -102,10 +102,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
           return Scaffold(
               backgroundColor: CoconutColors.black,
-              appBar: CustomAppBar.build(
+              appBar: CoconutAppBar.build(
                 title: t.view_tx_details,
                 context: context,
-                hasRightIcon: false,
               ),
               body: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -139,7 +138,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         CoconutLayout.spacing_100h,
                         Center(
                             child: FiatPrice(
-                                satoshiAmount: tx.amount!.abs(),
+                                satoshiAmount: tx.amount.abs(),
                                 textStyle: CoconutTypography.body2_14_Number
                                     .setColor(CoconutColors.gray500))),
                         CoconutLayout.spacing_400h,
