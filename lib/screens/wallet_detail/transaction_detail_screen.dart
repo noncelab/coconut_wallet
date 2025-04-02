@@ -642,22 +642,23 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   }
 
   bool _isTransactionStatusPending(TransactionRecord tx) {
+    _timer?.cancel();
+
     if (tx.blockHeight != 0) {
       _timer?.cancel();
       if (_timer != null) {
-        _timer == null;
+        _timer = null;
       }
       return false;
-    } else {
-      _timer?.cancel();
-      // 'n분 째' 최신화를 위한 타이머, pending 상태인 tx일 때만 타이머가 작동합니다.
-      _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
-        if (mounted) {
-          setState(() {});
-        }
-      });
-      return true;
     }
+
+    // 'n분 째' 최신화를 위한 타이머, pending 상태인 tx일 때만 타이머가 작동합니다.
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+    return true;
   }
 
   Widget _pendingWidget(TransactionRecord tx) {
