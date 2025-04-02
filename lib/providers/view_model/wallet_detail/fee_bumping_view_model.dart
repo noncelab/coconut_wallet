@@ -675,14 +675,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     final tx = txResult.value;
     final List<TransactionInput> inputList = Transaction.parse(tx).inputs;
-    // d65c61c2792334cf0a8c0d03ac5869f66912ba9de947bca1ace5835c7592c824
     List<Utxo> utxoList = [];
-    final utxos = _utxoRepository.getUtxoStateList(_walletId);
-    // for (var utxo in utxos) {
-    //   if (utxo.transactionHash == _pendingTx.inputAddressList[0].transactionHash) {
-    //     debugPrint('트랜잭션 조회! ${utxo.transactionHash} ${utxo.index}');
-    //   }
-    // }
     for (var input in inputList) {
       var utxo = _utxoRepository.getUtxoState(
           _walletId, makeUtxoId(input.transactionHash, input.index));
