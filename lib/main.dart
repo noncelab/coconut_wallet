@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -19,6 +20,10 @@ late final String dbDirectoryPath;
 const methodChannelOS = 'onl.coconut.wallet/os';
 
 void main() {
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
+
   runZonedGuarded(() async {
     // This app is designed only to work vertically, so we limit
     // orientations to portrait up and down.

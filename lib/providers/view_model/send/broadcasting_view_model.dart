@@ -2,7 +2,6 @@ import 'dart:collection';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';

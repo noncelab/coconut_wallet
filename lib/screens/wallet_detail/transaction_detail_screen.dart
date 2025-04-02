@@ -58,6 +58,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   late Animation<Offset> _slideInAnimation;
   late Animation<Offset> _slideOutAnimation;
 
+  int tInputCountToShow = 0;
+  int tOutputCountToShow = 0;
+
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
 
   @override
@@ -139,7 +142,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         CoconutLayout.spacing_100h,
                         Center(
                             child: FiatPrice(
-                                satoshiAmount: tx.amount!.abs(),
+                                satoshiAmount: tx.amount.abs(),
                                 textStyle: CoconutTypography.body2_14_Number
                                     .setColor(CoconutColors.gray500))),
                         CoconutLayout.spacing_400h,
@@ -300,7 +303,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
 
   Widget _buildTransactionDetail(int index) {
     final transactionDetail = _viewModel.transactionList![index];
-
+    tInputCountToShow = transactionDetail.inputCountToShow;
+    tOutputCountToShow = transactionDetail.outputCountToShow;
     return Column(
       key: ValueKey(_viewModel
           .transactionList![_viewModel.selectedTransactionIndex]
@@ -311,7 +315,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: transactionDetail.inputCountToShow,
+          itemCount: _viewModel.previousInputCountToShow ??
+              transactionDetail.inputCountToShow,
           padding: EdgeInsets.zero,
           itemBuilder: (context, index) {
             final address = _viewModel.getInputAddress(index);
@@ -334,9 +339,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           },
         ),
         Visibility(
-          visible: _viewModel
-              .transactionList![_viewModel.selectedTransactionIndex]
-              .canSeeMoreInputs,
+          visible: _viewModel.previousCanSeeMoreInputs ??
+              _viewModel.transactionList![_viewModel.selectedTransactionIndex]
+                  .canSeeMoreInputs,
           child: Center(
             child: CustomUnderlinedButton(
               text: t.view_more,
@@ -363,7 +368,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: transactionDetail.outputCountToShow,
+          itemCount: _viewModel.previousOutputCountToShow ??
+              transactionDetail.outputCountToShow,
           padding: EdgeInsets.zero,
           itemBuilder: (context, index) {
             final address = _viewModel.getOutputAddress(index);
@@ -386,7 +392,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           },
         ),
         Visibility(
-          visible: transactionDetail.canSeeMoreOutputs,
+          visible: _viewModel.previousCanSeeMoreOutputs ??
+              transactionDetail.canSeeMoreOutputs,
           child: Center(
             child: CustomUnderlinedButton(
               text: t.view_more,
@@ -427,11 +434,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCompletedListener();
       _animationController.value = 1.0;
-    });
-    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (mounted) {
-        setState(() {});
-      }
     });
   }
 
@@ -525,6 +527,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           isSelected:
                               _viewModel.selectedTransactionIndex == index,
                           onTap: () {
+                            _viewModel.resetPreviousCountValues();
                             _changeTransaction(index);
                           },
                         ),
@@ -639,7 +642,23 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   }
 
   bool _isTransactionStatusPending(TransactionRecord tx) {
-    return tx.blockHeight == 0;
+    _timer?.cancel();
+
+    if (tx.blockHeight != 0) {
+      _timer?.cancel();
+      if (_timer != null) {
+        _timer = null;
+      }
+      return false;
+    }
+
+    // 'n분 째' 최신화를 위한 타이머, pending 상태인 tx일 때만 타이머가 작동합니다.
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+    return true;
   }
 
   Widget _pendingWidget(TransactionRecord tx) {

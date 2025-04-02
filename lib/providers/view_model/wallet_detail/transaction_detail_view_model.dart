@@ -22,7 +22,15 @@ class TransactionDetail {
   int _inputCountToShow = 0;
 
   int _outputCountToShow = 0;
+
   TransactionDetail(this._transaction);
+  TransactionDetail.copy(TransactionDetail original)
+      : _transaction = original._transaction,
+        _canSeeMoreInputs = original._canSeeMoreInputs,
+        _canSeeMoreOutputs = original._canSeeMoreOutputs,
+        _inputCountToShow = original._inputCountToShow,
+        _outputCountToShow = original._outputCountToShow;
+
   bool get canSeeMoreInputs => _canSeeMoreInputs;
   bool get canSeeMoreOutputs => _canSeeMoreOutputs;
   int get inputCountToShow => _inputCountToShow;
@@ -76,6 +84,11 @@ class TransactionDetailViewModel extends ChangeNotifier {
   int _selectedTransactionIndex = 0; // RBF history chip 선택 인덱스
   int _previousTransactionIndex = 0; // 이전 인덱스 (애니메이션 방향 결정용)
 
+  int? _previousInputCountToShow;
+  int? _previousOutputCountToShow;
+  bool? _previousCanSeeMoreInputs;
+  bool? _previousCanSeeMoreOutputs;
+
   TransactionStatus? _transactionStatus = TransactionStatus.receiving;
   bool _isSendType = false;
 
@@ -99,8 +112,11 @@ class TransactionDetailViewModel extends ChangeNotifier {
   ValueNotifier<bool> get loadCompletedNotifier => _loadCompletedNotifier;
 
   int get previousTransactionIndex => _previousTransactionIndex;
-
   int get selectedTransactionIndex => _selectedTransactionIndex;
+  int? get previousInputCountToShow => _previousInputCountToShow;
+  int? get previousOutputCountToShow => _previousOutputCountToShow;
+  bool? get previousCanSeeMoreInputs => _previousCanSeeMoreInputs;
+  bool? get previousCanSeeMoreOutputs => _previousCanSeeMoreOutputs;
 
   ValueNotifier<bool> get showDialogNotifier => _showDialogNotifier;
 
@@ -142,13 +158,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   String getWalletName() => _walletProvider.getWalletById(_walletId).name;
 
-  // void init() {
-  //   _transactionList![0].setCanSeeMoreInputs(false);
-  //   _transactionList![0].setCanSeeMoreOutputs(false);
-  //   _transactionList![0].setInputCountToShow(0);
-  //   _transactionList![0].setOutputCountToShow(0);
-  // }
-
   bool isSameAddress(String address, int index) {
     bool isContainAddress = _walletProvider.containsAddress(_walletId, address);
 
@@ -162,6 +171,13 @@ class TransactionDetailViewModel extends ChangeNotifier {
     return false;
   }
 
+  void resetPreviousCountValues() {
+    _previousInputCountToShow = null;
+    _previousOutputCountToShow = null;
+    _previousCanSeeMoreInputs = null;
+    _previousCanSeeMoreOutputs = null;
+  }
+
   void onTapViewMoreInputs() {
     // ignore: no_leading_underscores_for_local_identifiers
     if (transactionList?[selectedTransactionIndex] == null) return;
@@ -171,9 +187,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
     transactionDetail.setInputCountToShow(
         (transactionDetail.inputCountToShow + kViewMoreCount)
             .clamp(0, transactionDetail.transaction!.inputAddressList.length));
+    _previousInputCountToShow = transactionDetail.inputCountToShow;
+
     if (transactionDetail.inputCountToShow ==
         transactionDetail.transaction!.inputAddressList.length) {
       transactionDetail.setCanSeeMoreInputs(false);
+      _previousCanSeeMoreInputs = false;
     }
     notifyListeners();
   }
@@ -187,9 +206,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
     transactionDetail.setOutputCountToShow(
         (transactionDetail.outputCountToShow + kViewMoreCount)
             .clamp(0, transactionDetail.transaction!.outputAddressList.length));
+    _previousOutputCountToShow = transactionDetail.outputCountToShow;
+
     if (transactionDetail.outputCountToShow ==
         transactionDetail.transaction!.outputAddressList.length) {
       transactionDetail.setCanSeeMoreOutputs(false);
+      _previousCanSeeMoreOutputs = false;
     }
     notifyListeners();
   }
@@ -206,6 +228,14 @@ class TransactionDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _setPreviousTransactionIndex(int newIndex) {
+    _previousTransactionIndex = newIndex;
+  }
+
+  void _setSelectedTransactionIndex(int newIndex) {
+    _selectedTransactionIndex = newIndex;
+  }
+
   void updateProvider() {
     if (_walletProvider.walletItemList.isNotEmpty) {
       _setCurrentBlockHeight();
@@ -218,10 +248,16 @@ class TransactionDetailViewModel extends ChangeNotifier {
       if (updatedTx.blockHeight != currentTx.blockHeight ||
           updatedTx.transactionHash != currentTx.transactionHash) {
         _initTransactionList();
+        _setPreviousTransactionIndex(0);
+        _setSelectedTransactionIndex(0);
       }
       if (_initViewMoreButtons() == false) {
         _showDialogNotifier.value = true;
       }
+      _previousCanSeeMoreInputs ??=
+          _transactionList![selectedTransactionIndex].canSeeMoreInputs;
+      _previousCanSeeMoreOutputs ??=
+          _transactionList![selectedTransactionIndex].canSeeMoreOutputs;
     }
     notifyListeners();
   }
@@ -287,8 +323,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
           (a, b) => b.transaction!.feeRate.compareTo(a.transaction!.feeRate));
       debugPrint(
           '🚨 _transactionList : ${_transactionList!.map((s) => s.transaction!.feeRate)}');
-    } else if (currentTransaction.transactionType ==
-            TransactionType.received.name &&
+    } else if (currentTransaction.transactionType == TransactionType.received &&
         currentTransaction.cpfpHistory != null) {
       debugPrint(
           '🔹 CPFP History: ${_transactionList?[_selectedTransactionIndex].transaction!.cpfpHistory}');

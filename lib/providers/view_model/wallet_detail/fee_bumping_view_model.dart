@@ -421,7 +421,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     //     'RBF:: inputSum: $inputSum, outputSum: $outputSum fee current: ${outputSum - inputSum}');
 
     double requiredFee = estimatedVSize * newFeeRate;
-    int remainingFee = (requiredFee - _pendingTx.fee!).toInt();
+    int remainingFee = (requiredFee - _pendingTx.fee).toInt();
     debugPrint(
         '필요 : $requiredFee 기존: ${_pendingTx.fee} 추가할 remainingFee: $remainingFee');
     debugPrint('☑️ 기존 전송 정보');
@@ -498,7 +498,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     // debugPrint('RBF:: 싱글 또는 스윕 >> amount 조정 $externalSendingAmount');
     int adjustedMyOuputAmount =
-        myOutputAmount - (newFee - _pendingTx.fee!).toInt();
+        myOutputAmount - (newFee - _pendingTx.fee).toInt();
     debugPrint('RBF::                        조정 후 $adjustedMyOuputAmount');
 
     if (adjustedMyOuputAmount == 0) {
@@ -674,8 +674,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     final tx = txResult.value;
-    final inputList = Transaction.parse(tx).inputs;
-
+    final List<TransactionInput> inputList = Transaction.parse(tx).inputs;
     List<Utxo> utxoList = [];
     for (var input in inputList) {
       var utxo = _utxoRepository.getUtxoState(
@@ -731,7 +730,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     double cpfpTxSize = _estimateVirtualByte(transaction);
     double totalFee = (_pendingTx.vSize + cpfpTxSize) * recommendedFeeRate;
-    double cpfpTxFee = totalFee - _pendingTx.fee!.toDouble();
+    double cpfpTxFee = totalFee - _pendingTx.fee.toDouble();
     double cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
 
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
@@ -752,7 +751,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     double estimatedVirtualByte = _estimateVirtualByte(transaction);
     double minimumRequiredFee =
-        _pendingTx.fee!.toDouble() + estimatedVirtualByte;
+        _pendingTx.fee.toDouble() + estimatedVirtualByte;
     // double mempoolRecommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
     // if (mempoolRecommendedFee < minimumRequiredFee) {
