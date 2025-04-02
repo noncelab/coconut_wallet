@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -13,7 +14,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../../widgets/appbar/custom_appbar.dart';
@@ -91,9 +91,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             ),
           ),
           Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: CustomTooltip(
-                  backgroundColor: MyColors.white.withOpacity(0.9),
+              padding: const EdgeInsets.only(
+                  top: 20,
+                  left: CoconutLayout.defaultPadding,
+                  right: CoconutLayout.defaultPadding),
+              child: CoconutToolTip(
+                  baseBackgroundColor: MyColors.white.withOpacity(0.95),
+                  tooltipType: CoconutTooltipType.fixed,
                   richText: RichText(
                     text: TextSpan(
                       text: t.tooltip.wallet_add1,
@@ -132,9 +136,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                         ),
                       ],
                     ),
-                  ),
-                  showIcon: true,
-                  type: TooltipType.info)),
+                  ))),
         ]));
   }
 
