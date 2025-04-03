@@ -37,11 +37,10 @@ UtxoState mapRealmToUtxoState(RealmUtxo utxo) {
     blockHeight: utxo.blockHeight,
     amount: utxo.amount,
     to: utxo.address,
+    timestamp: utxo.timestamp,
     status: stringToUtxoStatus(utxo.status),
     spentByTransactionHash: utxo.spentByTransactionHash,
   );
-
-  utxoState.updateTimestamp(utxo.timestamp);
 
   return utxoState;
 }

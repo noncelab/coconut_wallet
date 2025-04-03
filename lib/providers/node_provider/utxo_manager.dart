@@ -39,24 +39,7 @@ class UtxoManager {
     }
 
     // UTXO 목록 조회
-    final utxos = await fetchUtxoStateList(
-        walletItem.walletBase.addressType, scriptStatus);
-
-    final utxoBlockHeightSet = utxos
-        .map((utxo) => utxo.blockHeight)
-        .where((height) => height > 0)
-        .toSet();
-
-    final blockTimestampMap =
-        await _electrumService.fetchBlocksByHeight(utxoBlockHeightSet);
-
-    UtxoState.updateTimestampFromBlocks(utxos, blockTimestampMap);
-
-    for (var utxo in utxos) {
-      if (utxo.blockHeight == 0) {
-        utxo.status = UtxoStatus.incoming;
-      }
-    }
+    final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
 
     _utxoRepository.addAllUtxos(walletItem.id, utxos);
 
@@ -68,10 +51,19 @@ class UtxoManager {
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다.
   Future<List<UtxoState>> fetchUtxoStateList(
-      AddressType addressType, ScriptStatus scriptStatus) async {
+      WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
     try {
       final utxos = await _electrumService.getUnspentList(
-          addressType, scriptStatus.address);
+          walletItem.walletBase.addressType, scriptStatus.address);
+
+      final realmTransactions =
+          _transactionRepository.getRealmTransactionListByHashes(
+              walletItem.id, utxos.map((e) => e.txHash).toSet());
+
+      final transactionMap = {
+        for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx
+      };
+
       return utxos
           .map((e) => UtxoState(
                 transactionHash: e.txHash,
@@ -80,7 +72,9 @@ class UtxoManager {
                 derivationPath: scriptStatus.derivationPath,
                 blockHeight: e.height,
                 to: scriptStatus.address,
-                status: UtxoStatus.unspent,
+                status: e.height > 0 ? UtxoStatus.unspent : UtxoStatus.incoming,
+                timestamp:
+                    transactionMap[e.txHash]?.createdAt ?? DateTime.now(),
               ))
           .toList();
     } catch (e) {
@@ -230,8 +224,9 @@ class UtxoManager {
             to: address,
             status: UtxoStatus.outgoing,
             spentByTransactionHash: transaction.transactionHash,
+            // 언컨펌 상태이므로 블록 높이나 타임스탬프 값 대신 createdAt 값 사용
+            timestamp: txRecord.createdAt,
           );
-          newUtxo.timestamp = DateTime.now();
           newUtxoList.add(newUtxo);
         }
       }

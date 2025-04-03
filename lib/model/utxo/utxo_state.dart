@@ -1,7 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 
 enum UtxoStatus {
   unspent, // 사용되지 않은 상태, confirmed
@@ -12,10 +11,14 @@ enum UtxoStatus {
 class UtxoState extends Utxo {
   final int blockHeight;
   final String to; // 소유 주소
-  late DateTime timestamp;
+  DateTime timestamp;
   List<UtxoTag>? tags;
   UtxoStatus status = UtxoStatus.unspent;
   String? spentByTransactionHash; // 이 UTXO를 사용한 트랜잭션 해시
+
+  bool get isRbfable => status == UtxoStatus.outgoing && blockHeight == 0;
+
+  bool get isCpfpable => status == UtxoStatus.incoming && blockHeight == 0;
 
   UtxoState({
     required String transactionHash,
@@ -24,27 +27,11 @@ class UtxoState extends Utxo {
     required String derivationPath,
     required this.blockHeight,
     required this.to,
+    required this.timestamp,
     this.tags,
     this.status = UtxoStatus.unspent,
     this.spentByTransactionHash,
   }) : super(transactionHash, index, amount, derivationPath);
-
-  void updateTimestamp(DateTime timestamp) {
-    this.timestamp = timestamp;
-  }
-
-  bool get isRbfable => status == UtxoStatus.outgoing && blockHeight == 0;
-
-  bool get isCpfpable => status == UtxoStatus.incoming && blockHeight == 0;
-
-  static void updateTimestampFromBlocks(
-      List<UtxoState> utxos, Map<int, BlockTimestamp> blockTimestamps) {
-    for (var utxo in utxos) {
-      // 언컨펌 Utxo의 경우 현재 시간으로 설정 -> FIXME: transaction의 created_at으로 설정
-      utxo.updateTimestamp(
-          blockTimestamps[utxo.blockHeight]?.timestamp ?? DateTime.now());
-    }
-  }
 
   static void sortUtxo(List<UtxoState> utxos, UtxoOrder order) {
     int getLastIndex(String path) => int.parse(path.split('/').last);
