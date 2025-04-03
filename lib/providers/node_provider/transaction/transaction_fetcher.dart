@@ -33,7 +33,8 @@ class TransactionFetcher {
     this._utxoManager,
   )   : _rbfHandler =
             RbfHandler(_transactionRepository, _utxoManager, _electrumService),
-        _cpfpHandler = CpfpHandler(_transactionRepository, _utxoManager);
+        _cpfpHandler =
+            CpfpHandler(_transactionRepository, _utxoManager, _electrumService);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
   Future<void> fetchScriptTransaction(
@@ -105,7 +106,6 @@ class TransactionFetcher {
         final sendingRbfInfo = await _rbfHandler.detectSendingRbfTransaction(
           walletItem.id,
           fetchedTx,
-          _transactionProcessor.getPreviousTransactions,
         );
         if (sendingRbfInfo != null) {
           sendingRbfInfoMap[fetchedTx.transactionHash] = sendingRbfInfo;
@@ -127,7 +127,6 @@ class TransactionFetcher {
         final cpfpInfo = await _cpfpHandler.detectCpfpTransaction(
           walletItem.id,
           fetchedTx,
-          _transactionProcessor.getPreviousTransactions,
         );
         if (cpfpInfo != null) {
           cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;

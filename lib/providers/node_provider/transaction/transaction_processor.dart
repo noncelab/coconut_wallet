@@ -7,8 +7,6 @@ import 'package:coconut_wallet/providers/node_provider/transaction/models/transa
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/transaction_util.dart';
 
 /// 트랜잭션을 처리하고 변환하는 클래스
 class TransactionProcessor {
@@ -16,66 +14,6 @@ class TransactionProcessor {
   final AddressRepository _addressRepository;
 
   TransactionProcessor(this._electrumService, this._addressRepository);
-
-  /// 이전 트랜잭션을 조회합니다.
-  Future<List<Transaction>> getPreviousTransactions(
-    Transaction transaction,
-    List<Transaction> existingTxList,
-  ) async {
-    if (transaction.inputs.isEmpty) {
-      return [];
-    }
-
-    if (TransactionUtil.isCoinbaseTransaction(transaction)) {
-      return [];
-    }
-
-    Set<String> toFetchTransactionHashes = {};
-
-    final existingTxHashes =
-        existingTxList.map((tx) => tx.transactionHash).toSet();
-
-    toFetchTransactionHashes = transaction.inputs
-        .map((input) => input.transactionHash)
-        .where((hash) => !existingTxHashes.contains(hash))
-        .toSet();
-
-    var futures = toFetchTransactionHashes.map((transactionHash) async {
-      try {
-        var inputTx = await _electrumService.getTransaction(transactionHash);
-        return Transaction.parse(inputTx);
-      } catch (e) {
-        Logger.error('Failed to get previous transaction $transactionHash: $e');
-        return null;
-      }
-    });
-
-    try {
-      List<Transaction?> fetchedTransactionsNullable =
-          await Future.wait(futures);
-      List<Transaction> fetchedTransactions =
-          fetchedTransactionsNullable.whereType<Transaction>().toList();
-
-      fetchedTransactions.addAll(existingTxList);
-
-      List<Transaction> previousTransactions = [];
-
-      for (var input in transaction.inputs) {
-        final matchingTx = fetchedTransactions
-            .where((tx) => tx.transactionHash == input.transactionHash)
-            .toList();
-
-        if (matchingTx.isNotEmpty) {
-          previousTransactions.add(matchingTx.first);
-        }
-      }
-
-      return previousTransactions;
-    } catch (e) {
-      Logger.error('Failed to process previous transactions: $e');
-      return [];
-    }
-  }
 
   /// 트랜잭션 레코드를 생성합니다.
   Future<List<TransactionRecord>> createTransactionRecords(
@@ -114,7 +52,8 @@ class TransactionProcessor {
 
     List<Transaction> prevTxs;
     if (getTransactionHex != null) {
-      prevTxs = await getPreviousTransactions(tx, previousTxs);
+      prevTxs = await _electrumService.getPreviousTransactions(tx,
+          existingTxList: previousTxs);
     } else {
       prevTxs = previousTxs;
     }

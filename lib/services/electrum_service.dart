@@ -9,6 +9,7 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 
 part 'model/request/electrum_request_types.dart';
 
@@ -210,6 +211,64 @@ class ElectrumService {
     });
 
     return response.result;
+  }
+
+  /// 이전 트랜잭션을 조회합니다.
+  Future<List<Transaction>> getPreviousTransactions(Transaction transaction,
+      {List<Transaction>? existingTxList}) async {
+    if (transaction.inputs.isEmpty) {
+      return [];
+    }
+
+    if (TransactionUtil.isCoinbaseTransaction(transaction)) {
+      return [];
+    }
+
+    Set<String> toFetchTransactionHashes = {};
+
+    final existingTxHashes =
+        existingTxList?.map((tx) => tx.transactionHash).toSet() ?? {};
+
+    toFetchTransactionHashes = transaction.inputs
+        .map((input) => input.transactionHash)
+        .where((hash) => !existingTxHashes.contains(hash))
+        .toSet();
+
+    var futures = toFetchTransactionHashes.map((transactionHash) async {
+      try {
+        var inputTx = await getTransaction(transactionHash);
+        return Transaction.parse(inputTx);
+      } catch (e) {
+        return null;
+      }
+    });
+
+    try {
+      List<Transaction?> fetchedTransactionsNullable =
+          await Future.wait(futures);
+      List<Transaction> fetchedTransactions =
+          fetchedTransactionsNullable.whereType<Transaction>().toList();
+
+      if (existingTxList != null && existingTxList.isNotEmpty) {
+        fetchedTransactions.addAll(existingTxList);
+      }
+
+      List<Transaction> previousTransactions = [];
+
+      for (var input in transaction.inputs) {
+        final matchingTx = fetchedTransactions
+            .where((tx) => tx.transactionHash == input.transactionHash)
+            .toList();
+
+        if (matchingTx.isNotEmpty) {
+          previousTransactions.add(matchingTx.first);
+        }
+      }
+
+      return previousTransactions;
+    } catch (e) {
+      return [];
+    }
   }
 
   Future<List<List<num>>> getMempoolFeeHistogram() async {

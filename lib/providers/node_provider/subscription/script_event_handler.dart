@@ -132,6 +132,10 @@ class ScriptEventHandler {
         scriptStatuses.map((status) => _utxoManager
             .fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
       );
+
+      // 최초 지갑 구독 시 Outgoing Transaction이 있을 경우 UTXO가 생성되지 않을 경우 임의로 UTXO를 생성해야 함
+      await _utxoManager.createOutgoingUtxos(walletItem);
+
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
 
       // 동기화 완료 state 업데이트

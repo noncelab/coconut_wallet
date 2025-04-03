@@ -20,10 +20,7 @@ class RbfHandler {
 
   /// RBF를 보내는 지갑 관점에서 이미 소비한 UTXO를 다시 소비하는지 확인
   Future<RbfInfo?> detectSendingRbfTransaction(
-      int walletId,
-      Transaction tx,
-      Future<List<Transaction>> Function(Transaction, List<Transaction>)
-          getPreviousTransactions) async {
+      int walletId, Transaction tx) async {
     // 이미 RBF 내역이 있는지 확인
     final existingRbfHistory =
         _transactionRepository.getRbfHistoryList(walletId, tx.transactionHash);

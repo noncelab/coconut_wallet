@@ -4,6 +4,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/cpfp_info.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 
@@ -11,17 +12,18 @@ import 'package:coconut_wallet/utils/utxo_util.dart';
 class CpfpHandler {
   final TransactionRepository _transactionRepository;
   final UtxoManager _utxoManager;
+  final ElectrumService _electrumService;
 
-  CpfpHandler(this._transactionRepository, this._utxoManager);
+  CpfpHandler(
+    this._transactionRepository,
+    this._utxoManager,
+    this._electrumService,
+  );
 
   /// CPFP 트랜잭션을 감지합니다.
   ///
   /// CPFP는 미확인 트랜잭션의 출력을 입력으로 사용하는 새로운 트랜잭션이 발생했을 때 감지됩니다.
-  Future<CpfpInfo?> detectCpfpTransaction(
-      int walletId,
-      Transaction tx,
-      Future<List<Transaction>> Function(Transaction, List<Transaction>)
-          getPreviousTransactions) async {
+  Future<CpfpInfo?> detectCpfpTransaction(int walletId, Transaction tx) async {
     // 이미 CPFP 내역이 있는지 확인
     final existingCpfpHistory =
         _transactionRepository.getCpfpHistory(walletId, tx.transactionHash);
@@ -54,7 +56,7 @@ class CpfpHandler {
 
     if (isCpfp && parentTxHash != null) {
       // 수수료 계산을 위한 정보 수집
-      final prevTxs = await getPreviousTransactions(tx, []);
+      final prevTxs = await _electrumService.getPreviousTransactions(tx);
 
       return CpfpInfo(
         parentTransactionHash: parentTxHash,
