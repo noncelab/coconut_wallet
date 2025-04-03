@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -11,7 +12,6 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
-import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -64,8 +64,12 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                               child: Column(children: [
                                 const SizedBox(height: 16),
                                 if (viewModel.incomingBalance > 0)
-                                  CustomTooltip(
-                                      backgroundColor:
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal:
+                                            CoconutLayout.defaultPadding),
+                                    child: CoconutToolTip(
+                                      baseBackgroundColor:
                                           MyColors.white.withOpacity(0.9),
                                       richText: RichText(
                                           text: TextSpan(
@@ -81,8 +85,9 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                           color: MyColors.black,
                                         ),
                                       )),
-                                      showIcon: true,
-                                      type: TooltipType.info),
+                                      tooltipType: CoconutTooltipType.fixed,
+                                    ),
+                                  ),
                                 Expanded(
                                   child: Center(
                                     child: Column(

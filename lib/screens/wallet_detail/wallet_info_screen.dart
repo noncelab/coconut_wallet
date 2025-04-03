@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
@@ -14,7 +14,6 @@ import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_tooltip.dart';
 import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -52,7 +51,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       child: Consumer<WalletInfoViewModel>(
         builder: (_, viewModel, child) {
           return Scaffold(
-            backgroundColor: MyColors.black,
+            backgroundColor: CoconutColors.black,
             appBar: CustomAppBar.build(
                 title: t.wallet_info_screen.title(name: viewModel.walletName),
                 context: context,
@@ -118,7 +117,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           const SizedBox(height: 32),
                         },
                         Container(
-                          decoration: BoxDecorations.boxDecoration,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28),
+                            color: CoconutColors.white.withOpacity(0.06),
+                          ),
                           margin: const EdgeInsets.symmetric(horizontal: 16),
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Column(
@@ -132,8 +134,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       arguments: {'id': widget.id});
                                 },
                               ),
-                              const Divider(
-                                  color: MyColors.transparentWhite_12,
+                              Divider(
+                                  color: CoconutColors.white.withOpacity(0.12),
                                   height: 1),
                               if (!widget.isMultisig) ...{
                                 InformationItemCard(
@@ -172,8 +174,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     }
                                   },
                                 ),
-                                const Divider(
-                                    color: MyColors.transparentWhite_12,
+                                Divider(
+                                    color:
+                                        CoconutColors.white.withOpacity(0.12),
                                     height: 1),
                               },
                               InformationItemCard(
@@ -194,12 +197,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             margin: const EdgeInsets.symmetric(vertical: 20),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(1),
-                              color: MyColors.white,
+                              color: CoconutColors.white,
                             ),
                           ),
                         ),
                         Container(
-                          decoration: BoxDecorations.boxDecoration,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28),
+                            color: CoconutColors.white.withOpacity(0.06),
+                          ),
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           margin: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
@@ -210,13 +216,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 rightIcon: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                      color: MyColors.defaultBackground,
+                                      color:
+                                          CoconutColors.white.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(10)),
                                   child: SvgPicture.asset(
                                     'assets/svg/trash.svg',
                                     width: 16,
                                     colorFilter: const ColorFilter.mode(
-                                      MyColors.warningRed,
+                                      CoconutColors.hotPink,
                                       BlendMode.srcIn,
                                     ),
                                   ),
@@ -251,7 +258,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       Navigator.of(context).pop();
                                     },
                                     confirmButtonText: t.delete,
-                                    confirmButtonColor: MyColors.warningRed,
+                                    confirmButtonColor: CoconutColors.hotPink,
                                   );
                                 },
                               ),
@@ -260,7 +267,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                         ),
                       ],
                     ),
-                    CustomTooltip(
+                    Positioned(
                       top: _walletTooltipIconPosition.dy - _tooltipTopPadding,
                       right: MediaQuery.of(context).size.width -
                           _walletTooltipIconPosition.dx -
@@ -268,14 +275,30 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               ? 0
                               : _walletTooltipIconRenderBox!.size.width) -
                           10,
-                      text: widget.isMultisig
-                          ? t.tooltip.multisig_wallet(
-                              total: viewModel.multisigTotalSignerCount,
-                              count: viewModel.multisigRequiredSignerCount)
-                          : t.tooltip.mfp,
-                      onTap: _removeTooltip,
-                      topPadding: _tooltipTopPadding,
-                      isVisible: _tooltipRemainingTime > 0,
+                      child: CoconutToolTip(
+                        width: MediaQuery.sizeOf(context).width,
+                        isBubbleClipperSideLeft: false,
+                        tooltipType: CoconutTooltipType.placement,
+                        richText: RichText(
+                          text: TextSpan(
+                            text: widget.isMultisig
+                                ? t.tooltip.multisig_wallet(
+                                    total: viewModel.multisigTotalSignerCount,
+                                    count:
+                                        viewModel.multisigRequiredSignerCount)
+                                : t.tooltip.mfp,
+                            style: CoconutTypography.body3_12
+                                .setColor(CoconutColors.black)
+                                .merge(
+                                  const TextStyle(
+                                    height: 1.3,
+                                  ),
+                                ),
+                          ),
+                        ),
+                        onTapRemove: _removeTooltip,
+                        isPlacementTooltipVisible: _tooltipRemainingTime > 0,
+                      ),
                     ),
                   ],
                 ),

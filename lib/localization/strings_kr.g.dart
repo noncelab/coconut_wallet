@@ -709,9 +709,9 @@ class TranslationsTooltipKr {
   late final TranslationsTooltipUnsignedTxQrKr unsigned_tx_qr =
       TranslationsTooltipUnsignedTxQrKr.internal(_root);
   String get address_receiving =>
-      '비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라 해요.';
+      '비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라고 해요.';
   String get address_change =>
-      '다른 사람에게 비트코인을 보내고 남은 비트코인을 거슬러 받는 주소예요. 영어로 Change라 해요.';
+      '다른 사람에게 비트코인을 보내고 남은 비트코인을 거슬러 받는 주소예요. 영어로 Change라고 해요.';
   String get utxo =>
       'UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
   String get faucet => '테스트용 비트코인으로 마음껏 테스트 해보세요';
@@ -1607,9 +1607,9 @@ extension on Translations {
       case 'tooltip.unsigned_tx_qr.scan_qr_below':
         return '로 이동하여 아래 QR 코드를 스캔해 주세요.';
       case 'tooltip.address_receiving':
-        return '비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라 해요.';
+        return '비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라고 해요.';
       case 'tooltip.address_change':
-        return '다른 사람에게 비트코인을 보내고 남은 비트코인을 거슬러 받는 주소예요. 영어로 Change라 해요.';
+        return '다른 사람에게 비트코인을 보내고 남은 비트코인을 거슬러 받는 주소예요. 영어로 Change라고 해요.';
       case 'tooltip.utxo':
         return 'UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요.';
       case 'tooltip.faucet':

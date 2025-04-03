@@ -19,7 +19,6 @@ import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
-import 'package:coconut_wallet/widgets/tooltip/custom_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -143,40 +142,39 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                       ])),
 
                       if (viewModel.isNetworkOn == false)
-                        CustomTooltip(
-                            richText: RichText(
-                                text: TextSpan(
-                                    text: ErrorCodes.networkError.message)),
-                            showIcon: true,
-                            type: TooltipType.warning),
+                        _buildFixedTooltip(
+                          tooltipState: CoconutTooltipState.warning,
+                          richText: RichText(
+                              text: TextSpan(
+                                  text: ErrorCodes.networkError.message)),
+                        ),
                       if (viewModel.isNetworkOn == true &&
                           _isRecommendedFeeFetchSuccess == false)
-                        CustomTooltip(
-                            richText: RichText(
-                                text:
-                                    TextSpan(text: t.tooltip.recommended_fee1)),
-                            showIcon: true,
-                            type: TooltipType.error),
-                      if (_estimatedFee != null &&
-                          _estimatedFee! >= maxFeeLimit)
-                        CustomTooltip(
+                        _buildFixedTooltip(
+                            tooltipState: CoconutTooltipState.error,
                             richText: RichText(
                                 text: TextSpan(
-                                    text: t.tooltip.recommended_fee2(
-                                        bitcoin: UnitUtil.satoshiToBitcoin(
-                                            maxFeeLimit)))),
-                            showIcon: true,
-                            type: TooltipType.warning),
+                                    text: t.tooltip.recommended_fee1))),
+                      if (_estimatedFee != null &&
+                          _estimatedFee! >= maxFeeLimit)
+                        _buildFixedTooltip(
+                          tooltipState: CoconutTooltipState.warning,
+                          richText: RichText(
+                              text: TextSpan(
+                                  text: t.tooltip.recommended_fee2(
+                                      bitcoin: UnitUtil.satoshiToBitcoin(
+                                          maxFeeLimit)))),
+                        ),
                       if (_estimatedFee != null &&
                           _estimatedFee! != 0 &&
                           !_viewModel.isBalanceEnough(_estimatedFee) &&
                           _estimatedFee! < maxFeeLimit)
-                        CustomTooltip(
-                            richText: RichText(
-                                text: TextSpan(
-                                    text: t.errors.insufficient_balance)),
-                            showIcon: true,
-                            type: TooltipType.warning),
+                        _buildFixedTooltip(
+                          tooltipState: CoconutTooltipState.warning,
+                          richText: RichText(
+                              text: TextSpan(
+                                  text: t.errors.insufficient_balance)),
+                        ),
                       Padding(
                           padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
                           child: Column(
@@ -448,5 +446,19 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     if (mounted) {
       context.loaderOverlay.hide();
     }
+  }
+
+  Widget _buildFixedTooltip(
+      {required RichText richText,
+      CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
+    return Padding(
+        padding: const EdgeInsets.symmetric(
+            vertical: 8, horizontal: CoconutLayout.defaultPadding),
+        child: CoconutToolTip(
+          richText: richText,
+          showIcon: true,
+          tooltipType: CoconutTooltipType.fixed,
+          tooltipState: tooltipState,
+        ));
   }
 }

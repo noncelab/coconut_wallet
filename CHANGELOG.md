@@ -1,3 +1,15 @@
+## 3.0.0 - 2025-04-02
+### Added
+* `RBF` 기능 지원
+* `CPFP` 기능 지원
+* `Batch Transaction` 기능 지원
+* `Coconut_Design_System` 패키지 적용
+* `i18n` 관리를 위해 slang 패키지 적용
+
+### Changed
+* 앱 전체 코드 리팩토링을 통해 유지보수성 개선
+* 네트워크 관련 로직 개선
+
 ## 2.1.1 - 2025-01-10
 ### Changed
 * `지갑 상세`화면에서 unconfirmed 트랜잭션의 경우 `일시`에 생성일시 보여주기
