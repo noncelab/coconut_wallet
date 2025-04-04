@@ -35,12 +35,10 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
     _nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
-    _connectivityProvider =
-        Provider.of<ConnectivityProvider>(context, listen: false);
+    _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
     _connectivity.onConnectivityChanged.listen(_checkConnectivity);
     _screenListener.addScreenShotListener((_) {
-      CustomToast.showToast(
-          context: context, text: '스크린 캡처가 감지되었습니다.', seconds: 4);
+      CustomToast.showToast(context: context, text: '스크린 캡처가 감지되었습니다.', seconds: 4);
     });
     _screenListener.watch();
   }

@@ -34,8 +34,7 @@ class _KeyButtonState extends State<KeyButton> {
     final LocalAuthentication auth = LocalAuthentication();
 
     try {
-      final List<BiometricType> availableBiometrics =
-          await auth.getAvailableBiometrics();
+      final List<BiometricType> availableBiometrics = await auth.getAvailableBiometrics();
 
       if (Platform.isIOS) {
         if (availableBiometrics.contains(BiometricType.face)) {
@@ -89,9 +88,8 @@ class _KeyButtonState extends State<KeyButton> {
           margin: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: _isPressed
-                  ? MyColors.defaultBackground
-                  : Colors.transparent // 버튼의 상태에 따라 색상 변경
+              color:
+                  _isPressed ? MyColors.defaultBackground : Colors.transparent // 버튼의 상태에 따라 색상 변경
               ),
           child: Center(
               child: widget.keyValue == '<'
@@ -100,12 +98,10 @@ class _KeyButtonState extends State<KeyButton> {
                       ? _isFaceRecognition
                           ? SvgPicture.asset('assets/svg/face-id.svg',
                               width: 20,
-                              colorFilter: const ColorFilter.mode(
-                                  Colors.white, BlendMode.srcIn))
+                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn))
                           : SvgPicture.asset('assets/svg/fingerprint.svg',
                               width: 20,
-                              colorFilter: const ColorFilter.mode(
-                                  Colors.white, BlendMode.srcIn))
+                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn))
                       : Text(
                           widget.keyValue,
                           style: const TextStyle(

@@ -25,8 +25,8 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   @override
   void initState() {
     super.initState();
-    _filteredItems = List.generate(wordList.length,
-        (index) => {'index': index + 1, 'item': wordList[index]});
+    _filteredItems =
+        List.generate(wordList.length, (index) => {'index': index + 1, 'item': wordList[index]});
 
     _isTop = true;
 
@@ -76,17 +76,16 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
       });
     } else {
       setState(() {
-        _filteredItems = List.generate(wordList.length,
-            (index) => {'index': index + 1, 'item': wordList[index]});
+        _filteredItems = List.generate(
+            wordList.length, (index) => {'index': index + 1, 'item': wordList[index]});
       });
     }
   }
 
   void _queryWord() {
     String query = _searchController.text.toLowerCase();
-    _filteredItems = List.generate(wordList.length,
-            (index) => {'index': index + 1, 'item': wordList[index]})
-        .where((element) {
+    _filteredItems = List.generate(
+        wordList.length, (index) => {'index': index + 1, 'item': wordList[index]}).where((element) {
       final item = element['item'] as String;
       return item.toLowerCase().contains(query);
     }).toList()
@@ -137,8 +136,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
               color: MyColors.black,
               child: Container(
                 width: MediaQuery.of(context).size.width,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Center(
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 500),
@@ -173,8 +171,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.transparent,
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0.0, horizontal: 16.0),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 16.0),
                       ),
                       style: const TextStyle(
                         decorationThickness: 0,
@@ -210,8 +207,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         : Column(
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -231,8 +227,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                         child: Text(
                           t.bip39_list_screen.no_result,
                           style: Styles.body1Bold.merge(
-                            const TextStyle(
-                                color: MyColors.transparentWhite_70),
+                            const TextStyle(color: MyColors.transparentWhite_70),
                           ),
                         ),
                       ),
@@ -256,14 +251,12 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
       int lastMatchEnd = 0;
       for (var match in matches) {
         if (match.start != lastMatchEnd) {
-          spans
-              .add(TextSpan(text: source.substring(lastMatchEnd, match.start)));
+          spans.add(TextSpan(text: source.substring(lastMatchEnd, match.start)));
         }
         spans.add(
           TextSpan(
             text: source.substring(match.start, match.end),
-            style: const TextStyle(
-                fontWeight: FontWeight.bold, color: MyColors.cyanblue),
+            style: const TextStyle(fontWeight: FontWeight.bold, color: MyColors.cyanblue),
           ),
         );
         lastMatchEnd = match.end;
@@ -290,10 +283,8 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                             fontFamily: CustomFonts.number.getFontFamily))),
                     RichText(
                       text: TextSpan(
-                        children: highlightOccurrences(
-                            item, _searchController.text.toLowerCase()),
-                        style: Styles.h3.merge(
-                            const TextStyle(fontWeight: FontWeight.w600)),
+                        children: highlightOccurrences(item, _searchController.text.toLowerCase()),
+                        style: Styles.h3.merge(const TextStyle(fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],
@@ -302,14 +293,12 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
               const Spacer(),
               Text(
                 'Binary: ${(_filteredItems[index]['index'] - 1).toRadixString(2).padLeft(11, '0')}',
-                style: Styles.subLabel.merge(
-                    const TextStyle(color: MyColors.transparentWhite_50)),
+                style: Styles.subLabel.merge(const TextStyle(color: MyColors.transparentWhite_50)),
               ),
             ],
           ),
         ),
-        if (index != wordList.length - 1)
-          const Divider(color: MyColors.borderLightgrey),
+        if (index != wordList.length - 1) const Divider(color: MyColors.borderLightgrey),
       ],
     );
   }

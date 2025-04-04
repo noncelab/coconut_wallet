@@ -34,12 +34,11 @@ class BalanceManager {
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
     }
 
-    final balanceResponse = await _electrumService.getBalance(
-        walletItem.walletBase.addressType, scriptStatus.address);
+    final balanceResponse =
+        await _electrumService.getBalance(walletItem.walletBase.addressType, scriptStatus.address);
 
     // GetBalanceRes에서 Balance 객체로 변환
-    final addressBalance =
-        Balance(balanceResponse.confirmed, balanceResponse.unconfirmed);
+    final addressBalance = Balance(balanceResponse.confirmed, balanceResponse.unconfirmed);
 
     final balanceDiff = _addressRepository.updateAddressBalance(
       walletId: walletItem.id,
@@ -57,8 +56,7 @@ class BalanceManager {
       // 임시로 지연을 통해 이벤트 리스너가 모두 실행되기 전에 동기화 완료 state가 업데이트되는 것을 방지함.
       // TODO: 이벤트 리스너에 대해서 동시성 제어 필요함
       Future.delayed(const Duration(milliseconds: 300), () {
-        _stateManager.addWalletCompletedState(
-            walletItem.id, UpdateElement.balance);
+        _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
       });
     }
   }
@@ -80,8 +78,8 @@ class BalanceManager {
       List<AddressBalanceUpdateDto> balanceUpdates = [];
 
       for (var script in scriptStatuses) {
-        final balanceResponse = await _electrumService.getBalance(
-            walletItem.walletBase.addressType, script.address);
+        final balanceResponse =
+            await _electrumService.getBalance(walletItem.walletBase.addressType, script.address);
 
         balanceUpdates.add(AddressBalanceUpdateDto(
           scriptStatus: script,
@@ -90,25 +88,21 @@ class BalanceManager {
         ));
       }
 
-      final totalBalanceDiff =
-          await _addressRepository.updateAddressBalanceBatch(
+      final totalBalanceDiff = await _addressRepository.updateAddressBalanceBatch(
         walletItem.id,
         balanceUpdates,
       );
 
       // 지갑 잔액에 변화량 반영
-      await _walletRepository.accumulateWalletBalance(
-          walletItem.id, totalBalanceDiff);
+      await _walletRepository.accumulateWalletBalance(walletItem.id, totalBalanceDiff);
 
       // 동기화 완료 state 업데이트
-      _stateManager.addWalletCompletedState(
-          walletItem.id, UpdateElement.balance);
+      _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
     } catch (e, stack) {
       Logger.error('fetchScriptBalanceBatch error: $e');
       Logger.error(stack);
       // 동기화 실패 state 업데이트 (오류 시 동기화 완료 상태로 변경)
-      _stateManager.addWalletCompletedState(
-          walletItem.id, UpdateElement.balance);
+      _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
       rethrow;
     }
   }

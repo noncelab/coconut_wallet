@@ -15,8 +15,7 @@ class SendAddressViewModel extends ChangeNotifier {
   late final WalletProvider _walletProvider;
   late bool? _isNetworkOn;
   String? _address;
-  SendAddressViewModel(
-      this._sendInfoProvider, this._isNetworkOn, this._walletProvider);
+  SendAddressViewModel(this._sendInfoProvider, this._isNetworkOn, this._walletProvider);
 
   String? get address => _address;
 
@@ -55,9 +54,7 @@ class SendAddressViewModel extends ChangeNotifier {
     }
 
     if (NetworkType.currentNetworkType == NetworkType.testnet) {
-      if (recipient.startsWith('1') ||
-          recipient.startsWith('3') ||
-          recipient.startsWith('bc1')) {
+      if (recipient.startsWith('1') || recipient.startsWith('3') || recipient.startsWith('bc1')) {
         throw noTestnetAddressMessage;
       }
     } else if (NetworkType.currentNetworkType == NetworkType.mainnet) {
@@ -87,8 +84,7 @@ class SendAddressViewModel extends ChangeNotifier {
 
   /// --- batch transaction
   bool isSendAmountValid(int walletId, int totalSendAmount) {
-    return _walletProvider.getWalletBalance(walletId).confirmed >
-        totalSendAmount;
+    return _walletProvider.getWalletBalance(walletId).confirmed > totalSendAmount;
   }
 
   void saveWalletIdAndBatchRecipients(int id, Map<String, double> recipients) {

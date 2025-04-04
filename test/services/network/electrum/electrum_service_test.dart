@@ -20,8 +20,7 @@ void main() {
     mockSocketManager = MockSocketManager();
     electrumClient = ElectrumService(socketManager: mockSocketManager);
 
-    when(mockSocketManager.connect(any, any, ssl: anyNamed('ssl')))
-        .thenAnswer((_) async {});
+    when(mockSocketManager.connect(any, any, ssl: anyNamed('ssl'))).thenAnswer((_) async {});
   });
 
   test('connect should call socketManager.connect', () async {
@@ -33,8 +32,7 @@ void main() {
   test('ping should return pong when connected', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
 
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
       var id = _.positionalArguments[0];
       var completer = _.positionalArguments[1];
@@ -54,8 +52,7 @@ void main() {
 
   test('getBlockHeader should return block header', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.block.header');
@@ -73,8 +70,7 @@ void main() {
 
   test('getBlockHeader should throw error when height is negative', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
 
     expect(
         () => electrumClient.getBlockHeader(-1),
@@ -84,8 +80,7 @@ void main() {
 
   test('getBalance should return GetBalanceRes Object', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.scripthash.get_balance');
@@ -99,8 +94,7 @@ void main() {
         'result': {'confirmed': 0, 'unconfirmed': 0}
       });
     });
-    final response =
-        await electrumClient.getBalance(AddressType.p2wpkh, '0123456789abcdef');
+    final response = await electrumClient.getBalance(AddressType.p2wpkh, '0123456789abcdef');
 
     expect(response.confirmed, 0);
     expect(response.unconfirmed, 0);
@@ -108,8 +102,7 @@ void main() {
 
   test('getHistory should return GetHistoryRes List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.scripthash.get_history');
@@ -126,8 +119,7 @@ void main() {
         ]
       });
     });
-    final response =
-        await electrumClient.getHistory(AddressType.p2wpkh, '0123456789abcdef');
+    final response = await electrumClient.getHistory(AddressType.p2wpkh, '0123456789abcdef');
 
     expect(response, isList);
     expect(response[0].height, 1);
@@ -137,8 +129,7 @@ void main() {
   });
   test('getUnspentList should return ListUnspentRes List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.scripthash.listunspent');
@@ -155,8 +146,7 @@ void main() {
         ]
       });
     });
-    final response = await electrumClient.getUnspentList(
-        AddressType.p2wpkh, '0123456789abcdef');
+    final response = await electrumClient.getUnspentList(AddressType.p2wpkh, '0123456789abcdef');
 
     expect(response, isList);
     expect(response[0].height, 1);
@@ -170,8 +160,7 @@ void main() {
   });
   test('broadcast should return TransactionId String', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.transaction.broadcast');
@@ -189,8 +178,7 @@ void main() {
   });
   test('getTransaction should return RawTransaction String', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.transaction.get');
@@ -208,8 +196,7 @@ void main() {
   });
   test('getMempoolFeeHistogram should return Num List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'mempool.get_fee_histogram');
@@ -234,8 +221,7 @@ void main() {
 
   test('getCurrentBlock should return BlockHeaderSubscribe Object', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.headers.subscribe');
@@ -255,11 +241,9 @@ void main() {
     expect(response.hex, '0123456789abcdef');
   });
 
-  test('getMempoolFeeHistogram should return empty List when json is empty',
-      () async {
+  test('getMempoolFeeHistogram should return empty List when json is empty', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'mempool.get_fee_histogram');
@@ -277,8 +261,7 @@ void main() {
 
   test('serverFeatures should return ServerFeaturesRes Object', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'server.features');
@@ -314,8 +297,7 @@ void main() {
 
   test('serverVersion should return version List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'server.version');
@@ -336,8 +318,7 @@ void main() {
 
   test('estimateFee should return fee value', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.estimatefee');
@@ -353,11 +334,9 @@ void main() {
     expect(response, 0.00001234);
   });
 
-  test('estimateFee should throw error when targetConfirmation is negative',
-      () async {
+  test('estimateFee should throw error when targetConfirmation is negative', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
 
     expect(
         () => electrumClient.estimateFee(-1),
@@ -367,8 +346,7 @@ void main() {
 
   test('getMempool should return GetMempoolRes List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
-    when(mockSocketManager.connectionStatus)
-        .thenReturn(SocketConnectionStatus.connected);
+    when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
       Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.scripthash.get_mempool');
@@ -385,8 +363,7 @@ void main() {
         ]
       });
     });
-    final response =
-        await electrumClient.getMempool(AddressType.p2wpkh, '0123456789abcdef');
+    final response = await electrumClient.getMempool(AddressType.p2wpkh, '0123456789abcdef');
 
     expect(response, isList);
     expect(response[0].height, 0);
@@ -407,9 +384,7 @@ void main() {
   });
 
   group('GetHistoryRes Set', () {
-    test(
-        'Should remove duplicates when adding identical GetHistoryRes objects to Set',
-        () {
+    test('Should remove duplicates when adding identical GetHistoryRes objects to Set', () {
       final history1 = GetHistoryRes(height: 100, txHash: 'abc123');
       final history2 = GetHistoryRes(height: 100, txHash: 'abc123');
 
@@ -419,8 +394,7 @@ void main() {
       expect(historySet.first, history1);
     });
 
-    test('Should include all different GetHistoryRes objects when added to Set',
-        () {
+    test('Should include all different GetHistoryRes objects when added to Set', () {
       final history1 = GetHistoryRes(height: 100, txHash: 'abc123');
       final history2 = GetHistoryRes(height: 200, txHash: 'abc123');
       final history3 = GetHistoryRes(height: 100, txHash: 'def456');
@@ -437,8 +411,7 @@ void main() {
   group('_call error handling', () {
     test('should throw error when server returns error response', () async {
       await electrumClient.connect('localhost', 50001, ssl: false);
-      when(mockSocketManager.connectionStatus)
-          .thenReturn(SocketConnectionStatus.connected);
+      when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
       when(mockSocketManager.send(any)).thenAnswer((_) async {
         Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
         expect(jsonReq['method'], 'server.ping');
@@ -454,13 +427,10 @@ void main() {
     });
 
     test('should throw error when not connected to server', () async {
-      when(mockSocketManager.connectionStatus)
-          .thenReturn(SocketConnectionStatus.terminated);
+      when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.terminated);
 
-      expect(
-          () => electrumClient.ping(),
-          throwsA(
-              'Can not connect to the server. Please connect and try again.'));
+      expect(() => electrumClient.ping(),
+          throwsA('Can not connect to the server. Please connect and try again.'));
     });
   });
 }

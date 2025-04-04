@@ -36,27 +36,23 @@ class UtxoState extends Utxo {
   static void sortUtxo(List<UtxoState> utxos, UtxoOrder order) {
     int getLastIndex(String path) => int.parse(path.split('/').last);
 
-    int compareUtxos(
-        UtxoState a, UtxoState b, bool isAscending, bool byAmount) {
+    int compareUtxos(UtxoState a, UtxoState b, bool isAscending, bool byAmount) {
       if (a.blockHeight == 0 && b.blockHeight != 0) return -1;
       if (b.blockHeight == 0 && a.blockHeight != 0) return 1;
 
       int primaryCompare = byAmount
-          ? (isAscending ? a.amount : b.amount)
-              .compareTo(isAscending ? b.amount : a.amount)
+          ? (isAscending ? a.amount : b.amount).compareTo(isAscending ? b.amount : a.amount)
           : (isAscending ? a.timestamp : b.timestamp)
               .compareTo(isAscending ? b.timestamp : a.timestamp);
 
       if (primaryCompare != 0) return primaryCompare;
 
-      int secondaryCompare = byAmount
-          ? b.timestamp.compareTo(a.timestamp)
-          : b.amount.compareTo(a.amount);
+      int secondaryCompare =
+          byAmount ? b.timestamp.compareTo(a.timestamp) : b.amount.compareTo(a.amount);
 
       if (secondaryCompare != 0) return secondaryCompare;
 
-      return getLastIndex(a.derivationPath)
-          .compareTo(getLastIndex(b.derivationPath));
+      return getLastIndex(a.derivationPath).compareTo(getLastIndex(b.derivationPath));
     }
 
     utxos.sort((a, b) {

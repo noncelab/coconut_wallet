@@ -47,16 +47,14 @@ class NodeStateManager implements StateManagerInterface {
   }
 
   /// 이전 상태와 새 상태를 비교하여 변경 여부를 확인
-  bool _isStateChanged(
-      NodeProviderState prevState, NodeProviderState newState) {
+  bool _isStateChanged(NodeProviderState prevState, NodeProviderState newState) {
     // ConnectionState 비교
     if (prevState.connectionState != newState.connectionState) {
       return true;
     }
 
     // 등록된 지갑 수 비교
-    if (prevState.registeredWallets.length !=
-        newState.registeredWallets.length) {
+    if (prevState.registeredWallets.length != newState.registeredWallets.length) {
       return true;
     }
 
@@ -206,8 +204,7 @@ class NodeStateManager implements StateManagerInterface {
   }
 
   void unregisterWalletUpdateState(int walletId) {
-    final updatedWallets =
-        Map<int, WalletUpdateInfo>.from(_state.registeredWallets);
+    final updatedWallets = Map<int, WalletUpdateInfo>.from(_state.registeredWallets);
     updatedWallets.remove(walletId);
 
     setState(

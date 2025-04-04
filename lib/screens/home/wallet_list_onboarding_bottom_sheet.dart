@@ -50,19 +50,15 @@ class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
                 right: 16,
                 top: 60,
                 child: ShrinkAnimationButton(
-                  onPressed: () =>
-                      _isCountdownFinished ? Navigator.pop(context) : null,
+                  onPressed: () => _isCountdownFinished ? Navigator.pop(context) : null,
                   borderRadius: 8,
                   border: _isCountdownFinished
                       ? Border.all(color: MyColors.white, width: 1)
-                      : Border.all(
-                          color: MyColors.transparentWhite_50, width: 1),
+                      : Border.all(color: MyColors.transparentWhite_50, width: 1),
                   defaultColor: MyColors.nero,
-                  pressedColor:
-                      _isCountdownFinished ? MyColors.grey : MyColors.nero,
+                  pressedColor: _isCountdownFinished ? MyColors.grey : MyColors.nero,
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
                     child: Row(
                       children: [
                         Text(
@@ -101,10 +97,8 @@ class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
                                     ),
                                   ),
                                 ),
-                          transitionBuilder:
-                              (Widget child, Animation<double> animation) {
-                            return ScaleTransition(
-                                scale: animation, child: child);
+                          transitionBuilder: (Widget child, Animation<double> animation) {
+                            return ScaleTransition(scale: animation, child: child);
                           },
                         ),
                       ],

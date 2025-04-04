@@ -15,12 +15,10 @@ class WalletListTermsShortcutCard extends StatefulWidget {
   });
 
   @override
-  State<WalletListTermsShortcutCard> createState() =>
-      _WalletListTermsShortcutCardState();
+  State<WalletListTermsShortcutCard> createState() => _WalletListTermsShortcutCardState();
 }
 
-class _WalletListTermsShortcutCardState
-    extends State<WalletListTermsShortcutCard> {
+class _WalletListTermsShortcutCardState extends State<WalletListTermsShortcutCard> {
   bool _isTapped = false;
 
   @override
@@ -46,13 +44,9 @@ class _WalletListTermsShortcutCardState
         width: double.maxFinite,
         decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: _isTapped
-                ? MyColors.transparentWhite_20
-                : MyColors.transparentWhite_12),
+            color: _isTapped ? MyColors.transparentWhite_20 : MyColors.transparentWhite_12),
         margin: const EdgeInsets.only(
-            left: CoconutLayout.defaultPadding,
-            right: CoconutLayout.defaultPadding,
-            bottom: 16),
+            left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding, bottom: 16),
         padding: const EdgeInsets.only(left: 26, top: 16, bottom: 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -62,8 +56,7 @@ class _WalletListTermsShortcutCardState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(t.wallet_list_terms_shortcut_card.any_terms_you_dont_know,
-                    style: Styles.body1
-                        .merge(const TextStyle(fontWeight: FontWeight.w600))),
+                    style: Styles.body1.merge(const TextStyle(fontWeight: FontWeight.w600))),
                 SizedBox(
                   width: MediaQuery.sizeOf(context).width - 100,
                   child: Text.rich(
@@ -75,8 +68,7 @@ class _WalletListTermsShortcutCardState
                         ),
                         TextSpan(
                           text: '•••',
-                          style: Styles.label
-                              .merge(const TextStyle(letterSpacing: -2.0)),
+                          style: Styles.label.merge(const TextStyle(letterSpacing: -2.0)),
                         ),
                         TextSpan(
                           text: t.wallet_list_terms_shortcut_card.click_to_jump,
@@ -97,8 +89,7 @@ class _WalletListTermsShortcutCardState
                 child: SvgPicture.asset('assets/svg/close.svg',
                     width: 10,
                     height: 10,
-                    colorFilter: const ColorFilter.mode(
-                        MyColors.white, BlendMode.srcIn)),
+                    colorFilter: const ColorFilter.mode(MyColors.white, BlendMode.srcIn)),
               ),
             ),
           ],

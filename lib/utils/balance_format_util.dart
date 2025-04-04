@@ -11,9 +11,7 @@ class UnitUtil {
 
   /// 부동 소숫점 연산 시 오차가 발생할 수 있으므로 Decimal이용
   static int bitcoinToSatoshi(double bitcoin) {
-    return (Decimal.parse(bitcoin.toString()) * Decimal.parse('100000000'))
-        .toDouble()
-        .toInt();
+    return (Decimal.parse(bitcoin.toString()) * Decimal.parse('100000000')).toDouble().toInt();
   }
 }
 
@@ -29,8 +27,7 @@ String satoshiToBitcoinString(int satoshi) {
     // 소숫점만 있을 때
     bitcoinString = toBitcoin.toInt().toString();
   } else {
-    bitcoinString =
-        toBitcoin.toStringAsFixed(8); // Ensure it has 8 decimal places
+    bitcoinString = toBitcoin.toStringAsFixed(8); // Ensure it has 8 decimal places
   }
 
   // Split the integer and decimal parts
@@ -38,15 +35,12 @@ String satoshiToBitcoinString(int satoshi) {
   String integerPart = parts[0];
   String decimalPart = parts.length > 1 ? parts[1] : '';
 
-  final integerPartFormatted = integerPart == '-0'
-      ? '-0'
-      : addCommasToIntegerPart(double.parse(integerPart));
+  final integerPartFormatted =
+      integerPart == '-0' ? '-0' : addCommasToIntegerPart(double.parse(integerPart));
 
   // Group the decimal part into blocks of 4 digits
-  final decimalPartGrouped = RegExp(r'.{1,4}')
-      .allMatches(decimalPart)
-      .map((match) => match.group(0))
-      .join(' ');
+  final decimalPartGrouped =
+      RegExp(r'.{1,4}').allMatches(decimalPart).map((match) => match.group(0)).join(' ');
 
   if (integerPartFormatted == '0' && decimalPartGrouped == '') {
     return '0';
@@ -86,9 +80,7 @@ extension NormalizeTo11Characters on String {
     // print(
     //     'for ${formatted.substring(0, 11)}    ${formatted.padRight(11, ' ')}');
     // Step 5: 결과 문자열을 정확히 11자리로 조정
-    return formatted.length > 11
-        ? formatted.substring(0, 11)
-        : formatted.padRight(11, ' ');
+    return formatted.length > 11 ? formatted.substring(0, 11) : formatted.padRight(11, ' ');
   }
 }
 
@@ -114,8 +106,7 @@ String addCommasToIntegerPart(double number) {
 
   // 세 자리마다 콤마 추가
   RegExp regex = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
-  integerPart =
-      integerPart.replaceAllMapped(regex, (Match match) => '${match[1]},');
+  integerPart = integerPart.replaceAllMapped(regex, (Match match) => '${match[1]},');
 
   return integerPart;
 }

@@ -8,8 +8,7 @@ void main() {
     const plainText = 'test message'; // 암호화할 평문 메시지
     const iterations = 100; // 적절한 반복 횟수 설정
 
-    final cipher =
-        WalletDataManagerCryptography(nonce: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    final cipher = WalletDataManagerCryptography(nonce: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     await cipher.initialize(iterations: iterations, hashedPin: hashedPin);
 
     final encrypted = await cipher.encrypt(plainText);

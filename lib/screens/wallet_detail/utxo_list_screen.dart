@@ -58,8 +58,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     _viewModel = _createViewModel();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final appBarRenderBox =
-          _appBarKey.currentContext?.findRenderObject() as RenderBox;
+      final appBarRenderBox = _appBarKey.currentContext?.findRenderObject() as RenderBox;
 
       _appBarSize = appBarRenderBox.size;
 
@@ -98,8 +97,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<WalletProvider, UtxoTagProvider,
-            UtxoListViewModel>(
+    return ChangeNotifierProxyProvider2<WalletProvider, UtxoTagProvider, UtxoListViewModel>(
         create: (_) => _viewModel,
         update: (_, walletProvider, utxoTagProvider, viewModel) {
           viewModel ??= _createViewModel();
@@ -125,14 +123,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                     context: context,
                     backgroundColor: CoconutColors.black,
                   ),
-                  body: Consumer<UtxoListViewModel>(
-                      builder: (context, viewModel, child) {
+                  body: Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
                     return CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       controller: _scrollController,
-                      semanticChildCount: viewModel.isUtxoTagListEmpty
-                          ? 1
-                          : viewModel.utxoList.length,
+                      semanticChildCount:
+                          viewModel.isUtxoTagListEmpty ? 1 : viewModel.utxoList.length,
                       slivers: [
                         if (viewModel.isSyncing)
                           const SliverToBoxAdapter(child: LoadingIndicator()),
@@ -169,13 +165,11 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         _isStickyHeaderDropdownVisible = false;
       });
 
-      headerDropdownRenderBox =
-          _headerDropdownKey.currentContext?.findRenderObject() as RenderBox;
+      headerDropdownRenderBox = _headerDropdownKey.currentContext?.findRenderObject() as RenderBox;
       if (_headerDropdownSize == Size.zero) {
         _headerDropdownSize = headerDropdownRenderBox.size;
       }
-      _headerDropdownPosition =
-          headerDropdownRenderBox.localToGlobal(Offset.zero);
+      _headerDropdownPosition = headerDropdownRenderBox.localToGlobal(Offset.zero);
     }
   }
 
@@ -188,13 +182,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       RenderBox? stickyHeaderDropdownRenderBox;
 
       if (_viewModel.utxoList.isNotEmpty == true) {
-        stickyHeaderDropdownRenderBox = _stickyHeaderDropdownKey.currentContext
-            ?.findRenderObject() as RenderBox;
+        stickyHeaderDropdownRenderBox =
+            _stickyHeaderDropdownKey.currentContext?.findRenderObject() as RenderBox;
         if (_stickyHeaderDropdownSize == Size.zero) {
           _stickyHeaderDropdownSize = stickyHeaderDropdownRenderBox.size;
         }
-        _stickyHeaderDropdownPosition =
-            stickyHeaderDropdownRenderBox.localToGlobal(Offset.zero);
+        _stickyHeaderDropdownPosition = stickyHeaderDropdownRenderBox.localToGlobal(Offset.zero);
       }
     }
   }
@@ -214,8 +207,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     return UtxoListHeader(
         key: ValueKey(viewModel.utxoTagListKey),
         dropdownGlobalKey: _headerDropdownKey,
-        animatedBalanceData:
-            AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+        animatedBalanceData: AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
         selectedFilter: viewModel.selectedUtxoOrder.text,
         utxoTagList: viewModel.utxoTagList,
         selectedUtxoTagName: viewModel.selectedUtxoTagName,
@@ -239,8 +231,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       positionTop: _isHeaderDropdownVisible
           ? _headerDropdownPosition.dy + _headerDropdownSize.height
           : _isStickyHeaderDropdownVisible
-              ? _stickyHeaderDropdownPosition.dy +
-                  _stickyHeaderDropdownSize.height
+              ? _stickyHeaderDropdownPosition.dy + _stickyHeaderDropdownSize.height
               : 0,
       selectedFilter: _viewModel.selectedUtxoOrder,
       onSelected: (filter) {
@@ -249,8 +240,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         });
         if (_stickyHeaderVisible) {
           _scrollController.animateTo(kToolbarHeight + 28,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut);
+              duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
         }
         _viewModel.updateUtxoFilter(filter);
       },
@@ -266,8 +256,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
           dropdownGlobalKey: _stickyHeaderDropdownKey,
           height: _appBarSize.height,
           isVisible: _stickyHeaderVisible,
-          animatedBalanceData:
-              AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
+          animatedBalanceData: AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
           totalCount: _viewModel.utxoList.length,
           selectedFilter: _viewModel.selectedUtxoOrder.text,
           onTapDropdown: () {
@@ -307,16 +296,14 @@ class UtxoList extends StatefulWidget {
 
 class _UtxoListState extends State<UtxoList> {
   late List<UtxoState> _previousUtxoList = [];
-  final GlobalKey<SliverAnimatedListState> _utxoListKey =
-      GlobalKey<SliverAnimatedListState>();
+  final GlobalKey<SliverAnimatedListState> _utxoListKey = GlobalKey<SliverAnimatedListState>();
 
   final Duration _duration = const Duration(milliseconds: 1200);
 
   @override
   Widget build(BuildContext context) {
     return Selector<UtxoListViewModel, Tuple2<List<UtxoState>, String>>(
-        selector: (_, viewModel) =>
-            Tuple2(viewModel.utxoList, viewModel.selectedUtxoTagName),
+        selector: (_, viewModel) => Tuple2(viewModel.utxoList, viewModel.selectedUtxoTagName),
         builder: (_, data, __) {
           final utxoList = data.item1;
           final selectedUtxoTagName = data.item2;
@@ -329,21 +316,17 @@ class _UtxoListState extends State<UtxoList> {
         });
   }
 
-  Widget _buildSliverAnimatedList(
-      List<UtxoState> utxoList, String selectedUtxoTagName) {
+  Widget _buildSliverAnimatedList(List<UtxoState> utxoList, String selectedUtxoTagName) {
     return SliverAnimatedList(
       key: _utxoListKey,
       initialItemCount: utxoList.length,
       itemBuilder: (context, index, animation) {
         final isSelected = selectedUtxoTagName == t.all ||
             (utxoList[index].tags != null &&
-                utxoList[index]
-                    .tags!
-                    .any((e) => e.name == selectedUtxoTagName));
+                utxoList[index].tags!.any((e) => e.name == selectedUtxoTagName));
 
         return isSelected && index < utxoList.length
-            ? _buildUtxoItem(
-                utxoList[index], animation, index == utxoList.length - 1)
+            ? _buildUtxoItem(utxoList[index], animation, index == utxoList.length - 1)
             : const SizedBox();
       },
     );
@@ -404,8 +387,7 @@ class _UtxoListState extends State<UtxoList> {
 
       _utxoListKey.currentState?.removeItem(
         index,
-        (context, animation) =>
-            _buildRemoveUtxoItem(_previousUtxoList[index], animation),
+        (context, animation) => _buildRemoveUtxoItem(_previousUtxoList[index], animation),
         duration: _duration,
       );
     }
@@ -450,8 +432,7 @@ class _UtxoListState extends State<UtxoList> {
     );
   }
 
-  Widget _buildUtxoItem(
-      UtxoState utxo, Animation<double> animation, bool isLastItem) {
+  Widget _buildUtxoItem(UtxoState utxo, Animation<double> animation, bool isLastItem) {
     var offsetAnimation = _buildSlideAnimation(animation);
     return Column(
       children: [

@@ -7,8 +7,7 @@ void main() {
       final data = 'a' * 1000;
       final result = AnimatedQRDataHandler.splitData(data);
 
-      expect(
-          result.length, 4); // 총 1000글자이므로 300, 300, 300, 100으로 4조각이 되어야 합니다.
+      expect(result.length, 4); // 총 1000글자이므로 300, 300, 300, 100으로 4조각이 되어야 합니다.
       expect(result[0], startsWith('ur:crypto-psbt/1-4/'));
       expect(result[1], startsWith('ur:crypto-psbt/2-4/'));
       expect(result[2], startsWith('ur:crypto-psbt/3-4/'));
@@ -91,8 +90,7 @@ void main() {
         'ur:crypto-psbt/3-4/ghi',
       ];
 
-      expect(
-          () => AnimatedQRDataHandler.joinData(data), throwsA(isA<String>()));
+      expect(() => AnimatedQRDataHandler.joinData(data), throwsA(isA<String>()));
     });
   });
 }

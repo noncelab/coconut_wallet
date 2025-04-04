@@ -190,20 +190,17 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                 children: List.generate(
                   _utxoTags.length,
                   (index) {
-                    bool isSelected = _prevSelectedUtxoTagNames
-                        .contains(_utxoTags[index].name);
+                    bool isSelected = _prevSelectedUtxoTagNames.contains(_utxoTags[index].name);
                     return IntrinsicWidth(
                       child: CoconutChip(
                         minWidth: 40,
-                        color: CoconutColors.backgroundColorPaletteDark[
-                            _utxoTags[index].colorIndex],
+                        color:
+                            CoconutColors.backgroundColorPaletteDark[_utxoTags[index].colorIndex],
                         hasOpacity: true,
-                        borderColor: CoconutColors
-                            .colorPalette[_utxoTags[index].colorIndex],
+                        borderColor: CoconutColors.colorPalette[_utxoTags[index].colorIndex],
                         label: '#${_utxoTags[index].name}',
                         labelSize: 12,
-                        labelColor: CoconutColors
-                            .colorPalette[_utxoTags[index].colorIndex],
+                        labelColor: CoconutColors.colorPalette[_utxoTags[index].colorIndex],
                         isSelected: isSelected,
                         onTap: () {
                           final tag = _utxoTags[index].name;
@@ -341,10 +338,9 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     if (widget.utxoTags.length != _utxoTags.length) return;
     final prevTags = widget.selectedUtxoTagNames ?? [];
     setState(() {
-      _isNextButtonEnabled =
-          _prevSelectedUtxoTagNames.length != prevTags.length ||
-              _prevSelectedUtxoTagNames.length == prevTags.length &&
-                  !Set.from(prevTags).containsAll(_prevSelectedUtxoTagNames);
+      _isNextButtonEnabled = _prevSelectedUtxoTagNames.length != prevTags.length ||
+          _prevSelectedUtxoTagNames.length == prevTags.length &&
+              !Set.from(prevTags).containsAll(_prevSelectedUtxoTagNames);
     });
   }
 

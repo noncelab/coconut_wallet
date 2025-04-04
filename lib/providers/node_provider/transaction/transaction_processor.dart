@@ -52,8 +52,7 @@ class TransactionProcessor {
 
     List<Transaction> prevTxs;
     if (getTransactionHex != null) {
-      prevTxs = await _electrumService.getPreviousTransactions(tx,
-          existingTxList: previousTxs);
+      prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
     } else {
       prevTxs = previousTxs;
     }
@@ -93,8 +92,8 @@ class TransactionProcessor {
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
       Transaction? previousTx;
       try {
-        previousTx = previousTxs.firstWhere(
-            (prevTx) => prevTx.transactionHash == input.transactionHash);
+        previousTx =
+            previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
       } catch (_) {
         // 해당 트랜잭션을 찾지 못한 경우 스킵
         continue;
@@ -106,14 +105,13 @@ class TransactionProcessor {
       }
 
       final previousOutput = previousTx.outputs[input.index];
-      final inputAddress = TransactionAddress(
-          previousOutput.scriptPubKey.getAddress(), previousOutput.amount);
+      final inputAddress =
+          TransactionAddress(previousOutput.scriptPubKey.getAddress(), previousOutput.amount);
       inputAddressList.add(inputAddress);
 
       fee += inputAddress.amount;
 
-      if (_addressRepository.containsAddress(
-          walletItemBase.id, inputAddress.address)) {
+      if (_addressRepository.containsAddress(walletItemBase.id, inputAddress.address)) {
         selfInputCount++;
         amount -= inputAddress.amount;
       }
@@ -123,14 +121,12 @@ class TransactionProcessor {
     List<TransactionAddress> outputAddressList = [];
     for (int i = 0; i < tx.outputs.length; i++) {
       final output = tx.outputs[i];
-      final outputAddress =
-          TransactionAddress(output.scriptPubKey.getAddress(), output.amount);
+      final outputAddress = TransactionAddress(output.scriptPubKey.getAddress(), output.amount);
       outputAddressList.add(outputAddress);
 
       fee -= outputAddress.amount;
 
-      if (_addressRepository.containsAddress(
-          walletItemBase.id, outputAddress.address)) {
+      if (_addressRepository.containsAddress(walletItemBase.id, outputAddress.address)) {
         selfOutputCount++;
         amount += outputAddress.amount;
       }

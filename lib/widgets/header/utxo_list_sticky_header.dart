@@ -79,8 +79,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                               prevValue: animatedBalanceData.previous,
                               value: animatedBalanceData.current,
                               isBtcUnit: true,
-                              textStyle:
-                                  CoconutTypography.heading4_18_NumberBold,
+                              textStyle: CoconutTypography.heading4_18_NumberBold,
                             ),
                             CoconutLayout.spacing_100w,
                             Text(
@@ -109,8 +108,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                             ),
                             CupertinoButton(
                               key: dropdownGlobalKey,
-                              padding: const EdgeInsets.only(
-                                  top: 7, bottom: 7, left: 8, right: 26),
+                              padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
                               minSize: 0,
                               onPressed: () {
                                 onTapDropdown();
@@ -118,8 +116,8 @@ class UtxoListStickyHeader extends StatelessWidget {
                               child: Row(
                                 children: [
                                   Text(selectedFilter,
-                                      style: CoconutTypography.body3_12
-                                          .setColor(CoconutColors.white)),
+                                      style:
+                                          CoconutTypography.body3_12.setColor(CoconutColors.white)),
                                   CoconutLayout.spacing_200w,
                                   SvgPicture.asset(
                                     'assets/svg/arrow-down.svg',
@@ -134,8 +132,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                       Visibility(
                         visible: !viewModel.isUtxoTagListEmpty,
                         child: CustomTagHorizontalSelector(
-                          tags:
-                              viewModel.utxoTagList.map((e) => e.name).toList(),
+                          tags: viewModel.utxoTagList.map((e) => e.name).toList(),
                           selectedName: viewModel.selectedUtxoTagName,
                           onSelectedTag: (tagName) {
                             viewModel.setSelectedUtxoTagName(tagName);

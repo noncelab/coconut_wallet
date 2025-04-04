@@ -12,8 +12,7 @@ class SocketManager {
   /// Socket
   final SocketFactory socketFactory;
   Socket? _socket;
-  SocketConnectionStatus _connectionStatus =
-      SocketConnectionStatus.reconnecting;
+  SocketConnectionStatus _connectionStatus = SocketConnectionStatus.reconnecting;
   int _connectionAttempts = 0;
   final int _maxConnectionAttempts;
   final int _reconnectDelaySeconds;
@@ -54,8 +53,7 @@ class SocketManager {
     _completerMap[id] = completer;
   }
 
-  setSubscriptionCallback(
-      String scriptReverseHash, Function(String, String?) callback) {
+  setSubscriptionCallback(String scriptReverseHash, Function(String, String?) callback) {
     _scriptSubscribeCallbacks[scriptReverseHash] = callback;
   }
 
@@ -88,8 +86,7 @@ class SocketManager {
       }
       _connectionStatus = SocketConnectionStatus.connected;
       _connectionAttempts = 0;
-      _socket!.listen(_onData,
-          onError: _onError, onDone: _onDone, cancelOnError: true);
+      _socket!.listen(_onData, onError: _onError, onDone: _onDone, cancelOnError: true);
     } catch (e) {
       _connectionStatus = SocketConnectionStatus.reconnecting;
       _scheduleReconnect(host, port, ssl: ssl);
@@ -195,8 +192,7 @@ class SocketManager {
                 braceCount = 0;
               }
             } catch (e) {
-              Logger.log(
-                  'JSON 파싱 오류: $e, JSON: ${_truncateForLogging(jsonString)}');
+              Logger.log('JSON 파싱 오류: $e, JSON: ${_truncateForLogging(jsonString)}');
 
               int nextStartPos = input.indexOf('{', endPos + 1);
               if (nextStartPos == -1) {

@@ -16,8 +16,7 @@ class LicenseBottomSheet extends StatefulWidget {
 }
 
 class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
-  late List<bool> licenseExplanationVisible =
-      List.filled(dependencies.length, false);
+  late List<bool> licenseExplanationVisible = List.filled(dependencies.length, false);
   String? identifyLicense(String licenseText) {
     final Map<String, String> licenseKeywords = {
       'MIT License': 'Permission is hereby granted,',
@@ -25,8 +24,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
       'BSD License': 'Redistribution and use in source and binary forms,',
       'GPL License': 'This program is free software:',
       'EPL License': 'Eclipse Public License - v 2.0',
-      'Creative Commons License':
-          'This work is licensed under a Creative Commons Attribution',
+      'Creative Commons License': 'This work is licensed under a Creative Commons Attribution',
       'Proprietary License': 'This software is proprietary and confidential',
       'Public Domain': 'The person who associated a work with this',
       'LGPL License': 'This library is free software; you can redistribute it',
@@ -109,8 +107,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                                   ..onTap = () async {
                                     launchURL(mitFullTextLink);
                                   }),
-                            TextSpan(
-                                text: t.license_bottom_sheet.copyright_text2),
+                            TextSpan(text: t.license_bottom_sheet.copyright_text2),
                             TextSpan(
                                 text: CONTACT_EMAIL_ADDRESS, // 색상을 다르게 할 텍스트
                                 style: Styles.caption.merge(
@@ -142,8 +139,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                 final license = dependencies[index - 1];
                 final licenseName = license.name;
                 String copyRight = '';
-                List<String>? licenseClassExplanation =
-                    license.license?.split('\n');
+                List<String>? licenseClassExplanation = license.license?.split('\n');
                 String? licenseClass = '';
 
                 /// License 종류 찾기
@@ -163,8 +159,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                 }
 
                 return Padding(
-                  padding: const EdgeInsets.only(
-                      left: 10, right: 10, top: 10, bottom: 8),
+                  padding: const EdgeInsets.only(left: 10, right: 10, top: 10, bottom: 8),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -211,9 +206,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                                 ),
                                 height: 200,
                                 decoration: BoxDecoration(
-                                  border: Border.all(
-                                      width: 1,
-                                      color: MyColors.transparentWhite_70),
+                                  border: Border.all(width: 1, color: MyColors.transparentWhite_70),
                                 ),
                                 child: SingleChildScrollView(
                                   padding: const EdgeInsets.symmetric(

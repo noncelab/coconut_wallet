@@ -55,8 +55,7 @@ class TestRealmManager implements RealmManager {
   @override
   void checkInitialized() {
     if (!_isInitialized) {
-      throw StateError(
-          'RealmManager is not initialized. Call initialize first.');
+      throw StateError('RealmManager is not initialized. Call initialize first.');
     }
   }
 

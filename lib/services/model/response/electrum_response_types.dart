@@ -50,8 +50,7 @@ class HostsPort {
 
   HostsPort({this.sslPort, this.tcpPort});
 
-  factory HostsPort.fromJson(Map<String, dynamic> json) =>
-      _$HostsPortFromJson(json);
+  factory HostsPort.fromJson(Map<String, dynamic> json) => _$HostsPortFromJson(json);
 }
 
 @JsonSerializable()
@@ -62,8 +61,7 @@ class GetHistoryRes {
 
   GetHistoryRes({required this.height, required this.txHash});
 
-  factory GetHistoryRes.fromJson(Map<String, dynamic> json) =>
-      _$GetHistoryResFromJson(json);
+  factory GetHistoryRes.fromJson(Map<String, dynamic> json) => _$GetHistoryResFromJson(json);
 
   @override
   bool operator ==(covariant GetHistoryRes other) {
@@ -81,11 +79,9 @@ class GetMempoolRes {
   String txHash;
   int fee;
 
-  GetMempoolRes(
-      {required this.height, required this.txHash, required this.fee});
+  GetMempoolRes({required this.height, required this.txHash, required this.fee});
 
-  factory GetMempoolRes.fromJson(Map<String, dynamic> json) =>
-      _$GetMempoolResFromJson(json);
+  factory GetMempoolRes.fromJson(Map<String, dynamic> json) => _$GetMempoolResFromJson(json);
 }
 
 @JsonSerializable()
@@ -104,8 +100,7 @@ class ListUnspentRes {
     required this.value,
   });
 
-  factory ListUnspentRes.fromJson(Map<String, dynamic> json) =>
-      _$ListUnspentResFromJson(json);
+  factory ListUnspentRes.fromJson(Map<String, dynamic> json) => _$ListUnspentResFromJson(json);
 }
 
 @JsonSerializable()

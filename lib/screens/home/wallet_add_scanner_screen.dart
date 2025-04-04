@@ -75,11 +75,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                     overlay: QrScannerOverlayShape(
                         borderColor: MyColors.white,
                         borderRadius: 8,
-                        borderLength:
-                            (MediaQuery.of(context).size.width < 400 ||
-                                    MediaQuery.of(context).size.height < 400)
-                                ? 160.0
-                                : MediaQuery.of(context).size.width * 0.9 / 2,
+                        borderLength: (MediaQuery.of(context).size.width < 400 ||
+                                MediaQuery.of(context).size.height < 400)
+                            ? 160.0
+                            : MediaQuery.of(context).size.width * 0.9 / 2,
                         borderWidth: 8,
                         cutOutSize: (MediaQuery.of(context).size.width < 400 ||
                                 MediaQuery.of(context).size.height < 400)
@@ -92,9 +91,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           ),
           Padding(
               padding: const EdgeInsets.only(
-                  top: 20,
-                  left: CoconutLayout.defaultPadding,
-                  right: CoconutLayout.defaultPadding),
+                  top: 20, left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),
               child: CoconutToolTip(
                   baseBackgroundColor: MyColors.white.withOpacity(0.95),
                   tooltipType: CoconutTooltipType.fixed,
@@ -154,9 +151,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         Map<String, dynamic> jsonData = jsonDecode(scanData.code!);
         watchOnlyWallet = WatchOnlyWallet.fromJson(jsonData);
 
-        model
-            .syncFromVault(watchOnlyWallet)
-            .then((ResultOfSyncFromVault value) {
+        model.syncFromVault(watchOnlyWallet).then((ResultOfSyncFromVault value) {
           switch (value.result) {
             case WalletSyncResult.newWalletAdded:
             case WalletSyncResult.existingWalletUpdated:
@@ -183,8 +178,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               vibrateLightDouble();
               CustomDialogs.showCustomAlertDialog(context,
                   title: t.alert.wallet_add.duplicate_name,
-                  message: t.alert.wallet_add.duplicate_name_description,
-                  onConfirm: () {
+                  message: t.alert.wallet_add.duplicate_name_description, onConfirm: () {
                 _isProcessing = false;
                 Navigator.pop(context);
               });
@@ -193,8 +187,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           vibrateLightDouble();
 
           CustomDialogs.showCustomAlertDialog(context,
-              title: t.alert.wallet_add.add_failed,
-              message: error.toString(), onConfirm: () {
+              title: t.alert.wallet_add.add_failed, message: error.toString(), onConfirm: () {
             _isProcessing = false;
             Navigator.pop(context);
           });

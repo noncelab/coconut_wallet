@@ -6,6 +6,5 @@ class IsolateConnectorData {
   final int port;
   final bool ssl;
 
-  IsolateConnectorData(
-      this.isolateToMainSendPort, this.host, this.port, this.ssl);
+  IsolateConnectorData(this.isolateToMainSendPort, this.host, this.port, this.ssl);
 }

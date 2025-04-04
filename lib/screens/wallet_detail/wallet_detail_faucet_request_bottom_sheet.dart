@@ -31,8 +31,7 @@ class FaucetRequestBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<FaucetRequestBottomSheet> createState() =>
-      _FaucetRequestBottomSheetState();
+  State<FaucetRequestBottomSheet> createState() => _FaucetRequestBottomSheetState();
 }
 
 enum _AvailabilityState { checking, bad, good, dailyLimitReached }
@@ -72,8 +71,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
     textController.text = _walletAddress;
     _isRequesting = widget.isRequesting;
 
-    var requestHistory =
-        SharedPrefsRepository().getFaucetHistoryWithId(_walletId);
+    var requestHistory = SharedPrefsRepository().getFaucetHistoryWithId(_walletId);
     _todayRequestCount = requestHistory.isToday ? requestHistory.count : 0;
 
     if (_todayRequestCount >= kMaxFaucetRequestCount) {
@@ -89,11 +87,8 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
     await Faucet().getStatus().then((FaucetStatusResponse response) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {
-          _requestAmount =
-              (_todayRequestCount == 0) ? response.maxLimit : response.minLimit;
-          _state = (_requestAmount != 0)
-              ? _AvailabilityState.good
-              : _AvailabilityState.bad;
+          _requestAmount = (_todayRequestCount == 0) ? response.maxLimit : response.minLimit;
+          _state = (_requestAmount != 0) ? _AvailabilityState.good : _AvailabilityState.bad;
         });
       });
     }).catchError((_) {
@@ -206,12 +201,10 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                 },
                 borderRadius: BorderRadius.circular(8.0),
                 padding: EdgeInsets.zero,
-                color: canRequestFaucet()
-                    ? CoconutColors.white
-                    : CoconutColors.white.withOpacity(0.3),
+                color:
+                    canRequestFaucet() ? CoconutColors.white : CoconutColors.white.withOpacity(0.3),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                   child: _state == _AvailabilityState.checking
                       ? const SizedBox(
                           height: 28,
@@ -223,15 +216,14 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                       : Text(
                           _isRequesting
                               ? t.faucet_request_bottom_sheet.requesting
-                              : t.faucet_request_bottom_sheet.request_amount(
-                                  bitcoin: formatNumber(_requestAmount)),
+                              : t.faucet_request_bottom_sheet
+                                  .request_amount(bitcoin: formatNumber(_requestAmount)),
                           style: CoconutTypography.body2_14
                               .setColor((canRequestFaucet())
                                   ? CoconutColors.black
                                   : CoconutColors.black.withOpacity(0.5))
                               .merge(const TextStyle(
-                                  letterSpacing: -0.1,
-                                  fontWeight: FontWeight.w600)),
+                                  letterSpacing: -0.1, fontWeight: FontWeight.w600)),
                         ),
                 ),
               ),
@@ -240,8 +232,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
             if (_state == _AvailabilityState.bad) ...{
               _buildWarningMessage(t.alert.faucet.no_test_bitcoin),
             } else if (_state == _AvailabilityState.dailyLimitReached) ...{
-              _buildWarningMessage(
-                  t.alert.faucet.try_again(count: _remainingTimeString)),
+              _buildWarningMessage(t.alert.faucet.try_again(count: _remainingTimeString)),
             } else if (_isErrorInAddress) ...{
               _buildWarningMessage(t.alert.faucet.check_address),
             }
@@ -275,10 +266,8 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   }
 
   Future<void> _resetFaucetRecord() {
-    return SharedPrefsRepository().saveFaucetHistory(FaucetRecord(
-        id: _walletId,
-        dateTime: DateTime.now().millisecondsSinceEpoch,
-        count: 0));
+    return SharedPrefsRepository().saveFaucetHistory(
+        FaucetRecord(id: _walletId, dateTime: DateTime.now().millisecondsSinceEpoch, count: 0));
   }
 
   void _validateAddress(String address) {
@@ -286,8 +275,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
     textController.value = textController.value.copyWith(
       text: _walletAddress,
       selection: TextSelection.collapsed(
-          offset: textController.selection.baseOffset
-              .clamp(0, _walletAddress.length)),
+          offset: textController.selection.baseOffset.clamp(0, _walletAddress.length)),
     );
 
     _isErrorInAddress = !_isValidAddress(address);
@@ -296,8 +284,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
 
   bool _isValidAddress(String address) {
     try {
-      return widget.walletProvider
-              .containsAddress(widget.walletItem.id, address) &&
+      return widget.walletProvider.containsAddress(widget.walletItem.id, address) &&
           WalletUtility.validateAddress(address);
     } catch (_) {
       return false;

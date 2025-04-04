@@ -18,29 +18,24 @@ class WalletRepository extends BaseRepository {
 
   final SharedPrefsRepository _sharedPrefs;
 
-  WalletRepository(super._realmManager)
-      : _sharedPrefs = SharedPrefsRepository();
+  WalletRepository(super._realmManager) : _sharedPrefs = SharedPrefsRepository();
 
   /// 지갑 목록을 DB에서 로드
   Future<List<WalletListItemBase>> getWalletItemList() async {
     int multisigWalletIndex = 0;
     List<WalletListItemBase> walletList = [];
 
-    var walletBases =
-        realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id DESC)');
-    var multisigWallets =
-        realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id DESC)');
+    var walletBases = realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id DESC)');
+    var multisigWallets = realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id DESC)');
 
     for (var i = 0; i < walletBases.length; i++) {
       String? decryptedDescriptor;
       if (cryptography != null) {
-        decryptedDescriptor =
-            await cryptography!.decrypt(walletBases[i].descriptor);
+        decryptedDescriptor = await cryptography!.decrypt(walletBases[i].descriptor);
       }
 
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
-        walletList.add(
-            mapRealmToSingleSigWalletItem(walletBases[i], decryptedDescriptor));
+        walletList.add(mapRealmToSingleSigWalletItem(walletBases[i], decryptedDescriptor));
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         walletList.add(mapRealmToMultisigWalletItem(
@@ -52,20 +47,14 @@ class WalletRepository extends BaseRepository {
   }
 
   /// 싱글시그 지갑 추가
-  Future<SinglesigWalletListItem> addSinglesigWallet(
-      WatchOnlyWallet watchOnlyWallet) async {
+  Future<SinglesigWalletListItem> addSinglesigWallet(WatchOnlyWallet watchOnlyWallet) async {
     var id = _getNextWalletId();
     String descriptor = cryptography != null
         ? await cryptography!.encrypt(watchOnlyWallet.descriptor)
         : watchOnlyWallet.descriptor;
 
-    var wallet = RealmWalletBase(
-        id,
-        watchOnlyWallet.colorIndex,
-        watchOnlyWallet.iconIndex,
-        descriptor,
-        watchOnlyWallet.name,
-        WalletType.singleSignature.name);
+    var wallet = RealmWalletBase(id, watchOnlyWallet.colorIndex, watchOnlyWallet.iconIndex,
+        descriptor, watchOnlyWallet.name, WalletType.singleSignature.name);
 
     realm.write(() {
       realm.add(wallet);
@@ -77,24 +66,16 @@ class WalletRepository extends BaseRepository {
   }
 
   /// 멀티시그 지갑 추가
-  Future<MultisigWalletListItem> addMultisigWallet(
-      WatchOnlyWallet walletSync) async {
+  Future<MultisigWalletListItem> addMultisigWallet(WatchOnlyWallet walletSync) async {
     var id = _getNextWalletId();
     String descriptor = cryptography != null
         ? await cryptography!.encrypt(walletSync.descriptor)
         : walletSync.descriptor;
 
-    var realmWalletBase = RealmWalletBase(
-        id,
-        walletSync.colorIndex,
-        walletSync.iconIndex,
-        descriptor,
-        walletSync.name,
-        WalletType.multiSignature.name);
+    var realmWalletBase = RealmWalletBase(id, walletSync.colorIndex, walletSync.iconIndex,
+        descriptor, walletSync.name, WalletType.multiSignature.name);
     var realmMultisigWallet = RealmMultisigWallet(
-        id,
-        MultisigSigner.toJsonList(walletSync.signers!),
-        walletSync.requiredSignatureCount!,
+        id, MultisigSigner.toJsonList(walletSync.signers!), walletSync.requiredSignatureCount!,
         walletBase: realmWalletBase);
 
     realm.write(() {
@@ -109,8 +90,7 @@ class WalletRepository extends BaseRepository {
 
   /// 지갑 UI 정보 업데이트
   void updateWalletUI(int id, WatchOnlyWallet watchOnlyWallet) {
-    final RealmWalletBase wallet =
-        realm.all<RealmWalletBase>().query('id = $id').first;
+    final RealmWalletBase wallet = realm.all<RealmWalletBase>().query('id = $id').first;
     final RealmMultisigWallet? multisigWallet =
         realm.all<RealmMultisigWallet>().query('id = $id').firstOrNull;
     if (wallet.walletType == WalletType.multiSignature.name) {
@@ -135,19 +115,15 @@ class WalletRepository extends BaseRepository {
     final walletBaseResults = realm.query<RealmWalletBase>('id == $walletId');
     final walletBase = walletBaseResults.first;
     final transactions = realm.query<RealmTransaction>('walletId == $walletId');
-    final walletBalance =
-        realm.query<RealmWalletBalance>('walletId == $walletId');
-    final walletAddress =
-        realm.query<RealmWalletAddress>('walletId == $walletId');
+    final walletBalance = realm.query<RealmWalletBalance>('walletId == $walletId');
+    final walletAddress = realm.query<RealmWalletAddress>('walletId == $walletId');
     final utxos = realm.query<RealmUtxo>('walletId == $walletId');
     final utxoTags = realm.query<RealmUtxoTag>('walletId == $walletId');
-    final scriptStatuses =
-        realm.query<RealmScriptStatus>('walletId == $walletId');
+    final scriptStatuses = realm.query<RealmScriptStatus>('walletId == $walletId');
 
-    final realmMultisigWalletResults =
-        walletBase.walletType == WalletType.multiSignature.name
-            ? realm.query<RealmMultisigWallet>('id == $walletId')
-            : null;
+    final realmMultisigWalletResults = walletBase.walletType == WalletType.multiSignature.name
+        ? realm.query<RealmMultisigWallet>('id == $walletId')
+        : null;
     final realmMultisigWallet = realmMultisigWalletResults?.first;
 
     await realm.writeAsync(() {
@@ -201,8 +177,7 @@ class WalletRepository extends BaseRepository {
 
   RealmWalletBalance updateWalletBalance(int walletId, Balance balance) {
     final realmWalletBase = realm.find<RealmWalletBase>(walletId);
-    final balanceResults =
-        realm.query<RealmWalletBalance>('walletId == $walletId');
+    final balanceResults = realm.query<RealmWalletBalance>('walletId == $walletId');
 
     if (realmWalletBase == null) {
       throw StateError('[updateWalletBalance] Wallet not found');
@@ -223,8 +198,7 @@ class WalletRepository extends BaseRepository {
     return realmWalletBalance;
   }
 
-  Future<RealmWalletBalance> accumulateWalletBalance(
-      int walletId, Balance balanceDiff) async {
+  Future<RealmWalletBalance> accumulateWalletBalance(int walletId, Balance balanceDiff) async {
     final realmWalletBalance = getWalletBalance(walletId);
 
     await realm.writeAsync(() {
@@ -256,8 +230,7 @@ class WalletRepository extends BaseRepository {
   }
 
   RealmWalletBalance getWalletBalance(int walletId) {
-    final realmWalletBalance =
-        realm.query<RealmWalletBalance>('walletId == $walletId').firstOrNull;
+    final realmWalletBalance = realm.query<RealmWalletBalance>('walletId == $walletId').firstOrNull;
 
     if (realmWalletBalance == null) {
       return _createNewWalletBalance(

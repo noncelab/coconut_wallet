@@ -122,9 +122,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   DateTime? get timestamp {
     final blockHeight = _txProvider.transaction?.blockHeight;
-    return (blockHeight != null && blockHeight > 0)
-        ? _txProvider.transaction!.timestamp
-        : null;
+    return (blockHeight != null && blockHeight > 0) ? _txProvider.transaction!.timestamp : null;
   }
 
   List<TransactionDetail>? get transactionList => _transactionList;
@@ -163,8 +161,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
     if (isContainAddress) {
       var amount = getInputAmount(index);
-      var derivationPath =
-          _addressRepository.getDerivationPath(_walletId, address);
+      var derivationPath = _addressRepository.getDerivationPath(_walletId, address);
       _currentUtxo = Utxo(_txHash, index, amount, derivationPath);
       return true;
     }
@@ -181,12 +178,10 @@ class TransactionDetailViewModel extends ChangeNotifier {
   void onTapViewMoreInputs() {
     // ignore: no_leading_underscores_for_local_identifiers
     if (transactionList?[selectedTransactionIndex] == null) return;
-    TransactionDetail transactionDetail =
-        _transactionList![selectedTransactionIndex];
+    TransactionDetail transactionDetail = _transactionList![selectedTransactionIndex];
 
-    transactionDetail.setInputCountToShow(
-        (transactionDetail.inputCountToShow + kViewMoreCount)
-            .clamp(0, transactionDetail.transaction!.inputAddressList.length));
+    transactionDetail.setInputCountToShow((transactionDetail.inputCountToShow + kViewMoreCount)
+        .clamp(0, transactionDetail.transaction!.inputAddressList.length));
     _previousInputCountToShow = transactionDetail.inputCountToShow;
 
     if (transactionDetail.inputCountToShow ==
@@ -200,12 +195,10 @@ class TransactionDetailViewModel extends ChangeNotifier {
   void onTapViewMoreOutputs() {
     if (_transactionList?[selectedTransactionIndex] == null) return;
 
-    TransactionDetail transactionDetail =
-        _transactionList![selectedTransactionIndex];
+    TransactionDetail transactionDetail = _transactionList![selectedTransactionIndex];
 
-    transactionDetail.setOutputCountToShow(
-        (transactionDetail.outputCountToShow + kViewMoreCount)
-            .clamp(0, transactionDetail.transaction!.outputAddressList.length));
+    transactionDetail.setOutputCountToShow((transactionDetail.outputCountToShow + kViewMoreCount)
+        .clamp(0, transactionDetail.transaction!.outputAddressList.length));
     _previousOutputCountToShow = transactionDetail.outputCountToShow;
 
     if (transactionDetail.outputCountToShow ==
@@ -254,10 +247,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
       if (_initViewMoreButtons() == false) {
         _showDialogNotifier.value = true;
       }
-      _previousCanSeeMoreInputs ??=
-          _transactionList![selectedTransactionIndex].canSeeMoreInputs;
-      _previousCanSeeMoreOutputs ??=
-          _transactionList![selectedTransactionIndex].canSeeMoreOutputs;
+      _previousCanSeeMoreInputs ??= _transactionList![selectedTransactionIndex].canSeeMoreInputs;
+      _previousCanSeeMoreOutputs ??= _transactionList![selectedTransactionIndex].canSeeMoreOutputs;
     }
     notifyListeners();
   }
@@ -265,8 +256,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool updateTransactionMemo(String memo) {
     final result = _txProvider.updateTransactionMemo(_walletId, _txHash, memo);
     if (result) {
-      _transactionList![0] =
-          TransactionDetail(_txProvider.getTransaction(_walletId, _txHash));
+      _transactionList![0] = TransactionDetail(_txProvider.getTransaction(_walletId, _txHash));
       notifyListeners();
     }
     return result;
@@ -283,8 +273,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   }
 
   void _initTransactionList() {
-    final currentTransaction =
-        _txProvider.getTransactionRecord(_walletId, _txHash);
+    final currentTransaction = _txProvider.getTransactionRecord(_walletId, _txHash);
     _transactionList = [TransactionDetail(currentTransaction)];
 
     if (currentTransaction == null) {
@@ -295,8 +284,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('🚀 [Transaction Initialization] 🚀');
     debugPrint('----------------------------------------');
     debugPrint('🔹 Transaction Hash: $_txHash');
-    debugPrint(
-        '🔹 currentTransaction transactionType: ${currentTransaction.transactionType}');
+    debugPrint('🔹 currentTransaction transactionType: ${currentTransaction.transactionType}');
     debugPrint('🔹 Current Transaction FeeRate: ${currentTransaction.feeRate}');
     debugPrint(
         '🔹 Input Addresses: ${currentTransaction.inputAddressList.map((e) => e.address.toString()).join(", ")}');
@@ -306,23 +294,19 @@ class TransactionDetailViewModel extends ChangeNotifier {
             currentTransaction.transactionType == TransactionType.self) &&
         currentTransaction.rbfHistoryList != null &&
         currentTransaction.rbfHistoryList!.isNotEmpty) {
-      debugPrint(
-          '🔹 RBF History Count: ${currentTransaction.rbfHistoryList?.length}');
+      debugPrint('🔹 RBF History Count: ${currentTransaction.rbfHistoryList?.length}');
       debugPrint('----------------------------------------');
 
       for (var rbfTx in currentTransaction.rbfHistoryList!) {
         if (rbfTx.transactionHash == currentTransaction.transactionHash) {
           continue;
         }
-        var rbfTxTransaction =
-            _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
+        var rbfTxTransaction = _txProvider.getTransactionRecord(_walletId, rbfTx.transactionHash);
         _transactionList!.add(TransactionDetail(rbfTxTransaction));
       }
 
-      _transactionList!.sort(
-          (a, b) => b.transaction!.feeRate.compareTo(a.transaction!.feeRate));
-      debugPrint(
-          '🚨 _transactionList : ${_transactionList!.map((s) => s.transaction!.feeRate)}');
+      _transactionList!.sort((a, b) => b.transaction!.feeRate.compareTo(a.transaction!.feeRate));
+      debugPrint('🚨 _transactionList : ${_transactionList!.map((s) => s.transaction!.feeRate)}');
     } else if (currentTransaction.transactionType == TransactionType.received &&
         currentTransaction.cpfpHistory != null) {
       debugPrint(
@@ -336,8 +320,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       ];
     }
 
-    debugPrint(
-        '📌 Updated Transaction List Length: ${_transactionList!.length}');
+    debugPrint('📌 Updated Transaction List Length: ${_transactionList!.length}');
     debugPrint('----------------------------------------');
 
     for (var transaction in _transactionList!) {
@@ -350,8 +333,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       debugPrint('  - Hash: ${transaction._transaction.transactionHash}');
       debugPrint('  - Type: ${transaction._transaction.transactionType.name}');
       debugPrint('  - vSize: ${transaction._transaction.vSize}');
-      debugPrint(
-          '  - RBF History Count: ${transaction._transaction.rbfHistoryList?.length}');
+      debugPrint('  - RBF History Count: ${transaction._transaction.rbfHistoryList?.length}');
       debugPrint('----------------------------------------');
 
       if (transaction._transaction.rbfHistoryList != null) {
@@ -366,8 +348,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     }
 
     debugPrint('✅ Transaction Initialization Complete');
-    debugPrint(
-        '====================================================================');
+    debugPrint('====================================================================');
     _syncFeeHistoryList();
 
     notifyListeners();
@@ -380,8 +361,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     _feeBumpingHistoryList = transactionList!.map((transactionDetail) {
       return FeeHistory(
         feeRate: transactionDetail.transaction!.feeRate,
-        isSelected: selectedTransactionIndex ==
-            transactionList!.indexOf(transactionDetail),
+        isSelected: selectedTransactionIndex == transactionList!.indexOf(transactionDetail),
       );
     }).toList();
   }
@@ -396,8 +376,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
       return false;
     }
 
-    final status = TransactionUtil.getStatus(
-        _transactionList![_selectedTransactionIndex].transaction!);
+    final status =
+        TransactionUtil.getStatus(_transactionList![_selectedTransactionIndex].transaction!);
 
     final isRbfType = [
       TransactionStatus.sending,
@@ -406,42 +386,26 @@ class TransactionDetailViewModel extends ChangeNotifier {
       TransactionStatus.selfsending,
     ].contains(status);
 
-    int initialInputMaxCount =
-        isRbfType ? kNotReceiveInputCount : kReceiveInputCount;
-    int initialOutputMaxCount =
-        isRbfType ? kNotReceiveOutputCount : kReceiveOutputCount;
+    int initialInputMaxCount = isRbfType ? kNotReceiveInputCount : kReceiveInputCount;
+    int initialOutputMaxCount = isRbfType ? kNotReceiveOutputCount : kReceiveOutputCount;
 
-    if (_transactionList![_selectedTransactionIndex]
-            .transaction!
-            .inputAddressList
-            .length <=
+    if (_transactionList![_selectedTransactionIndex].transaction!.inputAddressList.length <=
         initialInputMaxCount) {
       _transactionList![_selectedTransactionIndex].setCanSeeMoreInputs(false);
       _transactionList![_selectedTransactionIndex].setInputCountToShow(
-          _transactionList![_selectedTransactionIndex]
-              .transaction!
-              .inputAddressList
-              .length);
+          _transactionList![_selectedTransactionIndex].transaction!.inputAddressList.length);
     } else {
       _transactionList![_selectedTransactionIndex].setCanSeeMoreInputs(true);
-      _transactionList![_selectedTransactionIndex]
-          .setInputCountToShow(initialInputMaxCount);
+      _transactionList![_selectedTransactionIndex].setInputCountToShow(initialInputMaxCount);
     }
-    if (_transactionList![_selectedTransactionIndex]
-            .transaction!
-            .outputAddressList
-            .length <=
+    if (_transactionList![_selectedTransactionIndex].transaction!.outputAddressList.length <=
         initialOutputMaxCount) {
       _transactionList![_selectedTransactionIndex].setCanSeeMoreOutputs(false);
       _transactionList![_selectedTransactionIndex].setOutputCountToShow(
-          _transactionList![_selectedTransactionIndex]
-              .transaction!
-              .outputAddressList
-              .length);
+          _transactionList![_selectedTransactionIndex].transaction!.outputAddressList.length);
     } else {
       _transactionList![_selectedTransactionIndex].setCanSeeMoreOutputs(true);
-      _transactionList![_selectedTransactionIndex]
-          .setOutputCountToShow(initialOutputMaxCount);
+      _transactionList![_selectedTransactionIndex].setOutputCountToShow(initialOutputMaxCount);
     }
 
     notifyListeners();

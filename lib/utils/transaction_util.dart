@@ -32,23 +32,22 @@ class TransactionUtil {
   }
 
   static String getInputAddress(TransactionRecord? transaction, index) =>
-      _getTransactionField<String>(transaction, index,
-          (tx) => transaction!.inputAddressList, (item) => item.address,
+      _getTransactionField<String>(
+          transaction, index, (tx) => transaction!.inputAddressList, (item) => item.address,
           defaultValue: '');
 
   static String getOutputAddress(TransactionRecord? transaction, int index) =>
-      _getTransactionField<String>(transaction, index,
-          (tx) => transaction!.outputAddressList, (item) => item.address,
+      _getTransactionField<String>(
+          transaction, index, (tx) => transaction!.outputAddressList, (item) => item.address,
           defaultValue: '');
 
-  static int getInputAmount(TransactionRecord? transaction, int index) =>
-      _getTransactionField<int>(transaction, index,
-          (tx) => transaction!.inputAddressList, (item) => item.amount,
-          defaultValue: 0);
+  static int getInputAmount(TransactionRecord? transaction, int index) => _getTransactionField<int>(
+      transaction, index, (tx) => transaction!.inputAddressList, (item) => item.amount,
+      defaultValue: 0);
 
   static int getOutputAmount(TransactionRecord? transaction, int index) =>
-      _getTransactionField<int>(transaction, index,
-          (tx) => transaction!.outputAddressList, (item) => item.amount,
+      _getTransactionField<int>(
+          transaction, index, (tx) => transaction!.outputAddressList, (item) => item.amount,
           defaultValue: 0);
 
   static T _getTransactionField<T>(
@@ -67,8 +66,8 @@ class TransactionUtil {
   }
 
   /// confirmed uxto만 사용 가능
-  static List<UtxoState> selectOptimalUtxos(List<UtxoState> utxoList,
-      int amount, int feeRate, AddressType addressType) {
+  static List<UtxoState> selectOptimalUtxos(
+      List<UtxoState> utxoList, int amount, int feeRate, AddressType addressType) {
     int baseVbyte = 72; // 0 input, 2 output
     int vBytePerInput = 0;
     int dust = _getDustThreshold(addressType);
@@ -78,9 +77,7 @@ class TransactionUtil {
       vBytePerInput = 148;
     }
     List<UtxoState> selectedUtxos = [];
-    List<UtxoState> unspentUtxos = utxoList
-        .where((u) => u.status == UtxoStatus.unspent)
-        .toList()
+    List<UtxoState> unspentUtxos = utxoList.where((u) => u.status == UtxoStatus.unspent).toList()
       ..sort((a, b) => b.amount.compareTo(a.amount));
     // List<UtxoState> incomingUtxos = utxoList
     //     .where((u) => u.status == UtxoStatus.incoming)
@@ -148,16 +145,14 @@ class TransactionUtil {
     return tx.inputs[0].index == 4294967295; // 0xffffffff
   }
 
-  static Future<void> showTransactionConfirmedDialog(
-      BuildContext context) async {
+  static Future<void> showTransactionConfirmedDialog(BuildContext context) async {
     await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return CoconutPopup(
           title: t.transaction_fee_bumping_screen.dialog.confirmed_alert_title,
-          description: t.transaction_fee_bumping_screen.dialog
-              .confirmed_alert_description,
+          description: t.transaction_fee_bumping_screen.dialog.confirmed_alert_description,
           backgroundColor: CoconutColors.gray800,
           rightButtonText: t.view_tx_details,
           rightButtonTextStyle: CoconutTypography.body1_16,

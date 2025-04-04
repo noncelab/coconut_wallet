@@ -41,8 +41,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     await Future.delayed(const Duration(seconds: 1));
 
     Psbt psbt = Psbt.parse(_viewModel.signedTransaction);
-    Transaction signedTx =
-        psbt.getSignedTransaction(_viewModel.walletAddressType);
+    Transaction signedTx = psbt.getSignedTransaction(_viewModel.walletAddressType);
 
     try {
       Result<String> result = await _viewModel.broadcast(signedTx);
@@ -54,8 +53,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         showAlertDialog(
             context: context,
             title: t.broadcasting_screen.error_popup_title,
-            content: t.alert.error_send
-                .broadcasting_failed(error: result.error.message));
+            content: t.alert.error_send.broadcasting_failed(error: result.error.message));
         return;
       }
 
@@ -67,16 +65,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/broadcasting-complete', // 이동할 경로
-          ModalRoute.withName(
-              '/wallet-detail'), // '/wallet-detail' 경로를 남기고 그 외의 경로 제거
+          ModalRoute.withName('/wallet-detail'), // '/wallet-detail' 경로를 남기고 그 외의 경로 제거
           arguments: {'id': _viewModel.walletId},
         );
       }
     } catch (_) {
       Logger.log(">>>>> broadcast error: $_");
       _setOverlayLoading(false);
-      String message =
-          t.alert.error_send.broadcasting_failed(error: _.toString());
+      String message = t.alert.error_send.broadcasting_failed(error: _.toString());
       if (_.toString().contains('min relay fee not met')) {
         message = t.alert.error_send.insufficient_fee;
       }
@@ -88,11 +84,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider,
-        UpbitConnectModel, BroadcastingViewModel>(
+    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, UpbitConnectModel,
+        BroadcastingViewModel>(
       create: (_) => _viewModel,
-      update: (_, connectivityProvider, walletProvider, upbitConnectModel,
-          viewModel) {
+      update: (_, connectivityProvider, walletProvider, upbitConnectModel, viewModel) {
         if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
           viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
         }
@@ -106,8 +101,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       },
       child: Consumer<BroadcastingViewModel>(
         builder: (context, viewModel, child) => Scaffold(
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerFloat,
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
           backgroundColor: MyColors.black,
           appBar: CustomAppBar.buildWithNext(
               title: t.broadcasting_screen.title,
@@ -119,8 +113,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                       context: context, text: ErrorCodes.networkError.message);
                   return;
                 }
-                if (viewModel.feeBumpingType != null &&
-                    viewModel.hasTransactionConfirmed()) {
+                if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
                   await TransactionUtil.showTransactionConfirmedDialog(context);
                   return;
                 }
@@ -147,22 +140,19 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                       child: Text.rich(
                         TextSpan(
                             text: viewModel.amount != null
-                                ? satoshiToBitcoinString(viewModel
-                                            .sendingAmountWhenAddressIsMyChange !=
-                                        null
-                                    ? viewModel.sendingAmountWhenAddressIsMyChange!
-                                    : viewModel.amount!)
+                                ? satoshiToBitcoinString(
+                                    viewModel.sendingAmountWhenAddressIsMyChange != null
+                                        ? viewModel.sendingAmountWhenAddressIsMyChange!
+                                        : viewModel.amount!)
                                 : "",
-                            children: <TextSpan>[
-                              TextSpan(text: ' ${t.btc}', style: Styles.unit)
-                            ]),
+                            children: <TextSpan>[TextSpan(text: ' ${t.btc}', style: Styles.unit)]),
                         style: Styles.balance1,
                       ),
                     ),
                     FiatPrice(
                         satoshiAmount: viewModel.amount ?? 0,
-                        textStyle: CoconutTypography.body2_14_Number
-                            .setColor(CoconutColors.gray400)),
+                        textStyle:
+                            CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
                     CoconutLayout.spacing_1000h,
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -172,19 +162,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                             color: MyColors.transparentWhite_06,
                           ),
                           child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 24),
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
                               child: Column(
                                 children: [
                                   InformationItemCard(
                                       label: t.receiver,
                                       value: viewModel.recipientAddresses,
                                       isNumber: true,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start),
-                                  const Divider(
-                                      color: MyColors.transparentWhite_12,
-                                      height: 1),
+                                      crossAxisAlignment: CrossAxisAlignment.start),
+                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
                                   InformationItemCard(
                                       label: t.estimated_fee,
                                       value: [
@@ -193,9 +179,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                                             : ''
                                       ],
                                       isNumber: true),
-                                  const Divider(
-                                      color: MyColors.transparentWhite_12,
-                                      height: 1),
+                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
                                   InformationItemCard(
                                       label: t.total_cost,
                                       value: [
@@ -246,8 +230,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         _viewModel.setTxInfo();
       } catch (e) {
         vibrateMedium();
-        showAlertDialog(
-            context: context, content: t.alert.error_tx.not_parsed(error: e));
+        showAlertDialog(context: context, content: t.alert.error_tx.not_parsed(error: e));
       }
 
       _setOverlayLoading(false);

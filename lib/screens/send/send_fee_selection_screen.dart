@@ -33,8 +33,7 @@ class SendFeeSelectionScreen extends StatefulWidget {
 }
 
 class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
-  static const maxFeeLimit =
-      1000000; // sats, 사용자가 실수로 너무 큰 금액을 수수료로 지불하지 않도록 지정했습니다.
+  static const maxFeeLimit = 1000000; // sats, 사용자가 실수로 너무 큰 금액을 수수료로 지불하지 않도록 지정했습니다.
   final networkOffMessage = t.alert.error_send.poor_network;
   final TextEditingController _customFeeController = TextEditingController();
   List<FeeInfoWithLevel> feeInfos = [
@@ -53,11 +52,10 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider,
-            UpbitConnectModel, SendFeeSelectionViewModel>(
+    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, UpbitConnectModel,
+            SendFeeSelectionViewModel>(
         create: (_) => _viewModel,
-        update: (_, connectivityProvider, walletProvider, upbitConnectModel,
-            viewModel) {
+        update: (_, connectivityProvider, walletProvider, upbitConnectModel, viewModel) {
           if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
@@ -92,16 +90,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                     onNextPressed: () {
                       if (_viewModel.isNetworkOn != true) {
                         CustomToast.showWarningToast(
-                            context: context,
-                            text: ErrorCodes.networkError.message);
+                            context: context, text: ErrorCodes.networkError.message);
                         return;
                       }
 
                       int satsPerVb = _customSelected
                           ? _customFeeInfo!.satsPerVb!
                           : feeInfos
-                              .firstWhere(
-                                  (element) => element.level == _selectedLevel)
+                              .firstWhere((element) => element.level == _selectedLevel)
                               .satsPerVb!;
 
                       _viewModel.saveFinalSendInfo(_estimatedFee!, satsPerVb);
@@ -118,16 +114,12 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                         const SizedBox(height: 32),
                         Container(
                           margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(14),
                               color: MyColors.transparentWhite_06,
-                              border: Border.all(
-                                  color: MyColors.transparentWhite_12,
-                                  width: 1)),
-                          child: Text(_selectedFeeLevel ?? "",
-                              style: Styles.caption),
+                              border: Border.all(color: MyColors.transparentWhite_12, width: 1)),
+                          child: Text(_selectedFeeLevel ?? "", style: Styles.caption),
                         ),
                         Text(
                             _estimatedFee != null
@@ -136,34 +128,27 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                             style: Styles.fee),
                         FiatPrice(
                             satoshiAmount: _estimatedFee ?? 0,
-                            textStyle: CoconutTypography.body2_14_Number
-                                .setColor(CoconutColors.gray400)),
+                            textStyle:
+                                CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
                         const SizedBox(height: 32),
                       ])),
 
                       if (viewModel.isNetworkOn == false)
                         _buildFixedTooltip(
                           tooltipState: CoconutTooltipState.warning,
-                          richText: RichText(
-                              text: TextSpan(
-                                  text: ErrorCodes.networkError.message)),
+                          richText: RichText(text: TextSpan(text: ErrorCodes.networkError.message)),
                         ),
-                      if (viewModel.isNetworkOn == true &&
-                          _isRecommendedFeeFetchSuccess == false)
+                      if (viewModel.isNetworkOn == true && _isRecommendedFeeFetchSuccess == false)
                         _buildFixedTooltip(
                             tooltipState: CoconutTooltipState.error,
-                            richText: RichText(
-                                text: TextSpan(
-                                    text: t.tooltip.recommended_fee1))),
-                      if (_estimatedFee != null &&
-                          _estimatedFee! >= maxFeeLimit)
+                            richText: RichText(text: TextSpan(text: t.tooltip.recommended_fee1))),
+                      if (_estimatedFee != null && _estimatedFee! >= maxFeeLimit)
                         _buildFixedTooltip(
                           tooltipState: CoconutTooltipState.warning,
                           richText: RichText(
                               text: TextSpan(
                                   text: t.tooltip.recommended_fee2(
-                                      bitcoin: UnitUtil.satoshiToBitcoin(
-                                          maxFeeLimit)))),
+                                      bitcoin: UnitUtil.satoshiToBitcoin(maxFeeLimit)))),
                         ),
                       if (_estimatedFee != null &&
                           _estimatedFee! != 0 &&
@@ -171,9 +156,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                           _estimatedFee! < maxFeeLimit)
                         _buildFixedTooltip(
                           tooltipState: CoconutTooltipState.warning,
-                          richText: RichText(
-                              text: TextSpan(
-                                  text: t.errors.insufficient_balance)),
+                          richText: RichText(text: TextSpan(text: t.errors.insufficient_balance)),
                         ),
                       Padding(
                           padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
@@ -185,16 +168,12 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                       feeInfo: feeInfos[index],
                                       isSelected: _customSelected
                                           ? false
-                                          : _selectedLevel ==
-                                              feeInfos[index].level,
+                                          : _selectedLevel == feeInfos[index].level,
                                       onPressed: () {
                                         setState(() {
-                                          _selectedLevel =
-                                              feeInfos[index].level;
-                                          _selectedFeeLevel =
-                                              feeInfos[index].level.text;
-                                          _estimatedFee =
-                                              feeInfos[index].estimatedFee;
+                                          _selectedLevel = feeInfos[index].level;
+                                          _selectedFeeLevel = feeInfos[index].level.text;
+                                          _estimatedFee = feeInfos[index].estimatedFee;
                                           _customSelected = false;
                                         });
                                       })),
@@ -206,8 +185,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                     isScrollControlled: true,
                                     builder: (context) => TextFieldBottomSheet(
                                       title: t.input_directly,
-                                      placeholder: t.text_field
-                                          .enter_fee_as_natural_number,
+                                      placeholder: t.text_field.enter_fee_as_natural_number,
                                       onComplete: (text) {
                                         _handleCustomFeeInput(text);
                                       },
@@ -256,9 +234,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   bool _canGoNext() {
     int? satsPerVb = _customSelected
         ? _customFeeInfo?.satsPerVb
-        : feeInfos
-            .firstWhere((element) => element.level == _selectedLevel)
-            .satsPerVb;
+        : feeInfos.firstWhere((element) => element.level == _selectedLevel).satsPerVb;
 
     return _viewModel.isNetworkOn &&
         (satsPerVb != null && satsPerVb > 0) &&
@@ -276,9 +252,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     try {
       customSatsPerVb = int.parse(input.trim());
       if (_minimumSatsPerVb != null && customSatsPerVb < _minimumSatsPerVb!) {
-        CustomToast.showToast(
-            context: context,
-            text: t.toast.min_fee(minimum: _minimumSatsPerVb!));
+        CustomToast.showToast(context: context, text: t.toast.min_fee(minimum: _minimumSatsPerVb!));
         _customFeeController.clear();
         return;
       }
@@ -316,9 +290,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         if (mounted) {
           CustomToast.showWarningToast(
               context: context,
-              text: ErrorCodes.withMessage(
-                      ErrorCodes.feeEstimationError, error.toString())
-                  .message);
+              text:
+                  ErrorCodes.withMessage(ErrorCodes.feeEstimationError, error.toString()).message);
         }
       }
     }
@@ -332,17 +305,15 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     try {
       if (e.toString().contains("Insufficient amount. Estimated fee is")) {
         // get finalFee from error message : 'Insufficient amount. Estimated fee is $finalFee'
-        var estimatedFee = int.parse(
-            e.toString().split("Insufficient amount. Estimated fee is ")[1]);
+        var estimatedFee =
+            int.parse(e.toString().split("Insufficient amount. Estimated fee is ")[1]);
         return estimatedFee;
       }
 
       if (e.toString().contains("Not enough amount for sending. (Fee")) {
         // get finalFee from error message : 'Not enough amount for sending. (Fee : $finalFee)'
-        var estimatedFee = int.parse(e
-            .toString()
-            .split("Not enough amount for sending. (Fee : ")[1]
-            .split(")")[0]);
+        var estimatedFee = int.parse(
+            e.toString().split("Not enough amount for sending. (Fee : ")[1].split(")")[0]);
         return estimatedFee;
       }
     } catch (_) {
@@ -355,8 +326,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   void _setFeeInfo(FeeInfo feeInfo, int estimatedFee) {
     feeInfo.estimatedFee = estimatedFee;
     feeInfo.fiatValue = _viewModel.bitcoinPriceKrw != null
-        ? FiatUtil.calculateFiatAmount(
-            estimatedFee, _viewModel.bitcoinPriceKrw!)
+        ? FiatUtil.calculateFiatAmount(estimatedFee, _viewModel.bitcoinPriceKrw!)
         : null;
 
     if (feeInfo is FeeInfoWithLevel && feeInfo.level == _selectedLevel) {
@@ -406,8 +376,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
           WidgetsBinding.instance.addPostFrameCallback((duration) {
             CustomToast.showWarningToast(
                 context: context,
-                text: ErrorCodes.withMessage(
-                        ErrorCodes.feeEstimationError, error.toString())
+                text: ErrorCodes.withMessage(ErrorCodes.feeEstimationError, error.toString())
                     .message);
           });
         }
@@ -449,11 +418,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Widget _buildFixedTooltip(
-      {required RichText richText,
-      CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
+      {required RichText richText, CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
     return Padding(
-        padding: const EdgeInsets.symmetric(
-            vertical: 8, horizontal: CoconutLayout.defaultPadding),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: CoconutLayout.defaultPadding),
         child: CoconutToolTip(
           richText: richText,
           showIcon: true,

@@ -120,16 +120,13 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       backgroundColor: MyColors.black,
       appBar: AppBar(
         scrolledUnderElevation: 0,
-        backgroundColor: _isScrollOverTitleHeight
-            ? MyColors.transparentBlack_50
-            : MyColors.black,
+        backgroundColor: _isScrollOverTitleHeight ? MyColors.transparentBlack_50 : MyColors.black,
         toolbarHeight: kToolbarHeight,
         leading: IconButton(
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.close_rounded,
-                color: MyColors.white, size: 22)),
+            icon: const Icon(Icons.close_rounded, color: MyColors.white, size: 22)),
         flexibleSpace: _isScrollOverTitleHeight
             ? ClipRect(
                 child: BackdropFilter(
@@ -440,9 +437,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      t.app_info_screen.version_and_date(
-                          version: packageInfo.version,
-                          releasedAt: RELEASE_DATE),
+                      t.app_info_screen
+                          .version_and_date(version: packageInfo.version, releasedAt: RELEASE_DATE),
                       style: Styles.body2.merge(
                         const TextStyle(
                           color: MyColors.transparentWhite_50,

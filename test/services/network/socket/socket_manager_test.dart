@@ -84,8 +84,7 @@ void main() {
     });
 
     test('초기 상태는 재연결 중이어야 함', () {
-      expect(socketManager.connectionStatus,
-          equals(SocketConnectionStatus.reconnecting));
+      expect(socketManager.connectionStatus, equals(SocketConnectionStatus.reconnecting));
     });
 
     group('연결 테스트', () {
@@ -95,20 +94,16 @@ void main() {
 
         await socketManager.connect('localhost', 8080, ssl: true);
 
-        expect(socketManager.connectionStatus,
-            equals(SocketConnectionStatus.connected));
-        verify(mockSocketFactory.createSecureSocket('localhost', 8080))
-            .called(1);
+        expect(socketManager.connectionStatus, equals(SocketConnectionStatus.connected));
+        verify(mockSocketFactory.createSecureSocket('localhost', 8080)).called(1);
       });
 
       test('일반 연결 성공 시 연결 상태가 연결됨이어야 함', () async {
-        when(mockSocketFactory.createSocket(any, any))
-            .thenAnswer((_) async => mockSocket);
+        when(mockSocketFactory.createSocket(any, any)).thenAnswer((_) async => mockSocket);
 
         await socketManager.connect('localhost', 8080, ssl: false);
 
-        expect(socketManager.connectionStatus,
-            equals(SocketConnectionStatus.connected));
+        expect(socketManager.connectionStatus, equals(SocketConnectionStatus.connected));
         verify(mockSocketFactory.createSocket('localhost', 8080)).called(1);
       });
 
@@ -118,8 +113,7 @@ void main() {
 
         await socketManager.connect('localhost', 8080);
 
-        expect(socketManager.connectionStatus,
-            equals(SocketConnectionStatus.reconnecting));
+        expect(socketManager.connectionStatus, equals(SocketConnectionStatus.reconnecting));
       });
 
       test('최대 연결 시도 횟수 초과 시 연결 상태가 종료됨이어야 함', () async {
@@ -132,8 +126,7 @@ void main() {
         await socketManager.connect('localhost', 8080);
         await socketManager.connect('localhost', 8080);
 
-        expect(socketManager.connectionStatus,
-            equals(SocketConnectionStatus.terminated));
+        expect(socketManager.connectionStatus, equals(SocketConnectionStatus.terminated));
       });
     });
 
@@ -149,8 +142,7 @@ void main() {
       });
 
       test('연결되지 않은 상태에서 데이터 전송 시 예외가 발생해야 함', () async {
-        expect(() => socketManager.send('test data'),
-            throwsA(isA<SocketException>()));
+        expect(() => socketManager.send('test data'), throwsA(isA<SocketException>()));
       });
 
       test('데이터 전송 중 오류 발생 시 재연결 상태로 변경되어야 함', () async {
@@ -161,8 +153,7 @@ void main() {
         await socketManager.connect('localhost', 8080, ssl: true);
 
         expect(() => socketManager.send('test data'), throwsException);
-        expect(socketManager.connectionStatus,
-            equals(SocketConnectionStatus.reconnecting));
+        expect(socketManager.connectionStatus, equals(SocketConnectionStatus.reconnecting));
       });
     });
 
@@ -223,10 +214,8 @@ void main() {
 
         final result = await completer.future;
         expect(result['id'], equals(6));
-        expect(
-            result['result']['blockhash'],
-            equals(
-                '5ac1d7097ad416628d0843393c56dec9db8fcd60aa5fc67c7ea0bc6ea038d3c7'));
+        expect(result['result']['blockhash'],
+            equals('5ac1d7097ad416628d0843393c56dec9db8fcd60aa5fc67c7ea0bc6ea038d3c7'));
       });
 
       test('여러 줄의 JSON 데이터 처리 테스트', () async {
@@ -287,14 +276,12 @@ void main() {
         socketManager.setCompleter(4, completer);
 
         // 문자열 내에 중괄호가 포함된 JSON
-        const jsonData =
-            '{"id":4,"result":"This is a string with { and } braces inside"}';
+        const jsonData = '{"id":4,"result":"This is a string with { and } braces inside"}';
         streamController.add(utf8.encode(jsonData));
 
         final result = await completer.future;
         expect(result['id'], equals(4));
-        expect(result['result'],
-            equals('This is a string with { and } braces inside'));
+        expect(result['result'], equals('This is a string with { and } braces inside'));
       });
     });
 
@@ -321,16 +308,12 @@ void main() {
 
       // 결과의 특정 필드 검증
       final resultData = result['result'];
-      expect(
-          resultData['blockhash'],
-          equals(
-              '5ac1d7097ad416628d0843393c56dec9db8fcd60aa5fc67c7ea0bc6ea038d3c7'));
+      expect(resultData['blockhash'],
+          equals('5ac1d7097ad416628d0843393c56dec9db8fcd60aa5fc67c7ea0bc6ea038d3c7'));
       expect(resultData['blocktime'], equals(1730360700));
       expect(resultData['confirmations'], isNotNull);
-      expect(
-          resultData['hash'],
-          equals(
-              '2dca645bb4e4434b3e7a1502fa8c1ca942385aba99b5fff065f6183a898597d0'));
+      expect(resultData['hash'],
+          equals('2dca645bb4e4434b3e7a1502fa8c1ca942385aba99b5fff065f6183a898597d0'));
 
       // 추가 복잡한 데이터 필드 검증
       expect(resultData['hex'], isNotNull);
@@ -338,10 +321,8 @@ void main() {
       expect(resultData['in_active_chain'], isTrue);
       expect(resultData['size'], equals(3891));
       expect(resultData['time'], equals(1730360700));
-      expect(
-          resultData['txid'],
-          equals(
-              'b3c3bd06ff9d2cda768a4946a4ed1d87a62700f618cfb4965b1e28c4fef3aa12'));
+      expect(resultData['txid'],
+          equals('b3c3bd06ff9d2cda768a4946a4ed1d87a62700f618cfb4965b1e28c4fef3aa12'));
       expect(resultData['version'], equals(2));
 
       // vin 배열 검증
@@ -362,8 +343,7 @@ void main() {
       await socketManager.disconnect();
 
       verify(mockSecureSocket.close()).called(1);
-      expect(socketManager.connectionStatus,
-          equals(SocketConnectionStatus.terminated));
+      expect(socketManager.connectionStatus, equals(SocketConnectionStatus.terminated));
     });
 
     test('재연결 콜백 테스트', () async {
@@ -426,8 +406,7 @@ void main() {
 
       await socketManager.connect('localhost', 8080, ssl: true);
 
-      expect(socketManager.connectionStatus,
-          equals(SocketConnectionStatus.connected));
+      expect(socketManager.connectionStatus, equals(SocketConnectionStatus.connected));
 
       // onDone 콜백 트리거
       streamController.close();
@@ -435,8 +414,7 @@ void main() {
       // 이벤트 처리 시간 기다림
       await Future.delayed(const Duration(milliseconds: 100));
 
-      expect(socketManager.connectionStatus,
-          equals(SocketConnectionStatus.terminated));
+      expect(socketManager.connectionStatus, equals(SocketConnectionStatus.terminated));
     });
   });
 }

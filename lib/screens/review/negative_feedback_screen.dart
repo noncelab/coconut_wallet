@@ -30,10 +30,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
       },
       child: Scaffold(
         appBar: CustomAppBar.build(
-            context: context,
-            title: '',
-            hasRightIcon: false,
-            showTestnetLabel: false),
+            context: context, title: '', hasRightIcon: false, showTestnetLabel: false),
         backgroundColor: MyColors.black,
         body: SafeArea(
           child: Center(
@@ -43,8 +40,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
               children: [
                 Text(
                   t.negative_feedback_screen.text1,
-                  style:
-                      Styles.h2.merge(const TextStyle(color: MyColors.white)),
+                  style: Styles.h2.merge(const TextStyle(color: MyColors.white)),
                 ),
                 const SizedBox(
                   height: 20,
@@ -60,16 +56,13 @@ class NegativeFeedbackScreen extends StatelessWidget {
                   onTap: () => _runKakaoOpenChat(context),
                   child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          color: MyColors.primary),
+                          borderRadius: BorderRadius.circular(14), color: MyColors.primary),
                       child: Text(
                         t.negative_feedback_screen.text3,
-                        style: Styles.label.merge(const TextStyle(
-                            color: MyColors.darkgrey,
-                            fontWeight: FontWeight.bold)),
+                        style: Styles.label.merge(
+                            const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
                         textAlign: TextAlign.center,
                       )),
                 ),
@@ -80,16 +73,14 @@ class NegativeFeedbackScreen extends StatelessWidget {
                   onTap: () => _stopGettingFeedback(context),
                   child: Container(
                       width: MediaQuery.of(context).size.width * 0.5,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
                           color: MyColors.transparentWhite_15),
                       child: Text(
                         t.negative_feedback_screen.text4,
-                        style: Styles.label.merge(const TextStyle(
-                            color: MyColors.white,
-                            fontWeight: FontWeight.bold)),
+                        style: Styles.label.merge(
+                            const TextStyle(color: MyColors.white, fontWeight: FontWeight.bold)),
                         textAlign: TextAlign.center,
                       )),
                 ),

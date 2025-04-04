@@ -41,21 +41,17 @@ class BroadcastingViewModel extends ChangeNotifier {
     this._nodeProvider,
     this._txProvider,
   ) {
-    _walletBase =
-        _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
+    _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
   }
 
-  List<String> get recipientAddresses =>
-      UnmodifiableListView(_recipientAddresses);
+  List<String> get recipientAddresses => UnmodifiableListView(_recipientAddresses);
 
   int? get amount => _sendingAmount;
   int? get amountValueInKrw {
     if (_bitcoinPriceKrw == null || _sendingAmount == null) return null;
     return FiatUtil.calculateFiatAmount(
-        sendingAmountWhenAddressIsMyChange != null
-            ? sendingAmountWhenAddressIsMyChange!
-            : amount!,
+        sendingAmountWhenAddressIsMyChange != null ? sendingAmountWhenAddressIsMyChange! : amount!,
         _bitcoinPriceKrw!);
   }
 
@@ -64,8 +60,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool get isInitDone => _isInitDone;
   bool get isNetworkOn => _isNetworkOn == true;
   bool get isSendingToMyAddress => _isSendingToMyAddress;
-  int? get sendingAmountWhenAddressIsMyChange =>
-      _sendingAmountWhenAddressIsMyChange;
+  int? get sendingAmountWhenAddressIsMyChange => _sendingAmountWhenAddressIsMyChange;
   String get signedTransaction => _sendInfoProvider.signedPsbt!;
   int? get totalAmount => _totalAmount;
   AddressType get walletAddressType => _walletBase.addressType;
@@ -114,32 +109,28 @@ class BroadcastingViewModel extends ChangeNotifier {
       }
     }
 
-    if (_isBatchTransaction(
-        outputToMyReceivingAddress, outputToMyChangeAddress, outputsToOther)) {
+    if (_isBatchTransaction(outputToMyReceivingAddress, outputToMyChangeAddress, outputsToOther)) {
       Map<String, double> recipientAmounts = {};
       if (outputsToOther.isNotEmpty) {
         for (var output in outputsToOther) {
-          recipientAmounts[output.outAddress] =
-              UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
         }
       }
       if (outputToMyReceivingAddress.isNotEmpty) {
         for (var output in outputToMyReceivingAddress) {
-          recipientAmounts[output.outAddress] =
-              UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
         }
         _isSendingToMyAddress = true;
       }
       if (outputToMyChangeAddress.length > 1) {
         for (int i = outputToMyChangeAddress.length - 1; i > 0; i--) {
           var output = outputToMyChangeAddress[i];
-          recipientAmounts[output.outAddress] =
-              UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
         }
       }
       _sendingAmount = signedPsbt.sendingAmount;
-      _recipientAddresses.addAll(recipientAmounts.entries
-          .map((e) => '${e.key} (${e.value} ${t.btc})'));
+      _recipientAddresses
+          .addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
     } else {
       PsbtOutput? output;
       if (outputsToOther.isNotEmpty) {
@@ -170,20 +161,16 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   ///예외: 사용자가 배치 트랜잭션에 '남의 주소 또는 내 Receive 주소 1개'와 '본인 change 주소 1개'를 입력하고, 이 트랜잭션의 잔액이 없는 희박한 상황에서는 배치 트랜잭션임을 구분하지 못함
-  bool _isBatchTransaction(
-      List<PsbtOutput> outputToMyReceivingAddress,
-      List<PsbtOutput> outputToMyChangeAddress,
-      List<PsbtOutput> outputsToOther) {
-    var countExceptToMyChangeAddress =
-        outputToMyReceivingAddress.length + outputsToOther.length;
+  bool _isBatchTransaction(List<PsbtOutput> outputToMyReceivingAddress,
+      List<PsbtOutput> outputToMyChangeAddress, List<PsbtOutput> outputsToOther) {
+    var countExceptToMyChangeAddress = outputToMyReceivingAddress.length + outputsToOther.length;
     if (countExceptToMyChangeAddress >= 2) {
       return true;
     }
     if (outputToMyChangeAddress.length >= 3) {
       return true;
     }
-    if (outputToMyChangeAddress.length == 2 &&
-        countExceptToMyChangeAddress >= 1) {
+    if (outputToMyChangeAddress.length == 2 && countExceptToMyChangeAddress >= 1) {
       return true;
     }
 
@@ -192,12 +179,10 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {
-    return _txProvider.hasTransactionConfirmed(
-        walletId, _txProvider.transaction!.transactionHash);
+    return _txProvider.hasTransactionConfirmed(walletId, _txProvider.transaction!.transactionHash);
   }
 
   Future<void> updateTagsOfUsedUtxos(String signedTx) async {
-    await _tagProvider.applyTagsToNewUtxos(
-        _walletId, signedTx, _outputIndexesToMyAddress);
+    await _tagProvider.applyTagsToNewUtxos(_walletId, signedTx, _outputIndexesToMyAddress);
   }
 }

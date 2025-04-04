@@ -12,8 +12,7 @@ class BroadcastingCompleteScreen extends StatefulWidget {
   const BroadcastingCompleteScreen({super.key, required this.id});
 
   @override
-  State<BroadcastingCompleteScreen> createState() =>
-      _BroadcastingCompleteScreenState();
+  State<BroadcastingCompleteScreen> createState() => _BroadcastingCompleteScreenState();
 }
 
 class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
@@ -44,16 +43,13 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                 GestureDetector(
                   onTap: () => onTap(context),
                   child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          color: MyColors.primary),
+                          borderRadius: BorderRadius.circular(14), color: MyColors.primary),
                       child: Text(
                         t.confirm,
-                        style: Styles.label.merge(const TextStyle(
-                            color: MyColors.darkgrey,
-                            fontWeight: FontWeight.bold)),
+                        style: Styles.label.merge(
+                            const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
                       )),
                 ),
                 const SizedBox(
@@ -86,9 +82,9 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
     // 보내는 중 tx list 조회를 위한 조치
     // Provider.of<WalletProvider>(context, listen: false)
     //     .initWallet(targetId: widget.id);
-    Future<dynamic>? showReviewScreenFuture =
-        AppReviewService.showReviewScreenIfFirstSending(context,
-            animationController: _animationController);
+    Future<dynamic>? showReviewScreenFuture = AppReviewService.showReviewScreenIfFirstSending(
+        context,
+        animationController: _animationController);
     if (showReviewScreenFuture == null) {
       Navigator.pop(context);
     } else {

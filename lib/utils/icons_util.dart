@@ -12,8 +12,7 @@ abstract final class CustomIcons {
   static const String dolphin = 'assets/svg/wallet-icons/dolphin.svg';
   static const String whale = 'assets/svg/wallet-icons/whale.svg';
 
-  static const String hand_holding =
-      'assets/svg/wallet-icons/hand-holding-heart.svg';
+  static const String hand_holding = 'assets/svg/wallet-icons/hand-holding-heart.svg';
   static const String finger = 'assets/svg/wallet-icons/cursor-finger.svg';
   static const String paw = 'assets/svg/wallet-icons/paw.svg';
   static const String paper_plane = 'assets/svg/wallet-icons/paper-plane.svg';

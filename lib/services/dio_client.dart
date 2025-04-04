@@ -29,8 +29,7 @@ class DioClient {
 
   Future<dynamic> sendFaucetRequest(FaucetRequest requestBody) async {
     try {
-      final response =
-          await _dio.post('/faucet/request', data: requestBody.toJson());
+      final response = await _dio.post('/faucet/request', data: requestBody.toJson());
       if (response.statusCode == 200 || response.statusCode == 201) {
         return FaucetResponse.fromJson(response.data);
       } else if (response.statusCode == 429) {
@@ -91,8 +90,7 @@ class CustomLogInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    Logger.log(
-        "Error [${err.response?.statusCode}] => MESSAGE: ${err.message}");
+    Logger.log("Error [${err.response?.statusCode}] => MESSAGE: ${err.message}");
     super.onError(err, handler);
   }
 }

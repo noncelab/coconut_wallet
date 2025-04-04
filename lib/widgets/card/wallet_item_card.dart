@@ -35,19 +35,15 @@ class WalletItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final row = Padding(
-      padding:
-          const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+      padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
       child: ShrinkAnimationButton(
           onPressed: () {
-            Navigator.pushNamed(context, '/wallet-detail',
-                arguments: {'id': id});
+            Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id});
           },
-          borderGradientColors: signers?.isNotEmpty == true
-              ? CustomColorHelper.getGradientColors(signers!)
-              : null,
+          borderGradientColors:
+              signers?.isNotEmpty == true ? CustomColorHelper.getGradientColors(signers!) : null,
           child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
               ),
@@ -55,15 +51,12 @@ class WalletItemCard extends StatelessWidget {
                 Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color:
-                          CoconutColors.backgroundColorPaletteDark[colorIndex],
+                      color: CoconutColors.backgroundColorPaletteDark[colorIndex],
                       borderRadius: BorderRadius.circular(16.0),
                     ),
-                    child: SvgPicture.asset(
-                        CustomIcons.getPathByIndex(iconIndex),
+                    child: SvgPicture.asset(CustomIcons.getPathByIndex(iconIndex),
                         colorFilter: ColorFilter.mode(
-                            CoconutColors.colorPalette[colorIndex],
-                            BlendMode.srcIn),
+                            CoconutColors.colorPalette[colorIndex], BlendMode.srcIn),
                         width: 20.0)),
                 const SizedBox(width: 8.0),
                 Expanded(
@@ -73,8 +66,7 @@ class WalletItemCard extends StatelessWidget {
                       Text(
                         name,
                         style: CoconutTypography.body3_12.merge(TextStyle(
-                            color: CoconutColors.white.withOpacity(0.7),
-                            letterSpacing: 0.2)),
+                            color: CoconutColors.white.withOpacity(0.7), letterSpacing: 0.2)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -84,34 +76,28 @@ class WalletItemCard extends StatelessWidget {
                             imageFilter: isBalanceHidden
                                 ? ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0)
                                 : ImageFilter.blur(sigmaX: 0),
-                            child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  AnimatedBalance(
-                                    prevValue: animatedBalanceData.previous,
-                                    value: animatedBalanceData.current,
-                                    isBtcUnit: true,
-                                    textStyle: CoconutTypography
-                                        .heading3_21_NumberBold
-                                        .merge(
-                                      const TextStyle(
-                                        fontSize: 22,
-                                        letterSpacing: 0.2,
-                                      ),
-                                    ),
+                            child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                              AnimatedBalance(
+                                prevValue: animatedBalanceData.previous,
+                                value: animatedBalanceData.current,
+                                isBtcUnit: true,
+                                textStyle: CoconutTypography.heading3_21_NumberBold.merge(
+                                  const TextStyle(
+                                    fontSize: 22,
+                                    letterSpacing: 0.2,
                                   ),
-                                  Text(
-                                    " BTC",
-                                    style:
-                                        CoconutTypography.body3_12_Number.merge(
-                                      TextStyle(
-                                          fontSize: 13,
-                                          color: CoconutColors.white
-                                              .withOpacity(0.7),
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                  ),
-                                ]),
+                                ),
+                              ),
+                              Text(
+                                " BTC",
+                                style: CoconutTypography.body3_12_Number.merge(
+                                  TextStyle(
+                                      fontSize: 13,
+                                      color: CoconutColors.white.withOpacity(0.7),
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ]),
                           )),
                     ],
                   ),
@@ -121,8 +107,7 @@ class WalletItemCard extends StatelessWidget {
                 ),
                 SvgPicture.asset('assets/svg/arrow-right.svg',
                     width: 24,
-                    colorFilter: const ColorFilter.mode(
-                        CoconutColors.white, BlendMode.srcIn))
+                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn))
               ]))),
     );
 

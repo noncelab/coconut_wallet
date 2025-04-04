@@ -30,8 +30,7 @@ class TransactionProvider extends ChangeNotifier {
     _transaction = tx;
   }
 
-  TransactionRecord? getTransaction(int walletId, String txHash,
-      {String? utxoTo}) {
+  TransactionRecord? getTransaction(int walletId, String txHash, {String? utxoTo}) {
     final tx = _transactionRepository.getTransactionRecord(walletId, txHash);
 
     if (utxoTo != null && tx != null) {
@@ -52,17 +51,14 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   bool updateTransactionMemo(int walletId, String txHash, String memo) {
-    final result =
-        _transactionRepository.updateTransactionMemo(walletId, txHash, memo);
+    final result = _transactionRepository.updateTransactionMemo(walletId, txHash, memo);
     if (result.isSuccess) {
-      _transaction =
-          _transactionRepository.getTransactionRecord(walletId, txHash);
+      _transaction = _transactionRepository.getTransactionRecord(walletId, txHash);
       notifyListeners();
       return true;
     } else {
       Logger.log('-----------------------------------------------------------');
-      Logger.log(
-          'updateTransactionMemo(walletId: $walletId, txHash: $txHash, memo: $memo)');
+      Logger.log('updateTransactionMemo(walletId: $walletId, txHash: $txHash, memo: $memo)');
       Logger.log(result.error);
     }
     return false;

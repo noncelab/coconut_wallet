@@ -22,8 +22,7 @@ class InputOutputDetailRow extends StatelessWidget {
     required this.rowType,
     this.isCurrentAddress,
     this.transactionStatus,
-  }) : rowProperty = getRowProperty(
-            rowType, transactionStatus, isCurrentAddress ?? false);
+  }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +37,7 @@ class InputOutputDetailRow extends StatelessWidget {
           ),
           maxLines: 1,
         ),
-        if (rowType == InputOutputRowType.output ||
-            rowType == InputOutputRowType.fee)
+        if (rowType == InputOutputRowType.output || rowType == InputOutputRowType.fee)
           Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -48,8 +46,7 @@ class InputOutputDetailRow extends StatelessWidget {
                   rowProperty.svgPath,
                   width: 16,
                   height: 12,
-                  colorFilter:
-                      ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
                 ),
                 const SizedBox(
                   width: 10,
@@ -58,8 +55,7 @@ class InputOutputDetailRow extends StatelessWidget {
                   width: balanceMaxWidth,
                   child: Text(
                     textAlign: TextAlign.end,
-                    satoshiToBitcoinString(balance.abs())
-                        .normalizeTo11Characters(),
+                    satoshiToBitcoinString(balance.abs()).normalizeTo11Characters(),
                     style: CoconutTypography.body2_14_Number.copyWith(
                       color: rowProperty.rightItemColor,
                       height: 16 / 14,
@@ -77,8 +73,7 @@ class InputOutputDetailRow extends StatelessWidget {
                 SizedBox(
                   width: balanceMaxWidth,
                   child: Text(
-                    satoshiToBitcoinString(balance.abs())
-                        .normalizeTo11Characters(),
+                    satoshiToBitcoinString(balance.abs()).normalizeTo11Characters(),
                     style: CoconutTypography.body2_14_Number.copyWith(
                       color: rowProperty.rightItemColor,
                       height: 16 / 14,
@@ -92,8 +87,7 @@ class InputOutputDetailRow extends StatelessWidget {
                   rowProperty.svgPath,
                   width: 16,
                   height: 12,
-                  colorFilter:
-                      ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
                 ),
               ],
             ),

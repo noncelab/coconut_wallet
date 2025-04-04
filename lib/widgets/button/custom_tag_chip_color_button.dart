@@ -8,14 +8,10 @@ class CustomTagChipColorButton extends StatefulWidget {
   final int colorIndex;
   final bool isCreate;
   const CustomTagChipColorButton(
-      {super.key,
-      required this.onTap,
-      required this.colorIndex,
-      this.isCreate = false});
+      {super.key, required this.onTap, required this.colorIndex, this.isCreate = false});
 
   @override
-  State<CustomTagChipColorButton> createState() =>
-      _CustomTagChipColorButtonState();
+  State<CustomTagChipColorButton> createState() => _CustomTagChipColorButtonState();
 }
 
 class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {

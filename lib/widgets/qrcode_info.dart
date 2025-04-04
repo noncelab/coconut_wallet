@@ -55,27 +55,23 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
             ),
             const SizedBox(height: 32),
             Text(widget.qrData,
-                style: Styles.body1
-                    .merge(const TextStyle(fontFamily: 'SpaceGrotesk')),
+                style: Styles.body1.merge(const TextStyle(fontFamily: 'SpaceGrotesk')),
                 textAlign: TextAlign.center),
             const SizedBox(height: 24),
             SmallActionButton(
               text: '복사하기',
               onPressed: () async {
-                Clipboard.setData(ClipboardData(text: widget.qrData))
-                    .then((value) => null);
+                Clipboard.setData(ClipboardData(text: widget.qrData)).then((value) => null);
                 if (Platform.isAndroid) {
                   try {
-                    final int version =
-                        await _channel.invokeMethod('getSdkVersion');
+                    final int version = await _channel.invokeMethod('getSdkVersion');
 
                     // 안드로이드13 부터는 클립보드 복사 메세지가 나오기 때문에 예외 적용
                     if (version > 31) {
                       return;
                     }
                   } on PlatformException catch (e) {
-                    Logger.log(
-                        "Failed to get platform version: '${e.message}'.");
+                    Logger.log("Failed to get platform version: '${e.message}'.");
                   }
                 }
 

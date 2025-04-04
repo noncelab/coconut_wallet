@@ -49,8 +49,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
                     _buildEditButtons(context, model),
                     Expanded(
                       child: CustomTagVerticalSelector(
-                        key: ValueKey(
-                            model.utxoTagList.map((e) => e.name).join(':')),
+                        key: ValueKey(model.utxoTagList.map((e) => e.name).join(':')),
                         tags: model.utxoTagList,
                         externalUpdatedTagName: model.updatedTagName,
                         onSelectedTag: model.toggleUtxoTag,
@@ -78,8 +77,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
         CoconutLayout.spacing_200h,
         Text(
           t.utxo_tag_screen.add_tag,
-          style:
-              CoconutTypography.body2_14.copyWith(color: CoconutColors.gray350),
+          style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray350),
         ),
       ],
     );
@@ -114,8 +112,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
     ]);
   }
 
-  void _handeDeleteTagPressed(
-      BuildContext context, UtxoTagCrudViewModel model) {
+  void _handeDeleteTagPressed(BuildContext context, UtxoTagCrudViewModel model) {
     CustomDialogs.showCustomAlertDialog(
       context,
       title: t.alert.tag_delete.title,

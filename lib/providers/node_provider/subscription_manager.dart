@@ -40,8 +40,7 @@ class SubscriptionManager {
     this._addressRepository,
     this._subscriptionRepository,
   ) {
-    _scriptStatusController =
-        StreamController<SubscribeScriptStreamDto>.broadcast();
+    _scriptStatusController = StreamController<SubscribeScriptStreamDto>.broadcast();
 
     _scriptSubscriber = ScriptSubscriber(
       _electrumService,
@@ -58,8 +57,7 @@ class SubscriptionManager {
       subscribeWallet,
     );
 
-    _scriptStatusController.stream
-        .listen(_scriptEventHandler.handleScriptStatusChanged);
+    _scriptStatusController.stream.listen(_scriptEventHandler.handleScriptStatusChanged);
   }
 
   /// 스크립트 구독
@@ -77,8 +75,7 @@ class SubscriptionManager {
         return Result.success(true);
       }
 
-      final existingScriptStatusMap =
-          _subscriptionRepository.getScriptStatusMap(
+      final existingScriptStatusMap = _subscriptionRepository.getScriptStatusMap(
         walletItem.id,
       );
 

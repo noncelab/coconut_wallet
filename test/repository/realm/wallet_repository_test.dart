@@ -26,8 +26,8 @@ void main() {
   group('WalletRepository 테스트', () {
     test('지갑 삭제 테스트', () async {
       // Given
-      final walletBase = RealmWalletBase(1, 0, 0, 'encrypted_descriptor',
-          'Test Wallet', WalletType.singleSignature.name);
+      final walletBase = RealmWalletBase(
+          1, 0, 0, 'encrypted_descriptor', 'Test Wallet', WalletType.singleSignature.name);
 
       realmManager.realm.write(() {
         realmManager.realm.add(walletBase);

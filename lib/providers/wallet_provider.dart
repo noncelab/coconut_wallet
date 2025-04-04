@@ -38,10 +38,8 @@ class WalletProvider extends ChangeNotifier {
   WalletLoadState _walletLoadState = WalletLoadState.never;
   WalletLoadState get walletLoadState => _walletLoadState;
 
-  WalletSubscriptionState _walletSubscriptionState =
-      WalletSubscriptionState.never;
-  WalletSubscriptionState get walletSubscriptionState =>
-      _walletSubscriptionState;
+  WalletSubscriptionState _walletSubscriptionState = WalletSubscriptionState.never;
+  WalletSubscriptionState get walletSubscriptionState => _walletSubscriptionState;
 
   bool? _isNetworkOn;
 
@@ -123,8 +121,7 @@ class WalletProvider extends ChangeNotifier {
 
   void _onNodeProviderStateUpdated() {
     if (!_isNodeProviderInitialized && _nodeProvider.isInitialized) {
-      Logger.log(
-          '--> _nodeProvider.isInitialized: ${_nodeProvider.isInitialized}');
+      Logger.log('--> _nodeProvider.isInitialized: ${_nodeProvider.isInitialized}');
       _isNodeProviderInitialized = true;
       _subscribeNodeProvider();
     }
@@ -151,23 +148,20 @@ class WalletProvider extends ChangeNotifier {
     _updateIsAnyBalanceUpdatingIfNeeded(_nodeProvider.state);
     for (var key in _nodeProvider.state.registeredWallets.keys) {
       if (_nodeProvider.state.registeredWallets[key] != null) {
-        _notifyWalletUpdateListeners(
-            _nodeProvider.state.registeredWallets[key]!);
+        _notifyWalletUpdateListeners(_nodeProvider.state.registeredWallets[key]!);
       }
     }
   }
 
   void _updateIsSyncingIfNeeded(NodeProviderState nodeProviderState) {
-    final newSyncingState =
-        nodeProviderState.connectionState == MainClientState.syncing;
+    final newSyncingState = nodeProviderState.connectionState == MainClientState.syncing;
     if (_isSyncing != newSyncingState) {
       _isSyncing = newSyncingState;
       notifyListeners();
     }
   }
 
-  void _updateIsAnyBalanceUpdatingIfNeeded(
-      NodeProviderState nodeProviderState) {
+  void _updateIsAnyBalanceUpdatingIfNeeded(NodeProviderState nodeProviderState) {
     if (nodeProviderState.connectionState != MainClientState.syncing) return;
 
     bool anyBalanceSyncing = false;
@@ -177,8 +171,7 @@ class WalletProvider extends ChangeNotifier {
       if (wallet == null) continue;
 
       // 업데이트 예정 중이거나 업데이트 중
-      if (wallet.balance == UpdateStatus.waiting ||
-          wallet.balance == UpdateStatus.syncing) {
+      if (wallet.balance == UpdateStatus.waiting || wallet.balance == UpdateStatus.syncing) {
         anyBalanceSyncing = true;
         break;
       }
@@ -198,8 +191,7 @@ class WalletProvider extends ChangeNotifier {
     _walletLoadState = WalletLoadState.loadingFromDB;
 
     try {
-      Logger.log(
-          '--> RealmManager.isInitialized: ${_realmManager.isInitialized}');
+      Logger.log('--> RealmManager.isInitialized: ${_realmManager.isInitialized}');
       if (_realmManager.isInitialized) {
         await _realmManager.init(_isSetPin);
       }
@@ -218,9 +210,7 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Map<int, Balance> fetchWalletBalanceMap() {
-    return {
-      for (var wallet in _walletItemList) wallet.id: getWalletBalance(wallet.id)
-    };
+    return {for (var wallet in _walletItemList) wallet.id: getWalletBalance(wallet.id)};
   }
 
   bool _canSubscribeWallets() {
@@ -287,8 +277,7 @@ class WalletProvider extends ChangeNotifier {
   /// case2. 이미 존재하는 fingerprint이지만 이름/계정/칼라 중 하나라도 변경되었을 경우 ("동기화를 완료했습니다.")
   /// case3. 이미 존재하고 변화가 없는 경우 ("이미 추가된 지갑입니다.")
   /// case4. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
-  Future<ResultOfSyncFromVault> syncFromVault(
-      WatchOnlyWallet watchOnlyWallet) async {
+  Future<ResultOfSyncFromVault> syncFromVault(WatchOnlyWallet watchOnlyWallet) async {
     // _walletList 동시 변경 방지를 위해 상태 확인 후 sync 진행하기
     // while (_walletInitState == WalletInitState.never ||
     //     _walletInitState == WalletInitState.processing) {
@@ -296,8 +285,8 @@ class WalletProvider extends ChangeNotifier {
     // }
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
-    final index = _walletItemList.indexWhere(
-        (element) => element.descriptor == watchOnlyWallet.descriptor);
+    final index =
+        _walletItemList.indexWhere((element) => element.descriptor == watchOnlyWallet.descriptor);
 
     bool isMultisig = watchOnlyWallet.signers != null;
 
@@ -307,21 +296,19 @@ class WalletProvider extends ChangeNotifier {
 
       // case 2: 변경 사항 체크하며 업데이트
       if (_hasChangedOfUI(_walletItemList[index], watchOnlyWallet)) {
-        _walletRepository.updateWalletUI(
-            _walletItemList[index].id, watchOnlyWallet);
+        _walletRepository.updateWalletUI(_walletItemList[index].id, watchOnlyWallet);
 
         // 업데이트된 지갑 목록 가져오기
         _walletItemList = await _fetchWalletListFromDB();
         result = WalletSyncResult.existingWalletUpdated;
         notifyListeners();
       }
-      return ResultOfSyncFromVault(
-          result: result, walletId: _walletItemList[index].id);
+      return ResultOfSyncFromVault(result: result, walletId: _walletItemList[index].id);
     }
 
     // 새 지갑 추가
-    final sameNameIndex = _walletItemList
-        .indexWhere((element) => element.name == watchOnlyWallet.name);
+    final sameNameIndex =
+        _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
     if (sameNameIndex != -1) {
       // case 4: 동일 이름 존재
       return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
@@ -341,8 +328,7 @@ class WalletProvider extends ChangeNotifier {
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
   }
 
-  Future<WalletListItemBase> _addNewWallet(
-      WatchOnlyWallet wallet, bool isMultisig) async {
+  Future<WalletListItemBase> _addNewWallet(WatchOnlyWallet wallet, bool isMultisig) async {
     WalletListItemBase newItem;
     if (isMultisig) {
       newItem = await _walletRepository.addMultisigWallet(wallet);
@@ -368,8 +354,7 @@ class WalletProvider extends ChangeNotifier {
   }
 
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
-  bool _hasChangedOfUI(
-      WalletListItemBase existingWallet, WatchOnlyWallet watchOnlyWallet) {
+  bool _hasChangedOfUI(WalletListItemBase existingWallet, WatchOnlyWallet watchOnlyWallet) {
     bool hasChanged = false;
 
     if (existingWallet.name != watchOnlyWallet.name ||
@@ -385,10 +370,8 @@ class WalletProvider extends ChangeNotifier {
     var multisigWallet = existingWallet as MultisigWalletListItem;
     for (int i = 0; i < multisigWallet.signers.length; i++) {
       if (multisigWallet.signers[i].name != watchOnlyWallet.signers![i].name ||
-          multisigWallet.signers[i].colorIndex !=
-              watchOnlyWallet.signers![i].colorIndex ||
-          multisigWallet.signers[i].iconIndex !=
-              watchOnlyWallet.signers![i].iconIndex ||
+          multisigWallet.signers[i].colorIndex != watchOnlyWallet.signers![i].colorIndex ||
+          multisigWallet.signers[i].iconIndex != watchOnlyWallet.signers![i].iconIndex ||
           multisigWallet.signers[i].memo != watchOnlyWallet.signers![i].memo) {
         hasChanged = true;
         break;
@@ -462,8 +445,7 @@ class WalletProvider extends ChangeNotifier {
 
   List<WalletAddress> getWalletAddressList(
       WalletListItemBase wallet, int cursor, int count, bool isChange) {
-    return _addressRepository.getWalletAddressList(
-        wallet, cursor, count, isChange);
+    return _addressRepository.getWalletAddressList(wallet, cursor, count, isChange);
   }
 
   Future encryptWalletSecureData(String hashedPin) async {
@@ -482,10 +464,8 @@ class WalletProvider extends ChangeNotifier {
     );
   }
 
-  List<WalletAddress> filterChangeAddressesFromList(
-      int walletId, List<String> addresses) {
-    return _addressRepository.filterChangeAddressesFromList(
-        walletId, addresses);
+  List<WalletAddress> filterChangeAddressesFromList(int walletId, List<String> addresses) {
+    return _addressRepository.filterChangeAddressesFromList(walletId, addresses);
   }
 
   WalletAddress getChangeAddress(int walletId) {
@@ -512,10 +492,8 @@ class WalletProvider extends ChangeNotifier {
     return _utxoRepository.getUtxoState(walletId, utxoId);
   }
 
-  TransactionRecord? getTransactionRecord(
-      int walletId, String transactionHash) {
-    return _transactionRepository.getTransactionRecord(
-        walletId, transactionHash);
+  TransactionRecord? getTransactionRecord(int walletId, String transactionHash) {
+    return _transactionRepository.getTransactionRecord(walletId, transactionHash);
   }
 
   WalletUpdateInfo getWalletUpdateInfo(int walletId) {
@@ -572,8 +550,7 @@ class WalletProvider extends ChangeNotifier {
 
     // 테이블 헤더 출력 (connectionState 포함)
     Logger.log('┌───────────────────────────────────────┐');
-    Logger.log(
-        '│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
+    Logger.log('│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
     Logger.log('├─────────┬─────────┬─────────┬─────────┤');
     Logger.log('│ 지갑 ID │  잔액   │  거래   │  UTXO   │');
     Logger.log('├─────────┼─────────┼─────────┼─────────┤');

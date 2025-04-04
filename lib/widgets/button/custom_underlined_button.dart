@@ -77,8 +77,7 @@ class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
             style: CoconutTypography.body3_12.copyWith(
                 // decoration: TextDecoration.underline, // 밑줄 설정
                 fontSize: widget.fontSize,
-                height:
-                    (widget.lineHeight ?? widget.fontSize) / widget.fontSize,
+                height: (widget.lineHeight ?? widget.fontSize) / widget.fontSize,
                 color: widget.isEnable
                     ? _isPressing
                         ? widget.pressingColor ?? CoconutColors.gray500

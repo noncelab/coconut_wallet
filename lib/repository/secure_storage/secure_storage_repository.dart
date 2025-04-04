@@ -3,8 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class SecureStorageRepository {
   SecureStorageRepository._internal();
 
-  static final SecureStorageRepository _instance =
-      SecureStorageRepository._internal();
+  static final SecureStorageRepository _instance = SecureStorageRepository._internal();
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
   factory SecureStorageRepository() {

@@ -31,12 +31,11 @@ void main() {
         2: FaucetRecord(id: 2, dateTime: 1627848390, count: 3),
       };
 
-      final encodedData = json.encode(histories
-          .map((key, value) => MapEntry(key.toString(), value.toJson())));
+      final encodedData =
+          json.encode(histories.map((key, value) => MapEntry(key.toString(), value.toJson())));
       when(mockPrefs.setString(SharedPrefKeys.kFaucetHistories, encodedData))
           .thenAnswer((_) async => true);
-      when(mockPrefs.getString(SharedPrefKeys.kFaucetHistories))
-          .thenReturn(encodedData);
+      when(mockPrefs.getString(SharedPrefKeys.kFaucetHistories)).thenReturn(encodedData);
 
       await sharedPrefs.saveFaucetHistory(histories[1]!);
       final result1 = sharedPrefs.getFaucetHistoryWithId(1);
@@ -48,14 +47,11 @@ void main() {
     });
 
     test('IS_BALANCE_HIDDEN boolean must be saved and imported', () async {
-      when(mockPrefs.setBool(SharedPrefKeys.kIsBalanceHidden, true))
-          .thenAnswer((_) async => true);
+      when(mockPrefs.setBool(SharedPrefKeys.kIsBalanceHidden, true)).thenAnswer((_) async => true);
       when(mockPrefs.getBool(SharedPrefKeys.kIsBalanceHidden)).thenReturn(true);
 
-      await sharedPrefs.sharedPrefs
-          .setBool(SharedPrefKeys.kIsBalanceHidden, true);
-      final result =
-          sharedPrefs.sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
+      await sharedPrefs.sharedPrefs.setBool(SharedPrefKeys.kIsBalanceHidden, true);
+      final result = sharedPrefs.sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
 
       expect(result, true);
     });

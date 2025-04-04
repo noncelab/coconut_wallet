@@ -10,12 +10,7 @@ class HighlightedInfoArea extends StatelessWidget {
   final TextStyle? textStyle;
 
   const HighlightedInfoArea(
-      {super.key,
-      this.child,
-      this.textList,
-      this.width,
-      this.height,
-      this.textStyle});
+      {super.key, this.child, this.textList, this.width, this.height, this.textStyle});
 
   Widget _buildTextListWidget() {
     if (textList == null || textList!.isEmpty) {

@@ -58,6 +58,16 @@
     Tools • Dart 3.5.3 • DevTools 2.37.3
     ```
 
+4. 자동 생성 파일 준비
+
+   ```bash
+   flutter pub run build_runner build --delete-conflicting-outputs
+
+   dart run realm generate
+
+   flutter pub run slang
+   ```
+
 ### 실행하기
 
 1. 포우팀에게 문의하여 환경변수 파일 준비하기

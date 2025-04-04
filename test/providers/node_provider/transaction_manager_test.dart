@@ -54,8 +54,7 @@ void main() {
   late CpfpHandler cpfpDetector;
 
   const int testWalletId = 1;
-  final SinglesigWalletListItem testWalletItem =
-      WalletMock.createSingleSigWalletItem();
+  final SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
 
   setUp(() async {
     realmManager = await setupTestRealmManager();
@@ -76,8 +75,7 @@ void main() {
       addressRepository,
     );
 
-    transactionProcessor =
-        TransactionProcessor(electrumService, addressRepository);
+    transactionProcessor = TransactionProcessor(electrumService, addressRepository);
     transactionFetcher = TransactionFetcher(
       electrumService,
       transactionRepository,
@@ -86,10 +84,8 @@ void main() {
       utxoManager,
     );
 
-    rbfDetector =
-        RbfHandler(transactionRepository, utxoManager, electrumService);
-    cpfpDetector =
-        CpfpHandler(transactionRepository, utxoManager, electrumService);
+    rbfDetector = RbfHandler(transactionRepository, utxoManager, electrumService);
+    cpfpDetector = CpfpHandler(transactionRepository, utxoManager, electrumService);
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
@@ -112,8 +108,7 @@ void main() {
   group('TransactionManager 기능 테스트', () {
     test('getFetchTransactionResponses가 올바르게 작동하는지 확인', () async {
       // 스크립트 상태 설정
-      final scriptStatus =
-          ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
+      final scriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
 
       // 모의 historyList 설정
       final historyList = [
@@ -144,8 +139,7 @@ void main() {
   group('트랜잭션 상태 변경 테스트', () {
     test('미확인 트랜잭션이 확인 상태로 업데이트되는지 확인', () async {
       // 테스트용 미확인 트랜잭션 추가
-      final unconfirmedTx =
-          TransactionMock.createUnconfirmedTransactionRecord();
+      final unconfirmedTx = TransactionMock.createUnconfirmedTransactionRecord();
 
       // 트랜잭션 저장
       transactionRepository.addAllTransactions(testWalletId, [unconfirmedTx]);
@@ -156,8 +150,7 @@ void main() {
 
       // 블록 타임스탬프 저장
       realmManager.realm.write(() {
-        realmManager.realm
-            .add(RealmBlockTimestamp(blockHeight, blockTimestamp));
+        realmManager.realm.add(RealmBlockTimestamp(blockHeight, blockTimestamp));
       });
 
       // 업데이트할 트랜잭션 정보 준비
@@ -170,9 +163,7 @@ void main() {
         )
       };
 
-      final blockTimestampMap = {
-        blockHeight: BlockTimestamp(blockHeight, blockTimestamp)
-      };
+      final blockTimestampMap = {blockHeight: BlockTimestamp(blockHeight, blockTimestamp)};
 
       // 트랜잭션 상태 업데이트
       await transactionRepository.updateTransactionStates(
@@ -184,8 +175,8 @@ void main() {
       );
 
       // 업데이트된 트랜잭션 조회
-      final updatedTx = transactionRepository.getTransactionRecord(
-          testWalletId, unconfirmedTx.transactionHash);
+      final updatedTx =
+          transactionRepository.getTransactionRecord(testWalletId, unconfirmedTx.transactionHash);
 
       expect(updatedTx, isNotNull);
       expect(updatedTx!.blockHeight, blockHeight);
@@ -202,13 +193,11 @@ void main() {
     final now = DateTime.now();
 
     setUp(() {
-      mockScriptStatus =
-          ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
+      mockScriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
       // 모킹 기본 설정
       when(walletProvider.containsAddress(any, any)).thenReturn(false);
 
-      when(electrumService.getBlockTimestamp(any))
-          .thenAnswer((invocation) async {
+      when(electrumService.getBlockTimestamp(any)).thenAnswer((invocation) async {
         final height = invocation.positionalArguments[0] as int;
         return BlockTimestamp(height, DateTime.now());
       });
@@ -251,8 +240,7 @@ void main() {
 
       // 모의 응답 설정
       when(electrumService.getHistory(any, any)).thenAnswer((_) async => [
-            GetHistoryRes(
-                height: 0, txHash: mockTx.transactionHash), // 미확인 트랜잭션
+            GetHistoryRes(height: 0, txHash: mockTx.transactionHash), // 미확인 트랜잭션
           ]);
       when(electrumService.getTransaction(mockTx.transactionHash))
           .thenAnswer((_) async => mockTx.serialize());
@@ -260,8 +248,7 @@ void main() {
           .thenAnswer((_) async => prevTx.serialize());
 
       // UTXO 관리자 모킹
-      when(utxoManager.updateUtxoStatusToOutgoingByTransaction(any, any))
-          .thenReturn(null);
+      when(utxoManager.updateUtxoStatusToOutgoingByTransaction(any, any)).thenReturn(null);
 
       // 함수 실행
       await transactionManager.fetchScriptTransaction(
@@ -273,9 +260,7 @@ void main() {
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
       verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
-      verify(utxoManager.updateUtxoStatusToOutgoingByTransaction(
-              testWalletId, any))
-          .called(1);
+      verify(utxoManager.updateUtxoStatusToOutgoingByTransaction(testWalletId, any)).called(1);
     });
 
     test('확인된 트랜잭션 처리를 올바르게 하는지 확인', () async {
@@ -293,8 +278,7 @@ void main() {
 
       // 모의 응답 설정
       when(electrumService.getHistory(any, any)).thenAnswer((_) async => [
-            GetHistoryRes(
-                height: mockBlockHeight, txHash: mockTx.transactionHash),
+            GetHistoryRes(height: mockBlockHeight, txHash: mockTx.transactionHash),
           ]);
       when(electrumService.getTransaction(mockTx.transactionHash))
           .thenAnswer((_) async => mockTx.serialize());
@@ -378,8 +362,7 @@ void main() {
       ]);
 
       when(electrumService.getHistory(any, any)).thenAnswer((_) async => [
-            GetHistoryRes(
-                height: 0, txHash: mockTx.transactionHash), // 미확인 RBF 트랜잭션
+            GetHistoryRes(height: 0, txHash: mockTx.transactionHash), // 미확인 RBF 트랜잭션
           ]);
       when(electrumService.getTransaction(mockTx.transactionHash))
           .thenAnswer((_) async => mockTx.serialize());
@@ -389,8 +372,7 @@ void main() {
           .thenAnswer((_) async => mockOriginalTx.serialize());
 
       // UTXO 관리자 모킹 - _detectRbfTransaction에서 사용될 입력 준비
-      when(utxoManager.updateUtxoStatusToOutgoingByTransaction(any, any))
-          .thenAnswer((_) {});
+      when(utxoManager.updateUtxoStatusToOutgoingByTransaction(any, any)).thenAnswer((_) {});
 
       await transactionManager.fetchScriptTransaction(
         testWalletItem,
@@ -399,12 +381,11 @@ void main() {
       );
 
       // RBF 내역이 저장되었는지 확인
-      final rbfHistories = transactionRepository.getRbfHistoryList(
-          testWalletId, mockTx.transactionHash);
+      final rbfHistories =
+          transactionRepository.getRbfHistoryList(testWalletId, mockTx.transactionHash);
 
       expect(rbfHistories.length, 1);
-      expect(
-          rbfHistories.first.originalTransactionHash, prevTx.transactionHash);
+      expect(rbfHistories.first.originalTransactionHash, prevTx.transactionHash);
     });
   });
 
@@ -469,8 +450,7 @@ void main() {
 
     test('이미 RBF 내역이 있는 트랜잭션은 null을 반환해야 함', () async {
       // 기존 RBF 내역 추가
-      _addRbfHistory(realmManager, testWalletId, mockNewTx.transactionHash,
-          mockOriginalTxHash);
+      _addRbfHistory(realmManager, testWalletId, mockNewTx.transactionHash, mockOriginalTxHash);
 
       // 함수 실행
       final result = await rbfDetector.detectSendingRbfTransaction(
@@ -543,8 +523,7 @@ void main() {
       ]);
 
       // 이전 RBF 내역 추가 (spent 트랜잭션에 대한 RBF 내역)
-      _addRbfHistory(
-          realmManager, testWalletId, mockSpentTxHash, mockOriginalTxHash);
+      _addRbfHistory(realmManager, testWalletId, mockSpentTxHash, mockOriginalTxHash);
 
       // 함수 실행
       final result = await rbfDetector.detectSendingRbfTransaction(
@@ -621,15 +600,15 @@ void main() {
       );
 
       // RBF 내역 추가
-      _addRbfHistory(realmManager, testWalletId, confirmedTx.transactionHash,
-          originalTx.transactionHash);
+      _addRbfHistory(
+          realmManager, testWalletId, confirmedTx.transactionHash, originalTx.transactionHash);
 
       // 함수 실행
       transactionRepository.deleteRbfHistory(testWalletId, confirmedTx);
 
       // 검증 - RBF 내역이 삭제되었는지 확인
-      final rbfHistories = transactionRepository.getRbfHistoryList(
-          testWalletId, confirmedTx.transactionHash);
+      final rbfHistories =
+          transactionRepository.getRbfHistoryList(testWalletId, confirmedTx.transactionHash);
 
       expect(rbfHistories.isEmpty, isTrue);
     });
@@ -658,19 +637,19 @@ void main() {
       );
 
       // RBF 내역 추가 (연속된 RBF 시뮬레이션)
-      _addRbfHistory(realmManager, testWalletId, rbfTx1.transactionHash,
-          originalTx1.transactionHash);
-      _addRbfHistory(realmManager, testWalletId, rbfTx2.transactionHash,
-          originalTx2.transactionHash);
+      _addRbfHistory(
+          realmManager, testWalletId, rbfTx1.transactionHash, originalTx1.transactionHash);
+      _addRbfHistory(
+          realmManager, testWalletId, rbfTx2.transactionHash, originalTx2.transactionHash);
 
       // 함수 실행 - 이 경우 deleteRbfHistory는 해당 트랜잭션의 RBF 내역만 삭제해야 함
       transactionRepository.deleteRbfHistory(testWalletId, rbfTx1);
 
       // 검증 - 첫 번째 RBF 내역은 삭제되었지만 두 번째 RBF 내역은 유지되어야 함
-      final rbfHistories1 = transactionRepository.getRbfHistoryList(
-          testWalletId, rbfTx1.transactionHash);
-      final rbfHistories2 = transactionRepository.getRbfHistoryList(
-          testWalletId, rbfTx2.transactionHash);
+      final rbfHistories1 =
+          transactionRepository.getRbfHistoryList(testWalletId, rbfTx1.transactionHash);
+      final rbfHistories2 =
+          transactionRepository.getRbfHistoryList(testWalletId, rbfTx2.transactionHash);
 
       expect(rbfHistories1.isEmpty, isTrue); // 첫 번째 RBF 내역은 삭제됨
       expect(rbfHistories2.isNotEmpty, isTrue); // 두 번째 RBF 내역은 유지됨
@@ -691,12 +670,10 @@ void main() {
       );
 
       // RBF 내역 추가
-      _addRbfHistory(realmManager, testWalletId, rbfTx.transactionHash,
-          originalTx.transactionHash);
+      _addRbfHistory(realmManager, testWalletId, rbfTx.transactionHash, originalTx.transactionHash);
 
       // 모의 스크립트 상태 설정
-      final scriptStatus =
-          ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
+      final scriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
       const blockHeight = 700000;
 
       // 모의 응답 설정 - 트랜잭션이 컨펌된 상태로 반환
@@ -711,8 +688,8 @@ void main() {
           .thenAnswer((_) async => BlockTimestamp(blockHeight, DateTime.now()));
       when(walletProvider.containsAddress(any, any)).thenReturn(false);
 
-      final rbfHistoriesBefore = transactionRepository.getRbfHistoryList(
-          testWalletId, rbfTx.transactionHash);
+      final rbfHistoriesBefore =
+          transactionRepository.getRbfHistoryList(testWalletId, rbfTx.transactionHash);
       final rbfHistoriesBeforeCount = rbfHistoriesBefore.length;
 
       // fetchScriptTransaction 함수 실행
@@ -723,8 +700,8 @@ void main() {
       );
 
       // 검증 - RBF 내역이 삭제되었는지 확인
-      final rbfHistories = transactionRepository.getRbfHistoryList(
-          testWalletId, rbfTx.transactionHash);
+      final rbfHistories =
+          transactionRepository.getRbfHistoryList(testWalletId, rbfTx.transactionHash);
 
       expect(rbfHistoriesBeforeCount, 1);
       expect(rbfHistories.isEmpty, isTrue, reason: 'RBF 내역이 삭제되지 않았습니다.');
@@ -736,8 +713,8 @@ void main() {
 }
 
 // 테스트를 위한 RBF 내역 추가 헬퍼 함수
-void _addRbfHistory(TestRealmManager realmManager, int walletId, String txHash,
-    String originalTxHash) {
+void _addRbfHistory(
+    TestRealmManager realmManager, int walletId, String txHash, String originalTxHash) {
   realmManager.realm.write(() {
     final rbfHistory = RealmRbfHistory(
       Object.hash(walletId, originalTxHash, txHash),

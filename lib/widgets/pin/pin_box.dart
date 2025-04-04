@@ -22,8 +22,7 @@ class PinBox extends StatelessWidget {
               width: 12,
               height: 12,
               fit: BoxFit.scaleDown,
-              colorFilter:
-                  const ColorFilter.mode(MyColors.white, BlendMode.srcIn),
+              colorFilter: const ColorFilter.mode(MyColors.white, BlendMode.srcIn),
             )
           : null,
     );

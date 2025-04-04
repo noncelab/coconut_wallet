@@ -9,10 +9,8 @@ MultisigWalletListItem mapRealmToMultisigWalletItem(
       name: realmMultisigWallet.walletBase!.name,
       colorIndex: realmMultisigWallet.walletBase!.colorIndex,
       iconIndex: realmMultisigWallet.walletBase!.iconIndex,
-      descriptor:
-          decryptedDescriptor ?? realmMultisigWallet.walletBase!.descriptor,
-      signers: MultisigSigner.fromJsonList(
-          realmMultisigWallet.signersInJsonSerialization),
+      descriptor: decryptedDescriptor ?? realmMultisigWallet.walletBase!.descriptor,
+      signers: MultisigSigner.fromJsonList(realmMultisigWallet.signersInJsonSerialization),
       requiredSignatureCount: realmMultisigWallet.requiredSignatureCount,
       receiveUsedIndex: realmMultisigWallet.walletBase!.usedReceiveIndex,
       changeUsedIndex: realmMultisigWallet.walletBase!.usedChangeIndex);

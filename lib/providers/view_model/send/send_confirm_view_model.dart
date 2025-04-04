@@ -20,8 +20,7 @@ class SendConfirmViewModel extends ChangeNotifier {
   Map<String, double>? _recipientsForBatch;
 
   SendConfirmViewModel(this._sendInfoProvider, this._walletProvider) {
-    _walletListItemBase =
-        _walletProvider.getWalletById(_sendInfoProvider.walletId!);
+    _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _estimatedFee = _sendInfoProvider.estimatedFee!;
     if (_sendInfoProvider.recipientsForBatch != null) {
       _setBatchTxParams();
@@ -32,9 +31,8 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   double get amount => _amount;
   List<String> get addresses => _addresses;
-  Map<String, double>? get recipientsForBatch => _recipientsForBatch == null
-      ? null
-      : UnmodifiableMapView(_recipientsForBatch!);
+  Map<String, double>? get recipientsForBatch =>
+      _recipientsForBatch == null ? null : UnmodifiableMapView(_recipientsForBatch!);
 
   int get estimatedFee => _estimatedFee;
   String get walletName => _walletListItemBase.name;
@@ -61,8 +59,7 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   Future<String> generateUnsignedPsbt() async {
     assert(_sendInfoProvider.transaction != null);
-    var psbt = Psbt.fromTransaction(
-        _sendInfoProvider.transaction!, _walletListItemBase.walletBase);
+    var psbt = Psbt.fromTransaction(_sendInfoProvider.transaction!, _walletListItemBase.walletBase);
     return psbt.serialize();
   }
 

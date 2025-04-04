@@ -52,8 +52,7 @@ void showTextFieldDialog(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             controller: controller,
             style: Styles.body1,
-            keyboardType: textInputType ??
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: textInputType ?? const TextInputType.numberWithOptions(decimal: true),
           )
         ]),
         actions: <CupertinoDialogAction>[

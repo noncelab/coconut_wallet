@@ -57,9 +57,8 @@ class UtxoManager {
       final utxos = await _electrumService.getUnspentList(
           walletItem.walletBase.addressType, scriptStatus.address);
 
-      final realmTransactions =
-          _transactionRepository.getRealmTransactionListByHashes(
-              walletItem.id, utxos.map((e) => e.txHash).toSet());
+      final realmTransactions = _transactionRepository.getRealmTransactionListByHashes(
+          walletItem.id, utxos.map((e) => e.txHash).toSet());
 
       final transactionMap = {
         for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx
@@ -120,9 +119,8 @@ class UtxoManager {
     int walletId,
     Transaction transaction,
   ) {
-    final utxoIds = transaction.inputs
-        .map((input) => makeUtxoId(input.transactionHash, input.index))
-        .toList();
+    final utxoIds =
+        transaction.inputs.map((input) => makeUtxoId(input.transactionHash, input.index)).toList();
 
     _utxoRepository.deleteUtxoList(walletId, utxoIds);
   }
@@ -131,8 +129,7 @@ class UtxoManager {
   void printUtxoStateList(int walletId) {
     List<UtxoState> utxoStateList = _utxoRepository.getUtxoStateList(walletId);
 
-    Logger.log(
-        '---------------- utxoStateList: ${utxoStateList.length} ----------------');
+    Logger.log('---------------- utxoStateList: ${utxoStateList.length} ----------------');
     for (var utxo in utxoStateList) {
       Logger.log(
           '${utxo.transactionHash.substring(0, 10)}:${utxo.index} - ${utxo.status} isRbfable: ${utxo.isRbfable} isCpfpable: ${utxo.isCpfpable} amount: ${utxo.amount} spentByTransactionHash: ${utxo.spentByTransactionHash?.substring(0, 10)}');
@@ -140,10 +137,8 @@ class UtxoManager {
     Logger.log('---------------- utxoStateList end ----------------');
   }
 
-  void deleteUtxosByReplacedTransactionHashSet(
-      int walletId, Set<String> replacedTxHashs) {
-    _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
-        walletId, replacedTxHashs);
+  void deleteUtxosByReplacedTransactionHashSet(int walletId, Set<String> replacedTxHashs) {
+    _utxoRepository.deleteUtxosByReplacedTransactionHashSet(walletId, replacedTxHashs);
   }
 
   List<UtxoState> getIncomingUtxoList(int walletId) {
@@ -155,8 +150,8 @@ class UtxoManager {
   Future<void> createOutgoingUtxos(WalletListItemBase walletItem) async {
     try {
       // 1. 언컨펌 출금 트랜잭션 목록 조회
-      final unconfirmedTransactions = _transactionRepository
-          .getUnconfirmedTransactionRecordList(walletItem.id);
+      final unconfirmedTransactions =
+          _transactionRepository.getUnconfirmedTransactionRecordList(walletItem.id);
       final sentTransactions = unconfirmedTransactions
           .where((tx) => tx.transactionType == TransactionType.sent)
           .toList();
@@ -174,13 +169,11 @@ class UtxoManager {
 
       // 3. 각 트랜잭션에 대해 트랜잭션 상세 정보 조회
       for (final txRecord in sentTransactions) {
-        final txHex =
-            await _electrumService.getTransaction(txRecord.transactionHash);
+        final txHex = await _electrumService.getTransaction(txRecord.transactionHash);
         final transaction = Transaction.parse(txHex);
 
         // 4. 이전 트랜잭션 조회 (트랜잭션의 입력으로 사용된 트랜잭션)
-        final previousTxs =
-            await _electrumService.getPreviousTransactions(transaction);
+        final previousTxs = await _electrumService.getPreviousTransactions(transaction);
 
         if (previousTxs.isEmpty) {
           continue; // 이전 트랜잭션을 찾을 수 없으면 처리 불가
@@ -197,8 +190,8 @@ class UtxoManager {
 
           Transaction? previousTx;
           try {
-            previousTx = previousTxs.firstWhere(
-                (prevTx) => prevTx.transactionHash == input.transactionHash);
+            previousTx =
+                previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
           } catch (_) {
             continue;
           }
@@ -218,8 +211,7 @@ class UtxoManager {
             transactionHash: input.transactionHash,
             index: input.index,
             amount: previousOutput.amount,
-            derivationPath:
-                _addressRepository.getDerivationPath(walletItem.id, address),
+            derivationPath: _addressRepository.getDerivationPath(walletItem.id, address),
             blockHeight: 0,
             to: address,
             status: UtxoStatus.outgoing,

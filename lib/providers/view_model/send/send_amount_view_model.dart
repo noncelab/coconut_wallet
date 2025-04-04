@@ -18,8 +18,7 @@ class SendAmountViewModel extends ChangeNotifier {
   int? _errorIndex;
   bool _isUtxoUpdating = false;
 
-  SendAmountViewModel(
-      this._sendInfoProvider, this._walletProvider, this._isNetworkOn) {
+  SendAmountViewModel(this._sendInfoProvider, this._walletProvider, this._isNetworkOn) {
     _initBalances(); // _confirmedBalance, _incomingBalance
     _input = '';
     _isNextButtonEnabled = false;
@@ -122,8 +121,7 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   void _initBalances() {
-    List<UtxoState> utxos =
-        _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
+    List<UtxoState> utxos = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
 
     int unspentBalance = 0, incomingBalance = 0;
     for (UtxoState utxo in utxos) {
@@ -141,8 +139,7 @@ class SendAmountViewModel extends ChangeNotifier {
   void _onWalletUpdated(WalletUpdateInfo walletUpdateInfo) {
     if (walletUpdateInfo.utxo == UpdateStatus.syncing) {
       _isUtxoUpdating = true;
-    } else if (walletUpdateInfo.utxo == UpdateStatus.completed &&
-        _isUtxoUpdating) {
+    } else if (walletUpdateInfo.utxo == UpdateStatus.completed && _isUtxoUpdating) {
       _isUtxoUpdating = false;
       _initBalances();
       notifyListeners();
@@ -151,13 +148,11 @@ class SendAmountViewModel extends ChangeNotifier {
 
   // pending tx가 완료되었을 때 잔액을 업데이트 하기 위해
   void _addWalletUpdateListner() {
-    _walletProvider.addWalletUpdateListener(
-        _sendInfoProvider.walletId!, _onWalletUpdated);
+    _walletProvider.addWalletUpdateListener(_sendInfoProvider.walletId!, _onWalletUpdated);
   }
 
   void _removeWalletUpdateListener() {
-    _walletProvider.removeWalletUpdateListener(
-        _sendInfoProvider.walletId!, _onWalletUpdated);
+    _walletProvider.removeWalletUpdateListener(_sendInfoProvider.walletId!, _onWalletUpdated);
   }
 
   @override

@@ -28,15 +28,14 @@ class MigratorVer2_1_0 {
   List<Map<String, dynamic>>? existingWalletList;
 
   Future<bool> hasFailed() async {
-    String? failedDateTime =
-        await SecureStorageRepository().read(key: migrationFailedField);
+    String? failedDateTime = await SecureStorageRepository().read(key: migrationFailedField);
 
     return failedDateTime != null;
   }
 
   Future recordFailedDateTime() async {
-    await SecureStorageRepository().write(
-        key: migrationFailedField, value: DateTime.now().toIso8601String());
+    await SecureStorageRepository()
+        .write(key: migrationFailedField, value: DateTime.now().toIso8601String());
   }
 
   Future<bool> needToMigrate() async {
@@ -49,8 +48,7 @@ class MigratorVer2_1_0 {
       return false;
     }
 
-    String? walletListJsonString =
-        await SecureStorageRepository().read(key: walletListField);
+    String? walletListJsonString = await SecureStorageRepository().read(key: walletListField);
     if (walletListJsonString == null) return false;
 
     try {
@@ -72,8 +70,7 @@ class MigratorVer2_1_0 {
     return true;
   }
 
-  Future migrateWallets(
-      Realm realm, WalletDataManagerCryptography? cryptography) async {
+  Future migrateWallets(Realm realm, WalletDataManagerCryptography? cryptography) async {
     if (_isNeedToMigrate == null) {
       var need = await needToMigrate();
       if (!need) return;
@@ -87,19 +84,12 @@ class MigratorVer2_1_0 {
             ? wallet[descriptorField]
             : await cryptography.encrypt(wallet[descriptorField]);
 
-        migratedWallets.add(RealmWalletBase(
-            wallet[idField],
-            wallet[colorField],
-            wallet[iconField],
-            descriptor,
-            wallet[nameField],
-            wallet[typeField] ?? WalletType.singleSignature.name));
+        migratedWallets.add(RealmWalletBase(wallet[idField], wallet[colorField], wallet[iconField],
+            descriptor, wallet[nameField], wallet[typeField] ?? WalletType.singleSignature.name));
 
         if (wallet[typeField] == WalletType.multiSignature.name) {
-          migratedMultisigWallets.add(RealmMultisigWallet(
-              wallet[idField],
-              jsonEncode(wallet[signersField]),
-              wallet[requiredSignatureCountField],
+          migratedMultisigWallets.add(RealmMultisigWallet(wallet[idField],
+              jsonEncode(wallet[signersField]), wallet[requiredSignatureCountField],
               walletBase: migratedWallets.last));
         }
       }

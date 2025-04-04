@@ -29,8 +29,7 @@ class MultisigSigner {
 
   Map<String, dynamic> toJson() => _$MultisigSignerToJson(this);
 
-  factory MultisigSigner.fromJson(Map<String, dynamic> json) =>
-      _$MultisigSignerFromJson(json);
+  factory MultisigSigner.fromJson(Map<String, dynamic> json) => _$MultisigSignerFromJson(json);
 
   static String toJsonList(List<MultisigSigner> signers) {
     return jsonEncode(signers.map((signer) => signer.toJson()).toList());
@@ -38,8 +37,6 @@ class MultisigSigner {
 
   static List<MultisigSigner> fromJsonList(String jsonString) {
     final List<dynamic> jsonList = jsonDecode(jsonString);
-    return jsonList
-        .map((json) => MultisigSigner.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return jsonList.map((json) => MultisigSigner.fromJson(json as Map<String, dynamic>)).toList();
   }
 }

@@ -23,10 +23,8 @@ class TransactionRepository extends BaseRepository {
     if (transactions.isEmpty) return [];
     List<TransactionRecord> result = [];
 
-    final unconfirmed =
-        transactions.query('blockHeight = 0 SORT(createdAt DESC)');
-    final confirmed = transactions
-        .query('blockHeight != 0 SORT(timestamp DESC, createdAt DESC)');
+    final unconfirmed = transactions.query('blockHeight = 0 SORT(createdAt DESC)');
+    final confirmed = transactions.query('blockHeight != 0 SORT(timestamp DESC, createdAt DESC)');
 
     for (var t in unconfirmed) {
       result.add(mapRealmTransactionToTransaction(t));
@@ -61,10 +59,9 @@ class TransactionRepository extends BaseRepository {
   }
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
-  Result<TransactionRecord> updateTransactionMemo(
-      int walletId, String txHash, String memo) {
-    final transactions = realm.query<RealmTransaction>(
-        "walletId == '$walletId' AND transactionHash == '$txHash'");
+  Result<TransactionRecord> updateTransactionMemo(int walletId, String txHash, String memo) {
+    final transactions =
+        realm.query<RealmTransaction>("walletId == '$walletId' AND transactionHash == '$txHash'");
 
     return handleRealm<TransactionRecord>(
       () {
@@ -78,8 +75,7 @@ class TransactionRepository extends BaseRepository {
   }
 
   /// 일시적인 브로드캐스트 시간 기록
-  Future<void> recordTemporaryBroadcastTime(
-      String txHash, DateTime createdAt) async {
+  Future<void> recordTemporaryBroadcastTime(String txHash, DateTime createdAt) async {
     await realm.writeAsync(() {
       realm.add(TempBroadcastTimeRecord(txHash, createdAt));
     });
@@ -127,15 +123,13 @@ class TransactionRepository extends BaseRepository {
       }
 
       // 3. 지갑의 최신 트랜잭션 상태 업데이트
-      realmWalletBase.isLatestTxBlockHeightZero =
-          fetchedTxMap.values.any((tx) => tx.height == 0);
+      realmWalletBase.isLatestTxBlockHeightZero = fetchedTxMap.values.any((tx) => tx.height == 0);
     });
   }
 
   /// 확인된 트랜잭션 해시 목록 가져오기
   Set<String> getExistingConfirmedTxHashes(int walletId) {
-    final realmTxs = realm
-        .query<RealmTransaction>('walletId == $walletId AND blockHeight > 0');
+    final realmTxs = realm.query<RealmTransaction>('walletId == $walletId AND blockHeight > 0');
     return realmTxs.map((tx) => tx.transactionHash).toSet();
   }
 
@@ -204,8 +198,7 @@ class TransactionRepository extends BaseRepository {
   }
 
   /// 특정 트랜잭션 조회
-  TransactionRecord? getTransactionRecord(
-      int walletId, String transactionHash) {
+  TransactionRecord? getTransactionRecord(int walletId, String transactionHash) {
     final realmTransaction = realm.query<RealmTransaction>(
       r'walletId == $0 AND transactionHash == $1',
       [walletId, transactionHash],
@@ -220,8 +213,7 @@ class TransactionRepository extends BaseRepository {
       final realmCpfpHistory = getCpfpHistory(walletId, transactionHash);
 
       return mapRealmTransactionToTransaction(realmTransaction,
-          realmRbfHistoryList: realmRbfHistoryList,
-          realmCpfpHistory: realmCpfpHistory);
+          realmRbfHistoryList: realmRbfHistoryList, realmCpfpHistory: realmCpfpHistory);
     }
 
     return mapRealmTransactionToTransaction(realmTransaction);
@@ -250,8 +242,7 @@ class TransactionRepository extends BaseRepository {
       // 중복 체크를 위한 기존 ID 목록 생성
       final existingIds = <int>{};
       final idsToAdd = rbfHistoryList.map((dto) => dto.id).toList();
-      final existingRbfHistory =
-          realm.query<RealmRbfHistory>(r'id IN $0', [idsToAdd]);
+      final existingRbfHistory = realm.query<RealmRbfHistory>(r'id IN $0', [idsToAdd]);
 
       if (existingRbfHistory.isNotEmpty) {
         existingIds.addAll(existingRbfHistory.map((rbf) => rbf.id));
@@ -284,8 +275,7 @@ class TransactionRepository extends BaseRepository {
     // 중복 체크를 위한 기존 ID 목록 생성
     final existingIds = <int>{};
     final idsToAdd = cpfpHistoryList.map((dto) => dto.id).toList();
-    final existingCpfpHistory =
-        realm.query<RealmCpfpHistory>(r'id IN $0', [idsToAdd]);
+    final existingCpfpHistory = realm.query<RealmCpfpHistory>(r'id IN $0', [idsToAdd]);
 
     if (existingCpfpHistory.isNotEmpty) {
       existingIds.addAll(existingCpfpHistory.map((cpfp) => cpfp.id));
@@ -305,8 +295,7 @@ class TransactionRepository extends BaseRepository {
     }
   }
 
-  List<RealmRbfHistory> getRbfHistoryList(
-      int walletId, String transactionHash) {
+  List<RealmRbfHistory> getRbfHistoryList(int walletId, String transactionHash) {
     final realmRbfHistory = realm.query<RealmRbfHistory>(
       r'walletId == $0 AND transactionHash == $1',
       [walletId, transactionHash],
@@ -402,8 +391,7 @@ class TransactionRepository extends BaseRepository {
 
     realm.write(() {
       for (final realmTx in txListToReplce) {
-        realmTx.replaceByTransactionHash =
-            spentToOriginalTxMap[realmTx.transactionHash];
+        realmTx.replaceByTransactionHash = spentToOriginalTxMap[realmTx.transactionHash];
       }
     });
   }

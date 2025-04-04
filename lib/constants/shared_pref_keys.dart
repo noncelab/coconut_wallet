@@ -4,8 +4,7 @@ class SharedPrefKeys {
   static const String kCanCheckBiometrics = "CAN_CHECK_BIOMETRICS";
   static const String kIsSetBiometrics = "IS_SET_BIOMETRICS";
   static const String kIsSetPin = "IS_SET_PIN";
-  static const String kNextVersionUpdateDialogDate =
-      "NEXT_VERSION_UPDATE_DIALOG_DATE";
+  static const String kNextVersionUpdateDialogDate = "NEXT_VERSION_UPDATE_DIALOG_DATE";
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';
   static const String kWalletCount = 'WALLET_COUNT';
@@ -13,6 +12,5 @@ class SharedPrefKeys {
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';
   static const String kHaveReviewed = 'HAVE_REVIEWED';
-  static const String kAppRunCountAfterRejectReview =
-      'APP_RUN_COUNT_AFTER_REJECT_REVIEW';
+  static const String kAppRunCountAfterRejectReview = 'APP_RUN_COUNT_AFTER_REJECT_REVIEW';
 }

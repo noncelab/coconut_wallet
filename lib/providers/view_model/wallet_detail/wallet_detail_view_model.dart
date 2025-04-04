@@ -102,8 +102,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool get isRequesting => _isRequesting;
 
   String get derivationPath => _receiveAddress.derivationPath;
-  String get receiveAddressIndex =>
-      _receiveAddress.derivationPath.split('/').last;
+  String get receiveAddressIndex => _receiveAddress.derivationPath.split('/').last;
   String get receiveAddress => _receiveAddress.address;
 
   List<TransactionRecord> get txList => _txProvider.txList;
@@ -130,14 +129,12 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _addChangeListener() {
-    _walletProvider.addWalletUpdateListener(
-        _walletId, _onWalletUpdateInfoChanged);
+    _walletProvider.addWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
   }
 
   void _updateBitcoinPrice() {
     _bitcoinPriceKrw = _upbitConnectModel.bitcoinPriceKrw ?? 0;
-    _bitcoinPriceKrwInString =
-        _upbitConnectModel.getFiatPrice(_balance, CurrencyCode.KRW);
+    _bitcoinPriceKrwInString = _upbitConnectModel.getFiatPrice(_balance, CurrencyCode.KRW);
     notifyListeners();
   }
 
@@ -208,8 +205,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _walletProvider.removeWalletUpdateListener(
-        _walletId, _onWalletUpdateInfoChanged);
+    _walletProvider.removeWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
     _upbitConnectModel.removeListener(_updateBitcoinPrice);
     super.dispose();
   }
@@ -220,18 +216,17 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> requestTestBitcoin(String address, double requestAmount,
-      Function(bool, String) onResult) async {
+  Future<void> requestTestBitcoin(
+      String address, double requestAmount, Function(bool, String) onResult) async {
     _isRequesting = true;
     notifyListeners();
     try {
-      final response = await _faucetService
-          .getTestCoin(FaucetRequest(address: address, amount: requestAmount));
+      final response =
+          await _faucetService.getTestCoin(FaucetRequest(address: address, amount: requestAmount));
       if (response is FaucetResponse) {
         onResult(true, '테스트 비트코인을 요청했어요. 잠시만 기다려 주세요.');
         _updateFaucetRecord();
-      } else if (response is DefaultErrorResponse &&
-          response.error == 'TOO_MANY_REQUEST_FAUCET') {
+      } else if (response is DefaultErrorResponse && response.error == 'TOO_MANY_REQUEST_FAUCET') {
         onResult(false, '해당 주소로 이미 요청했습니다. 입금까지 최대 5분이 걸릴 수 있습니다.');
       } else {
         onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
@@ -272,10 +267,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _initFaucetRecord() {
-    _faucetRecord = FaucetRecord(
-        id: _walletId,
-        dateTime: DateTime.now().millisecondsSinceEpoch,
-        count: 0);
+    _faucetRecord =
+        FaucetRecord(id: _walletId, dateTime: DateTime.now().millisecondsSinceEpoch, count: 0);
   }
 
   void _saveFaucetRecordToSharedPrefs() {
@@ -288,8 +281,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
     int count = _faucetRecord.count;
     int dateTime = DateTime.now().millisecondsSinceEpoch;
-    _faucetRecord =
-        _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
+    _faucetRecord = _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
     _saveFaucetRecordToSharedPrefs();
   }
   // <------ Faucet 메소드 끝

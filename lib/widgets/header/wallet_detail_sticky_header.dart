@@ -25,8 +25,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
   }) : super(key: widgetKey);
 
   @override
-  State<WalletDetailStickyHeader> createState() =>
-      _WalletDetailStickyHeaderState();
+  State<WalletDetailStickyHeader> createState() => _WalletDetailStickyHeaderState();
 }
 
 class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
@@ -59,17 +58,14 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                             prevValue: widget.animatedBalanceData.previous,
                             value: widget.animatedBalanceData.current,
                             isBtcUnit: widget.currentUnit == Unit.btc,
-                            textStyle:
-                                CoconutTypography.body1_16_NumberBold.merge(
+                            textStyle: CoconutTypography.body1_16_NumberBold.merge(
                               const TextStyle(
                                 fontSize: 18,
                               ),
                             ),
                           ),
                           Text(
-                            widget.currentUnit == Unit.btc
-                                ? ' ${t.btc}'
-                                : ' ${t.sats}',
+                            widget.currentUnit == Unit.btc ? ' ${t.btc}' : ' ${t.sats}',
                             style: CoconutTypography.body2_14_Number,
                           ),
                         ],
@@ -135,8 +131,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                     children: [
                       Container(
                         width: MediaQuery.sizeOf(context).width,
-                        padding: const EdgeInsets.only(
-                            top: 10, left: 16, right: 16, bottom: 9),
+                        padding: const EdgeInsets.only(top: 10, left: 16, right: 16, bottom: 9),
                         decoration: const BoxDecoration(
                           color: CoconutColors.black,
                           boxShadow: [

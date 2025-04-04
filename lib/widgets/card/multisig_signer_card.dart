@@ -69,9 +69,7 @@ class MultisigSignerCard extends StatelessWidget {
                             ? CustomIcons.getPathByIndex(iconIndex)
                             : 'assets/svg/download.svg',
                         colorFilter: ColorFilter.mode(
-                          isInnerWallet
-                              ? ColorPalette[colorIndex]
-                              : ColorPalette[8],
+                          isInnerWallet ? ColorPalette[colorIndex] : ColorPalette[8],
                           BlendMode.srcIn,
                         ),
                         width: isInnerWallet ? 20 : 15,

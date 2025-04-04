@@ -9,11 +9,7 @@ class SvgIcon extends StatelessWidget {
   final int colorIndex;
   final bool enableBorder;
 
-  const SvgIcon(
-      {super.key,
-      required this.index,
-      this.colorIndex = -1,
-      this.enableBorder = true});
+  const SvgIcon({super.key, required this.index, this.colorIndex = -1, this.enableBorder = true});
 
   @override
   Widget build(BuildContext context) {

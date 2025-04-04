@@ -19,12 +19,10 @@ class CustomTagHorizontalSelector extends StatefulWidget {
   });
 
   @override
-  State<CustomTagHorizontalSelector> createState() =>
-      _CustomTagHorizontalSelectorState();
+  State<CustomTagHorizontalSelector> createState() => _CustomTagHorizontalSelectorState();
 }
 
-class _CustomTagHorizontalSelectorState
-    extends State<CustomTagHorizontalSelector> {
+class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelector> {
   final List<String> _tags = [t.all];
 
   @override
@@ -50,8 +48,7 @@ class _CustomTagHorizontalSelectorState
                 onTap: () {
                   widget.onSelectedTag.call(name);
                 },
-                child: _tagSelectorChip(
-                    index == 0 ? t.all : '#$name', widget.selectedName == name),
+                child: _tagSelectorChip(index == 0 ? t.all : '#$name', widget.selectedName == name),
               ),
               if (index == _tags.length) CoconutLayout.spacing_400w,
             ],

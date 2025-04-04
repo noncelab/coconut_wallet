@@ -21,12 +21,10 @@ class SendAddressAmountBodyForBatch extends StatefulWidget {
       required this.onRecipientsConfirmed});
 
   @override
-  State<SendAddressAmountBodyForBatch> createState() =>
-      _SendAddressAmountBodyForBatchState();
+  State<SendAddressAmountBodyForBatch> createState() => _SendAddressAmountBodyForBatchState();
 }
 
-class _SendAddressAmountBodyForBatchState
-    extends State<SendAddressAmountBodyForBatch> {
+class _SendAddressAmountBodyForBatchState extends State<SendAddressAmountBodyForBatch> {
   final ScrollController _scrollController = ScrollController();
   late final List<_RecipientInfo> _recipients;
   late final List<GlobalKey> _cardKeys;
@@ -35,10 +33,8 @@ class _SendAddressAmountBodyForBatchState
   // MAX 제한은 현재 없음
   bool get isCompleteButtonEnabled =>
       _recipients.length >= 2 &&
-      _recipients.every((r) =>
-          r.isAddressValid == true &&
-          r.isAddressDuplicated != true &&
-          r.amount.isNotEmpty);
+      _recipients.every(
+          (r) => r.isAddressValid == true && r.isAddressDuplicated != true && r.amount.isNotEmpty);
 
   @override
   void initState() {
@@ -47,8 +43,7 @@ class _SendAddressAmountBodyForBatchState
     _cardKeys = List.generate(_recipients.length, (_) => GlobalKey());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final RenderBox renderBox =
-          _cardKeys[0].currentContext?.findRenderObject() as RenderBox;
+      final RenderBox renderBox = _cardKeys[0].currentContext?.findRenderObject() as RenderBox;
       _addressAndAmountCardHeight = renderBox.size.height;
     });
   }
@@ -64,8 +59,7 @@ class _SendAddressAmountBodyForBatchState
             SliverSafeArea(
               bottom: false,
               minimum: const EdgeInsets.symmetric(
-                  horizontal: CoconutLayout.defaultPadding,
-                  vertical: Sizes.size28),
+                  horizontal: CoconutLayout.defaultPadding, vertical: Sizes.size28),
               sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                 return index != _recipients.length
@@ -87,22 +81,18 @@ class _SendAddressAmountBodyForBatchState
                           },
                           validateAddress: widget.validateAddress,
                           isRemovable: _recipients.length > 2,
-                          addressPlaceholder:
-                              t.send_address_screen.address_placeholder,
+                          addressPlaceholder: t.send_address_screen.address_placeholder,
                           amountPlaceholder:
                               '${t.send_address_screen.amount_placeholder} (${t.btc})',
-                          isAddressInvalid: _recipients[index].isAddressValid ==
-                                  false ||
+                          isAddressInvalid: _recipients[index].isAddressValid == false ||
                               _recipients[index].isAddressDuplicated == true,
                           isAmountDust: _recipients[index].isAmountDust == true,
                           isLastItem: index == _recipients.length - 1,
-                          addressErrorMessage:
-                              _recipients[index].isAddressDuplicated == true
-                                  ? t.errors.address_error.duplicated
-                                  : null,
+                          addressErrorMessage: _recipients[index].isAddressDuplicated == true
+                              ? t.errors.address_error.duplicated
+                              : null,
                           onFocusRequested: () async {
-                            await Future.delayed(
-                                const Duration(milliseconds: 500));
+                            await Future.delayed(const Duration(milliseconds: 500));
                             if (!mounted) return;
                             if (index == _recipients.length - 1) {
                               _scrollToBottom();
@@ -111,8 +101,7 @@ class _SendAddressAmountBodyForBatchState
                             _scrollToIndex(index);
                           },
                           onFocusAfterScanned: () async {
-                            await Future.delayed(
-                                const Duration(milliseconds: 700));
+                            await Future.delayed(const Duration(milliseconds: 700));
                             if (mounted) {
                               _scrollToBottom();
                             }
@@ -125,8 +114,7 @@ class _SendAddressAmountBodyForBatchState
                           onTap: _addAddressAndQuantityCard,
                           textStyle: CoconutTypography.body3_12,
                           brightness: Brightness.dark,
-                          padding: const EdgeInsets.only(
-                              top: Sizes.size24, bottom: Sizes.size96),
+                          padding: const EdgeInsets.only(top: Sizes.size24, bottom: Sizes.size96),
                         ),
                       ]);
               }, childCount: _recipients.length + 1)),
@@ -139,8 +127,7 @@ class _SendAddressAmountBodyForBatchState
           },
           text: t.complete,
           showGradient: true,
-          gradientPadding:
-              const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
+          gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
           isActive: isCompleteButtonEnabled,
           backgroundColor: CoconutColors.primary,
         ),
@@ -264,12 +251,10 @@ class _SendAddressAmountBodyForBatchState
   }
 
   void _updateIsAddressDuplication() {
-    final addressDuplicatedRecipients =
-        _recipients.where((r) => r.isAddressDuplicated == true);
+    final addressDuplicatedRecipients = _recipients.where((r) => r.isAddressDuplicated == true);
     for (var addressDuplicatedOne in addressDuplicatedRecipients) {
-      var sameAddressCount = _recipients
-          .where((r) => r.address == addressDuplicatedOne.address)
-          .length;
+      var sameAddressCount =
+          _recipients.where((r) => r.address == addressDuplicatedOne.address).length;
       if (sameAddressCount == 1) {
         addressDuplicatedOne.isAddressDuplicated = false;
       }
@@ -277,13 +262,11 @@ class _SendAddressAmountBodyForBatchState
   }
 
   void _onComplete(BuildContext context) {
-    double totalAmount = _recipients.fold(
-        0, (sum, recipient) => sum + (double.parse(recipient.amount)));
-    bool isAffordable =
-        widget.checkSendAvailable(UnitUtil.bitcoinToSatoshi(totalAmount));
+    double totalAmount =
+        _recipients.fold(0, (sum, recipient) => sum + (double.parse(recipient.amount)));
+    bool isAffordable = widget.checkSendAvailable(UnitUtil.bitcoinToSatoshi(totalAmount));
     if (!isAffordable) {
-      CustomToast.showToast(
-          context: context, text: t.errors.insufficient_balance);
+      CustomToast.showToast(context: context, text: t.errors.insufficient_balance);
     } else {
       widget.onRecipientsConfirmed(_recipients.fold({}, (result, recipient) {
         result[recipient.address] = double.parse(recipient.amount);

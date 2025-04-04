@@ -14,8 +14,7 @@ import '../constants/secure_keys.dart';
 
 class AuthProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  final SecureStorageRepository _secureStorageService =
-      SecureStorageRepository();
+  final SecureStorageRepository _secureStorageService = SecureStorageRepository();
   final LocalAuthentication _auth = LocalAuthentication();
 
   /// 사용자 생체인증 on/off 여부
@@ -32,8 +31,7 @@ class AuthProvider extends ChangeNotifier {
 
   AuthProvider() {
     _isSetBiometrics = _sharedPrefs.getBool(SharedPrefKeys.kIsSetBiometrics);
-    _canCheckBiometrics =
-        _sharedPrefs.getBool(SharedPrefKeys.kCanCheckBiometrics);
+    _canCheckBiometrics = _sharedPrefs.getBool(SharedPrefKeys.kCanCheckBiometrics);
     _isSetPin = _sharedPrefs.getBool(SharedPrefKeys.kIsSetPin);
   }
 
@@ -44,10 +42,8 @@ class AuthProvider extends ChangeNotifier {
     try {
       final isEnabledBiometrics = await _auth.canCheckBiometrics;
       availableBiometrics = await _auth.getAvailableBiometrics();
-      _canCheckBiometrics =
-          isEnabledBiometrics && availableBiometrics.isNotEmpty;
-      _sharedPrefs.setBool(
-          SharedPrefKeys.kCanCheckBiometrics, _canCheckBiometrics);
+      _canCheckBiometrics = isEnabledBiometrics && availableBiometrics.isNotEmpty;
+      _sharedPrefs.setBool(SharedPrefKeys.kCanCheckBiometrics, _canCheckBiometrics);
 
       if (!_canCheckBiometrics) {
         _isSetBiometrics = false;
@@ -97,8 +93,7 @@ class AuthProvider extends ChangeNotifier {
 
   /// 비밀번호 저장
   Future<void> savePinSet(String hashedPin) async {
-    await _secureStorageService.write(
-        key: kSecureStoragePinKey, value: hashedPin);
+    await _secureStorageService.write(key: kSecureStoragePinKey, value: hashedPin);
     _isSetPin = true;
     _sharedPrefs.setBool(SharedPrefKeys.kIsSetPin, _isSetPin);
     notifyListeners();
@@ -117,8 +112,7 @@ class AuthProvider extends ChangeNotifier {
   /// 비밀번호 검증
   Future<bool> verifyPin(String inputPin) async {
     String hashedInput = hashString(inputPin);
-    final savedPin =
-        await _secureStorageService.read(key: kSecureStoragePinKey);
+    final savedPin = await _secureStorageService.read(key: kSecureStoragePinKey);
     return savedPin == hashedInput;
   }
 
@@ -134,11 +128,9 @@ class AuthProvider extends ChangeNotifier {
 
   List<String> getShuffledNumberPad({bool isSettings = false}) {
     final random = Random();
-    var randomNumberPad =
-        List<String>.generate(10, (index) => index.toString());
+    var randomNumberPad = List<String>.generate(10, (index) => index.toString());
     randomNumberPad.shuffle(random);
-    randomNumberPad.insert(randomNumberPad.length - 1,
-        !isSettings && isSetBiometrics ? 'bio' : '');
+    randomNumberPad.insert(randomNumberPad.length - 1, !isSettings && isSetBiometrics ? 'bio' : '');
     randomNumberPad.add('<');
     return randomNumberPad;
   }

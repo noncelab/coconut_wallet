@@ -27,9 +27,8 @@ class SendInfoProvider {
   Transaction? get transaction => _transaction;
   String? get txWaitingForSign => _txWaitingForSign;
   String? get signedPsbt => _signedPsbtBase64Encoded;
-  Map<String, double>? get recipientsForBatch => _recipientsForBatch == null
-      ? null
-      : UnmodifiableMapView(_recipientsForBatch!);
+  Map<String, double>? get recipientsForBatch =>
+      _recipientsForBatch == null ? null : UnmodifiableMapView(_recipientsForBatch!);
   FeeBumpingType? get feeBumpingType => _feeBumpingType;
 
   void setWalletId(int id) {
@@ -77,9 +76,8 @@ class SendInfoProvider {
   }
 
   void clear() {
-    _walletId = _recipientAddress = _amount = _estimatedFee = _isMaxMode =
-        _isMultisig = _transaction = _txWaitingForSign =
-            _signedPsbtBase64Encoded =
-                _recipientsForBatch = _feeBumpingType = null;
+    _walletId = _recipientAddress = _amount = _estimatedFee = _isMaxMode = _isMultisig =
+        _transaction = _txWaitingForSign =
+            _signedPsbtBase64Encoded = _recipientsForBatch = _feeBumpingType = null;
   }
 }

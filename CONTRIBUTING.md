@@ -23,7 +23,7 @@
   `pre-commit script`
   ```bash
   #!/bin/bash
-  dart format . --set-exit-if-changed
+  dart format . --set-exit-if-changed --line-length=100
   if [[ $? -ne 0 ]]; then
     echo "코드 포맷팅에 문제가 있습니다. 다시 커밋해 주세요."
     exit 1

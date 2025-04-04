@@ -15,9 +15,7 @@ class ElectrumUtil {
     Map<int, String> scripts = {};
 
     try {
-      for (int derivationIndex = startIndex;
-          derivationIndex < endIndex;
-          derivationIndex++) {
+      for (int derivationIndex = startIndex; derivationIndex < endIndex; derivationIndex++) {
         String address = wallet.getAddress(derivationIndex, isChange: isChange);
         scripts[derivationIndex] = address;
       }
@@ -43,8 +41,7 @@ class ElectrumUtil {
     return hex.encode(hex.decode(scriptHash).reversed.toList());
   }
 
-  static String addressToReversedScriptHash(
-      AddressType addressType, String address) {
+  static String addressToReversedScriptHash(AddressType addressType, String address) {
     String script = getScriptForAddress(addressType, address);
     return scriptToReversedHash(script);
   }

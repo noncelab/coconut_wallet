@@ -26,9 +26,7 @@ class UnderlineButtonItemCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(children: [
-            Text(label,
-                style: CoconutTypography.body2_14
-                    .copyWith(color: CoconutColors.gray400)),
+            Text(label, style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray400)),
             const SizedBox(width: 4),
             if (underlineButtonLabel != null)
               Expanded(

@@ -36,19 +36,16 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider<ConnectivityProvider,
-        SendAddressViewModel>(
+    return ChangeNotifierProxyProvider<ConnectivityProvider, SendAddressViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
-        Logger.log(
-            '--> connectivityProvider: ${connectivityProvider.isNetworkOn}');
+        Logger.log('--> connectivityProvider: ${connectivityProvider.isNetworkOn}');
         if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
           viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
         }
         return viewModel;
       },
-      child:
-          Consumer<SendAddressViewModel>(builder: (context, viewModel, child) {
+      child: Consumer<SendAddressViewModel>(builder: (context, viewModel, child) {
         return GestureDetector(
           onTap: _isBatchMode
               ? () {
@@ -62,18 +59,15 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                   context: context,
                   actionButtonList: [
                     IconButton(
-                      icon: SvgPicture.asset(_isBatchMode
-                          ? 'assets/svg/user.svg'
-                          : 'assets/svg/users-group.svg'),
+                      icon: SvgPicture.asset(
+                          _isBatchMode ? 'assets/svg/user.svg' : 'assets/svg/users-group.svg'),
                       onPressed: _changeIsBatchMode,
                     ),
                     IconButton(
                       iconSize: 24,
                       icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
                           colorFilter: ColorFilter.mode(
-                            _isBatchMode
-                                ? CoconutColors.gray800
-                                : CoconutColors.white,
+                            _isBatchMode ? CoconutColors.gray800 : CoconutColors.white,
                             BlendMode.srcIn,
                           )),
                       onPressed: _isBatchMode
@@ -102,8 +96,8 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                       )
                     : SendAddressAmountBodyForBatch(
                         validateAddress: _viewModel.validateAddress,
-                        checkSendAvailable: (int totalSendAmount) => viewModel
-                            .isSendAmountValid(widget.id, totalSendAmount),
+                        checkSendAvailable: (int totalSendAmount) =>
+                            viewModel.isSendAmountValid(widget.id, totalSendAmount),
                         onRecipientsConfirmed: _onRecipientsConfirmed),
               )),
         );
@@ -202,12 +196,10 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     if (_viewModel.address == null) return;
 
     if (_viewModel.isNetworkOn) {
-      _viewModel.saveWalletIdAndRecipientAddress(
-          widget.id, _viewModel.address!);
+      _viewModel.saveWalletIdAndRecipientAddress(widget.id, _viewModel.address!);
       _goNext();
     } else {
-      CustomToast.showWarningToast(
-          context: context, text: ErrorCodes.networkError.message);
+      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
     }
   }
 
@@ -242,8 +234,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     if (_viewModel.isNetworkOn) {
       Navigator.pushNamed(context, "/fee-selection");
     } else {
-      CustomToast.showWarningToast(
-          context: context, text: ErrorCodes.networkError.message);
+      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
     }
   }
 }

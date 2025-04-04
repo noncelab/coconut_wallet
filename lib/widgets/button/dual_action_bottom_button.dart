@@ -35,17 +35,11 @@ class _DualActionBottomButtonState extends State<DualActionBottomButton> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          ActionIconButton(
-              onPressed: widget.onPressed1,
-              icon: widget.icon1,
-              text: widget.text1),
+          ActionIconButton(onPressed: widget.onPressed1, icon: widget.icon1, text: widget.text1),
           const SizedBox(
             width: 10,
           ),
-          ActionIconButton(
-              onPressed: widget.onPressed2,
-              icon: widget.icon2,
-              text: widget.text2),
+          ActionIconButton(onPressed: widget.onPressed2, icon: widget.icon2, text: widget.text2),
         ],
       ),
     );
@@ -66,8 +60,7 @@ class ActionIconButton extends StatelessWidget {
   final String text;
   final Widget? icon;
 
-  const ActionIconButton(
-      {super.key, required this.onPressed, required this.text, this.icon});
+  const ActionIconButton({super.key, required this.onPressed, required this.text, this.icon});
 
   @override
   Widget build(BuildContext context) {

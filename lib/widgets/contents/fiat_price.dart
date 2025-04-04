@@ -24,11 +24,10 @@ class _FiatPriceState extends State<FiatPrice> {
   @override
   Widget build(BuildContext context) {
     return Consumer<UpbitConnectModel>(builder: (context, viewModel, child) {
-      final defaultStyle = CoconutTypography.body2_14_Number
-          .copyWith(color: CoconutColors.gray500);
-      final appliedStyle = widget.textStyle
-              ?.copyWith(color: widget.textColor ?? defaultStyle.color) ??
-          defaultStyle.copyWith(color: widget.textColor ?? defaultStyle.color);
+      final defaultStyle = CoconutTypography.body2_14_Number.copyWith(color: CoconutColors.gray500);
+      final appliedStyle =
+          widget.textStyle?.copyWith(color: widget.textColor ?? defaultStyle.color) ??
+              defaultStyle.copyWith(color: widget.textColor ?? defaultStyle.color);
 
       return Text(
         viewModel.getFiatPrice(widget.satoshiAmount, CurrencyCode.KRW),

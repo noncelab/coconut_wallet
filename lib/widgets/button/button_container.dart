@@ -11,7 +11,6 @@ class ButtonContainer extends StatelessWidget {
     return Container(
         decoration: BoxDecorations.boxDecoration,
         child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: child));
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24), child: child));
   }
 }

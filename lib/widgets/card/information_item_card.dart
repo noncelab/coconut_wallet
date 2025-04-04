@@ -42,8 +42,7 @@ class InformationItemCard extends StatelessWidget {
                             final item = entry.value;
                             final isLast = index == value!.length - 1;
                             return Padding(
-                              padding: EdgeInsets.only(
-                                  bottom: isLast ? 0 : Sizes.size4),
+                              padding: EdgeInsets.only(bottom: isLast ? 0 : Sizes.size4),
                               child: Text(item,
                                   textAlign: TextAlign.right,
                                   style: Styles.body2.merge(

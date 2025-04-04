@@ -95,10 +95,9 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                           text: t.status_receiving,
                           backgroundColor: CoconutColors.gray500,
                           borderColor: CoconutColors.gray500,
-                          textStyle: CoconutTypography.caption_10_Bold
-                              .setColor(CoconutColors.black),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                          textStyle:
+                              CoconutTypography.caption_10_Bold.setColor(CoconutColors.black),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         ),
                     ],
                   ),
@@ -137,12 +136,12 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                               minWidth: 40,
                               color: CoconutColors.backgroundColorPaletteDark[
                                   widget.utxoTags?[index].colorIndex ?? 0],
-                              borderColor: CoconutColors.colorPalette[
-                                  widget.utxoTags?[index].colorIndex ?? 0],
+                              borderColor: CoconutColors
+                                  .colorPalette[widget.utxoTags?[index].colorIndex ?? 0],
                               label: '#${widget.utxoTags?[index].name ?? ''}',
                               labelSize: 12,
-                              labelColor: CoconutColors.colorPalette[
-                                  widget.utxoTags?[index].colorIndex ?? 0],
+                              labelColor: CoconutColors
+                                  .colorPalette[widget.utxoTags?[index].colorIndex ?? 0],
                             ),
                           ),
                         ),
@@ -155,9 +154,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
             SvgPicture.asset(
               'assets/svg/circle-check.svg',
               colorFilter: ColorFilter.mode(
-                  widget.isSelected
-                      ? MyColors.primary
-                      : MyColors.transparentWhite_40,
+                  widget.isSelected ? MyColors.primary : MyColors.transparentWhite_40,
                   BlendMode.srcIn),
             ),
           ],

@@ -14,8 +14,7 @@ class AnimatedQRDataHandler {
       if (end > length) {
         end = length;
       }
-      result
-          .add('$psbtUrType/$index-$splitCount/${data.substring(start, end)}');
+      result.add('$psbtUrType/$index-$splitCount/${data.substring(start, end)}');
       start = end;
       end += 300;
       index += 1;

@@ -51,8 +51,7 @@ class UtxoListViewModel extends ChangeNotifier {
     _prevBalance = balance;
   }
 
-  int get balance =>
-      _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
+  int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
   int get prevBalance => _prevBalance;
   int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
   bool? get isNetworkOn => _connectProvider.isNetworkOn;
@@ -74,18 +73,15 @@ class UtxoListViewModel extends ChangeNotifier {
   WalletType get walletType => _walletListBaseItem.walletType;
 
   bool get isSyncing =>
-      _prevUpdateStatus == UpdateStatus.waiting ||
-      _prevUpdateStatus == UpdateStatus.syncing;
+      _prevUpdateStatus == UpdateStatus.waiting || _prevUpdateStatus == UpdateStatus.syncing;
 
   void _addChangeListener() {
-    _walletProvider.addWalletUpdateListener(
-        _walletId, _onWalletUpdateInfoChanged);
+    _walletProvider.addWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
   }
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
     Logger.log('${DateTime.now()}--> 지갑$_walletId 업데이트 체크 (UTXO)');
-    if (_prevUpdateStatus != updateInfo.utxo &&
-        updateInfo.utxo == UpdateStatus.completed) {
+    if (_prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == UpdateStatus.completed) {
       Logger.log('_getUtxoAndTagList();');
 
       // 하나의 트랜잭션으로 여러 스크립트에 대한 이벤트가 발생할 경우에 오류 발생.
@@ -180,8 +176,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _walletProvider.removeWalletUpdateListener(
-        _walletId, _onWalletUpdateInfoChanged);
+    _walletProvider.removeWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
     super.dispose();
   }
 }

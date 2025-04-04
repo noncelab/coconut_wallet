@@ -26,9 +26,8 @@ class CustomAppbarButton extends StatelessWidget {
           border: Border.all(
             color: isActive ? Colors.transparent : MyColors.transparentWhite_20,
           ),
-          color: isActive
-              ? (isActivePrimaryColor ? MyColors.primary : MyColors.white)
-              : MyColors.grey,
+          color:
+              isActive ? (isActivePrimaryColor ? MyColors.primary : MyColors.white) : MyColors.grey,
         ),
         child: Center(
           child: Text(

@@ -37,8 +37,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
   void _shufflePinNumbers() {
     setState(() {
-      _shuffledPinNumbers =
-          _authProvider.getShuffledNumberPad(isSettings: true);
+      _shuffledPinNumbers = _authProvider.getShuffledNumberPad(isSettings: true);
     });
   }
 
@@ -48,8 +47,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       barrierDismissible: false,
       barrierColor: MyColors.transparentBlack_50,
       transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (BuildContext buildContext, Animation animation,
-          Animation secondaryAnimation) {
+      pageBuilder: (BuildContext buildContext, Animation animation, Animation secondaryAnimation) {
         return AnimatedDialog(
           context: buildContext,
           lottieAddress: 'assets/lottie/pin-locked-success.json',
@@ -71,8 +69,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     );
   }
 
-  void returnToBackSequence(String message,
-      {bool isError = false, bool firstSequence = false}) {
+  void returnToBackSequence(String message, {bool isError = false, bool firstSequence = false}) {
     setState(() {
       errorMessage = message;
       pinConfirm = '';
@@ -115,13 +112,11 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           bool isAlreadyUsingPin = await _comparePin(pin);
 
           if (isAlreadyUsingPin) {
-            returnToBackSequence(t.errors.pin_setting_error.already_in_use,
-                firstSequence: true);
+            returnToBackSequence(t.errors.pin_setting_error.already_in_use, firstSequence: true);
             return;
           }
         } catch (error) {
-          returnToBackSequence(t.errors.pin_setting_error.process_failed,
-              isError: true);
+          returnToBackSequence(t.errors.pin_setting_error.process_failed, isError: true);
           return;
         }
         setState(() {
@@ -159,8 +154,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         await Provider.of<WalletProvider>(context, listen: false)
             .encryptWalletSecureData(hashedPin)
             .catchError((e) {
-          returnToBackSequence(t.errors.pin_setting_error.save_failed,
-              isError: true);
+          returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true);
         });
 
         _authProvider.savePinSet(hashedPin).then((_) async {
@@ -169,8 +163,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           Navigator.pop(context);
           Navigator.pop(context);
         }).catchError((e) {
-          returnToBackSequence(t.errors.pin_setting_error.save_failed,
-              isError: true);
+          returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true);
         });
       }
     }
@@ -179,9 +172,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   @override
   Widget build(BuildContext context) {
     return PinInputPad(
-      title: step == 0
-          ? t.pin_setting_screen.new_password
-          : t.pin_setting_screen.enter_again,
+      title: step == 0 ? t.pin_setting_screen.new_password : t.pin_setting_screen.enter_again,
       pin: step == 0 ? pin : pinConfirm,
       errorMessage: errorMessage,
       onKeyTap: _onKeyTap,

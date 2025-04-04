@@ -14,8 +14,7 @@ class UtxoRepository extends BaseRepository {
   Result<List<UtxoTag>> getUtxoTags(int walletId) {
     return handleRealm<List<UtxoTag>>(
       () {
-        final tags = realm
-            .query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
+        final tags = realm.query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
 
         return tags.map(mapRealmUtxoTagToUtxoTag).toList();
       },
@@ -35,8 +34,9 @@ class UtxoRepository extends BaseRepository {
 
             int previousCount = tags[i].utxoIdList.length;
 
-            tags[i].utxoIdList.removeWhere((utxoId) =>
-                usedUtxoIds.any((targetUtxoId) => targetUtxoId == utxoId));
+            tags[i]
+                .utxoIdList
+                .removeWhere((utxoId) => usedUtxoIds.any((targetUtxoId) => targetUtxoId == utxoId));
 
             if (newUtxoIds.isNotEmpty) {
               bool needToMove = previousCount > tags[i].utxoIdList.length;
@@ -53,9 +53,7 @@ class UtxoRepository extends BaseRepository {
   /// walletId 로 조회된 태그 목록에서 utxoId($txHash$Index)를 포함하고 있는 태그 목록 조회
   Result<List<UtxoTag>> getUtxoTagsByTxHash(int walletId, String utxoId) {
     return handleRealm<List<UtxoTag>>(() {
-      final tags = realm
-          .all<RealmUtxoTag>()
-          .query("walletId == '$walletId' SORT(createAt DESC)");
+      final tags = realm.all<RealmUtxoTag>().query("walletId == '$walletId' SORT(createAt DESC)");
 
       return tags
           .where((tag) => tag.utxoIdList.contains(utxoId))
@@ -65,8 +63,7 @@ class UtxoRepository extends BaseRepository {
   }
 
   /// 태그 추가
-  Result<UtxoTag> createUtxoTag(
-      String id, int walletId, String name, int colorIndex) {
+  Result<UtxoTag> createUtxoTag(String id, int walletId, String name, int colorIndex) {
     return handleRealm<UtxoTag>(() {
       final tag = RealmUtxoTag(id, walletId, name, colorIndex, DateTime.now());
       realm.write(() {
@@ -119,8 +116,8 @@ class UtxoRepository extends BaseRepository {
   /// - [utxoId] Utxo Id
   /// - [newUtxoTags] 추가할 UtxoTag 목록
   /// - [selectedTagNames] 선택된 태그명 목록
-  Result<bool> createTagAndUpdateTagsOfUtxo(int walletId, String utxoId,
-      List<UtxoTag> newUtxoTags, List<String> selectedTagNames) {
+  Result<bool> createTagAndUpdateTagsOfUtxo(
+      int walletId, String utxoId, List<UtxoTag> newUtxoTags, List<String> selectedTagNames) {
     return handleRealm<bool>(
       () {
         realm.write(() {
@@ -285,8 +282,7 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  void deleteUtxosByReplacedTransactionHashSet(
-      int walletId, Set<String> replacedTxHashSet) {
+  void deleteUtxosByReplacedTransactionHashSet(int walletId, Set<String> replacedTxHashSet) {
     final utxosToDelete = realm.query<RealmUtxo>(
       r'walletId == $0 AND transactionHash IN $1',
       [walletId, replacedTxHashSet],

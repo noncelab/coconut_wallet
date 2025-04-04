@@ -46,8 +46,7 @@ abstract class MyColors {
 
   static const warningRed = Color.fromRGBO(218, 65, 92, 1.0); // color6Red
   static const transparentWarningRed = Color.fromRGBO(218, 65, 92, 0.7);
-  static const backgroundActive =
-      Color.fromRGBO(145, 179, 242, 0.67); // color4Blue
+  static const backgroundActive = Color.fromRGBO(145, 179, 242, 0.67); // color4Blue
 
   static const primary = Color.fromRGBO(222, 255, 88, 1);
   static const secondary = Color.fromRGBO(0, 196, 255, 1.0);
@@ -149,10 +148,7 @@ abstract class Styles {
       letterSpacing: 0.2);
 
   static const TextStyle appbarTitle = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.white,
-      fontSize: 18,
-      fontStyle: FontStyle.normal);
+      fontFamily: _fontText, color: MyColors.white, fontSize: 18, fontStyle: FontStyle.normal);
 
   static const TextStyle h3Number = TextStyle(
       fontFamily: _fontNumber,
@@ -358,16 +354,13 @@ abstract class Styles {
 
 abstract class MyBorder {
   static const double defaultRadiusValue = 24.0;
-  static final BorderRadius defaultRadius =
-      BorderRadius.circular(defaultRadiusValue);
+  static final BorderRadius defaultRadius = BorderRadius.circular(defaultRadiusValue);
   static final BorderRadius boxDecorationRadius = BorderRadius.circular(28);
 }
 
 class Paddings {
-  static const EdgeInsets container =
-      EdgeInsets.symmetric(horizontal: 10, vertical: 20);
-  static const EdgeInsets widgetContainer =
-      EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+  static const EdgeInsets container = EdgeInsets.symmetric(horizontal: 10, vertical: 20);
+  static const EdgeInsets widgetContainer = EdgeInsets.symmetric(horizontal: 20, vertical: 16);
 }
 
 class BoxDecorations {

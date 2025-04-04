@@ -34,9 +34,7 @@ class FeeSelectionItemCard extends StatelessWidget {
           color: MyColors.transparentWhite_06),
       child: CupertinoButton(
         padding: Paddings.widgetContainer,
-        onPressed: feeInfo.satsPerVb == null || feeInfo.estimatedFee == null
-            ? null
-            : onPressed,
+        onPressed: feeInfo.satsPerVb == null || feeInfo.estimatedFee == null ? null : onPressed,
         child: Row(
           children: [
             Column(
@@ -103,8 +101,8 @@ class FeeSelectionItemCard extends StatelessWidget {
                     ),
                     FiatPrice(
                         satoshiAmount: feeInfo.estimatedFee ?? 0,
-                        textStyle: CoconutTypography.body3_12_Number
-                            .setColor(CoconutColors.gray500)),
+                        textStyle:
+                            CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500)),
                   ],
                 ),
               ),

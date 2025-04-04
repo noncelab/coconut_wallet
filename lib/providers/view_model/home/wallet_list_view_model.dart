@@ -42,8 +42,7 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
-  bool get shouldShowLoadingIndicator =>
-      !_isFirstLoaded && _walletProvider.isAnyBalanceUpdating;
+  bool get shouldShowLoadingIndicator => !_isFirstLoaded && _walletProvider.isAnyBalanceUpdating;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
 
@@ -79,20 +78,17 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
 
     if (_walletSyncingState != walletProvider.walletSubscriptionState) {
-      if (walletProvider.walletSubscriptionState ==
-          WalletSubscriptionState.completed) {
+      if (walletProvider.walletSubscriptionState == WalletSubscriptionState.completed) {
         vibrateLight();
         if (_isFirstLoaded == false) {
           _isFirstLoaded = true;
         }
-      } else if (walletProvider.walletSubscriptionState ==
-          WalletSubscriptionState.failed) {
+      } else if (walletProvider.walletSubscriptionState == WalletSubscriptionState.failed) {
         vibrateLightDouble();
       }
       _walletSyncingState = walletProvider.walletSubscriptionState;
     } else if (_walletSyncingState == WalletSubscriptionState.completed &&
-        walletProvider.walletSubscriptionState ==
-            WalletSubscriptionState.completed &&
+        walletProvider.walletSubscriptionState == WalletSubscriptionState.completed &&
         _isFirstLoaded == false) {
       _isFirstLoaded = true;
     }
@@ -120,11 +116,8 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isWalletListChanged(
-      List<WalletListItemBase> oldList,
-      List<WalletListItemBase> newList,
-      Map<int, int> previousWalletBalance,
-      BalanceGetter getUpdatedBalance) {
+  bool isWalletListChanged(List<WalletListItemBase> oldList, List<WalletListItemBase> newList,
+      Map<int, int> previousWalletBalance, BalanceGetter getUpdatedBalance) {
     if (oldList.length != newList.length) return true;
 
     return oldList.asMap().entries.any((entry) {

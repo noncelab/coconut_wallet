@@ -13,12 +13,10 @@ class SecuritySelfCheckBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<SecuritySelfCheckBottomSheet> createState() =>
-      _SecuritySelfCheckBottomSheetState();
+  State<SecuritySelfCheckBottomSheet> createState() => _SecuritySelfCheckBottomSheetState();
 }
 
-class _SecuritySelfCheckBottomSheetState
-    extends State<SecuritySelfCheckBottomSheet> {
+class _SecuritySelfCheckBottomSheetState extends State<SecuritySelfCheckBottomSheet> {
   final List<ChecklistItem> _items = [
     ChecklistItem(title: t.security_self_check_bottom_sheet.check1),
     ChecklistItem(title: t.security_self_check_bottom_sheet.check2),
@@ -61,13 +59,12 @@ class _SecuritySelfCheckBottomSheetState
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     decoration: BoxDecorations.boxDecoration,
                     child: Text(
                       t.security_self_check_bottom_sheet.guidance,
-                      style: Styles.subLabel.merge(const TextStyle(
-                          fontWeight: FontWeight.w600, color: Colors.white)),
+                      style: Styles.subLabel
+                          .merge(const TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
                     )),
               ),
               const SizedBox(height: 16),
@@ -75,8 +72,7 @@ class _SecuritySelfCheckBottomSheetState
                 builder: (context, constraints) {
                   const double itemHeight = 40.0;
                   final double totalHeight = _items.length * itemHeight;
-                  final bool needScrolling =
-                      totalHeight > constraints.maxHeight;
+                  final bool needScrolling = totalHeight > constraints.maxHeight;
 
                   return needScrolling
                       ? SingleChildScrollView(

@@ -21,15 +21,13 @@ class PinCheckScreen extends StatefulWidget {
   State<PinCheckScreen> createState() => _PinCheckScreenState();
 }
 
-class _PinCheckScreenState extends State<PinCheckScreen>
-    with WidgetsBindingObserver {
+class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObserver {
   static const kMaxNumberOfAttempts = 3;
   late String pin;
   late String errorMessage;
   // when widget.appEntrance is true
   int attempt = 0;
-  final GlobalKey<PinInputPadState> _pinInputScreenKey =
-      GlobalKey<PinInputPadState>();
+  final GlobalKey<PinInputPadState> _pinInputScreenKey = GlobalKey<PinInputPadState>();
   late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
   bool _isPause = false;
@@ -103,8 +101,8 @@ class _PinCheckScreenState extends State<PinCheckScreen>
         if (widget.appEntrance) {
           attempt += 1;
           if (attempt < 3) {
-            errorMessage = t.errors.pin_check_error
-                .trial_count(count: kMaxNumberOfAttempts - attempt);
+            errorMessage =
+                t.errors.pin_check_error.trial_count(count: kMaxNumberOfAttempts - attempt);
             _shufflePinNumbers();
             vibrateLightDouble();
           } else {

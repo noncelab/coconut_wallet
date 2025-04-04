@@ -33,8 +33,7 @@ class _ToggleWidgetState extends State<ToggleWidget> {
       children: [
         Expanded(
             child: Text(widget.toggleName,
-                style: Styles.subLabel
-                    .merge(const TextStyle(color: MyColors.defaultText)))),
+                style: Styles.subLabel.merge(const TextStyle(color: MyColors.defaultText)))),
         CupertinoSwitch(
           value: _value,
           onChanged: (newValue) {

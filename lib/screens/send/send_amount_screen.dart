@@ -27,15 +27,13 @@ class SendAmountScreen extends StatefulWidget {
 class _SendAmountScreenState extends State<SendAmountScreen> {
   final errorMessages = [
     t.errors.insufficient_balance,
-    t.alert.error_send
-        .minimum_amount(bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1))
+    t.alert.error_send.minimum_amount(bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1))
   ];
   late SendAmountViewModel _viewModel;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider,
-        SendAmountViewModel>(
+    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, SendAmountViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, walletProvider, viewModel) {
         if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
@@ -66,16 +64,14 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                 if (viewModel.incomingBalance > 0)
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal:
-                                            CoconutLayout.defaultPadding),
+                                        horizontal: CoconutLayout.defaultPadding),
                                     child: CoconutToolTip(
-                                      baseBackgroundColor:
-                                          MyColors.white.withOpacity(0.9),
+                                      baseBackgroundColor: MyColors.white.withOpacity(0.9),
                                       richText: RichText(
                                           text: TextSpan(
                                         text: t.tooltip.amount_to_be_sent(
-                                            bitcoin: satoshiToBitcoinString(
-                                                viewModel.incomingBalance)),
+                                            bitcoin:
+                                                satoshiToBitcoinString(viewModel.incomingBalance)),
                                         style: const TextStyle(
                                           fontFamily: 'Pretendard',
                                           fontWeight: FontWeight.normal,
@@ -91,10 +87,8 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                 Expanded(
                                   child: Center(
                                     child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
                                         // 최대
                                         GestureDetector(
@@ -102,64 +96,42 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                               viewModel.setMaxAmount();
                                             },
                                             child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 6.0),
-                                                margin: const EdgeInsets.only(
-                                                    bottom: 4),
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 12, vertical: 6.0),
+                                                margin: const EdgeInsets.only(bottom: 4),
                                                 decoration: BoxDecoration(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12.0),
+                                                    borderRadius: BorderRadius.circular(12.0),
                                                     border: Border.all(
-                                                        color: viewModel
-                                                                    .errorIndex ==
-                                                                0
-                                                            ? MyColors
-                                                                .warningRed
-                                                            : Colors
-                                                                .transparent,
+                                                        color: viewModel.errorIndex == 0
+                                                            ? MyColors.warningRed
+                                                            : Colors.transparent,
                                                         width: 1),
-                                                    color:
-                                                        viewModel.errorIndex ==
-                                                                0
-                                                            ? Colors.transparent
-                                                            : MyColors.grey),
+                                                    color: viewModel.errorIndex == 0
+                                                        ? Colors.transparent
+                                                        : MyColors.grey),
                                                 child: RichText(
                                                     text: TextSpan(children: [
                                                   TextSpan(
                                                       text: '${t.max} ',
                                                       style: Styles.caption.merge(TextStyle(
-                                                          color: viewModel
-                                                                      .errorIndex ==
-                                                                  0
-                                                              ? MyColors
-                                                                  .warningRed
+                                                          color: viewModel.errorIndex == 0
+                                                              ? MyColors.warningRed
                                                               : MyColors.white,
-                                                          fontFamily: CustomFonts
-                                                              .text
-                                                              .getFontFamily))),
+                                                          fontFamily:
+                                                              CustomFonts.text.getFontFamily))),
                                                   TextSpan(
                                                       text:
                                                           '${UnitUtil.satoshiToBitcoin(viewModel.confirmedBalance)} ${t.btc}',
-                                                      style: Styles
-                                                          .caption
-                                                          .merge(TextStyle(
-                                                              color: viewModel
-                                                                          .errorIndex ==
-                                                                      0
-                                                                  ? MyColors
-                                                                      .warningRed
-                                                                  : MyColors
-                                                                      .white))),
+                                                      style: Styles.caption.merge(TextStyle(
+                                                          color: viewModel.errorIndex == 0
+                                                              ? MyColors.warningRed
+                                                              : MyColors.white))),
                                                 ])))),
                                         // BTC
                                         Text(
                                           '${viewModel.input.isEmpty ? 0 : viewModel.input} ${t.btc}',
                                           style: TextStyle(
-                                            fontFamily: CustomFonts
-                                                .number.getFontFamily,
+                                            fontFamily: CustomFonts.number.getFontFamily,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 38,
                                             color: viewModel.input.isEmpty
@@ -172,26 +144,21 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                         // Error
                                         Text(
                                           viewModel.errorIndex != null
-                                              ? errorMessages[
-                                                  viewModel.errorIndex!]
+                                              ? errorMessages[viewModel.errorIndex!]
                                               : '',
-                                          style: Styles.caption.merge(
-                                              const TextStyle(
-                                                  color: MyColors.warningRed)),
+                                          style: Styles.caption
+                                              .merge(const TextStyle(color: MyColors.warningRed)),
                                         ),
 
                                         Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 4),
+                                          padding: const EdgeInsets.only(top: 4),
                                           child: CustomUnderlinedButton(
                                               text: t.select_utxo,
                                               fontSize: 14,
                                               lineHeight: 21,
-                                              isEnable: viewModel.errorIndex ==
-                                                      null &&
+                                              isEnable: viewModel.errorIndex == null &&
                                                   viewModel.isNextButtonEnabled,
-                                              onTap: () => _goNextScreen(
-                                                  '/utxo-selection')),
+                                              onTap: () => _goNextScreen('/utxo-selection')),
                                         )
                                       ],
                                     ),
@@ -204,23 +171,10 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                           childAspectRatio: 2,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          children: [
-                            '1',
-                            '2',
-                            '3',
-                            '4',
-                            '5',
-                            '6',
-                            '7',
-                            '8',
-                            '9',
-                            '.',
-                            '0',
-                            '<'
-                          ].map((key) {
+                          children: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '<']
+                              .map((key) {
                             return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: KeyButton(
                                 keyValue: key,
                                 onKeyTap: viewModel.onKeyTap,
@@ -248,8 +202,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
 
   void _goNextScreen(String routeName) {
     if (_viewModel.isNetworkOn != true) {
-      CustomToast.showWarningToast(
-          context: context, text: ErrorCodes.networkError.message);
+      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
       return;
     }
 

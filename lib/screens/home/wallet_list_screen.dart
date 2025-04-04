@@ -40,8 +40,7 @@ class WalletListScreen extends StatefulWidget {
   State<WalletListScreen> createState() => _WalletListScreenState();
 }
 
-class _WalletListScreenState extends State<WalletListScreen>
-    with TickerProviderStateMixin {
+class _WalletListScreenState extends State<WalletListScreen> with TickerProviderStateMixin {
   final GlobalKey _dropdownButtonKey = GlobalKey();
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
@@ -57,8 +56,7 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   late List<WalletListItemBase> _previousWalletList = [];
   late Map<int, int> _previousWalletBalance = {};
-  final GlobalKey<SliverAnimatedListState> _walletListKey =
-      GlobalKey<SliverAnimatedListState>();
+  final GlobalKey<SliverAnimatedListState> _walletListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
 
   double? itemCardWidth;
@@ -78,8 +76,8 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider4<WalletProvider, PreferenceProvider,
-        VisibilityProvider, ConnectivityProvider, WalletListViewModel>(
+    return ChangeNotifierProxyProvider4<WalletProvider, PreferenceProvider, VisibilityProvider,
+        ConnectivityProvider, WalletListViewModel>(
       create: (_) => _createViewModel(),
       update: (BuildContext context,
           WalletProvider walletProvider,
@@ -103,11 +101,8 @@ class _WalletListScreenState extends State<WalletListScreen>
       },
       child: Consumer<WalletListViewModel>(
         builder: (context, viewModel, child) {
-          if (viewModel.isWalletListChanged(
-              _previousWalletList,
-              viewModel.walletItemList,
-              _previousWalletBalance,
-              (id) => viewModel.getWalletBalance(id).current)) {
+          if (viewModel.isWalletListChanged(_previousWalletList, viewModel.walletItemList,
+              _previousWalletBalance, (id) => viewModel.getWalletBalance(id).current)) {
             _handleWalletListUpdate(
               viewModel.walletItemList,
               (id) => viewModel.getWalletBalance(id),
@@ -121,8 +116,7 @@ class _WalletListScreenState extends State<WalletListScreen>
               if (Platform.isAndroid) {
                 final now = DateTime.now();
                 if (_lastPressedAt == null ||
-                    now.difference(_lastPressedAt!) >
-                        const Duration(seconds: 3)) {
+                    now.difference(_lastPressedAt!) > const Duration(seconds: 3)) {
                   _lastPressedAt = now;
                   Fluttertoast.showToast(
                     backgroundColor: CoconutColors.gray800,
@@ -150,10 +144,9 @@ class _WalletListScreenState extends State<WalletListScreen>
                           // Appbar
                           CoconutAppBar.buildHomeAppbar(
                             context: context,
-                            leadingSvgAsset: SvgPicture.asset(
-                                'assets/svg/coconut.svg',
-                                colorFilter: const ColorFilter.mode(
-                                    CoconutColors.white, BlendMode.srcIn),
+                            leadingSvgAsset: SvgPicture.asset('assets/svg/coconut.svg',
+                                colorFilter:
+                                    const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                                 width: 24),
                             appTitle: t.wallet,
                             actionButtonList: [
@@ -177,8 +170,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                       builder: (BuildContext context) {
                                         return CoconutPopup(
                                           title: t.alert.tutorial.title,
-                                          description:
-                                              t.alert.tutorial.description,
+                                          description: t.alert.tutorial.description,
                                           onTapRight: () async {
                                             launchURL(
                                               TUTORIAL_URL,
@@ -189,8 +181,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                           onTapLeft: () {
                                             Navigator.of(context).pop();
                                           },
-                                          rightButtonText:
-                                              t.alert.tutorial.btn_view,
+                                          rightButtonText: t.alert.tutorial.btn_view,
                                           rightButtonColor: CoconutColors.cyan,
                                           leftButtonText: t.close,
                                         );
@@ -218,8 +209,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                                 height: 40,
                                 width: 40,
                                 child: IconButton(
-                                  icon: const Icon(CupertinoIcons.ellipsis,
-                                      size: 18),
+                                  icon: const Icon(CupertinoIcons.ellipsis, size: 18),
                                   onPressed: () {
                                     _setPulldownMenuVisiblility(true);
                                   },
@@ -247,8 +237,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                           // loading indicator with animation
                           SliverToBoxAdapter(
                               child: AnimatedSwitcher(
-                            transitionBuilder: (child, animation) =>
-                                FadeTransition(
+                            transitionBuilder: (child, animation) => FadeTransition(
                               opacity: animation,
                               child: SizeTransition(
                                 sizeFactor: animation,
@@ -275,22 +264,18 @@ class _WalletListScreenState extends State<WalletListScreen>
                                   WalletListTermsShortcutCard(
                                     onTap: () {
                                       CommonBottomSheets.showBottomSheet_90(
-                                          context: context,
-                                          child: const TermsBottomSheet());
+                                          context: context, child: const TermsBottomSheet());
                                     },
                                     onCloseTap: viewModel.hideTermsShortcut,
                                   ),
                                 if (viewModel.walletItemList.isEmpty)
-                                  WalletListAddGuideCard(
-                                      onPressed: _onAddScannerPressed)
+                                  WalletListAddGuideCard(onPressed: _onAddScannerPressed)
                               },
                             ],
                           )),
                           // 지갑 목록
-                          _buildSliverAnimatedList(
-                              viewModel.walletItemList,
-                              (id) => viewModel.getWalletBalance(id),
-                              viewModel.isBalanceHidden),
+                          _buildSliverAnimatedList(viewModel.walletItemList,
+                              (id) => viewModel.getWalletBalance(id), viewModel.isBalanceHidden),
                         ]),
                     if (_isDropdownMenuVisible)
                       Positioned.fill(
@@ -302,8 +287,7 @@ class _WalletListScreenState extends State<WalletListScreen>
                         ),
                       ),
                     Positioned(
-                      top: _dropdownButtonPosition.dy +
-                          _dropdownButtonSize.height,
+                      top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
                       right: 20,
                       child: Visibility(
                         visible: _isDropdownMenuVisible,
@@ -340,9 +324,7 @@ class _WalletListScreenState extends State<WalletListScreen>
     if (isWalletLoading) return;
     isWalletLoading = true;
 
-    final oldWallets = {
-      for (var walletItem in _previousWalletList) walletItem.id: walletItem
-    };
+    final oldWallets = {for (var walletItem in _previousWalletList) walletItem.id: walletItem};
 
     final List<int> insertedIndexes = [];
     for (int i = 0; i < walletList.length; i++) {
@@ -353,15 +335,13 @@ class _WalletListScreenState extends State<WalletListScreen>
 
     for (var i = 0; i < insertedIndexes.length; i++) {
       await Future.delayed(Duration(milliseconds: 100 * i), () {
-        _walletListKey.currentState
-            ?.insertItem(insertedIndexes[i], duration: _duration);
+        _walletListKey.currentState?.insertItem(insertedIndexes[i], duration: _duration);
       });
     }
 
     _previousWalletList = List.from(walletList);
     _previousWalletBalance = {
-      for (var walletId in walletList)
-        walletId.id: getWalletBalance(walletId.id).previous
+      for (var walletId in walletList) walletId.id: getWalletBalance(walletId.id).previous
     };
 
     isWalletLoading = false;
@@ -386,12 +366,8 @@ class _WalletListScreenState extends State<WalletListScreen>
     );
   }
 
-  Widget _buildWalletItem(
-      WalletListItemBase wallet,
-      Animation<double> animation,
-      AnimatedBalanceData animatedBalanceData,
-      bool isBalanceHidden,
-      bool isLastItem) {
+  Widget _buildWalletItem(WalletListItemBase wallet, Animation<double> animation,
+      AnimatedBalanceData animatedBalanceData, bool isBalanceHidden, bool isLastItem) {
     var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
 
     return Column(
@@ -463,20 +439,18 @@ class _WalletListScreenState extends State<WalletListScreen>
     _scrollController = ScrollController();
 
     _dropdownActions = [
-      () => CommonBottomSheets.showBottomSheet_90(
-          context: context, child: const TermsBottomSheet()),
+      () =>
+          CommonBottomSheets.showBottomSheet_90(context: context, child: const TermsBottomSheet()),
       () => Navigator.pushNamed(context, '/mnemonic-word-list'),
       () => CommonBottomSheets.showBottomSheet_90(
           context: context, child: const SecuritySelfCheckBottomSheet()),
-      () => CommonBottomSheets.showBottomSheet_90(
-          context: context, child: const SettingsScreen()),
+      () => CommonBottomSheets.showBottomSheet_90(context: context, child: const SettingsScreen()),
       () => Navigator.pushNamed(context, '/app-info'),
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_dropdownButtonKey.currentContext != null) {
-        final faucetRenderBox =
-            _dropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
+        final faucetRenderBox = _dropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
         _dropdownButtonPosition = faucetRenderBox.localToGlobal(Offset.zero);
         _dropdownButtonSize = faucetRenderBox.size;
       }
@@ -528,12 +502,8 @@ class _WalletListScreenState extends State<WalletListScreen>
     return _viewModel;
   }
 
-  Widget? _getWalletRowItem(
-      Key key,
-      WalletListItemBase walletItem,
-      AnimatedBalanceData animatedBalanceData,
-      bool isBalanceHidden,
-      bool isLastItem) {
+  Widget? _getWalletRowItem(Key key, WalletListItemBase walletItem,
+      AnimatedBalanceData animatedBalanceData, bool isBalanceHidden, bool isLastItem) {
     final WalletListItemBase(
       id: id,
       name: name,
@@ -561,8 +531,7 @@ class _WalletListScreenState extends State<WalletListScreen>
 
   void _onAddScannerPressed() async {
     final ResultOfSyncFromVault? scanResult =
-        (await Navigator.pushNamed(context, '/wallet-add-scanner')
-            as ResultOfSyncFromVault?);
+        (await Navigator.pushNamed(context, '/wallet-add-scanner') as ResultOfSyncFromVault?);
 
     setState(() {
       _resultOfSyncFromVault = scanResult;

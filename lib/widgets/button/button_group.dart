@@ -20,8 +20,7 @@ class ButtonGroup extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20.0),
             child: Divider(
-              color:
-                  MyColors.transparentWhite_12, // Adjust this color as needed
+              color: MyColors.transparentWhite_12, // Adjust this color as needed
               height: 1,
             ),
           ),

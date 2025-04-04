@@ -13,8 +13,7 @@ import 'test_realm_manager.dart';
 void main() {
   late TestRealmManager realmManager;
   late TransactionRepository transactionRepository;
-  SinglesigWalletListItem testWalletItem =
-      WalletMock.createSingleSigWalletItem();
+  SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
 
   setUp(() async {
     // 테스트 실행 전 셋업
@@ -45,12 +44,10 @@ void main() {
       final testTransaction = TransactionMock.createMockTransactionRecord();
 
       // 트랜잭션 추가
-      transactionRepository
-          .addAllTransactions(testWalletItem.id, [testTransaction]);
+      transactionRepository.addAllTransactions(testWalletItem.id, [testTransaction]);
 
       // 트랜잭션 조회
-      final transactions =
-          transactionRepository.getTransactionRecordList(testWalletItem.id);
+      final transactions = transactionRepository.getTransactionRecordList(testWalletItem.id);
 
       // 검증
       expect(transactions, isNotEmpty);
@@ -62,12 +59,10 @@ void main() {
   group('트랜잭션 상태 업데이트 테스트', () {
     test('미확인 트랜잭션이 확인 상태로 업데이트되어야 함', () async {
       // 미확인 트랜잭션 생성
-      final testTransaction =
-          TransactionMock.createUnconfirmedTransactionRecord();
+      final testTransaction = TransactionMock.createUnconfirmedTransactionRecord();
 
       // 트랜잭션 추가
-      transactionRepository
-          .addAllTransactions(testWalletItem.id, [testTransaction]);
+      transactionRepository.addAllTransactions(testWalletItem.id, [testTransaction]);
 
       // 블록 타임스탬프 데이터 생성
       const blockHeight = 680000;
@@ -78,8 +73,7 @@ void main() {
 
       // 블록 타임스탬프 저장
       realmManager.realm.write(() {
-        realmManager.realm
-            .add(RealmBlockTimestamp(blockHeight, blockTimestamp.timestamp));
+        realmManager.realm.add(RealmBlockTimestamp(blockHeight, blockTimestamp.timestamp));
       });
 
       // 트랜잭션 상태 업데이트 데이터 준비
@@ -98,8 +92,7 @@ void main() {
 
       // 지갑의 최근 트랜잭션 상태 플래그 설정
       realmManager.realm.write(() {
-        final wallet =
-            realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
+        final wallet = realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
         wallet!.isLatestTxBlockHeightZero = true;
       });
 
@@ -115,8 +108,7 @@ void main() {
       // 업데이트된 트랜잭션 조회
       final updatedTransaction = transactionRepository.getTransactionRecord(
           testWalletItem.id, testTransaction.transactionHash);
-      final wallet =
-          realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
+      final wallet = realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
 
       // 검증
       expect(updatedTransaction?.blockHeight, blockHeight);
@@ -157,10 +149,8 @@ void main() {
       transactionRepository.addAllRbfHistory(rbfDtoList);
 
       // RBF 내역 조회
-      final rbfHistory1 = transactionRepository.getRbfHistoryList(
-          testWalletItem.id, 'new_tx_1');
-      final rbfHistory2 = transactionRepository.getRbfHistoryList(
-          testWalletItem.id, 'new_tx_2');
+      final rbfHistory1 = transactionRepository.getRbfHistoryList(testWalletItem.id, 'new_tx_1');
+      final rbfHistory2 = transactionRepository.getRbfHistoryList(testWalletItem.id, 'new_tx_2');
 
       // 검증
       expect(rbfHistory1, isNotEmpty);
@@ -201,8 +191,7 @@ void main() {
       transactionRepository.addAllRbfHistory(rbfDtoList);
 
       // RBF 내역 조회
-      final rbfHistory = transactionRepository.getRbfHistoryList(
-          testWalletItem.id, 'new_tx_1');
+      final rbfHistory = transactionRepository.getRbfHistoryList(testWalletItem.id, 'new_tx_1');
 
       // 검증
       expect(rbfHistory, isNotEmpty);
@@ -231,8 +220,7 @@ void main() {
       transactionRepository.addAllRbfHistory([rbfDto]);
 
       // RBF 내역 조회
-      final rbfHistory =
-          transactionRepository.getRbfHistoryList(testWalletItem.id, 'new_tx');
+      final rbfHistory = transactionRepository.getRbfHistoryList(testWalletItem.id, 'new_tx');
 
       // 검증 - 중복이 추가되지 않아야 함
       expect(rbfHistory.length, 1);
@@ -265,10 +253,8 @@ void main() {
       transactionRepository.addAllCpfpHistory(cpfpDtoList);
 
       // CPFP 내역 조회
-      final cpfpHistory1 = transactionRepository.getCpfpHistory(
-          testWalletItem.id, 'parent_tx_1');
-      final cpfpHistory2 = transactionRepository.getCpfpHistory(
-          testWalletItem.id, 'parent_tx_2');
+      final cpfpHistory1 = transactionRepository.getCpfpHistory(testWalletItem.id, 'parent_tx_1');
+      final cpfpHistory2 = transactionRepository.getCpfpHistory(testWalletItem.id, 'parent_tx_2');
 
       // 검증
       expect(cpfpHistory1, isNotNull);
@@ -326,12 +312,11 @@ void main() {
       );
 
       // 트랜잭션 추가 (순서 섞어서)
-      transactionRepository.addAllTransactions(
-          testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
+      transactionRepository
+          .addAllTransactions(testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
 
       // 트랜잭션 목록 조회
-      final transactions =
-          transactionRepository.getTransactionRecordList(testWalletItem.id);
+      final transactions = transactionRepository.getTransactionRecordList(testWalletItem.id);
 
       // 검증: 미확인 트랜잭션이 먼저 나오고, 이후 확인된 트랜잭션이 타임스탬프 역순으로 정렬되어야 함
       expect(transactions.length, 3);
@@ -359,8 +344,8 @@ void main() {
       );
 
       // 트랜잭션 추가
-      transactionRepository.addAllTransactions(
-          testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
+      transactionRepository
+          .addAllTransactions(testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
 
       // 확인된 트랜잭션 해시 목록 조회
       final confirmedTxHashes =
@@ -381,21 +366,18 @@ void main() {
       final broadcastTime = DateTime.now();
 
       // 임시 브로드캐스트 시간 기록
-      await transactionRepository.recordTemporaryBroadcastTime(
-          txHash, broadcastTime);
+      await transactionRepository.recordTemporaryBroadcastTime(txHash, broadcastTime);
 
       // 기록된 데이터 조회
       final tempRecords = realmManager.realm.all<TempBroadcastTimeRecord>();
-      final recordedItem =
-          tempRecords.firstWhere((r) => r.transactionHash == txHash);
+      final recordedItem = tempRecords.firstWhere((r) => r.transactionHash == txHash);
 
       // 검증
       expect(tempRecords, isNotEmpty);
       expect(recordedItem.transactionHash, txHash);
 
       // DateTime 비교는 정밀도 차이 때문에 근사값으로 비교
-      final timeDiff =
-          recordedItem.createdAt.difference(broadcastTime).inMilliseconds.abs();
+      final timeDiff = recordedItem.createdAt.difference(broadcastTime).inMilliseconds.abs();
       expect(timeDiff < 1000, true); // 1초 이내 차이는 허용
     });
   });
@@ -414,8 +396,7 @@ void main() {
       );
 
       // 두 개의 원본 트랜잭션을 DB에 추가
-      transactionRepository
-          .addAllTransactions(testWalletItem.id, [spentTx1, spentTx2]);
+      transactionRepository.addAllTransactions(testWalletItem.id, [spentTx1, spentTx2]);
 
       // RBF 정보 맵 생성
       final rbfInfoMap = {

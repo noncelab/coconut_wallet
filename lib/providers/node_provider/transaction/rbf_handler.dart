@@ -15,12 +15,10 @@ class RbfHandler {
   final UtxoManager _utxoManager;
   final ElectrumService _electrumService;
 
-  RbfHandler(
-      this._transactionRepository, this._utxoManager, this._electrumService);
+  RbfHandler(this._transactionRepository, this._utxoManager, this._electrumService);
 
   /// RBF를 보내는 지갑 관점에서 이미 소비한 UTXO를 다시 소비하는지 확인
-  Future<RbfInfo?> detectSendingRbfTransaction(
-      int walletId, Transaction tx) async {
+  Future<RbfInfo?> detectSendingRbfTransaction(int walletId, Transaction tx) async {
     // 이미 RBF 내역이 있는지 확인
     final existingRbfHistory =
         _transactionRepository.getRbfHistoryList(walletId, tx.transactionHash);
@@ -48,19 +46,17 @@ class RbfHandler {
         continue;
       }
 
-      if (utxo.status == UtxoStatus.outgoing &&
-          utxo.spentByTransactionHash != null) {
+      if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) {
         // 최초 트랜잭션과 RBF를 구분하기 위한 로직
-        final spentTransaction = _transactionRepository.getTransactionRecord(
-            walletId, utxo.spentByTransactionHash!);
+        final spentTransaction =
+            _transactionRepository.getTransactionRecord(walletId, utxo.spentByTransactionHash!);
 
         Logger.log(
             'spentTransaction 검사: ${utxo.spentByTransactionHash}, 존재: ${spentTransaction != null}, 블록높이: ${spentTransaction?.blockHeight}');
 
         // spentTransaction이 존재하지 않는 경우 처리 (트랜잭션이 아직 DB에 없을 수 있음)
         if (spentTransaction == null) {
-          Logger.log(
-              'spentTransaction이 존재하지 않음. UTXO의 outgoing 상태를 기반으로 RBF로 간주합니다.');
+          Logger.log('spentTransaction이 존재하지 않음. UTXO의 outgoing 상태를 기반으로 RBF로 간주합니다.');
           isRbf = true;
           spentTxHash = utxo.spentByTransactionHash;
           break;
@@ -68,8 +64,7 @@ class RbfHandler {
 
         // spentTransaction이 존재하고, 해당 트랜잭션이 미확인 상태일 때만 RBF로 간주
         if (spentTransaction.blockHeight < 1) {
-          Logger.log(
-              'RBF 조건 충족: $utxoId, spentTx: ${utxo.spentByTransactionHash}');
+          Logger.log('RBF 조건 충족: $utxoId, spentTx: ${utxo.spentByTransactionHash}');
           isRbf = true;
           spentTxHash = utxo.spentByTransactionHash;
           break;
@@ -79,8 +74,7 @@ class RbfHandler {
 
     if (isRbf && spentTxHash != null) {
       // 대체되는 트랜잭션의 RBF 내역 확인
-      final previousRbfHistory =
-          _transactionRepository.getRbfHistoryList(walletId, spentTxHash);
+      final previousRbfHistory = _transactionRepository.getRbfHistoryList(walletId, spentTxHash);
 
       String originalTxHash;
       if (previousRbfHistory.isNotEmpty) {
@@ -110,8 +104,7 @@ class RbfHandler {
       try {
         // 대체된 트랜잭션인지 확인, 대체된 트랜잭션은 mempool에 존재하지 않아 예외 발생
         // mempool에 존재하지 않는 트랜잭션을 확인하려면 verbose: true 옵션으로 조회해야 함
-        await _electrumService.getTransaction(utxo.transactionHash,
-            verbose: true);
+        await _electrumService.getTransaction(utxo.transactionHash, verbose: true);
       } catch (e) {
         // 대체되어 없어진 경우이며 RBF가 발생한 것으로 판단
         return utxo.transactionHash;
@@ -120,11 +113,8 @@ class RbfHandler {
     return null;
   }
 
-  Future<void> saveRbfHistoryMap(
-      WalletListItemBase walletItem,
-      Map<String, RbfInfo> rbfInfoMap,
-      Map<String, TransactionRecord> txRecordMap,
-      int walletId) async {
+  Future<void> saveRbfHistoryMap(WalletListItemBase walletItem, Map<String, RbfInfo> rbfInfoMap,
+      Map<String, TransactionRecord> txRecordMap, int walletId) async {
     final rbfHistoryDtos = <RbfHistoryDto>[];
 
     for (final entry in rbfInfoMap.entries) {
@@ -142,8 +132,8 @@ class RbfHandler {
               'RBF 내역 등록: $txHash ← ${rbfInfo.spentTransactionHash} (원본: ${rbfInfo.originalTransactionHash})');
           Logger.log('  - 수수료율: ${txRecord.feeRate}');
 
-          final existingRbfHistory = _transactionRepository.getRbfHistoryList(
-              walletItem.id, txRecord.transactionHash);
+          final existingRbfHistory =
+              _transactionRepository.getRbfHistoryList(walletItem.id, txRecord.transactionHash);
 
           // 최초로 RBF 내역을 등록하는 경우 원본 트랜잭션 내역도 등록
           if (existingRbfHistory.isEmpty) {

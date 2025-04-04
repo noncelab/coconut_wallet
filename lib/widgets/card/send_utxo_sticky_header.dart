@@ -85,8 +85,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(
-            '${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
+        Text('${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
             style: CoconutTypography.body2_14_Number),
         FiatPrice(
           satoshiAmount: sendAmount,
@@ -123,8 +122,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
   }
 
   Widget _buildFeeInfo() {
-    if (recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
-        !customFeeSelected) {
+    if (recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed && !customFeeSelected) {
       return _buildPlaceholderFee();
     } else if (recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed ||
         customFeeSelected) {
@@ -139,16 +137,13 @@ class SendUtxoStickyHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          estimatedFee != null
-              ? '${satoshiToBitcoinString(estimatedFee!)} BTC'
-              : '0 BTC',
+          estimatedFee != null ? '${satoshiToBitcoinString(estimatedFee!)} BTC' : '0 BTC',
           style: CoconutTypography.body2_14_Number,
         ),
         if (satsPerVb != null)
           Text(
               '${selectedLevel?.expectedTime ?? ''} ($satsPerVb ${satsPerVb == 1 ? 'sat' : 'sats'}/vb)',
-              style: CoconutTypography.body3_12_Number
-                  .setColor(CoconutColors.gray500)),
+              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500)),
       ],
     );
   }
@@ -173,9 +168,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text('- BTC',
-            style: CoconutTypography.body2_14_Number
-                .setColor(CoconutColors.gray400)),
+        Text('- BTC', style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
       ],
     );
   }
@@ -207,9 +200,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
     );
   }
 
-  Widget _divider(
-          {EdgeInsets padding = const EdgeInsets.symmetric(vertical: 12)}) =>
-      Container(
+  Widget _divider({EdgeInsets padding = const EdgeInsets.symmetric(vertical: 12)}) => Container(
         padding: padding,
         child: const Divider(
           height: 1,

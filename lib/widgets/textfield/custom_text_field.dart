@@ -53,8 +53,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             padding: const EdgeInsets.only(left: 4, top: 8),
             child: Text(
               widget.errorMessage,
-              style: const TextStyle(
-                  color: MyColors.red, fontFamily: 'Pretendard', fontSize: 12),
+              style: const TextStyle(color: MyColors.red, fontFamily: 'Pretendard', fontSize: 12),
             )),
     ]);
   }
@@ -78,14 +77,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
             },
             child: Container(
                 padding: EdgeInsets.only(
-                    right: widget.clearButtonMode != OverlayVisibilityMode.never
-                        ? 4
-                        : 0),
+                    right: widget.clearButtonMode != OverlayVisibilityMode.never ? 4 : 0),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: isFocused
-                        ? MyColors.white
-                        : MyColors.transparentBlack_06,
+                    color: isFocused ? MyColors.white : MyColors.transparentBlack_06,
                     width: 1,
                   ),
                   borderRadius: BorderRadius.circular(16.0),

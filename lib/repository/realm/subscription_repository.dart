@@ -27,8 +27,7 @@ class SubscriptionRepository extends BaseRepository {
         });
         return existingStatus;
       } else {
-        final newStatus =
-            RealmScriptStatus(scriptPubKey, status, walletId, now);
+        final newStatus = RealmScriptStatus(scriptPubKey, status, walletId, now);
         realm.write(() {
           realm.add(newStatus);
         });

@@ -20,8 +20,7 @@ class AnimatedDialog extends StatefulWidget {
   _AnimatedDialogState createState() => _AnimatedDialogState();
 }
 
-class _AnimatedDialogState extends State<AnimatedDialog>
-    with SingleTickerProviderStateMixin {
+class _AnimatedDialogState extends State<AnimatedDialog> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _offsetAnimation;
 

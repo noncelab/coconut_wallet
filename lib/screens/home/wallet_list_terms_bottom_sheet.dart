@@ -29,8 +29,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
   }
 
   Future<void> _loadData() async {
-    String detailsContent =
-        await rootBundle.loadString('assets/files/terms_details.json');
+    String detailsContent = await rootBundle.loadString('assets/files/terms_details.json');
     setState(() {
       termDetails = json.decode(detailsContent);
       termList = termDetails.keys.toList();
@@ -71,8 +70,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
     int codeUnit = firstChar.codeUnitAt(0);
 
     // 한글인지 확인
-    if (codeUnit >= kSBase &&
-        codeUnit <= kSBase + (initials.length * 21 * 28) - 1) {
+    if (codeUnit >= kSBase && codeUnit <= kSBase + (initials.length * 21 * 28) - 1) {
       // 초성 인덱스 계산
       int initialIndex = (codeUnit - kSBase) ~/ (21 * 28);
       return initials[initialIndex];
@@ -113,9 +111,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
             showTestnetLabel: false),
         body: Padding(
             padding: EdgeInsets.only(
-                left: TermsBottomSheet.gutter,
-                right: TermsBottomSheet.gutter,
-                top: 20),
+                left: TermsBottomSheet.gutter, right: TermsBottomSheet.gutter, top: 20),
             child: Column(children: [
               Row(
                 children: [
@@ -151,15 +147,13 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
                           child: GestureDetector(
                               onTap: () => _showBottomSheet(term),
                               child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                   decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(32),
                                       color: MyColors.borderLightgrey),
                                   child: Text(term,
-                                      style: Styles.body2.merge(const TextStyle(
-                                          color:
-                                              MyColors.transparentWhite_70))))),
+                                      style: Styles.body2.merge(
+                                          const TextStyle(color: MyColors.transparentWhite_70))))),
                         );
                       }).toList(),
                     ),
@@ -201,19 +195,16 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
                 ),
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24)),
+                      topLeft: Radius.circular(24), topRight: Radius.circular(24)),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 32),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
                     color: MyColors.black,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '${details['content']}',
-                          style: Styles.label
-                              .merge(const TextStyle(color: MyColors.white)),
+                          style: Styles.label.merge(const TextStyle(color: MyColors.white)),
                         ),
                         const SizedBox(height: 32),
                         Text(
@@ -239,8 +230,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
                                 spacing: 8.0,
                                 runSpacing: 8.0,
                                 children: details['related']
-                                    .map<Widget>(
-                                        (text) => Keyword(keyword: text))
+                                    .map<Widget>((text) => Keyword(keyword: text))
                                     .toList())
                           ],
                           const SizedBox(height: 100),
@@ -279,9 +269,7 @@ class AskCard extends StatelessWidget {
   Future<void> _launchURL() async {
     final Uri url = Uri.parse(this.url);
     if (!await launchUrl(url,
-        mode: externalBrowser
-            ? LaunchMode.externalApplication
-            : LaunchMode.platformDefault)) {
+        mode: externalBrowser ? LaunchMode.externalApplication : LaunchMode.platformDefault)) {
       throw 'Could not launch $url';
     }
   }
@@ -292,8 +280,7 @@ class AskCard extends StatelessWidget {
         onTap: _launchURL,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          width:
-              (MediaQuery.of(context).size.width - gutter * 2 - gutter / 2) / 2,
+          width: (MediaQuery.of(context).size.width - gutter * 2 - gutter / 2) / 2,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             color: backgroundColor,
@@ -315,8 +302,8 @@ class AskCard extends StatelessWidget {
                 ),
               ),
               Text(title,
-                  style: Styles.body2.merge(const TextStyle(
-                      color: MyColors.darkgrey, fontWeight: FontWeight.bold))),
+                  style: Styles.body2.merge(
+                      const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold))),
             ],
           ),
         ));
@@ -335,9 +322,8 @@ class Keyword extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(100),
-            color: MyColors.lightblue),
+        decoration:
+            BoxDecoration(borderRadius: BorderRadius.circular(100), color: MyColors.lightblue),
         child: Text(
           keyword,
           style: Styles.caption.merge(TextStyle(

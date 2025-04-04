@@ -10,8 +10,7 @@ class CommonBottomSheets {
     bool isDismissible = true,
     bool enableDrag = true,
     bool isCloseButton = false,
-    EdgeInsetsGeometry titlePadding =
-        const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+    EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
     showModalBottomSheet(
       context: context,
@@ -42,8 +41,7 @@ class CommonBottomSheets {
                           padding: const EdgeInsets.all(4),
                           color: Colors.transparent,
                           child: isCloseButton
-                              ? const Icon(Icons.close_rounded,
-                                  color: MyColors.white)
+                              ? const Icon(Icons.close_rounded, color: MyColors.white)
                               : Container(width: 16),
                         ),
                       ),
@@ -79,8 +77,7 @@ class CommonBottomSheets {
       context: context,
       builder: (context) {
         return Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: SizedBox(
             height: MediaQuery.of(context).size.height * 0.5,
             width: MediaQuery.of(context).size.width,
@@ -107,8 +104,7 @@ class CommonBottomSheets {
         isScrollControlled: true,
         enableDrag: true,
         useSafeArea: true,
-        constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9));
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9));
   }
 
   static Future<T?> showBottomSheet_95<T>(
@@ -123,8 +119,7 @@ class CommonBottomSheets {
         isScrollControlled: true,
         enableDrag: true,
         useSafeArea: true,
-        constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.95));
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.95));
   }
 
   static Future<T?> showBottomSheet_100<T>(
@@ -147,8 +142,7 @@ class CommonBottomSheets {
         isScrollControlled: isScrollControlled,
         enableDrag: enableDrag,
         useSafeArea: useSafeArea,
-        constraints:
-            BoxConstraints(maxHeight: MediaQuery.of(context).size.height));
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height));
   }
 
   static Future<T?> showDraggableScrollableSheet<T>({
@@ -189,7 +183,6 @@ class CommonBottomSheets {
         isScrollControlled: isScrollControlled,
         enableDrag: enableDrag,
         useSafeArea: useSafeArea,
-        constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.5));
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5));
   }
 }

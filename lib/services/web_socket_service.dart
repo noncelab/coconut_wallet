@@ -11,8 +11,7 @@ class WebSocketService {
   int _reconnectAttempts = 0;
   Timer? _pingTimer;
 
-  final StreamController<UpbitResponse?> _tickerController =
-      StreamController.broadcast();
+  final StreamController<UpbitResponse?> _tickerController = StreamController.broadcast();
   Stream<UpbitResponse?> get tickerStream => _tickerController.stream;
 
   WebSocketService() {
@@ -65,8 +64,7 @@ class WebSocketService {
   void _onData(dynamic data) {
     try {
       final decodedData = jsonDecode(utf8.decode(data));
-      if (decodedData is Map<String, dynamic> &&
-          decodedData['trade_price'] != null) {
+      if (decodedData is Map<String, dynamic> && decodedData['trade_price'] != null) {
         final ticker = UpbitResponse.fromJson(decodedData);
         _tickerController.add(ticker);
       }

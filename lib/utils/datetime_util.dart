@@ -16,8 +16,7 @@ class DateTimeUtil {
   }
 
   static String formatLastUpdateTime(int millisecondsSinceEpoch) {
-    DateTime dateTime =
-        DateTime.fromMillisecondsSinceEpoch(millisecondsSinceEpoch);
+    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(millisecondsSinceEpoch);
     DateTime now = DateTime.now();
 
     DateFormat timeFormat = DateFormat('HH:mm');
@@ -25,9 +24,7 @@ class DateTimeUtil {
     DateFormat dateFormat = DateFormat('M.d HH:mm');
 
     // 오늘 날짜인지 확인
-    if (dateTime.year == now.year &&
-        dateTime.month == now.month &&
-        dateTime.day == now.day) {
+    if (dateTime.year == now.year && dateTime.month == now.month && dateTime.day == now.day) {
       return timeFormat.format(dateTime);
     }
 

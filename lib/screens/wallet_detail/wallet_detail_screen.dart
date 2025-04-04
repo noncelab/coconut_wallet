@@ -72,8 +72,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         child: Selector<WalletDetailViewModel,
                                 Tuple4<AnimatedBalanceData, String, int, int>>(
                             selector: (_, viewModel) => Tuple4(
-                                AnimatedBalanceData(
-                                    viewModel.balance, viewModel.prevBalance),
+                                AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
                                 viewModel.bitcoinPriceKrwInString,
                                 viewModel.sendingAmount,
                                 viewModel.receivingAmount),
@@ -93,8 +92,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       ),
                       _buildLoadingWidget(),
                       _buildTxListLabel(),
-                      TransactionList(
-                          currentUnit: _currentUnit, widget: widget),
+                      TransactionList(currentUnit: _currentUnit, widget: widget),
                     ],
                   ),
                 ),
@@ -118,8 +116,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       actionButtonList: [
         IconButton(
           onPressed: () => _onFaucetIconPressed(),
-          icon:
-              SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
+          icon: SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
         ),
         IconButton(
           onPressed: () => _navigateToUtxoList(context),
@@ -161,8 +158,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           height: _appBarSize.height,
           isVisible: _stickyHeaderVisible,
           currentUnit: _currentUnit,
-          animatedBalanceData:
-              AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
+          animatedBalanceData: AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
           onTapReceive: () {
             _viewModel.removeFaucetTooltip();
             _onTapReceive();
@@ -216,8 +212,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               bottom: 12.0,
             ),
             child: Text(t.tx_list,
-                style: CoconutTypography.heading4_18_Bold
-                    .setColor(CoconutColors.white))));
+                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white))));
   }
 
   // 스크롤 시 sticky header 렌더링을 위한 상태 변수들
@@ -258,8 +253,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       Size positionedTopWidgetSize = const Size(0, 0);
 
       if (_appBarKey.currentContext != null) {
-        final appBarRenderBox =
-            _appBarKey.currentContext?.findRenderObject() as RenderBox;
+        final appBarRenderBox = _appBarKey.currentContext?.findRenderObject() as RenderBox;
         _appBarSize = appBarRenderBox.size;
       }
 
@@ -270,18 +264,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       }
 
       if (_faucetIconKey.currentContext != null) {
-        final faucetRenderBox =
-            _faucetIconKey.currentContext?.findRenderObject() as RenderBox;
+        final faucetRenderBox = _faucetIconKey.currentContext?.findRenderObject() as RenderBox;
         _faucetIconPosition = faucetRenderBox.localToGlobal(Offset.zero);
         _faucetIconSize = faucetRenderBox.size;
       }
 
       if (_stickyHeaderWidgetKey.currentContext != null) {
         final positionedTopWidgetRenderBox =
-            _stickyHeaderWidgetKey.currentContext?.findRenderObject()
-                as RenderBox;
-        positionedTopWidgetSize =
-            positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
+            _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
+        positionedTopWidgetSize = positionedTopWidgetRenderBox.size; // 거래내역 - Utxo 리스트 위젯 영역
       }
 
       setState(() {
@@ -296,8 +287,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             setState(() {
               _stickyHeaderVisible = true;
             });
-            _stickyHeaderRenderBox ??= _stickyHeaderWidgetKey.currentContext
-                ?.findRenderObject() as RenderBox;
+            _stickyHeaderRenderBox ??=
+                _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
           }
         } else {
           if (!_isPullToRefreshing) {
@@ -318,14 +309,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   bool _checkStateAndShowToast() {
     if (_viewModel.isNetworkOn != true) {
-      CustomToast.showWarningToast(
-          context: context, text: ErrorCodes.networkError.message);
+      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
       return false;
     }
 
     if (_viewModel.isWalletSyncing) {
-      CustomToast.showToast(
-          context: context, text: t.toast.fetching_onchain_data);
+      CustomToast.showToast(context: context, text: t.toast.fetching_onchain_data);
       return false;
     }
 
@@ -388,8 +377,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           onRequest: (address, requestAmount) {
             if (_viewModel.isRequesting) return;
 
-            _viewModel.requestTestBitcoin(address, requestAmount,
-                (success, message) {
+            _viewModel.requestTestBitcoin(address, requestAmount, (success, message) {
               if (success) {
                 Navigator.pop(context);
                 vibrateLight();
@@ -422,8 +410,7 @@ class TransactionList extends StatefulWidget {
 
 class _TransactionListState extends State<TransactionList> {
   late List<TransactionRecord> _previousTxList = [];
-  final GlobalKey<SliverAnimatedListState> _txListKey =
-      GlobalKey<SliverAnimatedListState>();
+  final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
 
   @override
@@ -438,9 +425,7 @@ class _TransactionListState extends State<TransactionList> {
         builder: (_, txList, __) {
           _handleTransactionListUpdate(txList);
 
-          return txList.isNotEmpty
-              ? _buildSliverAnimatedList(txList)
-              : _buildEmptyState();
+          return txList.isNotEmpty ? _buildSliverAnimatedList(txList) : _buildEmptyState();
         });
   }
 
@@ -467,8 +452,7 @@ class _TransactionListState extends State<TransactionList> {
     for (var index in removedIndexes.reversed) {
       _txListKey.currentState?.removeItem(
         index,
-        (context, animation) =>
-            _buildRemoveTransactionItem(_previousTxList[index], animation),
+        (context, animation) => _buildRemoveTransactionItem(_previousTxList[index], animation),
         duration: _duration,
       );
     }
@@ -486,14 +470,12 @@ class _TransactionListState extends State<TransactionList> {
       key: _txListKey,
       initialItemCount: txList.length,
       itemBuilder: (context, index, animation) {
-        return _buildTransactionItem(
-            txList[index], animation, txList.length - 1 == index);
+        return _buildTransactionItem(txList[index], animation, txList.length - 1 == index);
       },
     );
   }
 
-  Widget _buildTransactionItem(
-      TransactionRecord tx, Animation<double> animation, bool isLastItem) {
+  Widget _buildTransactionItem(TransactionRecord tx, Animation<double> animation, bool isLastItem) {
     return Column(
       children: [
         SlideTransition(
@@ -523,8 +505,7 @@ class _TransactionListState extends State<TransactionList> {
     );
   }
 
-  Widget _buildRemoveTransactionItem(
-      TransactionRecord tx, Animation<double> animation) {
+  Widget _buildRemoveTransactionItem(TransactionRecord tx, Animation<double> animation) {
     var offsetAnimation = AnimationUtil.buildSlideOutAnimation(animation);
 
     return FadeTransition(
@@ -539,10 +520,8 @@ class _TransactionListState extends State<TransactionList> {
             currentUnit: widget._currentUnit,
             id: widget.widget.id,
             onPressed: () {
-              Navigator.pushNamed(context, '/transaction-detail', arguments: {
-                'id': widget.widget.id,
-                'txHash': tx.transactionHash
-              });
+              Navigator.pushNamed(context, '/transaction-detail',
+                  arguments: {'id': widget.widget.id, 'txHash': tx.transactionHash});
             },
           ),
         ),

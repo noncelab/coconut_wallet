@@ -28,20 +28,15 @@ class ScriptSubscriber {
   Future<List<ScriptStatus>> subscribeWallet(
     WalletListItemBase walletItem,
   ) async {
-    final receiveFutures =
-        _subscribeWallet(walletItem, false, _scriptStatusController);
-    final changeFutures =
-        _subscribeWallet(walletItem, true, _scriptStatusController);
+    final receiveFutures = _subscribeWallet(walletItem, false, _scriptStatusController);
+    final changeFutures = _subscribeWallet(walletItem, true, _scriptStatusController);
 
-    final [receiveResult, changeResult] =
-        await Future.wait([receiveFutures, changeFutures]);
+    final [receiveResult, changeResult] = await Future.wait([receiveFutures, changeFutures]);
 
     walletItem.receiveUsedIndex = receiveResult.lastUsedIndex;
     walletItem.changeUsedIndex = changeResult.lastUsedIndex;
 
-    List<ScriptStatus> fetchedScriptStatuses = [
-      ...receiveResult.scriptStatuses
-    ];
+    List<ScriptStatus> fetchedScriptStatuses = [...receiveResult.scriptStatuses];
     fetchedScriptStatuses.addAll(changeResult.scriptStatuses);
 
     // 구독 응답 객체 생성
@@ -56,9 +51,8 @@ class ScriptSubscriber {
       return [];
     }
 
-    final changedScriptStatuses = subscribeResponse.scriptStatuses
-        .where((status) => status.status != null)
-        .toList();
+    final changedScriptStatuses =
+        subscribeResponse.scriptStatuses.where((status) => status.status != null).toList();
 
     // 지갑 인덱스 업데이트
     await _addressRepository.updateWalletUsedIndex(
@@ -73,8 +67,7 @@ class ScriptSubscriber {
     );
 
     // 주소 사용 여부 업데이트
-    await _addressRepository.setWalletAddressUsedBatch(
-        walletItem, changedScriptStatuses);
+    await _addressRepository.setWalletAddressUsedBatch(walletItem, changedScriptStatuses);
 
     Logger.log(
         'SubscribeWallet: ${walletItem.name} - finished / subscribedScriptMap.length: ${walletItem.subscribedScriptMap.length}');
@@ -84,25 +77,21 @@ class ScriptSubscriber {
 
   /// 지갑의 스크립트 구독 해제
   Future<void> unsubscribeWallet(WalletListItemBase walletItem) async {
-    await Future.wait([
-      _unsubscribeScript(walletItem, false),
-      _unsubscribeScript(walletItem, true)
-    ]);
+    await Future.wait(
+        [_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
     walletItem.subscribedScriptMap.clear();
     Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
   }
 
   /// 특정 유형(receive/change)의 주소에 대한 구독 처리
-  Future<({List<ScriptStatus> scriptStatuses, int lastUsedIndex})>
-      _subscribeWallet(
+  Future<({List<ScriptStatus> scriptStatuses, int lastUsedIndex})> _subscribeWallet(
     WalletListItemBase walletItem,
     bool isChange,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
   ) async {
     int currentAddressIndex = 0;
     int addressScanLimit = _gapLimit;
-    int lastUsedIndex =
-        isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
+    int lastUsedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
     List<ScriptStatus> scriptStatuses = [];
 
     while (currentAddressIndex < addressScanLimit) {
@@ -129,8 +118,7 @@ class ScriptSubscriber {
           walletItem.receiveUsedIndex = lastUsedIndex;
         }
 
-        Logger.log(
-            'Updated ${isChange ? "change" : "receive"} lastUsedIndex to $lastUsedIndex');
+        Logger.log('Updated ${isChange ? "change" : "receive"} lastUsedIndex to $lastUsedIndex');
       }
 
       // 사용된 주소가 발견된 경우 스캔 범위 확장
@@ -145,12 +133,8 @@ class ScriptSubscriber {
   }
 
   /// 주소 범위에 대한 구독 처리를 수행하는 공통 메서드
-  Future<
-      ({
-        List<ScriptStatus> newScriptStatuses,
-        int maxUsedIndex,
-        int nextIndex
-      })> _subscribeAddressRange(
+  Future<({List<ScriptStatus> newScriptStatuses, int maxUsedIndex, int nextIndex})>
+      _subscribeAddressRange(
     WalletListItemBase walletItem,
     int startIndex,
     int endIndex,
@@ -165,11 +149,7 @@ class ScriptSubscriber {
     );
 
     if (addresses.isEmpty) {
-      return (
-        newScriptStatuses: <ScriptStatus>[],
-        maxUsedIndex: -1,
-        nextIndex: startIndex
-      );
+      return (newScriptStatuses: <ScriptStatus>[], maxUsedIndex: -1, nextIndex: startIndex);
     }
 
     List<ScriptStatus> newScriptStatuses = <ScriptStatus>[];
@@ -194,8 +174,7 @@ class ScriptSubscriber {
         // 즉시 walletItem의 인덱스 업데이트
         if (isChange && scriptStatus.index > walletItem.changeUsedIndex) {
           walletItem.changeUsedIndex = scriptStatus.index;
-        } else if (!isChange &&
-            scriptStatus.index > walletItem.receiveUsedIndex) {
+        } else if (!isChange && scriptStatus.index > walletItem.receiveUsedIndex) {
           walletItem.receiveUsedIndex = scriptStatus.index;
         }
       }
@@ -221,8 +200,7 @@ class ScriptSubscriber {
     bool isChange,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
   ) async {
-    final script = ElectrumUtil.getScriptForAddress(
-        walletItem.walletBase.addressType, address);
+    final script = ElectrumUtil.getScriptForAddress(walletItem.walletBase.addressType, address);
     final derivationPath =
         '${walletItem.walletBase.derivationPath}/${isChange ? 1 : 0}/$derivationIndex';
 
@@ -245,9 +223,8 @@ class ScriptSubscriber {
       );
     }
 
-    final status = await _electrumService
-        .subscribeScript(walletItem.walletBase.addressType, address,
-            onUpdate: (reversedScriptHash, newStatus) {
+    final status = await _electrumService.subscribeScript(
+        walletItem.walletBase.addressType, address, onUpdate: (reversedScriptHash, newStatus) {
       // ---------- 콜백 함수 시작 ----------
       final now = DateTime.now();
       final scriptStatus = ScriptStatus(
@@ -276,8 +253,7 @@ class ScriptSubscriber {
           // 인덱스가 더 크거나, 상태가 변경되었고 현재 인덱스와 같은 경우
           if (derivationIndex > currentChangeIndex ||
               (statusChanged && derivationIndex >= currentChangeIndex)) {
-            walletItem.changeUsedIndex =
-                max(walletItem.changeUsedIndex, derivationIndex);
+            walletItem.changeUsedIndex = max(walletItem.changeUsedIndex, derivationIndex);
 
             needsExtension = true;
             Logger.log(
@@ -290,8 +266,7 @@ class ScriptSubscriber {
           // 인덱스가 더 크거나, 상태가 변경되었고 현재 인덱스와 같은 경우
           if (derivationIndex > currentReceiveIndex ||
               (statusChanged && derivationIndex >= currentReceiveIndex)) {
-            walletItem.receiveUsedIndex =
-                max(walletItem.receiveUsedIndex, derivationIndex);
+            walletItem.receiveUsedIndex = max(walletItem.receiveUsedIndex, derivationIndex);
 
             needsExtension = true;
             Logger.log(
@@ -348,8 +323,7 @@ class ScriptSubscriber {
     bool isChange,
     StreamController<SubscribeScriptStreamDto> scriptStatusController,
   ) async {
-    final usedIndex =
-        isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
+    final usedIndex = isChange ? walletItem.changeUsedIndex : walletItem.receiveUsedIndex;
     final startIndex = usedIndex + 1;
     final endIndex = usedIndex + _gapLimit + 1;
 
@@ -358,8 +332,7 @@ class ScriptSubscriber {
 
     // 범위가 유효한지 확인
     if (startIndex >= endIndex || usedIndex < 0) {
-      Logger.log(
-          'Invalid extension range: skipping (startIndex=$startIndex, endIndex=$endIndex)');
+      Logger.log('Invalid extension range: skipping (startIndex=$startIndex, endIndex=$endIndex)');
       return;
     }
 
@@ -374,8 +347,7 @@ class ScriptSubscriber {
   }
 
   /// 특정 유형(receive/change)의 스크립트 구독 해제
-  Future<void> _unsubscribeScript(
-      WalletListItemBase walletItem, bool isChange) async {
+  Future<void> _unsubscribeScript(WalletListItemBase walletItem, bool isChange) async {
     final addressScanLimit = isChange
         ? walletItem.changeUsedIndex + _gapLimit + 1
         : walletItem.receiveUsedIndex + _gapLimit + 1;
@@ -388,8 +360,7 @@ class ScriptSubscriber {
     );
 
     await Future.wait(addresses.values.map((address) {
-      return _electrumService.unsubscribeScript(
-          walletItem.walletBase.addressType, address);
+      return _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
     }));
   }
 }

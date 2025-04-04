@@ -47,8 +47,7 @@ class _AnimatedQrScannerState extends State<AnimatedQrScanner> {
 
         // 배열 insert를 위해서 scannedData Size 설정
         if (scannedData == null) {
-          int totalCount =
-              AnimatedQRDataHandler.parseTotalCount(scanData.code!);
+          int totalCount = AnimatedQRDataHandler.parseTotalCount(scanData.code!);
           scannedData = List<String>.filled(totalCount, '');
           setState(() {
             _totalCount = totalCount;
@@ -84,15 +83,15 @@ class _AnimatedQrScannerState extends State<AnimatedQrScanner> {
     return QrScannerOverlayShape(
       borderColor: widget.borderColor,
       borderRadius: 8,
-      borderLength: (MediaQuery.of(context).size.width < 400 ||
-              MediaQuery.of(context).size.height < 400)
-          ? 160.0
-          : MediaQuery.of(context).size.width * 0.85 / 2,
+      borderLength:
+          (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
+              ? 160.0
+              : MediaQuery.of(context).size.width * 0.85 / 2,
       borderWidth: _borderWidth,
-      cutOutSize: (MediaQuery.of(context).size.width < 400 ||
-              MediaQuery.of(context).size.height < 400)
-          ? 320.0
-          : MediaQuery.of(context).size.width * 0.85,
+      cutOutSize:
+          (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
+              ? 320.0
+              : MediaQuery.of(context).size.width * 0.85,
     );
   }
 
@@ -111,9 +110,7 @@ class _AnimatedQrScannerState extends State<AnimatedQrScanner> {
               bottom: (MediaQuery.of(context).size.width < 400 ||
                       MediaQuery.of(context).size.height < 400)
                   ? (constraints.maxHeight - 320.0) / 2 - _borderWidth - 20
-                  : (constraints.maxHeight -
-                              MediaQuery.of(context).size.width * 0.85) /
-                          2 -
+                  : (constraints.maxHeight - MediaQuery.of(context).size.width * 0.85) / 2 -
                       _borderWidth -
                       20, // QRView 아래에 배치되도록 위치 설정
               left: 0,

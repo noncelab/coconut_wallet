@@ -1,5 +1,6 @@
 {
   "java.configuration.updateBuildConfiguration": "interactive",
   "dart.flutterSdkPath": ".fvm/versions/3.24.3",
-  "todo-tree.general.tags": ["TODO", "FIXME", "INFO"]
+  "todo-tree.general.tags": ["TODO", "FIXME", "INFO"],
+  "dart.lineLength": 100
 }

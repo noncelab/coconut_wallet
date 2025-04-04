@@ -14,12 +14,10 @@ class UnsignedTransactionQrScreen extends StatefulWidget {
   const UnsignedTransactionQrScreen({super.key, required this.walletName});
 
   @override
-  State<UnsignedTransactionQrScreen> createState() =>
-      _UnsignedTransactionQrScreenState();
+  State<UnsignedTransactionQrScreen> createState() => _UnsignedTransactionQrScreenState();
 }
 
-class _UnsignedTransactionQrScreenState
-    extends State<UnsignedTransactionQrScreen> {
+class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScreen> {
   late final String _psbtBase64;
   late final bool _isMultisig;
 
@@ -92,8 +90,7 @@ class _UnsignedTransactionQrScreenState
                     margin: const EdgeInsets.only(top: 40),
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                        color: MyColors.white,
-                        borderRadius: BorderRadius.circular(8)),
+                        color: MyColors.white, borderRadius: BorderRadius.circular(8)),
                     child: AnimatedQrView(
                       data: AnimatedQRDataHandler.splitData(_psbtBase64),
                       size: MediaQuery.of(context).size.width * 0.8,
@@ -109,11 +106,9 @@ class _UnsignedTransactionQrScreenState
   @override
   void initState() {
     super.initState();
-    final sendInfoProvider =
-        Provider.of<SendInfoProvider>(context, listen: false);
+    final sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
     _psbtBase64 = sendInfoProvider.txWaitingForSign!;
-    debugPrint(
-        'txWaitingForSign = ${sendInfoProvider.txWaitingForSign!.length}');
+    debugPrint('txWaitingForSign = ${sendInfoProvider.txWaitingForSign!.length}');
     debugPrint('txWaitingForSign = ${sendInfoProvider.txWaitingForSign}');
     _isMultisig = sendInfoProvider.isMultisig!;
   }

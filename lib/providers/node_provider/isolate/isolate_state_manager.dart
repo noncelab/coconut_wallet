@@ -52,26 +52,26 @@ class IsolateStateManager implements StateManagerInterface {
 
   @override
   void initWalletUpdateStatus(int walletId) {
-    _sendStateUpdateToMain(IsolateStateMessage(
-        IsolateStateMethod.initWalletUpdateStatus, [walletId]));
+    _sendStateUpdateToMain(
+        IsolateStateMessage(IsolateStateMethod.initWalletUpdateStatus, [walletId]));
   }
 
   @override
   void addWalletSyncState(int walletId, UpdateElement updateType) {
-    _sendStateUpdateToMain(IsolateStateMessage(
-        IsolateStateMethod.addWalletSyncState, [walletId, updateType]));
+    _sendStateUpdateToMain(
+        IsolateStateMessage(IsolateStateMethod.addWalletSyncState, [walletId, updateType]));
   }
 
   @override
   void addWalletCompletedState(int walletId, UpdateElement updateType) {
-    _sendStateUpdateToMain(IsolateStateMessage(
-        IsolateStateMethod.addWalletCompletedState, [walletId, updateType]));
+    _sendStateUpdateToMain(
+        IsolateStateMessage(IsolateStateMethod.addWalletCompletedState, [walletId, updateType]));
   }
 
   @override
   void addWalletCompletedAllStates(int walletId) {
-    _sendStateUpdateToMain(IsolateStateMessage(
-        IsolateStateMethod.addWalletCompletedAllStates, [walletId]));
+    _sendStateUpdateToMain(
+        IsolateStateMessage(IsolateStateMethod.addWalletCompletedAllStates, [walletId]));
   }
 
   @override
@@ -80,7 +80,7 @@ class IsolateStateManager implements StateManagerInterface {
     Map<int, WalletUpdateInfo>? newUpdatedWallets,
     bool notify = true,
   }) {
-    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setState,
-        [newConnectionState, newUpdatedWallets, notify]));
+    _sendStateUpdateToMain(IsolateStateMessage(
+        IsolateStateMethod.setState, [newConnectionState, newUpdatedWallets, notify]));
   }
 }

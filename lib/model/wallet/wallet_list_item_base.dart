@@ -16,8 +16,7 @@ abstract class WalletListItemBase {
 
   late WalletBase walletBase;
 
-  Map<String, UnaddressedScriptStatus> subscribedScriptMap =
-      {}; // { ScriptPubKey: ScriptStatus }
+  Map<String, UnaddressedScriptStatus> subscribedScriptMap = {}; // { ScriptPubKey: ScriptStatus }
 
   WalletListItemBase(
       {required this.id,

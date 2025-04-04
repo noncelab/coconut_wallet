@@ -37,8 +37,7 @@ class WalletInfoItemCard extends StatelessWidget {
       colorIndex = multiWallet.colorIndex;
       iconIndex = multiWallet.iconIndex;
       rightText = '';
-      tooltipText =
-          '${multiWallet.requiredSignatureCount}/${multiWallet.signers.length}';
+      tooltipText = '${multiWallet.requiredSignatureCount}/${multiWallet.signers.length}';
       isMultisig = true;
     } else {
       /// 싱글 시그
@@ -60,13 +59,11 @@ class WalletInfoItemCard extends StatelessWidget {
           : null,
       child: Container(
         margin: isMultisig ? const EdgeInsets.all(2) : const EdgeInsets.all(0),
-        padding:
-            isMultisig ? const EdgeInsets.all(20) : const EdgeInsets.all(24),
+        padding: isMultisig ? const EdgeInsets.all(20) : const EdgeInsets.all(24),
         decoration: isMultisig
             ? BoxDecoration(
                 color: MyColors.black,
-                borderRadius: BorderRadius.circular(
-                    26), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
+                borderRadius: BorderRadius.circular(26), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
               )
             : BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
@@ -111,8 +108,7 @@ class WalletInfoItemCard extends StatelessWidget {
                 if (rightText.isNotEmpty)
                   Text(
                     rightText,
-                    style: Styles.h3.merge(TextStyle(
-                        fontFamily: CustomFonts.number.getFontFamily)),
+                    style: Styles.h3.merge(TextStyle(fontFamily: CustomFonts.number.getFontFamily)),
                   ),
                 TooltipButton(
                   isSelected: false,

@@ -47,8 +47,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                       context.loaderOverlay.hide();
                       showAlertDialog(
                           context: context,
-                          content: t.alert.error_tx
-                              .not_created(error: error.toString()));
+                          content: t.alert.error_tx.not_created(error: error.toString()));
                     });
                   }),
               body: SafeArea(
@@ -60,18 +59,15 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                           child: Text.rich(
                             TextSpan(
                                 text: satoshiToBitcoinString(
-                                    UnitUtil.bitcoinToSatoshi(
-                                        viewModel.amount)),
+                                    UnitUtil.bitcoinToSatoshi(viewModel.amount)),
                                 children: <TextSpan>[
-                                  TextSpan(
-                                      text: ' ${t.btc}', style: Styles.unit)
+                                  TextSpan(text: ' ${t.btc}', style: Styles.unit)
                                 ]),
                             style: Styles.balance1,
                           ),
                         )),
                     FiatPrice(
-                      satoshiAmount:
-                          UnitUtil.bitcoinToSatoshi(viewModel.amount),
+                      satoshiAmount: UnitUtil.bitcoinToSatoshi(viewModel.amount),
                     ),
                     CoconutLayout.spacing_1000h,
                     Padding(
@@ -82,20 +78,16 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                             color: MyColors.transparentWhite_06,
                           ),
                           child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 24),
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
                               child: Column(
                                 children: [
                                   InformationItemCard(
                                     label: t.receiver,
                                     value: viewModel.addresses,
                                     isNumber: true,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                   ),
-                                  const Divider(
-                                      color: MyColors.transparentWhite_12,
-                                      height: 1),
+                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
                                   InformationItemCard(
                                       label: t.estimated_fee,
                                       value: [
@@ -104,9 +96,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                             : t.calculation_failed
                                       ],
                                       isNumber: true),
-                                  const Divider(
-                                      color: MyColors.transparentWhite_12,
-                                      height: 1),
+                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
                                   InformationItemCard(
                                       label: t.total_cost,
                                       value: [
@@ -130,8 +120,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   void initState() {
     super.initState();
 
-    _viewModel = SendConfirmViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
+    _viewModel = SendConfirmViewModel(Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false));
   }
 }

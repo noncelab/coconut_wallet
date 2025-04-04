@@ -34,8 +34,7 @@ class CustomDialogs {
                   isDefaultAction: true,
                   onPressed: onConfirm,
                   child: Text(confirmButtonText,
-                      style: Styles.label
-                          .merge(TextStyle(color: confirmButtonColor)))),
+                      style: Styles.label.merge(TextStyle(color: confirmButtonColor)))),
             ]);
       },
     );
@@ -78,15 +77,13 @@ class CustomDialogs {
                     await onConfirm();
                   },
                   child: Text(confirmButtonText,
-                      style: Styles.label
-                          .merge(TextStyle(color: confirmButtonColor)))),
+                      style: Styles.label.merge(TextStyle(color: confirmButtonColor)))),
             ]);
       },
     );
   }
 
-  static void showFullScreenDialog(
-      BuildContext context, String title, Widget body) {
+  static void showFullScreenDialog(BuildContext context, String title, Widget body) {
     Navigator.of(context).push(MaterialPageRoute<void>(
       fullscreenDialog: true,
       builder: (BuildContext context) {
@@ -96,8 +93,8 @@ class CustomDialogs {
                 title: Text(title),
                 centerTitle: true,
                 backgroundColor: MyColors.black,
-                titleTextStyle: Styles.h3.merge(
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w400)),
+                titleTextStyle:
+                    Styles.h3.merge(const TextStyle(fontSize: 16, fontWeight: FontWeight.w400)),
                 toolbarTextStyle: Styles.h3,
                 actions: [
                   IconButton(

@@ -31,15 +31,8 @@ class WalletAddress {
   bool get isChange => _isChange;
 
   /// Creates a new address object.
-  WalletAddress(
-      this._address,
-      this._derivationPath,
-      this._index,
-      this._isChange,
-      this._isUsed,
-      this._confirmed,
-      this._unconfirmed,
-      this._total);
+  WalletAddress(this._address, this._derivationPath, this._index, this._isChange, this._isUsed,
+      this._confirmed, this._unconfirmed, this._total);
 
   /// @nodoc
   @override

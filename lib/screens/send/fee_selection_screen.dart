@@ -52,8 +52,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Selector<ConnectivityProvider, bool?>(
-        selector: (context, connectivityProvider) =>
-            connectivityProvider.isNetworkOn,
+        selector: (context, connectivityProvider) => connectivityProvider.isNetworkOn,
         builder: (context, isNetworkOn, child) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _onChangedNetworkStatus(isNetworkOn);
@@ -84,17 +83,13 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                       const SizedBox(height: 32),
                       Container(
                         margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
                             color: CoconutColors.gray800,
-                            border: Border.all(
-                                color: CoconutColors.gray500, width: 1)),
+                            border: Border.all(color: CoconutColors.gray500, width: 1)),
                         child: Text(
-                            _selectedFeeLevel == null
-                                ? t.input_directly
-                                : _selectedFeeLevel!.text,
+                            _selectedFeeLevel == null ? t.input_directly : _selectedFeeLevel!.text,
                             style: CoconutTypography.caption_10),
                       ),
                       Text(
@@ -110,25 +105,20 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
                     if (_isNetworkOn == false)
                       _buildFixedTooltip(
-                          richText: RichText(
-                              text: TextSpan(
-                                  text: ErrorCodes.networkError.message)),
+                          richText: RichText(text: TextSpan(text: ErrorCodes.networkError.message)),
                           tooltipState: CoconutTooltipState.warning),
-                    if (_isNetworkOn == true &&
-                        widget.isRecommendedFeeFetchSuccess == false)
+                    if (_isNetworkOn == true && widget.isRecommendedFeeFetchSuccess == false)
                       _buildFixedTooltip(
                           richText: RichText(
                               text: TextSpan(
-                                  text: t.errors.fee_selection_error
-                                      .recommended_fee_unavailable)),
+                                  text: t.errors.fee_selection_error.recommended_fee_unavailable)),
                           tooltipState: CoconutTooltipState.error),
                     if (_estimatedFee != null && _estimatedFee! >= kMaxFeeLimit)
                       _buildFixedTooltip(
                           richText: RichText(
                               text: TextSpan(
                                   text: t.tooltip.recommended_fee2(
-                                      bitcoin: UnitUtil.satoshiToBitcoin(
-                                          kMaxFeeLimit)))),
+                                      bitcoin: UnitUtil.satoshiToBitcoin(kMaxFeeLimit)))),
                           tooltipState: CoconutTooltipState.warning),
                     Padding(
                         padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
@@ -138,14 +128,11 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                 3,
                                 (index) => FeeSelectionItemCard(
                                     feeInfo: widget.feeInfos[index],
-                                    isSelected: _selectedFeeLevel ==
-                                        widget.feeInfos[index].level,
+                                    isSelected: _selectedFeeLevel == widget.feeInfos[index].level,
                                     onPressed: () {
                                       setState(() {
-                                        _selectedFeeLevel =
-                                            widget.feeInfos[index].level;
-                                        _estimatedFee =
-                                            widget.feeInfos[index].estimatedFee;
+                                        _selectedFeeLevel = widget.feeInfos[index].level;
+                                        _estimatedFee = widget.feeInfos[index].estimatedFee;
                                         _customSatsPerVb = null;
 
                                         debugPrint(
@@ -153,16 +140,14 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                       });
                                     })),
                             CustomUnderlinedButton(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 16),
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                                 onTap: () {
                                   showModalBottomSheet(
                                     context: context,
                                     isScrollControlled: true,
                                     builder: (context) => TextFieldBottomSheet(
                                       title: t.input_directly,
-                                      placeholder: t.text_field
-                                          .enter_fee_as_natural_number,
+                                      placeholder: t.text_field.enter_fee_as_natural_number,
                                       onComplete: (text) {
                                         _onCustomFeeRateInput(text);
                                       },
@@ -191,15 +176,12 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       _estimatedFee = widget.customFeeInfo!.estimatedFee ?? 0;
       _customSatsPerVb = widget.customFeeInfo!.satsPerVb;
     } else if (_selectedFeeLevel != null && widget.customFeeInfo == null) {
-      _estimatedFee =
-          _findFeeInfoWithLevel(_selectedFeeLevel!).estimatedFee ?? 0;
+      _estimatedFee = _findFeeInfoWithLevel(_selectedFeeLevel!).estimatedFee ?? 0;
     }
   }
 
-  FeeInfoWithLevel _findFeeInfoWithLevel(
-      TransactionFeeLevel transactionFeeLevel) {
-    return widget.feeInfos
-        .firstWhere((feeInfo) => feeInfo.level == transactionFeeLevel);
+  FeeInfoWithLevel _findFeeInfoWithLevel(TransactionFeeLevel transactionFeeLevel) {
+    return widget.feeInfos.firstWhere((feeInfo) => feeInfo.level == transactionFeeLevel);
   }
 
   Future<void> _onChangedNetworkStatus(bool? isNetworkOn) async {
@@ -222,11 +204,9 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
     // }
 
     int customSatsPerVb = int.parse(input);
-    if (widget.networkMinimumFeeRate != null &&
-        customSatsPerVb < widget.networkMinimumFeeRate!) {
+    if (widget.networkMinimumFeeRate != null && customSatsPerVb < widget.networkMinimumFeeRate!) {
       CustomToast.showToast(
-          context: context,
-          text: t.toast.min_fee(minimum: widget.networkMinimumFeeRate!));
+          context: context, text: t.toast.min_fee(minimum: widget.networkMinimumFeeRate!));
       _customFeeController.clear();
       return null;
     }
@@ -244,9 +224,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       if (mounted) {
         CustomToast.showWarningToast(
             context: context,
-            text: ErrorCodes.withMessage(
-                    ErrorCodes.feeEstimationError, e.toString())
-                .message);
+            text: ErrorCodes.withMessage(ErrorCodes.feeEstimationError, e.toString()).message);
       }
     } finally {
       _customFeeController.clear();
@@ -256,24 +234,21 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   void _onDone() {
     Map<String, dynamic> returnData = {
       FeeSelectionScreen.selectedOptionField: _selectedFeeLevel,
-      FeeSelectionScreen.feeInfoField:
-          (_selectedFeeLevel == null && _customSatsPerVb != null)
-              ? FeeInfo(
-                  estimatedFee: _estimatedFee,
-                  // fiatValue: fiatValueInKrw?.toInt(),
-                  satsPerVb: _customSatsPerVb)
-              : _findFeeInfoWithLevel(_selectedFeeLevel!),
+      FeeSelectionScreen.feeInfoField: (_selectedFeeLevel == null && _customSatsPerVb != null)
+          ? FeeInfo(
+              estimatedFee: _estimatedFee,
+              // fiatValue: fiatValueInKrw?.toInt(),
+              satsPerVb: _customSatsPerVb)
+          : _findFeeInfoWithLevel(_selectedFeeLevel!),
     };
 
     Navigator.pop(context, returnData);
   }
 
   Widget _buildFixedTooltip(
-      {required RichText richText,
-      CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
+      {required RichText richText, CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
     return Padding(
-        padding: const EdgeInsets.symmetric(
-            vertical: 8, horizontal: CoconutLayout.defaultPadding),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: CoconutLayout.defaultPadding),
         child: CoconutToolTip(
           richText: richText,
           showIcon: true,

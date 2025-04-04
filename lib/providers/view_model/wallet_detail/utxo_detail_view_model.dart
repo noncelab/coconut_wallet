@@ -25,8 +25,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   int _utxoInputMaxCount = 0;
   int _utxoOutputMaxCount = 0;
 
-  UtxoDetailViewModel(
-      this._walletId, this._utxo, this._tagProvider, this._txProvider) {
+  UtxoDetailViewModel(this._walletId, this._utxo, this._tagProvider, this._txProvider) {
     _utxoId = _utxo.utxoId;
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
     _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
@@ -47,22 +46,14 @@ class UtxoDetailViewModel extends ChangeNotifier {
   List<UtxoTag> get utxoTagList => _utxoTagList;
   UtxoStatus get utxoStatus => _utxo.status;
 
-  String getInputAddress(int index) =>
-      TransactionUtil.getInputAddress(_transaction, index);
-  int getInputAmount(int index) =>
-      TransactionUtil.getInputAmount(_transaction, index);
-  String getOutputAddress(int index) =>
-      TransactionUtil.getOutputAddress(_transaction, index);
-  int getOutputAmount(int index) =>
-      TransactionUtil.getOutputAmount(_transaction, index);
+  String getInputAddress(int index) => TransactionUtil.getInputAddress(_transaction, index);
+  int getInputAmount(int index) => TransactionUtil.getInputAmount(_transaction, index);
+  String getOutputAddress(int index) => TransactionUtil.getOutputAddress(_transaction, index);
+  int getOutputAmount(int index) => TransactionUtil.getOutputAmount(_transaction, index);
 
-  void updateUtxoTags(
-      String utxoId, List<String> selectedTagNames, List<UtxoTag> newTags) {
+  void updateUtxoTags(String utxoId, List<String> selectedTagNames, List<UtxoTag> newTags) {
     _tagProvider.updateUtxoTagList(
-        walletId: _walletId,
-        utxoId: utxoId,
-        newTags: newTags,
-        selectedTagNames: selectedTagNames);
+        walletId: _walletId, utxoId: utxoId, newTags: newTags, selectedTagNames: selectedTagNames);
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
     _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxoId);
@@ -75,10 +66,9 @@ class UtxoDetailViewModel extends ChangeNotifier {
     _utxoInputMaxCount = _transaction.inputAddressList.length <= kInputMaxCount
         ? _transaction.inputAddressList.length
         : kInputMaxCount;
-    _utxoOutputMaxCount =
-        _transaction.outputAddressList.length <= kOutputMaxCount
-            ? _transaction.outputAddressList.length
-            : kOutputMaxCount;
+    _utxoOutputMaxCount = _transaction.outputAddressList.length <= kOutputMaxCount
+        ? _transaction.outputAddressList.length
+        : kOutputMaxCount;
     if (_transaction.inputAddressList.length <= utxoInputMaxCount) {
       _utxoInputMaxCount = _transaction.inputAddressList.length;
     }

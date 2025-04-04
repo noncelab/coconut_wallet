@@ -65,9 +65,7 @@ class _CustomExpansionPanelState extends State<CustomExpansionPanel> {
         AnimatedCrossFade(
           firstChild: Container(),
           secondChild: widget.expansionWidget,
-          crossFadeState: widget.isExpanded
-              ? CrossFadeState.showSecond
-              : CrossFadeState.showFirst,
+          crossFadeState: widget.isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 200),
         ),
       ],

@@ -54,8 +54,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
   bool _isErrorInServerStatus = false;
   bool get isErrorInServerStatus => _isErrorInServerStatus;
 
-  FaucetRequestViewModel(
-      WalletListItemBase walletBaseItem, this._walletProvider) {
+  FaucetRequestViewModel(WalletListItemBase walletBaseItem, this._walletProvider) {
     initReceivingAddress(walletBaseItem);
 
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(walletBaseItem.id);
@@ -67,8 +66,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
   }
 
   void initReceivingAddress(WalletListItemBase walletBaseItem) {
-    WalletAddress receiveAddress =
-        _walletProvider.getReceiveAddress(walletBaseItem.id);
+    WalletAddress receiveAddress = _walletProvider.getReceiveAddress(walletBaseItem.id);
     _walletAddress = receiveAddress.address;
     _walletId = walletBaseItem.id;
     _walletName = walletBaseItem.name.length > 20
@@ -111,14 +109,13 @@ class FaucetRequestViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _faucetService.getTestCoin(
-          FaucetRequest(address: inputText, amount: _requestAmount));
+      final response = await _faucetService
+          .getTestCoin(FaucetRequest(address: inputText, amount: _requestAmount));
       if (response is FaucetResponse) {
         isErrorInRemainingTime = false;
         onResult(true, '테스트 비트코인을 요청했어요. 잠시만 기다려 주세요.');
         _updateFaucetHistory();
-      } else if (response is DefaultErrorResponse &&
-          response.error == 'TOO_MANY_REQUEST_FAUCET') {
+      } else if (response is DefaultErrorResponse && response.error == 'TOO_MANY_REQUEST_FAUCET') {
         isErrorInRemainingTime = true;
         onResult(false, '해당 주소로 이미 요청했습니다. 입금까지 최대 5분이 걸릴 수 있습니다.');
       } else {
@@ -142,8 +139,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
     textController.value = textController.value.copyWith(
       text: inputText,
       selection: TextSelection.collapsed(
-          offset:
-              textController.selection.baseOffset.clamp(0, inputText.length)),
+          offset: textController.selection.baseOffset.clamp(0, inputText.length)),
     );
 
     isErrorInAddress = !_isValidAddress(address);
@@ -164,8 +160,7 @@ class FaucetRequestViewModel extends ChangeNotifier {
 
     int count = _faucetRecord.count;
     int dateTime = DateTime.now().millisecondsSinceEpoch;
-    _faucetRecord =
-        _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
+    _faucetRecord = _faucetRecord.copyWith(dateTime: dateTime, count: count + 1);
     _saveFaucetRecordToSharedPrefs();
   }
 
@@ -210,10 +205,8 @@ class FaucetRequestViewModel extends ChangeNotifier {
   // }
 
   void _initFaucetRecord() {
-    _faucetRecord = FaucetRecord(
-        id: _walletId,
-        dateTime: DateTime.now().millisecondsSinceEpoch,
-        count: 0);
+    _faucetRecord =
+        FaucetRecord(id: _walletId, dateTime: DateTime.now().millisecondsSinceEpoch, count: 0);
   }
 
   void _saveFaucetRecordToSharedPrefs() {

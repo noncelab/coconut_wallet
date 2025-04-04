@@ -29,8 +29,7 @@ class TransactionManager {
     this._utxoManager,
     this._addressRepository,
   ) {
-    _transactionProcessor =
-        TransactionProcessor(_electrumService, _addressRepository);
+    _transactionProcessor = TransactionProcessor(_electrumService, _addressRepository);
     _transactionFetcher = TransactionFetcher(
       _electrumService,
       _transactionRepository,
@@ -62,8 +61,7 @@ class TransactionManager {
 
       // 브로드캐스트 시간 기록
       _transactionRepository
-          .recordTemporaryBroadcastTime(
-              signedTx.transactionHash, DateTime.now())
+          .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
           .catchError((e) {
         Logger.error(e);
       });

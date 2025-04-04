@@ -13,8 +13,7 @@ class SettingsViewModel extends ChangeNotifier {
   bool get isBalanceHidden => _preferenceProvider.isBalanceHidden;
   bool get canCheckBiometrics => _authProvider.canCheckBiometrics;
 
-  SettingsViewModel(
-      this._authProvider, this._preferenceProvider, this._walletProvider);
+  SettingsViewModel(this._authProvider, this._preferenceProvider, this._walletProvider);
 
   Future<bool> authenticateWithBiometrics({bool isSave = false}) async {
     return await _authProvider.authenticateWithBiometrics(isSave: isSave);

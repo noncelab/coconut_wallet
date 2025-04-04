@@ -21,7 +21,6 @@ class ValueText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(text,
-        style: Styles.body1.merge(
-            const TextStyle(fontFamily: 'SpaceGrotesk', letterSpacing: 0)));
+        style: Styles.body1.merge(const TextStyle(fontFamily: 'SpaceGrotesk', letterSpacing: 0)));
   }
 }

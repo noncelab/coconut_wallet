@@ -84,8 +84,7 @@ class FrostedAppBar extends StatelessWidget {
                         'assets/svg/book.svg',
                         width: 18,
                         height: 18,
-                        colorFilter: const ColorFilter.mode(
-                            MyColors.white, BlendMode.srcIn),
+                        colorFilter: const ColorFilter.mode(MyColors.white, BlendMode.srcIn),
                       ),
                       onPressed: () {
                         CustomDialogs.showCustomAlertDialog(

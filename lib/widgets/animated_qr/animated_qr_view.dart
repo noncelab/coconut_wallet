@@ -9,10 +9,7 @@ class AnimatedQrView extends StatefulWidget {
   final int milliSeconds;
 
   const AnimatedQrView(
-      {super.key,
-      required this.data,
-      required this.size,
-      this.milliSeconds = 500});
+      {super.key, required this.data, required this.size, this.milliSeconds = 500});
 
   @override
   State<AnimatedQrView> createState() => _AnimatedQrViewState();
@@ -26,8 +23,7 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
   @override
   void initState() {
     super.initState();
-    _timer =
-        Timer.periodic(Duration(milliseconds: widget.milliSeconds), (timer) {
+    _timer = Timer.periodic(Duration(milliseconds: widget.milliSeconds), (timer) {
       setState(() {
         dataIndex = (dataIndex + 1) % widget.data.length;
       });
@@ -36,8 +32,7 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
 
   @override
   Widget build(BuildContext context) {
-    return QrImageView(
-        data: widget.data[dataIndex], size: widget.size, version: 11);
+    return QrImageView(data: widget.data[dataIndex], size: widget.size, version: 11);
   }
 
   @override

@@ -19,8 +19,7 @@ class AddressListScreen extends StatefulWidget {
   final int id;
   final bool isFullScreen;
 
-  const AddressListScreen(
-      {super.key, required this.id, this.isFullScreen = true});
+  const AddressListScreen({super.key, required this.id, this.isFullScreen = true});
 
   @override
   State<AddressListScreen> createState() => _AddressListScreenState();
@@ -59,17 +58,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => AddressListViewModel(
-          Provider.of<WalletProvider>(context, listen: false),
-          widget.id,
-          kFirstCount),
+          Provider.of<WalletProvider>(context, listen: false), widget.id, kFirstCount),
       child: Consumer<AddressListViewModel>(
         builder: (context, viewModel, child) {
           if (this.viewModel == null) {
             this.viewModel = viewModel;
           }
-          List<WalletAddress>? addressList = isReceivingSelected
-              ? viewModel.receivingAddressList
-              : viewModel.changeAddressList;
+          List<WalletAddress>? addressList =
+              isReceivingSelected ? viewModel.receivingAddressList : viewModel.changeAddressList;
 
           return PopScope(
             canPop: true,
@@ -93,13 +89,12 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           },
                           icon: SvgPicture.asset('assets/svg/back.svg',
                               width: 24,
-                              colorFilter: const ColorFilter.mode(
-                                  CoconutColors.white, BlendMode.srcIn))),
+                              colorFilter:
+                                  const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn))),
                       flexibleSpace: _isScrollOverTitleHeight
                           ? ClipRect(
                               child: BackdropFilter(
-                                filter:
-                                    ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                                 child: Container(
                                   color: CoconutColors.white.withOpacity(0.6),
                                 ),
@@ -107,8 +102,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             )
                           : null,
                       title: Text(
-                        t.address_list_screen
-                            .wallet_name(name: viewModel.walletBaseItem!.name),
+                        t.address_list_screen.wallet_name(name: viewModel.walletBaseItem!.name),
                         style: CoconutTypography.heading4_18,
                       ),
                       centerTitle: true,
@@ -131,43 +125,29 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                       ListView.builder(
                                         controller: _controller,
                                         itemCount: addressList!.length,
-                                        itemBuilder: (context, index) =>
-                                            AddressItemCard(
+                                        itemBuilder: (context, index) => AddressItemCard(
                                           onPressed: () {
                                             _removeTooltip();
-                                            CommonBottomSheets
-                                                .showBottomSheet_90(
-                                                    context: context,
-                                                    child: QrcodeBottomSheet(
-                                                        qrcodeTopWidget: Text(
-                                                          addressList[index]
-                                                              .derivationPath,
-                                                          style:
-                                                              CoconutTypography
-                                                                  .body2_14
-                                                                  .merge(
-                                                            TextStyle(
-                                                              color: CoconutColors
-                                                                  .white
-                                                                  .withOpacity(
-                                                                      0.7),
-                                                            ),
-                                                          ),
+                                            CommonBottomSheets.showBottomSheet_90(
+                                                context: context,
+                                                child: QrcodeBottomSheet(
+                                                    qrcodeTopWidget: Text(
+                                                      addressList[index].derivationPath,
+                                                      style: CoconutTypography.body2_14.merge(
+                                                        TextStyle(
+                                                          color:
+                                                              CoconutColors.white.withOpacity(0.7),
                                                         ),
-                                                        qrData:
-                                                            addressList[index]
-                                                                .address,
-                                                        title: t
-                                                            .address_list_screen
-                                                            .address_index(
-                                                                index: index)));
+                                                      ),
+                                                    ),
+                                                    qrData: addressList[index].address,
+                                                    title: t.address_list_screen
+                                                        .address_index(index: index)));
                                           },
                                           address: addressList[index].address,
-                                          derivationPath:
-                                              addressList[index].derivationPath,
+                                          derivationPath: addressList[index].derivationPath,
                                           isUsed: addressList[index].isUsed,
-                                          balanceInSats:
-                                              addressList[index].total,
+                                          balanceInSats: addressList[index].total,
                                         ),
                                       ),
                                       if (_isLoadMoreRunning)
@@ -219,19 +199,16 @@ class _AddressListScreenState extends State<AddressListScreen> {
       _controller.addListener(_nextLoad);
       _depositTooltipIconRenderBox =
           _depositTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _depositTooltipIconPosition =
-          _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _depositTooltipIconPosition = _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
 
       _changeTooltipIconRenderBox =
           _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _changeTooltipIconPosition =
-          _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _changeTooltipIconPosition = _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
     });
   }
 
   void scrollToTop() {
-    _controller.animateTo(0,
-        duration: const Duration(milliseconds: 500), curve: Curves.decelerate);
+    _controller.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.decelerate);
   }
 
   Widget toolbarWidget() {
@@ -297,18 +274,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
     if (_depositTooltipVisible) {
       _depositTooltipIconRenderBox =
           _depositTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _depositTooltipIconPosition =
-          _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _depositTooltipIconPosition = _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
 
       return Positioned(
         top: widget.isFullScreen
-            ? _depositTooltipIconPosition.dy +
-                _depositTooltipIconRenderBox.size.height
+            ? _depositTooltipIconPosition.dy + _depositTooltipIconRenderBox.size.height
             : _depositTooltipIconPosition.dy - 70,
         left: _depositTooltipIconPosition.dx - 30,
-        right: MediaQuery.of(context).size.width -
-            _depositTooltipIconPosition.dx -
-            150,
+        right: MediaQuery.of(context).size.width - _depositTooltipIconPosition.dx - 150,
         child: CoconutToolTip(
           onTapRemove: () => _removeTooltip(),
           width: MediaQuery.sizeOf(context).width,
@@ -320,9 +293,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           richText: RichText(
             text: TextSpan(
               text: t.tooltip.address_receiving,
-              style: CoconutTypography.body3_12
-                  .setColor(CoconutColors.black)
-                  .merge(
+              style: CoconutTypography.body3_12.setColor(CoconutColors.black).merge(
                     const TextStyle(
                       height: 1.3,
                     ),
@@ -334,12 +305,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
     } else if (_changeTooltipVisible) {
       _changeTooltipIconRenderBox =
           _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _changeTooltipIconPosition =
-          _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _changeTooltipIconPosition = _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
       return Positioned(
         top: widget.isFullScreen
-            ? _changeTooltipIconPosition.dy +
-                _changeTooltipIconRenderBox.size.height
+            ? _changeTooltipIconPosition.dy + _changeTooltipIconRenderBox.size.height
             : _changeTooltipIconPosition.dy - 70,
         left: _changeTooltipIconPosition.dx - 150,
         right: MediaQuery.of(context).size.width -
@@ -357,9 +326,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
           richText: RichText(
             text: TextSpan(
               text: t.tooltip.address_change,
-              style: CoconutTypography.body3_12
-                  .setColor(CoconutColors.black)
-                  .merge(
+              style: CoconutTypography.body3_12.setColor(CoconutColors.black).merge(
                     const TextStyle(
                       height: 1.3,
                     ),
@@ -373,9 +340,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   void _nextLoad() {
-    if (!_isFirstLoadRunning &&
-        !_isLoadMoreRunning &&
-        _controller.position.extentAfter < 100) {
+    if (!_isFirstLoadRunning && !_isLoadMoreRunning && _controller.position.extentAfter < 100) {
       setState(() {
         _isLoadMoreRunning = true;
       });
@@ -384,10 +349,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
         final newAddresses = viewModel?.walletProvider.getWalletAddressList(
             viewModel!.walletBaseItem!,
             kFirstCount +
-                (isReceivingSelected
-                        ? _receivingAddressPage
-                        : _changeAddressPage) *
-                    _limit,
+                (isReceivingSelected ? _receivingAddressPage : _changeAddressPage) * _limit,
             _limit,
             !isReceivingSelected);
 

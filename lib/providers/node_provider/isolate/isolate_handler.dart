@@ -16,11 +16,11 @@ class IsolateHandler {
   final NetworkManager _networkManager;
   final IsolateStateManager _isolateStateManager;
   final ElectrumService _electrumService;
-  IsolateHandler(this._subscriptionManager, this._transactionManager,
-      this._networkManager, this._isolateStateManager, this._electrumService);
+  IsolateHandler(this._subscriptionManager, this._transactionManager, this._networkManager,
+      this._isolateStateManager, this._electrumService);
 
-  Future<void> handleMessage(IsolateHandlerMessage messageType,
-      SendPort isolateToMainSendPort, List params) async {
+  Future<void> handleMessage(
+      IsolateHandlerMessage messageType, SendPort isolateToMainSendPort, List params) async {
     try {
       switch (messageType) {
         case IsolateHandlerMessage.subscribeWallets:
@@ -38,8 +38,7 @@ class IsolateHandler {
           );
 
           for (var walletItem in walletItems) {
-            final result =
-                await _subscriptionManager.subscribeWallet(walletItem);
+            final result = await _subscriptionManager.subscribeWallet(walletItem);
             if (result.isFailure) {
               isolateToMainSendPort.send(result);
               return;
@@ -55,31 +54,25 @@ class IsolateHandler {
           isolateToMainSendPort.send(Result.success(true));
           break;
         case IsolateHandlerMessage.subscribeWallet:
-          isolateToMainSendPort
-              .send(await _subscriptionManager.subscribeWallet(params[0]));
+          isolateToMainSendPort.send(await _subscriptionManager.subscribeWallet(params[0]));
           break;
         case IsolateHandlerMessage.unsubscribeWallet:
-          isolateToMainSendPort
-              .send(await _subscriptionManager.unsubscribeWallet(params[0]));
+          isolateToMainSendPort.send(await _subscriptionManager.unsubscribeWallet(params[0]));
           break;
         case IsolateHandlerMessage.broadcast:
-          isolateToMainSendPort
-              .send(await _transactionManager.broadcast(params[0]));
+          isolateToMainSendPort.send(await _transactionManager.broadcast(params[0]));
           break;
         case IsolateHandlerMessage.getNetworkMinimumFeeRate:
-          isolateToMainSendPort
-              .send(await _networkManager.getNetworkMinimumFeeRate());
+          isolateToMainSendPort.send(await _networkManager.getNetworkMinimumFeeRate());
           break;
         case IsolateHandlerMessage.getLatestBlock:
           isolateToMainSendPort.send(await _networkManager.getLatestBlock());
           break;
         case IsolateHandlerMessage.getTransaction:
-          isolateToMainSendPort
-              .send(await _transactionManager.getTransaction(params[0]));
+          isolateToMainSendPort.send(await _transactionManager.getTransaction(params[0]));
           break;
         case IsolateHandlerMessage.getRecommendedFees:
-          isolateToMainSendPort
-              .send(await _networkManager.getRecommendedFees());
+          isolateToMainSendPort.send(await _networkManager.getRecommendedFees());
           break;
         case IsolateHandlerMessage.getSocketConnectionStatus:
           isolateToMainSendPort.send(_electrumService.connectionStatus);

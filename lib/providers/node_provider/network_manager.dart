@@ -40,8 +40,7 @@ class NetworkManager {
       var blockHeader = BlockHeader.parse(result.height, result.hex);
       return Result.success(BlockTimestamp(
         blockHeader.height,
-        DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000,
-            isUtc: true),
+        DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000, isUtc: true),
       ));
     } catch (e) {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
@@ -53,8 +52,7 @@ class NetworkManager {
     try {
       // 1. mempool.get_fee_histogram 호출
       //    결과는 [[fee, vsize], [fee, vsize], ...] 형태이며 fee 단위는 sat/vB.
-      final dynamic histogramResult =
-          await _electrumService.getMempoolFeeHistogram();
+      final dynamic histogramResult = await _electrumService.getMempoolFeeHistogram();
       List<List<dynamic>> histogram = [];
       if (histogramResult is List) {
         for (var entry in histogramResult) {
@@ -72,25 +70,18 @@ class NetworkManager {
       const int economyTarget = 10; // 경제적 확인 (10블록)
 
       // 각 목표에 대해 fee 추정값 호출 (BTC/kB 단위)
-      final dynamic feeFastRaw =
-          await _electrumService.estimateFee(fastestTarget);
-      final dynamic feeHalfHourRaw =
-          await _electrumService.estimateFee(halfHourTarget);
+      final dynamic feeFastRaw = await _electrumService.estimateFee(fastestTarget);
+      final dynamic feeHalfHourRaw = await _electrumService.estimateFee(halfHourTarget);
       final dynamic feeHourRaw = await _electrumService.estimateFee(hourTarget);
-      final dynamic feeEconomyRaw =
-          await _electrumService.estimateFee(economyTarget);
+      final dynamic feeEconomyRaw = await _electrumService.estimateFee(economyTarget);
 
       // 반환값이 -1이면 충분한 정보가 없다는 뜻이므로 0으로 처리 (추후 대체)
-      double feeFast =
-          (feeFastRaw is int ? feeFastRaw.toDouble() : feeFastRaw) as double;
-      double feeHalfHour = (feeHalfHourRaw is int
-          ? feeHalfHourRaw.toDouble()
-          : feeHalfHourRaw) as double;
-      double feeHour =
-          (feeHourRaw is int ? feeHourRaw.toDouble() : feeHourRaw) as double;
-      double feeEconomy = (feeEconomyRaw is int
-          ? feeEconomyRaw.toDouble()
-          : feeEconomyRaw) as double;
+      double feeFast = (feeFastRaw is int ? feeFastRaw.toDouble() : feeFastRaw) as double;
+      double feeHalfHour =
+          (feeHalfHourRaw is int ? feeHalfHourRaw.toDouble() : feeHalfHourRaw) as double;
+      double feeHour = (feeHourRaw is int ? feeHourRaw.toDouble() : feeHourRaw) as double;
+      double feeEconomy =
+          (feeEconomyRaw is int ? feeEconomyRaw.toDouble() : feeEconomyRaw) as double;
       feeFast = feeFast > 0 ? feeFast : 0;
       feeHalfHour = feeHalfHour > 0 ? feeHalfHour : 0;
       feeHour = feeHour > 0 ? feeHour : 0;
@@ -98,11 +89,9 @@ class NetworkManager {
 
       // 3. BTC/kB 단위를 sat/vB로 변환
       int fastestFee = feeFast > 0 ? _convertFeeToSatPerVByte(feeFast) : 0;
-      int halfHourFee =
-          feeHalfHour > 0 ? _convertFeeToSatPerVByte(feeHalfHour) : 0;
+      int halfHourFee = feeHalfHour > 0 ? _convertFeeToSatPerVByte(feeHalfHour) : 0;
       int hourFee = feeHour > 0 ? _convertFeeToSatPerVByte(feeHour) : 0;
-      int economyFee =
-          feeEconomy > 0 ? _convertFeeToSatPerVByte(feeEconomy) : 0;
+      int economyFee = feeEconomy > 0 ? _convertFeeToSatPerVByte(feeEconomy) : 0;
 
       // 4. 최소 수수료 (minimumFee)는 mempool 내에서 지불되고 있는 가장 낮은 fee rate (sat/vB)
       int minimumFee = 0;
@@ -112,17 +101,14 @@ class NetworkManager {
       }
 
       // 5. 만약 estimatefee 결과가 0(즉, -1인 경우)라면 최소 수수료 또는 기본값 1로 대체
-      fastestFee =
-          fastestFee > 0 ? fastestFee : (minimumFee > 0 ? minimumFee : 1);
-      halfHourFee =
-          halfHourFee > 0 ? halfHourFee : (minimumFee > 0 ? minimumFee : 1);
+      fastestFee = fastestFee > 0 ? fastestFee : (minimumFee > 0 ? minimumFee : 1);
+      halfHourFee = halfHourFee > 0 ? halfHourFee : (minimumFee > 0 ? minimumFee : 1);
       hourFee = hourFee > 0 ? hourFee : (minimumFee > 0 ? minimumFee : 1);
-      economyFee =
-          economyFee > 0 ? economyFee : (minimumFee > 0 ? minimumFee : 1);
+      economyFee = economyFee > 0 ? economyFee : (minimumFee > 0 ? minimumFee : 1);
       minimumFee = minimumFee > 0 ? minimumFee : 1;
 
-      return Result.success(RecommendedFee(
-          fastestFee, halfHourFee, hourFee, economyFee, minimumFee));
+      return Result.success(
+          RecommendedFee(fastestFee, halfHourFee, hourFee, economyFee, minimumFee));
     } catch (e) {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
     }

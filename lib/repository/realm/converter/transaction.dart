@@ -21,20 +21,16 @@ RealmTransaction mapTransactionToRealmTransaction(
     transaction.vSize,
     transaction.createdAt,
     memo: transaction.memo,
-    inputAddressList: transaction.inputAddressList
-        .map((address) => jsonEncode(addressToJson(address)))
-        .toList(),
-    outputAddressList: transaction.outputAddressList
-        .map((address) => jsonEncode(addressToJson(address)))
-        .toList(),
+    inputAddressList:
+        transaction.inputAddressList.map((address) => jsonEncode(addressToJson(address))).toList(),
+    outputAddressList:
+        transaction.outputAddressList.map((address) => jsonEncode(addressToJson(address))).toList(),
   );
 }
 
 // note(트랜잭션 메모) 정보가 추가로 필요하여 TransactionDto를 반환
-TransactionRecord mapRealmTransactionToTransaction(
-    RealmTransaction realmTransaction,
-    {List<RealmRbfHistory>? realmRbfHistoryList,
-    RealmCpfpHistory? realmCpfpHistory}) {
+TransactionRecord mapRealmTransactionToTransaction(RealmTransaction realmTransaction,
+    {List<RealmRbfHistory>? realmRbfHistoryList, RealmCpfpHistory? realmCpfpHistory}) {
   return TransactionRecord(
       realmTransaction.transactionHash,
       realmTransaction.timestamp,

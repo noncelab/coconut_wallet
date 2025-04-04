@@ -22,8 +22,7 @@ class AnimatedBalance extends StatefulWidget {
   State<AnimatedBalance> createState() => _AnimatedBalanceState();
 }
 
-class _AnimatedBalanceState extends State<AnimatedBalance>
-    with SingleTickerProviderStateMixin {
+class _AnimatedBalanceState extends State<AnimatedBalance> with SingleTickerProviderStateMixin {
   late AnimationController _balanceAnimController;
   late Animation<double> _balanceAnimation;
   double _displayValue = 0.0;
@@ -67,19 +66,16 @@ class _AnimatedBalanceState extends State<AnimatedBalance>
     double startBalance = widget.prevValue.toDouble();
     double endBalance = widget.value.toDouble();
 
-    _balanceAnimation =
-        Tween<double>(begin: startBalance, end: endBalance).animate(
-      CurvedAnimation(
-          parent: _balanceAnimController, curve: Curves.easeOutCubic),
+    _balanceAnimation = Tween<double>(begin: startBalance, end: endBalance).animate(
+      CurvedAnimation(parent: _balanceAnimController, curve: Curves.easeOutCubic),
     )..addListener(() {
-            setState(() {
-              _displayValue = _balanceAnimation.value;
-            });
-          });
+        setState(() {
+          _displayValue = _balanceAnimation.value;
+        });
+      });
 
     if (startBalance != endBalance) {
-      _balanceAnimController.forward(
-          from: 0.0); // 애니메이션의 진행도를 처음부터 다시 시작하기 위함(부드럽게)
+      _balanceAnimController.forward(from: 0.0); // 애니메이션의 진행도를 처음부터 다시 시작하기 위함(부드럽게)
     } else {
       _displayValue = endBalance;
     }

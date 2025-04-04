@@ -14,8 +14,7 @@ class SharedPrefsRepository {
     _sharedPrefs = sp;
   }
 
-  static final SharedPrefsRepository _instance =
-      SharedPrefsRepository._internal();
+  static final SharedPrefsRepository _instance = SharedPrefsRepository._internal();
 
   factory SharedPrefsRepository() => _instance;
 
@@ -90,19 +89,17 @@ class SharedPrefsRepository {
   }
 
   Future<void> _saveFaucetHistories(Map<int, FaucetRecord> histories) async {
-    final String encodedData = json.encode(histories
-        .map((key, value) => MapEntry(key.toString(), value.toJson())));
+    final String encodedData =
+        json.encode(histories.map((key, value) => MapEntry(key.toString(), value.toJson())));
     await _sharedPrefs.setString(SharedPrefKeys.kFaucetHistories, encodedData);
   }
 
   Map<int, FaucetRecord> _getFaucetHistories() {
-    final String? encodedData =
-        _sharedPrefs.getString(SharedPrefKeys.kFaucetHistories);
+    final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kFaucetHistories);
     if (encodedData == null) {
       return {};
     }
     final Map<String, dynamic> decodedData = json.decode(encodedData);
-    return decodedData.map(
-        (key, value) => MapEntry(int.parse(key), FaucetRecord.fromJson(value)));
+    return decodedData.map((key, value) => MapEntry(int.parse(key), FaucetRecord.fromJson(value)));
   }
 }

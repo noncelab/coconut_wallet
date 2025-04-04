@@ -61,11 +61,10 @@ class CustomAppBar {
             padding: const EdgeInsets.all(8),
             margin: const EdgeInsets.only(right: 6),
             decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: BackgroundColorPalette[colorIndex]),
+                borderRadius: BorderRadius.circular(12), color: BackgroundColorPalette[colorIndex]),
             // ignore: deprecated_member_use
-            child: SvgPicture.asset(CustomIcons.carrot,
-                color: ColorPalette[colorIndex], width: 16)),
+            child:
+                SvgPicture.asset(CustomIcons.carrot, color: ColorPalette[colorIndex], width: 16)),
         Text(title)
       ]);
     }
@@ -89,8 +88,7 @@ class CustomAppBar {
                     )
                   : SvgPicture.asset('assets/svg/back.svg',
                       width: 24,
-                      colorFilter: const ColorFilter.mode(
-                          MyColors.white, BlendMode.srcIn)),
+                      colorFilter: const ColorFilter.mode(MyColors.white, BlendMode.srcIn)),
               onPressed: () {
                 if (onBackPressed != null) {
                   onBackPressed();
@@ -146,8 +144,7 @@ class CustomAppBar {
         centerTitle: true,
         scrolledUnderElevation: 0,
         backgroundColor: backgroundColor ?? Colors.transparent,
-        titleTextStyle:
-            Styles.navHeader.merge(const TextStyle(color: MyColors.white)),
+        titleTextStyle: Styles.navHeader.merge(const TextStyle(color: MyColors.white)),
         toolbarTextStyle: Styles.appbarTitle,
         leading: Navigator.canPop(context)
             ? IconButton(

@@ -42,12 +42,10 @@ class TransactionFeeBumpingScreen extends StatefulWidget {
   });
 
   @override
-  State<TransactionFeeBumpingScreen> createState() =>
-      _TransactionFeeBumpingScreenState();
+  State<TransactionFeeBumpingScreen> createState() => _TransactionFeeBumpingScreenState();
 }
 
-class _TransactionFeeBumpingScreenState
-    extends State<TransactionFeeBumpingScreen> {
+class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScreen> {
   late FeeBumpingViewModel _viewModel;
   late bool _isRbf;
 
@@ -130,9 +128,7 @@ class _TransactionFeeBumpingScreenState
                               viewModel.feeInfos[1].satsPerVb ?? 0,
                               viewModel.feeInfos[2].satsPerVb ?? 0,
                             ),
-                          ] else if (viewModel
-                                  .didFetchRecommendedFeesSuccessfully ==
-                              false)
+                          ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
                             _buildFetchFailedWidget()
                         ],
                       ),
@@ -146,8 +142,7 @@ class _TransactionFeeBumpingScreenState
                   text: t.complete,
                   backgroundColor: _getNewFeeTextColor(),
                   showGradient: true,
-                  gradientPadding: const EdgeInsets.only(
-                      left: 16, right: 16, bottom: 40, top: 150),
+                  gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 150),
                   isActive: !viewModel.insufficientUtxos &&
                       !_isEstimatedFeeTooLow &&
                       _textEditingController.text.isNotEmpty,
@@ -158,10 +153,8 @@ class _TransactionFeeBumpingScreenState
                           children: [
                             if (_isEstimatedFeeTooHigh) ...[
                               Text(
-                                t.transaction_fee_bumping_screen
-                                    .estimated_fee_too_high_error,
-                                style: CoconutTypography.body2_14
-                                    .setColor(CoconutColors.hotPink),
+                                t.transaction_fee_bumping_screen.estimated_fee_too_high_error,
+                                style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
                               ),
                               CoconutLayout.spacing_100h
                             ],
@@ -169,8 +162,8 @@ class _TransactionFeeBumpingScreenState
                               Text(
                                 t.transaction_fee_bumping_screen.estimated_fee(
                                   fee: addCommasToIntegerPart(viewModel
-                                      .getTotalEstimatedFee(double.parse(
-                                          _textEditingController.text))
+                                      .getTotalEstimatedFee(
+                                          double.parse(_textEditingController.text))
                                       .toDouble()),
                                 ),
                                 style: CoconutTypography.body2_14,
@@ -220,13 +213,11 @@ class _TransactionFeeBumpingScreenState
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final tooltipIconRenderBox =
-          _tooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
+      final tooltipIconRenderBox = _tooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
 
       if (tooltipIconRenderBox != null) {
         setState(() {
-          _tooltipIconPosition =
-              tooltipIconRenderBox.localToGlobal(Offset.zero);
+          _tooltipIconPosition = tooltipIconRenderBox.localToGlobal(Offset.zero);
           _tooltipIconSize = tooltipIconRenderBox.size;
         });
       }
@@ -239,16 +230,14 @@ class _TransactionFeeBumpingScreenState
     super.dispose();
   }
 
-  void _onCompleteButtonPressed(
-      BuildContext context, FeeBumpingViewModel viewModel) async {
+  void _onCompleteButtonPressed(BuildContext context, FeeBumpingViewModel viewModel) async {
     _feeTextFieldFocusNode.unfocus();
     if (_isEstimatedFeeTooLow) return;
     bool canContinue = await _showConfirmationDialog(context);
 
     if (!canContinue) return;
 
-    bool success = await viewModel
-        .prepareToSend(double.parse(_textEditingController.text));
+    bool success = await viewModel.prepareToSend(double.parse(_textEditingController.text));
 
     if (success && mounted) {
       Navigator.pushNamed(context, '/unsigned-transaction-qr',
@@ -293,8 +282,7 @@ class _TransactionFeeBumpingScreenState
     });
 
     setState(() {
-      _isEstimatedFeeTooHigh =
-          _viewModel.getTotalEstimatedFee(value) >= 1000000;
+      _isEstimatedFeeTooHigh = _viewModel.getTotalEstimatedFee(value) >= 1000000;
       _isEstimatedFeeTooLow = false;
     });
   }
@@ -310,8 +298,7 @@ class _TransactionFeeBumpingScreenState
           builder: (BuildContext context) {
             return CoconutPopup(
               title: t.transaction_fee_bumping_screen.dialog.fee_alert_title,
-              description:
-                  t.transaction_fee_bumping_screen.dialog.fee_alert_description,
+              description: t.transaction_fee_bumping_screen.dialog.fee_alert_description,
               onTapRight: () {
                 Navigator.pop(context, true);
               },
@@ -325,13 +312,11 @@ class _TransactionFeeBumpingScreenState
   }
 
   FeeBumpingViewModel _getViewModel(BuildContext context) {
-    final sendInfoProvider =
-        Provider.of<SendInfoProvider>(context, listen: false);
+    final sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
     final txProvider = Provider.of<TransactionProvider>(context, listen: false);
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
     final nodeProvider = Provider.of<NodeProvider>(context, listen: false);
-    final addressRepository =
-        Provider.of<AddressRepository>(context, listen: false);
+    final addressRepository = Provider.of<AddressRepository>(context, listen: false);
     final utxoRepositry = Provider.of<UtxoRepository>(context, listen: false);
 
     return FeeBumpingViewModel(
@@ -365,8 +350,8 @@ class _TransactionFeeBumpingScreenState
             ),
             color: CoconutColors.white,
             child: Text(_isRbf ? t.tooltip.rbf : t.tooltip.cpfp,
-                style: CoconutTypography.body2_14
-                    .copyWith(color: CoconutColors.gray900, height: 1.3)),
+                style:
+                    CoconutTypography.body2_14.copyWith(color: CoconutColors.gray900, height: 1.3)),
           ),
         ),
       ),
@@ -403,10 +388,8 @@ class _TransactionFeeBumpingScreenState
             children: [
               Text(
                 t.transaction_fee_bumping_screen.total_fee(
-                  fee:
-                      addCommasToIntegerPart(widget.transaction.fee.toDouble()),
-                  vb: addCommasToIntegerPart(
-                      widget.transaction.vSize.toDouble()),
+                  fee: addCommasToIntegerPart(widget.transaction.fee.toDouble()),
+                  vb: addCommasToIntegerPart(widget.transaction.vSize.toDouble()),
                 ),
                 style: CoconutTypography.body2_14,
               ),
@@ -426,8 +409,7 @@ class _TransactionFeeBumpingScreenState
           Text(
             t.transaction_fee_bumping_screen.new_fee,
             style: CoconutTypography.body2_14_Bold.setColor(_getNewFeeTextColor(
-                isError:
-                    _isEstimatedFeeTooLow || _viewModel.insufficientUtxos)),
+                isError: _isEstimatedFeeTooLow || _viewModel.insufficientUtxos)),
           ),
           Row(
             children: [
@@ -438,16 +420,14 @@ class _TransactionFeeBumpingScreenState
                       controller: _textEditingController,
                       focusNode: _feeTextFieldFocusNode,
                       cursorColor: CoconutColors.white,
-                      textInputType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      textInputType: const TextInputType.numberWithOptions(decimal: true),
                       errorColor: CoconutColors.hotPink,
                       activeColor: CoconutColors.white,
                       backgroundColor: CoconutColors.white.withOpacity(0.15),
                       prefix: null,
                       fontFamily: 'SpaceGrotesk',
                       maxLines: 1,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 7, horizontal: 5),
+                      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 5),
                       isLengthVisible: false,
                       textAlign: TextAlign.center,
                       onChanged: _onFeeRateChanged),
@@ -481,8 +461,7 @@ class _TransactionFeeBumpingScreenState
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              t.transaction_fee_bumping_screen
-                  .recommend_fee(fee: _viewModel.recommendFeeRate!),
+              t.transaction_fee_bumping_screen.recommend_fee(fee: _viewModel.recommendFeeRate!),
             ),
             AnimatedRotation(
               turns: _isRecommendFeePannelExpanded ? -0.5 : 0,
@@ -509,9 +488,7 @@ class _TransactionFeeBumpingScreenState
             });
           },
           child: Container(
-            color: _isRecommendFeePannelPressed
-                ? CoconutColors.gray900
-                : CoconutColors.gray800,
+            color: _isRecommendFeePannelPressed ? CoconutColors.gray900 : CoconutColors.gray800,
             padding: const EdgeInsets.all(12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,8 +503,7 @@ class _TransactionFeeBumpingScreenState
                     child: Text(
                       _viewModel.isInitializedSuccess == true
                           ? _viewModel.recommendFeeRateDescription!
-                          : t.transaction_fee_bumping_screen
-                              .recommended_fees_fetch_error,
+                          : t.transaction_fee_bumping_screen.recommended_fees_fetch_error,
                       style: CoconutTypography.body2_14,
                     ),
                   ),
@@ -672,8 +648,7 @@ class _TransactionFeeBumpingScreenState
         children: [
           SvgPicture.asset(
             'assets/svg/triangle-warning.svg',
-            colorFilter:
-                const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
+            colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
           Text(

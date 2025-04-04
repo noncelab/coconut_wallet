@@ -60,10 +60,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
             index,
             widget.dividerColor,
             widget.backgroundColor,
-            dividerHeight:
-                widget.dividerIndex > 0 && widget.dividerIndex == index + 1
-                    ? 5
-                    : 1,
+            dividerHeight: widget.dividerIndex > 0 && widget.dividerIndex == index + 1 ? 5 : 1,
             isFirst: index == 0,
             isLast: index == widget.buttons.length - 1,
           );
@@ -107,16 +104,12 @@ class _CustomDropdownState extends State<CustomDropdown> {
             decoration: BoxDecoration(
               borderRadius: isFirst
                   ? const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16))
+                      topLeft: Radius.circular(16), topRight: Radius.circular(16))
                   : isLast
                       ? const BorderRadius.only(
-                          bottomLeft: Radius.circular(16),
-                          bottomRight: Radius.circular(16))
+                          bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16))
                       : null,
-              color: tapDownButtonIndex == index
-                  ? MyColors.borderGrey
-                  : backgroundColor,
+              color: tapDownButtonIndex == index ? MyColors.borderGrey : backgroundColor,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -131,16 +124,14 @@ class _CustomDropdownState extends State<CustomDropdown> {
                     fontStyle: FontStyle.normal,
                   ),
                 ),
-                if (_selectedIndex == index)
-                  SvgPicture.asset('assets/svg/check.svg')
+                if (_selectedIndex == index) SvgPicture.asset('assets/svg/check.svg')
               ],
             ),
           ),
         ),
         if (!isLast)
           Container(
-              height: dividerHeight,
-              color: dividerHeight == 1 ? dividerColor : MyColors.nero),
+              height: dividerHeight, color: dividerHeight == 1 ? dividerColor : MyColors.nero),
       ],
     );
   }

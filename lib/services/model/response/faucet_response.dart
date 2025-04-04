@@ -14,8 +14,7 @@ class FaucetResponse {
     this.txHash = '',
   });
 
-  factory FaucetResponse.fromJson(Map<String, dynamic> json) =>
-      _$FaucetResponseFromJson(json);
+  factory FaucetResponse.fromJson(Map<String, dynamic> json) => _$FaucetResponseFromJson(json);
 
   Map<String, dynamic> toJson() => _$FaucetResponseToJson(this);
 

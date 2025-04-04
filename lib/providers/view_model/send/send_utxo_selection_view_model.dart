@@ -65,8 +65,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   final List<UtxoState> _availableUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
-  RecommendedFeeFetchStatus _recommendedFeeFetchStatus =
-      RecommendedFeeFetchStatus.fetching;
+  RecommendedFeeFetchStatus _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
   TransactionFeeLevel? _selectedLevel = TransactionFeeLevel.halfhour;
 
   RecommendedFee? _recommendedFees;
@@ -103,9 +102,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         ? (_walletBaseItem as MultisigWalletListItem).signers.length
         : null;
 
-    _confirmedBalance = _walletProvider
-        .getUtxoList(_sendInfoProvider.walletId!)
-        .fold<int>(0, (sum, utxo) {
+    _confirmedBalance =
+        _walletProvider.getUtxoList(_sendInfoProvider.walletId!).fold<int>(0, (sum, utxo) {
       if (utxo.status == UtxoStatus.unspent) {
         _availableUtxoList.add(utxo);
         return sum + utxo.amount;
@@ -117,14 +115,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
     _walletBase = _walletBaseItem.walletBase;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
-    _changeAddressDerivationPath =
-        _walletProvider.getChangeAddress(_walletId).derivationPath;
-    _isMaxMode = _confirmedBalance ==
-        UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
+    _changeAddressDerivationPath = _walletProvider.getChangeAddress(_walletId).derivationPath;
+    _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
 
-    _transaction =
-        _createTransaction(_availableUtxoList, _isMaxMode, 1, _walletBaseItem);
+    _transaction = _createTransaction(_availableUtxoList, _isMaxMode, 1, _walletBaseItem);
     _syncSelectedUtxosWithTransaction();
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
@@ -154,8 +149,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       return null;
     }
 
-    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
-        _customFeeInfo == null) {
+    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed && _customFeeInfo == null) {
       return null;
     }
 
@@ -175,8 +169,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     } else {
       // 가장 마지막 change 주소에 해당하는 금액을 change 금액으로 간주함
       changeAmount = _transaction.outputs
-          .where(
-              (output) => output.getAddress() == changeAddresses.last.address)
+          .where((output) => output.getAddress() == changeAddresses.last.address)
           .first
           .amount;
     }
@@ -203,8 +196,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       return ErrorState.insufficientBalance;
     }
 
-    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed &&
-        _customFeeInfo == null) {
+    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed && _customFeeInfo == null) {
       return ErrorState.failedToFetchRecommendedFee;
     }
 
@@ -221,24 +213,20 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
   int get needAmount => _sendAmount + (_estimatedFee ?? 0);
 
-  RecommendedFeeFetchStatus get recommendedFeeFetchStatus =>
-      _recommendedFeeFetchStatus;
+  RecommendedFeeFetchStatus get recommendedFeeFetchStatus => _recommendedFeeFetchStatus;
   RecommendedFee? get recommendedFees => _recommendedFees;
   int? get satsPerVb {
     if (_selectedLevel == null) {
       return _customFeeInfo?.satsPerVb;
     }
 
-    return feeInfos
-        .firstWhere((feeInfo) => feeInfo.level == _selectedLevel)
-        .satsPerVb;
+    return feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel).satsPerVb;
   }
 
   TransactionFeeLevel? get selectedLevel => _selectedLevel;
 
   int get selectedUtxoAmountSum {
-    _cachedSelectedUtxoAmountSum ??=
-        _calculateTotalAmountOfUtxoList(_selectedUtxoList);
+    _cachedSelectedUtxoAmountSum ??= _calculateTotalAmountOfUtxoList(_selectedUtxoList);
     return _cachedSelectedUtxoAmountSum!;
   }
 
@@ -267,12 +255,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   void deselectAllUtxo() {
     _clearUtxoList();
     if (!_isMaxMode) {
-      _transaction = Transaction.forSinglePayment([],
-          _recipientAddress,
-          _changeAddressDerivationPath,
-          _sendAmount,
-          (satsPerVb ?? 1).toDouble(),
-          _walletBase);
+      _transaction = Transaction.forSinglePayment([], _recipientAddress,
+          _changeAddressDerivationPath, _sendAmount, (satsPerVb ?? 1).toDouble(), _walletBase);
     }
   }
 
@@ -286,35 +270,28 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   bool hasTaggedUtxo() {
-    return _selectedUtxoList
-        .any((utxo) => _utxoTagMap[utxo.utxoId]?.isNotEmpty == true);
+    return _selectedUtxoList.any((utxo) => _utxoTagMap[utxo.utxoId]?.isNotEmpty == true);
   }
 
   bool isSelectedUtxoEnough() => _isSelectedUtxoEnough();
 
   void onFeeRateChanged(Map<String, dynamic> feeSelectionResult) {
-    _estimatedFee =
-        (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
-            .estimatedFee;
+    _estimatedFee = (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo).estimatedFee;
     _selectedLevel = feeSelectionResult[FeeSelectionScreen.selectedOptionField];
     _setAmount();
     notifyListeners();
 
-    _customFeeInfo =
-        feeSelectionResult[FeeSelectionScreen.selectedOptionField] == null
-            ? (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
-            : null;
+    _customFeeInfo = feeSelectionResult[FeeSelectionScreen.selectedOptionField] == null
+        ? (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
+        : null;
 
     var satsPerVb = _customFeeInfo?.satsPerVb! ??
-        feeInfos
-            .firstWhere((feeInfo) => feeInfo.level == _selectedLevel)
-            .satsPerVb!;
+        feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel).satsPerVb!;
     _updateFeeRateOfTransaction(satsPerVb);
   }
 
   void cacheSpentUtxoIdsWithTag({required bool isTagsMoveAllowed}) {
-    _tagProvider.cacheUsedUtxoIds(
-        _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+    _tagProvider.cacheUsedUtxoIds(_selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
         isTagsMoveAllowed: isTagsMoveAllowed);
   }
 
@@ -322,13 +299,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     setSelectedUtxoList(List.from(availableUtxoList));
 
     if (!isMaxMode) {
-      _transaction = Transaction.forSinglePayment(
-          _selectedUtxoList,
-          _recipientAddress,
-          _changeAddressDerivationPath,
-          _sendAmount,
-          (satsPerVb ?? 1).toDouble(),
-          _walletBase);
+      _transaction = Transaction.forSinglePayment(_selectedUtxoList, _recipientAddress,
+          _changeAddressDerivationPath, _sendAmount, (satsPerVb ?? 1).toDouble(), _walletBase);
 
       if (estimatedFee != null && isSelectedUtxoEnough()) {
         setEstimatedFee(estimateFee(satsPerVb ?? 1));
@@ -356,8 +328,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _cachedSelectedUtxoAmountSum = null;
     if (selectedUtxoList.contains(utxo)) {
       if (!_isMaxMode) {
-        _transaction.removeInputWithUtxo(
-            utxo, (satsPerVb ?? 1).toDouble(), _walletBase,
+        _transaction.removeInputWithUtxo(utxo, (satsPerVb ?? 1).toDouble(), _walletBase,
             requiredSignature: _requiredSignature, totalSigner: _totalSigner);
       }
 
@@ -367,8 +338,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       }
     } else {
       if (!_isMaxMode) {
-        _transaction.addInputWithUtxo(
-            utxo, (satsPerVb ?? 1).toDouble(), _walletBase,
+        _transaction.addInputWithUtxo(utxo, (satsPerVb ?? 1).toDouble(), _walletBase,
             requiredSignature: _requiredSignature, totalSigner: _totalSigner);
         setEstimatedFee(estimateFee(satsPerVb ?? 1));
       }
@@ -392,30 +362,28 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Transaction _createTransaction(List<UtxoState> utxos, bool isMaxMode,
-      int feeRate, WalletListItemBase walletListItemBase) {
+  Transaction _createTransaction(
+      List<UtxoState> utxos, bool isMaxMode, int feeRate, WalletListItemBase walletListItemBase) {
     if (isMaxMode) {
-      return Transaction.forSweep(utxos, _sendInfoProvider.recipientAddress!,
-          feeRate.toDouble(), walletListItemBase.walletBase);
+      return Transaction.forSweep(utxos, _sendInfoProvider.recipientAddress!, feeRate.toDouble(),
+          walletListItemBase.walletBase);
     }
 
     try {
-      final optimalUtxos = TransactionUtil.selectOptimalUtxos(
-          utxos, _sendAmount, feeRate, _walletBase.addressType);
+      final optimalUtxos =
+          TransactionUtil.selectOptimalUtxos(utxos, _sendAmount, feeRate, _walletBase.addressType);
       _selectedUtxoList = optimalUtxos;
       return Transaction.forSinglePayment(
           optimalUtxos,
           _sendInfoProvider.recipientAddress!,
-          _walletProvider
-              .getChangeAddress(_sendInfoProvider.walletId!)
-              .derivationPath,
+          _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).derivationPath,
           UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
           feeRate.toDouble(),
           walletListItemBase.walletBase);
     } catch (e) {
       if (e.toString().contains('Not enough amount for sending. (Fee')) {
-        return Transaction.forSweep(utxos, _sendInfoProvider.recipientAddress!,
-            feeRate.toDouble(), walletListItemBase.walletBase);
+        return Transaction.forSweep(utxos, _sendInfoProvider.recipientAddress!, feeRate.toDouble(),
+            walletListItemBase.walletBase);
       }
       rethrow;
     }
@@ -440,8 +408,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _initUtxoTagMap() {
     for (var (element) in _availableUtxoList) {
-      final tags = _tagProvider.getUtxoTagsByUtxoId(
-          _sendInfoProvider.walletId!, element.utxoId);
+      final tags = _tagProvider.getUtxoTagsByUtxoId(_sendInfoProvider.walletId!, element.utxoId);
       _utxoTagMap[element.utxoId] = tags;
     }
   }
@@ -502,8 +469,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     List<UtxoState> result = [];
     for (int i = 0; i < inputs.length; i++) {
       result.add(_availableUtxoList.firstWhere((utxo) =>
-          utxo.transactionHash == inputs[i].transactionHash &&
-          utxo.index == inputs[i].index));
+          utxo.transactionHash == inputs[i].transactionHash && utxo.index == inputs[i].index));
     }
     _selectedUtxoList = result;
     notifyListeners();

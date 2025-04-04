@@ -19,8 +19,7 @@ class CustomTagVerticalSelector extends StatefulWidget {
   });
 
   @override
-  State<CustomTagVerticalSelector> createState() =>
-      _CustomTagVerticalSelectorState();
+  State<CustomTagVerticalSelector> createState() => _CustomTagVerticalSelectorState();
 }
 
 class _CustomTagVerticalSelectorState extends State<CustomTagVerticalSelector> {
@@ -70,8 +69,7 @@ class _CustomTagVerticalSelectorState extends State<CustomTagVerticalSelector> {
             tag: utxoTag.name,
             colorIndex: utxoTag.colorIndex,
             usedCount: utxoTag.utxoIdList?.length ?? 0,
-            isSelected: _selectedTagName == utxoTag.name &&
-                _selectedTagIndex == utxoTag.colorIndex,
+            isSelected: _selectedTagName == utxoTag.name && _selectedTagIndex == utxoTag.colorIndex,
           ),
         );
       },
@@ -101,8 +99,7 @@ class CustomTagSelectorItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          EdgeInsets.symmetric(vertical: 11, horizontal: isSelected ? 10 : 0),
+      padding: EdgeInsets.symmetric(vertical: 11, horizontal: isSelected ? 10 : 0),
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
         color: isSelected ? MyColors.selectBackground : Colors.transparent,
@@ -150,8 +147,7 @@ class CustomTagSelectorItem extends StatelessWidget {
                   visible: usedCount > 0,
                   child: Text(
                     t.apply_item(count: usedCount),
-                    style: Styles.body1
-                        .copyWith(fontSize: 11, color: MyColors.white),
+                    style: Styles.body1.copyWith(fontSize: 11, color: MyColors.white),
                   ),
                 ),
               ],

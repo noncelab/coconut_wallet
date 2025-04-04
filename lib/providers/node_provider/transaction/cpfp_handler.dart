@@ -25,8 +25,7 @@ class CpfpHandler {
   /// CPFP는 미확인 트랜잭션의 출력을 입력으로 사용하는 새로운 트랜잭션이 발생했을 때 감지됩니다.
   Future<CpfpInfo?> detectCpfpTransaction(int walletId, Transaction tx) async {
     // 이미 CPFP 내역이 있는지 확인
-    final existingCpfpHistory =
-        _transactionRepository.getCpfpHistory(walletId, tx.transactionHash);
+    final existingCpfpHistory = _transactionRepository.getCpfpHistory(walletId, tx.transactionHash);
     if (existingCpfpHistory != null) {
       return null; // 이미 CPFP로 등록된 트랜잭션
     }
@@ -38,12 +37,12 @@ class CpfpHandler {
 
     for (final input in tx.inputs) {
       // 입력으로 사용된 트랜잭션이 미확인 상태인지 확인
-      final parentTxRecord = _transactionRepository.getTransactionRecord(
-          walletId, input.transactionHash);
+      final parentTxRecord =
+          _transactionRepository.getTransactionRecord(walletId, input.transactionHash);
       // 입력 트랜잭션이 언컨펌이면서
       if (parentTxRecord != null && parentTxRecord.blockHeight == 0) {
-        final utxo = _utxoManager.getUtxoState(
-            walletId, makeUtxoId(input.transactionHash, input.index));
+        final utxo =
+            _utxoManager.getUtxoState(walletId, makeUtxoId(input.transactionHash, input.index));
         // 입력 트랜잭션에 사용된 UTXO가 내 UTXO라면 CPFP로 간주
         if (utxo != null) {
           isCpfp = true;
@@ -68,11 +67,8 @@ class CpfpHandler {
     return null;
   }
 
-  Future<void> saveCpfpHistoryMap(
-      WalletListItemBase walletItem,
-      Map<String, CpfpInfo> cpfpInfoMap,
-      Map<String, TransactionRecord> txRecordMap,
-      int walletId) async {
+  Future<void> saveCpfpHistoryMap(WalletListItemBase walletItem, Map<String, CpfpInfo> cpfpInfoMap,
+      Map<String, TransactionRecord> txRecordMap, int walletId) async {
     final cpfpHistoryDtos = <CpfpHistoryDto>[];
 
     for (final entry in cpfpInfoMap.entries) {

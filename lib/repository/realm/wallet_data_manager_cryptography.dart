@@ -18,8 +18,7 @@ class WalletDataManagerCryptography {
     }
   }
 
-  Future<void> initialize(
-      {required int iterations, required String hashedPin}) async {
+  Future<void> initialize({required int iterations, required String hashedPin}) async {
     final pbkdf2 = Pbkdf2(
       macAlgorithm: Hmac.sha256(),
       iterations: iterations, // 적절한 반복 횟수 설정
@@ -35,8 +34,7 @@ class WalletDataManagerCryptography {
   Future<String> encrypt(String plainText) async {
     assert(_secretKey != null);
 
-    SecretBox secretBox =
-        await _aesCbc.encrypt(utf8.encode(plainText), secretKey: _secretKey!);
+    SecretBox secretBox = await _aesCbc.encrypt(utf8.encode(plainText), secretKey: _secretKey!);
 
     return '${base64Encode(secretBox.nonce)}:${base64Encode(secretBox.cipherText)}:${base64Encode(secretBox.mac.bytes)}';
   }
@@ -47,8 +45,7 @@ class WalletDataManagerCryptography {
     List<String> splited = encrypted.split(':');
     var decrypted = await _aesCbc.decrypt(
         SecretBox(base64Decode(splited[1]),
-            nonce: base64Decode(splited[0]),
-            mac: Mac(base64Decode(splited[2]))),
+            nonce: base64Decode(splited[0]), mac: Mac(base64Decode(splited[2]))),
         secretKey: _secretKey!);
 
     return utf8.decode(decrypted);

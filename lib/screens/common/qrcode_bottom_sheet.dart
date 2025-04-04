@@ -7,8 +7,7 @@ import 'package:coconut_wallet/widgets/qrcode_info.dart';
 // address_list_screen.dart
 // wallet_info_screen.dart
 class QrcodeBottomSheet extends StatelessWidget {
-  const QrcodeBottomSheet(
-      {super.key, required this.qrData, this.qrcodeTopWidget, this.title});
+  const QrcodeBottomSheet({super.key, required this.qrData, this.qrcodeTopWidget, this.title});
 
   final String qrData;
   final Widget? qrcodeTopWidget;
@@ -43,8 +42,7 @@ class QrcodeBottomSheet extends StatelessWidget {
               height: MediaQuery.of(context).size.height * 0.9,
               padding: Paddings.container,
               color: MyColors.black,
-              child:
-                  QRCodeInfo(qrData: qrData, qrcodeTopWidget: qrcodeTopWidget),
+              child: QRCodeInfo(qrData: qrData, qrcodeTopWidget: qrcodeTopWidget),
             ),
           ),
         ),

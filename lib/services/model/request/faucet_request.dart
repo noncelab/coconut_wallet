@@ -12,8 +12,7 @@ class FaucetRequest {
     this.amount = 0,
   });
 
-  factory FaucetRequest.fromJson(Map<String, dynamic> json) =>
-      _$FaucetRequestFromJson(json);
+  factory FaucetRequest.fromJson(Map<String, dynamic> json) => _$FaucetRequestFromJson(json);
 
   Map<String, dynamic> toJson() => _$FaucetRequestToJson(this);
 }

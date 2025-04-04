@@ -33,8 +33,7 @@ class Result<T> {
     return _error;
   }
 
-  R fold<R>(
-      R Function(T value) onSuccess, R Function(AppError error) onFailure) {
+  R fold<R>(R Function(T value) onSuccess, R Function(AppError error) onFailure) {
     return isSuccess ? onSuccess(value) : onFailure(error);
   }
 

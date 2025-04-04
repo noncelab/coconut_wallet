@@ -33,8 +33,7 @@ class UtxoItemCard extends StatelessWidget {
       child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius),
-              color: CoconutColors.gray800),
+              borderRadius: BorderRadius.circular(borderRadius), color: CoconutColors.gray800),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -45,20 +44,17 @@ class UtxoItemCard extends StatelessWidget {
                     children: [
                       Text(
                         dateString[0],
-                        style: CoconutTypography.body3_12_Number
-                            .setColor(CoconutColors.gray300),
+                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray300),
                       ),
                       CoconutLayout.spacing_200w,
                       Text(
                         '|',
-                        style: CoconutTypography.caption_10
-                            .setColor(CoconutColors.gray400),
+                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
                       ),
                       CoconutLayout.spacing_200w,
                       Text(
                         dateString[1],
-                        style: CoconutTypography.body3_12_Number
-                            .setColor(CoconutColors.gray300),
+                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray300),
                       ),
                     ],
                   ),
@@ -72,14 +68,12 @@ class UtxoItemCard extends StatelessWidget {
                             text: t.change,
                             backgroundColor: CoconutColors.gray500,
                             borderColor: CoconutColors.gray500,
-                            textStyle: CoconutTypography.caption_10_Bold
-                                .setColor(CoconutColors.black),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
+                            textStyle:
+                                CoconutTypography.caption_10_Bold.setColor(CoconutColors.black),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           ),
                         CoconutLayout.spacing_100w,
-                        if (utxo.status != UtxoStatus.unspent)
-                          _buildStatus(utxo.status),
+                        if (utxo.status != UtxoStatus.unspent) _buildStatus(utxo.status),
                         Text(
                           satoshiToBitcoinString(utxo.amount),
                           style: CoconutTypography.heading4_18_NumberBold
@@ -93,8 +87,7 @@ class UtxoItemCard extends StatelessWidget {
               CoconutLayout.spacing_100h,
               // address
               Text(utxo.to,
-                  style: CoconutTypography.body2_14_Number
-                      .setColor(CoconutColors.gray400)),
+                  style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
               Column(
                 children: [
                   if ((utxo.tags?.isNotEmpty ?? false))
@@ -107,14 +100,13 @@ class UtxoItemCard extends StatelessWidget {
                       (index) => IntrinsicWidth(
                         child: CoconutChip(
                           minWidth: 40,
-                          color: CoconutColors.backgroundColorPaletteDark[
-                              utxo.tags?[index].colorIndex ?? 0],
-                          borderColor: CoconutColors
-                              .colorPalette[utxo.tags?[index].colorIndex ?? 0],
+                          color: CoconutColors
+                              .backgroundColorPaletteDark[utxo.tags?[index].colorIndex ?? 0],
+                          borderColor:
+                              CoconutColors.colorPalette[utxo.tags?[index].colorIndex ?? 0],
                           label: '#${utxo.tags?[index].name ?? ''}',
                           labelSize: 12,
-                          labelColor: CoconutColors
-                              .colorPalette[utxo.tags?[index].colorIndex ?? 0],
+                          labelColor: CoconutColors.colorPalette[utxo.tags?[index].colorIndex ?? 0],
                         ),
                       ),
                     ),

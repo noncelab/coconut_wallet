@@ -62,20 +62,12 @@ class IsolateManager {
 
     // IsolateStateManager 초기화
     final isolateStateManager = IsolateStateManager(sendPort);
-    final BalanceManager balanceManager = BalanceManager(electrumService,
-        isolateStateManager, addressRepository, walletRepository);
-    final UtxoManager utxoManager = UtxoManager(
-        electrumService,
-        isolateStateManager,
-        utxoRepository,
-        transactionRepository,
-        addressRepository);
-    final TransactionManager transactionManager = TransactionManager(
-        electrumService,
-        isolateStateManager,
-        transactionRepository,
-        utxoManager,
-        addressRepository);
+    final BalanceManager balanceManager =
+        BalanceManager(electrumService, isolateStateManager, addressRepository, walletRepository);
+    final UtxoManager utxoManager = UtxoManager(electrumService, isolateStateManager,
+        utxoRepository, transactionRepository, addressRepository);
+    final TransactionManager transactionManager = TransactionManager(electrumService,
+        isolateStateManager, transactionRepository, utxoManager, addressRepository);
     final NetworkManager networkManager = NetworkManager(electrumService);
     final SubscriptionManager subscriptionManager = SubscriptionManager(
       electrumService,
@@ -99,8 +91,7 @@ class IsolateManager {
     return isolateHandler;
   }
 
-  bool get isInitialized =>
-      (_mainToIsolateSendPort != null && _isolate != null);
+  bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
   IsolateManager() {
     _isolateReady = Completer<void>();
@@ -177,8 +168,7 @@ class IsolateManager {
         },
         onError: (error) {
           if (!_isolateReady.isCompleted) {
-            _isolateReady
-                .completeError(Exception('Receive port error: $error'));
+            _isolateReady.completeError(Exception('Receive port error: $error'));
           }
         },
         cancelOnError: false, // 오류가 발생해도 리스너 유지
@@ -186,8 +176,7 @@ class IsolateManager {
     } catch (e) {
       _receivePortListening = false;
       if (!_isolateReady.isCompleted) {
-        _isolateReady.completeError(
-            Exception('Failed to set up ReceivePort listener: $e'));
+        _isolateReady.completeError(Exception('Failed to set up ReceivePort listener: $e'));
       }
     }
   }
@@ -197,15 +186,12 @@ class IsolateManager {
     // TODO: 메인넷/테스트넷 설정을 isolate 스레드에서도 적용해야 함. (환경변수로 등록하면 좋을듯)
     NetworkType.setNetworkType(NetworkType.regtest);
 
-    final isolateFromMainReceivePort =
-        ReceivePort('isolateFromMainReceivePort');
+    final isolateFromMainReceivePort = ReceivePort('isolateFromMainReceivePort');
 
     // 초기화 됐음을 알리는 목적으로 사용
     try {
-      data.isolateToMainSendPort.send([
-        IsolateManagerMessage.initialize,
-        isolateFromMainReceivePort.sendPort
-      ]);
+      data.isolateToMainSendPort
+          .send([IsolateManagerMessage.initialize, isolateFromMainReceivePort.sendPort]);
     } catch (e) {
       Logger.error("Isolate: ERROR sending initialization message: $e");
     }
@@ -219,8 +205,7 @@ class IsolateManager {
     }
 
     // IsolateStateManager에 올바른 SendPort 전달
-    final isolateHandler =
-        await entryInitialize(data.isolateToMainSendPort, electrumService);
+    final isolateHandler = await entryInitialize(data.isolateToMainSendPort, electrumService);
 
     isolateFromMainReceivePort.listen((message) async {
       if (message is List && message.length == 3) {
@@ -228,16 +213,14 @@ class IsolateManager {
         SendPort isolateToMainSendPort = message[1]; // 이 SendPort는 일회성 응답용
         List<dynamic> params = message[2];
 
-        isolateHandler.handleMessage(
-            messageType, isolateToMainSendPort, params);
+        isolateHandler.handleMessage(messageType, isolateToMainSendPort, params);
       }
     }, onError: (error) {
       Logger.error("Isolate: Error in isolate ReceivePort: $error");
     });
   }
 
-  Future<T> _send<T>(
-      IsolateHandlerMessage messageType, List<dynamic> params) async {
+  Future<T> _send<T>(IsolateHandlerMessage messageType, List<dynamic> params) async {
     // 초기화가 진행 중인지 확인하고 완료될 때까지 대기
     try {
       if (!isInitialized) {
@@ -262,8 +245,7 @@ class IsolateManager {
       // 활성 ReceivePort 집합에 추가
       _activeReceivePorts.add(mainFromIsolateReceivePort);
 
-      _mainToIsolateSendPort!
-          .send([messageType, mainFromIsolateReceivePort.sendPort, params]);
+      _mainToIsolateSendPort!.send([messageType, mainFromIsolateReceivePort.sendPort, params]);
 
       T result;
       try {
@@ -414,8 +396,8 @@ class IsolateManager {
 
       // isolateReady가 완료되지 않았다면 에러로 완료 처리
       if (!_isolateReady.isCompleted) {
-        _isolateReady.completeError(
-            Exception('Isolate was closed before initialization completed'));
+        _isolateReady
+            .completeError(Exception('Isolate was closed before initialization completed'));
       }
     } catch (e) {
       Logger.error('IsolateManager: Error closing isolate: $e');

@@ -39,8 +39,7 @@ class AddressItemCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                 margin: const EdgeInsets.only(right: 6),
                 decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: MyColors.transparentBlack_50),
+                    borderRadius: BorderRadius.circular(8), color: MyColors.transparentBlack_50),
                 child: Text(index, style: Styles.caption)),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,10 +49,7 @@ class AddressItemCard extends StatelessWidget {
                   style: Styles.body1Number,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                    balanceInSats == null
-                        ? ''
-                        : '${satoshiToBitcoinString(balanceInSats!)} BTC',
+                Text(balanceInSats == null ? '' : '${satoshiToBitcoinString(balanceInSats!)} BTC',
                     style: Styles.label.merge(TextStyle(
                         fontFamily: CustomFonts.number.getFontFamily,
                         fontWeight: FontWeight.normal,
@@ -64,13 +60,10 @@ class AddressItemCard extends StatelessWidget {
             Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: MyColors.transparentWhite_15),
+                    borderRadius: BorderRadius.circular(12), color: MyColors.transparentWhite_15),
                 child: Text(isUsed ? '사용됨' : '사용 전',
                     style: TextStyle(
-                        color: isUsed
-                            ? MyColors.primary
-                            : MyColors.transparentWhite_70,
+                        color: isUsed ? MyColors.primary : MyColors.transparentWhite_70,
                         fontSize: 10,
                         fontFamily: CustomFonts.text.getFontFamily)))
           ],

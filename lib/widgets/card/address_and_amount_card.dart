@@ -126,8 +126,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
               padding: const EdgeInsets.all(1.0),
               onPressed: _onDeleted,
               icon: SvgPicture.asset('assets/svg/close-bold.svg',
-                  colorFilter: const ColorFilter.mode(
-                      CoconutColors.white, BlendMode.srcIn)),
+                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn)),
             ),
           ),
         Column(
@@ -171,8 +170,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 controller: _amountController,
                 focusNode: _quantityFocusNode,
                 onChanged: _onAmountChanged,
-                textInputType: const TextInputType.numberWithOptions(
-                    signed: false, decimal: true),
+                textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
                 suffix: _amountController.text.isEmpty
                     ? null
                     : IconButton(
@@ -191,8 +189,8 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 placeholderText: widget.amountPlaceholder,
                 isError: widget.isAmountDust,
                 errorText: widget.isAmountDust
-                    ? t.alert.error_send.minimum_amount(
-                        bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1))
+                    ? t.alert.error_send
+                        .minimum_amount(bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1))
                     : null),
           ],
         ),
@@ -219,8 +217,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
   }
 
   void _onDeleted() {
-    widget.onDeleted(
-        _addressController.text.isEmpty && _amountController.text.isEmpty);
+    widget.onDeleted(_addressController.text.isEmpty && _amountController.text.isEmpty);
   }
 
   void _onQRViewCreated(QRViewController qrViewController) {
@@ -270,8 +267,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                   _disposeQrViewController();
                   Navigator.of(context).pop<String>('');
                 }),
-            body: SendAddressBody(
-                qrKey: qrKey, onQRViewCreated: _onQRViewCreated)));
+            body: SendAddressBody(qrKey: qrKey, onQRViewCreated: _onQRViewCreated)));
     if (scannedAddress != null) {
       _addressController.text = scannedAddress;
       _onAddressChanged(scannedAddress);

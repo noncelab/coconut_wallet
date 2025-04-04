@@ -103,28 +103,23 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         // Repository 등록 - Provider보다 먼저 등록해야 함
         ProxyProvider<RealmManager, WalletRepository>(
           create: (context) => WalletRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) =>
-              previous ?? WalletRepository(realmManager),
+          update: (context, realmManager, previous) => previous ?? WalletRepository(realmManager),
         ),
         ProxyProvider<RealmManager, AddressRepository>(
           create: (context) => AddressRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) =>
-              previous ?? AddressRepository(realmManager),
+          update: (context, realmManager, previous) => previous ?? AddressRepository(realmManager),
         ),
         ProxyProvider<RealmManager, TransactionRepository>(
-          create: (context) =>
-              TransactionRepository(context.read<RealmManager>()),
+          create: (context) => TransactionRepository(context.read<RealmManager>()),
           update: (context, realmManager, previous) =>
               previous ?? TransactionRepository(realmManager),
         ),
         ProxyProvider<RealmManager, UtxoRepository>(
           create: (context) => UtxoRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) =>
-              previous ?? UtxoRepository(realmManager),
+          update: (context, realmManager, previous) => previous ?? UtxoRepository(realmManager),
         ),
         ProxyProvider<RealmManager, SubscriptionRepository>(
-          create: (context) =>
-              SubscriptionRepository(context.read<RealmManager>()),
+          create: (context) => SubscriptionRepository(context.read<RealmManager>()),
           update: (context, realmManager, previous) =>
               previous ?? SubscriptionRepository(realmManager),
         ),
@@ -146,13 +141,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             CoconutWalletApp.kElectrumPort,
             CoconutWalletApp.kElectrumIsSSL,
           ),
-          update: (context,
-                  addressRepository,
-                  transactionRepository,
-                  utxoRepository,
-                  subscribeRepository,
-                  walletRepository,
-                  previous) =>
+          update: (context, addressRepository, transactionRepository, utxoRepository,
+                  subscribeRepository, walletRepository, previous) =>
               previous ??
               NodeProvider(
                 CoconutWalletApp.kElectrumHost,
@@ -165,8 +155,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         if (_appEntryFlow == AppEntryFlow.main) ...{
           ChangeNotifierProvider(create: (_) => PreferenceProvider()),
           Provider(create: (_) => SendInfoProvider()),
-          ChangeNotifierProxyProvider3<ConnectivityProvider, VisibilityProvider,
-              AuthProvider, WalletProvider>(
+          ChangeNotifierProxyProvider3<ConnectivityProvider, VisibilityProvider, AuthProvider,
+              WalletProvider>(
             create: (_) {
               return WalletProvider(
                   Provider.of<RealmManager>(_, listen: false),
@@ -174,19 +164,16 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   Provider.of<TransactionRepository>(_, listen: false),
                   Provider.of<UtxoRepository>(_, listen: false),
                   Provider.of<WalletRepository>(_, listen: false),
-                  Provider.of<ConnectivityProvider>(_, listen: false)
-                      .isNetworkOn,
-                  Provider.of<VisibilityProvider>(_, listen: false)
-                      .setWalletCount,
+                  Provider.of<ConnectivityProvider>(_, listen: false).isNetworkOn,
+                  Provider.of<VisibilityProvider>(_, listen: false).setWalletCount,
                   Provider.of<AuthProvider>(_, listen: false).isSetPin,
                   Provider.of<NodeProvider>(_, listen: false));
             },
-            update: (context, connectivityProvider, visiblityProvider,
-                authProvider, walletProvider) {
+            update:
+                (context, connectivityProvider, visiblityProvider, authProvider, walletProvider) {
               try {
                 // TODO: 바뀌었을 때만 호출되도록. walletProvider 내부에서 addLitsener()
-                walletProvider!
-                    .setIsNetworkOn(connectivityProvider.isNetworkOn);
+                walletProvider!.setIsNetworkOn(connectivityProvider.isNetworkOn);
 
                 return walletProvider;
               } catch (e) {
@@ -264,8 +251,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/wallet-info': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
-                    child: WalletInfoScreen(
-                        id: args['id'], isMultisig: args['isMultisig'])),
+                    child: WalletInfoScreen(id: args['id'], isMultisig: args['isMultisig'])),
               ),
           '/address-list': (context) => buildScreenWithArguments(
                 context,
@@ -273,8 +259,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               ),
           '/transaction-detail': (context) => buildScreenWithArguments(
                 context,
-                (args) => TransactionDetailScreen(
-                    id: args['id'], txHash: args['txHash']),
+                (args) => TransactionDetailScreen(id: args['id'], txHash: args['txHash']),
               ),
           '/transaction-fee-bumping': (context) => buildScreenWithArguments(
                 context,
@@ -289,21 +274,17 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               ),
           '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
                 context,
-                (args) =>
-                    UnsignedTransactionQrScreen(walletName: args['walletName']),
+                (args) => UnsignedTransactionQrScreen(walletName: args['walletName']),
               ),
           '/signed-psbt-scanner': (context) => const SignedPsbtScannerScreen(),
-          '/broadcasting': (context) =>
-              const CustomLoadingOverlay(child: BroadcastingScreen()),
+          '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
           '/broadcasting-complete': (context) => buildScreenWithArguments(
                 context,
-                (args) => CustomLoadingOverlay(
-                    child: BroadcastingCompleteScreen(id: args['id'])),
+                (args) => CustomLoadingOverlay(child: BroadcastingCompleteScreen(id: args['id'])),
               ),
           '/send-address': (context) => buildScreenWithArguments(
                 context,
-                (args) => CustomLoadingOverlay(
-                    child: SendAddressScreen(id: args['id'])),
+                (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
               ),
           '/send-amount': (context) => const SendAmountScreen(),
           '/fee-selection': (context) => const CustomLoadingOverlay(
@@ -312,8 +293,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/utxo-selection': (context) => const CustomLoadingOverlay(
                 child: SendUtxoSelectionScreen(),
               ),
-          '/send-confirm': (context) =>
-              const CustomLoadingOverlay(child: SendConfirmScreen()),
+          '/send-confirm': (context) => const CustomLoadingOverlay(child: SendConfirmScreen()),
           '/utxo-list': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
@@ -332,15 +312,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/positive-feedback': (context) => const PositiveFeedbackScreen(),
           '/negative-feedback': (context) => const NegativeFeedbackScreen(),
           '/mnemonic-word-list': (context) => const Bip39ListScreen(),
-          '/utxo-tag': (context) => buildScreenWithArguments(
-              context, (args) => UtxoTagCrudScreen(id: args['id'])),
+          '/utxo-tag': (context) =>
+              buildScreenWithArguments(context, (args) => UtxoTagCrudScreen(id: args['id'])),
         },
       ),
     );
   }
 
-  T buildScreenWithArguments<T>(
-      BuildContext context, T Function(Map<String, dynamic>) builder) {
+  T buildScreenWithArguments<T>(BuildContext context, T Function(Map<String, dynamic>) builder) {
     final Map<String, dynamic> args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
     return builder(args);

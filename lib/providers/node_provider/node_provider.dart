@@ -23,8 +23,7 @@ class NodeProvider extends ChangeNotifier {
 
   Completer<void>? _initCompleter;
 
-  NodeProviderState get state =>
-      _stateManager?.state ?? NodeProviderState.initial();
+  NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
 
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
   String get host => _host;
@@ -35,8 +34,7 @@ class NodeProvider extends ChangeNotifier {
 
   bool get needSubscribe => _needSubscribeWallets;
 
-  NodeProvider(this._host, this._port, this._ssl,
-      {IsolateManager? isolateManager})
+  NodeProvider(this._host, this._port, this._ssl, {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
     initialize();
   }
@@ -135,8 +133,7 @@ class NodeProvider extends ChangeNotifier {
       _stateSubscription?.cancel();
       _stateSubscription = null;
 
-      final socketConnectionStatus =
-          await _isolateManager.getSocketConnectionStatus();
+      final socketConnectionStatus = await _isolateManager.getSocketConnectionStatus();
 
       if (socketConnectionStatus != SocketConnectionStatus.connected) {
         await initialize();

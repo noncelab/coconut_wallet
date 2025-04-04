@@ -76,8 +76,7 @@ class PinInputPadState extends State<PinInputPad> {
                       onPressed: widget.onBackPressed,
                       icon: SvgPicture.asset(
                         'assets/svg/back.svg',
-                        colorFilter: const ColorFilter.mode(
-                            MyColors.white, BlendMode.srcIn),
+                        colorFilter: const ColorFilter.mode(MyColors.white, BlendMode.srcIn),
                       ),
                     ),
             )
@@ -90,8 +89,7 @@ class PinInputPadState extends State<PinInputPad> {
             SizedBox(height: widget.initOptionVisible ? 60 : 24),
             Text(
               widget.title,
-              style: Styles.body1
-                  .merge(const TextStyle(fontWeight: FontWeight.bold)),
+              style: Styles.body1.merge(const TextStyle(fontWeight: FontWeight.bold)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -108,8 +106,7 @@ class PinInputPadState extends State<PinInputPad> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(widget.errorMessage,
-                style: Styles.warning, textAlign: TextAlign.center),
+            Text(widget.errorMessage, style: Styles.warning, textAlign: TextAlign.center),
             const SizedBox(height: 40),
             Expanded(
               child: Align(
@@ -142,8 +139,7 @@ class PinInputPadState extends State<PinInputPad> {
                     child: Text(
                       '비밀번호가 기억나지 않나요?',
                       style: Styles.body2.merge(const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: MyColors.transparentWhite_70)),
+                          fontWeight: FontWeight.bold, color: MyColors.transparentWhite_70)),
                       textAlign: TextAlign.center,
                     ),
                   )),

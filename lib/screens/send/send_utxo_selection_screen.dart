@@ -36,8 +36,7 @@ class SendUtxoSelectionScreen extends StatefulWidget {
   });
 
   @override
-  State<SendUtxoSelectionScreen> createState() =>
-      _SendUtxoSelectionScreenState();
+  State<SendUtxoSelectionScreen> createState() => _SendUtxoSelectionScreenState();
 }
 
 class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
@@ -83,8 +82,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     viewModel.errorState == null,
                 onNextPressed: () => _goNext()),
             body: ConstrainedBox(
-              constraints:
-                  BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
+              constraints: BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
               child: Stack(
                 children: [
                   SingleChildScrollView(
@@ -135,8 +133,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       _scrollController.addListener(() {
         double threshold = _headerTopContainerSize.height + 24;
         double offset = _scrollController.offset;
-        if ((_isOrderDropdownVisible || _isScrolledOrderDropdownVisible) &&
-            offset > 0) {
+        if ((_isOrderDropdownVisible || _isScrolledOrderDropdownVisible) && offset > 0) {
           _removeUtxoOrderDropdown();
         }
         setState(() {
@@ -146,19 +143,15 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         RenderBox orderDropdownButtonRenderBox =
-            _orderDropdownButtonKey.currentContext?.findRenderObject()
-                as RenderBox;
+            _orderDropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
         RenderBox scrolledOrderDropdownButtonRenderBox =
-            _scrolledOrderDropdownButtonKey.currentContext?.findRenderObject()
-                as RenderBox;
-        _orderDropdownButtonPosition =
-            orderDropdownButtonRenderBox.localToGlobal(Offset.zero);
+            _scrolledOrderDropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
+        _orderDropdownButtonPosition = orderDropdownButtonRenderBox.localToGlobal(Offset.zero);
         _scrolledOrderDropdownButtonPosition =
             scrolledOrderDropdownButtonRenderBox.localToGlobal(Offset.zero);
 
         RenderBox headerTopContainerRenderBox =
-            _headerTopContainerKey.currentContext?.findRenderObject()
-                as RenderBox;
+            _headerTopContainerKey.currentContext?.findRenderObject() as RenderBox;
         _headerTopContainerSize = headerTopContainerRenderBox.size;
       });
     } catch (e) {
@@ -183,8 +176,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   void _goNext() {
     if (!_viewModel.isNetworkOn()) {
-      CustomToast.showWarningToast(
-          context: context, text: ErrorCodes.networkError.message);
+      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
       return;
     }
 
@@ -220,23 +212,21 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _onTapFeeChangeButton() async {
-    Result<int>? minimumFeeRate =
-        await _viewModel.getMinimumFeeRateFromNetwork();
+    Result<int>? minimumFeeRate = await _viewModel.getMinimumFeeRateFromNetwork();
 
     if (!mounted) {
       return;
     }
 
-    Map<String, dynamic>? feeSelectionResult =
-        await CommonBottomSheets.showBottomSheet_90(
+    Map<String, dynamic>? feeSelectionResult = await CommonBottomSheets.showBottomSheet_90(
       context: context,
       child: FeeSelectionScreen(
           feeInfos: _viewModel.feeInfos,
           selectedFeeLevel: _viewModel.selectedLevel,
           networkMinimumFeeRate: minimumFeeRate?.value,
           customFeeInfo: _viewModel.customFeeInfo,
-          isRecommendedFeeFetchSuccess: _viewModel.recommendedFeeFetchStatus ==
-              RecommendedFeeFetchStatus.succeed,
+          isRecommendedFeeFetchSuccess:
+              _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed,
           estimateFee: _viewModel.estimateFee),
     );
     if (feeSelectionResult != null) {
@@ -323,8 +313,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                             ? '0 ${t.btc}'
                             : '${satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()} ${t.btc}',
                         style: Styles.body1Number.merge(TextStyle(
-                            color: errorState ==
-                                        ErrorState.insufficientBalance ||
+                            color: errorState == ErrorState.insufficientBalance ||
                                     errorState == ErrorState.insufficientUtxo
                                 ? MyColors.warningRed
                                 : MyColors.white,
@@ -524,12 +513,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       );
     }
 
-    if (_isScrolledOrderDropdownVisible &&
-        viewModel.availableUtxoList.isNotEmpty) {
+    if (_isScrolledOrderDropdownVisible && viewModel.availableUtxoList.isNotEmpty) {
       return Positioned(
-        top: _scrolledOrderDropdownButtonPosition.dy -
-            MediaQuery.of(context).padding.top -
-            55,
+        top: _scrolledOrderDropdownButtonPosition.dy - MediaQuery.of(context).padding.top - 55,
         left: 16,
         child: _utxoOrderDropdownMenu(),
       );
@@ -565,15 +551,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         separatorBuilder: (context, index) => const SizedBox(height: 0),
         itemBuilder: (context, index) {
           final utxo = viewModel.availableUtxoList[index];
-          final utxoHasSelectedTag = viewModel.selectedUtxoTagName ==
-                  allLabelName ||
+          final utxoHasSelectedTag = viewModel.selectedUtxoTagName == allLabelName ||
               viewModel.utxoTagMap[utxo.utxoId]
                       ?.any((e) => e.name == viewModel.selectedUtxoTagName) ==
                   true;
 
           if (utxoHasSelectedTag) {
-            if (viewModel.selectedUtxoTagName != allLabelName &&
-                !utxoHasSelectedTag) {
+            if (viewModel.selectedUtxoTagName != allLabelName && !utxoHasSelectedTag) {
               return const SizedBox();
             }
 

@@ -63,12 +63,10 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                           child: Row(
                             children: [
                               AnimatedBalance(
-                                  prevValue:
-                                      widget.animatedBalanceData.previous,
+                                  prevValue: widget.animatedBalanceData.previous,
                                   value: widget.animatedBalanceData.current,
                                   isBtcUnit: true,
-                                  textStyle:
-                                      CoconutTypography.heading1_32_NumberBold),
+                                  textStyle: CoconutTypography.heading1_32_NumberBold),
                             ],
                           ),
                         ),
@@ -81,8 +79,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     ),
                   ),
                   CoconutLayout.spacing_50h,
-                  FiatPrice(
-                      satoshiAmount: widget.animatedBalanceData.current ?? 0),
+                  FiatPrice(satoshiAmount: widget.animatedBalanceData.current ?? 0),
                   CoconutLayout.spacing_400h,
                   Row(
                     children: [
@@ -91,8 +88,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                       ),
                       CupertinoButton(
                         key: widget.dropdownGlobalKey,
-                        padding: const EdgeInsets.only(
-                            top: 7, bottom: 7, left: 8, right: 26),
+                        padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
                         minSize: 0,
                         onPressed: () {
                           widget.onTapDropdown();
@@ -100,8 +96,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                         child: Row(
                           children: [
                             Text(widget.selectedFilter,
-                                style: CoconutTypography.body3_12
-                                    .setColor(CoconutColors.white)),
+                                style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
                             CoconutLayout.spacing_200w,
                             SvgPicture.asset(
                               'assets/svg/arrow-down.svg',

@@ -19,8 +19,7 @@ class ScriptEventHandler {
   final TransactionManager _transactionManager;
   final UtxoManager _utxoManager;
   final AddressRepository _addressRepository;
-  final Future<Result<bool>> Function(WalletListItemBase walletItem)
-      _subscribeWallet;
+  final Future<Result<bool>> Function(WalletListItemBase walletItem) _subscribeWallet;
 
   ScriptEventHandler(
     this._stateManager,
@@ -60,12 +59,10 @@ class ScriptEventHandler {
       );
 
       // Balance 동기화
-      await _balanceManager.fetchScriptBalance(
-          dto.walletItem, dto.scriptStatus);
+      await _balanceManager.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
 
       // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
-      await _transactionManager
-          .fetchScriptTransaction(dto.walletItem, dto.scriptStatus, now: now);
+      await _transactionManager.fetchScriptTransaction(dto.walletItem, dto.scriptStatus, now: now);
 
       // UTXO 동기화
       await _utxoManager.fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
@@ -79,11 +76,9 @@ class ScriptEventHandler {
         final subResult = await _subscribeWallet(dto.walletItem);
 
         if (subResult.isSuccess) {
-          Logger.log(
-              'Successfully extended script subscription for ${dto.walletItem.name}');
+          Logger.log('Successfully extended script subscription for ${dto.walletItem.name}');
         } else {
-          Logger.error(
-              'Failed to extend script subscription: ${subResult.error}');
+          Logger.error('Failed to extend script subscription: ${subResult.error}');
         }
       }
 
@@ -116,21 +111,19 @@ class ScriptEventHandler {
       await _balanceManager.fetchScriptBalanceBatch(walletItem, scriptStatuses);
 
       // Transaction 병렬 처리
-      _stateManager.addWalletSyncState(
-          walletItem.id, UpdateElement.transaction);
+      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
       final transactionFutures = scriptStatuses.map(
-        (status) => _transactionManager
-            .fetchScriptTransaction(walletItem, status, inBatchProcess: true),
+        (status) =>
+            _transactionManager.fetchScriptTransaction(walletItem, status, inBatchProcess: true),
       );
       await Future.wait(transactionFutures);
-      _stateManager.addWalletCompletedState(
-          walletItem.id, UpdateElement.transaction);
+      _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
 
       // UTXO 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
       await Future.wait(
-        scriptStatuses.map((status) => _utxoManager
-            .fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
+        scriptStatuses.map(
+            (status) => _utxoManager.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
       );
 
       // 최초 지갑 구독 시 Outgoing Transaction이 있을 경우 UTXO가 생성되지 않을 경우 임의로 UTXO를 생성해야 함

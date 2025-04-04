@@ -23,15 +23,15 @@ class SendAddressBody extends StatelessWidget {
       overlay: QrScannerOverlayShape(
           borderColor: MyColors.white,
           borderRadius: 8,
-          borderLength: (MediaQuery.of(context).size.width < 400 ||
-                  MediaQuery.of(context).size.height < 400)
-              ? 160
-              : MediaQuery.of(context).size.width * 0.9 / 2,
+          borderLength:
+              (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
+                  ? 160
+                  : MediaQuery.of(context).size.width * 0.9 / 2,
           borderWidth: 8,
-          cutOutSize: (MediaQuery.of(context).size.width < 400 ||
-                  MediaQuery.of(context).size.height < 400)
-              ? 320.0
-              : MediaQuery.of(context).size.width * 0.9),
+          cutOutSize:
+              (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
+                  ? 320.0
+                  : MediaQuery.of(context).size.width * 0.9),
     );
   }
 
@@ -53,12 +53,9 @@ class SendAddressBody extends StatelessWidget {
           child: Container(
               padding: const EdgeInsets.only(top: 32),
               child: Text(
-                pasteAddress != null
-                    ? t.send_address_screen.text1
-                    : t.send_address_screen.text2,
+                pasteAddress != null ? t.send_address_screen.text1 : t.send_address_screen.text2,
                 textAlign: TextAlign.center,
-                style:
-                    Styles.label.merge(const TextStyle(color: MyColors.white)),
+                style: Styles.label.merge(const TextStyle(color: MyColors.white)),
               ))),
       if (pasteAddress != null)
         Align(
@@ -68,13 +65,10 @@ class SendAddressBody extends StatelessWidget {
                 child: TextButton(
                     onPressed: pasteAddress,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor:
-                          address != null ? MyColors.darkgrey : MyColors.white,
-                      backgroundColor: address != null
-                          ? MyColors.white
-                          : MyColors.transparentBlack_50,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 20),
+                      foregroundColor: address != null ? MyColors.darkgrey : MyColors.white,
+                      backgroundColor:
+                          address != null ? MyColors.white : MyColors.transparentBlack_50,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(
                           Radius.circular(8),
@@ -84,21 +78,19 @@ class SendAddressBody extends StatelessWidget {
                     child: address != null
                         ? Text.rich(TextSpan(
                             text: '${t.address} ',
-                            style: Styles.label.merge(
-                                const TextStyle(color: MyColors.darkgrey)),
+                            style: Styles.label.merge(const TextStyle(color: MyColors.darkgrey)),
                             children: [
                                 TextSpan(
                                     text:
                                         '${address?.substring(0, 10)}...${address?.substring(35)}',
                                     style: TextStyle(
-                                        fontFamily:
-                                            CustomFonts.number.getFontFamily,
+                                        fontFamily: CustomFonts.number.getFontFamily,
                                         fontWeight: FontWeight.bold)),
                                 TextSpan(text: ' ${t.paste}')
                               ]))
                         : Text(t.paste,
-                            style: Styles.label.merge(const TextStyle(
-                                color: MyColors.transparentWhite_20))))))
+                            style: Styles.label
+                                .merge(const TextStyle(color: MyColors.transparentWhite_20))))))
     ]);
   }
 }

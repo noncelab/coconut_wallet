@@ -84,10 +84,8 @@ void main() {
     await dotenv.load(fileName: envFile);
     CoconutWalletApp.kElectrumHost = dotenv.env[DotenvKeys.electrumHost] ?? '';
     String? portString = dotenv.env[DotenvKeys.electrumPort];
-    CoconutWalletApp.kElectrumPort =
-        portString != null ? int.tryParse(portString) ?? 0 : 0;
-    CoconutWalletApp.kElectrumIsSSL =
-        dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
+    CoconutWalletApp.kElectrumPort = portString != null ? int.tryParse(portString) ?? 0 : 0;
+    CoconutWalletApp.kElectrumIsSSL = dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
     CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
     CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
     runApp(const CoconutWalletApp());

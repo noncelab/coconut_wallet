@@ -5,8 +5,7 @@ class SvgBoxContainer extends StatelessWidget {
   final String svgPath;
   final Color backgroundColor;
 
-  const SvgBoxContainer(
-      {super.key, required this.svgPath, required this.backgroundColor});
+  const SvgBoxContainer({super.key, required this.svgPath, required this.backgroundColor});
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +15,7 @@ class SvgBoxContainer extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color.fromRGBO(76, 110, 244, 1.0),
         borderRadius: BorderRadius.circular(21),
-        border: Border.all(
-            color: const Color.fromRGBO(202, 212, 252, 1.0), width: 4.0),
+        border: Border.all(color: const Color.fromRGBO(202, 212, 252, 1.0), width: 4.0),
       ),
       child: Center(
         child: SvgPicture.asset(

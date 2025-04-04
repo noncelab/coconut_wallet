@@ -11,8 +11,7 @@ class Balance {
 
   /// @nodoc
   Balance operator +(Balance other) {
-    return Balance(
-        confirmed + other.confirmed, unconfirmed + other.unconfirmed);
+    return Balance(confirmed + other.confirmed, unconfirmed + other.unconfirmed);
   }
 
   /// @nodoc

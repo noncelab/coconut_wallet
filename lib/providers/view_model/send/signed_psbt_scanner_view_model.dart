@@ -16,17 +16,14 @@ class SignedPsbtScannerViewModel {
     MultisignatureWallet multisigWallet = _walletProvider
         .getWalletById(_sendInfoProvider.walletId!)
         .walletBase as MultisignatureWallet;
-    int signedCount = multisigWallet.keyStoreList
-        .where((keyStore) => psbt.isSigned(keyStore))
-        .length;
+    int signedCount =
+        multisigWallet.keyStoreList.where((keyStore) => psbt.isSigned(keyStore)).length;
     int difference = multisigWallet.requiredSignature - signedCount;
     return difference;
   }
 
   WalletBase getWalletBase() {
-    return _walletProvider
-        .getWalletById(_sendInfoProvider.walletId!)
-        .walletBase;
+    return _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
   }
 
   bool isPsbtAmountAndTxHashEqualTo(Psbt signedPsbt) {

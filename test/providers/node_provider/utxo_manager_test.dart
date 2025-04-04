@@ -29,8 +29,7 @@ void main() {
   late UtxoManager utxoManager;
   late TransactionRepository transactionRepository;
   late AddressRepository addressRepository;
-  SinglesigWalletListItem testWalletItem =
-      WalletMock.createSingleSigWalletItem();
+  SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
   const int testWalletId = 1;
 
   setUp(() async {
@@ -93,8 +92,7 @@ void main() {
 
         expect(updatedUtxo, isNotNull);
         expect(updatedUtxo!.status, equals(UtxoStatus.outgoing));
-        expect(
-            updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
+        expect(updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
       });
 
       test('자기 참조 UTXO는 업데이트되지 않아야 함', () {
@@ -132,8 +130,7 @@ void main() {
 
         expect(updatedUtxo, isNotNull);
         expect(updatedUtxo!.status, equals(UtxoStatus.outgoing));
-        expect(
-            updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
+        expect(updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
       });
 
       test('이미 outgoing 상태인 UTXO의 기존 spentByTransactionHash가 유지되어야 함', () {
@@ -173,10 +170,8 @@ void main() {
 
         expect(updatedUtxo, isNotNull);
         expect(updatedUtxo!.status, equals(UtxoStatus.outgoing));
-        expect(
-            updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
-        expect(
-            updatedUtxo.spentByTransactionHash, isNot(equals(previousTxHash)));
+        expect(updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
+        expect(updatedUtxo.spentByTransactionHash, isNot(equals(previousTxHash)));
       });
     });
   });

@@ -81,8 +81,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           const SizedBox(width: 4.0),
           Text(
             widget.currentUnit == Unit.btc ? t.btc : t.sats,
-            style: CoconutTypography.heading4_18_Number
-                .setColor(CoconutColors.gray350),
+            style: CoconutTypography.heading4_18_Number.setColor(CoconutColors.gray350),
           ),
         ],
       ),
@@ -113,8 +112,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
     );
   }
 
-  Widget _buildPendingAmountRow(
-      bool condition, String animationPath, String text, Color color) {
+  Widget _buildPendingAmountRow(bool condition, String animationPath, String text, Color color) {
     if (!condition) return const SizedBox.shrink();
 
     return SizedBox(
@@ -132,8 +130,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           CoconutLayout.spacing_200w,
           Text(
             text,
-            style: CoconutTypography.body2_14_Number
-                .setColor(CoconutColors.gray200),
+            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray200),
           ),
         ],
       ),
@@ -143,17 +140,16 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   Widget _buildActionButtons() {
     return Row(
       children: [
-        _buildActionButton(widget.onTapReceive, t.receive, CoconutColors.white,
-            CoconutColors.black),
+        _buildActionButton(
+            widget.onTapReceive, t.receive, CoconutColors.white, CoconutColors.black),
         const SizedBox(width: 12.0),
-        _buildActionButton(widget.onTapSend, t.send, CoconutColors.primary,
-            CoconutColors.black),
+        _buildActionButton(widget.onTapSend, t.send, CoconutColors.primary, CoconutColors.black),
       ],
     );
   }
 
-  Widget _buildActionButton(void Function() onTap, String label,
-      Color backgroundColor, Color textColor) {
+  Widget _buildActionButton(
+      void Function() onTap, String label, Color backgroundColor, Color textColor) {
     return Expanded(
       child: CoconutButton(
         onPressed: onTap,

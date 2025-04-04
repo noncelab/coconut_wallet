@@ -155,8 +155,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  Widget _buildTxInputOutputSection(
-      UtxoDetailViewModel viewModel, TransactionRecord tx) {
+  Widget _buildTxInputOutputSection(UtxoDetailViewModel viewModel, TransactionRecord tx) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Container(
@@ -169,19 +168,16 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildInputOutputList(
-                tx.inputAddressList, InputOutputRowType.input),
+            _buildInputOutputList(tx.inputAddressList, InputOutputRowType.input),
             _buildFeeSection(tx.fee ?? 0),
-            _buildInputOutputList(
-                tx.outputAddressList, InputOutputRowType.output),
+            _buildInputOutputList(tx.outputAddressList, InputOutputRowType.output),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInputOutputList(
-      List<TransactionAddress> addressList, InputOutputRowType type) {
+  Widget _buildInputOutputList(List<TransactionAddress> addressList, InputOutputRowType type) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -192,8 +188,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           InputOutputDetailRow(
             address: addressList[index].address,
             balance: addressList[index].amount,
-            balanceMaxWidth:
-                _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
+            balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
             rowType: type,
             isCurrentAddress: addressList[index].address == widget.utxo.to,
           ),
@@ -210,8 +205,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         InputOutputDetailRow(
           address: t.fee,
           balance: fee,
-          balanceMaxWidth:
-              _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
+          balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
           rowType: InputOutputRowType.fee,
         ),
         const SizedBox(height: 8),
@@ -237,8 +231,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             ),
             color: CoconutColors.white,
             child: Text(t.tooltip.utxo,
-                style: CoconutTypography.body3_12
-                    .copyWith(color: CoconutColors.gray900, height: 1.3)),
+                style:
+                    CoconutTypography.body3_12.copyWith(color: CoconutColors.gray900, height: 1.3)),
           ),
         ),
       ),
@@ -254,8 +248,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
       if (utxoTooltipIconRenderBox != null) {
         setState(() {
-          _utxoTooltipIconPosition =
-              utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
+          _utxoTooltipIconPosition = utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
           _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
         });
       }
@@ -285,16 +278,15 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     return Text(
       key: _balanceWidthKey,
       '0.0000 0000',
-      style: CoconutTypography.body2_14_Number
-          .copyWith(color: Colors.transparent, height: 16 / 14),
+      style: CoconutTypography.body2_14_Number.copyWith(color: Colors.transparent, height: 16 / 14),
     );
   }
 
   Widget _buildDateTime(List<String> timeString) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28.0),
-      child: HighlightedInfoArea(
-          textList: timeString, textStyle: CoconutTypography.body2_14_Number),
+      child:
+          HighlightedInfoArea(textList: timeString, textStyle: CoconutTypography.body2_14_Number),
     );
   }
 
@@ -311,8 +303,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                   children: <InlineSpan>[
             WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
-                child: Text(" ${t.btc}",
-                    style: CoconutTypography.heading3_21_Number))
+                child: Text(" ${t.btc}", style: CoconutTypography.heading3_21_Number))
           ]))),
     );
   }
@@ -350,11 +341,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           ),
           CoconutLayout.spacing_200w,
           Text(
-            status == UtxoStatus.incoming
-                ? t.status_receiving
-                : t.status_sending,
-            style: CoconutTypography.body2_14_Number
-                .copyWith(color: CoconutColors.gray200),
+            status == UtxoStatus.incoming ? t.status_receiving : t.status_sending,
+            style: CoconutTypography.body2_14_Number.copyWith(color: CoconutColors.gray200),
           ),
         ],
       ),
@@ -370,8 +358,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         UnderlineButtonItemCard(
             label: t.utxo_detail_screen.address,
             underlineButtonLabel: t.view_mempool,
-            onTapUnderlineButton: () => launchUrl(Uri.parse(
-                "${CoconutWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+            onTapUnderlineButton: () =>
+                launchUrl(Uri.parse("${CoconutWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -390,8 +378,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             style: i == changeIndex && path[changeIndex] == '1'
                                 ? CoconutTypography.body3_12_NumberBold
                                     .setColor(CoconutColors.gray200)
-                                : CoconutTypography.body3_12_Number
-                                    .setColor(CoconutColors.gray500),
+                                : CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
                           ),
                           if (i < path.length - 1)
                             TextSpan(
@@ -405,8 +392,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                   CoconutLayout.spacing_100w,
                   if (path[changeIndex] == '1') ...{
                     Text('(${t.change})',
-                        style: CoconutTypography.body3_12
-                            .setColor(CoconutColors.gray500))
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray500))
                   }
                 ])
               ],
@@ -438,10 +424,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           label: t.tx_id,
           underlineButtonLabel: t.view_tx_details,
           onTapUnderlineButton: () {
-            Navigator.pushNamed(context, '/transaction-detail', arguments: {
-              'id': widget.id,
-              'txHash': widget.utxo.transactionHash
-            });
+            Navigator.pushNamed(context, '/transaction-detail',
+                arguments: {'id': widget.id, 'txHash': widget.utxo.transactionHash});
           },
           child: Text(
             widget.utxo.transactionHash,
@@ -456,31 +440,27 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildBlockHeight() {
     return UnderlineButtonItemCard(
         label: t.block_num,
-        underlineButtonLabel:
-            widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
+        underlineButtonLabel: widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
         onTapUnderlineButton: () {
           widget.utxo.status == UtxoStatus.unspent
-              ? launchUrl(Uri.parse(
-                  "${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}"))
+              ? launchUrl(
+                  Uri.parse("${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}"))
               : ();
         },
         child: Text(
-          widget.utxo.blockHeight != 0
-              ? widget.utxo.blockHeight.toString()
-              : '-',
+          widget.utxo.blockHeight != 0 ? widget.utxo.blockHeight.toString() : '-',
           style: CoconutTypography.body2_14_Number,
         ));
   }
 
-  Widget _buildTagSection(BuildContext context, List<UtxoTag> tags,
-      List<UtxoTag> selectedTags, UtxoDetailViewModel viewModel) {
+  Widget _buildTagSection(BuildContext context, List<UtxoTag> tags, List<UtxoTag> selectedTags,
+      UtxoDetailViewModel viewModel) {
     return Column(
       children: [
         UnderlineButtonItemCard(
           label: t.tag,
           underlineButtonLabel: t.edit,
-          onTapUnderlineButton: () =>
-              _showTagBottomSheet(context, tags, selectedTags, viewModel),
+          onTapUnderlineButton: () => _showTagBottomSheet(context, tags, selectedTags, viewModel),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -495,14 +475,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     (index) => IntrinsicWidth(
                       child: CoconutChip(
                         minWidth: 40,
-                        color: CoconutColors.backgroundColorPaletteDark[
-                            selectedTags[index].colorIndex],
-                        borderColor: CoconutColors
-                            .colorPalette[selectedTags[index].colorIndex],
+                        color: CoconutColors
+                            .backgroundColorPaletteDark[selectedTags[index].colorIndex],
+                        borderColor: CoconutColors.colorPalette[selectedTags[index].colorIndex],
                         label: '#${selectedTags[index].name}',
                         labelSize: 12,
-                        labelColor: CoconutColors
-                            .colorPalette[selectedTags[index].colorIndex],
+                        labelColor: CoconutColors.colorPalette[selectedTags[index].colorIndex],
                       ),
                     ),
                   ),

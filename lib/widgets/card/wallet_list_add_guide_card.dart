@@ -21,10 +21,8 @@ class _WalletListAddGuideCardState extends State<WalletListAddGuideCard> {
     return Container(
       width: double.maxFinite,
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: MyColors.transparentWhite_12),
-      margin:
-          const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+          borderRadius: BorderRadius.circular(16), color: MyColors.transparentWhite_12),
+      margin: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
       padding: const EdgeInsets.only(top: 26, bottom: 24, left: 26, right: 26),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -19,8 +19,7 @@ class SignedPsbtScannerScreen extends StatefulWidget {
   const SignedPsbtScannerScreen({super.key});
 
   @override
-  State<SignedPsbtScannerScreen> createState() =>
-      _SignedPsbtScannerScreenState();
+  State<SignedPsbtScannerScreen> createState() => _SignedPsbtScannerScreenState();
 }
 
 class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
@@ -57,9 +56,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           ),
           Padding(
               padding: const EdgeInsets.only(
-                  top: 20,
-                  left: CoconutLayout.defaultPadding,
-                  right: CoconutLayout.defaultPadding),
+                  top: 20, left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),
               child: CoconutToolTip(
                 tooltipType: CoconutTooltipType.fixed,
                 baseBackgroundColor: MyColors.white.withOpacity(0.9),
@@ -97,8 +94,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
     String? currentRoute = ModalRoute.of(context)?.settings.name;
 
-    if (currentRoute != null &&
-        currentRoute.startsWith('/signed-psbt-scanner')) {
+    if (currentRoute != null && currentRoute.startsWith('/signed-psbt-scanner')) {
       _isProcessing = false;
     }
   }
@@ -112,8 +108,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = SignedPsbtScannerViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
+    _viewModel = SignedPsbtScannerViewModel(Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false));
   }
 
@@ -138,8 +133,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       if (_viewModel.isMultisig) {
         int missingCount = _viewModel.getMissingSignaturesCount(psbt);
         if (missingCount > 0) {
-          _showAlert(t.alert.signed_psbt.need_more_sign(count: missingCount),
-              isBack: true);
+          _showAlert(t.alert.signed_psbt.need_more_sign(count: missingCount), isBack: true);
           controller?.pauseCamera();
           await _stopCamera();
           return;

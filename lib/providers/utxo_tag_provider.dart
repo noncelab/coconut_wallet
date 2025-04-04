@@ -35,14 +35,13 @@ class UtxoTagProvider extends ChangeNotifier {
 
   // [utxo tag 승계 유무에 따라 Utxo 태그 적용]
   // broadcasting_view_model.dart / updateTagsOfUsedUtxos에서 호출
-  Future applyTagsToNewUtxos(
-      int walletId, String signedTx, List<int> outputIndexes) async {
+  Future applyTagsToNewUtxos(int walletId, String signedTx, List<int> outputIndexes) async {
     List<String> newUtxoIds = _isTagsMoveAllowed
         ? outputIndexes.map((index) => makeUtxoId(signedTx, index)).toList()
         : [];
 
-    final result = await _utxoRepository.updateTagsOfSpentUtxos(
-        walletId, _spentUtxoIds, newUtxoIds);
+    final result =
+        await _utxoRepository.updateTagsOfSpentUtxos(walletId, _spentUtxoIds, newUtxoIds);
     if (result.isFailure) {
       Logger.error(result.error);
     }
@@ -53,8 +52,7 @@ class UtxoTagProvider extends ChangeNotifier {
   // [utxo tag 승계 유무 정보 저장]
   // send_utxo_selection_view_model.dart / cacheSpentUtxoIdsWithTag에서 호출
   // 사용한 utxo 중, 태그된 것이 하나라도 있는 경우, 사용한 utxo id 목록을 저장
-  void cacheUsedUtxoIds(List<String> utxoIdList,
-      {required bool isTagsMoveAllowed}) {
+  void cacheUsedUtxoIds(List<String> utxoIdList, {required bool isTagsMoveAllowed}) {
     _spentUtxoIds = utxoIdList;
     _isTagsMoveAllowed = isTagsMoveAllowed;
   }
@@ -89,8 +87,7 @@ class UtxoTagProvider extends ChangeNotifier {
     final result = _utxoRepository.getUtxoTagsByTxHash(walletId, utxoId);
     if (result.isFailure) {
       Logger.log('-----------------------------------------------------------');
-      Logger.log(
-          'getUtxoTagsByUtxoId(walletId: $walletId, txHashIndex: $utxoId)');
+      Logger.log('getUtxoTagsByUtxoId(walletId: $walletId, txHashIndex: $utxoId)');
       Logger.log(result.error);
       return [];
     }
@@ -108,8 +105,7 @@ class UtxoTagProvider extends ChangeNotifier {
   }
 
   bool updateUtxoTag(int walletId, UtxoTag utxoTag) {
-    final result = _utxoRepository.updateUtxoTag(
-        utxoTag.id, utxoTag.name, utxoTag.colorIndex);
+    final result = _utxoRepository.updateUtxoTag(utxoTag.id, utxoTag.name, utxoTag.colorIndex);
     if (result.isSuccess) {
       _isUpdatedTagList = true;
       notifyListeners();
@@ -129,8 +125,7 @@ class UtxoTagProvider extends ChangeNotifier {
     required List<String> selectedTagNames,
   }) async {
     final updateUtxoTagListResult =
-        _utxoRepository.createTagAndUpdateTagsOfUtxo(
-            walletId, utxoId, newTags, selectedTagNames);
+        _utxoRepository.createTagAndUpdateTagsOfUtxo(walletId, utxoId, newTags, selectedTagNames);
 
     if (updateUtxoTagListResult.isFailure) {
       Logger.log('-----------------------------------------------------------');

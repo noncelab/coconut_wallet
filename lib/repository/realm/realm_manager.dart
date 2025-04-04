@@ -65,17 +65,15 @@ class RealmManager {
   }
 
   Future _initCryptography(String? nonce, String hashedPin) async {
-    _cryptography = WalletDataManagerCryptography(
-        nonce: nonce == null ? null : base64Decode(nonce));
+    _cryptography =
+        WalletDataManagerCryptography(nonce: nonce == null ? null : base64Decode(nonce));
     await _cryptography!.initialize(
-        iterations: int.parse(dotenv.env[DotenvKeys.pbkdf2Iteration]!),
-        hashedPin: hashedPin);
+        iterations: int.parse(dotenv.env[DotenvKeys.pbkdf2Iteration]!), hashedPin: hashedPin);
   }
 
   void checkInitialized() {
     if (!_isInitialized) {
-      throw StateError(
-          'RealmManager is not initialized. Call initialize first.');
+      throw StateError('RealmManager is not initialized. Call initialize first.');
     }
   }
 
@@ -121,8 +119,7 @@ class RealmManager {
     realm.deleteAll<RealmCpfpHistory>();
   }
 
-  Future<List<String>> _createEncryptedDescriptionList(
-      List<String> plainTexts) async {
+  Future<List<String>> _createEncryptedDescriptionList(List<String> plainTexts) async {
     List<String> encryptedDescriptions = [];
     for (var i = 0; i < plainTexts.length; i++) {
       var encrypted = await _cryptography!.encrypt(plainTexts[i]);
@@ -146,20 +143,17 @@ class RealmManager {
   Future encrypt(String hashedPin) async {
     checkInitialized();
 
-    var walletBases =
-        realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
+    var walletBases = realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
 
     // 비밀번호 변경 시
     List<String>? decryptedDescriptions;
     if (_cryptography != null) {
-      decryptedDescriptions =
-          await _createDecryptedDescriptionList(walletBases);
+      decryptedDescriptions = await _createDecryptedDescriptionList(walletBases);
     }
 
     await _initCryptography(null, hashedPin);
     List<String> encryptedDescriptions = await _createEncryptedDescriptionList(
-        decryptedDescriptions ??
-            walletBases.map((walletBase) => walletBase.descriptor).toList());
+        decryptedDescriptions ?? walletBases.map((walletBase) => walletBase.descriptor).toList());
     await realm.writeAsync(() {
       for (var i = 0; i < walletBases.length; i++) {
         walletBases[i].descriptor = encryptedDescriptions[i];
@@ -177,10 +171,8 @@ class RealmManager {
   Future decrypt() async {
     checkInitialized();
 
-    var walletBases =
-        realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
-    List<String> decryptedDescriptions =
-        await _createDecryptedDescriptionList(walletBases);
+    var walletBases = realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id ASC)');
+    List<String> decryptedDescriptions = await _createDecryptedDescriptionList(walletBases);
 
     await realm.writeAsync(() {
       for (var i = 0; i < walletBases.length; i++) {

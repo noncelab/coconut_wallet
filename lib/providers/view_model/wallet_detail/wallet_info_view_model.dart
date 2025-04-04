@@ -20,8 +20,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   late int _multisigTotalSignerCount;
   late int _multisigRequiredSignerCount;
 
-  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider,
-      bool _isMultisig) {
+  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, bool _isMultisig) {
     final walletItemBase = _walletProvider.getWalletById(_walletId);
     _walletItemBase = walletItemBase;
     _walletName = walletItemBase.name;

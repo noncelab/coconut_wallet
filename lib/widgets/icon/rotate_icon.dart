@@ -19,14 +19,12 @@ class RotateIcon extends StatefulWidget {
   State<RotateIcon> createState() => _RotateIconState();
 }
 
-class _RotateIconState extends State<RotateIcon>
-    with SingleTickerProviderStateMixin {
+class _RotateIconState extends State<RotateIcon> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: Duration(seconds: widget.duration))
+    _controller = AnimationController(vsync: this, duration: Duration(seconds: widget.duration))
       ..repeat();
   }
 
@@ -42,8 +40,7 @@ class _RotateIconState extends State<RotateIcon>
       animation: _controller,
       builder: (context, child) {
         return Transform.rotate(
-          angle:
-              _controller.value * 2.0 * 3.1415927, // 2π radians = 360 degrees
+          angle: _controller.value * 2.0 * 3.1415927, // 2π radians = 360 degrees
           child: child,
         );
       },

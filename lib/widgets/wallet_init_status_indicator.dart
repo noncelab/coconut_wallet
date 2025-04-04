@@ -64,9 +64,7 @@ class WalletInitStatusIndicator extends StatelessWidget {
         color = Colors.transparent;
     }
 
-    if (isLastUpdateTimeVisible &&
-        lastUpdateTime != null &&
-        lastUpdateTime != 0) {
+    if (isLastUpdateTimeVisible && lastUpdateTime != null && lastUpdateTime != 0) {
       iconName = 'idle';
       text = '마지막 업데이트 ${DateTimeUtil.formatLastUpdateTime(lastUpdateTime!)}';
       color = MyColors.transparentWhite_50;
@@ -100,8 +98,7 @@ class WalletInitStatusIndicator extends StatelessWidget {
               ),
             } else ...{
               SvgPicture.asset('assets/svg/status-$iconName.svg',
-                  width: 18,
-                  colorFilter: ColorFilter.mode(color, BlendMode.srcIn)),
+                  width: 18, colorFilter: ColorFilter.mode(color, BlendMode.srcIn)),
             }
           ],
         ),

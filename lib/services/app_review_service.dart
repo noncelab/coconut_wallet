@@ -34,9 +34,7 @@ class AppReviewService {
   }
 
   static Future _setCompletedBitcoinTransaction() async {
-    await SharedPrefsRepository()
-        .sharedPrefs
-        .setBool(SharedPrefKeys.kHaveSent, true);
+    await SharedPrefsRepository().sharedPrefs.setBool(SharedPrefKeys.kHaveSent, true);
   }
 
   /// 리뷰를 남긴 적이 있는지 여부를 반환한다.
@@ -46,28 +44,23 @@ class AppReviewService {
   }
 
   static Future setHasReviewed() async {
-    await SharedPrefsRepository()
-        .sharedPrefs
-        .setBool(SharedPrefKeys.kHaveReviewed, true);
+    await SharedPrefsRepository().sharedPrefs.setBool(SharedPrefKeys.kHaveReviewed, true);
   }
 
   /// 비트코인 전송 첫 성공 후 앱 실행 횟수를 반환한다.
   /// 리뷰를 남긴 후에는 기록하지 않으므로 언제나 정확한 값은 아님
   static int? _getAppRunningCountAfterRejectReview() {
     final sharedPrefs = SharedPrefsRepository();
-    return sharedPrefs.sharedPrefs
-        .getInt(SharedPrefKeys.kAppRunCountAfterRejectReview);
+    return sharedPrefs.sharedPrefs.getInt(SharedPrefKeys.kAppRunCountAfterRejectReview);
   }
 
   /// 비트코인 전송을 완료한 적이 있고, 리뷰를 남긴 적이 없으면, 앱 실행 시 마다 count를 1씩 증가시켜 저장한다.
   static Future<void> increaseAppRunningCountIfRejected() async {
     final sharedPrefs = SharedPrefsRepository();
     if (_hasCompletedBitcoinTransaction() == true && _hasReviewed() != true) {
-      final count = sharedPrefs.sharedPrefs
-              .getInt(SharedPrefKeys.kAppRunCountAfterRejectReview) ??
-          0;
-      await sharedPrefs.sharedPrefs
-          .setInt(SharedPrefKeys.kAppRunCountAfterRejectReview, count + 1);
+      final count =
+          sharedPrefs.sharedPrefs.getInt(SharedPrefKeys.kAppRunCountAfterRejectReview) ?? 0;
+      await sharedPrefs.sharedPrefs.setInt(SharedPrefKeys.kAppRunCountAfterRejectReview, count + 1);
     }
   }
 
@@ -101,8 +94,7 @@ class AppReviewService {
       {AnimationController? animationController}) {
     if (_hasCompletedBitcoinTransaction() == true) return null;
     _setCompletedBitcoinTransaction();
-    return _showReviewScreen(context,
-        isFirst: true, animationController: animationController);
+    return _showReviewScreen(context, isFirst: true, animationController: animationController);
   }
 
   static bool shouldShowReviewScreen() {
