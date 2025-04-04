@@ -88,7 +88,8 @@ void main() {
 
     rbfDetector =
         RbfHandler(transactionRepository, utxoManager, electrumService);
-    cpfpDetector = CpfpHandler(transactionRepository, utxoManager);
+    cpfpDetector =
+        CpfpHandler(transactionRepository, utxoManager, electrumService);
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
@@ -460,10 +461,6 @@ void main() {
       final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
-        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
-          transaction,
-          prevTxs,
-        ),
       );
 
       // 검증
@@ -479,10 +476,6 @@ void main() {
       final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
-        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
-          transaction,
-          prevTxs,
-        ),
       );
 
       // 검증
@@ -515,10 +508,6 @@ void main() {
       final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
-        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
-          transaction,
-          prevTxs,
-        ),
       );
 
       // 검증 - previousTransactions 확인 제외 (모킹 어려움)
@@ -561,10 +550,6 @@ void main() {
       final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
-        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
-          transaction,
-          prevTxs,
-        ),
       );
 
       // 검증 - previousTransactions 확인 제외 (모킹 어려움)
@@ -610,10 +595,6 @@ void main() {
       final result = await rbfDetector.detectSendingRbfTransaction(
         testWalletId,
         multiInputTx,
-        (transaction, prevTxs) => transactionProcessor.getPreviousTransactions(
-          transaction,
-          prevTxs,
-        ),
       );
 
       // 검증 - previousTransactions 확인 제외 (모킹 어려움)

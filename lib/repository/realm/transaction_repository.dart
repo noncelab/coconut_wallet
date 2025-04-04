@@ -52,6 +52,14 @@ class TransactionRepository extends BaseRepository {
     return result;
   }
 
+  List<RealmTransaction> getRealmTransactionListByHashes(
+      int walletId, Set<String> transactionHashes) {
+    return realm.query<RealmTransaction>(
+      r'walletId == $0 AND transactionHash IN $1',
+      [walletId, transactionHashes],
+    ).toList();
+  }
+
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
   Result<TransactionRecord> updateTransactionMemo(
       int walletId, String txHash, String memo) {

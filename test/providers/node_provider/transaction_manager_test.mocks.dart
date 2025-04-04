@@ -408,6 +408,21 @@ class MockElectrumService extends _i1.Mock implements _i11.ElectrumService {
       ) as _i13.Future<String>);
 
   @override
+  _i13.Future<List<_i10.Transaction>> getPreviousTransactions(
+    _i10.Transaction? transaction, {
+    List<_i10.Transaction>? existingTxList,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getPreviousTransactions,
+          [transaction],
+          {#existingTxList: existingTxList},
+        ),
+        returnValue:
+            _i13.Future<List<_i10.Transaction>>.value(<_i10.Transaction>[]),
+      ) as _i13.Future<List<_i10.Transaction>>);
+
+  @override
   _i13.Future<List<List<num>>> getMempoolFeeHistogram() => (super.noSuchMethod(
         Invocation.method(
           #getMempoolFeeHistogram,
@@ -700,6 +715,27 @@ class MockUtxoManager extends _i1.Mock implements _i17.UtxoManager {
         ),
         returnValueForMissingStub: null,
       );
+
+  @override
+  List<_i19.UtxoState> getIncomingUtxoList(int? walletId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getIncomingUtxoList,
+          [walletId],
+        ),
+        returnValue: <_i19.UtxoState>[],
+      ) as List<_i19.UtxoState>);
+
+  @override
+  _i13.Future<void> createOutgoingUtxos(_i5.WalletListItemBase? walletItem) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #createOutgoingUtxosFromUnconfirmedTransactions,
+          [walletItem],
+        ),
+        returnValue: _i13.Future<void>.value(),
+        returnValueForMissingStub: _i13.Future<void>.value(),
+      ) as _i13.Future<void>);
 }
 
 /// A class which mocks [WalletProvider].

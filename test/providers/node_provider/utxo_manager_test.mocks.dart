@@ -332,6 +332,21 @@ class MockElectrumService extends _i1.Mock implements _i5.ElectrumService {
       ) as _i7.Future<String>);
 
   @override
+  _i7.Future<List<_i9.Transaction>> getPreviousTransactions(
+    _i9.Transaction? transaction, {
+    List<_i9.Transaction>? existingTxList,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getPreviousTransactions,
+          [transaction],
+          {#existingTxList: existingTxList},
+        ),
+        returnValue:
+            _i7.Future<List<_i9.Transaction>>.value(<_i9.Transaction>[]),
+      ) as _i7.Future<List<_i9.Transaction>>);
+
+  @override
   _i7.Future<List<List<num>>> getMempoolFeeHistogram() => (super.noSuchMethod(
         Invocation.method(
           #getMempoolFeeHistogram,

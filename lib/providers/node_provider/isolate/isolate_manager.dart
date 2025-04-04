@@ -64,8 +64,12 @@ class IsolateManager {
     final isolateStateManager = IsolateStateManager(sendPort);
     final BalanceManager balanceManager = BalanceManager(electrumService,
         isolateStateManager, addressRepository, walletRepository);
-    final UtxoManager utxoManager =
-        UtxoManager(electrumService, isolateStateManager, utxoRepository);
+    final UtxoManager utxoManager = UtxoManager(
+        electrumService,
+        isolateStateManager,
+        utxoRepository,
+        transactionRepository,
+        addressRepository);
     final TransactionManager transactionManager = TransactionManager(
         electrumService,
         isolateStateManager,

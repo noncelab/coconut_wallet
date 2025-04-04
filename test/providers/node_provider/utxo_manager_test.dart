@@ -2,6 +2,8 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -25,6 +27,8 @@ void main() {
   late MockElectrumService electrumService;
   late MockNodeStateManager stateManager;
   late UtxoManager utxoManager;
+  late TransactionRepository transactionRepository;
+  late AddressRepository addressRepository;
   SinglesigWalletListItem testWalletItem =
       WalletMock.createSingleSigWalletItem();
   const int testWalletId = 1;
@@ -32,6 +36,8 @@ void main() {
   setUp(() async {
     realmManager = await setupTestRealmManager();
     utxoRepository = UtxoRepository(realmManager);
+    transactionRepository = TransactionRepository(realmManager);
+    addressRepository = AddressRepository(realmManager);
     electrumService = MockElectrumService();
     stateManager = MockNodeStateManager();
 
@@ -39,6 +45,8 @@ void main() {
       electrumService,
       stateManager,
       utxoRepository,
+      transactionRepository,
+      addressRepository,
     );
   });
 
@@ -165,9 +173,10 @@ void main() {
 
         expect(updatedUtxo, isNotNull);
         expect(updatedUtxo!.status, equals(UtxoStatus.outgoing));
-        expect(updatedUtxo.spentByTransactionHash, equals(previousTxHash));
-        expect(updatedUtxo.spentByTransactionHash,
-            isNot(equals(mockTx.transactionHash)));
+        expect(
+            updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
+        expect(
+            updatedUtxo.spentByTransactionHash, isNot(equals(previousTxHash)));
       });
     });
   });
