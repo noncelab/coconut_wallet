@@ -152,3 +152,8 @@ key.properties
 default.realm.management
 *.mx
 *.cv
+
+# Generated files
+*.mocks.dart
+*.realm.dart
+*.g.dart
