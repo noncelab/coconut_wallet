@@ -61,31 +61,46 @@ class ScriptEventHandler {
       // Balance 동기화
       await _balanceManager.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
 
+      // UTXO 동기화 시작 state 업데이트
+      _stateManager.addWalletSyncState(dto.walletItem.id, UpdateElement.utxo);
+      // UTXO 처리를 위한 콜백 함수 정의 (로컬 함수 선언 문법 사용)
+      Future<void> utxoProcessCallback() async {
+        // UTXO 동기화
+        await _utxoManager.fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
+
+        // 새 스크립트 구독 여부 확인 및 처리
+        if (_needSubscriptionUpdate(
+          dto.walletItem,
+          oldUsedIndex,
+          dto.scriptStatus.isChange,
+        )) {
+          final subResult = await _subscribeWallet(dto.walletItem);
+
+          if (subResult.isSuccess) {
+            Logger.log('Successfully extended script subscription for ${dto.walletItem.name}');
+          } else {
+            Logger.error('Failed to extend script subscription: ${subResult.error}');
+          }
+        }
+
+        // 동기화 완료 state 업데이트
+        _stateManager.setState(newConnectionState: MainClientState.waiting);
+      }
+
+      // Transaction 동기화를 수행하고, 콜백으로 UTXO 처리를 등록
+      // 트랜잭션 처리 완료 후 UTXO 처리가 자동으로 실행됨
+      await _transactionManager.registerTransactionCallback(
+          dto.walletItem, dto.scriptStatus, utxoProcessCallback);
+
       // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
       await _transactionManager.fetchScriptTransaction(dto.walletItem, dto.scriptStatus, now: now);
 
-      // UTXO 동기화
-      await _utxoManager.fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
-
-      // 새 스크립트 구독 여부 확인 및 처리
-      if (_needSubscriptionUpdate(
-        dto.walletItem,
-        oldUsedIndex,
-        dto.scriptStatus.isChange,
-      )) {
-        final subResult = await _subscribeWallet(dto.walletItem);
-
-        if (subResult.isSuccess) {
-          Logger.log('Successfully extended script subscription for ${dto.walletItem.name}');
-        } else {
-          Logger.error('Failed to extend script subscription: ${subResult.error}');
-        }
-      }
-
-      // 동기화 완료 state 업데이트
-      _stateManager.setState(newConnectionState: MainClientState.waiting);
+      // 참고: 여기서는 UTXO 처리를 직접 호출하지 않음
+      // UTXO 처리는 트랜잭션 처리가 완료되면 콜백을 통해 자동으로 실행됨
     } catch (e) {
       Logger.error('Failed to handle script status change: $e');
+      // 오류 발생 시에도 상태 초기화
+      _stateManager.setState(newConnectionState: MainClientState.waiting);
     }
   }
 

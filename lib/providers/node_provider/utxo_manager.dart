@@ -34,11 +34,6 @@ class UtxoManager {
     ScriptStatus scriptStatus, {
     bool inBatchProcess = false,
   }) async {
-    if (!inBatchProcess) {
-      // UTXO 동기화 시작 state 업데이트
-      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
-    }
-
     // UTXO 목록 조회
     final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
 

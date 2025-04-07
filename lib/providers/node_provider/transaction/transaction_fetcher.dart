@@ -65,6 +65,7 @@ class TransactionFetcher {
     ScriptStatus scriptStatus, {
     DateTime? now,
     bool inBatchProcess = false,
+    void Function()? onComplete,
   }) async {
     if (!inBatchProcess) {
       // Transaction 동기화 시작 state 업데이트
@@ -93,6 +94,7 @@ class TransactionFetcher {
       if (!inBatchProcess) {
         _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
       }
+      onComplete?.call();
       return;
     }
 
@@ -247,6 +249,8 @@ class TransactionFetcher {
       // Transaction 업데이트 완료 state 업데이트
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
     }
+
+    onComplete?.call();
   }
 
   /// 스크립트에 대한 트랜잭션 응답을 가져옵니다.
