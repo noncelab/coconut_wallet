@@ -76,8 +76,9 @@ class UtxoManager {
                 timestamp: transactionMap[e.txHash]!.createdAt,
               ))
           .toList();
-    } catch (e) {
+    } catch (e, stackTrace) {
       Logger.error('Failed to get UTXO list: $e');
+      Logger.error('Stack trace: $stackTrace');
       return [];
     }
   }

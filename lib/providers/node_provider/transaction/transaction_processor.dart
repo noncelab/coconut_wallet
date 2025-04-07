@@ -22,7 +22,6 @@ class TransactionProcessor {
     Map<String, int> txBlockHeightMap,
     Map<int, BlockTimestamp> blockTimestampMap, {
     List<Transaction> previousTxs = const [],
-    Future<String> Function(String)? getTransactionHex,
     DateTime? now,
   }) async {
     return Future.wait(txs.map((tx) async {
@@ -32,7 +31,6 @@ class TransactionProcessor {
         txBlockHeightMap,
         blockTimestampMap,
         previousTxs: previousTxs,
-        getTransactionHex: getTransactionHex,
         now: now,
       );
     }));
@@ -45,17 +43,12 @@ class TransactionProcessor {
     Map<String, int> txBlockHeightMap,
     Map<int, BlockTimestamp> blockTimestampMap, {
     List<Transaction> previousTxs = const [],
-    Future<String> Function(String)? getTransactionHex,
     DateTime? now,
   }) async {
     now ??= DateTime.now();
 
-    List<Transaction> prevTxs;
-    if (getTransactionHex != null) {
-      prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
-    } else {
-      prevTxs = previousTxs;
-    }
+    List<Transaction> prevTxs =
+        await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
 
     int blockHeight = txBlockHeightMap[tx.transactionHash] ?? 0;
     final txDetails = processTransactionDetails(tx, prevTxs, walletItemBase);

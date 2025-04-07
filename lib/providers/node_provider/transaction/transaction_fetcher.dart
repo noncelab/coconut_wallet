@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -25,6 +26,9 @@ class TransactionFetcher {
   final RbfHandler _rbfHandler;
   final CpfpHandler _cpfpHandler;
 
+  // 현재 처리 중인 트랜잭션 해시와 처리 시작 시간을 추적하기 위한 맵
+  final Map<String, ({DateTime startTime, bool isConfirmed})> _processingTransactions = {};
+
   TransactionFetcher(
     this._electrumService,
     this._transactionRepository,
@@ -33,6 +37,27 @@ class TransactionFetcher {
     this._utxoManager,
   )   : _rbfHandler = RbfHandler(_transactionRepository, _utxoManager, _electrumService),
         _cpfpHandler = CpfpHandler(_transactionRepository, _utxoManager, _electrumService);
+
+  /// 트랜잭션의 처리 가능 여부를 확인합니다. 타임아웃이 지난 경우 true를 반환합니다.
+  bool _isProcessable({required String txHash, required bool isConfirmed}) {
+    if (!_processingTransactions.containsKey(txHash)) return true;
+
+    final processInfo = _processingTransactions[txHash]!;
+
+    if (processInfo.isConfirmed != isConfirmed) {
+      return true;
+    }
+
+    final timeElapsed = DateTime.now().difference(processInfo.startTime);
+
+    // 지정된 타임아웃 시간이 지난 경우 재처리 허용
+    if (timeElapsed >= kTransactionProcessingTimeout) {
+      _processingTransactions.remove(txHash);
+      return true;
+    }
+
+    return false;
+  }
 
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
   Future<void> fetchScriptTransaction(
@@ -71,8 +96,34 @@ class TransactionFetcher {
       return;
     }
 
+    final newTxHashes = <String>{};
+
+    for (final txFetchResult in txFetchResults) {
+      // 이미 처리 중인 트랜잭션이지만 타임아웃이 지나지 않은 경우 제외
+      if (_isProcessable(
+          txHash: txFetchResult.transactionHash, isConfirmed: txFetchResult.height > 0)) {
+        _processingTransactions[txFetchResult.transactionHash] = (
+          startTime: DateTime.now(),
+          isConfirmed: txFetchResult.height > 0,
+        );
+        newTxHashes.add(txFetchResult.transactionHash);
+      }
+    }
+
+    // 모든 트랜잭션이 이미 처리 중이라면 종료
+    if (newTxHashes.isEmpty) {
+      if (!inBatchProcess) {
+        _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+      }
+      return;
+    }
+
+    // 새로운 트랜잭션만 처리
+    final filteredTxFetchResults =
+        txFetchResults.where((tx) => newTxHashes.contains(tx.transactionHash)).toList();
+
     // 트랜잭션에 타임스탬프를 기록하기 위해 해당 트랜잭션이 속한 블록 조회
-    final txBlockHeightMap = Map<String, int>.fromEntries(txFetchResults
+    final txBlockHeightMap = Map<String, int>.fromEntries(filteredTxFetchResults
         .where((tx) => tx.height > 0)
         .map((tx) => MapEntry(tx.transactionHash, tx.height)));
 
@@ -81,8 +132,7 @@ class TransactionFetcher {
         : await _electrumService.fetchBlocksByHeight(txBlockHeightMap.values.toSet());
 
     // 트랜잭션 상세 정보 조회
-    final fetchedTransactions =
-        await fetchTransactions(txFetchResults.map((tx) => tx.transactionHash).toSet());
+    final fetchedTransactions = await fetchTransactions(newTxHashes);
 
     // RBF 및 CPFP 감지 결과를 저장할 맵
     Map<String, RbfInfo> sendingRbfInfoMap = {};
@@ -91,6 +141,8 @@ class TransactionFetcher {
 
     // 각 트랜잭션에 대해 사용된 UTXO 상태 업데이트
     for (final fetchedTx in fetchedTransactions) {
+      Logger.log(
+          '-------- fetchScriptTransaction 처리중인 트랜잭션: ${fetchedTx.transactionHash} --------');
       // 언컨펌 트랜잭션의 경우 새로 브로드캐스트된 트랜잭션이므로 사용된 UTXO 상태 업데이트
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
         // RBF 및 CPFP 감지
@@ -141,7 +193,6 @@ class TransactionFetcher {
       fetchedTransactions,
       txBlockHeightMap,
       blockTimestampMap,
-      getTransactionHex: (txHash) => _electrumService.getTransaction(txHash),
       now: now,
     );
 
