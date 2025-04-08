@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -8,16 +9,16 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class TermsBottomSheet extends StatefulWidget {
+class GlossaryBottomSheet extends StatefulWidget {
   static double gutter = 16;
 
-  const TermsBottomSheet({super.key});
+  const GlossaryBottomSheet({super.key});
 
   @override
-  State<TermsBottomSheet> createState() => _TermsBottomSheetState();
+  State<GlossaryBottomSheet> createState() => _GlossaryBottomSheetState();
 }
 
-class _TermsBottomSheetState extends State<TermsBottomSheet> {
+class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
   List<String> termList = [];
   Map<String, dynamic> termDetails = {};
   Map<String, List<String>> groupedTermList = {};
@@ -29,7 +30,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
   }
 
   Future<void> _loadData() async {
-    String detailsContent = await rootBundle.loadString('assets/files/terms_details.json');
+    String detailsContent = await rootBundle.loadString('assets/files/glossary_details.json');
     setState(() {
       termDetails = json.decode(detailsContent);
       termList = termDetails.keys.toList();
@@ -111,25 +112,25 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
             showTestnetLabel: false),
         body: Padding(
             padding: EdgeInsets.only(
-                left: TermsBottomSheet.gutter, right: TermsBottomSheet.gutter, top: 20),
+                left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),
             child: Column(children: [
               Row(
                 children: [
                   AskCard(
                     imagePath: 'assets/images/pow_logo.png',
-                    title: t.terms_bottom_sheet.ask_to_pow,
+                    title: t.glossary_bottom_sheet.ask_to_pow,
                     backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
-                    gutter: TermsBottomSheet.gutter,
-                    url: 'https://powbitcoiner.com/',
+                    gutter: GlossaryBottomSheet.gutter,
+                    url: POW_URL,
                     externalBrowser: true,
                   ),
-                  SizedBox(width: TermsBottomSheet.gutter / 2),
+                  SizedBox(width: GlossaryBottomSheet.gutter / 2),
                   AskCard(
                       imagePath: 'assets/images/telegram_logo.png',
-                      title: t.terms_bottom_sheet.ask_to_telegram,
+                      title: t.glossary_bottom_sheet.ask_to_telegram,
                       backgroundColor: const Color.fromRGBO(233, 242, 255, 1),
-                      gutter: TermsBottomSheet.gutter,
-                      url: 'https://t.me/+s4D6-03LjaY5ZmU1'),
+                      gutter: GlossaryBottomSheet.gutter,
+                      url: TELEGRAM_POW),
                 ],
               ),
               const SizedBox(height: 20),
@@ -208,7 +209,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
                         ),
                         const SizedBox(height: 32),
                         Text(
-                          t.terms_bottom_sheet.synonym,
+                          t.glossary_bottom_sheet.synonym,
                           style: Styles.body2Bold,
                         ),
                         const SizedBox(height: 8),
@@ -221,7 +222,7 @@ class _TermsBottomSheetState extends State<TermsBottomSheet> {
                                   .toList()),
                           const SizedBox(height: 32),
                           Text(
-                            t.terms_bottom_sheet.related_terms,
+                            t.glossary_bottom_sheet.related,
                             style: Styles.body2Bold,
                           ),
                           const SizedBox(height: 8),

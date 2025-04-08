@@ -230,8 +230,8 @@ wallet_list_add_guide_card:
   add_watch_only: "보기 전용 지갑을 추가해 주세요"
   top_right_icon: "오른쪽 위 + 버튼을 눌러도 추가할 수 있어요"
   btn_add: "바로 추가하기"
-wallet_list_terms_shortcut_card:
-  any_terms_you_dont_know: "모르는 용어가 있으신가요?"
+wallet_list_glossary_shortcut_card:
+  any_word_you_dont_know: "모르는 용어가 있으신가요?"
   top_right: "오른쪽 위 "
   click_to_jump: " - 용어집 또는 여기를 눌러 바로가기"
 
@@ -271,11 +271,11 @@ tag_bottom_sheet:
   title_edit_tag: "태그 편집"
   add_new_tag: "새 태그 만들기"
   max_tag_count: "태그는 최대 5개 지정할 수 있어요"
-terms_bottom_sheet:
+glossary_bottom_sheet:
   ask_to_pow: "포우에 물어보기"
   ask_to_telegram: "텔레그램에 물어보기"
   synonym: "같은 용어"
-  related_terms: "관련 용어"
+  related: "관련 용어"
 user_experience_survey_bottom_sheet:
   text1: "비트코인 전송을 완료하셨군요👍"
   text2: "코코넛 월렛이 도움이 되었나요?"
