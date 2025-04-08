@@ -530,7 +530,7 @@ class WalletProvider extends ChangeNotifier {
         case MainClientState.syncing:
           return '🔄 동기화 중';
         case MainClientState.waiting:
-          return '🟢 대기 중 ';
+          return '🟢 대기 중ㅤ';
         case MainClientState.disconnected:
           return '🔴 연결 끊김';
       }
@@ -538,10 +538,12 @@ class WalletProvider extends ChangeNotifier {
 
     final connectionState = _nodeProvider.state.connectionState;
     final connectionStateSymbol = connectionStateToSymbol(connectionState);
+    final buffer = StringBuffer();
 
     if (_nodeProvider.state.registeredWallets.isEmpty) {
-      Logger.log('--> 등록된 지갑이 없습니다.');
-      Logger.log('--> connectionState: $connectionState');
+      buffer.writeln('--> 등록된 지갑이 없습니다.');
+      buffer.writeln('--> connectionState: $connectionState');
+      Logger.log(buffer.toString());
       return;
     }
 
@@ -549,11 +551,12 @@ class WalletProvider extends ChangeNotifier {
     final walletKeys = _nodeProvider.state.registeredWallets.keys.toList();
 
     // 테이블 헤더 출력 (connectionState 포함)
-    Logger.log('┌───────────────────────────────────────┐');
-    Logger.log('│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
-    Logger.log('├─────────┬─────────┬─────────┬─────────┤');
-    Logger.log('│ 지갑 ID │  잔액   │  거래   │  UTXO   │');
-    Logger.log('├─────────┼─────────┼─────────┼─────────┤');
+    buffer.writeln('\n');
+    buffer.writeln('┌───────────────────────────────────────┐');
+    buffer.writeln('│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
+    buffer.writeln('├─────────┬─────────┬─────────┬─────────┤');
+    buffer.writeln('│ 지갑 ID │  잔액   │  거래   │  UTXO   │');
+    buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
 
     // 각 지갑 상태 출력
     for (int i = 0; i < walletKeys.length; i++) {
@@ -564,16 +567,17 @@ class WalletProvider extends ChangeNotifier {
       final transactionSymbol = statusToSymbol(value.transaction);
       final utxoSymbol = statusToSymbol(value.utxo);
 
-      Logger.log(
-          '│ ${key.toString().padRight(7)} │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
+      buffer.writeln(
+          '│ ${key.toString().padRight(7)} │  $balanceSymbol(${value.balanceCounter})  │  $transactionSymbol(${value.transactionCounter})  │  $utxoSymbol(${value.utxoCounter})  │');
 
       // 마지막 행이 아니면 행 구분선 추가
       if (i < walletKeys.length - 1) {
-        Logger.log('├─────────┼─────────┼─────────┼─────────┤');
+        buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
       }
     }
 
-    Logger.log('└─────────┴─────────┴─────────┴─────────┘');
+    buffer.writeln('└─────────┴─────────┴─────────┴─────────┘');
+    Logger.log(buffer.toString());
   }
 }
 
