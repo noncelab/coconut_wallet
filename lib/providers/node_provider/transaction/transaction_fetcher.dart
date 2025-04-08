@@ -1,8 +1,8 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/cpfp_info.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
@@ -25,9 +25,7 @@ class TransactionFetcher {
   final UtxoManager _utxoManager;
   final RbfHandler _rbfHandler;
   final CpfpHandler _cpfpHandler;
-
-  // 현재 처리 중인 트랜잭션 해시와 처리 시작 시간을 추적하기 위한 맵
-  final Map<String, ({DateTime startTime, bool isConfirmed})> _processingTransactions = {};
+  final ScriptCallbackManager _scriptCallbackManager;
 
   TransactionFetcher(
     this._electrumService,
@@ -35,41 +33,23 @@ class TransactionFetcher {
     this._transactionProcessor,
     this._stateManager,
     this._utxoManager,
+    this._scriptCallbackManager,
   )   : _rbfHandler = RbfHandler(_transactionRepository, _utxoManager, _electrumService),
         _cpfpHandler = CpfpHandler(_transactionRepository, _utxoManager, _electrumService);
 
-  /// 트랜잭션의 처리 가능 여부를 확인합니다. 타임아웃이 지난 경우 true를 반환합니다.
-  bool _isProcessable({required String txHash, required bool isConfirmed}) {
-    if (!_processingTransactions.containsKey(txHash)) return true;
-
-    final processInfo = _processingTransactions[txHash]!;
-
-    if (processInfo.isConfirmed != isConfirmed) {
-      return true;
-    }
-
-    final timeElapsed = DateTime.now().difference(processInfo.startTime);
-
-    // 지정된 타임아웃 시간이 지난 경우 재처리 허용
-    if (timeElapsed >= kTransactionProcessingTimeout) {
-      _processingTransactions.remove(txHash);
-      return true;
-    }
-
-    return false;
-  }
-
-  /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
-  Future<void> fetchScriptTransaction(
+  /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
+  Future<List<String>> fetchScriptTransaction(
     WalletListItemBase walletItem,
     ScriptStatus scriptStatus, {
     DateTime? now,
     bool inBatchProcess = false,
-    void Function()? onComplete,
   }) async {
     if (!inBatchProcess) {
       // Transaction 동기화 시작 state 업데이트
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
+
+      // UTXO 동기화가 트랜잭션 동기화에 의존성이 있으므로 Utxo 동기화 상태도 업데이트
+      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
     }
 
     // db에 저장된 트랜잭션 조회, 네트워크 요청을 줄이기 위함.
@@ -93,20 +73,22 @@ class TransactionFetcher {
     if (txFetchResults.isEmpty) {
       if (!inBatchProcess) {
         _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+        _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
       }
-      onComplete?.call();
-      return;
+
+      return [];
     }
 
     final newTxHashes = <String>{};
 
     for (final txFetchResult in txFetchResults) {
+      bool isConfirmed = txFetchResult.height > 0;
       // 이미 처리 중인 트랜잭션이지만 타임아웃이 지나지 않은 경우 제외
-      if (_isProcessable(
-          txHash: txFetchResult.transactionHash, isConfirmed: txFetchResult.height > 0)) {
-        _processingTransactions[txFetchResult.transactionHash] = (
-          startTime: DateTime.now(),
-          isConfirmed: txFetchResult.height > 0,
+      if (_scriptCallbackManager.isTransactionProcessable(
+          txHash: txFetchResult.transactionHash, isConfirmed: isConfirmed)) {
+        _scriptCallbackManager.registerTransactionProcessing(
+          txFetchResult.transactionHash,
+          isConfirmed,
         );
         newTxHashes.add(txFetchResult.transactionHash);
       }
@@ -117,7 +99,7 @@ class TransactionFetcher {
       if (!inBatchProcess) {
         _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
       }
-      return;
+      return txFetchResults.map((tx) => tx.transactionHash).toList();
     }
 
     // 새로운 트랜잭션만 처리
@@ -250,7 +232,15 @@ class TransactionFetcher {
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
     }
 
-    onComplete?.call();
+    for (final txHash in newTxHashes) {
+      // 트랜잭션 처리 완료 상태 등록
+      _scriptCallbackManager.registerTransactionCompletion(txHash);
+
+      // 트랜잭션 처리 완료 후 종속성 제거
+      _scriptCallbackManager.deleteTransactionDependency(txHash);
+    }
+
+    return txFetchResults.map((tx) => tx.transactionHash).toList();
   }
 
   /// 스크립트에 대한 트랜잭션 응답을 가져옵니다.
