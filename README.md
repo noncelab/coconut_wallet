@@ -61,6 +61,8 @@
 4. 자동 생성 파일 준비
 
    ```bash
+   flutter pub run build_runner clean # realm generate 오류 발생 시 캐시 삭제
+
    flutter pub run build_runner build --delete-conflicting-outputs
 
    dart run realm generate
