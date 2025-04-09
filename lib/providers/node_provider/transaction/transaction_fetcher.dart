@@ -127,7 +127,7 @@ class TransactionFetcher {
     // 각 트랜잭션에 대해 사용된 UTXO 상태 업데이트
     for (final fetchedTx in fetchedTransactions) {
       Logger.log(
-          '-------- fetchScriptTransaction 처리중인 트랜잭션: ${fetchedTx.transactionHash} --------');
+          '-------- fetchScriptTransaction에서 처리중인 트랜잭션: ${fetchedTx.transactionHash} --------');
       // 언컨펌 트랜잭션의 경우 새로 브로드캐스트된 트랜잭션이므로 사용된 UTXO 상태 업데이트
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
         // RBF 및 CPFP 감지
@@ -137,7 +137,6 @@ class TransactionFetcher {
         );
         if (sendingRbfInfo != null) {
           sendingRbfInfoMap[fetchedTx.transactionHash] = sendingRbfInfo;
-          Logger.log('[${walletItem.name}] 보내는 RBF 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
         }
 
         final receivingRbfTxHash = await _rbfHandler.detectReceivingRbfTransaction(
@@ -146,7 +145,6 @@ class TransactionFetcher {
         );
         if (receivingRbfTxHash != null) {
           receivingRbfTxHashSet.add(receivingRbfTxHash);
-          Logger.log('[${walletItem.name}] 받는 RBF 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
         }
 
         final cpfpInfo = await _cpfpHandler.detectCpfpTransaction(
@@ -155,7 +153,6 @@ class TransactionFetcher {
         );
         if (cpfpInfo != null) {
           cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
-          Logger.log('CPFP 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
         }
 
         _utxoManager.updateUtxoStatusToOutgoingByTransaction(walletItem.id, fetchedTx);

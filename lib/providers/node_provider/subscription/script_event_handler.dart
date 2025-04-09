@@ -38,8 +38,6 @@ class ScriptEventHandler {
   Future<void> handleScriptStatusChanged(SubscribeScriptStreamDto dto) async {
     try {
       final now = DateTime.now();
-      Logger.log(
-          'HandleScriptStatusChanged: ${dto.walletItem.name} - ${dto.scriptStatus.derivationPath}');
 
       // 지갑 업데이트 상태 초기화
       _stateManager.initWalletUpdateStatus(dto.walletItem.id);

@@ -118,7 +118,7 @@ class ScriptSubscriber {
           walletItem.receiveUsedIndex = lastUsedIndex;
         }
 
-        Logger.log('Updated ${isChange ? "change" : "receive"} lastUsedIndex to $lastUsedIndex');
+        // Logger.log('Updated ${isChange ? "change" : "receive"} lastUsedIndex to $lastUsedIndex');
       }
 
       // 사용된 주소가 발견된 경우 스캔 범위 확장
@@ -256,8 +256,8 @@ class ScriptSubscriber {
             walletItem.changeUsedIndex = max(walletItem.changeUsedIndex, derivationIndex);
 
             needsExtension = true;
-            Logger.log(
-                'Status changed for change address at index $derivationIndex: "$currentStatus" -> "$newStatus"');
+            // Logger.log(
+            //     'Status changed for change address at index $derivationIndex: "$currentStatus" -> "$newStatus"');
           }
         } else {
           // 안전하게 현재 최신 상태의 인덱스와 비교
@@ -269,15 +269,15 @@ class ScriptSubscriber {
             walletItem.receiveUsedIndex = max(walletItem.receiveUsedIndex, derivationIndex);
 
             needsExtension = true;
-            Logger.log(
-                'Status changed for receive address at index $derivationIndex: "$currentStatus" -> "$newStatus"');
+            // Logger.log(
+            //     'Status changed for receive address at index $derivationIndex: "$currentStatus" -> "$newStatus"');
           }
         }
 
         // 확장 조건이 충족되면 스캔 범위 확장
         if (needsExtension) {
-          Logger.log(
-              'Triggering extension from onUpdate callback for ${isChange ? "change" : "receive"} index $derivationIndex');
+          // Logger.log(
+          //     'Triggering extension from onUpdate callback for ${isChange ? "change" : "receive"} index $derivationIndex');
           // 추가 주소 구독이 필요한 경우 비동기로 처리
           _extendSubscription(walletItem, isChange, scriptStatusController);
         }

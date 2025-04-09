@@ -34,15 +34,11 @@ class RbfHandler {
       final utxo = _utxoManager.getUtxoState(walletId, utxoId);
 
       if (utxo != null) {
-        Logger.log(
-            'UTXO 검사: $utxoId, 상태: ${utxo.status}, spentByTx: ${utxo.spentByTransactionHash}');
-
         // 자기 참조 케이스 확인 (spentByTransactionHash가 현재 트랜잭션과 동일한 경우는 무시)
         if (utxo.spentByTransactionHash == tx.transactionHash) {
           continue;
         }
       } else {
-        Logger.log('UTXO 없음: $utxoId');
         continue;
       }
 
@@ -51,12 +47,8 @@ class RbfHandler {
         final spentTransaction =
             _transactionRepository.getTransactionRecord(walletId, utxo.spentByTransactionHash!);
 
-        Logger.log(
-            'spentTransaction 검사: ${utxo.spentByTransactionHash}, 존재: ${spentTransaction != null}, 블록높이: ${spentTransaction?.blockHeight}');
-
         // spentTransaction이 존재하지 않는 경우 처리 (트랜잭션이 아직 DB에 없을 수 있음)
         if (spentTransaction == null) {
-          Logger.log('spentTransaction이 존재하지 않음. UTXO의 outgoing 상태를 기반으로 RBF로 간주합니다.');
           isRbf = true;
           spentTxHash = utxo.spentByTransactionHash;
           break;
@@ -64,7 +56,6 @@ class RbfHandler {
 
         // spentTransaction이 존재하고, 해당 트랜잭션이 미확인 상태일 때만 RBF로 간주
         if (spentTransaction.blockHeight < 1) {
-          Logger.log('RBF 조건 충족: $utxoId, spentTx: ${utxo.spentByTransactionHash}');
           isRbf = true;
           spentTxHash = utxo.spentByTransactionHash;
           break;
@@ -128,10 +119,6 @@ class RbfHandler {
             walletItem.id, rbfInfo.originalTransactionHash);
 
         if (originalTx != null) {
-          Logger.log(
-              'RBF 내역 등록: $txHash ← ${rbfInfo.spentTransactionHash} (원본: ${rbfInfo.originalTransactionHash})');
-          Logger.log('  - 수수료율: ${txRecord.feeRate}');
-
           final existingRbfHistory =
               _transactionRepository.getRbfHistoryList(walletItem.id, txRecord.transactionHash);
 
@@ -162,7 +149,6 @@ class RbfHandler {
     // 일괄 저장
     if (rbfHistoryDtos.isNotEmpty) {
       _transactionRepository.addAllRbfHistory(rbfHistoryDtos);
-      Logger.log('RBF 내역 ${rbfHistoryDtos.length}개 저장 완료');
     }
   }
 }

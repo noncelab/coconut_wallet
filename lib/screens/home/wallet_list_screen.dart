@@ -95,7 +95,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
         }
 
-        debugPrint('update!!!!!!!!!!!!');
         // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
         return previous..onWalletProviderUpdated(walletProvider);
       },
