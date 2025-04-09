@@ -49,7 +49,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   bool _isHeaderDropdownVisible = false;
   bool _stickyHeaderVisible = false;
   bool _isStickyHeaderDropdownVisible = false;
-  bool _isPullToRefreshing = false;
   bool _isAnimating = false;
 
   late UtxoListViewModel _viewModel;
@@ -139,9 +138,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                           const SliverToBoxAdapter(child: LoadingIndicator()),
                         CupertinoSliverRefreshControl(
                           onRefresh: () async {
-                            _isPullToRefreshing = true;
                             viewModel.refetchFromDB();
-                            _isPullToRefreshing = false;
                           },
                         ),
                         SliverToBoxAdapter(child: _buildHeader(viewModel)),
@@ -164,37 +161,31 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   void _updateHeaderDropdownPosition() {
     RenderBox? headerDropdownRenderBox;
-    if (!_isPullToRefreshing) {
-      setState(() {
-        _stickyHeaderVisible = false;
-        _isStickyHeaderDropdownVisible = false;
-      });
+    setState(() {
+      _stickyHeaderVisible = false;
+      _isStickyHeaderDropdownVisible = false;
+    });
 
-      headerDropdownRenderBox = _headerDropdownKey.currentContext?.findRenderObject() as RenderBox;
-      if (_headerDropdownSize == Size.zero) {
-        _headerDropdownSize = headerDropdownRenderBox.size;
-      }
-      _headerDropdownPosition = headerDropdownRenderBox.localToGlobal(Offset.zero);
+    headerDropdownRenderBox = _headerDropdownKey.currentContext?.findRenderObject() as RenderBox;
+    if (_headerDropdownSize == Size.zero) {
+      _headerDropdownSize = headerDropdownRenderBox.size;
     }
+    _headerDropdownPosition = headerDropdownRenderBox.localToGlobal(Offset.zero);
   }
 
   void _updateStickyHeaderDropdownPosition() {
-    if (!_isPullToRefreshing) {
-      setState(() {
-        _stickyHeaderVisible = true;
-        _isHeaderDropdownVisible = false;
-      });
-      RenderBox? stickyHeaderDropdownRenderBox;
+    setState(() {
+      _stickyHeaderVisible = true;
+      _isHeaderDropdownVisible = false;
+    });
+    RenderBox? stickyHeaderDropdownRenderBox;
 
-      if (_viewModel.utxoList.isNotEmpty == true) {
-        stickyHeaderDropdownRenderBox =
-            _stickyHeaderDropdownKey.currentContext?.findRenderObject() as RenderBox;
-        if (_stickyHeaderDropdownSize == Size.zero) {
-          _stickyHeaderDropdownSize = stickyHeaderDropdownRenderBox.size;
-        }
-        _stickyHeaderDropdownPosition = stickyHeaderDropdownRenderBox.localToGlobal(Offset.zero);
-      }
+    stickyHeaderDropdownRenderBox =
+        _stickyHeaderDropdownKey.currentContext?.findRenderObject() as RenderBox;
+    if (_stickyHeaderDropdownSize == Size.zero) {
+      _stickyHeaderDropdownSize = stickyHeaderDropdownRenderBox.size;
     }
+    _stickyHeaderDropdownPosition = stickyHeaderDropdownRenderBox.localToGlobal(Offset.zero);
   }
 
   void _removeFilterDropdown() {
@@ -336,7 +327,7 @@ class UtxoList extends StatefulWidget {
 }
 
 class _UtxoListState extends State<UtxoList> {
-  late List<UtxoState> _previousUtxoList = [];
+  late List<UtxoState> _displayedUtxoList = [];
   final GlobalKey<SliverAnimatedListState> _utxoListKey = GlobalKey<SliverAnimatedListState>();
 
   final Duration _duration = const Duration(milliseconds: 1200);
@@ -351,12 +342,14 @@ class _UtxoListState extends State<UtxoList> {
           final utxoList = data.item1;
           final selectedUtxoTagName = data.item2;
 
-          if (_isListChanged(_previousUtxoList, utxoList)) {
-            _handleUtxoListChange(utxoList);
+          if (_isListChanged(_displayedUtxoList, utxoList)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _handleUtxoListChange(utxoList);
+            });
           }
 
           return utxoList.isNotEmpty
-              ? _buildSliverAnimatedList(utxoList, selectedUtxoTagName)
+              ? _buildSliverAnimatedList(_displayedUtxoList, selectedUtxoTagName)
               : _buildEmptyState();
         });
   }
@@ -405,7 +398,7 @@ class _UtxoListState extends State<UtxoList> {
     if (_isListLoading) return;
     _isListLoading = true;
 
-    final oldUtxoMap = {for (var utxo in _previousUtxoList) utxo.utxoId: utxo};
+    final oldUtxoMap = {for (var utxo in _displayedUtxoList) utxo.utxoId: utxo};
     final newUtxoMap = {for (var utxo in utxoList) utxo.utxoId: utxo};
 
     final List<int> insertedIndexes = [];
@@ -417,8 +410,8 @@ class _UtxoListState extends State<UtxoList> {
       }
     }
 
-    for (int i = 0; i < _previousUtxoList.length; i++) {
-      if (!newUtxoMap.containsKey(_previousUtxoList[i].utxoId)) {
+    for (int i = 0; i < _displayedUtxoList.length; i++) {
+      if (!newUtxoMap.containsKey(_displayedUtxoList[i].utxoId)) {
         removedIndexes.add(i);
       }
     }
@@ -427,17 +420,21 @@ class _UtxoListState extends State<UtxoList> {
       widget.onAnimatingStateChanged(true);
     }
 
+    setState(() {
+      _displayedUtxoList = List.from(utxoList);
+    });
+
     // 삭제된 인덱스 역순으로 삭제
     for (var index in removedIndexes.reversed) {
-      if (index >= _previousUtxoList.length) {
-        debugPrint('❌ 리스트를 초과하는 인덱스 $index < ${_previousUtxoList.length}');
+      if (index >= _displayedUtxoList.length) {
+        debugPrint('❌ 리스트를 초과하는 인덱스 $index < ${_displayedUtxoList.length}');
         continue;
       }
 
       await Future.delayed(_animationDuration);
       _utxoListKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildRemoveUtxoItem(_previousUtxoList[index], animation),
+        (context, animation) => _buildRemoveUtxoItem(_displayedUtxoList[index], animation),
         duration: _duration,
       );
     }
@@ -449,13 +446,7 @@ class _UtxoListState extends State<UtxoList> {
     }
 
     widget.onAnimatingStateChanged(false);
-    final totalDelay =
-        _duration + _animationDuration * (insertedIndexes.length + removedIndexes.length);
-    Future.delayed(totalDelay, () {
-      // 모든 애니메이션 끝난 후 상태 업데이트
-      _previousUtxoList = List.from(utxoList);
-      _isListLoading = false;
-    });
+    _isListLoading = false;
   }
 
   Widget _buildRemoveUtxoItem(UtxoState utxo, Animation<double> animation) {
