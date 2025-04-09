@@ -107,15 +107,12 @@ class NodeStateManager implements StateManagerInterface {
     // 카운터 증가 및 상태 업데이트
     switch (updateType) {
       case UpdateElement.balance:
-        walletUpdateInfo.balanceCounter++;
         walletUpdateInfo.balance = UpdateStatus.syncing;
         break;
       case UpdateElement.transaction:
-        walletUpdateInfo.transactionCounter++;
         walletUpdateInfo.transaction = UpdateStatus.syncing;
         break;
       case UpdateElement.utxo:
-        walletUpdateInfo.utxoCounter++;
         walletUpdateInfo.utxo = UpdateStatus.syncing;
         break;
     }
@@ -146,31 +143,13 @@ class NodeStateManager implements StateManagerInterface {
     // 카운터 감소 및 상태 업데이트
     switch (updateType) {
       case UpdateElement.balance:
-        if (walletUpdateInfo.balanceCounter > 0) {
-          walletUpdateInfo.balanceCounter--;
-        }
-        // 카운터가 0이 되면 완료 상태로 변경
-        if (walletUpdateInfo.balanceCounter == 0) {
-          walletUpdateInfo.balance = UpdateStatus.completed;
-        }
+        walletUpdateInfo.balance = UpdateStatus.completed;
         break;
       case UpdateElement.transaction:
-        if (walletUpdateInfo.transactionCounter > 0) {
-          walletUpdateInfo.transactionCounter--;
-        }
-        // 카운터가 0이 되면 완료 상태로 변경
-        if (walletUpdateInfo.transactionCounter == 0) {
-          walletUpdateInfo.transaction = UpdateStatus.completed;
-        }
+        walletUpdateInfo.transaction = UpdateStatus.completed;
         break;
       case UpdateElement.utxo:
-        if (walletUpdateInfo.utxoCounter > 0) {
-          walletUpdateInfo.utxoCounter--;
-        }
-        // 카운터가 0이 되면 완료 상태로 변경
-        if (walletUpdateInfo.utxoCounter == 0) {
-          walletUpdateInfo.utxo = UpdateStatus.completed;
-        }
+        walletUpdateInfo.utxo = UpdateStatus.completed;
         break;
     }
 
@@ -208,9 +187,6 @@ class NodeStateManager implements StateManagerInterface {
       balance: UpdateStatus.completed,
       transaction: UpdateStatus.completed,
       utxo: UpdateStatus.completed,
-      balanceCounter: 0,
-      transactionCounter: 0,
-      utxoCounter: 0,
     );
 
     setState(newUpdatedWallets: {

@@ -138,12 +138,7 @@ class WalletProvider extends ChangeNotifier {
     _updateIsSyncingIfNeeded(_nodeProvider.state);
     if (_isAnyBalanceUpdating) {
       _walletBalance = fetchWalletBalanceMap();
-
-      /// TODO: NodeProvider의 이벤트 리스너에 대해서 동시성 제어 후 지연 로직 제거
-      /// BalanceManager의 fetchScriptBalance 함수 참고
-      Future.delayed(const Duration(milliseconds: 300), () {
-        notifyListeners();
-      });
+      notifyListeners();
     }
     _updateIsAnyBalanceUpdatingIfNeeded(_nodeProvider.state);
     for (var key in _nodeProvider.state.registeredWallets.keys) {
@@ -568,7 +563,7 @@ class WalletProvider extends ChangeNotifier {
       final utxoSymbol = statusToSymbol(value.utxo);
 
       buffer.writeln(
-          '│ ${key.toString().padRight(7)} │  $balanceSymbol(${value.balanceCounter})  │  $transactionSymbol(${value.transactionCounter})  │  $utxoSymbol(${value.utxoCounter})  │');
+          '│ ${key.toString().padRight(7)} │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
 
       // 마지막 행이 아니면 행 구분선 추가
       if (i < walletKeys.length - 1) {

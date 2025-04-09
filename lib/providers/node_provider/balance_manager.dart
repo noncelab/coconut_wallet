@@ -26,13 +26,10 @@ class BalanceManager {
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
   Future<void> fetchScriptBalance(
     WalletListItemBase walletItem,
-    ScriptStatus scriptStatus, {
-    bool inBatchProcess = false,
-  }) async {
-    if (!inBatchProcess) {
-      // 동기화 시작 state 업데이트
-      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
-    }
+    ScriptStatus scriptStatus,
+  ) async {
+    // 동기화 시작 state 업데이트
+    _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
 
     final balanceResponse =
         await _electrumService.getBalance(walletItem.walletBase.addressType, scriptStatus.address);
@@ -48,17 +45,7 @@ class BalanceManager {
     );
 
     await _walletRepository.accumulateWalletBalance(walletItem.id, balanceDiff);
-
-    if (!inBatchProcess) {
-      // 하나의 트랜잭션으로 여러 스크립트에 대한 이벤트가 발생할 경우에 오류 발생.
-      // 이벤트 리스너 함수들이 모두 완료되지 않은 상태로 state가 업데이트됨.
-      // 결과적으로 화면에서 잔액이 제대로 변경되지 않는 오류가 있음.
-      // 임시로 지연을 통해 이벤트 리스너가 모두 실행되기 전에 동기화 완료 state가 업데이트되는 것을 방지함.
-      // TODO: 이벤트 리스너에 대해서 동시성 제어 필요함
-      Future.delayed(const Duration(milliseconds: 300), () {
-        _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
-      });
-    }
+    _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
   }
 
   /// 여러 스크립트의 잔액을 일괄적으로 조회하고 업데이트합니다.
