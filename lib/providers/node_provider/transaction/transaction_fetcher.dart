@@ -79,7 +79,8 @@ class TransactionFetcher {
       return [];
     }
 
-    final newTxHashes = <String>{};
+    /// [ScriptCallbackManager]에서 관리되지 않는 새롭게 처리해야 할 트랜잭션 해시 목록
+    final Set<String> newTxHashes = {};
 
     for (final txFetchResult in txFetchResults) {
       bool isConfirmed = txFetchResult.height > 0;
@@ -232,13 +233,8 @@ class TransactionFetcher {
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
     }
 
-    for (final txHash in newTxHashes) {
-      // 트랜잭션 처리 완료 상태 등록
-      _scriptCallbackManager.registerTransactionCompletion(txHash);
-
-      // 트랜잭션 처리 완료 후 종속성 제거
-      _scriptCallbackManager.deleteTransactionDependency(txHash);
-    }
+    // 트랜잭션 처리 완료 상태 등록
+    _scriptCallbackManager.registerTransactionCompletion(newTxHashes);
 
     return txFetchResults.map((tx) => tx.transactionHash).toList();
   }

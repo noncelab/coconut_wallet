@@ -86,22 +86,44 @@ class ScriptCallbackManager {
   }
 
   /// 트랜잭션의 처리를 완료 상태로 변경합니다.
-  void registerTransactionCompletion(String txHash) {
-    if (_processingTransactions.containsKey(txHash)) {
-      _processingTransactions[txHash]!.setCompleted();
+  void registerTransactionCompletion(Set<String> txHashes) {
+    // 먼저 모든 트랜잭션 상태를 완료로 변경
+    for (final txHash in txHashes) {
+      if (_processingTransactions.containsKey(txHash)) {
+        _processingTransactions[txHash]!.setCompleted();
+      }
     }
+
+    // 모든 종속성 한 번에 처리
+    _deleteTransactionDependencies(txHashes);
   }
 
-  /// 모든 스크립트 종속성에서 해당 트랜잭션 해시를 제거
-  void deleteTransactionDependency(String txHash) {
-    for (final scriptKey in _scriptDependency.keys.toList()) {
-      if (_scriptDependency[scriptKey]?.contains(txHash) ?? false) {
-        _scriptDependency[scriptKey]?.remove(txHash);
+  /// 여러 트랜잭션 해시에 대한 종속성을 일괄 제거
+  void _deleteTransactionDependencies(Set<String> txHashes) {
+    // 영향 받는 스크립트와 제거할 트랜잭션 매핑 생성
+    final Map<String, List<String>> affectedScripts = {};
 
-        // 종속성이 모두 제거되었다면 fetchUtxos 콜백 실행
-        if (_scriptDependency[scriptKey]?.isEmpty ?? false) {
-          callFetchUtxosCallback(scriptKey);
-        }
+    for (final scriptKey in _scriptDependency.keys) {
+      final deps = _scriptDependency[scriptKey];
+      if (deps == null || deps.isEmpty) continue;
+
+      // 이 스크립트에 영향을 주는 트랜잭션 목록
+      final toRemove = deps.where(txHashes.contains).toList();
+      if (toRemove.isNotEmpty) {
+        affectedScripts[scriptKey] = toRemove;
+      }
+    }
+
+    // 영향 받는 스크립트에서 트랜잭션 제거하고 콜백 호출
+    for (final scriptKey in affectedScripts.keys) {
+      final toRemove = affectedScripts[scriptKey]!;
+      final deps = _scriptDependency[scriptKey]!;
+
+      deps.removeWhere(toRemove.contains);
+
+      // 종속성이 모두 제거되었다면 fetchUtxos 콜백 실행
+      if (deps.isEmpty) {
+        callFetchUtxosCallback(scriptKey);
       }
     }
   }
