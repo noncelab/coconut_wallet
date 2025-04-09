@@ -79,7 +79,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     ),
                   ),
                   CoconutLayout.spacing_50h,
-                  FiatPrice(satoshiAmount: widget.animatedBalanceData.current ?? 0),
+                  FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
                   CoconutLayout.spacing_400h,
                   Row(
                     children: [

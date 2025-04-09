@@ -60,7 +60,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       },
       child: Column(
         children: [
-          FiatPrice(satoshiAmount: widget.animatedBalanceData.current ?? 0),
+          FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
           _buildBtcBalance(),
         ],
       ),
