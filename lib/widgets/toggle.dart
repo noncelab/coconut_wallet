@@ -14,7 +14,7 @@ class ToggleWidget extends StatefulWidget {
   });
 
   @override
-  _ToggleWidgetState createState() => _ToggleWidgetState();
+  State<ToggleWidget> createState() => _ToggleWidgetState();
 }
 
 class _ToggleWidgetState extends State<ToggleWidget> {

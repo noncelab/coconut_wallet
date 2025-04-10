@@ -330,10 +330,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _setOverlayLoading(true);
     await viewModel.deleteWallet();
     _setOverlayLoading(false);
-    Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (BuildContext context) => const WalletListScreen()),
-        (route) => false);
+    if (context.mounted) {
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (BuildContext context) => const WalletListScreen()),
+          (route) => false);
+    }
   }
 
   void _setOverlayLoading(bool value) {

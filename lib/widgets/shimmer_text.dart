@@ -7,7 +7,7 @@ class ShimmerText extends StatefulWidget {
   const ShimmerText({super.key, required this.text, required this.color, required this.textStyle});
 
   @override
-  _ShimmerTextState createState() => _ShimmerTextState();
+  State<ShimmerText> createState() => _ShimmerTextState();
 }
 
 class _ShimmerTextState extends State<ShimmerText> with SingleTickerProviderStateMixin {

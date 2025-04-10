@@ -72,6 +72,8 @@ status_updating: "업데이트 중"
 no_status: "상태 없음"
 quick_receive: "빨리 받기"
 quick_send: "빨리 보내기"
+copy: "복사하기"
+copied: "복사 완료"
 
 bitcoin_text: "$bitcoin BTC"
 apply_item: "$count개에 적용"

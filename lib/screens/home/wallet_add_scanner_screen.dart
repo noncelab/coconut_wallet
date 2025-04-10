@@ -142,8 +142,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     controller.scannedDataStream.listen((scanData) {
       if (_isProcessing || scanData.code == null) return;
       _isProcessing = true;
-      context.loaderOverlay.show();
 
+      if (!mounted) return;
+
+      context.loaderOverlay.show();
       final model = Provider.of<WalletProvider>(context, listen: false);
       WatchOnlyWallet watchOnlyWallet;
       try {
@@ -152,6 +154,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         watchOnlyWallet = WatchOnlyWallet.fromJson(jsonData);
 
         model.syncFromVault(watchOnlyWallet).then((ResultOfSyncFromVault value) {
+          if (!mounted) return;
           switch (value.result) {
             case WalletSyncResult.newWalletAdded:
             case WalletSyncResult.existingWalletUpdated:
@@ -176,24 +179,29 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               }
             case WalletSyncResult.existingName:
               vibrateLightDouble();
-              CustomDialogs.showCustomAlertDialog(context,
-                  title: t.alert.wallet_add.duplicate_name,
-                  message: t.alert.wallet_add.duplicate_name_description, onConfirm: () {
-                _isProcessing = false;
-                Navigator.pop(context);
-              });
+              if (mounted) {
+                CustomDialogs.showCustomAlertDialog(context,
+                    title: t.alert.wallet_add.duplicate_name,
+                    message: t.alert.wallet_add.duplicate_name_description, onConfirm: () {
+                  _isProcessing = false;
+                  Navigator.pop(context);
+                });
+              }
           }
         }).catchError((error) {
           vibrateLightDouble();
-
-          CustomDialogs.showCustomAlertDialog(context,
-              title: t.alert.wallet_add.add_failed, message: error.toString(), onConfirm: () {
-            _isProcessing = false;
-            Navigator.pop(context);
-          });
+          if (mounted) {
+            CustomDialogs.showCustomAlertDialog(context,
+                title: t.alert.wallet_add.add_failed, message: error.toString(), onConfirm: () {
+              _isProcessing = false;
+              Navigator.pop(context);
+            });
+          }
         }).whenComplete(() {
           vibrateMedium();
-          context.loaderOverlay.hide();
+          if (mounted) {
+            context.loaderOverlay.hide();
+          }
         });
       } catch (error) {
         vibrateLightDouble();

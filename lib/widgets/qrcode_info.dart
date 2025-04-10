@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -59,7 +60,7 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
                 textAlign: TextAlign.center),
             const SizedBox(height: 24),
             SmallActionButton(
-              text: '복사하기',
+              text: t.copy,
               onPressed: () async {
                 Clipboard.setData(ClipboardData(text: widget.qrData)).then((value) => null);
                 if (Platform.isAndroid) {
@@ -77,8 +78,10 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
 
                 FToast fToast = FToast();
 
+                if (!context.mounted) return;
+
                 fToast.init(context);
-                final toast = MyToast.getToastWidget("복사 완료");
+                final toast = MyToast.getToastWidget(t.copied);
                 fToast.showToast(
                     child: toast,
                     gravity: ToastGravity.BOTTOM,

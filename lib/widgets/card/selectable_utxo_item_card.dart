@@ -35,7 +35,6 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
   void initState() {
     super.initState();
     _isPressing = false;
-    // TODO: timestamp
     dateString = DateTimeUtil.formatTimestamp(widget.utxo.timestamp);
   }
 

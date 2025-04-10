@@ -63,8 +63,9 @@ class CustomAppBar {
             decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12), color: BackgroundColorPalette[colorIndex]),
             // ignore: deprecated_member_use
-            child:
-                SvgPicture.asset(CustomIcons.carrot, color: ColorPalette[colorIndex], width: 16)),
+            child: SvgPicture.asset(CustomIcons.carrot,
+                colorFilter: ColorFilter.mode(ColorPalette[colorIndex], BlendMode.srcIn),
+                width: 16)),
         Text(title)
       ]);
     }

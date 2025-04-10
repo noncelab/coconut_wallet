@@ -79,13 +79,13 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     context.loaderOverlay.show();
     _authProvider.authenticateWithBiometrics().then((value) {
       if (value) {
-        if (!widget.appEntrance) {
+        if (!widget.appEntrance && mounted) {
           Navigator.pop(context, true);
         }
         widget.onComplete?.call();
       }
     }).whenComplete(() {
-      if (context.mounted) context.loaderOverlay.hide();
+      if (mounted) context.loaderOverlay.hide();
     });
   }
 
@@ -93,7 +93,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     context.loaderOverlay.show();
     _authProvider.verifyPin(pin).then((value) {
       if (value) {
-        if (!widget.appEntrance) {
+        if (!widget.appEntrance && mounted) {
           Navigator.pop(context, true);
         }
         widget.onComplete?.call();
@@ -117,7 +117,11 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
       }
 
       setState(() {});
-    }).whenComplete(() => context.loaderOverlay.hide());
+    }).whenComplete(() {
+      if (mounted) {
+        context.loaderOverlay.hide();
+      }
+    });
   }
 
   void _onKeyTap(String value) {
@@ -156,7 +160,9 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
         cancelButtonText: t.close, onConfirm: () async {
       await _authProvider.resetPassword();
       widget.onComplete?.call();
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }, onCancel: () {
       Navigator.of(context).pop();
     });

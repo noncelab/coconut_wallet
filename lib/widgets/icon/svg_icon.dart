@@ -29,9 +29,11 @@ class SvgIcon extends StatelessWidget {
           width: 32,
           height: 32,
           fit: BoxFit.scaleDown,
-          color: colorIndex == -1
-              ? MyColors.defaultIcon
-              : CustomColorHelper.getColorByIndex(colorIndex),
+          colorFilter: ColorFilter.mode(
+              colorIndex == -1
+                  ? MyColors.defaultIcon
+                  : CustomColorHelper.getColorByIndex(colorIndex),
+              BlendMode.srcIn),
         ),
       ),
     );
