@@ -275,9 +275,9 @@ class NodeStateManager implements StateManagerInterface {
     final registeredWallets = updatedWallets ?? _state.registeredWallets;
 
     for (final walletInfo in registeredWallets.values) {
-      if (walletInfo.balance == UpdateStatus.syncing ||
-          walletInfo.transaction == UpdateStatus.syncing ||
-          walletInfo.utxo == UpdateStatus.syncing) {
+      if (walletInfo.balance != UpdateStatus.completed ||
+          walletInfo.transaction != UpdateStatus.completed ||
+          walletInfo.utxo != UpdateStatus.completed) {
         return false;
       }
     }
