@@ -15,7 +15,8 @@ enum IsolateStateMethod {
   addWalletSyncState,
   addWalletCompletedState,
   addWalletCompletedAllStates,
-  setState,
+  setMainClientSyncingState,
+  setMainClientWaitingState,
 }
 
 enum IsolateManagerMessage {

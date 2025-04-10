@@ -1,6 +1,5 @@
 import 'dart:isolate';
 
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
@@ -31,11 +30,7 @@ class IsolateHandler {
           }
 
           // 동기화 중 state 업데이트
-          _isolateStateManager.setState(
-            newConnectionState: MainClientState.syncing,
-            newUpdatedWallets: null,
-            notify: true,
-          );
+          _isolateStateManager.setMainClientSyncingState();
 
           for (var walletItem in walletItems) {
             final result = await _subscriptionManager.subscribeWallet(walletItem);
@@ -45,12 +40,6 @@ class IsolateHandler {
             }
           }
 
-          // 동기화 완료 state 업데이트
-          _isolateStateManager.setState(
-            newConnectionState: MainClientState.waiting,
-            newUpdatedWallets: null,
-            notify: true,
-          );
           isolateToMainSendPort.send(Result.success(true));
           break;
         case IsolateHandlerMessage.subscribeWallet:

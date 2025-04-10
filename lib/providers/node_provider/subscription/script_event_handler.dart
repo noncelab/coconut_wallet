@@ -96,13 +96,10 @@ class ScriptEventHandler {
           Logger.error('Failed to extend script subscription: ${subResult.error}');
         }
       }
-
-      // TODO: 동기화 완료 state 업데이트, 이벤트 핸들러간 동시성 제어 필요
-      _stateManager.setState(newConnectionState: MainClientState.waiting);
     } catch (e) {
       Logger.error('Failed to handle script status change: $e');
       // 오류 발생 시에도 상태 초기화
-      _stateManager.setState(newConnectionState: MainClientState.waiting);
+      _stateManager.setMainClientWaitingState();
     }
   }
 
@@ -134,6 +131,7 @@ class ScriptEventHandler {
 
       // Transaction 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
+
       final transactionFutures = scriptStatuses.map(
         (status) => _transactionManager.fetchScriptTransaction(
           walletItem,
@@ -156,14 +154,11 @@ class ScriptEventHandler {
       await _utxoManager.createOutgoingUtxos(walletItem);
 
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
-
-      // 동기화 완료 state 업데이트
-      _stateManager.setState(newConnectionState: MainClientState.waiting);
     } catch (e, stackTrace) {
       Logger.error('Failed to handle batch script status change: $e');
       Logger.error('Stack trace: $stackTrace');
       _stateManager.initWalletUpdateStatus(walletItem.id);
-      _stateManager.setState(newConnectionState: MainClientState.waiting);
+      _stateManager.setMainClientWaitingState();
     }
   }
 }

@@ -159,7 +159,7 @@ class IsolateStateManager implements StateManagerInterface {
 
   @override
   void initWalletUpdateStatus(int walletId) {
-    if (_registeredWallets.containsKey(walletId)) {
+    if (_isWalletAnySyncing(walletId)) {
       return;
     }
 
@@ -219,12 +219,23 @@ class IsolateStateManager implements StateManagerInterface {
   }
 
   @override
-  void setState({
-    MainClientState? newConnectionState,
-    Map<int, WalletUpdateInfo>? newUpdatedWallets,
-    bool notify = true,
-  }) {
-    _sendStateUpdateToMain(IsolateStateMessage(
-        IsolateStateMethod.setState, [newConnectionState, newUpdatedWallets, notify]));
+  void setMainClientSyncingState() {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setMainClientSyncingState, []));
+  }
+
+  @override
+  void setMainClientWaitingState() {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setMainClientWaitingState, []));
+  }
+
+  bool _isWalletAnySyncing(int walletId) {
+    final walletInfo = _registeredWallets[walletId];
+    if (walletInfo == null) {
+      return false;
+    }
+
+    return walletInfo.balance == UpdateStatus.syncing ||
+        walletInfo.transaction == UpdateStatus.syncing ||
+        walletInfo.utxo == UpdateStatus.syncing;
   }
 }
