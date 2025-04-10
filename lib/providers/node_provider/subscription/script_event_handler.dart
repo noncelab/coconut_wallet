@@ -125,6 +125,10 @@ class ScriptEventHandler {
   }) async {
     try {
       final now = DateTime.now();
+
+      // 지갑 업데이트 상태 초기화
+      _stateManager.initWalletUpdateStatus(walletItem.id);
+
       // Balance 병렬 처리
       await _balanceManager.fetchScriptBalanceBatch(walletItem, scriptStatuses);
 
