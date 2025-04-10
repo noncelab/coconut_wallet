@@ -110,7 +110,7 @@ class TransactionItemCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              t.status_received,
+              t.status_sent,
               style: fontStyle,
             )
           ],
