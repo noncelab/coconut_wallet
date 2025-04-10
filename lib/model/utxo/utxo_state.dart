@@ -20,6 +20,8 @@ class UtxoState extends Utxo {
 
   bool get isCpfpable => status == UtxoStatus.incoming && blockHeight == 0;
 
+  bool get isPending => status == UtxoStatus.outgoing || status == UtxoStatus.incoming;
+
   UtxoState({
     required String transactionHash,
     required int index,
@@ -36,15 +38,10 @@ class UtxoState extends Utxo {
   static void sortUtxo(List<UtxoState> utxos, UtxoOrder order) {
     int getLastIndex(String path) => int.parse(path.split('/').last);
 
-    bool isPendingUtxo(UtxoState utxo) =>
-        (utxo.status == UtxoStatus.outgoing || utxo.status == UtxoStatus.incoming);
-
     int compareUtxos(UtxoState a, UtxoState b, bool isAscending, bool byAmount) {
       // incoming/outgoing 우선 정렬
-      final aIsPending = isPendingUtxo(a);
-      final bIsPending = isPendingUtxo(b);
-      if (aIsPending && !bIsPending) return -1;
-      if (!aIsPending && bIsPending) return 1;
+      if (a.isPending && !b.isPending) return -1;
+      if (!a.isPending && b.isPending) return 1;
 
       int primaryCompare = byAmount
           ? (isAscending ? a.amount : b.amount).compareTo(isAscending ? b.amount : a.amount)
