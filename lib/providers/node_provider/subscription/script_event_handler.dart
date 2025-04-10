@@ -45,7 +45,11 @@ class ScriptEventHandler {
       //fetchScriptUtxo 함수에서 트랜잭션 정보가 필요함. 따라서 실제 트랜잭션 정보가 모두 처리된 후에 호출되도록 콜백함수 등록
       _scriptCallbackManager.registerFetchUtxosCallback(
         getScriptKey(dto.walletItem.id, dto.scriptStatus.derivationPath),
-        () => _utxoManager.fetchScriptUtxo(dto.walletItem, dto.scriptStatus),
+        () async {
+          // UTXO 동기화가 트랜잭션 동기화에 의존성이 있으므로 Utxo 동기화 상태도 업데이트
+          _stateManager.addWalletSyncState(dto.walletItem.id, UpdateElement.utxo);
+          _utxoManager.fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
+        },
       );
 
       // 스크립트 상태가 변경되었으면 주소 사용 여부 업데이트

@@ -11,11 +11,11 @@ class ScriptCallbackManager {
 
   /// 스크립트별 트랜잭션 조회 후 fetchUtxos 콜백 함수
   /// key: ScriptKey, value: Function
-  final Map<String, Future<void> Function()> _fetchUtxosCallback =
-      <String, Future<void> Function()>{};
+  final Map<String, List<Future<void> Function()>> _fetchUtxosCallback =
+      <String, List<Future<void> Function()>>{};
 
   /// 현재 처리 중인 트랜잭션 해시와 처리 시작 시간을 추적하기 위한 맵
-  /// key: "walletId:txHash", value: ({DateTime startTime, bool isConfirmed, bool isCompleted})
+  /// key: TxHashKey "walletId:txHash", value: ({DateTime startTime, bool isConfirmed, bool isCompleted})
   final Map<String, TransactionProcessingState> _processingTransactions = {};
 
   /// 트랜잭션의 처리 가능 여부를 확인합니다.
@@ -46,8 +46,9 @@ class ScriptCallbackManager {
   }
 
   /// 트랜잭션의 처리를 시작합니다.
-  void registerTransactionProcessing(String txHash, bool isConfirmed) {
-    _processingTransactions[txHash] = TransactionProcessingState(
+  void registerTransactionProcessing(int walletId, String txHash, bool isConfirmed) {
+    final txHashKey = getTxHashKey(walletId, txHash);
+    _processingTransactions[txHashKey] = TransactionProcessingState(
       DateTime.now(),
       isConfirmed,
       false,
@@ -56,7 +57,7 @@ class ScriptCallbackManager {
 
   /// fetchUtxos 콜백 함수 등록
   void registerFetchUtxosCallback(String scriptKey, Future<void> Function() callback) {
-    _fetchUtxosCallback[scriptKey] = callback;
+    (_fetchUtxosCallback[scriptKey] ??= []).add(callback);
   }
 
   /// fetchTransactions 종료 후 반환된 트랜잭션 해시 목록을 기반으로 스크립트 종속성 등록.
@@ -132,10 +133,14 @@ class ScriptCallbackManager {
 
   /// fetchUtxos 콜백 함수 실행
   void callFetchUtxosCallback(String scriptKey) {
-    final callback = _fetchUtxosCallback[scriptKey];
-    if (callback != null) {
-      callback();
-      _fetchUtxosCallback.remove(scriptKey);
+    final callbackList = _fetchUtxosCallback[scriptKey];
+    if (callbackList == null) {
+      return;
+    }
+    if (callbackList.isNotEmpty) {
+      callbackList.first().then((_) {
+        callbackList.removeAt(0);
+      });
     }
   }
 

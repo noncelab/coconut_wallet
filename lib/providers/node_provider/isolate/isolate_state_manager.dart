@@ -58,21 +58,18 @@ class WalletUpdateCounter {
       case UpdateElement.balance:
         balanceCounter--;
         if (balanceCounter <= 0) {
-          balanceCounter = 0;
           return true;
         }
         break;
       case UpdateElement.transaction:
         transactionCounter--;
         if (transactionCounter <= 0) {
-          transactionCounter = 0;
           return true;
         }
         break;
       case UpdateElement.utxo:
         utxoCounter--;
         if (utxoCounter <= 0) {
-          utxoCounter = 0;
           return true;
         }
         break;
@@ -119,21 +116,19 @@ class IsolateStateManager implements StateManagerInterface {
   }
 
   /// 지갑 정보 가져오기 (없으면 생성)
-  /// @return (walletUpdateInfo, isChange) 지갑 업데이트 정보와 변경 여부를 담은 Record
-  ({WalletUpdateInfo walletUpdateInfo, bool isChange}) _getWalletInfo(int walletId) {
+  /// @return 지갑 업데이트 정보
+  WalletUpdateInfo _getWalletInfo(int walletId) {
     final existingInfo = _registeredWallets[walletId];
-    bool isChange = false;
 
     WalletUpdateInfo walletUpdateInfo;
 
     if (existingInfo == null) {
       walletUpdateInfo = WalletUpdateInfo(walletId);
-      isChange = true;
     } else {
       walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
     }
 
-    return (walletUpdateInfo: walletUpdateInfo, isChange: isChange);
+    return walletUpdateInfo;
   }
 
   /// 업데이트 요소에 따른 상태 업데이트 및 상태 변경 여부 반환
@@ -171,9 +166,8 @@ class IsolateStateManager implements StateManagerInterface {
 
   @override
   void addWalletSyncState(int walletId, UpdateElement updateType) {
-    final results = _getWalletInfo(walletId);
-    WalletUpdateInfo walletUpdateInfo = results.walletUpdateInfo;
-    bool isChange = results.isChange;
+    final walletUpdateInfo = _getWalletInfo(walletId);
+    bool isChange = false;
 
     _walletUpdateCounter[walletId]!.incrementCounter(updateType);
 
@@ -191,9 +185,8 @@ class IsolateStateManager implements StateManagerInterface {
 
   @override
   void addWalletCompletedState(int walletId, UpdateElement updateType) {
-    final results = _getWalletInfo(walletId);
-    WalletUpdateInfo walletUpdateInfo = results.walletUpdateInfo;
-    bool isChange = results.isChange;
+    final walletUpdateInfo = _getWalletInfo(walletId);
+    bool isChange = false;
 
     bool isCounterZero = _walletUpdateCounter[walletId]!.decrementCounter(updateType);
 

@@ -48,9 +48,6 @@ class TransactionFetcher {
     if (!inBatchProcess) {
       // Transaction 동기화 시작 state 업데이트
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
-
-      // UTXO 동기화가 트랜잭션 동기화에 의존성이 있으므로 Utxo 동기화 상태도 업데이트
-      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
     }
 
     // db에 저장된 트랜잭션 조회, 네트워크 요청을 줄이기 위함.
@@ -91,6 +88,7 @@ class TransactionFetcher {
         isConfirmed: isConfirmed,
       )) {
         _scriptCallbackManager.registerTransactionProcessing(
+          walletItem.id,
           txFetchResult.transactionHash,
           isConfirmed,
         );

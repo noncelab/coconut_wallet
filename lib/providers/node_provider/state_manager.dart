@@ -158,10 +158,8 @@ class NodeStateManager implements StateManagerInterface {
       walletId: walletUpdateInfo,
     };
 
-    if (updateType == UpdateElement.utxo) {
-      if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
-        newConnectionState = MainClientState.waiting;
-      }
+    if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
+      newConnectionState = MainClientState.waiting;
     }
 
     _setState(
