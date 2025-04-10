@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_handler_util.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/cpfp_info.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
@@ -86,7 +87,9 @@ class TransactionFetcher {
       bool isConfirmed = txFetchResult.height > 0;
       // 이미 처리 중인 트랜잭션이지만 타임아웃이 지나지 않은 경우 제외
       if (_scriptCallbackManager.isTransactionProcessable(
-          txHash: txFetchResult.transactionHash, isConfirmed: isConfirmed)) {
+        txHashKey: getTxHashKey(walletItem.id, txFetchResult.transactionHash),
+        isConfirmed: isConfirmed,
+      )) {
         _scriptCallbackManager.registerTransactionProcessing(
           txFetchResult.transactionHash,
           isConfirmed,
@@ -231,7 +234,7 @@ class TransactionFetcher {
     }
 
     // 트랜잭션 처리 완료 상태 등록
-    _scriptCallbackManager.registerTransactionCompletion(newTxHashes);
+    _scriptCallbackManager.registerTransactionCompletion(walletItem.id, newTxHashes);
 
     return txFetchResults.map((tx) => tx.transactionHash).toList();
   }

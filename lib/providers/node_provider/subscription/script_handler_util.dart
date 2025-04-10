@@ -27,3 +27,7 @@ bool isScriptKeyBelongsToWallet(String scriptKey, int walletId) {
     return false;
   }
 }
+
+String getTxHashKey(int walletId, String txHash) {
+  return '$walletId:$txHash';
+}

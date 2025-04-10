@@ -15,7 +15,7 @@ class ScriptCallbackManager {
       <String, Future<void> Function()>{};
 
   /// 현재 처리 중인 트랜잭션 해시와 처리 시작 시간을 추적하기 위한 맵
-  /// key: "txHash", value: ({DateTime startTime, bool isConfirmed, bool isCompleted})
+  /// key: "walletId:txHash", value: ({DateTime startTime, bool isConfirmed, bool isCompleted})
   final Map<String, TransactionProcessingState> _processingTransactions = {};
 
   /// 트랜잭션의 처리 가능 여부를 확인합니다.
@@ -26,13 +26,13 @@ class ScriptCallbackManager {
   /// - 트랜잭션이 언컨펌에서 컨펌 상태로 변경된 경우
   ///
   /// 위 조건을 만족하지 않으면 `false`를 반환합니다.
-  bool isTransactionProcessable({required String txHash, required bool isConfirmed}) {
-    if (!_processingTransactions.containsKey(txHash)) return true;
+  bool isTransactionProcessable({required String txHashKey, required bool isConfirmed}) {
+    if (!_processingTransactions.containsKey(txHashKey)) return true;
 
-    final processInfo = _processingTransactions[txHash]!;
+    final processInfo = _processingTransactions[txHashKey]!;
 
     if (processInfo.isProcessable()) {
-      _processingTransactions.remove(txHash);
+      _processingTransactions.remove(txHashKey);
       return true;
     }
 
@@ -69,14 +69,15 @@ class ScriptCallbackManager {
     final scriptKey = getScriptKey(walletItem.id, status.derivationPath);
 
     // 모든 트랜잭션이 처리 완료되었으면 fetchUtxos 함수 실행
-    if (areAllTransactionsCompleted(txHashes)) {
+    if (areAllTransactionsCompleted(walletItem.id, txHashes)) {
       callFetchUtxosCallback(scriptKey);
       return;
     }
 
-    final processingTxHashes = txHashes
-        .where((txHash) => !(_processingTransactions[txHash]?.isCompleted ?? false))
-        .toList();
+    final processingTxHashes = txHashes.where((txHash) {
+      final txHashKey = getTxHashKey(walletItem.id, txHash);
+      return !(_processingTransactions[txHashKey]?.isCompleted ?? false);
+    }).toList();
 
     // 처리 중인 트랜잭션만 종속성으로 등록
     if (processingTxHashes.isNotEmpty) {
@@ -86,11 +87,12 @@ class ScriptCallbackManager {
   }
 
   /// 트랜잭션의 처리를 완료 상태로 변경합니다.
-  void registerTransactionCompletion(Set<String> txHashes) {
+  void registerTransactionCompletion(int walletId, Set<String> txHashes) {
     // 먼저 모든 트랜잭션 상태를 완료로 변경
     for (final txHash in txHashes) {
-      if (_processingTransactions.containsKey(txHash)) {
-        _processingTransactions[txHash]!.setCompleted();
+      final txHashKey = getTxHashKey(walletId, txHash);
+      if (_processingTransactions.containsKey(txHashKey)) {
+        _processingTransactions[txHashKey]!.setCompleted();
       }
     }
 
@@ -138,7 +140,10 @@ class ScriptCallbackManager {
   }
 
   /// 모든 트랜잭션이 처리 완료되었는지 확인합니다.
-  bool areAllTransactionsCompleted(List<String> txHashes) {
-    return txHashes.every((txHash) => _processingTransactions[txHash]?.isCompleted ?? false);
+  bool areAllTransactionsCompleted(int walletId, List<String> txHashes) {
+    return txHashes.every((txHash) {
+      final txHashKey = getTxHashKey(walletId, txHash);
+      return _processingTransactions[txHashKey]?.isCompleted ?? false;
+    });
   }
 }
