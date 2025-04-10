@@ -41,18 +41,17 @@ class WalletListScreen extends StatefulWidget {
 }
 
 class _WalletListScreenState extends State<WalletListScreen> with TickerProviderStateMixin {
+  final kOfflineWarningBarHeight = 32.0;
+  final kOfflineWarningBarDuration = const Duration(milliseconds: 500);
+
   final GlobalKey _dropdownButtonKey = GlobalKey();
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
-
-  final kTargetHeight = 30.0;
   bool _isDropdownMenuVisible = false;
+  late ScrollController _scrollController;
 
   DateTime? _lastPressedAt;
-
   ResultOfSyncFromVault? _resultOfSyncFromVault;
-
-  late ScrollController _scrollController;
 
   late List<WalletListItemBase> _previousWalletList = [];
   late Map<int, int> _previousWalletBalance = {};
@@ -101,6 +100,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       },
       child: Consumer<WalletListViewModel>(
         builder: (context, viewModel, child) {
+          final isOffline = viewModel.isNetworkOn == null ? false : !viewModel.isNetworkOn!;
+
           if (viewModel.isWalletListChanged(_previousWalletList, viewModel.walletItemList,
               _previousWalletBalance, (id) => viewModel.getWalletBalance(id).current)) {
             _handleWalletListUpdate(
@@ -132,30 +133,32 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                             onRefresh: viewModel.refreshWallets,
                           ),
                           _buildLoadingIndicator(viewModel),
-                          // 패딩
-                          const SliverToBoxAdapter(child: CoconutLayout.spacing_300h),
-                          if (!viewModel.shouldShowLoadingIndicator &&
-                              viewModel.isTermsShortcutVisible) ...{
+                          _buildPadding(isOffline),
+                          if (!viewModel.shouldShowLoadingIndicator) ...{
                             SliverToBoxAdapter(
-                                child: GlossaryShortcutCard(
-                              onTap: () {
-                                CommonBottomSheets.showBottomSheet_90(
-                                    context: context, child: const GlossaryBottomSheet());
-                              },
-                              onCloseTap: viewModel.hideTermsShortcut,
+                                child: Column(
+                              children: [
+                                if (!viewModel.shouldShowLoadingIndicator)
+                                  if (viewModel.isTermsShortcutVisible)
+                                    GlossaryShortcutCard(
+                                      onTap: () {
+                                        CommonBottomSheets.showBottomSheet_90(
+                                            context: context, child: const GlossaryBottomSheet());
+                                      },
+                                      onCloseTap: viewModel.hideTermsShortcut,
+                                    ),
+                                if (viewModel.walletItemList.isEmpty)
+                                  WalletAdditionGuideCard(onPressed: _onAddScannerPressed)
+                              ],
                             )),
                           },
                           // 지갑 목록
-                          viewModel.walletItemList.isEmpty
-                              ? SliverToBoxAdapter(
-                                  child: WalletAdditionGuideCard(onPressed: _onAddScannerPressed))
-                              : _buildSliverAnimatedList(
-                                  viewModel.walletItemList,
-                                  (id) => viewModel.getWalletBalance(id),
-                                  viewModel.isBalanceHidden),
+                          _buildSliverAnimatedList(viewModel.walletItemList,
+                              (id) => viewModel.getWalletBalance(id), viewModel.isBalanceHidden),
                         ]),
                     _buildDropdownBackdrop(),
                     _buildDropdownMenu(),
+                    _buildOfflineWarningBar(context, isOffline)
                   ],
                 ),
               ),
@@ -164,6 +167,43 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         },
       ),
     );
+  }
+
+  Positioned _buildOfflineWarningBar(BuildContext context, bool isOffline) {
+    return Positioned(
+      top: kToolbarHeight + MediaQuery.of(context).padding.top,
+      left: 0,
+      right: 0,
+      child: AnimatedContainer(
+        duration: kOfflineWarningBarDuration,
+        curve: Curves.easeOut,
+        height: isOffline ? kOfflineWarningBarHeight : 0.0,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        color: CoconutColors.hotPink,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset('assets/svg/triangle-warning.svg'),
+            CoconutLayout.spacing_100w,
+            Text(
+              t.errors.network_not_found,
+              style: CoconutTypography.body3_12,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPadding(bool isOffline) {
+    const kDefaultPadding = Sizes.size12;
+    return SliverToBoxAdapter(
+        child: AnimatedContainer(
+            duration: kOfflineWarningBarDuration,
+            height: isOffline ? kOfflineWarningBarHeight + kDefaultPadding : kDefaultPadding,
+            curve: Curves.easeInOut,
+            child: const SizedBox()));
   }
 
   @override
@@ -326,45 +366,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  PreferredSize _topNetworkAlertWidget() {
-    double targetHeight = kTargetHeight;
-
-    return PreferredSize(
-      preferredSize: Size.fromHeight(kTargetHeight),
-      child: SizedBox(
-        height: kTargetHeight,
-        width: double.infinity,
-        child: Stack(children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOut,
-              height: targetHeight,
-              child: Container(
-                color: CoconutColors.hotPink,
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset('assets/svg/triangle-warning.svg'),
-                    CoconutLayout.spacing_100w,
-                    Text(
-                      t.errors.network_not_found,
-                      style: CoconutTypography.body3_12,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
-
   Widget? _getWalletRowItem(Key key, WalletListItemBase walletItem,
       AnimatedBalanceData animatedBalanceData, bool isBalanceHidden, bool isLastItem) {
     final WalletListItemBase(
@@ -459,9 +460,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           },
         ),
       ],
-      // 네트워크 OFF 상태일 때 앱바 하단에 경고 위젯 표시
-      bottomWidget: _topNetworkAlertWidget(),
-      isBottomWidgetVisible: viewModel.isNetworkOn == false,
     );
   }
 
