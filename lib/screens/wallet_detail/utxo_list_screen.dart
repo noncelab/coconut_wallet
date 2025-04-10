@@ -50,7 +50,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   bool _isHeaderDropdownVisible = false;
   bool _stickyHeaderVisible = false;
   bool _isStickyHeaderDropdownVisible = false;
-  bool _isAnimating = false;
 
   late UtxoListViewModel _viewModel;
   OverlayEntry? _statusBarTapOverlayEntry; // iOS 노치 터치 시 scrol to top
@@ -161,7 +160,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                         UtxoList(
                           walletId: widget.id,
                           onRemoveDropdown: _removeFilterDropdown,
-                          onAnimatingStateChanged: _changeAnimatingState,
                         ),
                       ],
                     );
@@ -209,10 +207,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       _isHeaderDropdownVisible = false;
       _isStickyHeaderDropdownVisible = false;
     });
-  }
-
-  void _changeAnimatingState(bool isAnimating) {
-    _isAnimating = isAnimating;
   }
 
   Widget _buildHeader(UtxoListViewModel viewModel) {
@@ -321,13 +315,11 @@ class UtxoList extends StatefulWidget {
   const UtxoList({
     super.key,
     required this.walletId,
-    required this.onAnimatingStateChanged,
     this.onRemoveDropdown,
   });
 
   final int walletId;
   final Function? onRemoveDropdown;
-  final Function(bool) onAnimatingStateChanged;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -423,10 +415,6 @@ class _UtxoListState extends State<UtxoList> {
       }
     }
 
-    if (removedIndexes.isNotEmpty || insertedIndexes.isNotEmpty) {
-      widget.onAnimatingStateChanged(true);
-    }
-
     setState(() {
       _displayedUtxoList = List.from(utxoList);
     });
@@ -452,7 +440,6 @@ class _UtxoListState extends State<UtxoList> {
       _utxoListKey.currentState?.insertItem(index, duration: _duration);
     }
 
-    widget.onAnimatingStateChanged(false);
     _isListLoading = false;
   }
 

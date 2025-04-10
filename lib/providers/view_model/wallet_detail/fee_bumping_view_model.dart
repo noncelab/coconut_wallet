@@ -644,8 +644,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // 노드 프로바이더에서 추천 수수료 조회
   Future<void> _fetchRecommendedFees() async {
-    // TODO: 테스트 후 원래 코드로 원복해야 함
-    // ※ 주의 Node Provider 관련 import 문, 변수 등 지우지 말 것!
+    // TODO: 실제 멤풀 수수료 참조 코드
+    // 🚨 주의 🚨
+    // 아래 코드 주석 시 unused import, 변수가 보이지만
+    // 실제 로직에서 사용되는 Node Provider 관련 참조이므로 지우지 말 것!
     final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
     if (recommendedFeesResult.isFailure) {
       _isFeeFetchSuccess = false;
@@ -655,7 +657,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     final recommendedFees = recommendedFeesResult.value;
 
-    // TODO: 추천수수료 mock 테스트 코드!
+    // TODO: 테스트 코드 - 추천수수료 mock
     // final recommendedFees = await DioClient().getRecommendedFee();
 
     _feeInfos[0].satsPerVb = recommendedFees.fastestFee;

@@ -169,7 +169,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildInputOutputList(tx.inputAddressList, InputOutputRowType.input),
-            _buildFeeSection(tx.fee ?? 0),
+            _buildFeeSection(tx.fee),
             _buildInputOutputList(tx.outputAddressList, InputOutputRowType.output),
           ],
         ),

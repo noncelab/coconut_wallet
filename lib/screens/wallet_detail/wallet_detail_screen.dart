@@ -233,7 +233,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   bool _stickyHeaderVisible = false;
 
   final GlobalKey _txListLabelWidgetKey = GlobalKey();
-  late RenderBox _txlistLabelRenderBox;
 
   @override
   void initState() {
@@ -365,8 +364,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     await CommonBottomSheets.showBottomSheet_50(
         context: context,
         child: FaucetRequestBottomSheet(
-          // TODO: walletAddressBook
-          // walletAddressBook: const [],
           walletData: {
             'wallet_id': _viewModel.walletId,
             'wallet_address': _viewModel.receiveAddress,
