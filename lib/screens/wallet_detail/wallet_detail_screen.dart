@@ -96,7 +96,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     ],
                   ),
                 ),
-                _buildFaucetTooltip(),
+                Selector<WalletDetailViewModel, bool>(
+                    selector: (_, viewModel) => viewModel.faucetTooltipVisible,
+                    builder: (_, isFaucetTooltipVisible, __) {
+                      return _buildFaucetTooltip(isFaucetTooltipVisible);
+                    }),
                 _buildStickyHeader(),
               ],
             ),
@@ -107,7 +111,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       entireWidgetKey: _appBarKey,
-      faucetIconKey: _faucetIconKey,
       backgroundColor: CoconutColors.black,
       title: TextUtils.ellipsisIfLonger(_viewModel.walletName, maxLength: 15),
       titlePadding: const EdgeInsets.all(8),
@@ -115,6 +118,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       onTitlePressed: () => _navigateToWalletInfo(context),
       actionButtonList: [
         IconButton(
+          key: _faucetIconKey,
           onPressed: () => _onFaucetIconPressed(),
           icon: SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
         ),
@@ -345,10 +349,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   // Faucet 메서드
-  Widget _buildFaucetTooltip() {
+  Widget _buildFaucetTooltip(bool isVisible) {
     return FaucetTooltip(
       text: t.tooltip.faucet,
-      isVisible: _viewModel.faucetTooltipVisible,
+      isVisible: isVisible,
       width: MediaQuery.of(context).size.width,
       iconPosition: _faucetIconPosition,
       iconSize: _faucetIconSize,

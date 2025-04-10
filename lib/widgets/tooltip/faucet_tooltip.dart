@@ -41,8 +41,8 @@ class _FaucetTooltipState extends State<FaucetTooltip> {
     return Visibility(
       visible: widget.isVisible,
       child: Positioned(
-        top: widget.iconPosition.dy + widget.iconSize.height - 10,
-        right: widget.width - widget.iconPosition.dx - widget.iconSize.width + 5,
+        top: widget.iconPosition.dy + widget.iconSize.height - 12,
+        right: widget.width - widget.iconPosition.dx - widget.iconSize.width + 4,
         child: AnimatedOpacity(
           opacity: _isOpacity ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 1000),
