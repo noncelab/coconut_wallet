@@ -34,6 +34,7 @@ class UtxoListScreen extends StatefulWidget {
 class _UtxoListScreenState extends State<UtxoListScreen> {
   final ScrollController _scrollController = ScrollController();
 
+  double _topPadding = 0;
   final GlobalKey _appBarKey = GlobalKey();
   final GlobalKey _headerDropdownKey = GlobalKey();
   final GlobalKey _stickyHeaderDropdownKey = GlobalKey();
@@ -60,18 +61,33 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     _viewModel = _createViewModel();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final appBarRenderBox = _appBarKey.currentContext?.findRenderObject() as RenderBox;
-      _appBarSize = appBarRenderBox.size;
+      Size topHeaderWidgetSize = const Size(0, 0);
+      Size positionedTopWidgetSize = const Size(0, 0);
 
-      _checkAndUpdateStickyHeaderVisibility(ignoreAnimating: true);
+      if (_appBarKey.currentContext != null) {
+        final appBarWidgetRenderBox = _appBarKey.currentContext?.findRenderObject() as RenderBox;
+        _appBarSize = appBarWidgetRenderBox.size;
+      }
+
+      if (_headerDropdownKey.currentContext != null) {
+        final topHeaderWidgetRenderBox =
+            _headerDropdownKey.currentContext?.findRenderObject() as RenderBox;
+        topHeaderWidgetSize = topHeaderWidgetRenderBox.size;
+      }
+
+      setState(() {
+        _topPadding = topHeaderWidgetSize.height - positionedTopWidgetSize.height;
+      });
 
       _scrollController.addListener(() {
-        // fixme: 리스트가 렌더링 되고 있는 상태에서 스크롤이 발생해도 sticky header가 보이지 않음
-        if (_isAnimating) return;
         if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
           _removeFilterDropdown();
         }
-        _checkAndUpdateStickyHeaderVisibility();
+        if (_scrollController.offset > _topPadding) {
+          _updateStickyHeaderDropdownPosition();
+        } else {
+          _updateHeaderDropdownPosition();
+        }
       });
     });
 
@@ -197,15 +213,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   void _changeAnimatingState(bool isAnimating) {
     _isAnimating = isAnimating;
-  }
-
-  void _checkAndUpdateStickyHeaderVisibility({bool ignoreAnimating = false}) {
-    if (!ignoreAnimating && _isAnimating) return;
-    if (_scrollController.offset > kToolbarHeight + 27) {
-      _updateStickyHeaderDropdownPosition();
-    } else {
-      _updateHeaderDropdownPosition();
-    }
   }
 
   Widget _buildHeader(UtxoListViewModel viewModel) {
