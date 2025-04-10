@@ -68,7 +68,7 @@ class UtxoManager {
                 blockHeight: e.height,
                 to: scriptStatus.address,
                 status: e.height > 0 ? UtxoStatus.unspent : UtxoStatus.incoming,
-                timestamp: transactionMap[e.txHash]!.createdAt,
+                timestamp: transactionMap[e.txHash]!.timestamp,
               ))
           .toList();
     } catch (e, stackTrace) {

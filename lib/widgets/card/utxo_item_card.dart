@@ -73,7 +73,7 @@ class UtxoItemCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           ),
                         CoconutLayout.spacing_100w,
-                        if (utxo.status != UtxoStatus.unspent) _buildStatus(utxo.status),
+                        if (utxo.isPending) _buildPendingStatus(utxo.status),
                         Text(
                           satoshiToBitcoinString(utxo.amount),
                           style: CoconutTypography.heading4_18_NumberBold
@@ -118,7 +118,7 @@ class UtxoItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatus(UtxoStatus status) {
+  Widget _buildPendingStatus(UtxoStatus status) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
