@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
@@ -270,7 +269,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                   padding: EdgeInsets.only(left: 16),
                   child: Text(
                     "#",
-                    style: Styles.body2,
+                    style: CoconutTypography.body3_12,
                   ),
                 ),
                 onChanged: (text) => _onTextChanged(text),

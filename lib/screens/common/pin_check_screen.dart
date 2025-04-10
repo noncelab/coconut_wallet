@@ -1,8 +1,8 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
@@ -156,7 +156,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
         title: t.alert.forgot_password.title,
         message: t.alert.forgot_password.description,
         confirmButtonText: t.alert.forgot_password.btn_reset,
-        confirmButtonColor: MyColors.warningRed,
+        confirmButtonColor: CoconutColors.hotPink,
         cancelButtonText: t.close, onConfirm: () async {
       await _authProvider.resetPassword();
       widget.onComplete?.call();

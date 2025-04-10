@@ -45,7 +45,7 @@ class WalletItemCard extends StatelessWidget {
           child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
               ),
               child: Row(children: [
                 Container(

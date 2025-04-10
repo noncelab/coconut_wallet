@@ -10,7 +10,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -50,7 +49,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           context: context,
           hasRightIcon: true,
           isBottom: true,
-          backgroundColor: MyColors.black.withOpacity(0.95),
+          backgroundColor: CoconutColors.black.withOpacity(0.95),
           rightIconButton: IconButton(
             onPressed: () {
               if (controller != null) {
@@ -58,13 +57,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               }
             },
             icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
-            color: MyColors.white,
+            color: CoconutColors.white,
           ),
           showTestnetLabel: false,
         ),
         body: Stack(children: [
           Container(
-            color: MyColors.black,
+            color: CoconutColors.black,
             child: Column(
               children: <Widget>[
                 Expanded(
@@ -73,7 +72,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                     key: qrKey,
                     onQRViewCreated: _onQRViewCreated,
                     overlay: QrScannerOverlayShape(
-                        borderColor: MyColors.white,
+                        borderColor: CoconutColors.white,
                         borderRadius: 8,
                         borderLength: (MediaQuery.of(context).size.width < 400 ||
                                 MediaQuery.of(context).size.height < 400)
@@ -93,7 +92,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               padding: const EdgeInsets.only(
                   top: 20, left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),
               child: CoconutToolTip(
-                  baseBackgroundColor: MyColors.white.withOpacity(0.95),
+                  baseBackgroundColor: CoconutColors.white.withOpacity(0.95),
                   tooltipType: CoconutTooltipType.fixed,
                   richText: RichText(
                     text: TextSpan(
@@ -104,7 +103,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                         fontSize: 15,
                         height: 1.4,
                         letterSpacing: 0.5,
-                        color: MyColors.black,
+                        color: CoconutColors.black,
                       ),
                       children: <TextSpan>[
                         TextSpan(

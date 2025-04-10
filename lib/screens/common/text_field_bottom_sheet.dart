@@ -1,5 +1,5 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
@@ -71,7 +71,7 @@ class _TextFieldBottomSheetState extends State<TextFieldBottomSheet> {
         ),
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         decoration: const BoxDecoration(
-          color: MyColors.bottomSheetBackground,
+          color: CoconutColors.gray900,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: SafeArea(
@@ -89,15 +89,13 @@ class _TextFieldBottomSheetState extends State<TextFieldBottomSheet> {
                     },
                     child: const Icon(
                       Icons.close_rounded,
-                      color: MyColors.white,
+                      color: CoconutColors.white,
                       size: 22,
                     ),
                   ),
                   Text(
                     widget.title,
-                    style: Styles.body2Bold.copyWith(
-                      fontSize: 16,
-                    ),
+                    style: CoconutTypography.body1_16_Bold,
                   ),
                   CustomAppbarButton(
                     isActive: _isCompleteButtonEnabled,

@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -515,14 +516,26 @@ class _UtxoListState extends State<UtxoList> {
       return true;
     }
 
-    // 동일한 transactionHash에 대해 status가 다르면 변경
+    // 동일한 transactionHash에 대해 status와 tagList가 다르면 변경
     for (var txHash in oldMap.keys) {
       final oldUtxo = oldMap[txHash]!;
       final newUtxo = newMap[txHash]!;
 
+      final oldTags = oldUtxo.tags ?? [];
+      final newTags = newUtxo.tags ?? [];
+
+      if (oldTags.length != newTags.length || !_equalTagLists(oldTags, newTags)) {
+        return true;
+      }
       if (oldUtxo.status != newUtxo.status) return true;
     }
     return false;
+  }
+
+  // tags 리스트를 비교하는 유틸 함수
+  bool _equalTagLists(List<UtxoTag> a, List<UtxoTag> b) {
+    // 순서를 고려하지 않는다면 Set 비교
+    return Set.from(a) == Set.from(b);
   }
 
   @override
