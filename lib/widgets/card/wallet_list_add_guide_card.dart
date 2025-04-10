@@ -3,19 +3,19 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/cupertino.dart';
 
-class WalletListAddGuideCard extends StatefulWidget {
+class WalletAdditionGuideCard extends StatefulWidget {
   final VoidCallback onPressed;
 
-  const WalletListAddGuideCard({
+  const WalletAdditionGuideCard({
     super.key,
     required this.onPressed,
   });
 
   @override
-  State<WalletListAddGuideCard> createState() => _WalletListAddGuideCardState();
+  State<WalletAdditionGuideCard> createState() => _WalletAdditionGuideCardState();
 }
 
-class _WalletListAddGuideCardState extends State<WalletListAddGuideCard> {
+class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
   @override
   Widget build(BuildContext context) {
     return Container(

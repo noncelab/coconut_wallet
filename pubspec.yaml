@@ -70,7 +70,11 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  coconut_design_system: ^0.7.1
+  # coconut_design_system: ^0.7.1
+  coconut_design_system:
+    git:
+      url: https://github.com/noncelab/coconut_design_system.git
+      ref: fix/home-screen-appbar
   coconut_lib: ^0.9.0
   realm: ^20.0.0
   cryptography: ^2.7.0
@@ -109,7 +113,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/files/terms_details.json
+    - assets/files/glossary_details.json
     - assets/files/status_loading.json
     - assets/images/splash_logo.png
     - assets/images/pow_logo.png
