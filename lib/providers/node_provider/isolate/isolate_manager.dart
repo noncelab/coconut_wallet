@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
@@ -66,8 +67,14 @@ class IsolateManager {
         BalanceManager(electrumService, isolateStateManager, addressRepository, walletRepository);
     final UtxoManager utxoManager = UtxoManager(electrumService, isolateStateManager,
         utxoRepository, transactionRepository, addressRepository);
-    final TransactionManager transactionManager = TransactionManager(electrumService,
-        isolateStateManager, transactionRepository, utxoManager, addressRepository);
+    final ScriptCallbackManager scriptCallbackManager = ScriptCallbackManager();
+    final TransactionManager transactionManager = TransactionManager(
+        electrumService,
+        isolateStateManager,
+        transactionRepository,
+        utxoManager,
+        addressRepository,
+        scriptCallbackManager);
     final NetworkManager networkManager = NetworkManager(electrumService);
     final SubscriptionManager subscriptionManager = SubscriptionManager(
       electrumService,
@@ -77,6 +84,7 @@ class IsolateManager {
       utxoManager,
       addressRepository,
       subscribeRepository,
+      scriptCallbackManager,
     );
 
     final isolateHandler = IsolateHandler(

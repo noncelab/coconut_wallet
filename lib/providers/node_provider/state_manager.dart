@@ -91,7 +91,7 @@ class NodeStateManager implements StateManagerInterface {
     );
   }
 
-  /// 지갑의 업데이트 정보를 추가합니다.
+  /// 지갑의 동기화 상태 증가 및 상태 업데이트
   @override
   void addWalletSyncState(int walletId, UpdateElement updateType) {
     final existingInfo = _state.registeredWallets[walletId];
@@ -104,6 +104,7 @@ class NodeStateManager implements StateManagerInterface {
       walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
     }
 
+    // 카운터 증가 및 상태 업데이트
     switch (updateType) {
       case UpdateElement.balance:
         walletUpdateInfo.balance = UpdateStatus.syncing;
@@ -126,18 +127,20 @@ class NodeStateManager implements StateManagerInterface {
     );
   }
 
+  /// 지갑의 동기화 상태 감소 및 완료 여부 업데이트
   @override
   void addWalletCompletedState(int walletId, UpdateElement updateType) {
     final existingInfo = _state.registeredWallets[walletId];
 
-    WalletUpdateInfo walletUpdateInfo;
-
+    // 기존 정보가 없으면 아무 작업도 수행하지 않음
     if (existingInfo == null) {
-      walletUpdateInfo = WalletUpdateInfo(walletId);
-    } else {
-      walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
+      Logger.error('지갑 ID $walletId에 대한 정보가 없어 완료 상태로 변경할 수 없습니다.');
+      return;
     }
 
+    WalletUpdateInfo walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
+
+    // 카운터 감소 및 상태 업데이트
     switch (updateType) {
       case UpdateElement.balance:
         walletUpdateInfo.balance = UpdateStatus.completed;
@@ -160,11 +163,31 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void addWalletCompletedAllStates(int walletId) {
-    final updateInfo = WalletUpdateInfo(walletId);
+    final existingInfo = _state.registeredWallets[walletId];
 
-    updateInfo.balance = UpdateStatus.completed;
-    updateInfo.transaction = UpdateStatus.completed;
-    updateInfo.utxo = UpdateStatus.completed;
+    // 기존 정보가 없으면 새 정보 생성
+    if (existingInfo == null) {
+      final updateInfo = WalletUpdateInfo(
+        walletId,
+        balance: UpdateStatus.completed,
+        transaction: UpdateStatus.completed,
+        utxo: UpdateStatus.completed,
+      );
+
+      setState(newUpdatedWallets: {
+        ..._state.registeredWallets,
+        walletId: updateInfo,
+      });
+      return;
+    }
+
+    // 기존 정보가 있는 경우 모든 카운터를 0으로 설정하고 상태를 완료로 변경
+    final updateInfo = WalletUpdateInfo.fromExisting(
+      existingInfo,
+      balance: UpdateStatus.completed,
+      transaction: UpdateStatus.completed,
+      utxo: UpdateStatus.completed,
+    );
 
     setState(newUpdatedWallets: {
       ..._state.registeredWallets,

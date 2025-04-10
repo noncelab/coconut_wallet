@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_event_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_subscriber.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
@@ -25,6 +26,7 @@ class SubscriptionManager {
   final UtxoManager _utxoManager;
   final AddressRepository _addressRepository;
   final SubscriptionRepository _subscriptionRepository;
+  final ScriptCallbackManager _scriptCallbackManager;
 
   // 구독중인 스크립트 상태 변경을 인지하는 컨트롤러
   late StreamController<SubscribeScriptStreamDto> _scriptStatusController;
@@ -39,6 +41,7 @@ class SubscriptionManager {
     this._utxoManager,
     this._addressRepository,
     this._subscriptionRepository,
+    this._scriptCallbackManager,
   ) {
     _scriptStatusController = StreamController<SubscribeScriptStreamDto>.broadcast();
 
@@ -55,6 +58,7 @@ class SubscriptionManager {
       _utxoManager,
       _addressRepository,
       subscribeWallet,
+      _scriptCallbackManager,
     );
 
     _scriptStatusController.stream.listen(_scriptEventHandler.handleScriptStatusChanged);

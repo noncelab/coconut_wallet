@@ -76,13 +76,10 @@ class SubscriptionRepository extends BaseRepository {
           final existingStatus = existingStatusMap[update.scriptPubKey];
 
           if (existingStatus != null && update.status != null) {
-            Logger.log('실제 업데이트 시도: ${update.scriptPubKey} - ${update.status}');
             existingStatus.status = update.status!;
             existingStatus.timestamp = now;
           }
         }
-
-        Logger.log('실제 추가 시도: ${toAddStatuses.length}개');
 
         // 새로운 상태 일괄 추가
         realm.addAll<RealmScriptStatus>(toAddStatuses);

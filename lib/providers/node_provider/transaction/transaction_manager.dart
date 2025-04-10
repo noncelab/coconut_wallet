@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_fetcher.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_processor.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
@@ -19,6 +20,7 @@ class TransactionManager {
   final TransactionRepository _transactionRepository;
   final UtxoManager _utxoManager;
   final AddressRepository _addressRepository;
+  final ScriptCallbackManager _scriptCallbackManager;
   late final TransactionProcessor _transactionProcessor;
   late final TransactionFetcher _transactionFetcher;
 
@@ -28,25 +30,21 @@ class TransactionManager {
     this._transactionRepository,
     this._utxoManager,
     this._addressRepository,
+    this._scriptCallbackManager,
   ) {
     _transactionProcessor = TransactionProcessor(_electrumService, _addressRepository);
-    _transactionFetcher = TransactionFetcher(
-      _electrumService,
-      _transactionRepository,
-      _transactionProcessor,
-      _stateManager,
-      _utxoManager,
-    );
+    _transactionFetcher = TransactionFetcher(_electrumService, _transactionRepository,
+        _transactionProcessor, _stateManager, _utxoManager, _scriptCallbackManager);
   }
 
   /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
-  Future<void> fetchScriptTransaction(
+  Future<List<String>> fetchScriptTransaction(
     WalletListItemBase walletItem,
     ScriptStatus scriptStatus, {
     DateTime? now,
     bool inBatchProcess = false,
   }) async {
-    await _transactionFetcher.fetchScriptTransaction(
+    return _transactionFetcher.fetchScriptTransaction(
       walletItem,
       scriptStatus,
       now: now,

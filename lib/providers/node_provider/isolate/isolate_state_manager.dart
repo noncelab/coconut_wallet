@@ -18,9 +18,77 @@ class IsolateStateMessage {
   }
 }
 
+/// 지갑 업데이트 카운터를 관리하는 클래스
+class WalletUpdateCounter {
+  int balanceCounter;
+  int transactionCounter;
+  int utxoCounter;
+
+  WalletUpdateCounter({
+    this.balanceCounter = 0,
+    this.transactionCounter = 0,
+    this.utxoCounter = 0,
+  });
+
+  /// 초기화된 카운터 생성
+  factory WalletUpdateCounter.initial() {
+    return WalletUpdateCounter();
+  }
+
+  /// 특정 업데이트 요소의 카운터 증가
+  void incrementCounter(UpdateElement updateType) {
+    switch (updateType) {
+      case UpdateElement.balance:
+        balanceCounter++;
+        break;
+      case UpdateElement.transaction:
+        transactionCounter++;
+        break;
+      case UpdateElement.utxo:
+        utxoCounter++;
+        break;
+    }
+  }
+
+  /// 특정 업데이트 요소의 카운터 감소
+  /// 카운터가 0보다 작아지지 않도록 처리
+  /// @return 카운터 값이 0이면 true, 아니면 false
+  bool decrementCounter(UpdateElement updateType) {
+    switch (updateType) {
+      case UpdateElement.balance:
+        balanceCounter--;
+        if (balanceCounter <= 0) {
+          balanceCounter = 0;
+          return true;
+        }
+        break;
+      case UpdateElement.transaction:
+        transactionCounter--;
+        if (transactionCounter <= 0) {
+          transactionCounter = 0;
+          return true;
+        }
+        break;
+      case UpdateElement.utxo:
+        utxoCounter--;
+        if (utxoCounter <= 0) {
+          utxoCounter = 0;
+          return true;
+        }
+        break;
+    }
+    return false;
+  }
+}
+
 /// Isolate 스레드에서 메인 스레드로 상태 관리 메시지를 전달하는 클래스
 class IsolateStateManager implements StateManagerInterface {
   final SendPort? _isolateToMainSendPort;
+
+  final Map<int, WalletUpdateInfo> _registeredWallets = <int, WalletUpdateInfo>{};
+
+  /// 지갑 업데이트 카운터 - 각 요소(balance, transaction, utxo)별 카운터를 명시적으로 관리
+  final Map<int, WalletUpdateCounter> _walletUpdateCounter = <int, WalletUpdateCounter>{};
 
   IsolateStateManager(this._isolateToMainSendPort) {
     if (_isolateToMainSendPort == null) {
@@ -50,22 +118,98 @@ class IsolateStateManager implements StateManagerInterface {
     }
   }
 
+  /// 지갑 정보 가져오기 (없으면 생성)
+  /// @return (walletUpdateInfo, isChange) 지갑 업데이트 정보와 변경 여부를 담은 Record
+  ({WalletUpdateInfo walletUpdateInfo, bool isChange}) _getWalletInfo(int walletId) {
+    final existingInfo = _registeredWallets[walletId];
+    bool isChange = false;
+
+    WalletUpdateInfo walletUpdateInfo;
+
+    if (existingInfo == null) {
+      walletUpdateInfo = WalletUpdateInfo(walletId);
+      isChange = true;
+    } else {
+      walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
+    }
+
+    return (walletUpdateInfo: walletUpdateInfo, isChange: isChange);
+  }
+
+  /// 업데이트 요소에 따른 상태 업데이트 및 상태 변경 여부 반환
+  bool _updateElementStatus(
+      WalletUpdateInfo walletUpdateInfo, UpdateElement updateType, UpdateStatus newStatus) {
+    UpdateStatus prevStatus;
+
+    switch (updateType) {
+      case UpdateElement.balance:
+        prevStatus = walletUpdateInfo.balance;
+        walletUpdateInfo.balance = newStatus;
+        return prevStatus != newStatus;
+      case UpdateElement.transaction:
+        prevStatus = walletUpdateInfo.transaction;
+        walletUpdateInfo.transaction = newStatus;
+        return prevStatus != newStatus;
+      case UpdateElement.utxo:
+        prevStatus = walletUpdateInfo.utxo;
+        walletUpdateInfo.utxo = newStatus;
+        return prevStatus != newStatus;
+    }
+  }
+
   @override
   void initWalletUpdateStatus(int walletId) {
+    if (_registeredWallets.containsKey(walletId)) {
+      return;
+    }
+
+    _registeredWallets[walletId] = WalletUpdateInfo(walletId);
+    _walletUpdateCounter[walletId] = WalletUpdateCounter.initial();
     _sendStateUpdateToMain(
         IsolateStateMessage(IsolateStateMethod.initWalletUpdateStatus, [walletId]));
   }
 
   @override
   void addWalletSyncState(int walletId, UpdateElement updateType) {
-    _sendStateUpdateToMain(
-        IsolateStateMessage(IsolateStateMethod.addWalletSyncState, [walletId, updateType]));
+    final results = _getWalletInfo(walletId);
+    WalletUpdateInfo walletUpdateInfo = results.walletUpdateInfo;
+    bool isChange = results.isChange;
+
+    _walletUpdateCounter[walletId]!.incrementCounter(updateType);
+
+    if (_updateElementStatus(walletUpdateInfo, updateType, UpdateStatus.syncing)) {
+      isChange = true;
+    }
+
+    _registeredWallets[walletId] = walletUpdateInfo;
+
+    if (isChange) {
+      _sendStateUpdateToMain(
+          IsolateStateMessage(IsolateStateMethod.addWalletSyncState, [walletId, updateType]));
+    }
   }
 
   @override
   void addWalletCompletedState(int walletId, UpdateElement updateType) {
-    _sendStateUpdateToMain(
-        IsolateStateMessage(IsolateStateMethod.addWalletCompletedState, [walletId, updateType]));
+    final results = _getWalletInfo(walletId);
+    WalletUpdateInfo walletUpdateInfo = results.walletUpdateInfo;
+    bool isChange = results.isChange;
+
+    bool isCounterZero = _walletUpdateCounter[walletId]!.decrementCounter(updateType);
+
+    if (isCounterZero) {
+      // 카운터가 0이면 상태를 completed로 변경
+      if (_updateElementStatus(walletUpdateInfo, updateType, UpdateStatus.completed)) {
+        isChange = true;
+      }
+    }
+
+    _registeredWallets[walletId] = walletUpdateInfo;
+
+    if (isChange) {
+      _sendStateUpdateToMain(
+          IsolateStateMessage(IsolateStateMethod.addWalletCompletedState, [walletId, updateType]));
+    }
   }
 
   @override

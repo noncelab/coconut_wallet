@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/cpfp_info.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
@@ -24,6 +25,7 @@ class TransactionFetcher {
   final UtxoManager _utxoManager;
   final RbfHandler _rbfHandler;
   final CpfpHandler _cpfpHandler;
+  final ScriptCallbackManager _scriptCallbackManager;
 
   TransactionFetcher(
     this._electrumService,
@@ -31,11 +33,12 @@ class TransactionFetcher {
     this._transactionProcessor,
     this._stateManager,
     this._utxoManager,
+    this._scriptCallbackManager,
   )   : _rbfHandler = RbfHandler(_transactionRepository, _utxoManager, _electrumService),
         _cpfpHandler = CpfpHandler(_transactionRepository, _utxoManager, _electrumService);
 
-  /// 특정 스크립트의 트랜잭션을 조회하고 업데이트합니다.
-  Future<void> fetchScriptTransaction(
+  /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
+  Future<List<String>> fetchScriptTransaction(
     WalletListItemBase walletItem,
     ScriptStatus scriptStatus, {
     DateTime? now,
@@ -44,6 +47,9 @@ class TransactionFetcher {
     if (!inBatchProcess) {
       // Transaction 동기화 시작 state 업데이트
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
+
+      // UTXO 동기화가 트랜잭션 동기화에 의존성이 있으므로 Utxo 동기화 상태도 업데이트
+      _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
     }
 
     // db에 저장된 트랜잭션 조회, 네트워크 요청을 줄이기 위함.
@@ -67,12 +73,42 @@ class TransactionFetcher {
     if (txFetchResults.isEmpty) {
       if (!inBatchProcess) {
         _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+        _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
       }
-      return;
+
+      return [];
     }
 
+    /// [ScriptCallbackManager]에서 관리되지 않는 새롭게 처리해야 할 트랜잭션 해시 목록
+    final Set<String> newTxHashes = {};
+
+    for (final txFetchResult in txFetchResults) {
+      bool isConfirmed = txFetchResult.height > 0;
+      // 이미 처리 중인 트랜잭션이지만 타임아웃이 지나지 않은 경우 제외
+      if (_scriptCallbackManager.isTransactionProcessable(
+          txHash: txFetchResult.transactionHash, isConfirmed: isConfirmed)) {
+        _scriptCallbackManager.registerTransactionProcessing(
+          txFetchResult.transactionHash,
+          isConfirmed,
+        );
+        newTxHashes.add(txFetchResult.transactionHash);
+      }
+    }
+
+    // 모든 트랜잭션이 이미 처리 중이라면 종료
+    if (newTxHashes.isEmpty) {
+      if (!inBatchProcess) {
+        _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+      }
+      return txFetchResults.map((tx) => tx.transactionHash).toList();
+    }
+
+    // 새로운 트랜잭션만 처리
+    final filteredTxFetchResults =
+        txFetchResults.where((tx) => newTxHashes.contains(tx.transactionHash)).toList();
+
     // 트랜잭션에 타임스탬프를 기록하기 위해 해당 트랜잭션이 속한 블록 조회
-    final txBlockHeightMap = Map<String, int>.fromEntries(txFetchResults
+    final txBlockHeightMap = Map<String, int>.fromEntries(filteredTxFetchResults
         .where((tx) => tx.height > 0)
         .map((tx) => MapEntry(tx.transactionHash, tx.height)));
 
@@ -81,8 +117,7 @@ class TransactionFetcher {
         : await _electrumService.fetchBlocksByHeight(txBlockHeightMap.values.toSet());
 
     // 트랜잭션 상세 정보 조회
-    final fetchedTransactions =
-        await fetchTransactions(txFetchResults.map((tx) => tx.transactionHash).toSet());
+    final fetchedTransactions = await fetchTransactions(newTxHashes);
 
     // RBF 및 CPFP 감지 결과를 저장할 맵
     Map<String, RbfInfo> sendingRbfInfoMap = {};
@@ -91,6 +126,8 @@ class TransactionFetcher {
 
     // 각 트랜잭션에 대해 사용된 UTXO 상태 업데이트
     for (final fetchedTx in fetchedTransactions) {
+      Logger.log(
+          '-------- fetchScriptTransaction에서 처리중인 트랜잭션: ${fetchedTx.transactionHash} --------');
       // 언컨펌 트랜잭션의 경우 새로 브로드캐스트된 트랜잭션이므로 사용된 UTXO 상태 업데이트
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
         // RBF 및 CPFP 감지
@@ -100,7 +137,6 @@ class TransactionFetcher {
         );
         if (sendingRbfInfo != null) {
           sendingRbfInfoMap[fetchedTx.transactionHash] = sendingRbfInfo;
-          Logger.log('[${walletItem.name}] 보내는 RBF 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
         }
 
         final receivingRbfTxHash = await _rbfHandler.detectReceivingRbfTransaction(
@@ -109,7 +145,6 @@ class TransactionFetcher {
         );
         if (receivingRbfTxHash != null) {
           receivingRbfTxHashSet.add(receivingRbfTxHash);
-          Logger.log('[${walletItem.name}] 받는 RBF 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
         }
 
         final cpfpInfo = await _cpfpHandler.detectCpfpTransaction(
@@ -118,7 +153,6 @@ class TransactionFetcher {
         );
         if (cpfpInfo != null) {
           cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
-          Logger.log('CPFP 트랜잭션 감지됨: ${fetchedTx.transactionHash}');
         }
 
         _utxoManager.updateUtxoStatusToOutgoingByTransaction(walletItem.id, fetchedTx);
@@ -141,7 +175,6 @@ class TransactionFetcher {
       fetchedTransactions,
       txBlockHeightMap,
       blockTimestampMap,
-      getTransactionHex: (txHash) => _electrumService.getTransaction(txHash),
       now: now,
     );
 
@@ -196,6 +229,11 @@ class TransactionFetcher {
       // Transaction 업데이트 완료 state 업데이트
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
     }
+
+    // 트랜잭션 처리 완료 상태 등록
+    _scriptCallbackManager.registerTransactionCompletion(newTxHashes);
+
+    return txFetchResults.map((tx) => tx.transactionHash).toList();
   }
 
   /// 스크립트에 대한 트랜잭션 응답을 가져옵니다.

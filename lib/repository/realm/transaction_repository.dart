@@ -365,9 +365,6 @@ class TransactionRepository extends BaseRepository {
       realm.write(() {
         realm.delete(realmCpfpHistory);
       });
-
-      // 자세한 로깅
-      Logger.log('CPFP 내역 삭제: ${fetchedTx.transactionHash} (컨펌된 트랜잭션)');
     }
   }
 
