@@ -1,8 +1,7 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/button_container.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
-
-import '../../styles.dart';
 
 class ButtonGroup extends StatelessWidget {
   final List<SingleButton> buttons;
@@ -17,10 +16,10 @@ class ButtonGroup extends StatelessWidget {
       buttonListWithDividers.add(buttons[i]);
       if (i < buttons.length - 1) {
         buttonListWithDividers.add(
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: Sizes.size20),
             child: Divider(
-              color: MyColors.transparentWhite_12, // Adjust this color as needed
+              color: CoconutColors.white.withOpacity(0.12),
               height: 1,
             ),
           ),

@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
@@ -64,12 +65,12 @@ class CustomAppBar {
               icon: isBottom
                   ? const Icon(
                       Icons.close_rounded,
-                      color: MyColors.white,
+                      color: CoconutColors.white,
                       size: 22,
                     )
                   : SvgPicture.asset('assets/svg/back.svg',
                       width: 24,
-                      colorFilter: const ColorFilter.mode(MyColors.white, BlendMode.srcIn)),
+                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn)),
               onPressed: () {
                 if (onBackPressed != null) {
                   onBackPressed();
@@ -125,20 +126,20 @@ class CustomAppBar {
         centerTitle: true,
         scrolledUnderElevation: 0,
         backgroundColor: backgroundColor ?? Colors.transparent,
-        titleTextStyle: Styles.navHeader.merge(const TextStyle(color: MyColors.white)),
+        titleTextStyle: Styles.navHeader.merge(const TextStyle(color: CoconutColors.white)),
         toolbarTextStyle: Styles.appbarTitle,
         leading: Navigator.canPop(context)
             ? IconButton(
                 icon: isBottom
                     ? const Icon(
                         Icons.close,
-                        color: MyColors.white,
+                        color: CoconutColors.white,
                         size: 22,
                       )
                     : SvgPicture.asset(
                         'assets/svg/back.svg',
                         colorFilter: const ColorFilter.mode(
-                          MyColors.white,
+                          CoconutColors.white,
                           BlendMode.srcIn,
                         ),
                       ),

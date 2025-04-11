@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -53,7 +54,7 @@ class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
                   onPressed: () => _isCountdownFinished ? Navigator.pop(context) : null,
                   borderRadius: 8,
                   border: _isCountdownFinished
-                      ? Border.all(color: MyColors.white, width: 1)
+                      ? Border.all(color: CoconutColors.white, width: 1)
                       : Border.all(color: MyColors.transparentWhite_50, width: 1),
                   defaultColor: MyColors.nero,
                   pressedColor: _isCountdownFinished ? MyColors.grey : MyColors.nero,
@@ -66,7 +67,7 @@ class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
                           style: Styles.caption.merge(
                             TextStyle(
                               color: _isCountdownFinished
-                                  ? MyColors.white
+                                  ? CoconutColors.white
                                   : MyColors.transparentWhite_50,
                               fontFamily: 'Pretendard',
                             ),
@@ -80,7 +81,7 @@ class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
                                   'assets/svg/status-complete.svg',
                                   width: 16,
                                   colorFilter: const ColorFilter.mode(
-                                    MyColors.primary,
+                                    CoconutColors.primary,
                                     BlendMode.srcIn,
                                   ),
                                 )
@@ -91,7 +92,7 @@ class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
                                     textAlign: TextAlign.center,
                                     style: Styles.caption.merge(
                                       const TextStyle(
-                                        color: MyColors.white,
+                                        color: CoconutColors.white,
                                         fontFamily: 'Pretendard',
                                       ),
                                     ),

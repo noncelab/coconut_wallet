@@ -1,6 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 
 class ShrinkAnimationButton extends StatefulWidget {
   final Widget child;
@@ -18,7 +18,7 @@ class ShrinkAnimationButton extends StatefulWidget {
     required this.onPressed,
     this.pressedColor = CoconutColors.gray900,
     this.defaultColor = CoconutColors.gray800,
-    this.borderRadius = 28.0,
+    this.borderRadius = 24.0,
     this.borderWidth = 2.0,
     this.border,
     this.borderGradientColors,
@@ -86,7 +86,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(widget.borderRadius + 2),
               gradient: widget.borderGradientColors != null
-                  ? BoxDecorations.getMultisigLinearGradient(widget.borderGradientColors!)
+                  ? ColorUtil.getMultisigLinearGradient(widget.borderGradientColors!)
                   : null,
               border: widget.borderGradientColors == null
                   ? Border.all(color: _isPressed ? widget.pressedColor : widget.defaultColor)

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -102,7 +103,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         appBar: CustomAppBar.build(
             title: t.glossary,
             context: context,
@@ -199,13 +200,13 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
                       topLeft: Radius.circular(24), topRight: Radius.circular(24)),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-                    color: MyColors.black,
+                    color: CoconutColors.black,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '${details['content']}',
-                          style: Styles.label.merge(const TextStyle(color: MyColors.white)),
+                          style: Styles.label.merge(const TextStyle(color: CoconutColors.white)),
                         ),
                         const SizedBox(height: 32),
                         Text(

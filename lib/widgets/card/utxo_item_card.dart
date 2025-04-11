@@ -4,7 +4,6 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -21,19 +20,14 @@ class UtxoItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateString = DateTimeUtil.formatTimestamp(utxo.timestamp);
-    const borderRadius = CoconutStyles.radius_300;
 
     return ShrinkAnimationButton(
-      pressedColor: CoconutColors.gray900,
       borderWidth: 0,
-      borderRadius: borderRadius,
       onPressed: () {
         onPressed();
       },
       child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius), color: CoconutColors.gray800),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -64,13 +58,12 @@ class UtxoItemCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         if (utxo.isChange)
-                          CustomChip(
-                            text: t.change,
-                            backgroundColor: CoconutColors.gray500,
-                            borderColor: CoconutColors.gray500,
-                            textStyle:
-                                CoconutTypography.caption_10_Bold.setColor(CoconutColors.black),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          CoconutChip(
+                            color: CoconutColors.gray400,
+                            label: t.change,
+                            labelColor: CoconutColors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            isSelected: true, // label bold 스타일로 보이기 위해 지정
                           ),
                         CoconutLayout.spacing_100w,
                         if (utxo.isPending) _buildPendingStatus(utxo.status),

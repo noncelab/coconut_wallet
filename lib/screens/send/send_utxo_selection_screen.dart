@@ -196,7 +196,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           _moveToSendConfirm();
         },
         confirmButtonText: t.alert.tag_apply.btn_apply,
-        confirmButtonColor: MyColors.primary,
+        confirmButtonColor: CoconutColors.primary,
         cancelButtonText: t.no,
       );
     } else {
@@ -281,7 +281,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         color: errorState == ErrorState.insufficientBalance ||
                                 errorState == ErrorState.insufficientUtxo
                             ? MyColors.warningRed
-                            : MyColors.white),
+                            : CoconutColors.white),
                   ),
                 ),
                 const SizedBox(
@@ -314,7 +314,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                             color: errorState == ErrorState.insufficientBalance ||
                                     errorState == ErrorState.insufficientUtxo
                                 ? MyColors.warningRed
-                                : MyColors.white,
+                                : CoconutColors.white,
                             fontWeight: FontWeight.w700,
                             height: 16.8 / 14)),
                       ),
@@ -475,7 +475,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         child: Opacity(
           opacity: _isStickyHeaderVisible ? 1 : 0,
           child: Container(
-            color: MyColors.black,
+            color: CoconutColors.black,
             padding: const EdgeInsets.symmetric(
               horizontal: 16,
             ),
@@ -485,7 +485,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 _selectedUtxoOrder.text,
                 style: Styles.caption2.merge(
                   const TextStyle(
-                    color: MyColors.white,
+                    color: CoconutColors.white,
                     fontSize: 12,
                   ),
                 ),
@@ -618,7 +618,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               _selectedUtxoOrder.text,
               style: Styles.caption2.merge(
                 const TextStyle(
-                  color: MyColors.white,
+                  color: CoconutColors.white,
                   fontSize: 12,
                 ),
               ),

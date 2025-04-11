@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -88,7 +89,7 @@ class ActionIconButton extends StatelessWidget {
                     textAlign: TextAlign.center,
                     text,
                     style: const TextStyle(
-                      color: MyColors.white,
+                      color: CoconutColors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),

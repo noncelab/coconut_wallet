@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -5,7 +6,6 @@ import 'package:coconut_wallet/providers/view_model/settings/settings_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/button_container.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -32,7 +32,7 @@ class _SettingsScreen extends State<SettingsScreen> {
         },
         child: Consumer<SettingsViewModel>(builder: (context, viewModel, child) {
           return Scaffold(
-              backgroundColor: MyColors.black,
+              backgroundColor: CoconutColors.black,
               appBar: CustomAppBar.build(
                 title: t.settings,
                 context: context,
@@ -50,7 +50,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                   //       title: t.settings_screen.set_password,
                   //       rightElement: CupertinoSwitch(
                   //           value: viewModel.isSetPin,
-                  //           activeColor: MyColors.primary,
+                  //           activeColor: CoconutColors.primary,
                   //           onChanged: (isOn) {
                   //             if (isOn) {
                   //               CommonBottomSheets.showBottomSheet_90<bool>(
@@ -69,7 +69,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                   //       title: t.settings_screen.use_biometric,
                   //       rightElement: CupertinoSwitch(
                   //           value: viewModel.isSetBiometrics,
-                  //           activeColor: MyColors.primary,
+                  //           activeColor: CoconutColors.primary,
                   //           onChanged: (isOn) async {
                   //             if (isOn) {
                   //               viewModel.authenticateWithBiometrics(
@@ -102,7 +102,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                     title: t.settings_screen.hide_balance,
                     rightElement: CupertinoSwitch(
                         value: viewModel.isBalanceHidden,
-                        activeColor: MyColors.primary,
+                        activeColor: CoconutColors.primary,
                         onChanged: (value) {
                           viewModel.changeIsBalanceHidden(value);
                         }),
@@ -114,12 +114,5 @@ class _SettingsScreen extends State<SettingsScreen> {
 
   Widget _category(String label) => Container(
       padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-      child: Text(label,
-          style: const TextStyle(
-            fontFamily: 'Pretendard',
-            color: Colors.white,
-            fontSize: 16,
-            fontStyle: FontStyle.normal,
-            fontWeight: FontWeight.bold,
-          )));
+      child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)));
 }

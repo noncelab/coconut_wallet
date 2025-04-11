@@ -109,7 +109,6 @@ class TransactionItemCard extends StatelessWidget {
           onPressed();
         },
         borderWidth: 0,
-        borderRadius: CoconutStyles.radius_400,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
           child: Column(

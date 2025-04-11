@@ -1,5 +1,6 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
@@ -30,38 +31,27 @@ class MultisigSignerCard extends StatelessWidget {
           // 왼쪽 인덱스 번호
           SizedBox(
             width: 24,
-            child: Text(
-              '${index + 1}',
-              textAlign: TextAlign.center,
-              style: Styles.body2.merge(
-                TextStyle(
-                  fontSize: 16,
-                  fontFamily: CustomFonts.number.getFontFamily,
-                ),
-              ),
-            ),
+            child: Text('${index + 1}',
+                textAlign: TextAlign.center,
+                style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.gray400)),
           ),
-
-          const SizedBox(width: 12), // 간격
-
+          CoconutLayout.spacing_200w,
           // 카드 영역
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: MyColors.black,
-                borderRadius: MyBorder.boxDecorationRadius,
-                border: Border.all(color: MyColors.borderLightgrey),
+                color: CoconutColors.black,
+                borderRadius: BorderRadius.circular(Sizes.size24),
+                border: Border.all(color: CoconutColors.gray700),
               ),
               child: Row(
                 children: [
                   // 아이콘
                   Container(
-                      padding: EdgeInsets.all(isInnerWallet ? 8 : 10),
+                      padding: const EdgeInsets.all(Sizes.size10),
                       decoration: BoxDecoration(
-                        color: isInnerWallet
-                            ? BackgroundColorPalette[colorIndex]
-                            : BackgroundColorPalette[8],
+                        color: ColorUtil.getColor(isInnerWallet ? colorIndex : 8).backgroundColor,
                         borderRadius: BorderRadius.circular(14.0),
                       ),
                       child: SvgPicture.asset(
@@ -69,13 +59,13 @@ class MultisigSignerCard extends StatelessWidget {
                             ? CustomIcons.getPathByIndex(iconIndex)
                             : 'assets/svg/download.svg',
                         colorFilter: ColorFilter.mode(
-                          isInnerWallet ? ColorPalette[colorIndex] : ColorPalette[8],
+                          ColorUtil.getColor(isInnerWallet ? colorIndex : 8)
+                              .color, // index 8 is gray
                           BlendMode.srcIn,
                         ),
-                        width: isInnerWallet ? 20 : 15,
+                        width: isInnerWallet ? 18 : 15,
                       )),
-
-                  const SizedBox(width: 12),
+                  CoconutLayout.spacing_300w,
 
                   // 이름, 메모
                   Expanded(
@@ -84,7 +74,7 @@ class MultisigSignerCard extends StatelessWidget {
                       children: [
                         Text(
                           TextUtils.ellipsisIfLonger(name),
-                          style: Styles.body2,
+                          style: CoconutTypography.body2_14,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -92,7 +82,7 @@ class MultisigSignerCard extends StatelessWidget {
                           visible: memo.isNotEmpty,
                           child: Text(
                             memo,
-                            style: Styles.caption2,
+                            style: CoconutTypography.body2_14.setColor(CoconutColors.white),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -104,7 +94,7 @@ class MultisigSignerCard extends StatelessWidget {
                   // MFP 텍스트
                   Text(
                     masterFingerprint,
-                    style: Styles.mfpH3,
+                    style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                   ),
                 ],
               ),

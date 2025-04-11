@@ -4,7 +4,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
@@ -55,8 +54,7 @@ class WalletInfoItemCard extends StatelessWidget {
           ? BoxDecoration(
               color: CoconutColors.black,
               borderRadius: BorderRadius.circular(26),
-              gradient:
-                  BoxDecorations.getMultisigLinearGradient(ColorUtil.getGradientColors(signers!)),
+              gradient: ColorUtil.getMultisigLinearGradient(ColorUtil.getGradientColors(signers!)),
             )
           : null,
       child: Container(
@@ -78,13 +76,13 @@ class WalletInfoItemCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: ColorUtil.getBackgroundColor(colorIndex),
+                color: ColorUtil.getColor(colorIndex).backgroundColor,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: SvgPicture.asset(
                 CustomIcons.getPathByIndex(iconIndex),
                 colorFilter: ColorFilter.mode(
-                  ColorPalette[colorIndex],
+                  ColorUtil.getColor(colorIndex).color,
                   BlendMode.srcIn,
                 ),
                 width: 24.0,

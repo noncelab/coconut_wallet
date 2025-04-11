@@ -102,7 +102,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       child: Consumer<BroadcastingViewModel>(
         builder: (context, viewModel, child) => Scaffold(
           floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-          backgroundColor: MyColors.black,
+          backgroundColor: CoconutColors.black,
           appBar: CustomAppBar.buildWithNext(
               title: t.broadcasting_screen.title,
               context: context,

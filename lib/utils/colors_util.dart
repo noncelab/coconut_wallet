@@ -1,10 +1,34 @@
-import 'dart:ui';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
 const defaultIconColor = Color.fromRGBO(218, 216, 228, 1);
 const defaultBackgroundColor = Color.fromRGBO(255, 255, 255, 0.1);
+
+const defaultBoxDecoration = BoxDecoration(
+  color: CoconutColors.gray800,
+  borderRadius: BorderRadius.all(Radius.circular(24)),
+);
+
+const defaultCardColor = Color.fromRGBO(255, 255, 255, 0.06);
+
+class ColorSet {
+  final Color color;
+  final Color backgroundColor;
+
+  const ColorSet({
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  ColorSet withOpacity(double opacity) {
+    return ColorSet(
+      color: color,
+      backgroundColor: backgroundColor.withOpacity(opacity),
+    );
+  }
+}
 
 enum CustomColor {
   purple,
@@ -46,11 +70,19 @@ final List<Color> backgroundColorPalette = [
 ];
 
 class ColorUtil {
-  static Color getColor(int index) =>
-      index < 0 || index > 9 ? defaultIconColor : colorPalette[index % colorPalette.length];
-  static Color getBackgroundColor(int index) => index < 0 || index > 9
-      ? defaultBackgroundColor
-      : backgroundColorPalette[index % colorPalette.length];
+  static ColorSet getColor(int index) {
+    if (index < 0 || index >= colorPalette.length) {
+      return const ColorSet(
+        color: defaultIconColor,
+        backgroundColor: defaultBackgroundColor,
+      );
+    }
+
+    return ColorSet(
+      color: colorPalette[index],
+      backgroundColor: backgroundColorPalette[index],
+    );
+  }
 
   static int getIntFromColor(CustomColor color) {
     switch (color) {
@@ -119,5 +151,13 @@ class ColorUtil {
       getColor(list[1]),
       getColor(list[2]),
     ];
+  }
+
+  static LinearGradient getMultisigLinearGradient(List<Color> colors) {
+    return LinearGradient(
+        colors: colors,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        transform: const GradientRotation(math.pi / 10));
   }
 }
