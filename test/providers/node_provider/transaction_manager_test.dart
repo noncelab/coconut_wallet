@@ -3,7 +3,7 @@ import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_handler.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_handler.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_fetcher.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
@@ -44,14 +43,13 @@ void main() {
   late MockElectrumService electrumService;
   late MockNodeStateManager stateManager;
   late MockUtxoManager utxoManager;
-  late UtxoRepository utxoRepository;
   late AddressRepository addressRepository;
   late MockWalletProvider walletProvider;
   late TransactionManager transactionManager;
   late TransactionFetcher transactionFetcher;
   late TransactionProcessor transactionProcessor;
-  late RbfHandler rbfDetector;
-  late CpfpHandler cpfpDetector;
+  late RbfHandler rbfHandler;
+  late ScriptCallbackManager scriptCallbackManager;
 
   const int testWalletId = 1;
   final SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
@@ -59,12 +57,12 @@ void main() {
   setUp(() async {
     realmManager = await setupTestRealmManager();
     transactionRepository = TransactionRepository(realmManager);
-    utxoRepository = UtxoRepository(realmManager);
     addressRepository = AddressRepository(realmManager);
     electrumService = MockElectrumService();
     stateManager = MockNodeStateManager();
     utxoManager = MockUtxoManager();
     walletProvider = MockWalletProvider();
+    scriptCallbackManager = ScriptCallbackManager();
 
     // TransactionManager 생성
     transactionManager = TransactionManager(
@@ -73,6 +71,7 @@ void main() {
       transactionRepository,
       utxoManager,
       addressRepository,
+      scriptCallbackManager,
     );
 
     transactionProcessor = TransactionProcessor(electrumService, addressRepository);
@@ -82,10 +81,10 @@ void main() {
       transactionProcessor,
       stateManager,
       utxoManager,
+      scriptCallbackManager,
     );
 
-    rbfDetector = RbfHandler(transactionRepository, utxoManager, electrumService);
-    cpfpDetector = CpfpHandler(transactionRepository, utxoManager, electrumService);
+    rbfHandler = RbfHandler(transactionRepository, utxoManager, electrumService);
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
@@ -439,7 +438,7 @@ void main() {
       });
 
       // 함수 실행
-      final result = await rbfDetector.detectSendingRbfTransaction(
+      final result = await rbfHandler.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
       );
@@ -453,7 +452,7 @@ void main() {
       _addRbfHistory(realmManager, testWalletId, mockNewTx.transactionHash, mockOriginalTxHash);
 
       // 함수 실행
-      final result = await rbfDetector.detectSendingRbfTransaction(
+      final result = await rbfHandler.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
       );
@@ -485,7 +484,7 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await rbfDetector.detectSendingRbfTransaction(
+      final result = await rbfHandler.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
       );
@@ -526,7 +525,7 @@ void main() {
       _addRbfHistory(realmManager, testWalletId, mockSpentTxHash, mockOriginalTxHash);
 
       // 함수 실행
-      final result = await rbfDetector.detectSendingRbfTransaction(
+      final result = await rbfHandler.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
       );
@@ -571,7 +570,7 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await rbfDetector.detectSendingRbfTransaction(
+      final result = await rbfHandler.detectSendingRbfTransaction(
         testWalletId,
         multiInputTx,
       );
