@@ -1,69 +1,62 @@
 import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 
-import '../styles.dart';
+const defaultIconColor = Color.fromRGBO(218, 216, 228, 1);
+const defaultBackgroundColor = Color.fromRGBO(255, 255, 255, 0.1);
 
-class CustomColorHelper {
-  static Color getColorByEnum(CustomColor color) {
-    switch (color) {
-      case CustomColor.purple:
-        return ColorPalette[0];
-      case CustomColor.apricot:
-        return ColorPalette[1];
-      case CustomColor.yellow:
-        return ColorPalette[2];
-      case CustomColor.green:
-        return ColorPalette[3];
-      case CustomColor.blue:
-        return ColorPalette[4];
-      case CustomColor.pink:
-        return ColorPalette[5];
-      case CustomColor.red:
-        return ColorPalette[6];
-      case CustomColor.orange:
-        return ColorPalette[7];
-      case CustomColor.lightgrey:
-        return ColorPalette[8];
-      case CustomColor.mint:
-        return ColorPalette[9];
-      default:
-        return MyColors.defaultIcon;
-    }
-  }
+enum CustomColor {
+  purple,
+  tangerine,
+  yellow,
+  green,
+  blue,
+  pink,
+  red,
+  orange,
+  lightgrey,
+  mint,
+}
 
-  static Color getBackgroundColorByEnum(CustomColor color) {
-    switch (color) {
-      case CustomColor.purple:
-        return BackgroundColorPalette[0];
-      case CustomColor.apricot:
-        return BackgroundColorPalette[1];
-      case CustomColor.yellow:
-        return BackgroundColorPalette[2];
-      case CustomColor.green:
-        return BackgroundColorPalette[3];
-      case CustomColor.blue:
-        return BackgroundColorPalette[4];
-      case CustomColor.pink:
-        return BackgroundColorPalette[5];
-      case CustomColor.red:
-        return BackgroundColorPalette[6];
-      case CustomColor.orange:
-        return BackgroundColorPalette[7];
-      case CustomColor.lightgrey:
-        return BackgroundColorPalette[8];
-      case CustomColor.mint:
-        return BackgroundColorPalette[9];
-      default:
-        return MyColors.defaultBackground;
-    }
-  }
+const List<Color> colorPalette = [
+  CoconutColors.purple,
+  CoconutColors.tangerine,
+  CoconutColors.yellow,
+  CoconutColors.green,
+  CoconutColors.sky,
+  CoconutColors.pink,
+  CoconutColors.red,
+  CoconutColors.orange,
+  CoconutColors.gray600,
+  CoconutColors.mint,
+];
+
+final List<Color> backgroundColorPalette = [
+  CoconutColors.purple.withOpacity(0.18),
+  CoconutColors.tangerine.withOpacity(0.18),
+  CoconutColors.yellow.withOpacity(0.18),
+  CoconutColors.green.withOpacity(0.18),
+  CoconutColors.sky.withOpacity(0.18),
+  CoconutColors.pink.withOpacity(0.18),
+  CoconutColors.red.withOpacity(0.18),
+  CoconutColors.orange.withOpacity(0.18),
+  CoconutColors.gray600.withOpacity(0.18),
+  CoconutColors.mint.withOpacity(0.18),
+];
+
+class ColorUtil {
+  static Color getColor(int index) =>
+      index < 0 || index > 9 ? defaultIconColor : colorPalette[index % colorPalette.length];
+  static Color getBackgroundColor(int index) => index < 0 || index > 9
+      ? defaultBackgroundColor
+      : backgroundColorPalette[index % colorPalette.length];
 
   static int getIntFromColor(CustomColor color) {
     switch (color) {
       case CustomColor.purple:
         return 0;
-      case CustomColor.apricot:
+      case CustomColor.tangerine:
         return 1;
       case CustomColor.yellow:
         return 2;
@@ -88,29 +81,29 @@ class CustomColorHelper {
 
   static Color getColorByIndex(int index) {
     if (index < 0 || index > 9) {
-      return MyColors.defaultIcon;
+      return defaultIconColor;
     }
 
-    return ColorPalette[index % ColorPalette.length];
+    return colorPalette[index % colorPalette.length];
   }
 
   static Color getBackgroundColorByIndex(int index) {
     if (index < 0 || index > 9) {
-      return MyColors.defaultBackground;
+      return defaultBackgroundColor;
     }
 
-    return BackgroundColorPalette[index % ColorPalette.length];
+    return backgroundColorPalette[index % colorPalette.length];
   }
 
   static List<Color> getGradientColors(List<MultisigSigner> list) {
     if (list.isEmpty) {
-      return [MyColors.borderLightgrey];
+      return [CoconutColors.gray300];
     }
 
     Color getColor(MultisigSigner item) {
       return item.innerVaultId != null
-          ? CustomColorHelper.getColorByIndex(item.colorIndex ?? 0)
-          : MyColors.borderLightgrey;
+          ? ColorUtil.getColorByIndex(item.colorIndex ?? 0)
+          : CoconutColors.gray300;
     }
 
     // 2개인 경우
@@ -127,17 +120,4 @@ class CustomColorHelper {
       getColor(list[2]),
     ];
   }
-}
-
-enum CustomColor {
-  purple,
-  apricot,
-  yellow,
-  green,
-  blue,
-  pink,
-  red,
-  orange,
-  lightgrey,
-  mint,
 }

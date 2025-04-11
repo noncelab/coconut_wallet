@@ -1,11 +1,11 @@
 import 'dart:async';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,7 +25,7 @@ class _StartScreenState extends State<StartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         body: Center(
           child: Image.asset(
             'assets/images/splash_logo.png',
@@ -71,7 +71,7 @@ class _StartScreenState extends State<StartScreen> {
             return false;
           },
           confirmButtonText: t.alert.update.btn_update,
-          confirmButtonColor: MyColors.primary,
+          confirmButtonColor: CoconutColors.primary,
           cancelButtonText: t.alert.update.btn_do_later,
         )) ??
         false;

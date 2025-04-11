@@ -5,8 +5,6 @@ import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/widgets/label_testnet.dart';
 
 class CustomAppBar {
@@ -19,7 +17,6 @@ class CustomAppBar {
     VoidCallback? onFaucetIconPressed,
     VoidCallback? onTitlePressed,
     Color? backgroundColor,
-    bool hasWalletIcon = false,
     IconButton? rightIconButton,
     bool isBottom = false,
     VoidCallback? onBackPressed,
@@ -52,23 +49,6 @@ class CustomAppBar {
               ),
       ],
     );
-
-    // 현재 사용하지 않고 있음
-    if (hasWalletIcon) {
-      int colorIndex = CustomColorHelper.getIntFromColor(CustomColor.apricot);
-      widget = Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(
-            padding: const EdgeInsets.all(8),
-            margin: const EdgeInsets.only(right: 6),
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12), color: BackgroundColorPalette[colorIndex]),
-            // ignore: deprecated_member_use
-            child: SvgPicture.asset(CustomIcons.carrot,
-                colorFilter: ColorFilter.mode(ColorPalette[colorIndex], BlendMode.srcIn),
-                width: 16)),
-        Text(title)
-      ]);
-    }
 
     return AppBar(
       key: entireWidgetKey,

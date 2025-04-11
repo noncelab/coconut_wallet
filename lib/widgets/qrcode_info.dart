@@ -1,15 +1,14 @@
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:coconut_wallet/widgets/button/small_action_button.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/services.dart';
 
-import '../styles.dart';
 import '../utils/toast.dart';
 
 class QRCodeInfo extends StatefulWidget {
@@ -35,7 +34,7 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
           children: [
             if (widget.qrcodeTopWidget != null) ...[
               widget.qrcodeTopWidget!,
-              const SizedBox(height: 25)
+              CoconutLayout.spacing_400h,
             ],
             Stack(
               children: [
@@ -43,8 +42,8 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
                   width: qrSize,
                   height: qrSize,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+                    color: CoconutColors.white,
                   ),
                 ),
                 QrImageView(
@@ -54,42 +53,37 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
-            Text(widget.qrData,
-                style: Styles.body1.merge(const TextStyle(fontFamily: 'SpaceGrotesk')),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            SmallActionButton(
-              text: t.copy,
-              onPressed: () async {
-                Clipboard.setData(ClipboardData(text: widget.qrData)).then((value) => null);
-                if (Platform.isAndroid) {
-                  try {
-                    final int version = await _channel.invokeMethod('getSdkVersion');
+            CoconutLayout.spacing_600h,
+            GestureDetector(
+                onTap: () async {
+                  Clipboard.setData(ClipboardData(text: widget.qrData)).then((value) => null);
+                  if (Platform.isAndroid) {
+                    try {
+                      final int version = await _channel.invokeMethod('getSdkVersion');
 
-                    // 안드로이드13 부터는 클립보드 복사 메세지가 나오기 때문에 예외 적용
-                    if (version > 31) {
-                      return;
+                      // 안드로이드13 부터는 클립보드 복사 메세지가 나오기 때문에 예외 적용
+                      if (version > 31) {
+                        return;
+                      }
+                    } on PlatformException catch (e) {
+                      Logger.log("Failed to get platform version: '${e.message}'.");
                     }
-                  } on PlatformException catch (e) {
-                    Logger.log("Failed to get platform version: '${e.message}'.");
                   }
-                }
 
-                FToast fToast = FToast();
+                  FToast fToast = FToast();
 
-                if (!context.mounted) return;
+                  if (!context.mounted) return;
 
-                fToast.init(context);
-                final toast = MyToast.getToastWidget(t.copied);
-                fToast.showToast(
-                    child: toast,
-                    gravity: ToastGravity.BOTTOM,
-                    toastDuration: const Duration(seconds: 2));
-              },
-              height: 38,
-              width: 97,
-            )
+                  fToast.init(context);
+                  final toast = MyToast.getToastWidget(t.copied);
+                  fToast.showToast(
+                      child: toast,
+                      gravity: ToastGravity.BOTTOM,
+                      toastDuration: const Duration(seconds: 2));
+                },
+                child: Text(widget.qrData,
+                    style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
+                    textAlign: TextAlign.center)),
           ],
         ));
   }

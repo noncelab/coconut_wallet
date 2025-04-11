@@ -1,4 +1,6 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -45,16 +47,16 @@ class WalletInfoItemCard extends StatelessWidget {
       colorIndex = walletItem.colorIndex;
       iconIndex = walletItem.iconIndex;
       rightText = singlesigWallet.keyStore.masterFingerprint;
-      tooltipText = '지갑 ID';
+      tooltipText = t.wallet_id;
     }
 
     return Container(
       decoration: isMultisig
           ? BoxDecoration(
-              color: MyColors.black,
-              borderRadius: MyBorder.boxDecorationRadius,
-              gradient: BoxDecorations.getMultisigLinearGradient(
-                  CustomColorHelper.getGradientColors(signers!)),
+              color: CoconutColors.black,
+              borderRadius: BorderRadius.circular(26),
+              gradient:
+                  BoxDecorations.getMultisigLinearGradient(ColorUtil.getGradientColors(signers!)),
             )
           : null,
       child: Container(
@@ -62,12 +64,12 @@ class WalletInfoItemCard extends StatelessWidget {
         padding: isMultisig ? const EdgeInsets.all(20) : const EdgeInsets.all(24),
         decoration: isMultisig
             ? BoxDecoration(
-                color: MyColors.black,
+                color: CoconutColors.black,
                 borderRadius: BorderRadius.circular(26), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
               )
             : BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: MyColors.borderLightgrey, width: 1),
+                border: Border.all(color: CoconutColors.gray700, width: 1),
               ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -76,7 +78,7 @@ class WalletInfoItemCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: BackgroundColorPalette[colorIndex],
+                color: ColorUtil.getBackgroundColor(colorIndex),
                 borderRadius: BorderRadius.circular(18),
               ),
               child: SvgPicture.asset(
@@ -88,19 +90,17 @@ class WalletInfoItemCard extends StatelessWidget {
                 width: 24.0,
               ),
             ),
-            const SizedBox(width: 8.0),
+            CoconutLayout.spacing_200w,
             // 이름
             Expanded(
               child: Text(
                 walletItem.name,
-                style: Styles.h3,
+                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(
-              width: 8,
-            ),
+            CoconutLayout.spacing_200w,
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -108,7 +108,7 @@ class WalletInfoItemCard extends StatelessWidget {
                 if (rightText.isNotEmpty)
                   Text(
                     rightText,
-                    style: Styles.h3.merge(TextStyle(fontFamily: CustomFonts.number.getFontFamily)),
+                    style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
                   ),
                 TooltipButton(
                   isSelected: false,

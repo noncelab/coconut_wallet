@@ -41,7 +41,7 @@ class WalletItemCard extends StatelessWidget {
             Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id});
           },
           borderGradientColors:
-              signers?.isNotEmpty == true ? CustomColorHelper.getGradientColors(signers!) : null,
+              signers?.isNotEmpty == true ? ColorUtil.getGradientColors(signers!) : null,
           child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
               decoration: BoxDecoration(

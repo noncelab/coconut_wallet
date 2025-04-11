@@ -3,7 +3,6 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -29,150 +28,75 @@ class TransactionItemCard extends StatelessWidget {
     status = TransactionUtil.getStatus(tx);
   }
 
-  // @override
-  // State<TransactionItemCard> createState() => _TransactionItemCardState();
-
-  Widget _getStatusWidget() {
-    TextStyle fontStyle = Styles.body2.merge(
-      const TextStyle(
-        fontWeight: FontWeight.w500,
-        height: 21 / 14,
-      ),
-    );
+  Widget _buildStatus() {
     switch (status) {
       case TransactionStatus.received:
-        return Row(
-          children: [
-            SvgPicture.asset(
-              'assets/svg/tx-received.svg',
-              width: 28,
-              height: 28,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              t.status_received,
-              style: fontStyle,
-            )
-          ],
-        );
+        return _buildIconStatus('assets/svg/tx-received.svg', t.status_received);
       case TransactionStatus.receiving:
-        return Row(
-          children: [
-            SvgPicture.asset(
-              'assets/svg/tx-receiving.svg',
-              width: 28,
-              height: 28,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              t.status_receiving,
-              style: fontStyle,
-            )
-          ],
-        );
+        return _buildIconStatus('assets/svg/tx-receiving.svg', t.status_receiving);
       case TransactionStatus.sent:
-        return Row(
-          children: [
-            SvgPicture.asset(
-              'assets/svg/tx-sent.svg',
-              width: 28,
-              height: 28,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              t.status_sent,
-              style: fontStyle,
-            )
-          ],
-        );
+        return _buildIconStatus('assets/svg/tx-sent.svg', t.status_sent);
       case TransactionStatus.sending:
-        return Row(
-          children: [
-            SvgPicture.asset(
-              'assets/svg/tx-sending.svg',
-              width: 28,
-              height: 28,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              t.status_sending,
-              style: fontStyle,
-            )
-          ],
-        );
+        return _buildIconStatus('assets/svg/tx-sending.svg', t.status_sending);
       case TransactionStatus.self:
-        return Row(
-          children: [
-            SvgPicture.asset(
-              'assets/svg/tx-self.svg',
-              width: 28,
-              height: 28,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              t.status_sent,
-              style: fontStyle,
-            )
-          ],
-        );
+        return _buildIconStatus('assets/svg/tx-self.svg', t.status_sent);
       case TransactionStatus.selfsending:
-        return Row(
-          children: [
-            SvgPicture.asset(
-              'assets/svg/tx-self-sending.svg',
-              width: 28,
-              height: 28,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              t.status_sending,
-              style: fontStyle,
-            )
-          ],
-        );
+        return _buildIconStatus('assets/svg/tx-self-sending.svg', t.status_sending);
       default:
-        throw "[_TransactionRowItem] status: $status";
+        return const SizedBox.shrink(); // fallback
     }
   }
 
-  Widget _getAmountWidget() {
-    switch (status) {
-      case TransactionStatus.receiving:
-      case TransactionStatus.received:
-        return Text(
-          currentUnit == Unit.btc
-              ? '+${satoshiToBitcoinString(tx.amount)}'
-              : '+${addCommasToIntegerPart(tx.amount.toDouble())}',
-          style: Styles.body1Number.merge(
-            const TextStyle(
-              color: MyColors.white,
-              fontWeight: FontWeight.w400,
-              height: 24 / 16,
-            ),
-          ),
-        );
-      case TransactionStatus.self:
-      case TransactionStatus.selfsending:
-      case TransactionStatus.sent:
-      case TransactionStatus.sending:
-        return Text(
-          currentUnit == Unit.btc
-              ? satoshiToBitcoinString(tx.amount)
-              : addCommasToIntegerPart(tx.amount.toDouble()),
-          style: Styles.body1Number.merge(
-            const TextStyle(
-              color: MyColors.white,
-              fontWeight: FontWeight.w400,
-              height: 24 / 16,
-            ),
-          ),
-        );
-      default:
-        // 기본 값으로 처리될 수 있도록 한 경우
-        return SizedBox(
-          child: Text(t.no_status),
-        );
-    }
+  Widget _buildIconStatus(String assetPath, String statusString) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SvgPicture.asset(
+          assetPath,
+          width: 24,
+          height: 24,
+        ),
+        CoconutLayout.spacing_200w,
+        Text(
+          statusString,
+          style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+        )
+      ],
+    );
+  }
+
+  Widget _buildAmount() {
+    final String amountString = currentUnit == Unit.btc
+        ? satoshiToBitcoinString(tx.amount)
+        : addCommasToIntegerPart(tx.amount.toDouble());
+    final bool isReceived =
+        status == TransactionStatus.received || status == TransactionStatus.receiving;
+    final String prefix = isReceived ? '+' : '';
+
+    return Text('$prefix$amountString',
+        style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white));
+  }
+
+  Widget _buildTimestamp(List<String> transactionTimeStamp) {
+    final textStyle = CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400);
+    return Row(
+      children: [
+        Text(
+          transactionTimeStamp[0],
+          style: textStyle,
+        ),
+        CoconutLayout.spacing_200w,
+        Text(
+          '|',
+          style: textStyle,
+        ),
+        CoconutLayout.spacing_200w,
+        Text(
+          transactionTimeStamp[1],
+          style: textStyle,
+        ),
+      ],
+    );
   }
 
   @override
@@ -185,44 +109,19 @@ class TransactionItemCard extends StatelessWidget {
           onPressed();
         },
         borderWidth: 0,
-        borderRadius: MyBorder.defaultRadiusValue,
+        borderRadius: CoconutStyles.radius_400,
         child: Container(
-          height: 84,
-          padding: Paddings.widgetContainer,
-          decoration: BoxDecoration(
-            borderRadius: MyBorder.defaultRadius,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Text(
-                    transactionTimeStamp[0],
-                    style: Styles.caption,
-                  ),
-                  CoconutLayout.spacing_200w,
-                  Text(
-                    '|',
-                    style: Styles.caption.merge(
-                      const TextStyle(
-                        color: MyColors.transparentWhite_40,
-                      ),
-                    ),
-                  ),
-                  CoconutLayout.spacing_200w,
-                  Text(
-                    transactionTimeStamp[1],
-                    style: Styles.caption,
-                  ),
-                ],
-              ),
-              CoconutLayout.spacing_100h,
+              _buildTimestamp(transactionTimeStamp),
+              CoconutLayout.spacing_200h,
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: [_getStatusWidget(), _getAmountWidget()],
+                children: [_buildStatus(), _buildAmount()],
               )
             ],
           ),

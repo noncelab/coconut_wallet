@@ -1,8 +1,8 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 
@@ -17,6 +17,8 @@ class LicenseBottomSheet extends StatefulWidget {
 
 class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
   late List<bool> licenseExplanationVisible = List.filled(dependencies.length, false);
+  final defaultTextStyle = CoconutTypography.body2_14;
+
   String? identifyLicense(String licenseText) {
     final Map<String, String> licenseKeywords = {
       'MIT License': 'Permission is hereby granted,',
@@ -39,12 +41,29 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
     return null;
   }
 
+  TextSpan linkSpan({
+    required String text,
+    required String url,
+  }) {
+    return TextSpan(
+      text: text,
+      style: defaultTextStyle.copyWith(
+        color: CoconutColors.sky,
+        decoration: TextDecoration.underline,
+      ),
+      recognizer: TapGestureRecognizer()
+        ..onTap = () async {
+          launchURL(url);
+        },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: MyBorder.defaultRadius,
+      borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
       child: Scaffold(
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         appBar: CustomAppBar.build(
           title: t.license_bottom_sheet.title,
           context: context,
@@ -58,34 +77,9 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
             itemCount: dependencies.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
-                const String mitFullTextLink = 'https://mit-license.org';
-
                 return Column(
                   children: [
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    Container(
-                      width: MediaQuery.of(context).size.width,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 10,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: MyColors.transparentWhite_90,
-                      ),
-                      child: Text(
-                        t.license_bottom_sheet.coconut_wallet,
-                        style: Styles.body2Bold.merge(
-                          const TextStyle(
-                            color: MyColors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
+                    CoconutLayout.spacing_600h,
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -93,37 +87,21 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                       child: RichText(
                         text: TextSpan(
                           text: t.license_bottom_sheet.copyright_text1,
-                          style: Styles.caption,
+                          style: defaultTextStyle,
                           children: <TextSpan>[
-                            TextSpan(
-                                text: mitFullTextLink, // 색상을 다르게 할 텍스트
-                                style: Styles.caption.merge(
-                                  const TextStyle(
-                                    color: MyColors.oceanBlue,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () async {
-                                    launchURL(mitFullTextLink);
-                                  }),
+                            linkSpan(
+                              text: MIT_LICENSE_URL,
+                              url: MIT_LICENSE_URL,
+                            ),
                             TextSpan(text: t.license_bottom_sheet.copyright_text2),
-                            TextSpan(
-                                text: CONTACT_EMAIL_ADDRESS, // 색상을 다르게 할 텍스트
-                                style: Styles.caption.merge(
-                                  const TextStyle(
-                                    color: MyColors.oceanBlue,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () async {
-                                    launchURL(
-                                        'mailto:$CONTACT_EMAIL_ADDRESS?subject=${t.license_bottom_sheet.email_subject}');
-                                  }),
+                            linkSpan(
+                              text: CONTACT_EMAIL_ADDRESS,
+                              url:
+                                  'mailto:$CONTACT_EMAIL_ADDRESS?subject=${t.license_bottom_sheet.email_subject}',
+                            ),
                             TextSpan(
                               text: t.license_bottom_sheet.copyright_text3,
-                              style: Styles.caption,
+                              style: defaultTextStyle,
                             ),
                           ],
                         ),
@@ -177,27 +155,14 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                           children: [
                             Text(
                               licenseName,
-                              style: Styles.body1Bold,
+                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
                             ),
                             if (copyRight.isNotEmpty)
-                              Text(
-                                copyRight,
-                                style: Styles.body2Grey.merge(
-                                  const TextStyle(
-                                    fontSize: 12.0,
-                                  ),
-                                ),
-                              ),
+                              Text(copyRight, style: CoconutTypography.body3_12),
                             SizedBox(
                               width: MediaQuery.of(context).size.width,
-                              child: Text(
-                                licenseClass ?? 'Unknown License',
-                                style: Styles.body2.merge(
-                                  const TextStyle(
-                                    fontSize: 12.0,
-                                  ),
-                                ),
-                              ),
+                              child: Text(licenseClass ?? 'Unknown License',
+                                  style: CoconutTypography.body3_12),
                             ),
                             if (licenseExplanationVisible[index - 1])
                               Container(
@@ -206,7 +171,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                                 ),
                                 height: 200,
                                 decoration: BoxDecoration(
-                                  border: Border.all(width: 1, color: MyColors.transparentWhite_70),
+                                  border: Border.all(width: 1, color: CoconutColors.gray700),
                                 ),
                                 child: SingleChildScrollView(
                                   padding: const EdgeInsets.symmetric(
@@ -215,7 +180,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                                   child: Text(
                                     license.license!,
                                     style: const TextStyle(
-                                      color: MyColors.transparentWhite_70,
+                                      color: CoconutColors.gray700,
                                     ),
                                   ),
                                 ),

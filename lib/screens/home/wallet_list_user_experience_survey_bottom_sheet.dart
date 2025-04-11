@@ -1,8 +1,8 @@
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 
 // Usage
 // wallet_list_screen.dart
@@ -32,11 +32,11 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(
                     Icons.close,
-                    color: MyColors.white,
+                    color: CoconutColors.white,
                     size: 22,
                   ),
                 )),
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         body: SafeArea(
           child: Center(
             child: Column(
@@ -50,11 +50,11 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                 if (isFirst)
                   Text(
                     t.user_experience_survey_bottom_sheet.text1,
-                    style: Styles.h3,
+                    style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
                   ),
                 Text(
                   t.user_experience_survey_bottom_sheet.text2,
-                  style: Styles.h3,
+                  style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
                 ),
                 const SizedBox(
                   height: 80,
@@ -65,11 +65,10 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14), color: MyColors.primary),
+                          borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text3,
-                        style: Styles.label.merge(
-                            const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
+                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray700),
                         textAlign: TextAlign.center,
                       )),
                 ),
@@ -85,11 +84,10 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
-                          color: MyColors.transparentWhite_15),
+                          color: CoconutColors.white.withOpacity(0.5)),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text4,
-                        style: Styles.label.merge(
-                            const TextStyle(color: MyColors.white, fontWeight: FontWeight.bold)),
+                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
                         textAlign: TextAlign.center,
                       )),
                 ),
