@@ -23,8 +23,7 @@ class NodeStateManager implements StateManagerInterface {
   /// [newConnectionState] 노드 상태
   /// [newUpdatedWallets] 지갑 업데이트 정보
   /// [notify] 상태 변경 시 리스너에게 알림 여부 (default: true)
-  @override
-  void setState({
+  void _setState({
     MainClientState? newConnectionState,
     Map<int, WalletUpdateInfo>? newUpdatedWallets,
     bool notify = true,
@@ -82,7 +81,7 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void initWalletUpdateStatus(int walletId) {
-    setState(
+    _setState(
       newUpdatedWallets: {
         ..._state.registeredWallets,
         walletId: WalletUpdateInfo(walletId),
@@ -118,7 +117,7 @@ class NodeStateManager implements StateManagerInterface {
     }
 
     // 상태 업데이트
-    setState(
+    _setState(
       newConnectionState: MainClientState.syncing,
       newUpdatedWallets: {
         ..._state.registeredWallets,
@@ -139,6 +138,7 @@ class NodeStateManager implements StateManagerInterface {
     }
 
     WalletUpdateInfo walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
+    MainClientState? newConnectionState;
 
     // 카운터 감소 및 상태 업데이트
     switch (updateType) {
@@ -153,46 +153,58 @@ class NodeStateManager implements StateManagerInterface {
         break;
     }
 
-    setState(
-      newUpdatedWallets: {
-        ..._state.registeredWallets,
-        walletId: walletUpdateInfo,
-      },
+    final Map<int, WalletUpdateInfo> newUpdatedWallets = {
+      ..._state.registeredWallets,
+      walletId: walletUpdateInfo,
+    };
+
+    if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
+      newConnectionState = MainClientState.waiting;
+    }
+
+    _setState(
+      newConnectionState: newConnectionState,
+      newUpdatedWallets: newUpdatedWallets,
     );
   }
 
   @override
   void addWalletCompletedAllStates(int walletId) {
     final existingInfo = _state.registeredWallets[walletId];
+    MainClientState? newConnectionState;
+    WalletUpdateInfo updateInfo;
 
     // 기존 정보가 없으면 새 정보 생성
     if (existingInfo == null) {
-      final updateInfo = WalletUpdateInfo(
+      updateInfo = WalletUpdateInfo(
         walletId,
         balance: UpdateStatus.completed,
         transaction: UpdateStatus.completed,
         utxo: UpdateStatus.completed,
       );
-
-      setState(newUpdatedWallets: {
-        ..._state.registeredWallets,
-        walletId: updateInfo,
-      });
-      return;
+    } else {
+      // 기존 정보가 있는 경우 모든 카운터를 0으로 설정하고 상태를 완료로 변경
+      updateInfo = WalletUpdateInfo.fromExisting(
+        existingInfo,
+        balance: UpdateStatus.completed,
+        transaction: UpdateStatus.completed,
+        utxo: UpdateStatus.completed,
+      );
     }
 
-    // 기존 정보가 있는 경우 모든 카운터를 0으로 설정하고 상태를 완료로 변경
-    final updateInfo = WalletUpdateInfo.fromExisting(
-      existingInfo,
-      balance: UpdateStatus.completed,
-      transaction: UpdateStatus.completed,
-      utxo: UpdateStatus.completed,
-    );
-
-    setState(newUpdatedWallets: {
+    final Map<int, WalletUpdateInfo> newUpdatedWallets = {
       ..._state.registeredWallets,
       walletId: updateInfo,
-    });
+    };
+
+    if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
+      newConnectionState = MainClientState.waiting;
+    }
+
+    _setState(
+      newConnectionState: newConnectionState,
+      newUpdatedWallets: newUpdatedWallets,
+    );
   }
 
   void handleIsolateStateMessage(IsolateStateMessage message) {
@@ -213,12 +225,11 @@ class NodeStateManager implements StateManagerInterface {
         case IsolateStateMethod.addWalletCompletedAllStates:
           addWalletCompletedAllStates(params[0]);
           break;
-        case IsolateStateMethod.setState:
-          setState(
-            newConnectionState: params[0],
-            newUpdatedWallets: params[1],
-            notify: params.length > 2 ? params[2] : true,
-          );
+        case IsolateStateMethod.setMainClientSyncingState:
+          setMainClientSyncingState();
+          break;
+        case IsolateStateMethod.setMainClientWaitingState:
+          setMainClientWaitingState();
           break;
       }
     } catch (e) {
@@ -230,9 +241,46 @@ class NodeStateManager implements StateManagerInterface {
     final updatedWallets = Map<int, WalletUpdateInfo>.from(_state.registeredWallets);
     updatedWallets.remove(walletId);
 
-    setState(
+    _setState(
       newUpdatedWallets: updatedWallets,
       notify: true,
     );
+  }
+
+  @override
+  void setMainClientSyncingState() {
+    _setState(
+      newConnectionState: MainClientState.syncing,
+      newUpdatedWallets: null,
+      notify: true,
+    );
+  }
+
+  @override
+  void setMainClientWaitingState() {
+    // 등록된 지갑 중 하나라도 syncing 상태인지 확인
+    if (!isAllWalletsCompleted()) {
+      Logger.log('=================아직 동기화 중인 지갑이 있습니다. =================');
+      return;
+    }
+
+    _setState(
+      newConnectionState: MainClientState.waiting,
+      newUpdatedWallets: null,
+      notify: true,
+    );
+  }
+
+  bool isAllWalletsCompleted({Map<int, WalletUpdateInfo>? updatedWallets}) {
+    final registeredWallets = updatedWallets ?? _state.registeredWallets;
+
+    for (final walletInfo in registeredWallets.values) {
+      if (walletInfo.balance != UpdateStatus.completed ||
+          walletInfo.transaction != UpdateStatus.completed ||
+          walletInfo.utxo != UpdateStatus.completed) {
+        return false;
+      }
+    }
+    return true;
   }
 }

@@ -1,5 +1,4 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 
 /// 상태 관리자 인터페이스
 abstract class StateManagerInterface {
@@ -15,10 +14,9 @@ abstract class StateManagerInterface {
   /// 지갑의 모든 상태 완료 처리
   void addWalletCompletedAllStates(int walletId);
 
-  /// 노드 상태 업데이트
-  void setState({
-    MainClientState? newConnectionState,
-    Map<int, WalletUpdateInfo>? newUpdatedWallets,
-    bool notify = true,
-  });
+  /// 노드 상태를 syncing으로 변경
+  void setMainClientSyncingState();
+
+  /// 노드 상태를 waiting으로 변경
+  void setMainClientWaitingState();
 }
