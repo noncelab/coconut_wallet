@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
@@ -31,7 +32,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
       child: Scaffold(
         appBar: CustomAppBar.build(
             context: context, title: '', hasRightIcon: false, showTestnetLabel: false),
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         body: SafeArea(
           child: Center(
             child: Column(
@@ -40,7 +41,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
               children: [
                 Text(
                   t.negative_feedback_screen.text1,
-                  style: Styles.h2.merge(const TextStyle(color: MyColors.white)),
+                  style: Styles.h2.merge(const TextStyle(color: CoconutColors.white)),
                 ),
                 const SizedBox(
                   height: 20,
@@ -58,7 +59,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14), color: MyColors.primary),
+                          borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
                       child: Text(
                         t.negative_feedback_screen.text3,
                         style: Styles.label.merge(
@@ -79,8 +80,8 @@ class NegativeFeedbackScreen extends StatelessWidget {
                           color: MyColors.transparentWhite_15),
                       child: Text(
                         t.negative_feedback_screen.text4,
-                        style: Styles.label.merge(
-                            const TextStyle(color: MyColors.white, fontWeight: FontWeight.bold)),
+                        style: Styles.label.merge(const TextStyle(
+                            color: CoconutColors.white, fontWeight: FontWeight.bold)),
                         textAlign: TextAlign.center,
                       )),
                 ),

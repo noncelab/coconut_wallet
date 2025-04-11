@@ -423,6 +423,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   void _setSendType(TransactionStatus? status) {
     _isSendType = status == TransactionStatus.sending ||
         status == TransactionStatus.selfsending ||
+        status == TransactionStatus.self ||
         status == TransactionStatus.sent;
   }
 }

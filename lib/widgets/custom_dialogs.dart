@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -10,7 +11,7 @@ class CustomDialogs {
       VoidCallback? onCancel,
       String confirmButtonText = '확인',
       String cancelButtonText = '취소',
-      Color confirmButtonColor = MyColors.white}) {
+      Color confirmButtonColor = CoconutColors.white}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -47,7 +48,7 @@ class CustomDialogs {
       required bool Function() onCancel,
       String confirmButtonText = '확인',
       String cancelButtonText = '취소',
-      Color confirmButtonColor = MyColors.white}) {
+      Color confirmButtonColor = CoconutColors.white}) {
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -92,13 +93,13 @@ class CustomDialogs {
             appBar: AppBar(
                 title: Text(title),
                 centerTitle: true,
-                backgroundColor: MyColors.black,
+                backgroundColor: CoconutColors.black,
                 titleTextStyle:
                     Styles.h3.merge(const TextStyle(fontSize: 16, fontWeight: FontWeight.w400)),
                 toolbarTextStyle: Styles.h3,
                 actions: [
                   IconButton(
-                    color: MyColors.white,
+                    color: CoconutColors.white,
                     focusColor: MyColors.transparentGrey,
                     icon: const Icon(CupertinoIcons.xmark, size: 18),
                     onPressed: () {
@@ -112,7 +113,7 @@ class CustomDialogs {
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.height,
                 padding: Paddings.container,
-                color: MyColors.black,
+                color: CoconutColors.black,
                 child: Column(
                   children: [body],
                 ),

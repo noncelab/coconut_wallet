@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ class SendAddressBody extends StatelessWidget {
       key: qrKey,
       onQRViewCreated: onQRViewCreated,
       overlay: QrScannerOverlayShape(
-          borderColor: MyColors.white,
+          borderColor: CoconutColors.white,
           borderRadius: 8,
           borderLength:
               (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
@@ -55,7 +56,7 @@ class SendAddressBody extends StatelessWidget {
               child: Text(
                 pasteAddress != null ? t.send_address_screen.text1 : t.send_address_screen.text2,
                 textAlign: TextAlign.center,
-                style: Styles.label.merge(const TextStyle(color: MyColors.white)),
+                style: Styles.label.merge(const TextStyle(color: CoconutColors.white)),
               ))),
       if (pasteAddress != null)
         Align(
@@ -65,9 +66,9 @@ class SendAddressBody extends StatelessWidget {
                 child: TextButton(
                     onPressed: pasteAddress,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: address != null ? MyColors.darkgrey : MyColors.white,
+                      foregroundColor: address != null ? MyColors.darkgrey : CoconutColors.white,
                       backgroundColor:
-                          address != null ? MyColors.white : MyColors.transparentBlack_50,
+                          address != null ? CoconutColors.white : MyColors.transparentBlack_50,
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(

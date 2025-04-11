@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 
@@ -26,8 +27,9 @@ class CustomAppbarButton extends StatelessWidget {
           border: Border.all(
             color: isActive ? Colors.transparent : MyColors.transparentWhite_20,
           ),
-          color:
-              isActive ? (isActivePrimaryColor ? MyColors.primary : MyColors.white) : MyColors.grey,
+          color: isActive
+              ? (isActivePrimaryColor ? CoconutColors.primary : CoconutColors.white)
+              : MyColors.grey,
         ),
         child: Center(
           child: Text(

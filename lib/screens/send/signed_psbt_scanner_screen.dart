@@ -6,7 +6,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_scanner.dart';
@@ -39,12 +38,12 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         controller = null;
       },
       child: Scaffold(
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         appBar: CustomAppBar.build(
           title: t.signed_psbt_scanner_screen.title,
           context: context,
           hasRightIcon: false,
-          backgroundColor: MyColors.black.withOpacity(0.95),
+          backgroundColor: CoconutColors.black.withOpacity(0.95),
         ),
         body: Stack(children: [
           AnimatedQrScanner(
@@ -59,7 +58,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
                   top: 20, left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),
               child: CoconutToolTip(
                 tooltipType: CoconutTooltipType.fixed,
-                baseBackgroundColor: MyColors.white.withOpacity(0.9),
+                baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
                 richText: RichText(
                   text: TextSpan(
                     text: '[5] ',
@@ -69,7 +68,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
                       fontSize: 15,
                       height: 1.4,
                       letterSpacing: 0.5,
-                      color: MyColors.black,
+                      color: CoconutColors.black,
                     ),
                     children: [
                       TextSpan(

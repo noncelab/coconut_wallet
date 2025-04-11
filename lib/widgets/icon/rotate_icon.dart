@@ -1,6 +1,6 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:coconut_wallet/styles.dart';
 
 class RotateIcon extends StatefulWidget {
   final String iconPath;
@@ -10,7 +10,7 @@ class RotateIcon extends StatefulWidget {
   const RotateIcon({
     super.key,
     required this.iconPath,
-    this.iconColor = MyColors.primary,
+    this.iconColor = CoconutColors.primary,
     this.iconSize = 20,
     this.duration = 2,
   });

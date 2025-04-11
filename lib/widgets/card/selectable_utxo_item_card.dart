@@ -5,7 +5,6 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/widgets/custom_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -35,7 +34,6 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
   void initState() {
     super.initState();
     _isPressing = false;
-    // TODO: timestamp
     dateString = DateTimeUtil.formatTimestamp(widget.utxo.timestamp);
   }
 
@@ -60,13 +58,13 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: _isPressing ? MyColors.transparentWhite_10 : MyColors.black,
+          color: _isPressing ? MyColors.transparentWhite_10 : CoconutColors.black,
           borderRadius: BorderRadius.circular(
             20,
           ),
           border: Border.all(
             width: 1,
-            color: widget.isSelected ? MyColors.primary : MyColors.borderGrey,
+            color: widget.isSelected ? CoconutColors.primary : MyColors.borderGrey,
           ),
         ),
         padding: const EdgeInsets.only(
@@ -91,19 +89,15 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                       ),
                       CoconutLayout.spacing_100w,
                       if (widget.utxo.status == UtxoStatus.incoming)
-                        CustomChip(
-                          text: t.status_receiving,
-                          backgroundColor: CoconutColors.gray500,
-                          borderColor: CoconutColors.gray500,
-                          textStyle:
-                              CoconutTypography.caption_10_Bold.setColor(CoconutColors.black),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        ),
+                        CoconutChip(
+                          color: CoconutColors.gray500,
+                          label: t.status_receiving,
+                          labelColor: CoconutColors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                        )
                     ],
                   ),
-                  const SizedBox(
-                    height: 8,
-                  ),
+                  CoconutLayout.spacing_200h,
                   Row(
                     children: [
                       Text(
@@ -154,7 +148,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
             SvgPicture.asset(
               'assets/svg/circle-check.svg',
               colorFilter: ColorFilter.mode(
-                  widget.isSelected ? MyColors.primary : MyColors.transparentWhite_40,
+                  widget.isSelected ? CoconutColors.primary : MyColors.transparentWhite_40,
                   BlendMode.srcIn),
             ),
           ],

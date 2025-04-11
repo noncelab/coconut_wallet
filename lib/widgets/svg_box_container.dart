@@ -22,7 +22,7 @@ class SvgBoxContainer extends StatelessWidget {
           svgPath,
           width: 20,
           height: 20,
-          color: const Color.fromRGBO(255, 255, 225, 1.0),
+          colorFilter: const ColorFilter.mode(Color.fromRGBO(255, 255, 225, 1.0), BlendMode.srcIn),
         ),
       ),
     );

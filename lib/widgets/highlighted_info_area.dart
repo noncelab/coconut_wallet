@@ -1,6 +1,5 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
-
-import '../styles.dart';
 
 class HighlightedInfoArea extends StatelessWidget {
   final Widget? child;
@@ -21,7 +20,7 @@ class HighlightedInfoArea extends StatelessWidget {
         .map<Widget>((text) => Text(
               text,
               textAlign: TextAlign.center,
-              style: Styles.body2Number.merge(textStyle),
+              style: CoconutTypography.body2_14_Number.merge(textStyle),
             ))
         .expand((widget) => [
               widget,
@@ -30,7 +29,7 @@ class HighlightedInfoArea extends StatelessWidget {
                 child: Container(
                   width: 1,
                   height: 12,
-                  color: MyColors.transparentWhite_40,
+                  color: CoconutColors.white.withOpacity(0.4),
                 ),
               )
             ])
@@ -52,10 +51,10 @@ class HighlightedInfoArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
         decoration: BoxDecoration(
-          borderRadius: MyBorder.defaultRadius,
-          color: MyColors.transparentWhite_10,
+          borderRadius: BorderRadius.circular(24),
+          color: CoconutColors.white.withOpacity(0.1),
         ),
         width: width, // 넘겨받은 width가 적용되거나 null이면 자동으로 조절됩니다.
         height: height, // 넘겨받은 height가 적용되거나 null이면 자동으로 조절됩니다.

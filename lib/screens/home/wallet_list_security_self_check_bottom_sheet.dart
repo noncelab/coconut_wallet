@@ -1,6 +1,7 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/check_list.dart';
 
@@ -42,7 +43,7 @@ class _SecuritySelfCheckBottomSheetState extends State<SecuritySelfCheckBottomSh
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       appBar: CustomAppBar.build(
         title: t.self_security_check,
         context: context,
@@ -60,11 +61,10 @@ class _SecuritySelfCheckBottomSheetState extends State<SecuritySelfCheckBottomSh
                 padding: const EdgeInsets.all(16.0),
                 child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    decoration: BoxDecorations.boxDecoration,
+                    decoration: defaultBoxDecoration,
                     child: Text(
                       t.security_self_check_bottom_sheet.guidance,
-                      style: Styles.subLabel
-                          .merge(const TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
+                      style: CoconutTypography.body1_16,
                     )),
               ),
               const SizedBox(height: 16),

@@ -1,5 +1,5 @@
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:coconut_wallet/styles.dart';
 
 class ButtonContainer extends StatelessWidget {
   final Widget child;
@@ -9,7 +9,7 @@ class ButtonContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        decoration: BoxDecorations.boxDecoration,
+        decoration: defaultBoxDecoration,
         child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24), child: child));
   }

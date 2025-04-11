@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -118,7 +119,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
                   title,
                   style: TextStyle(
                     fontFamily: CustomFonts.text.getFontFamily,
-                    color: MyColors.white,
+                    color: CoconutColors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontStyle: FontStyle.normal,

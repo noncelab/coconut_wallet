@@ -7,7 +7,6 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_address_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_amount_body_for_batch.dart';
@@ -53,7 +52,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                 }
               : null,
           child: Scaffold(
-              backgroundColor: MyColors.black,
+              backgroundColor: CoconutColors.black,
               appBar: CoconutAppBar.build(
                   title: t.send,
                   context: context,

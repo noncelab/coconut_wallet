@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -9,7 +10,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
@@ -117,32 +117,31 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
     topPadding = kToolbarHeight + MediaQuery.of(context).padding.top + 30;
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       appBar: AppBar(
         scrolledUnderElevation: 0,
-        backgroundColor: _isScrollOverTitleHeight ? MyColors.transparentBlack_50 : MyColors.black,
+        backgroundColor:
+            _isScrollOverTitleHeight ? CoconutColors.black.withOpacity(0.5) : CoconutColors.black,
         toolbarHeight: kToolbarHeight,
         leading: IconButton(
             onPressed: () {
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.close_rounded, color: MyColors.white, size: 22)),
+            icon: const Icon(Icons.close_rounded, color: CoconutColors.white, size: 22)),
         flexibleSpace: _isScrollOverTitleHeight
             ? ClipRect(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    color: MyColors.transparentWhite_06,
-                  ),
+                  child: Container(color: CoconutColors.black.withOpacity(0.06)),
                 ),
               )
             : null,
         title: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: _appbarTitleVisible ? 1 : 0,
-          child: const Text(
-            '앱 정보',
-            style: Styles.appbarTitle,
+          child: Text(
+            t.app_info,
+            style: CoconutTypography.heading4_18.setColor(CoconutColors.white),
           ),
         ),
         centerTitle: true,
@@ -151,27 +150,27 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           physics: const BouncingScrollPhysics(),
           controller: _scrollController,
           child: Container(
-            color: MyColors.black,
+            color: CoconutColors.black,
             child: Column(
               children: [
                 Container(
                   height: topPadding,
-                  color: MyColors.black,
+                  color: CoconutColors.black,
                 ),
                 headerWidget(_packageInfoFuture),
                 Container(
                   height: 50,
-                  color: MyColors.black,
+                  color: CoconutColors.black,
                 ),
                 socialMediaWidget(),
                 Container(
                   height: 50,
-                  color: MyColors.black,
+                  color: CoconutColors.black,
                 ),
                 githubWidget(),
                 Container(
                   height: 50,
-                  color: MyColors.black,
+                  color: CoconutColors.black,
                 ),
                 footerWidget(_packageInfoFuture),
               ],
@@ -187,7 +186,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
                 child: CircularProgressIndicator(
-              color: MyColors.white,
+              color: CoconutColors.white,
             ));
           } else if (snapshot.hasError) {
             return Center(child: Text(t.errors.data_loading_failed));
@@ -204,7 +203,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               bottom: 16,
             ),
             decoration: const BoxDecoration(
-              color: MyColors.black,
+              color: CoconutColors.black,
             ),
             child: Row(
               children: [
@@ -218,7 +217,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     shape: BoxShape.rectangle,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: MyColors.borderGrey,
+                      color: CoconutColors.gray500,
                       width: 2.0,
                     ),
                     color: Colors.black,
@@ -237,28 +236,13 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   children: [
                     Text(
                       packageInfo.appName,
-                      style: Styles.body1Bold.merge(
-                        const TextStyle(
-                          fontSize: 24,
-                        ),
-                      ),
+                      style: CoconutTypography.heading2_28_Bold
+                          .copyWith(fontSize: 24, color: CoconutColors.white),
                     ),
-                    Text(
-                      'ver.${packageInfo.version}',
-                      style: Styles.body2Bold.merge(
-                        const TextStyle(
-                          color: MyColors.lightgrey,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      t.app_info_screen.made_by_team_pow,
-                      style: Styles.body2.merge(
-                        const TextStyle(
-                          color: MyColors.transparentWhite_70,
-                        ),
-                      ),
-                    ),
+                    Text('ver.${packageInfo.version}',
+                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+                    Text(t.app_info_screen.made_by_team_pow,
+                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray400)),
                   ],
                 )
               ],
@@ -273,7 +257,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
         horizontal: 16,
       ),
       decoration: const BoxDecoration(
-        color: MyColors.black,
+        color: CoconutColors.black,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,7 +347,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
         horizontal: 16,
       ),
       decoration: const BoxDecoration(
-        color: MyColors.black,
+        color: CoconutColors.black,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,7 +401,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
                 child: CircularProgressIndicator(
-              color: MyColors.white,
+              color: CoconutColors.white,
             ));
           } else if (snapshot.hasError) {
             return Center(child: Text(t.errors.data_loading_failed));
@@ -427,8 +411,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
           PackageInfo packageInfo = snapshot.data!;
           return Container(
-            padding: const EdgeInsets.symmetric(vertical: 50),
-            color: MyColors.transparentWhite_06,
+            padding: const EdgeInsets.only(top: 20, bottom: 40),
+            color: CoconutColors.gray800,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -437,30 +421,22 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      t.app_info_screen
-                          .version_and_date(version: packageInfo.version, releasedAt: RELEASE_DATE),
-                      style: Styles.body2.merge(
-                        const TextStyle(
-                          color: MyColors.transparentWhite_50,
-                        ),
-                      ),
-                    ),
+                        t.app_info_screen.version_and_date(
+                            version: packageInfo.version, releasedAt: RELEASE_DATE),
+                        style: CoconutTypography.body2_14.setColor(CoconutColors.gray300)),
                   ),
                 ),
-                const SizedBox(
-                  height: 20,
-                ),
+                CoconutLayout.spacing_200h,
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: InkWell(
                     onTap: () => launchURL(LICENSE_URL, defaultMode: true),
                     child: Text(
                       COPYRIGHT_TEXT,
-                      style: Styles.body2.merge(
-                        const TextStyle(
-                          color: MyColors.transparentWhite_50,
+                      style: CoconutTypography.body2_14.merge(
+                        TextStyle(
                           decoration: TextDecoration.underline,
-                          decorationColor: MyColors.transparentWhite_30,
+                          decorationColor: CoconutColors.white.withOpacity(0.3),
                         ),
                       ),
                     ),
@@ -474,12 +450,5 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
   Widget _category(String label) => Container(
       padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-      child: Text(label,
-          style: const TextStyle(
-            fontFamily: 'Pretendard',
-            color: Colors.white,
-            fontSize: 16,
-            fontStyle: FontStyle.normal,
-            fontWeight: FontWeight.bold,
-          )));
+      child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray300)));
 }

@@ -1,6 +1,8 @@
 import 'dart:math';
 
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
 
 class CustomTagChipColorButton extends StatefulWidget {
@@ -38,7 +40,7 @@ class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        if (_colorIndex < BackgroundColorPalette.length - 1) {
+        if (_colorIndex < backgroundColorPalette.length - 1) {
           setState(() {
             _colorIndex += 1;
           });
@@ -53,23 +55,19 @@ class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {
         width: 55,
         height: 28,
         decoration: BoxDecoration(
-          color: BackgroundColorPalette[_colorIndex].withOpacity(0.3),
+          color: ColorUtil.getColor(_colorIndex).backgroundColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: ColorPalette[_colorIndex].withOpacity(1),
+            color: ColorUtil.getColor(_colorIndex).color,
             width: 1,
           ),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            '색 변경',
-            style: TextStyle(
-              decoration: TextDecoration.underline, // 밑줄 설정
-              height: 0.5,
-              fontSize: 10,
-              fontFamily: 'Pretendard',
-              color: MyColors.white,
-            ),
+            t.change_color,
+            style: CoconutTypography.caption_10
+                .setColor(CoconutColors.white)
+                .copyWith(decoration: TextDecoration.underline),
           ),
         ),
       ),

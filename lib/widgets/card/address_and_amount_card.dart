@@ -229,9 +229,13 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
       _isQrDataHandling = true;
 
       widget.validateAddress(scanData.code!).then((_) {
-        Navigator.pop(context, scanData.code!);
+        if (mounted) {
+          Navigator.pop(context, scanData.code!);
+        }
       }).catchError((e) {
-        CustomToast.showToast(context: context, text: e.toString());
+        if (mounted) {
+          CustomToast.showToast(context: context, text: e.toString());
+        }
       }).whenComplete(() async {
         // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
         await Future.delayed(const Duration(seconds: 1));

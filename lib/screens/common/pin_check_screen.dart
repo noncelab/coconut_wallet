@@ -1,8 +1,8 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
@@ -79,13 +79,13 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     context.loaderOverlay.show();
     _authProvider.authenticateWithBiometrics().then((value) {
       if (value) {
-        if (!widget.appEntrance) {
+        if (!widget.appEntrance && mounted) {
           Navigator.pop(context, true);
         }
         widget.onComplete?.call();
       }
     }).whenComplete(() {
-      if (context.mounted) context.loaderOverlay.hide();
+      if (mounted) context.loaderOverlay.hide();
     });
   }
 
@@ -93,7 +93,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     context.loaderOverlay.show();
     _authProvider.verifyPin(pin).then((value) {
       if (value) {
-        if (!widget.appEntrance) {
+        if (!widget.appEntrance && mounted) {
           Navigator.pop(context, true);
         }
         widget.onComplete?.call();
@@ -117,7 +117,11 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
       }
 
       setState(() {});
-    }).whenComplete(() => context.loaderOverlay.hide());
+    }).whenComplete(() {
+      if (mounted) {
+        context.loaderOverlay.hide();
+      }
+    });
   }
 
   void _onKeyTap(String value) {
@@ -152,11 +156,13 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
         title: t.alert.forgot_password.title,
         message: t.alert.forgot_password.description,
         confirmButtonText: t.alert.forgot_password.btn_reset,
-        confirmButtonColor: MyColors.warningRed,
+        confirmButtonColor: CoconutColors.hotPink,
         cancelButtonText: t.close, onConfirm: () async {
       await _authProvider.resetPassword();
       widget.onComplete?.call();
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }, onCancel: () {
       Navigator.of(context).pop();
     });

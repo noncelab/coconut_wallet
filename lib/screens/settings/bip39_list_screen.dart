@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
@@ -112,7 +113,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         appBar: CustomAppBar.build(
             title: _titleText,
             context: context,
@@ -123,7 +124,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           visible: _isFabShown,
           child: FloatingActionButton(
             onPressed: _scrollToTop,
-            backgroundColor: MyColors.black,
+            backgroundColor: CoconutColors.black,
             foregroundColor: MyColors.grey,
             shape: const CircleBorder(),
             mini: true,
@@ -133,7 +134,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         body: Column(
           children: [
             Container(
-              color: MyColors.black,
+              color: CoconutColors.black,
               child: Container(
                 width: MediaQuery.of(context).size.width,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -175,7 +176,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                       ),
                       style: const TextStyle(
                         decorationThickness: 0,
-                        color: MyColors.white,
+                        color: CoconutColors.white,
                       ),
                     ),
                   ),
@@ -214,7 +215,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                     t.bip39_list_screen.result(text: _searchController.text),
                     style: Styles.body1.merge(
                       const TextStyle(
-                        color: MyColors.white,
+                        color: CoconutColors.white,
                       ),
                     ),
                   ),

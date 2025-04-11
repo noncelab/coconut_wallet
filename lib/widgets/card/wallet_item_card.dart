@@ -41,73 +41,57 @@ class WalletItemCard extends StatelessWidget {
             Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id});
           },
           borderGradientColors:
-              signers?.isNotEmpty == true ? CustomColorHelper.getGradientColors(signers!) : null,
+              signers?.isNotEmpty == true ? ColorUtil.getGradientColors(signers!) : null,
           child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-              ),
               child: Row(children: [
                 Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: CoconutColors.backgroundColorPaletteDark[colorIndex],
+                      color: ColorUtil.getColor(colorIndex).backgroundColor,
                       borderRadius: BorderRadius.circular(16.0),
                     ),
                     child: SvgPicture.asset(CustomIcons.getPathByIndex(iconIndex),
-                        colorFilter: ColorFilter.mode(
-                            CoconutColors.colorPalette[colorIndex], BlendMode.srcIn),
+                        colorFilter:
+                            ColorFilter.mode(ColorUtil.getColor(colorIndex).color, BlendMode.srcIn),
                         width: 20.0)),
-                const SizedBox(width: 8.0),
+                CoconutLayout.spacing_200w,
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         name,
-                        style: CoconutTypography.body3_12.merge(TextStyle(
-                            color: CoconutColors.white.withOpacity(0.7), letterSpacing: 0.2)),
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      Padding(
-                          padding: const EdgeInsets.only(top: 0),
-                          child: ImageFiltered(
-                            imageFilter: isBalanceHidden
-                                ? ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0)
-                                : ImageFilter.blur(sigmaX: 0),
-                            child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                              AnimatedBalance(
-                                prevValue: animatedBalanceData.previous,
-                                value: animatedBalanceData.current,
-                                isBtcUnit: true,
-                                textStyle: CoconutTypography.heading3_21_NumberBold.merge(
-                                  const TextStyle(
-                                    fontSize: 22,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                " BTC",
-                                style: CoconutTypography.body3_12_Number.merge(
-                                  TextStyle(
-                                      fontSize: 13,
-                                      color: CoconutColors.white.withOpacity(0.7),
-                                      fontWeight: FontWeight.w500),
-                                ),
-                              ),
-                            ]),
-                          )),
+                      CoconutLayout.spacing_50h,
+                      ImageFiltered(
+                        imageFilter: isBalanceHidden
+                            ? ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0)
+                            : ImageFilter.blur(sigmaX: 0),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                          AnimatedBalance(
+                              prevValue: animatedBalanceData.previous,
+                              value: animatedBalanceData.current,
+                              isBtcUnit: true,
+                              textStyle: CoconutTypography.heading3_21_NumberBold
+                                  .setColor(CoconutColors.white)),
+                          Text(
+                            " BTC",
+                            style: CoconutTypography.body3_12_Number.copyWith(
+                                color: CoconutColors.gray500, fontWeight: FontWeight.w500),
+                          ),
+                        ]),
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(
-                  width: 8,
-                ),
-                SvgPicture.asset('assets/svg/arrow-right.svg',
-                    width: 24,
-                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn))
+                CoconutLayout.spacing_200w,
+                // SvgPicture.asset('assets/svg/arrow-right.svg',
+                //     width: 24,
+                //     colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn))
               ]))),
     );
 

@@ -48,12 +48,12 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
               context: context,
               onNextPressed: () => _goNextScreen('/fee-selection'),
               isActive: viewModel.isNextButtonEnabled,
-              backgroundColor: MyColors.black,
+              backgroundColor: CoconutColors.black,
               isBottom: false,
             ),
             body: Stack(children: [
               Container(
-                  color: MyColors.black,
+                  color: CoconutColors.black,
                   child: Column(
                     children: [
                       Expanded(
@@ -66,7 +66,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: CoconutLayout.defaultPadding),
                                     child: CoconutToolTip(
-                                      baseBackgroundColor: MyColors.white.withOpacity(0.9),
+                                      baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
                                       richText: RichText(
                                           text: TextSpan(
                                         text: t.tooltip.amount_to_be_sent(
@@ -78,7 +78,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                           fontSize: 15,
                                           height: 1.4,
                                           letterSpacing: 0.5,
-                                          color: MyColors.black,
+                                          color: CoconutColors.black,
                                         ),
                                       )),
                                       tooltipType: CoconutTooltipType.fixed,
@@ -116,7 +116,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                       style: Styles.caption.merge(TextStyle(
                                                           color: viewModel.errorIndex == 0
                                                               ? MyColors.warningRed
-                                                              : MyColors.white,
+                                                              : CoconutColors.white,
                                                           fontFamily:
                                                               CustomFonts.text.getFontFamily))),
                                                   TextSpan(
@@ -125,7 +125,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                       style: Styles.caption.merge(TextStyle(
                                                           color: viewModel.errorIndex == 0
                                                               ? MyColors.warningRed
-                                                              : MyColors.white))),
+                                                              : CoconutColors.white))),
                                                 ])))),
                                         // BTC
                                         Text(
@@ -136,7 +136,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                             fontSize: 38,
                                             color: viewModel.input.isEmpty
                                                 ? MyColors.transparentWhite_20
-                                                : MyColors.white,
+                                                : CoconutColors.white,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,

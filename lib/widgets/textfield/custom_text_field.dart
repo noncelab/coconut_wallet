@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -38,7 +39,7 @@ class CustomTextField extends StatefulWidget {
   });
 
   @override
-  _CustomTextFieldState createState() => _CustomTextFieldState();
+  State<CustomTextField> createState() => _CustomTextFieldState();
 }
 
 class _CustomTextFieldState extends State<CustomTextField> {
@@ -80,7 +81,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     right: widget.clearButtonMode != OverlayVisibilityMode.never ? 4 : 0),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: isFocused ? MyColors.white : MyColors.transparentBlack_06,
+                    color: isFocused ? CoconutColors.white : MyColors.transparentBlack_06,
                     width: 1,
                   ),
                   borderRadius: BorderRadius.circular(16.0),

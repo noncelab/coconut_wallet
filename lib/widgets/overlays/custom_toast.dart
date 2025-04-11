@@ -1,10 +1,13 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/styles.dart';
 
 bool _isToastVisible = false;
 
 class CustomToast {
+  static const warningYellow = Color.fromRGBO(255, 175, 3, 1.0);
+  static const warningYellowBackground = Color.fromRGBO(255, 243, 190, 1.0);
+
   static void showToast({
     required BuildContext context,
     required String text,
@@ -46,8 +49,8 @@ class CustomToast {
               text: text,
               visibleIcon: true,
               svgIconPath: 'assets/svg/tooltip/triangle-warning.svg',
-              iconColor: MyColors.warningYellow,
-              backgroundColor: MyColors.warningYellowBackground,
+              iconColor: warningYellow,
+              backgroundColor: warningYellowBackground,
               onDismiss: () {
                 overlayEntry.remove();
               },
@@ -74,8 +77,8 @@ class ToastWidget extends StatefulWidget {
     required this.visibleIcon,
     required this.duration,
     this.svgIconPath = 'assets/svg/tooltip/info.svg',
-    this.backgroundColor = Colors.white,
-    this.iconColor = MyColors.darkgrey,
+    this.backgroundColor = CoconutColors.white,
+    this.iconColor = CoconutColors.gray700,
   });
 
   @override
@@ -136,27 +139,26 @@ class _ToastWidgetState extends State<ToastWidget> with SingleTickerProviderStat
                 }
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                padding: const EdgeInsets.symmetric(horizontal: Sizes.size12),
                 width: MediaQuery.of(context).size.width,
                 color: Colors.transparent,
                 child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    padding: const EdgeInsets.all(Sizes.size16),
                     width: MediaQuery.of(context).size.width - 24,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12.0),
+                      borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
                       color: widget.backgroundColor,
                     ),
                     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       if (widget.visibleIcon)
                         Padding(
-                            padding: const EdgeInsets.only(right: 4),
+                            padding: const EdgeInsets.only(right: Sizes.size4),
                             child: SvgPicture.asset(widget.svgIconPath,
-                                width: 14,
+                                width: Sizes.size12,
                                 colorFilter: ColorFilter.mode(widget.iconColor, BlendMode.srcIn))),
                       Expanded(
                           child: Text(widget.text,
-                              style: Styles.caption
-                                  .merge(const TextStyle(color: MyColors.darkgrey, height: 1.2))))
+                              style: CoconutTypography.body3_12.setColor(CoconutColors.black)))
                     ])),
               ))),
     );

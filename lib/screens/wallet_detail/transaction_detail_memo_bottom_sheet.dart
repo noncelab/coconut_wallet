@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
@@ -79,7 +80,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
                     },
                     child: const Icon(
                       Icons.close_rounded,
-                      color: MyColors.white,
+                      color: CoconutColors.white,
                       size: 22,
                     ),
                   ),

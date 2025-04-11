@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:flutter/foundation.dart';
@@ -8,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/database_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:provider/provider.dart';
@@ -55,10 +55,10 @@ void main() {
     );
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor: MyColors.black, //상단바 색상
+        statusBarColor: CoconutColors.black, //상단바 색상
         statusBarIconBrightness: Brightness.light, //상단바 아이콘 색상
-        systemNavigationBarDividerColor: MyColors.black, //하단바 디바이더 색상
-        systemNavigationBarColor: MyColors.black, //하단바 색상
+        systemNavigationBarDividerColor: CoconutColors.black, //하단바 디바이더 색상
+        systemNavigationBarColor: CoconutColors.black, //하단바 색상
         systemNavigationBarIconBrightness: Brightness.light, //하단바 아이콘 색상
       ),
     );

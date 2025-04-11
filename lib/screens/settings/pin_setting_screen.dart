@@ -151,6 +151,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         }
 
         var hashedPin = hashString(pin);
+        if (!mounted) return;
         await Provider.of<WalletProvider>(context, listen: false)
             .encryptWalletSecureData(hashedPin)
             .catchError((e) {
@@ -160,8 +161,10 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         _authProvider.savePinSet(hashedPin).then((_) async {
           _showPinSetSuccessLottie();
 
-          Navigator.pop(context);
-          Navigator.pop(context);
+          if (mounted) {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          }
         }).catchError((e) {
           returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true);
         });

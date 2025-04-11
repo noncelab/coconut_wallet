@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/cupertino.dart';
@@ -24,16 +23,15 @@ class FeeSelectionItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 79,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? MyColors.white : MyColors.grey,
+            color: isSelected ? CoconutColors.white : CoconutColors.gray700,
           ),
-          borderRadius: MyBorder.defaultRadius,
-          color: MyColors.transparentWhite_06),
+          borderRadius: BorderRadius.circular(24),
+          color: CoconutColors.gray900),
       child: CupertinoButton(
-        padding: Paddings.widgetContainer,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         onPressed: feeInfo.satsPerVb == null || feeInfo.estimatedFee == null ? null : onPressed,
         child: Row(
           children: [
@@ -44,19 +42,17 @@ class FeeSelectionItemCard extends StatelessWidget {
                 Text(
                   feeInfo.level.text,
                   style: feeInfo.estimatedFee == null
-                      ? Styles.body1Bold.merge(
-                          const TextStyle(color: MyColors.borderLightgrey),
-                        )
-                      : Styles.body1,
+                      ? CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray500)
+                      : CoconutTypography.body1_16.setColor(CoconutColors.white),
                 ),
-                const SizedBox(height: 5),
+                CoconutLayout.spacing_50h,
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     RichText(
                       text: TextSpan(
-                        style: Styles.caption, // 동일한 스타일 적용
+                        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
                         children: [
                           TextSpan(
                             text: feeInfo.level.expectedTime,
@@ -79,21 +75,17 @@ class FeeSelectionItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // TODO 수량 위젯
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
                           satoshiToBitcoinString(feeInfo.estimatedFee!),
-                          style: Styles.body1Number,
+                          style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                         ),
-                        Text(
-                          ' BTC',
-                          style: Styles.body2Number.merge(
-                            const TextStyle(
-                              color: MyColors.transparentWhite_70,
-                            ),
-                          ),
-                        ),
+                        Text(' BTC',
+                            style:
+                                CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
                       ],
                     ),
                     const SizedBox(
@@ -102,7 +94,7 @@ class FeeSelectionItemCard extends StatelessWidget {
                     FiatPrice(
                         satoshiAmount: feeInfo.estimatedFee ?? 0,
                         textStyle:
-                            CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500)),
+                            CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400)),
                   ],
                 ),
               ),
@@ -114,7 +106,7 @@ class FeeSelectionItemCard extends StatelessWidget {
                   children: [
                     Text(
                       t.fetch_fee_failed,
-                      style: Styles.warning,
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
                     ),
                   ],
                 ),

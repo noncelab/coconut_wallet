@@ -1,6 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 
 class InformationItemCard extends StatelessWidget {
   final String label;
@@ -23,6 +22,9 @@ class InformationItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final defaultTextStyle = CoconutTypography.body2_14.setColor(CoconutColors.white);
+    final numberTextStyle = CoconutTypography.body2_14_Number.setColor(CoconutColors.white);
+
     return GestureDetector(
         onTap: onPressed,
         child: Container(
@@ -31,7 +33,7 @@ class InformationItemCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: crossAxisAlignment,
               children: [
-                Text(label, style: Styles.body2Bold),
+                Text(label, style: defaultTextStyle),
                 showIcon ? const Spacer() : const SizedBox(width: 32),
                 if (value != null)
                   Expanded(
@@ -45,18 +47,13 @@ class InformationItemCard extends StatelessWidget {
                               padding: EdgeInsets.only(bottom: isLast ? 0 : Sizes.size4),
                               child: Text(item,
                                   textAlign: TextAlign.right,
-                                  style: Styles.body2.merge(
-                                    TextStyle(
-                                        fontFamily: isNumber
-                                            ? CustomFonts.number.getFontFamily
-                                            : CustomFonts.text.getFontFamily),
-                                  )),
+                                  style: isNumber ? numberTextStyle : defaultTextStyle),
                             );
                           }).toList())),
                 if (showIcon)
                   rightIcon ??
-                      const Icon(Icons.keyboard_arrow_right_rounded,
-                          color: MyColors.transparentWhite_40)
+                      Icon(Icons.keyboard_arrow_right_rounded,
+                          color: CoconutColors.white.withOpacity(0.4))
               ],
             )));
   }

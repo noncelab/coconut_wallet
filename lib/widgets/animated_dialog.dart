@@ -17,7 +17,7 @@ class AnimatedDialog extends StatefulWidget {
   });
 
   @override
-  _AnimatedDialogState createState() => _AnimatedDialogState();
+  State<AnimatedDialog> createState() => _AnimatedDialogState();
 }
 
 class _AnimatedDialogState extends State<AnimatedDialog> with SingleTickerProviderStateMixin {

@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names
 const LICENSE_URL = 'https://github.com/noncelab/coconut_wallet/blob/main/LICENSE.md';
 const CONTRIBUTING_URL = 'https://github.com/noncelab/coconut_wallet/blob/main/CONTRIBUTING.md';
+const MIT_LICENSE_URL = 'https://mit-license.org';
 
 /// POW Community URL
 const POW_URL = 'https://powbitcoiner.com';

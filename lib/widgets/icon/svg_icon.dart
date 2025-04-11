@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 
@@ -18,8 +17,8 @@ class SvgIcon extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         color: colorIndex == -1
-            ? MyColors.defaultBackground
-            : CustomColorHelper.getBackgroundColorByIndex(colorIndex),
+            ? defaultBackgroundColor
+            : ColorUtil.getBackgroundColorByIndex(colorIndex),
       ),
       // 배경색 지정
       child: Padding(
@@ -29,9 +28,9 @@ class SvgIcon extends StatelessWidget {
           width: 32,
           height: 32,
           fit: BoxFit.scaleDown,
-          color: colorIndex == -1
-              ? MyColors.defaultIcon
-              : CustomColorHelper.getColorByIndex(colorIndex),
+          colorFilter: ColorFilter.mode(
+              colorIndex == -1 ? defaultIconColor : ColorUtil.getColorByIndex(colorIndex),
+              BlendMode.srcIn),
         ),
       ),
     );
