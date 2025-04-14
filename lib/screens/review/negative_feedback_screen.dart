@@ -4,7 +4,6 @@ import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 
 class NegativeFeedbackScreen extends StatelessWidget {
   const NegativeFeedbackScreen({super.key});
@@ -41,14 +40,14 @@ class NegativeFeedbackScreen extends StatelessWidget {
               children: [
                 Text(
                   t.negative_feedback_screen.text1,
-                  style: Styles.h2.merge(const TextStyle(color: CoconutColors.white)),
+                  style: CoconutTypography.heading2_28_NumberBold.setColor(CoconutColors.white),
                 ),
                 const SizedBox(
                   height: 20,
                 ),
                 Text(
                   t.negative_feedback_screen.text2,
-                  style: Styles.body1,
+                  style: CoconutTypography.body1_16,
                 ),
                 const SizedBox(
                   height: 80,
@@ -62,8 +61,7 @@ class NegativeFeedbackScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
                       child: Text(
                         t.negative_feedback_screen.text3,
-                        style: Styles.label.merge(
-                            const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
+                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray800),
                         textAlign: TextAlign.center,
                       )),
                 ),
@@ -76,12 +74,12 @@ class NegativeFeedbackScreen extends StatelessWidget {
                       width: MediaQuery.of(context).size.width * 0.5,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          color: MyColors.transparentWhite_15),
+                        borderRadius: BorderRadius.circular(14),
+                        color: CoconutColors.white.withOpacity(0.15),
+                      ),
                       child: Text(
                         t.negative_feedback_screen.text4,
-                        style: Styles.label.merge(const TextStyle(
-                            color: CoconutColors.white, fontWeight: FontWeight.bold)),
+                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
                         textAlign: TextAlign.center,
                       )),
                 ),
