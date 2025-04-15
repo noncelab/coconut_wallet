@@ -17,7 +17,7 @@ void defaultMigration(Migration migration, int oldVersion) {
   }
 
   try {
-    resetWithoutWallet(migration.newRealm);
+    resetExceptForWallet(migration.newRealm);
   } catch (e, stackTrace) {
     Logger.log('Migration error: $e\n$stackTrace');
     rethrow;
@@ -28,7 +28,7 @@ bool canSkipMigration(Migration migration, int oldVersion) {
   return oldVersion == kRealmVersion;
 }
 
-void resetWithoutWallet(Realm realm) {
+void resetExceptForWallet(Realm realm) {
   // 지갑과 주소는 삭제하지 않으며, 모든 작업을 하나의 트랜잭션 내에서 처리
   realm.all<RealmWalletBase>().forEach((walletBase) {
     walletBase.usedReceiveIndex = -1;
