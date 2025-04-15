@@ -10,9 +10,15 @@ import '../../mock/realm/realm_wallet_address_mock.dart';
 import '../../mock/realm/realm_transaction_mock.dart';
 import '../../mock/realm/realm_utxo_mock.dart';
 
-/// 테스트 실패 시 수동으로 삭제해야 함
+/// Realm 마이그레이션 테스트
 ///
+/// 테스트 실행에 필요한 다이나믹 라이브러리가 필요합니다.
+/// `dart run realm install`
+///
+/// 테스트 실패 시 로컬 Realm 파일을 수동으로 삭제하는 명령어
+/// `cd <project_root>`
 /// `sudo rm -rf ./test/mock/realm/defaultMigration*`
+///
 void deleteRealmFiles(String path) {
   if (File(path).existsSync()) {
     Realm.deleteRealm(path);
