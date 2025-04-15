@@ -15,21 +15,7 @@ class TestRealmManager implements RealmManager {
 
   TestRealmManager()
       : _realm = Realm(
-          Configuration.inMemory([
-            RealmWalletBase.schema,
-            RealmMultisigWallet.schema,
-            RealmTransaction.schema,
-            RealmIntegerId.schema,
-            TempBroadcastTimeRecord.schema,
-            RealmUtxoTag.schema,
-            RealmWalletAddress.schema,
-            RealmWalletBalance.schema,
-            RealmScriptStatus.schema,
-            RealmBlockTimestamp.schema,
-            RealmUtxo.schema,
-            RealmRbfHistory.schema,
-            RealmCpfpHistory.schema,
-          ]),
+          Configuration.inMemory(realmAllSchemas),
         );
 
   @override

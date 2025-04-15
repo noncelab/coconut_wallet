@@ -2,6 +2,22 @@ import 'package:realm/realm.dart';
 
 part 'coconut_wallet_model.realm.dart'; // dart run realm generate
 
+final realmAllSchemas = [
+  RealmWalletBase.schema,
+  RealmMultisigWallet.schema,
+  RealmTransaction.schema,
+  RealmIntegerId.schema,
+  TempBroadcastTimeRecord.schema,
+  RealmUtxoTag.schema,
+  RealmWalletAddress.schema,
+  RealmWalletBalance.schema,
+  RealmScriptStatus.schema,
+  RealmBlockTimestamp.schema,
+  RealmUtxo.schema,
+  RealmRbfHistory.schema,
+  RealmCpfpHistory.schema,
+];
+
 @RealmModel()
 class _RealmWalletBase {
   @PrimaryKey()
@@ -46,7 +62,6 @@ class _RealmTransaction {
   late double vSize;
   late List<String> inputAddressList;
   late List<String> outputAddressList;
-  String? note;
   late DateTime createdAt;
   String? replaceByTransactionHash;
 }
