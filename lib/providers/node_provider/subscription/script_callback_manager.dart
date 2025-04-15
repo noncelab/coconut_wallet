@@ -22,19 +22,15 @@ class ScriptCallbackManager {
   ///
   /// 다음 조건 중 하나라도 만족하면 `true`를 반환합니다:
   /// - 등록된 트랜잭션이 없는 경우
-  /// - 트랜잭션 처리 타임아웃이 지난 경우
   /// - 트랜잭션이 언컨펌에서 컨펌 상태로 변경된 경우
   ///
   /// 위 조건을 만족하지 않으면 `false`를 반환합니다.
   bool isTransactionProcessable({required String txHashKey, required bool isConfirmed}) {
-    if (!_processingTransactions.containsKey(txHashKey)) return true;
-
-    final processInfo = _processingTransactions[txHashKey]!;
-
-    if (processInfo.isProcessable()) {
-      _processingTransactions.remove(txHashKey);
+    if (!_processingTransactions.containsKey(txHashKey)) {
       return true;
     }
+
+    final processInfo = _processingTransactions[txHashKey]!;
 
     // 컨펌 여부가 다른 경우는 컨펌된 경우밖에 없음
     if (processInfo.isConfirmed != isConfirmed) {
@@ -49,7 +45,6 @@ class ScriptCallbackManager {
   void registerTransactionProcessing(int walletId, String txHash, bool isConfirmed) {
     final txHashKey = getTxHashKey(walletId, txHash);
     _processingTransactions[txHashKey] = TransactionProcessingState(
-      DateTime.now(),
       isConfirmed,
       false,
     );
@@ -139,7 +134,9 @@ class ScriptCallbackManager {
     }
     if (callbackList.isNotEmpty) {
       callbackList.first().then((_) {
-        callbackList.removeAt(0);
+        if (callbackList.isNotEmpty) {
+          callbackList.removeAt(0);
+        }
       });
     }
   }

@@ -1,10 +1,13 @@
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 
 class WalletMock {
-  static SinglesigWalletListItem createSingleSigWalletItem() {
+  static SinglesigWalletListItem createSingleSigWalletItem({
+    int id = 1,
+    String name = 'test_wallet',
+  }) {
     return SinglesigWalletListItem(
-      id: 1,
-      name: 'test_wallet',
+      id: id,
+      name: name,
       colorIndex: 0,
       iconIndex: 0,
       descriptor:
