@@ -2,11 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
+import 'package:coconut_wallet/constants/realm_constants.dart';
 import 'package:coconut_wallet/constants/secure_keys.dart';
+import 'package:coconut_wallet/repository/realm/migration/migration.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/wallet_data_manager_cryptography.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:realm/realm.dart';
@@ -27,28 +28,15 @@ class RealmManager {
   final Realm _realm;
   Realm get realm => _realm;
 
-  RealmManager()
-      : _realm = Realm(
-          Configuration.local(
-            [
-              RealmWalletBase.schema,
-              RealmMultisigWallet.schema,
-              RealmTransaction.schema,
-              RealmIntegerId.schema,
-              TempBroadcastTimeRecord.schema,
-              RealmUtxoTag.schema,
-              RealmWalletAddress.schema,
-              RealmWalletBalance.schema,
-              RealmScriptStatus.schema,
-              RealmBlockTimestamp.schema,
-              RealmUtxo.schema,
-              RealmRbfHistory.schema,
-              RealmCpfpHistory.schema,
-            ],
-            schemaVersion: 1,
-            migrationCallback: (migration, oldVersion) {},
-          ),
-        );
+  RealmManager({Realm? realm})
+      : _realm = realm ??
+            Realm(
+              Configuration.local(
+                realmAllSchemas,
+                schemaVersion: kRealmVersion,
+                migrationCallback: defaultMigration,
+              ),
+            );
 
   @visibleForTesting
   RealmManager.withRealm(this._realm);
@@ -96,27 +84,6 @@ class RealmManager {
 
     _isInitialized = false;
     _cryptography = null;
-  }
-
-  static void resetWithoutWallet(Realm realm) {
-    Logger.log('resetWithoutWallet ${realm.all<RealmWalletBase>().length}');
-    realm.all<RealmWalletBase>().forEach((walletBase) {
-      walletBase.generatedReceiveIndex = -1;
-      walletBase.generatedChangeIndex = -1;
-      walletBase.usedReceiveIndex = -1;
-      walletBase.usedChangeIndex = -1;
-    });
-    realm.deleteAll<RealmTransaction>();
-    realm.deleteAll<RealmUtxoTag>();
-    realm.deleteAll<RealmWalletBalance>();
-    realm.deleteAll<RealmWalletAddress>();
-    realm.deleteAll<RealmUtxo>();
-    realm.deleteAll<RealmScriptStatus>();
-    realm.deleteAll<RealmBlockTimestamp>();
-    realm.deleteAll<RealmIntegerId>();
-    realm.deleteAll<TempBroadcastTimeRecord>();
-    realm.deleteAll<RealmRbfHistory>();
-    realm.deleteAll<RealmCpfpHistory>();
   }
 
   Future<List<String>> _createEncryptedDescriptionList(List<String> plainTexts) async {

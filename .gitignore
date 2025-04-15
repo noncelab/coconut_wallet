@@ -150,6 +150,7 @@ key.properties
 
 # Test (realm)
 default.realm.management
+*.realm
 *.mx
 *.cv
 
