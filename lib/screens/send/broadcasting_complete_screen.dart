@@ -1,7 +1,7 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +24,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         body: SafeArea(
           child: Center(
             child: Column(
@@ -35,23 +35,20 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                 const SizedBox(height: 8),
                 Text(
                   t.broadcasting_complete_screen.complete,
-                  style: Styles.h3,
+                  style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
                 ),
                 const SizedBox(
                   height: 40,
                 ),
                 GestureDetector(
-                  onTap: () => onTap(context),
-                  child: Container(
+                    onTap: () => onTap(context),
+                    child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14), color: MyColors.primary),
-                      child: Text(
-                        t.confirm,
-                        style: Styles.label.merge(
-                            const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
-                      )),
-                ),
+                          borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
+                      child: Text(t.confirm,
+                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray800)),
+                    )),
                 const SizedBox(
                   height: 40,
                 ),
@@ -78,10 +75,6 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   }
 
   void onTap(BuildContext context) {
-    // TODO: 보내기 완료 후 txlist에 트랜잭션 바로 볼 수 있도록 해야 함
-    // 보내는 중 tx list 조회를 위한 조치
-    // Provider.of<WalletProvider>(context, listen: false)
-    //     .initWallet(targetId: widget.id);
     Future<dynamic>? showReviewScreenFuture = AppReviewService.showReviewScreenIfFirstSending(
         context,
         animationController: _animationController);
@@ -89,7 +82,9 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       Navigator.pop(context);
     } else {
       showReviewScreenFuture.whenComplete(() {
-        Navigator.pop(context);
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
       });
     }
   }

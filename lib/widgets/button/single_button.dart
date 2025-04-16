@@ -1,5 +1,5 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 
 class SingleButton extends StatelessWidget {
   final String title;
@@ -25,14 +25,16 @@ class SingleButton extends StatelessWidget {
           children: [
             if (leftElement != null) ...{
               Container(child: leftElement),
-              const SizedBox(width: 12),
+              CoconutLayout.spacing_400w,
             },
-            Expanded(child: Text(title, style: Styles.body2Bold)),
+            Expanded(
+                child: Text(title,
+                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white))),
             rightElement ?? _rightArrow(),
           ],
         ));
   }
 
   Widget _rightArrow() =>
-      const Icon(Icons.keyboard_arrow_right_rounded, color: MyColors.transparentWhite_40);
+      const Icon(Icons.keyboard_arrow_right_rounded, color: CoconutColors.gray600);
 }

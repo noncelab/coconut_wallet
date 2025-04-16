@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -44,13 +45,13 @@ class _ChecklistTileState extends State<ChecklistTile> {
             Icon(
               isChecked ? Icons.check_circle_rounded : Icons.check_circle_outline_rounded,
               size: 20.0,
-              color: MyColors.white,
+              color: CoconutColors.white,
             ),
             const SizedBox(width: 8), // 체크박스와 텍스트 사이의 가로 간격 조정
             Expanded(
               child: Text(
                 widget.item.title,
-                style: Styles.label.merge(const TextStyle(color: MyColors.white)),
+                style: Styles.label.merge(const TextStyle(color: CoconutColors.white)),
                 textAlign: TextAlign.start,
               ),
             ),

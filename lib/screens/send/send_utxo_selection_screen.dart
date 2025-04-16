@@ -1,6 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -20,7 +19,6 @@ import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/send_utxo_sticky_header.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
-import 'package:coconut_wallet/widgets/dropdown/custom_dropdown.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
@@ -198,7 +196,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           _moveToSendConfirm();
         },
         confirmButtonText: t.alert.tag_apply.btn_apply,
-        confirmButtonColor: MyColors.primary,
+        confirmButtonColor: CoconutColors.primary,
         cancelButtonText: t.no,
       );
     } else {
@@ -283,7 +281,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                         color: errorState == ErrorState.insufficientBalance ||
                                 errorState == ErrorState.insufficientUtxo
                             ? MyColors.warningRed
-                            : MyColors.white),
+                            : CoconutColors.white),
                   ),
                 ),
                 const SizedBox(
@@ -316,7 +314,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                             color: errorState == ErrorState.insufficientBalance ||
                                     errorState == ErrorState.insufficientUtxo
                                 ? MyColors.warningRed
-                                : MyColors.white,
+                                : CoconutColors.white,
                             fontWeight: FontWeight.w700,
                             height: 16.8 / 14)),
                       ),
@@ -477,7 +475,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         child: Opacity(
           opacity: _isStickyHeaderVisible ? 1 : 0,
           child: Container(
-            color: MyColors.black,
+            color: CoconutColors.black,
             padding: const EdgeInsets.symmetric(
               horizontal: 16,
             ),
@@ -487,7 +485,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 _selectedUtxoOrder.text,
                 style: Styles.caption2.merge(
                   const TextStyle(
-                    color: MyColors.white,
+                    color: CoconutColors.white,
                     fontSize: 12,
                   ),
                 ),
@@ -620,7 +618,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               _selectedUtxoOrder.text,
               style: Styles.caption2.merge(
                 const TextStyle(
-                  color: MyColors.white,
+                  color: CoconutColors.white,
                   fontSize: 12,
                 ),
               ),

@@ -245,14 +245,9 @@ class WalletDetailViewModel extends ChangeNotifier {
   /// Faucet methods
   void showFaucetTooltip() async {
     final faucetHistory = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-    if (faucetHistory.count < 3) {
+    if (faucetHistory.count < 3 && txList.isEmpty) {
       _faucetTooltipVisible = true;
     }
-    notifyListeners();
-  }
-
-  // TODO: 필요없을지도 모름.
-  void updateProvider() async {
     notifyListeners();
   }
 

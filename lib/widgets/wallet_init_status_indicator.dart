@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ enum WalletInitState {
   impossible,
 }
 
+// TODO: 더이상 사용하지 않음 확인 후 삭제
 class WalletInitStatusIndicator extends StatelessWidget {
   final WalletInitState state;
   final VoidCallback? onTap;
@@ -39,7 +41,7 @@ class WalletInitStatusIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     String iconName = '';
     String text = '';
-    Color color = MyColors.primary;
+    Color color = CoconutColors.primary;
 
     switch (state) {
       case WalletInitState.impossible:
@@ -53,11 +55,11 @@ class WalletInitStatusIndicator extends StatelessWidget {
       case WalletInitState.finished:
         iconName = 'complete';
         text = '업데이트 완료';
-        color = MyColors.primary;
+        color = CoconutColors.primary;
       case WalletInitState.processing:
         iconName = 'loading';
         text = '업데이트 중';
-        color = MyColors.primary;
+        color = CoconutColors.primary;
       default:
         iconName = 'complete';
         text = '';

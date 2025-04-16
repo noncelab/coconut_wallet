@@ -1,6 +1,8 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/styles.dart';
 
+// TODO: cds로 교체 후 삭제
 class CustomDialog extends StatelessWidget {
   final String title;
   final String content;
@@ -26,7 +28,8 @@ class CustomDialog extends StatelessWidget {
         CupertinoDialogAction(
           isDestructiveAction: true,
           onPressed: onConfirmPressed,
-          child: Text('네', style: Styles.subLabel.merge(const TextStyle(color: MyColors.primary))),
+          child: Text('네',
+              style: Styles.subLabel.merge(const TextStyle(color: CoconutColors.primary))),
         ),
       ],
     );

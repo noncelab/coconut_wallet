@@ -30,7 +30,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
       child: Consumer<SendConfirmViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
-              backgroundColor: MyColors.black,
+              backgroundColor: CoconutColors.black,
               appBar: CustomAppBar.buildWithNext(
                   title: t.send_confirm_screen.title,
                   context: context,
@@ -39,15 +39,18 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                     context.loaderOverlay.show();
                     viewModel.generateUnsignedPsbt().then((value) {
                       viewModel.setTxWaitingForSign(value);
-                      context.loaderOverlay.hide();
-
-                      Navigator.pushNamed(context, '/unsigned-transaction-qr',
-                          arguments: {'walletName': viewModel.walletName});
+                      if (context.mounted) {
+                        context.loaderOverlay.hide();
+                        Navigator.pushNamed(context, '/unsigned-transaction-qr',
+                            arguments: {'walletName': viewModel.walletName});
+                      }
                     }).catchError((error) {
-                      context.loaderOverlay.hide();
-                      showAlertDialog(
-                          context: context,
-                          content: t.alert.error_tx.not_created(error: error.toString()));
+                      if (context.mounted) {
+                        context.loaderOverlay.hide();
+                        showAlertDialog(
+                            context: context,
+                            content: t.alert.error_tx.not_created(error: error.toString()));
+                      }
                     });
                   }),
               body: SafeArea(

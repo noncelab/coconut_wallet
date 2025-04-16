@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -42,7 +43,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
-import 'package:coconut_wallet/styles.dart';
+
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -197,8 +198,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         theme: const CupertinoThemeData(
           // 테마 설정
           brightness: Brightness.dark,
-          primaryColor: MyColors.primary, // 기본 색상
-          scaffoldBackgroundColor: MyColors.black,
+          primaryColor: CoconutColors.primary, // 기본 색상
+          scaffoldBackgroundColor: CoconutColors.black,
           textTheme: CupertinoTextThemeData(
             // 텍스트 테마 설정
             textStyle: TextStyle(
@@ -221,9 +222,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               color: CupertinoColors.white,
             ),
           ),
-          barBackgroundColor: MyColors.black, // AppBar 배경 색상
+          barBackgroundColor: CoconutColors.black, // AppBar 배경 색상
         ),
-        color: MyColors.black,
+        color: CoconutColors.black,
         home: _appEntryFlow == AppEntryFlow.splash
             ? StartScreen(onComplete: _completeSplash)
             : _appEntryFlow == AppEntryFlow.main

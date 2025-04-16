@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -41,8 +41,8 @@ class _FaucetTooltipState extends State<FaucetTooltip> {
     return Visibility(
       visible: widget.isVisible,
       child: Positioned(
-        top: widget.iconPosition.dy + widget.iconSize.height - 10,
-        right: widget.width - widget.iconPosition.dx - widget.iconSize.width + 5,
+        top: widget.iconPosition.dy + widget.iconSize.height - 12,
+        right: widget.width - widget.iconPosition.dx - widget.iconSize.width + 4,
         child: AnimatedOpacity(
           opacity: _isOpacity ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 1000),
@@ -59,18 +59,12 @@ class _FaucetTooltipState extends State<FaucetTooltip> {
                   right: 18,
                   bottom: 10,
                 ),
-                color: MyColors.skybule,
+                color: const Color.fromRGBO(179, 240, 255, 1), // CDS에 없는 색상
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      widget.text,
-                      style: Styles.caption.merge(TextStyle(
-                        height: 1.3,
-                        fontFamily: CustomFonts.text.getFontFamily,
-                        color: MyColors.darkgrey,
-                      )),
-                    ),
+                    Text(widget.text,
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray900)),
                   ],
                 ),
               ),
