@@ -37,7 +37,9 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
           ),
           CoconutLayout.spacing_300h,
           CoconutButton(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+            // todo: width 지정 필요 없도록 cds 수정 필요
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+            width: 132,
             onPressed: widget.onPressed,
             text: t.wallet_list_add_guide_card.btn_add,
             backgroundColor: CoconutColors.primary,
