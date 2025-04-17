@@ -88,33 +88,18 @@ void printState(NodeProviderState state) {
 
 class ScriptEventHandlerMock {
   static int callSubscribeWalletCount = 0;
-  static final MockElectrumService electrumService = MockElectrumService();
-  static final NodeStateManager stateManager = NodeStateManager(() {
-    printState(stateManager.state);
-  });
-  static final TestRealmManager realmManager = TestRealmManager()..init(false);
-  static final UtxoRepository utxoRepository = UtxoRepository(realmManager);
-  static final UtxoManager utxoManager = UtxoManager(
-    electrumService,
-    stateManager,
-    utxoRepository,
-    transactionRepository,
-    addressRepository,
-  );
-  static final ScriptCallbackManager scriptCallbackManager = ScriptCallbackManager();
-  static final AddressRepository addressRepository = AddressRepository(realmManager);
-  static final TransactionRepository transactionRepository = TransactionRepository(realmManager);
-  static final WalletRepository walletRepository = WalletRepository(realmManager);
-  static final TransactionManager transactionManager = TransactionManager(
-    electrumService,
-    stateManager,
-    transactionRepository,
-    utxoManager,
-    addressRepository,
-    scriptCallbackManager,
-  );
-  static final BalanceManager balanceManager =
-      BalanceManager(electrumService, stateManager, addressRepository, walletRepository);
+  static late MockElectrumService electrumService;
+  static late NodeStateManager stateManager;
+  static TestRealmManager? realmManager;
+  static late UtxoRepository utxoRepository;
+  static late UtxoManager utxoManager;
+  static late ScriptCallbackManager scriptCallbackManager;
+  static late AddressRepository addressRepository;
+  static late TransactionRepository transactionRepository;
+  static late WalletRepository walletRepository;
+  static late TransactionManager transactionManager;
+  static late BalanceManager balanceManager;
+
   static Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
     callSubscribeWalletCount++;
     return Result.success(true);
@@ -128,6 +113,50 @@ class ScriptEventHandlerMock {
       utxoManager,
       addressRepository,
       subscribeWallet,
+      scriptCallbackManager,
+    );
+  }
+
+  static void init() {
+    callSubscribeWalletCount = 0;
+    electrumService = MockElectrumService();
+    stateManager = NodeStateManager(() {
+      printState(stateManager.state);
+    });
+    if (realmManager == null) {
+      realmManager = TestRealmManager()..init(false);
+    } else {
+      realmManager!.dispose();
+      realmManager = TestRealmManager()..init(false);
+    }
+
+    // 리포지토리 초기화
+    addressRepository = AddressRepository(realmManager!);
+    transactionRepository = TransactionRepository(realmManager!);
+    walletRepository = WalletRepository(realmManager!);
+    utxoRepository = UtxoRepository(realmManager!);
+
+    // 매니저 초기화
+    scriptCallbackManager = ScriptCallbackManager();
+
+    // 의존성 순서를 고려한 매니저 초기화
+    utxoManager = UtxoManager(
+      electrumService,
+      stateManager,
+      utxoRepository,
+      transactionRepository,
+      addressRepository,
+    );
+
+    balanceManager =
+        BalanceManager(electrumService, stateManager, addressRepository, walletRepository);
+
+    transactionManager = TransactionManager(
+      electrumService,
+      stateManager,
+      transactionRepository,
+      utxoManager,
+      addressRepository,
       scriptCallbackManager,
     );
   }

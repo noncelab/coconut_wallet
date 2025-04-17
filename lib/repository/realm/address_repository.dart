@@ -141,34 +141,78 @@ class AddressRepository extends BaseRepository {
   /// 주소를 DB에 저장
   Future<void> _addAllAddressList(
       RealmWalletBase realmWalletBase, List<WalletAddress> addresses) async {
+    if (addresses.isEmpty) {
+      return;
+    }
+
     int maxReceiveIndex = 0;
     int maxChangeIndex = 0;
-    final realmAddresses = addresses.map(
-      (address) {
-        if (address.isChange) {
-          maxChangeIndex = max(maxChangeIndex, address.index);
-        } else {
-          maxReceiveIndex = max(maxReceiveIndex, address.index);
+
+    // 주소 인덱스 최대값 계산
+    for (final address in addresses) {
+      if (address.isChange) {
+        maxChangeIndex = max(maxChangeIndex, address.index);
+      } else {
+        maxReceiveIndex = max(maxReceiveIndex, address.index);
+      }
+    }
+
+    await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
+
+    // 이미 존재하는 주소들의 ID를 미리 확인
+    final existingIds = realm
+        .query<RealmWalletAddress>('walletId == ${realmWalletBase.id}')
+        .map((addr) => addr.id)
+        .toSet();
+
+    // 중복되지 않는 주소 필터링
+    final addressesToAdd = <RealmWalletAddress>[];
+
+    for (final address in addresses) {
+      final addressId = Object.hash(realmWalletBase.id, address.index, address.address);
+
+      // 이미 존재하는 주소는 건너뛰기
+      if (existingIds.contains(addressId)) {
+        continue;
+      }
+
+      addressesToAdd.add(mapWalletAddressToRealm(
+        realmWalletBase.id,
+        address,
+      ));
+    }
+
+    // 추가할 주소가 없으면 종료
+    if (addressesToAdd.isEmpty) {
+      return;
+    }
+
+    await _safelyAddAddresses(addressesToAdd);
+  }
+
+  /// 안전하게 주소를 추가하는 헬퍼 메서드
+  Future<void> _safelyAddAddresses(List<RealmWalletAddress> addresses) async {
+    for (final address in addresses) {
+      try {
+        await realm.writeAsync(() {
+          realm.add<RealmWalletAddress>(address);
+        });
+      } catch (e) {
+        if (e.toString().contains('RLM_ERR_OBJECT_ALREADY_EXISTS')) {
+          Logger.log('[_safelyAddAddresses] Address already exists, skipping: ${address.address}');
+          continue;
         }
-        return RealmWalletAddress(
-          Object.hash(realmWalletBase.id, address.index, address.address),
-          realmWalletBase.id,
-          address.address,
-          address.index,
-          address.isChange,
-          address.derivationPath,
-          address.isUsed,
-          address.confirmed,
-          address.unconfirmed,
-          address.total,
-        );
-      },
-    ).toList();
 
+        Logger.error('[_safelyAddAddresses] Failed to add address: $e');
+        rethrow;
+      }
+    }
+  }
+
+  /// 지갑 인덱스만 업데이트하는 헬퍼 메서드
+  Future<void> _updateWalletIndices(
+      RealmWalletBase realmWalletBase, int maxReceiveIndex, int maxChangeIndex) async {
     await realm.writeAsync(() {
-      realm.addAll<RealmWalletAddress>(realmAddresses);
-
-      // 생성된 주소 인덱스 업데이트
       if (maxChangeIndex > realmWalletBase.generatedChangeIndex) {
         realmWalletBase.generatedChangeIndex = maxChangeIndex;
       }

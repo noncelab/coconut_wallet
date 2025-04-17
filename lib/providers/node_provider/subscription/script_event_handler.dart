@@ -101,8 +101,9 @@ class ScriptEventHandler {
           Logger.error('Failed to extend script subscription: ${subResult.error}');
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       Logger.error('Failed to handle script status change: $e');
+      Logger.error('Stack trace: $stackTrace');
       // 오류 발생 시에도 상태 초기화
       _stateManager.setMainClientWaitingState();
     }
