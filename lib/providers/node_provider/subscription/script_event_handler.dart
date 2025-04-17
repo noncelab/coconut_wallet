@@ -48,7 +48,8 @@ class ScriptEventHandler {
         () async {
           // UTXO 동기화가 트랜잭션 동기화에 의존성이 있으므로 Utxo 동기화 상태도 업데이트
           _stateManager.addWalletSyncState(dto.walletItem.id, UpdateElement.utxo);
-          _utxoManager.fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
+
+          await _utxoManager.fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
         },
       );
 
@@ -80,7 +81,7 @@ class ScriptEventHandler {
         now: now,
       );
 
-      _scriptCallbackManager.registerTransactionDependency(
+      await _scriptCallbackManager.registerTransactionDependency(
         dto.walletItem,
         dto.scriptStatus,
         txHashes,

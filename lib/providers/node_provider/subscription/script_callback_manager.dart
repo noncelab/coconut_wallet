@@ -66,7 +66,7 @@ class ScriptCallbackManager {
 
     // 모든 트랜잭션이 처리 완료되었으면 fetchUtxos 함수 실행
     if (areAllTransactionsCompleted(walletItem.id, txHashes)) {
-      callFetchUtxosCallback(scriptKey);
+      await callFetchUtxosCallback(scriptKey);
       return;
     }
 
@@ -83,7 +83,7 @@ class ScriptCallbackManager {
   }
 
   /// 트랜잭션의 처리를 완료 상태로 변경합니다.
-  void registerTransactionCompletion(int walletId, Set<String> txHashes) {
+  Future<void> registerTransactionCompletion(int walletId, Set<String> txHashes) async {
     // 먼저 모든 트랜잭션 상태를 완료로 변경
     for (final txHash in txHashes) {
       final txHashKey = getTxHashKey(walletId, txHash);
@@ -93,11 +93,11 @@ class ScriptCallbackManager {
     }
 
     // 모든 종속성 한 번에 처리
-    _deleteTransactionDependencies(txHashes);
+    await _deleteTransactionDependencies(txHashes);
   }
 
   /// 여러 트랜잭션 해시에 대한 종속성을 일괄 제거
-  void _deleteTransactionDependencies(Set<String> txHashes) {
+  Future<void> _deleteTransactionDependencies(Set<String> txHashes) async {
     // 영향 받는 스크립트와 제거할 트랜잭션 매핑 생성
     final Map<String, List<String>> affectedScripts = {};
 
@@ -121,19 +121,19 @@ class ScriptCallbackManager {
 
       // 종속성이 모두 제거되었다면 fetchUtxos 콜백 실행
       if (deps.isEmpty) {
-        callFetchUtxosCallback(scriptKey);
+        await callFetchUtxosCallback(scriptKey);
       }
     }
   }
 
   /// fetchUtxos 콜백 함수 실행
-  void callFetchUtxosCallback(String scriptKey) {
+  Future<void> callFetchUtxosCallback(String scriptKey) async {
     final callbackList = _fetchUtxosCallback[scriptKey];
     if (callbackList == null) {
       return;
     }
     if (callbackList.isNotEmpty) {
-      callbackList.first().then((_) {
+      await callbackList.first().then((_) {
         if (callbackList.isNotEmpty) {
           callbackList.removeAt(0);
         }
