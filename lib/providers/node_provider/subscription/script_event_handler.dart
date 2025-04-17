@@ -81,7 +81,7 @@ class ScriptEventHandler {
         now: now,
       );
 
-      await _scriptCallbackManager.registerTransactionDependency(
+      _scriptCallbackManager.registerTransactionDependency(
         dto.walletItem,
         dto.scriptStatus,
         txHashes,

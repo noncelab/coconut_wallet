@@ -232,7 +232,7 @@ class TransactionFetcher {
     }
 
     // 트랜잭션 처리 완료 상태 등록
-    await _scriptCallbackManager.registerTransactionCompletion(walletItem.id, newTxHashes);
+    _scriptCallbackManager.registerTransactionCompletion(walletItem.id, newTxHashes);
 
     return txFetchResults.map((tx) => tx.transactionHash).toList();
   }

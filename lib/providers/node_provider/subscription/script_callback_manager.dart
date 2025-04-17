@@ -57,7 +57,7 @@ class ScriptCallbackManager {
 
   /// fetchTransactions 종료 후 반환된 트랜잭션 해시 목록을 기반으로 스크립트 종속성 등록.
   /// 만약 모든 트랜잭션이 처리 완료되었으면 스크립트 종속성 등록 없이 바로 fetchUtxos 함수 실행
-  Future<void> registerTransactionDependency(
+  void registerTransactionDependency(
     WalletListItemBase walletItem,
     ScriptStatus status,
     List<String> txHashes,
@@ -66,7 +66,7 @@ class ScriptCallbackManager {
 
     // 모든 트랜잭션이 처리 완료되었으면 fetchUtxos 함수 실행
     if (areAllTransactionsCompleted(walletItem.id, txHashes)) {
-      await callFetchUtxosCallback(scriptKey);
+      callFetchUtxosCallback(scriptKey);
       return;
     }
 
@@ -83,7 +83,7 @@ class ScriptCallbackManager {
   }
 
   /// 트랜잭션의 처리를 완료 상태로 변경합니다.
-  Future<void> registerTransactionCompletion(int walletId, Set<String> txHashes) async {
+  void registerTransactionCompletion(int walletId, Set<String> txHashes) {
     // 먼저 모든 트랜잭션 상태를 완료로 변경
     for (final txHash in txHashes) {
       final txHashKey = getTxHashKey(walletId, txHash);
@@ -93,11 +93,11 @@ class ScriptCallbackManager {
     }
 
     // 모든 종속성 한 번에 처리
-    await _deleteTransactionDependencies(txHashes);
+    _deleteTransactionDependencies(txHashes);
   }
 
   /// 여러 트랜잭션 해시에 대한 종속성을 일괄 제거
-  Future<void> _deleteTransactionDependencies(Set<String> txHashes) async {
+  void _deleteTransactionDependencies(Set<String> txHashes) {
     // 영향 받는 스크립트와 제거할 트랜잭션 매핑 생성
     final Map<String, List<String>> affectedScripts = {};
 
@@ -121,19 +121,19 @@ class ScriptCallbackManager {
 
       // 종속성이 모두 제거되었다면 fetchUtxos 콜백 실행
       if (deps.isEmpty) {
-        await callFetchUtxosCallback(scriptKey);
+        callFetchUtxosCallback(scriptKey);
       }
     }
   }
 
   /// fetchUtxos 콜백 함수 실행
-  Future<void> callFetchUtxosCallback(String scriptKey) async {
+  void callFetchUtxosCallback(String scriptKey) {
     final callbackList = _fetchUtxosCallback[scriptKey];
     if (callbackList == null) {
       return;
     }
     if (callbackList.isNotEmpty) {
-      await callbackList.first().then((_) {
+      callbackList.first().then((_) {
         if (callbackList.isNotEmpty) {
           callbackList.removeAt(0);
         }
