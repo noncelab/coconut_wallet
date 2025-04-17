@@ -155,9 +155,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           _buildSliverAnimatedList(viewModel.walletItemList,
                               (id) => viewModel.getWalletBalance(id), viewModel.isBalanceHidden),
                         ]),
+                    _buildOfflineWarningBar(context, isOffline),
                     _buildDropdownBackdrop(),
                     _buildDropdownMenu(),
-                    _buildOfflineWarningBar(context, isOffline)
                   ],
                 ),
               ),
