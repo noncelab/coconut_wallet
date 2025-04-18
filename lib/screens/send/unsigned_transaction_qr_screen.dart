@@ -25,7 +25,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       appBar: CustomAppBar.buildWithNext(
           title: t.send,
           context: context,
@@ -47,7 +47,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                       left: CoconutLayout.defaultPadding,
                       right: CoconutLayout.defaultPadding),
                   child: CoconutToolTip(
-                      baseBackgroundColor: MyColors.white.withOpacity(0.95),
+                      baseBackgroundColor: CoconutColors.white.withOpacity(0.95),
                       tooltipType: CoconutTooltipType.fixed,
                       richText: RichText(
                         text: TextSpan(
@@ -58,7 +58,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                             fontSize: 15,
                             height: 1.4,
                             letterSpacing: 0.5,
-                            color: MyColors.black,
+                            color: CoconutColors.black,
                           ),
                           children: <TextSpan>[
                             TextSpan(
@@ -90,7 +90,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                     margin: const EdgeInsets.only(top: 40),
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                        color: MyColors.white, borderRadius: BorderRadius.circular(8)),
+                        color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
                     child: AnimatedQrView(
                       data: AnimatedQRDataHandler.splitData(_psbtBase64),
                       size: MediaQuery.of(context).size.width * 0.8,

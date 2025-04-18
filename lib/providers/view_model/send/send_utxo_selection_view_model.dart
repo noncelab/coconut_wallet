@@ -14,7 +14,6 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -141,7 +140,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   int? get change {
     if (_sendInfoProvider.walletId == null) {
       // 이미 보내기 과정 완료 후 호출 될 때를 대비
-      // FIXME: proxyProvider 제거 가능한지 확인
       return null;
     }
 
@@ -387,11 +385,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       }
       rethrow;
     }
-  }
-
-  List<UtxoState> _getAvailableUtxoList(WalletListItemBase walletItem) {
-    final utxoList = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
-    return utxoList.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
   }
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {

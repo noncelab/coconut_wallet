@@ -1,6 +1,6 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/pin/pin_box.dart';
 
@@ -58,7 +58,7 @@ class PinInputPadState extends State<PinInputPad> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       appBar: widget.appBarVisible
           ? AppBar(
               backgroundColor: Colors.transparent,
@@ -68,7 +68,7 @@ class PinInputPadState extends State<PinInputPad> {
                       onPressed: widget.onClosePressed,
                       icon: const Icon(
                         Icons.close,
-                        color: MyColors.white,
+                        color: CoconutColors.white,
                         size: 22,
                       ),
                     )
@@ -76,7 +76,7 @@ class PinInputPadState extends State<PinInputPad> {
                       onPressed: widget.onBackPressed,
                       icon: SvgPicture.asset(
                         'assets/svg/back.svg',
-                        colorFilter: const ColorFilter.mode(MyColors.white, BlendMode.srcIn),
+                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                       ),
                     ),
             )
@@ -89,7 +89,7 @@ class PinInputPadState extends State<PinInputPad> {
             SizedBox(height: widget.initOptionVisible ? 60 : 24),
             Text(
               widget.title,
-              style: Styles.body1.merge(const TextStyle(fontWeight: FontWeight.bold)),
+              style: CoconutTypography.body1_16_Bold,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -106,7 +106,9 @@ class PinInputPadState extends State<PinInputPad> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(widget.errorMessage, style: Styles.warning, textAlign: TextAlign.center),
+            Text(widget.errorMessage,
+                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                textAlign: TextAlign.center),
             const SizedBox(height: 40),
             Expanded(
               child: Align(
@@ -138,8 +140,7 @@ class PinInputPadState extends State<PinInputPad> {
                     },
                     child: Text(
                       '비밀번호가 기억나지 않나요?',
-                      style: Styles.body2.merge(const TextStyle(
-                          fontWeight: FontWeight.bold, color: MyColors.transparentWhite_70)),
+                      style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray600),
                       textAlign: TextAlign.center,
                     ),
                   )),

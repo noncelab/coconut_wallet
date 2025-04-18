@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -23,7 +24,7 @@ class TestnetLabelWidget extends StatelessWidget {
           const TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w600,
-            color: MyColors.white,
+            color: CoconutColors.white,
           ),
         ),
       ),

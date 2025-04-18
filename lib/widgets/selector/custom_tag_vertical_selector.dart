@@ -1,6 +1,7 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
 
 /// [CustomTagVerticalSelector] : 태그 목록을 보여주고 선택할 수 있는 위젯 (세로)
@@ -102,7 +103,7 @@ class CustomTagSelectorItem extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 11, horizontal: isSelected ? 10 : 0),
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
-        color: isSelected ? MyColors.selectBackground : Colors.transparent,
+        color: isSelected ? CoconutColors.gray800 : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -111,19 +112,18 @@ class CustomTagSelectorItem extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: BackgroundColorPalette[colorIndex],
+              color: ColorUtil.getColor(colorIndex).backgroundColor,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: ColorPalette[colorIndex],
+                color: ColorUtil.getColor(colorIndex).color,
                 width: 1,
               ),
             ),
             child: Center(
               child: Text(
                 '#',
-                style: Styles.body1.copyWith(
-                  fontSize: 14,
-                  color: ColorPalette[colorIndex],
+                style: CoconutTypography.body2_14.setColor(
+                  ColorUtil.getColor(colorIndex).color,
                 ),
               ),
             ),
@@ -135,11 +135,7 @@ class CustomTagSelectorItem extends StatelessWidget {
               children: [
                 Text(
                   '#$tag',
-                  style: Styles.body1.copyWith(
-                    fontSize: 14,
-                    color: MyColors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -147,7 +143,7 @@ class CustomTagSelectorItem extends StatelessWidget {
                   visible: usedCount > 0,
                   child: Text(
                     t.apply_item(count: usedCount),
-                    style: Styles.body1.copyWith(fontSize: 11, color: MyColors.white),
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.white),
                   ),
                 ),
               ],

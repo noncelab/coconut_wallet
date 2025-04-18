@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +40,7 @@ class CustomLimitTextField extends StatelessWidget {
         // Text Field
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: MyColors.white),
+            border: Border.all(color: CoconutColors.white),
             borderRadius: BorderRadius.circular(12),
             color: MyColors.transparentWhite_15,
           ),
@@ -65,7 +66,7 @@ class CustomLimitTextField extends StatelessWidget {
                 child: SvgPicture.asset(
                   'assets/svg/text-field-clear.svg',
                   colorFilter: const ColorFilter.mode(
-                    MyColors.white,
+                    CoconutColors.white,
                     BlendMode.srcIn,
                   ),
                   width: 15,
@@ -94,7 +95,7 @@ class CustomLimitTextField extends StatelessWidget {
                 '${controller.text.runes.length}/$maxLength',
                 style: TextStyle(
                   color: controller.text.runes.length == maxLength
-                      ? MyColors.white
+                      ? CoconutColors.white
                       : MyColors.transparentWhite_50,
                   fontSize: 12,
                   fontFamily: CustomFonts.number.getFontFamily,

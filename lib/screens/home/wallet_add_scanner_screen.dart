@@ -10,7 +10,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -50,7 +49,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           context: context,
           hasRightIcon: true,
           isBottom: true,
-          backgroundColor: MyColors.black.withOpacity(0.95),
+          backgroundColor: CoconutColors.black.withOpacity(0.95),
           rightIconButton: IconButton(
             onPressed: () {
               if (controller != null) {
@@ -58,13 +57,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               }
             },
             icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
-            color: MyColors.white,
+            color: CoconutColors.white,
           ),
           showTestnetLabel: false,
         ),
         body: Stack(children: [
           Container(
-            color: MyColors.black,
+            color: CoconutColors.black,
             child: Column(
               children: <Widget>[
                 Expanded(
@@ -73,7 +72,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                     key: qrKey,
                     onQRViewCreated: _onQRViewCreated,
                     overlay: QrScannerOverlayShape(
-                        borderColor: MyColors.white,
+                        borderColor: CoconutColors.white,
                         borderRadius: 8,
                         borderLength: (MediaQuery.of(context).size.width < 400 ||
                                 MediaQuery.of(context).size.height < 400)
@@ -93,7 +92,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               padding: const EdgeInsets.only(
                   top: 20, left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),
               child: CoconutToolTip(
-                  baseBackgroundColor: MyColors.white.withOpacity(0.95),
+                  baseBackgroundColor: CoconutColors.white.withOpacity(0.95),
                   tooltipType: CoconutTooltipType.fixed,
                   richText: RichText(
                     text: TextSpan(
@@ -104,7 +103,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                         fontSize: 15,
                         height: 1.4,
                         letterSpacing: 0.5,
-                        color: MyColors.black,
+                        color: CoconutColors.black,
                       ),
                       children: <TextSpan>[
                         TextSpan(
@@ -142,8 +141,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     controller.scannedDataStream.listen((scanData) {
       if (_isProcessing || scanData.code == null) return;
       _isProcessing = true;
-      context.loaderOverlay.show();
 
+      if (!mounted) return;
+
+      context.loaderOverlay.show();
       final model = Provider.of<WalletProvider>(context, listen: false);
       WatchOnlyWallet watchOnlyWallet;
       try {
@@ -152,6 +153,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         watchOnlyWallet = WatchOnlyWallet.fromJson(jsonData);
 
         model.syncFromVault(watchOnlyWallet).then((ResultOfSyncFromVault value) {
+          if (!mounted) return;
           switch (value.result) {
             case WalletSyncResult.newWalletAdded:
             case WalletSyncResult.existingWalletUpdated:
@@ -176,24 +178,29 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               }
             case WalletSyncResult.existingName:
               vibrateLightDouble();
-              CustomDialogs.showCustomAlertDialog(context,
-                  title: t.alert.wallet_add.duplicate_name,
-                  message: t.alert.wallet_add.duplicate_name_description, onConfirm: () {
-                _isProcessing = false;
-                Navigator.pop(context);
-              });
+              if (mounted) {
+                CustomDialogs.showCustomAlertDialog(context,
+                    title: t.alert.wallet_add.duplicate_name,
+                    message: t.alert.wallet_add.duplicate_name_description, onConfirm: () {
+                  _isProcessing = false;
+                  Navigator.pop(context);
+                });
+              }
           }
         }).catchError((error) {
           vibrateLightDouble();
-
-          CustomDialogs.showCustomAlertDialog(context,
-              title: t.alert.wallet_add.add_failed, message: error.toString(), onConfirm: () {
-            _isProcessing = false;
-            Navigator.pop(context);
-          });
+          if (mounted) {
+            CustomDialogs.showCustomAlertDialog(context,
+                title: t.alert.wallet_add.add_failed, message: error.toString(), onConfirm: () {
+              _isProcessing = false;
+              Navigator.pop(context);
+            });
+          }
         }).whenComplete(() {
           vibrateMedium();
-          context.loaderOverlay.hide();
+          if (mounted) {
+            context.loaderOverlay.hide();
+          }
         });
       } catch (error) {
         vibrateLightDouble();

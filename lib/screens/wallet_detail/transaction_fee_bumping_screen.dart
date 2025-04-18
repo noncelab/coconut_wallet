@@ -239,7 +239,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
     bool success = await viewModel.prepareToSend(double.parse(_textEditingController.text));
 
-    if (success && mounted) {
+    if (success && context.mounted) {
       Navigator.pushNamed(context, '/unsigned-transaction-qr',
           arguments: {'walletName': widget.walletName});
     }

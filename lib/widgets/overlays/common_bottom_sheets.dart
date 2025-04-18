@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -41,7 +42,7 @@ class CommonBottomSheets {
                           padding: const EdgeInsets.all(4),
                           color: Colors.transparent,
                           child: isCloseButton
-                              ? const Icon(Icons.close_rounded, color: MyColors.white)
+                              ? const Icon(Icons.close_rounded, color: CoconutColors.white)
                               : Container(width: 16),
                         ),
                       ),
@@ -63,7 +64,7 @@ class CommonBottomSheets {
               ],
             ));
       },
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       isDismissible: isDismissible,
       isScrollControlled: true,
       enableDrag: enableDrag,
@@ -85,7 +86,7 @@ class CommonBottomSheets {
           ),
         );
       },
-      backgroundColor: MyColors.black,
+      backgroundColor: CoconutColors.black,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
@@ -99,7 +100,7 @@ class CommonBottomSheets {
         builder: (context) {
           return child; // child screen에서 type <T>를 반환하면 반환됩니다.
         },
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         //isDismissible: false,
         isScrollControlled: true,
         enableDrag: true,
@@ -114,7 +115,7 @@ class CommonBottomSheets {
         builder: (context) {
           return child; // child screen에서 type <T>를 반환하면 반환됩니다.
         },
-        backgroundColor: MyColors.black,
+        backgroundColor: CoconutColors.black,
         //isDismissible: false,
         isScrollControlled: true,
         enableDrag: true,
@@ -126,7 +127,7 @@ class CommonBottomSheets {
       {required BuildContext context,
       required Widget child,
       bool enableDrag = true,
-      Color backgroundColor = MyColors.black,
+      Color backgroundColor = CoconutColors.black,
       bool isDismissible = false,
       bool isScrollControlled = true,
       bool useSafeArea = true,
@@ -149,7 +150,7 @@ class CommonBottomSheets {
     required BuildContext context,
     required Widget child,
     bool enableDrag = true,
-    Color backgroundColor = MyColors.black,
+    Color backgroundColor = CoconutColors.black,
     bool isDismissible = true,
     bool isScrollControlled = true,
     bool useSafeArea = true,

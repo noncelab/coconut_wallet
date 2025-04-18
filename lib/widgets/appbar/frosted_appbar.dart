@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -47,7 +48,7 @@ class FrostedAppBar extends StatelessWidget {
                   Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 10),
                       child: SvgPicture.asset('assets/svg/coconut.svg',
-                          color: MyColors.white, width: 24)),
+                          color: CoconutColors.white, width: 24)),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 4),
@@ -84,7 +85,7 @@ class FrostedAppBar extends StatelessWidget {
                         'assets/svg/book.svg',
                         width: 18,
                         height: 18,
-                        colorFilter: const ColorFilter.mode(MyColors.white, BlendMode.srcIn),
+                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                       ),
                       onPressed: () {
                         CustomDialogs.showCustomAlertDialog(
@@ -106,7 +107,7 @@ class FrostedAppBar extends StatelessWidget {
                           cancelButtonText: '닫기',
                         );
                       },
-                      color: MyColors.white,
+                      color: CoconutColors.white,
                     ),
                   ),
                   SizedBox(
@@ -119,7 +120,7 @@ class FrostedAppBar extends StatelessWidget {
                       onPressed: () {
                         onTapAddScanner();
                       },
-                      color: MyColors.white,
+                      color: CoconutColors.white,
                     ),
                   ),
                   Container(
@@ -131,7 +132,7 @@ class FrostedAppBar extends StatelessWidget {
                       onPressed: () {
                         onTapSeeMore.call();
                       },
-                      color: MyColors.white,
+                      color: CoconutColors.white,
                     ),
                   ),
                 ],

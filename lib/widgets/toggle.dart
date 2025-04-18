@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -14,7 +15,7 @@ class ToggleWidget extends StatefulWidget {
   });
 
   @override
-  _ToggleWidgetState createState() => _ToggleWidgetState();
+  State<ToggleWidget> createState() => _ToggleWidgetState();
 }
 
 class _ToggleWidgetState extends State<ToggleWidget> {
@@ -44,7 +45,7 @@ class _ToggleWidgetState extends State<ToggleWidget> {
               widget.onChanged!(newValue);
             }
           },
-          activeColor: MyColors.primary.withOpacity(0.8),
+          activeColor: CoconutColors.primary.withOpacity(0.8),
         )
       ],
     );

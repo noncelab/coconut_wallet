@@ -7,7 +7,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_vi
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
@@ -51,13 +51,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         builder: (_, viewModel, child) {
           return Scaffold(
             backgroundColor: CoconutColors.black,
-            appBar: CustomAppBar.build(
-                title: t.wallet_info_screen.title(name: viewModel.walletName),
-                context: context,
-                hasRightIcon: false,
-                onBackPressed: () {
-                  Navigator.pop(context);
-                }),
+            appBar: CoconutAppBar.build(
+                title: t.wallet_info_screen.title(name: viewModel.walletName), context: context),
             body: SafeArea(
               child: SingleChildScrollView(
                 child: Stack(
@@ -108,12 +103,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             ),
                           ),
                         } else ...{
-                          const SizedBox(height: 32),
+                          CoconutLayout.spacing_800h
                         },
                         Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28),
-                            color: CoconutColors.white.withOpacity(0.06),
+                            borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
+                            color: CoconutColors.gray800,
                           ),
                           margin: const EdgeInsets.symmetric(horizontal: 16),
                           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -187,10 +182,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           ),
                         ),
                         Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28),
-                            color: CoconutColors.white.withOpacity(0.06),
-                          ),
+                          decoration: defaultBoxDecoration,
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           margin: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
@@ -330,10 +322,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _setOverlayLoading(true);
     await viewModel.deleteWallet();
     _setOverlayLoading(false);
-    Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (BuildContext context) => const WalletListScreen()),
-        (route) => false);
+    if (context.mounted) {
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (BuildContext context) => const WalletListScreen()),
+          (route) => false);
+    }
   }
 
   void _setOverlayLoading(bool value) {

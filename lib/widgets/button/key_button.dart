@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -93,7 +94,7 @@ class _KeyButtonState extends State<KeyButton> {
               ),
           child: Center(
               child: widget.keyValue == '<'
-                  ? const Icon(Icons.backspace, color: MyColors.white, size: 20)
+                  ? const Icon(Icons.backspace, color: CoconutColors.white, size: 20)
                   : widget.keyValue == 'bio'
                       ? _isFaceRecognition
                           ? SvgPicture.asset('assets/svg/face-id.svg',
@@ -107,7 +108,7 @@ class _KeyButtonState extends State<KeyButton> {
                           style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
-                              color: MyColors.white,
+                              color: CoconutColors.white,
                               fontFamily: 'SpaceGrotesk'),
                         )),
         ));

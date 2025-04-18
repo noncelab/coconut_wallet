@@ -78,7 +78,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
             }
 
             return Scaffold(
-                backgroundColor: MyColors.black,
+                backgroundColor: CoconutColors.black,
                 appBar: CustomAppBar.buildWithNext(
                     title: t.fee,
                     context: context,
