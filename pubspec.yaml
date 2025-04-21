@@ -79,6 +79,9 @@ dependencies:
   async: ^2.11.0
   decimal: ^3.0.2
   tuple: ^2.0.2
+  cbor: ^6.3.5
+  ur:
+    path: lib/packages/bc-ur-dart
 
 dev_dependencies:
   flutter_test:
