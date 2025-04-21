@@ -1,16 +1,20 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
-/// NodeProvider의 네트워크 관련 기능을 담당하는 매니저 클래스
+/// NodeProvider의 네트워크 관련 기능을 담당하는 서비스 클래스
 /// ElectrumService의 네트워크 관련 기능을 직접 구현합니다.
-class NetworkManager {
+class NetworkService {
   final ElectrumService _electrumService;
+  final TransactionRepository _transactionRepository;
 
-  NetworkManager(this._electrumService);
+  NetworkService(this._electrumService, this._transactionRepository);
 
   /// 네트워크 최소 수수료율을 조회합니다.
   Future<Result<int>> getNetworkMinimumFeeRate() async {
@@ -118,5 +122,33 @@ class NetworkManager {
   int _convertFeeToSatPerVByte(double feeBtcPerKb) {
     // 1 BTC = 1e8 sat, 1 kB = 1000 vB → 변환 계수는 1e8/1000 = 100000
     return (feeBtcPerKb * 100000).round();
+  }
+
+  /// 트랜잭션을 브로드캐스트합니다.
+  Future<Result<String>> broadcast(Transaction signedTx) async {
+    try {
+      final txHash = await _electrumService.broadcast(signedTx.serialize());
+
+      // 브로드캐스트 시간 기록
+      _transactionRepository
+          .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
+          .catchError((e) {
+        Logger.error(e);
+      });
+
+      return Result.success(txHash);
+    } catch (e) {
+      return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));
+    }
+  }
+
+  /// 특정 트랜잭션을 조회합니다.
+  Future<Result<String>> getTransaction(String txHash) async {
+    try {
+      final tx = await _electrumService.getTransaction(txHash);
+      return Result.success(tx);
+    } catch (e) {
+      return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
+    }
   }
 }

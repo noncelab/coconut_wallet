@@ -4,38 +4,38 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_handler_util.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 /// 스크립트 상태 변경 이벤트 처리를 담당하는 클래스
-class ScriptEventHandler {
+class ScriptSyncService {
   final StateManagerInterface _stateManager;
-  final BalanceManager _balanceManager;
-  final TransactionManager _transactionManager;
-  final UtxoManager _utxoManager;
+  final BalanceSyncService _balanceSyncService;
+  final TransactionSyncService _transactionSyncService;
+  final UtxoSyncService _utxoSyncService;
   final AddressRepository _addressRepository;
   final Future<Result<bool>> Function(WalletListItemBase walletItem) _subscribeWallet;
-  final ScriptCallbackManager _scriptCallbackManager;
+  final ScriptCallbackService _scriptCallbackService;
 
-  ScriptEventHandler(
+  ScriptSyncService(
     this._stateManager,
-    this._balanceManager,
-    this._transactionManager,
-    this._utxoManager,
+    this._balanceSyncService,
+    this._transactionSyncService,
+    this._utxoSyncService,
     this._addressRepository,
     this._subscribeWallet,
-    this._scriptCallbackManager,
+    this._scriptCallbackService,
   );
 
   /// 스크립트 상태 변경 이벤트 처리
-  Future<void> handleScriptStatusChanged(SubscribeScriptStreamDto dto) async {
+  Future<void> syncScriptStatus(SubscribeScriptStreamDto dto) async {
     try {
       final now = DateTime.now();
 
@@ -43,13 +43,13 @@ class ScriptEventHandler {
       _stateManager.initWalletUpdateStatus(dto.walletItem.id);
 
       //fetchScriptUtxo 함수에서 트랜잭션 정보가 필요함. 따라서 실제 트랜잭션 정보가 모두 처리된 후에 호출되도록 콜백함수 등록
-      _scriptCallbackManager.registerFetchUtxosCallback(
+      _scriptCallbackService.registerFetchUtxosCallback(
         getScriptKey(dto.walletItem.id, dto.scriptStatus.derivationPath),
         () async {
           // UTXO 동기화가 트랜잭션 동기화에 의존성이 있으므로 Utxo 동기화 상태도 업데이트
           _stateManager.addWalletSyncState(dto.walletItem.id, UpdateElement.utxo);
 
-          await _utxoManager.fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
+          await _utxoSyncService.fetchScriptUtxo(dto.walletItem, dto.scriptStatus);
         },
       );
 
@@ -72,16 +72,16 @@ class ScriptEventHandler {
       );
 
       // Balance 동기화
-      await _balanceManager.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
+      await _balanceSyncService.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
 
       // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
-      final txHashes = await _transactionManager.fetchScriptTransaction(
+      final txHashes = await _transactionSyncService.fetchScriptTransaction(
         dto.walletItem,
         dto.scriptStatus,
         now: now,
       );
 
-      _scriptCallbackManager.registerTransactionDependency(
+      _scriptCallbackService.registerTransactionDependency(
         dto.walletItem,
         dto.scriptStatus,
         txHashes,
@@ -122,7 +122,7 @@ class ScriptEventHandler {
   }
 
   /// 스크립트 상태 변경 배치 처리
-  Future<void> handleBatchScriptStatusChanged({
+  Future<void> syncBatchScriptStatusList({
     required WalletListItemBase walletItem,
     required List<ScriptStatus> scriptStatuses,
   }) async {
@@ -133,13 +133,13 @@ class ScriptEventHandler {
       _stateManager.initWalletUpdateStatus(walletItem.id);
 
       // Balance 병렬 처리
-      await _balanceManager.fetchScriptBalanceBatch(walletItem, scriptStatuses);
+      await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);
 
       // Transaction 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
 
       final transactionFutures = scriptStatuses.map(
-        (status) => _transactionManager.fetchScriptTransaction(
+        (status) => _transactionSyncService.fetchScriptTransaction(
           walletItem,
           status,
           inBatchProcess: true,
@@ -153,11 +153,11 @@ class ScriptEventHandler {
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
       await Future.wait(
         scriptStatuses.map(
-            (status) => _utxoManager.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
+            (status) => _utxoSyncService.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
       );
 
       // 최초 지갑 구독 시 Outgoing Transaction이 있을 경우 UTXO가 생성되지 않을 경우 임의로 UTXO를 생성해야 함
-      await _utxoManager.createOutgoingUtxos(walletItem);
+      await _utxoSyncService.createOutgoingUtxos(walletItem);
 
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
     } catch (e, stackTrace) {

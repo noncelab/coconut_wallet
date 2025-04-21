@@ -3,14 +3,14 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_handler_util.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_handler.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/models/cpfp_info.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/rbf_handler.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/transaction_processor.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_service.dart';
+import 'package:coconut_wallet/model/node/cpfp_info.dart';
+import 'package:coconut_wallet/model/node/rbf_info.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
@@ -19,39 +19,39 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 // Helper record for step 3 return type (Moved before class)
-typedef _TransactionDetails = ({
+typedef FetchedTransactionDetails = ({
   List<Transaction> fetchedTransactions,
   Map<String, int> txBlockHeightMap,
   Map<int, BlockTimestamp> blockTimestampMap
 });
 
 // Helper record for step 4 return type (Moved before class)
-typedef _RbfCpfpDetectionResult = ({
+typedef RbfCpfpDetectionResult = ({
   Map<String, RbfInfo> sendingRbfInfoMap,
   Set<String> receivingRbfTxHashSet,
   Map<String, CpfpInfo> cpfpInfoMap
 });
 
 /// 트랜잭션 조회를 담당하는 클래스
-class TransactionFetcher {
+class TransactionSyncService {
   final ElectrumService _electrumService;
   final TransactionRepository _transactionRepository;
-  final TransactionProcessor _transactionProcessor;
+  final TransactionRecordService _transactionRecordService;
   final StateManagerInterface _stateManager;
-  final UtxoManager _utxoManager;
-  final RbfHandler _rbfHandler;
-  final CpfpHandler _cpfpHandler;
-  final ScriptCallbackManager _scriptCallbackManager;
+  final UtxoSyncService _utxoSyncService;
+  final RbfService _rbfService;
+  final CpfpService _cpfpService;
+  final ScriptCallbackService _scriptCallbackService;
 
-  TransactionFetcher(
+  TransactionSyncService(
     this._electrumService,
     this._transactionRepository,
-    this._transactionProcessor,
+    this._transactionRecordService,
     this._stateManager,
-    this._utxoManager,
-    this._scriptCallbackManager,
-  )   : _rbfHandler = RbfHandler(_transactionRepository, _utxoManager, _electrumService),
-        _cpfpHandler = CpfpHandler(_transactionRepository, _utxoManager, _electrumService);
+    this._utxoSyncService,
+    this._scriptCallbackService,
+  )   : _rbfService = RbfService(_transactionRepository, _utxoSyncService, _electrumService),
+        _cpfpService = CpfpService(_transactionRepository, _utxoSyncService, _electrumService);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
   Future<List<String>> fetchScriptTransaction(
@@ -85,7 +85,7 @@ class TransactionFetcher {
 
     // 2. 처리 대상 트랜잭션 식별 및 등록
     final Set<String> newTxHashes = _identifyAndRegisterProcessableTransactions(
-        walletId, txFetchResults, _scriptCallbackManager);
+        walletId, txFetchResults, _scriptCallbackService);
 
     if (newTxHashes.isEmpty) {
       _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
@@ -93,29 +93,20 @@ class TransactionFetcher {
     }
 
     // 3. 트랜잭션 상세 정보 조회
-    final _TransactionDetails transactionDetails =
+    final FetchedTransactionDetails fetchedTransactionDetails =
         await _fetchTransactionDetails(newTxHashes, txFetchResults, _electrumService);
 
     // 4. UTXO 상태 업데이트 및 RBF/CPFP 처리
-    final _RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
-      walletId,
-      transactionDetails.fetchedTransactions,
-      unconfirmedFetchedTxHashes,
-      confirmedFetchedTxHashes,
-      _rbfHandler,
-      _cpfpHandler,
-      _utxoManager,
-      _transactionRepository,
-    );
+    final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
+        walletId,
+        fetchedTransactionDetails.fetchedTransactions,
+        unconfirmedFetchedTxHashes,
+        confirmedFetchedTxHashes);
 
     // 5. 트랜잭션 레코드 생성 및 저장
     final List<TransactionRecord> txRecords = await _createAndSaveTransactionRecords(
       walletItem,
-      transactionDetails.fetchedTransactions,
-      transactionDetails.txBlockHeightMap,
-      transactionDetails.blockTimestampMap,
-      _transactionProcessor,
-      _transactionRepository,
+      fetchedTransactionDetails,
       now: now,
     );
 
@@ -123,17 +114,11 @@ class TransactionFetcher {
     await _saveRbfAndCpfpHistory(
       walletItem,
       txRecords,
-      rbfCpfpResult.sendingRbfInfoMap,
-      rbfCpfpResult.receivingRbfTxHashSet,
-      rbfCpfpResult.cpfpInfoMap,
-      _rbfHandler,
-      _cpfpHandler,
-      _utxoManager,
-      _transactionRepository,
+      rbfCpfpResult,
     );
 
     // 7. 오래된 언컨펌 트랜잭션 정리
-    await _cleanupStaleUnconfirmedTransactions(walletId, _electrumService, _transactionRepository);
+    await _cleanupStaleUnconfirmedTransactions(walletId);
 
     // 8. 마무리 단계
     _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
@@ -152,7 +137,7 @@ class TransactionFetcher {
   Set<String> _identifyAndRegisterProcessableTransactions(
     int walletId,
     List<FetchTransactionResponse> txFetchResults,
-    ScriptCallbackManager scriptCallbackManager,
+    ScriptCallbackService scriptCallbackManager,
   ) {
     final Set<String> newTxHashes = {};
     for (final txFetchResult in txFetchResults) {
@@ -173,7 +158,7 @@ class TransactionFetcher {
   }
 
   /// 3. 트랜잭션 상세 정보 조회
-  Future<_TransactionDetails> _fetchTransactionDetails(
+  Future<FetchedTransactionDetails> _fetchTransactionDetails(
     Set<String> newTxHashes,
     List<FetchTransactionResponse> allTxFetchResults,
     ElectrumService electrumService,
@@ -199,15 +184,11 @@ class TransactionFetcher {
   }
 
   /// 4. UTXO 상태 업데이트 및 RBF/CPFP 처리
-  Future<_RbfCpfpDetectionResult> _processFetchedTransactionsAndUpdateUtxos(
+  Future<RbfCpfpDetectionResult> _processFetchedTransactionsAndUpdateUtxos(
     int walletId,
     List<Transaction> fetchedTransactions,
     Set<String> unconfirmedFetchedTxHashes,
     Set<String> confirmedFetchedTxHashes,
-    RbfHandler rbfHandler,
-    CpfpHandler cpfpHandler,
-    UtxoManager utxoManager,
-    TransactionRepository transactionRepository,
   ) async {
     Map<String, RbfInfo> sendingRbfInfoMap = {};
     Set<String> receivingRbfTxHashSet = {};
@@ -216,23 +197,23 @@ class TransactionFetcher {
     for (final fetchedTx in fetchedTransactions) {
       Logger.log('Processing transaction: ${fetchedTx.transactionHash}');
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
-        final sendingRbfInfo = await rbfHandler.detectSendingRbfTransaction(walletId, fetchedTx);
+        final sendingRbfInfo = await _rbfService.detectSendingRbfTransaction(walletId, fetchedTx);
         if (sendingRbfInfo != null) sendingRbfInfoMap[fetchedTx.transactionHash] = sendingRbfInfo;
 
         final receivingRbfTxHash =
-            await rbfHandler.detectReceivingRbfTransaction(walletId, fetchedTx);
+            await _rbfService.detectReceivingRbfTransaction(walletId, fetchedTx);
         if (receivingRbfTxHash != null) receivingRbfTxHashSet.add(receivingRbfTxHash);
 
-        final cpfpInfo = await cpfpHandler.detectCpfpTransaction(walletId, fetchedTx);
+        final cpfpInfo = await _cpfpService.detectCpfpTransaction(walletId, fetchedTx);
         if (cpfpInfo != null) cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
 
-        utxoManager.updateUtxoStatusToOutgoingByTransaction(walletId, fetchedTx);
+        _utxoSyncService.updateUtxoStatusToOutgoingByTransaction(walletId, fetchedTx);
       }
 
       if (confirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
-        utxoManager.deleteUtxosByTransaction(walletId, fetchedTx);
-        transactionRepository.deleteRbfHistory(walletId, fetchedTx);
-        transactionRepository.deleteCpfpHistory(walletId, fetchedTx);
+        _utxoSyncService.deleteUtxosByTransaction(walletId, fetchedTx);
+        _transactionRepository.deleteRbfHistory(walletId, fetchedTx);
+        _transactionRepository.deleteCpfpHistory(walletId, fetchedTx);
       }
     }
 
@@ -246,21 +227,15 @@ class TransactionFetcher {
   /// 5. 트랜잭션 레코드 생성 및 저장
   Future<List<TransactionRecord>> _createAndSaveTransactionRecords(
     WalletListItemBase walletItem,
-    List<Transaction> fetchedTransactions,
-    Map<String, int> txBlockHeightMap,
-    Map<int, BlockTimestamp> blockTimestampMap,
-    TransactionProcessor transactionProcessor,
-    TransactionRepository transactionRepository, {
+    FetchedTransactionDetails fetchedTransactionDetails, {
     DateTime? now,
   }) async {
-    final txRecords = await transactionProcessor.createTransactionRecords(
+    final txRecords = await _transactionRecordService.createTransactionRecords(
       walletItem,
-      fetchedTransactions,
-      txBlockHeightMap,
-      blockTimestampMap,
+      fetchedTransactionDetails,
       now: now,
     );
-    transactionRepository.addAllTransactions(walletItem.id, txRecords);
+    _transactionRepository.addAllTransactions(walletItem.id, txRecords);
     return txRecords;
   }
 
@@ -268,49 +243,46 @@ class TransactionFetcher {
   Future<void> _saveRbfAndCpfpHistory(
     WalletListItemBase walletItem,
     List<TransactionRecord> txRecords,
-    Map<String, RbfInfo> sendingRbfInfoMap,
-    Set<String> receivingRbfTxHashSet,
-    Map<String, CpfpInfo> cpfpInfoMap,
-    RbfHandler rbfHandler,
-    CpfpHandler cpfpHandler,
-    UtxoManager utxoManager,
-    TransactionRepository transactionRepository,
+    RbfCpfpDetectionResult rbfCpfpResult,
   ) async {
-    if (sendingRbfInfoMap.isEmpty && receivingRbfTxHashSet.isEmpty && cpfpInfoMap.isEmpty) {
+    if (rbfCpfpResult.sendingRbfInfoMap.isEmpty &&
+        rbfCpfpResult.receivingRbfTxHashSet.isEmpty &&
+        rbfCpfpResult.cpfpInfoMap.isEmpty) {
       return;
     }
 
     final txRecordMap = {for (var record in txRecords) record.transactionHash: record};
     final int walletId = walletItem.id;
 
-    if (sendingRbfInfoMap.isNotEmpty) {
-      await rbfHandler.saveRbfHistoryMap(walletItem, sendingRbfInfoMap, txRecordMap, walletId);
-      transactionRepository.markAsRbfReplaced(walletId, sendingRbfInfoMap);
-      utxoManager.deleteUtxosByReplacedTransactionHashSet(
-          walletId, sendingRbfInfoMap.values.map((info) => info.spentTransactionHash).toSet());
+    if (rbfCpfpResult.sendingRbfInfoMap.isNotEmpty) {
+      await _rbfService.saveRbfHistoryMap(
+          walletItem, rbfCpfpResult.sendingRbfInfoMap, txRecordMap, walletId);
+      _transactionRepository.markAsRbfReplaced(walletId, rbfCpfpResult.sendingRbfInfoMap);
+      _utxoSyncService.deleteUtxosByReplacedTransactionHashSet(walletId,
+          rbfCpfpResult.sendingRbfInfoMap.values.map((info) => info.spentTransactionHash).toSet());
     }
 
-    if (receivingRbfTxHashSet.isNotEmpty) {
-      utxoManager.deleteUtxosByReplacedTransactionHashSet(walletId, receivingRbfTxHashSet);
+    if (rbfCpfpResult.receivingRbfTxHashSet.isNotEmpty) {
+      _utxoSyncService.deleteUtxosByReplacedTransactionHashSet(
+          walletId, rbfCpfpResult.receivingRbfTxHashSet);
     }
 
-    if (cpfpInfoMap.isNotEmpty) {
-      await cpfpHandler.saveCpfpHistoryMap(walletItem, cpfpInfoMap, txRecordMap, walletId);
+    if (rbfCpfpResult.cpfpInfoMap.isNotEmpty) {
+      await _cpfpService.saveCpfpHistoryMap(
+          walletItem, rbfCpfpResult.cpfpInfoMap, txRecordMap, walletId);
     }
   }
 
   /// 7. 오래된 언컨펌 트랜잭션 정리
   Future<void> _cleanupStaleUnconfirmedTransactions(
     int walletId,
-    ElectrumService electrumService,
-    TransactionRepository transactionRepository,
   ) async {
-    final unconfirmedTxs = transactionRepository.getUnconfirmedTransactionRecordList(walletId);
+    final unconfirmedTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
     final toDeleteTxs = <String>[];
 
     for (final tx in unconfirmedTxs) {
       try {
-        await electrumService.getTransaction(tx.transactionHash, verbose: true);
+        await _electrumService.getTransaction(tx.transactionHash, verbose: true);
       } catch (e) {
         Logger.log('Transaction ${tx.transactionHash} not found, marking for deletion.');
         toDeleteTxs.add(tx.transactionHash);
@@ -318,7 +290,7 @@ class TransactionFetcher {
     }
 
     if (toDeleteTxs.isNotEmpty) {
-      transactionRepository.deleteTransaction(walletId, toDeleteTxs);
+      _transactionRepository.deleteTransaction(walletId, toDeleteTxs);
       Logger.log('Deleted stale unconfirmed transactions: $toDeleteTxs');
     }
   }
@@ -333,7 +305,7 @@ class TransactionFetcher {
       _stateManager.addWalletCompletedState(walletId, UpdateElement.transaction);
     }
     if (newTxHashes.isNotEmpty) {
-      _scriptCallbackManager.registerTransactionCompletion(walletId, newTxHashes);
+      _scriptCallbackService.registerTransactionCompletion(walletId, newTxHashes);
     }
   }
 

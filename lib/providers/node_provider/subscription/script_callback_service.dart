@@ -1,9 +1,9 @@
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_handler_util.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/transaction_processing_state.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
+import 'package:coconut_wallet/model/node/transaction_processing_state.dart';
 
-class ScriptCallbackManager {
+class ScriptCallbackService {
   /// 스크립트별 트랜잭션 조회 후 콜백 함수 실행 시 선행 트랜잭션 조회 여부 확인용
   /// 해당 스크립트별 조회가 필요한 트랜잭션 해시 목록이며 값이 비어있으면 해당 스크립트에 대한 콜백 함수는 실행 가능한 상태로 간주함
   /// key: ScriptKey, value: TxHash 목록

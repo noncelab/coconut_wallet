@@ -1,22 +1,22 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/models/cpfp_info.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
+import 'package:coconut_wallet/model/node/cpfp_info.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 
 /// CPFP(Child-Pays-For-Parent) 트랜잭션 처리를 담당하는 클래스
-class CpfpHandler {
+class CpfpService {
   final TransactionRepository _transactionRepository;
-  final UtxoManager _utxoManager;
+  final UtxoSyncService _utxoSyncService;
   final ElectrumService _electrumService;
 
-  CpfpHandler(
+  CpfpService(
     this._transactionRepository,
-    this._utxoManager,
+    this._utxoSyncService,
     this._electrumService,
   );
 
@@ -42,7 +42,7 @@ class CpfpHandler {
       // 입력 트랜잭션이 언컨펌이면서
       if (parentTxRecord != null && parentTxRecord.blockHeight == 0) {
         final utxo =
-            _utxoManager.getUtxoState(walletId, makeUtxoId(input.transactionHash, input.index));
+            _utxoSyncService.getUtxoState(walletId, makeUtxoId(input.transactionHash, input.index));
         // 입력 트랜잭션에 사용된 UTXO가 내 UTXO라면 CPFP로 간주
         if (utxo != null) {
           isCpfp = true;

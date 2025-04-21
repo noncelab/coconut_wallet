@@ -2,27 +2,25 @@ import 'dart:isolate';
 
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/network_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
-class IsolateHandler {
+class IsolateController {
   final SubscriptionManager _subscriptionManager;
-  final TransactionManager _transactionManager;
-  final NetworkManager _networkManager;
+  final NetworkService _networkManager;
   final IsolateStateManager _isolateStateManager;
   final ElectrumService _electrumService;
-  IsolateHandler(this._subscriptionManager, this._transactionManager, this._networkManager,
-      this._isolateStateManager, this._electrumService);
+  IsolateController(this._subscriptionManager, this._networkManager, this._isolateStateManager,
+      this._electrumService);
 
-  Future<void> handleMessage(
-      IsolateHandlerMessage messageType, SendPort isolateToMainSendPort, List params) async {
+  Future<void> executeNetworkCommand(
+      IsolateControllerCommand messageType, SendPort isolateToMainSendPort, List params) async {
     try {
       switch (messageType) {
-        case IsolateHandlerMessage.subscribeWallets:
+        case IsolateControllerCommand.subscribeWallets:
           final walletItems = params[0];
           // 지갑별 status 초기화
           for (var walletItem in walletItems) {
@@ -42,28 +40,28 @@ class IsolateHandler {
 
           isolateToMainSendPort.send(Result.success(true));
           break;
-        case IsolateHandlerMessage.subscribeWallet:
+        case IsolateControllerCommand.subscribeWallet:
           isolateToMainSendPort.send(await _subscriptionManager.subscribeWallet(params[0]));
           break;
-        case IsolateHandlerMessage.unsubscribeWallet:
+        case IsolateControllerCommand.unsubscribeWallet:
           isolateToMainSendPort.send(await _subscriptionManager.unsubscribeWallet(params[0]));
           break;
-        case IsolateHandlerMessage.broadcast:
-          isolateToMainSendPort.send(await _transactionManager.broadcast(params[0]));
+        case IsolateControllerCommand.broadcast:
+          isolateToMainSendPort.send(await _networkManager.broadcast(params[0]));
           break;
-        case IsolateHandlerMessage.getNetworkMinimumFeeRate:
+        case IsolateControllerCommand.getNetworkMinimumFeeRate:
           isolateToMainSendPort.send(await _networkManager.getNetworkMinimumFeeRate());
           break;
-        case IsolateHandlerMessage.getLatestBlock:
+        case IsolateControllerCommand.getLatestBlock:
           isolateToMainSendPort.send(await _networkManager.getLatestBlock());
           break;
-        case IsolateHandlerMessage.getTransaction:
-          isolateToMainSendPort.send(await _transactionManager.getTransaction(params[0]));
+        case IsolateControllerCommand.getTransaction:
+          isolateToMainSendPort.send(await _networkManager.getTransaction(params[0]));
           break;
-        case IsolateHandlerMessage.getRecommendedFees:
+        case IsolateControllerCommand.getRecommendedFees:
           isolateToMainSendPort.send(await _networkManager.getRecommendedFees());
           break;
-        case IsolateHandlerMessage.getSocketConnectionStatus:
+        case IsolateControllerCommand.getSocketConnectionStatus:
           isolateToMainSendPort.send(_electrumService.connectionStatus);
           break;
       }

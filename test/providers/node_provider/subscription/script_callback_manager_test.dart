@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_handler_util.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // test/mock/wallet_mock.dart 에서 필요한 함수 임포트
@@ -9,14 +9,14 @@ import '../../../mock/script_status_mock.dart';
 import '../../../mock/wallet_mock.dart';
 
 void main() {
-  late ScriptCallbackManager scriptCallbackManager;
+  late ScriptCallbackService scriptCallbackManager;
   late WalletListItemBase testWalletItem;
   late ScriptStatus testScriptStatus1;
   late ScriptStatus testScriptStatus2;
 
   // 각 테스트 실행 전에 호출되어 필요한 객체들을 초기화합니다.
   setUp(() {
-    scriptCallbackManager = ScriptCallbackManager();
+    scriptCallbackManager = ScriptCallbackService();
     testWalletItem = WalletMock.createSingleSigWalletItem(id: 1);
     testScriptStatus1 = ScriptStatusMock.createMockScriptStatus(testWalletItem, 1);
     testScriptStatus2 = ScriptStatusMock.createMockScriptStatus(testWalletItem, 2);

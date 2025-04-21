@@ -4,12 +4,12 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_event_handler.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_subscriber.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
@@ -21,47 +21,47 @@ import 'package:coconut_wallet/providers/node_provider/state_manager_interface.d
 class SubscriptionManager {
   final ElectrumService _electrumService;
   final StateManagerInterface _stateManager;
-  final BalanceManager _balanceManager;
-  final TransactionManager _transactionManager;
-  final UtxoManager _utxoManager;
+  final BalanceSyncService _balanceSyncService;
+  final TransactionSyncService _transactionSyncService;
+  final UtxoSyncService _utxoSyncService;
   final AddressRepository _addressRepository;
   final SubscriptionRepository _subscriptionRepository;
-  final ScriptCallbackManager _scriptCallbackManager;
+  final ScriptCallbackService _scriptCallbackService;
 
   // 구독중인 스크립트 상태 변경을 인지하는 컨트롤러
   late StreamController<SubscribeScriptStreamDto> _scriptStatusController;
-  late ScriptSubscriber _scriptSubscriber;
-  late ScriptEventHandler _scriptEventHandler;
+  late SubscriptionService _subscriptionService;
+  late ScriptSyncService _scriptSyncService;
 
   SubscriptionManager(
     this._electrumService,
     this._stateManager,
-    this._balanceManager,
-    this._transactionManager,
-    this._utxoManager,
+    this._balanceSyncService,
+    this._transactionSyncService,
+    this._utxoSyncService,
     this._addressRepository,
     this._subscriptionRepository,
-    this._scriptCallbackManager,
+    this._scriptCallbackService,
   ) {
     _scriptStatusController = StreamController<SubscribeScriptStreamDto>.broadcast();
 
-    _scriptSubscriber = ScriptSubscriber(
+    _subscriptionService = SubscriptionService(
       _electrumService,
       _scriptStatusController,
       _addressRepository,
     );
 
-    _scriptEventHandler = ScriptEventHandler(
+    _scriptSyncService = ScriptSyncService(
       _stateManager,
-      _balanceManager,
-      _transactionManager,
-      _utxoManager,
+      _balanceSyncService,
+      _transactionSyncService,
+      _utxoSyncService,
       _addressRepository,
       subscribeWallet,
-      _scriptCallbackManager,
+      _scriptCallbackService,
     );
 
-    _scriptStatusController.stream.listen(_scriptEventHandler.handleScriptStatusChanged);
+    _scriptStatusController.stream.listen(_scriptSyncService.syncScriptStatus);
   }
 
   /// 스크립트 구독
@@ -69,7 +69,7 @@ class SubscriptionManager {
   /// [walletProvider] 지갑 프로바이더
   Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
     try {
-      final fetchedScriptStatuses = await _scriptSubscriber.subscribeWallet(
+      final fetchedScriptStatuses = await _subscriptionService.subscribeWallet(
         walletItem,
       );
 
@@ -100,7 +100,7 @@ class SubscriptionManager {
       }
 
       // 변경 이력이 있는 지갑에 대해서만 balance, transaction, utxo 업데이트
-      await _scriptEventHandler.handleBatchScriptStatusChanged(
+      await _scriptSyncService.syncBatchScriptStatusList(
         walletItem: walletItem,
         scriptStatuses: updatedScriptStatuses,
       );
@@ -120,7 +120,7 @@ class SubscriptionManager {
   /// [walletItem] 지갑 아이템
   Future<Result<bool>> unsubscribeWallet(WalletListItemBase walletItem) async {
     try {
-      await _scriptSubscriber.unsubscribeWallet(walletItem);
+      await _subscriptionService.unsubscribeWallet(walletItem);
       return Result.success(true);
     } catch (e) {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);

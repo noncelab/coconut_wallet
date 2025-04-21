@@ -2,13 +2,12 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/rbf_handler.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/transaction_fetcher.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/transaction_processor.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/node_state_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -31,7 +30,7 @@ import '../../repository/realm/test_realm_manager.dart';
 @GenerateMocks([
   ElectrumService,
   NodeStateManager,
-  UtxoManager,
+  UtxoSyncService,
   WalletProvider,
   WalletListItemBase,
 ])
@@ -42,14 +41,13 @@ void main() {
   late TransactionRepository transactionRepository;
   late MockElectrumService electrumService;
   late MockNodeStateManager stateManager;
-  late MockUtxoManager utxoManager;
+  late MockUtxoSyncService utxoSyncService;
   late AddressRepository addressRepository;
   late MockWalletProvider walletProvider;
-  late TransactionManager transactionManager;
-  late TransactionFetcher transactionFetcher;
-  late TransactionProcessor transactionProcessor;
-  late RbfHandler rbfHandler;
-  late ScriptCallbackManager scriptCallbackManager;
+  late TransactionSyncService transactionSyncService;
+  late TransactionRecordService transactionRecordService;
+  late RbfService rbfService;
+  late ScriptCallbackService scriptCallbackService;
 
   const int testWalletId = 1;
   final SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
@@ -60,31 +58,31 @@ void main() {
     addressRepository = AddressRepository(realmManager);
     electrumService = MockElectrumService();
     stateManager = MockNodeStateManager();
-    utxoManager = MockUtxoManager();
+    utxoSyncService = MockUtxoSyncService();
     walletProvider = MockWalletProvider();
-    scriptCallbackManager = ScriptCallbackManager();
+    scriptCallbackService = ScriptCallbackService();
 
     // TransactionManager 생성
-    transactionManager = TransactionManager(
-      electrumService,
-      stateManager,
-      transactionRepository,
-      utxoManager,
-      addressRepository,
-      scriptCallbackManager,
-    );
-
-    transactionProcessor = TransactionProcessor(electrumService, addressRepository);
-    transactionFetcher = TransactionFetcher(
+    transactionSyncService = TransactionSyncService(
       electrumService,
       transactionRepository,
-      transactionProcessor,
+      transactionRecordService,
       stateManager,
-      utxoManager,
-      scriptCallbackManager,
+      utxoSyncService,
+      scriptCallbackService,
     );
 
-    rbfHandler = RbfHandler(transactionRepository, utxoManager, electrumService);
+    transactionRecordService = TransactionRecordService(electrumService, addressRepository);
+    transactionSyncService = TransactionSyncService(
+      electrumService,
+      transactionRepository,
+      transactionRecordService,
+      stateManager,
+      utxoSyncService,
+      scriptCallbackService,
+    );
+
+    rbfService = RbfService(transactionRepository, utxoSyncService, electrumService);
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
@@ -120,7 +118,7 @@ void main() {
           .thenAnswer((_) async => historyList);
 
       // 함수 실행
-      final result = await transactionFetcher.getFetchTransactionResponses(
+      final result = await transactionSyncService.getFetchTransactionResponses(
         AddressType.p2wpkh,
         scriptStatus,
         {'known_tx_hash'}, // 이미 알고 있는 트랜잭션 해시
@@ -211,7 +209,7 @@ void main() {
       when(stateManager.addWalletCompletedState(any, any)).thenReturn(null);
 
       // 함수 실행
-      await transactionManager.fetchScriptTransaction(
+      await transactionSyncService.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
         now: now,
@@ -247,10 +245,10 @@ void main() {
           .thenAnswer((_) async => prevTx.serialize());
 
       // UTXO 관리자 모킹
-      when(utxoManager.updateUtxoStatusToOutgoingByTransaction(any, any)).thenReturn(null);
+      when(utxoSyncService.updateUtxoStatusToOutgoingByTransaction(any, any)).thenReturn(null);
 
       // 함수 실행
-      await transactionManager.fetchScriptTransaction(
+      await transactionSyncService.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
         now: now,
@@ -259,7 +257,7 @@ void main() {
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
       verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
-      verify(utxoManager.updateUtxoStatusToOutgoingByTransaction(testWalletId, any)).called(1);
+      verify(utxoSyncService.updateUtxoStatusToOutgoingByTransaction(testWalletId, any)).called(1);
     });
 
     test('확인된 트랜잭션 처리를 올바르게 하는지 확인', () async {
@@ -285,10 +283,10 @@ void main() {
           .thenAnswer((_) async => prevTx.serialize());
 
       // UTXO 관리자 모킹
-      when(utxoManager.deleteUtxosByTransaction(any, any)).thenReturn(null);
+      when(utxoSyncService.deleteUtxosByTransaction(any, any)).thenReturn(null);
 
       // 함수 실행
-      await transactionManager.fetchScriptTransaction(
+      await transactionSyncService.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
         now: now,
@@ -297,7 +295,7 @@ void main() {
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
       verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
-      verify(utxoManager.deleteUtxosByTransaction(testWalletId, any)).called(1);
+      verify(utxoSyncService.deleteUtxosByTransaction(testWalletId, any)).called(1);
     });
 
     test('일괄 처리 모드에서 상태 관리자를 호출하지 않는지 확인', () async {
@@ -305,7 +303,7 @@ void main() {
       when(electrumService.getHistory(any, any)).thenAnswer((_) async => []);
 
       // 함수 실행 (inBatchProcess = true)
-      await transactionManager.fetchScriptTransaction(
+      await transactionSyncService.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
         now: now,
@@ -371,9 +369,9 @@ void main() {
           .thenAnswer((_) async => mockOriginalTx.serialize());
 
       // UTXO 관리자 모킹 - _detectRbfTransaction에서 사용될 입력 준비
-      when(utxoManager.updateUtxoStatusToOutgoingByTransaction(any, any)).thenAnswer((_) {});
+      when(utxoSyncService.updateUtxoStatusToOutgoingByTransaction(any, any)).thenAnswer((_) {});
 
-      await transactionManager.fetchScriptTransaction(
+      await transactionSyncService.fetchScriptTransaction(
         testWalletItem,
         mockScriptStatus,
         now: now,
@@ -438,7 +436,7 @@ void main() {
       });
 
       // 함수 실행
-      final result = await rbfHandler.detectSendingRbfTransaction(
+      final result = await rbfService.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
       );
@@ -452,7 +450,7 @@ void main() {
       _addRbfHistory(realmManager, testWalletId, mockNewTx.transactionHash, mockOriginalTxHash);
 
       // 함수 실행
-      final result = await rbfHandler.detectSendingRbfTransaction(
+      final result = await rbfService.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
       );
@@ -484,7 +482,7 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await rbfHandler.detectSendingRbfTransaction(
+      final result = await rbfService.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
       );
@@ -525,7 +523,7 @@ void main() {
       _addRbfHistory(realmManager, testWalletId, mockSpentTxHash, mockOriginalTxHash);
 
       // 함수 실행
-      final result = await rbfHandler.detectSendingRbfTransaction(
+      final result = await rbfService.detectSendingRbfTransaction(
         testWalletId,
         mockNewTx,
       );
@@ -570,7 +568,7 @@ void main() {
       ]);
 
       // 함수 실행
-      final result = await rbfHandler.detectSendingRbfTransaction(
+      final result = await rbfService.detectSendingRbfTransaction(
         testWalletId,
         multiInputTx,
       );
@@ -692,7 +690,7 @@ void main() {
       final rbfHistoriesBeforeCount = rbfHistoriesBefore.length;
 
       // fetchScriptTransaction 함수 실행
-      await transactionManager.fetchScriptTransaction(
+      await transactionSyncService.fetchScriptTransaction(
         testWalletItem,
         scriptStatus,
         now: DateTime.now(),
@@ -706,7 +704,7 @@ void main() {
       expect(rbfHistories.isEmpty, isTrue, reason: 'RBF 내역이 삭제되지 않았습니다.');
 
       // 추가 검증 - 관련 함수 호출이 발생했는지 확인
-      verify(utxoManager.deleteUtxosByTransaction(testWalletId, any)).called(1);
+      verify(utxoSyncService.deleteUtxosByTransaction(testWalletId, any)).called(1);
     });
   });
 }

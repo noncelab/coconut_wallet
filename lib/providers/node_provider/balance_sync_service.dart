@@ -10,13 +10,13 @@ import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
 import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
 
 /// NodeProvider의 잔액 관련 기능을 담당하는 매니저 클래스
-class BalanceManager {
+class BalanceSyncService {
   final ElectrumService _electrumService;
   final StateManagerInterface _stateManager;
   final AddressRepository _addressRepository;
   final WalletRepository _walletRepository;
 
-  BalanceManager(
+  BalanceSyncService(
     this._electrumService,
     this._stateManager,
     this._addressRepository,

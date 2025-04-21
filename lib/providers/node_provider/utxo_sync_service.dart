@@ -11,15 +11,15 @@ import 'package:coconut_wallet/providers/node_provider/state_manager_interface.d
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 
-/// NodeProvider의 UTXO 관련 기능을 담당하는 매니저 클래스
-class UtxoManager {
+/// NodeProvider의 UTXO 관련 기능을 담당하는 서비스 클래스
+class UtxoSyncService {
   final ElectrumService _electrumService;
   final StateManagerInterface _stateManager;
   final UtxoRepository _utxoRepository;
   final TransactionRepository _transactionRepository;
   final AddressRepository _addressRepository;
 
-  UtxoManager(
+  UtxoSyncService(
     this._electrumService,
     this._stateManager,
     this._utxoRepository,

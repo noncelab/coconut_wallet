@@ -1,12 +1,13 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_event_handler.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/node_state_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -92,28 +93,29 @@ class ScriptEventHandlerMock {
   static late NodeStateManager stateManager;
   static TestRealmManager? realmManager;
   static late UtxoRepository utxoRepository;
-  static late UtxoManager utxoManager;
-  static late ScriptCallbackManager scriptCallbackManager;
+  static late UtxoSyncService utxoSyncService;
+  static late ScriptCallbackService scriptCallbackService;
   static late AddressRepository addressRepository;
   static late TransactionRepository transactionRepository;
   static late WalletRepository walletRepository;
-  static late TransactionManager transactionManager;
-  static late BalanceManager balanceManager;
+  static late TransactionSyncService transactionSyncService;
+  static late TransactionRecordService transactionRecordService;
+  static late BalanceSyncService balanceSyncService;
 
   static Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
     callSubscribeWalletCount++;
     return Result.success(true);
   }
 
-  static ScriptEventHandler createMockScriptEventHandler() {
-    return ScriptEventHandler(
+  static ScriptSyncService createMockScriptEventHandler() {
+    return ScriptSyncService(
       stateManager,
-      balanceManager,
-      transactionManager,
-      utxoManager,
+      balanceSyncService,
+      transactionSyncService,
+      utxoSyncService,
       addressRepository,
       subscribeWallet,
-      scriptCallbackManager,
+      scriptCallbackService,
     );
   }
 
@@ -137,10 +139,10 @@ class ScriptEventHandlerMock {
     utxoRepository = UtxoRepository(realmManager!);
 
     // 매니저 초기화
-    scriptCallbackManager = ScriptCallbackManager();
+    scriptCallbackService = ScriptCallbackService();
 
     // 의존성 순서를 고려한 매니저 초기화
-    utxoManager = UtxoManager(
+    utxoSyncService = UtxoSyncService(
       electrumService,
       stateManager,
       utxoRepository,
@@ -148,16 +150,18 @@ class ScriptEventHandlerMock {
       addressRepository,
     );
 
-    balanceManager =
-        BalanceManager(electrumService, stateManager, addressRepository, walletRepository);
+    transactionRecordService = TransactionRecordService(electrumService, addressRepository);
 
-    transactionManager = TransactionManager(
+    balanceSyncService =
+        BalanceSyncService(electrumService, stateManager, addressRepository, walletRepository);
+
+    transactionSyncService = TransactionSyncService(
       electrumService,
-      stateManager,
       transactionRepository,
-      utxoManager,
-      addressRepository,
-      scriptCallbackManager,
+      transactionRecordService,
+      stateManager,
+      utxoSyncService,
+      scriptCallbackService,
     );
   }
 }

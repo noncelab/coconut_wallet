@@ -110,11 +110,11 @@ void main() {
       expect(beforeUtxoList.length, 0);
 
       /// When - 이벤트 실행
-      await scriptEventHandler.handleScriptStatusChanged(dto);
+      await scriptEventHandler.syncScriptStatus(dto);
 
       /// Then - 이벤트 실행 후 검증
       // 검증 - 1. Callback
-      final isCompleted = ScriptEventHandlerMock.scriptCallbackManager.areAllTransactionsCompleted(
+      final isCompleted = ScriptEventHandlerMock.scriptCallbackService.areAllTransactionsCompleted(
         walletId,
         [mockTx.transactionHash],
       );
@@ -226,13 +226,13 @@ void main() {
 
       /// When - 이벤트 실행
       await Future.wait([
-        scriptEventHandler.handleScriptStatusChanged(dto),
-        scriptEventHandler.handleScriptStatusChanged(dto),
+        scriptEventHandler.syncScriptStatus(dto),
+        scriptEventHandler.syncScriptStatus(dto),
       ]);
 
       /// Then - 이벤트 실행 후 검증
       // 검증 - 1. Callback
-      final isCompleted = ScriptEventHandlerMock.scriptCallbackManager.areAllTransactionsCompleted(
+      final isCompleted = ScriptEventHandlerMock.scriptCallbackService.areAllTransactionsCompleted(
         walletId,
         [mockTx.transactionHash],
       );

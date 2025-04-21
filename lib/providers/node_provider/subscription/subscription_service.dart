@@ -12,13 +12,13 @@ import 'package:coconut_wallet/utils/logger.dart';
 import '../../../utils/electrum_utils.dart';
 
 /// 스크립트 구독 처리를 담당하는 클래스
-class ScriptSubscriber {
+class SubscriptionService {
   final ElectrumService _electrumService;
   final StreamController<SubscribeScriptStreamDto> _scriptStatusController;
   final AddressRepository _addressRepository;
   final int _gapLimit = 20; // 기본 gap limit 설정
 
-  ScriptSubscriber(
+  SubscriptionService(
     this._electrumService,
     this._scriptStatusController,
     this._addressRepository,
@@ -207,114 +207,113 @@ class ScriptSubscriber {
     // 이미 구독 중인 스크립트인지 확인
     final existingStatus = walletItem.subscribedScriptMap[script];
 
+    ScriptStatus scriptStatus = ScriptStatus(
+      derivationPath: derivationPath,
+      address: address,
+      index: derivationIndex,
+      isChange: isChange,
+      scriptPubKey: script,
+      status: null,
+      timestamp: DateTime.now(),
+    );
+
     if (existingStatus != null) {
       // 이미 구독 중인 스크립트는 기존 상태를 재사용하고 새 구독 요청을 보내지 않음
+      scriptStatus.status = existingStatus.status;
       return (
-        scriptStatus: ScriptStatus(
-          derivationPath: derivationPath,
-          address: address,
-          index: derivationIndex,
-          isChange: isChange,
-          scriptPubKey: script,
-          status: existingStatus.status,
-          timestamp: existingStatus.timestamp,
-        ),
+        scriptStatus: scriptStatus,
         isSubscribed: true,
       );
     }
 
     final status = await _electrumService.subscribeScript(
         walletItem.walletBase.addressType, address, onUpdate: (reversedScriptHash, newStatus) {
-      // ---------- 콜백 함수 시작 ----------
-      final now = DateTime.now();
-      final scriptStatus = ScriptStatus(
-        scriptPubKey: script,
-        status: newStatus,
-        timestamp: now,
-        derivationPath: derivationPath,
-        address: address,
-        index: derivationIndex,
-        isChange: isChange,
+      // 새 상태 업데이트
+      scriptStatus.status = newStatus;
+      scriptStatus.timestamp = DateTime.now();
+      _handleScriptUpdate(
+        reversedScriptHash,
+        scriptStatus,
+        walletItem,
+        scriptStatusController,
       );
+    });
 
-      // 상태 변경 시 사용된 인덱스 업데이트 및 스캔 범위 확장
-      if (newStatus != null) {
-        // 현재 상태와 기존 상태를 비교하여 변경 여부 확인
-        final currentStatus = walletItem.subscribedScriptMap[script]?.status;
-        final bool statusChanged = currentStatus != newStatus;
+    walletItem.subscribedScriptMap[script] = scriptStatus.toUnaddressedScriptStatus();
 
-        // 중요: 상태가 변경되었거나 인덱스가 현재 최대값인 경우 확장 수행
-        bool needsExtension = false;
+    scriptStatus.status = status;
+    scriptStatus.timestamp = DateTime.now();
 
-        if (isChange) {
-          // 안전하게 현재 최신 상태의 인덱스와 비교
-          int currentChangeIndex = walletItem.changeUsedIndex;
+    return (
+      scriptStatus: scriptStatus,
+      isSubscribed: false,
+    );
+  }
 
-          // 인덱스가 더 크거나, 상태가 변경되었고 현재 인덱스와 같은 경우
-          if (derivationIndex > currentChangeIndex ||
-              (statusChanged && derivationIndex >= currentChangeIndex)) {
-            walletItem.changeUsedIndex = max(walletItem.changeUsedIndex, derivationIndex);
+  /// 스크립트 업데이트 처리를 위한 콜백 메서드
+  void _handleScriptUpdate(
+    String reversedScriptHash,
+    ScriptStatus scriptStatus,
+    WalletListItemBase walletItem,
+    StreamController<SubscribeScriptStreamDto> scriptStatusController,
+  ) {
+    // 상태 변경 시 사용된 인덱스 업데이트 및 스캔 범위 확장
+    if (scriptStatus.status != null) {
+      // 현재 상태와 기존 상태를 비교하여 변경 여부 확인
+      final currentStatus = walletItem.subscribedScriptMap[scriptStatus.scriptPubKey]?.status;
+      final bool statusChanged = currentStatus != scriptStatus.status;
 
-            needsExtension = true;
-            // Logger.log(
-            //     'Status changed for change address at index $derivationIndex: "$currentStatus" -> "$newStatus"');
-          }
-        } else {
-          // 안전하게 현재 최신 상태의 인덱스와 비교
-          int currentReceiveIndex = walletItem.receiveUsedIndex;
+      // 중요: 상태가 변경되었거나 인덱스가 현재 최대값인 경우 확장 수행
+      bool needsExtension = false;
 
-          // 인덱스가 더 크거나, 상태가 변경되었고 현재 인덱스와 같은 경우
-          if (derivationIndex > currentReceiveIndex ||
-              (statusChanged && derivationIndex >= currentReceiveIndex)) {
-            walletItem.receiveUsedIndex = max(walletItem.receiveUsedIndex, derivationIndex);
+      if (scriptStatus.isChange) {
+        // 안전하게 현재 최신 상태의 인덱스와 비교
+        int currentChangeIndex = walletItem.changeUsedIndex;
 
-            needsExtension = true;
-            // Logger.log(
-            //     'Status changed for receive address at index $derivationIndex: "$currentStatus" -> "$newStatus"');
-          }
-        }
+        // 인덱스가 더 크거나, 상태가 변경되었고 현재 인덱스와 같은 경우
+        if (scriptStatus.index > currentChangeIndex ||
+            (statusChanged && scriptStatus.index >= currentChangeIndex)) {
+          walletItem.changeUsedIndex = max(walletItem.changeUsedIndex, scriptStatus.index);
 
-        // 확장 조건이 충족되면 스캔 범위 확장
-        if (needsExtension) {
+          needsExtension = true;
           // Logger.log(
-          //     'Triggering extension from onUpdate callback for ${isChange ? "change" : "receive"} index $derivationIndex');
-          // 추가 주소 구독이 필요한 경우 비동기로 처리
-          _extendSubscription(walletItem, isChange, scriptStatusController);
+          //     'Status changed for change address at index $derivationIndex: "$currentStatus" -> "$newStatus"');
+        }
+      } else {
+        // 안전하게 현재 최신 상태의 인덱스와 비교
+        int currentReceiveIndex = walletItem.receiveUsedIndex;
+
+        // 인덱스가 더 크거나, 상태가 변경되었고 현재 인덱스와 같은 경우
+        if (scriptStatus.index > currentReceiveIndex ||
+            (statusChanged && scriptStatus.index >= currentReceiveIndex)) {
+          walletItem.receiveUsedIndex = max(walletItem.receiveUsedIndex, scriptStatus.index);
+
+          needsExtension = true;
+          // Logger.log(
+          //     'Status changed for receive address at index $derivationIndex: "$currentStatus" -> "$newStatus"');
         }
       }
 
-      // 상태 업데이트 반영
-      walletItem.subscribedScriptMap[script] = UnaddressedScriptStatus(
-        scriptPubKey: script,
-        status: newStatus,
-        timestamp: now,
-      );
+      // 확장 조건이 충족되면 스캔 범위 확장
+      if (needsExtension) {
+        // Logger.log(
+        //     'Triggering extension from onUpdate callback for ${isChange ? "change" : "receive"} index $derivationIndex');
+        // 추가 주소 구독이 필요한 경우 비동기로 처리
+        _extendSubscription(walletItem, scriptStatus.isChange, scriptStatusController);
+      }
+    }
 
-      scriptStatusController.add(SubscribeScriptStreamDto(
-        scriptStatus: scriptStatus,
-        walletItem: walletItem,
-      ));
-      // ---------- 콜백 함수 끝 ----------
-    });
-
-    walletItem.subscribedScriptMap[script] = UnaddressedScriptStatus(
-      scriptPubKey: script,
-      status: status,
-      timestamp: DateTime.now(),
+    // 상태 업데이트 반영
+    walletItem.subscribedScriptMap[scriptStatus.scriptPubKey] = UnaddressedScriptStatus(
+      scriptPubKey: scriptStatus.scriptPubKey,
+      status: scriptStatus.status,
+      timestamp: scriptStatus.timestamp,
     );
 
-    return (
-      scriptStatus: ScriptStatus(
-        scriptPubKey: script,
-        status: status,
-        timestamp: DateTime.now(),
-        derivationPath: derivationPath,
-        address: address,
-        index: derivationIndex,
-        isChange: isChange,
-      ),
-      isSubscribed: false,
-    );
+    scriptStatusController.add(SubscribeScriptStreamDto(
+      scriptStatus: scriptStatus,
+      walletItem: walletItem,
+    ));
   }
 
   /// 스캔 범위 확장을 위한 메서드

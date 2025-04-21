@@ -2,20 +2,20 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
+import 'package:coconut_wallet/model/node/rbf_info.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 
 /// RBF(Replace-By-Fee) 트랜잭션 처리를 담당하는 클래스
-class RbfHandler {
+class RbfService {
   final TransactionRepository _transactionRepository;
-  final UtxoManager _utxoManager;
+  final UtxoSyncService _utxoSyncService;
   final ElectrumService _electrumService;
 
-  RbfHandler(this._transactionRepository, this._utxoManager, this._electrumService);
+  RbfService(this._transactionRepository, this._utxoSyncService, this._electrumService);
 
   /// RBF를 보내는 지갑 관점에서 이미 소비한 UTXO를 다시 소비하는지 확인
   Future<RbfInfo?> detectSendingRbfTransaction(int walletId, Transaction tx) async {
@@ -31,7 +31,7 @@ class RbfHandler {
 
     for (final input in tx.inputs) {
       final utxoId = makeUtxoId(input.transactionHash, input.index);
-      final utxo = _utxoManager.getUtxoState(walletId, utxoId);
+      final utxo = _utxoSyncService.getUtxoState(walletId, utxoId);
 
       if (utxo != null) {
         // 자기 참조 케이스 확인 (spentByTransactionHash가 현재 트랜잭션과 동일한 경우는 무시)
@@ -89,7 +89,7 @@ class RbfHandler {
     int walletId,
     Transaction tx,
   ) async {
-    final incomingUtxoList = _utxoManager.getIncomingUtxoList(walletId);
+    final incomingUtxoList = _utxoSyncService.getIncomingUtxoList(walletId);
 
     for (final utxo in incomingUtxoList) {
       try {

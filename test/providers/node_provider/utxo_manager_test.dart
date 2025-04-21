@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/node_state_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -26,7 +26,7 @@ void main() {
   late UtxoRepository utxoRepository;
   late MockElectrumService electrumService;
   late MockNodeStateManager stateManager;
-  late UtxoManager utxoManager;
+  late UtxoSyncService utxoManager;
   late TransactionRepository transactionRepository;
   late AddressRepository addressRepository;
   SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem();
@@ -40,7 +40,7 @@ void main() {
     electrumService = MockElectrumService();
     stateManager = MockNodeStateManager();
 
-    utxoManager = UtxoManager(
+    utxoManager = UtxoSyncService(
       electrumService,
       stateManager,
       utxoRepository,
