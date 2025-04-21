@@ -18,7 +18,11 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../../widgets/appbar/custom_appbar.dart';
 
 class WalletAddScannerScreen extends StatefulWidget {
-  const WalletAddScannerScreen({super.key});
+  final WalletImportSource walletImportSource;
+  const WalletAddScannerScreen({
+    super.key,
+    required this.walletImportSource,
+  });
 
   @override
   State<WalletAddScannerScreen> createState() => _WalletAddScannerScreenState();
@@ -45,7 +49,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: CustomAppBar.build(
-          title: t.wallet_add_scanner_screen.text,
+          title: t.wallet_add_scanner_screen.add_watch_only_wallet,
           context: context,
           hasRightIcon: true,
           isBottom: true,

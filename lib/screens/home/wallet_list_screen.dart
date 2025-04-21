@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -61,12 +62,17 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   double? itemCardHeight;
   late WalletListViewModel _viewModel;
 
-  final List<String> _dropdownButtons = [
-    t.glossary,
-    t.mnemonic_wordlist,
-    t.self_security_check,
-    t.settings,
-    t.view_app_info,
+  final List<CoconutPulldownMenuEntry> _dropdownButtons = [
+    CoconutPulldownMenuGroup(
+      groupTitle: t.tool,
+      items: [
+        CoconutPulldownMenuItem(title: t.glossary),
+        CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
+        CoconutPulldownMenuItem(title: t.tutorial),
+      ],
+    ),
+    CoconutPulldownMenuItem(title: t.settings),
+    CoconutPulldownMenuItem(title: t.view_app_info),
   ];
   late final List<Future<Object?> Function()> _dropdownActions;
 
@@ -214,8 +220,28 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       () => CommonBottomSheets.showBottomSheet_90(
           context: context, child: const GlossaryBottomSheet()),
       () => Navigator.pushNamed(context, '/mnemonic-word-list'),
-      () => CommonBottomSheets.showBottomSheet_90(
-          context: context, child: const SecuritySelfCheckBottomSheet()),
+      () => showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return CoconutPopup(
+                title: t.alert.tutorial.title,
+                description: t.alert.tutorial.description,
+                onTapRight: () async {
+                  launchURL(
+                    TUTORIAL_URL,
+                    defaultMode: false,
+                  );
+                  Navigator.of(context).pop();
+                },
+                onTapLeft: () {
+                  Navigator.of(context).pop();
+                },
+                rightButtonText: t.alert.tutorial.btn_view,
+                rightButtonColor: CoconutColors.cyan,
+                leftButtonText: t.close,
+              );
+            },
+          ),
       () => CommonBottomSheets.showBottomSheet_90(context: context, child: const SettingsScreen()),
       () => Navigator.pushNamed(context, '/app-info'),
     ];
@@ -375,15 +401,141 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     return walletItemCard;
   }
 
-  void _onAddScannerPressed() async {
+  void _goToScannerScreen(WalletImportSource walletImportSource) async {
     final ResultOfSyncFromVault? scanResult =
-        (await Navigator.pushNamed(context, '/wallet-add-scanner') as ResultOfSyncFromVault?);
+        (await Navigator.pushNamed(context, '/wallet-add-scanner', arguments: {
+      'walletImportSource': walletImportSource,
+    }) as ResultOfSyncFromVault?);
 
     setState(() {
       _resultOfSyncFromVault = scanResult;
     });
 
     if (_resultOfSyncFromVault == null) return;
+  }
+
+  void _onAddScannerPressed() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: "Dismiss",
+      barrierColor: Colors.transparent, // 배경 흐림 없음 (필요시 조정)
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final offsetTween = Tween<Offset>(
+          begin: const Offset(0, -1),
+          end: Offset.zero,
+        );
+        final slideDownAnimation = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+
+        return Stack(
+          children: [
+            // 투명 배경 터치 감지
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(color: CoconutColors.black.withOpacity(0.5)),
+            ),
+
+            // 슬라이드되는 다이얼로그
+            Positioned(
+              top: kToolbarHeight + MediaQuery.of(context).padding.top,
+              left: 0,
+              right: 0,
+              child: SlideTransition(
+                position: offsetTween.animate(slideDownAnimation),
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  color: CoconutColors.black,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.coconutVault),
+                                WalletImportSource.coconutVault,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.keystone),
+                                WalletImportSource.keystone,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.seedSigner),
+                                WalletImportSource.seedSigner,
+                              ),
+                            ),
+                          ],
+                        ),
+                        CoconutLayout.spacing_400h,
+                        SizedBox(
+                          width: MediaQuery.sizeOf(context).width,
+                          child: _buildWalletIconShrinkButton(
+                            // TODO: 직접 입력 화면 연결 #176
+                            () => debugPrint('클릭'),
+                            WalletImportSource.zpub,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  Container(
+                    height: MediaQuery.of(context).padding.top,
+                    color: CoconutColors.black,
+                  ),
+                  Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    height: kToolbarHeight,
+                    color: CoconutColors.black,
+                    child: Stack(children: [
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        bottom: 0,
+                        child: IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: SvgPicture.asset('assets/svg/close-bold.svg'),
+                        ),
+                      ),
+                      Center(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            t.wallet_add_scanner_screen.add_wallet,
+                            style: CoconutTypography.body1_16,
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return child;
+      },
+    );
   }
 
   SliverAppBar _buildAppBar(WalletListViewModel viewModel) {
@@ -393,42 +545,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn), width: 24),
       appTitle: t.wallet,
       actionButtonList: [
-        // 튜토리얼 안내 팝업
-        _buildAppBarIconButton(
-            icon: SvgPicture.asset(
-              'assets/svg/book.svg',
-              width: 18,
-              height: 18,
-              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-            ),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return CoconutPopup(
-                    title: t.alert.tutorial.title,
-                    description: t.alert.tutorial.description,
-                    onTapRight: () async {
-                      launchURL(
-                        TUTORIAL_URL,
-                        defaultMode: false,
-                      );
-                      Navigator.of(context).pop();
-                    },
-                    onTapLeft: () {
-                      Navigator.of(context).pop();
-                    },
-                    rightButtonText: t.alert.tutorial.btn_view,
-                    rightButtonColor: CoconutColors.cyan,
-                    leftButtonText: t.close,
-                  );
-                },
-              );
-            }),
         // 보기 전용 지갑 추가하기
         _buildAppBarIconButton(
           key: GlobalKey(),
-          icon: const Icon(Icons.add_rounded),
+          icon: SvgPicture.asset('assets/svg/wallet-eyes.svg'),
           onPressed: () {
             _onAddScannerPressed();
           },
@@ -436,7 +556,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         // 더보기(풀다운 메뉴 열림)
         _buildAppBarIconButton(
           key: _dropdownButtonKey,
-          icon: const Icon(Icons.more_horiz_rounded),
+          icon: SvgPicture.asset('assets/svg/kebab.svg'),
           onPressed: () {
             _setPulldownMenuVisiblility(true);
           },
@@ -503,14 +623,85 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           child: CoconutPulldownMenu(
             shadowColor: CoconutColors.gray800,
             dividerColor: CoconutColors.gray800,
-            buttons: _dropdownButtons,
+            entries: _dropdownButtons,
             dividerHeight: 1,
-            onTap: ((index) {
+            thickDividerHeight: 3,
+            thickDividerIndexList: const [
+              2,
+            ],
+            onSelected: ((index, selectedText) {
               _setPulldownMenuVisiblility(false);
               _dropdownActions[index].call();
             }),
           ),
         ));
+  }
+
+  Widget _buildWalletIconShrinkButton(
+    VoidCallback onPressed,
+    WalletImportSource scanType,
+  ) {
+    String svgPath;
+    String scanText;
+
+    switch (scanType) {
+      case WalletImportSource.coconutVault:
+        svgPath = 'assets/svg/vault.svg';
+        scanText = t.wallet_add_scanner_screen.vault;
+        break;
+      case WalletImportSource.keystone:
+        svgPath = 'assets/svg/keystone.svg';
+        scanText = t.wallet_add_scanner_screen.keystone;
+        break;
+      case WalletImportSource.seedSigner:
+        svgPath = 'assets/svg/seed-signer.svg';
+        scanText = t.wallet_add_scanner_screen.seed_signer;
+        break;
+      case WalletImportSource.zpub:
+      case WalletImportSource.descriptor:
+        svgPath = 'assets/svg/zpub.svg';
+        scanText = t.wallet_add_scanner_screen.self;
+    }
+    return ShrinkAnimationButton(
+      defaultColor: CoconutColors.black,
+      pressedColor: CoconutColors.gray800,
+      onPressed: () => onPressed(),
+      child: scanType == WalletImportSource.zpub
+          ? Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 16,
+                horizontal: 8,
+              ),
+              child: Row(
+                children: [
+                  SvgPicture.asset(svgPath),
+                  CoconutLayout.spacing_400w,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(scanText, style: CoconutTypography.body2_14),
+                      CoconutLayout.spacing_50h,
+                      Text(t.wallet_add_scanner_screen.self_description,
+                          style: CoconutTypography.body3_12),
+                    ],
+                  ),
+                ],
+              ),
+            )
+          : Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 16,
+                horizontal: 8,
+              ),
+              child: Column(
+                children: [
+                  SvgPicture.asset(svgPath),
+                  CoconutLayout.spacing_100h,
+                  Text(scanText, style: CoconutTypography.body2_14),
+                ],
+              ),
+            ),
+    );
   }
 
   void _setPulldownMenuVisiblility(bool value) {

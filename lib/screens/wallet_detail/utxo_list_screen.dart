@@ -241,7 +241,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               ? _stickyHeaderDropdownPosition.dy + _stickyHeaderDropdownSize.height
               : 0,
       selectedFilter: _viewModel.selectedUtxoOrder,
-      onSelected: (filter) {
+      onFilterSelected: (filter) {
         setState(() {
           _isHeaderDropdownVisible = _isStickyHeaderDropdownVisible = false;
         });

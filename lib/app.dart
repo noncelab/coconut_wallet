@@ -242,8 +242,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     ),
                   ),
         routes: {
-          '/wallet-add-scanner': (context) =>
-              const CustomLoadingOverlay(child: WalletAddScannerScreen()),
+          '/wallet-add-scanner': (context) => buildScreenWithArguments(
+                context,
+                (args) => CustomLoadingOverlay(
+                  child: WalletAddScannerScreen(
+                    walletImportSource: args['walletImportSource'],
+                  ),
+                ),
+              ),
           '/app-info': (context) => const AppInfoScreen(),
           '/wallet-detail': (context) => buildScreenWithArguments(
                 context,

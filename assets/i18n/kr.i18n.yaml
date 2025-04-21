@@ -35,6 +35,8 @@ tag: "태그"
 change: "잔돈"
 sign: "서명하기"
 glossary: "용어집"
+tool: "도구"
+tutorial: "튜토리얼"
 settings: "설정"
 tx_list: "거래 내역"
 utxo_list: "UTXO 목록"
@@ -122,7 +124,13 @@ pin_check_screen:
 
 # lib/screens/home
 wallet_add_scanner_screen:
-  text: "보기 전용 지갑 추가"
+  add_wallet: "지갑 추가"
+  add_watch_only_wallet: "보기 전용 지갑 추가"
+  vault: "코코넛 볼트"
+  keystone: "키스톤 3 프로"
+  seed_signer: "시드사이너"
+  self: "직접 입력"
+  self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
 
 # lib/screens/review
 negative_feedback_screen:
