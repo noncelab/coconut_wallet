@@ -402,6 +402,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   void _goToScannerScreen(WalletImportSource walletImportSource) async {
+    Navigator.pop(context);
     final ResultOfSyncFromVault? scanResult =
         (await Navigator.pushNamed(context, '/wallet-add-scanner', arguments: {
       'walletImportSource': walletImportSource,
@@ -419,7 +420,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       context: context,
       barrierDismissible: true,
       barrierLabel: "Dismiss",
-      barrierColor: Colors.transparent, // 배경 흐림 없음 (필요시 조정)
+      barrierColor: CoconutColors.black.withOpacity(0.5),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
         final offsetTween = Tween<Offset>(
@@ -430,12 +431,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
         return Stack(
           children: [
-            // 투명 배경 터치 감지
-            GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(color: CoconutColors.black.withOpacity(0.5)),
-            ),
-
             // 슬라이드되는 다이얼로그
             Positioned(
               top: kToolbarHeight + MediaQuery.of(context).padding.top,
