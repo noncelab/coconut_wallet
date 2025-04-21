@@ -15,4 +15,13 @@ class WalletAddInputViewModel extends ChangeNotifier {
       return false;
     }
   }
+
+  bool isDescriptor(String descriptor) {
+    try {
+      Descriptor.parse(descriptor);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }

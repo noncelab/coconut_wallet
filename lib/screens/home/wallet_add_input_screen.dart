@@ -50,8 +50,9 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
 
     setState(() {
       _isButtonEnabled = viewModel.isExtendedPublicKey(
-        _xpubInputController.text,
-      );
+            _xpubInputController.text,
+          ) ||
+          viewModel.isDescriptor(_xpubInputController.text);
       _isXpubError = !_isButtonEnabled;
     });
   }
