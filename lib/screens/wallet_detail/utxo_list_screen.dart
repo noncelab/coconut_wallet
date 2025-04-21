@@ -48,6 +48,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Size _headerDropdownSize = Size.zero;
   Size _stickyHeaderDropdownSize = Size.zero;
 
+  bool _canShowDropdown = false;
   bool _isHeaderDropdownVisible = false;
   bool _stickyHeaderVisible = false;
   bool _isStickyHeaderDropdownVisible = false;
@@ -161,6 +162,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                         UtxoList(
                           walletId: widget.id,
                           onRemoveDropdown: _removeFilterDropdown,
+                          onFirstBuildCompleted: () {
+                            if (!mounted) return;
+                            setState(() {
+                              _canShowDropdown = true;
+                            });
+                          },
                         ),
                       ],
                     );
@@ -175,17 +182,21 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   void _updateHeaderDropdownPosition() {
-    RenderBox? headerDropdownRenderBox;
     setState(() {
       _stickyHeaderVisible = false;
       _isStickyHeaderDropdownVisible = false;
     });
 
-    headerDropdownRenderBox = _headerDropdownKey.currentContext?.findRenderObject() as RenderBox;
-    if (_headerDropdownSize == Size.zero) {
-      _headerDropdownSize = headerDropdownRenderBox.size;
+    if (_headerDropdownKey.currentContext != null) {
+      final renderBox = _headerDropdownKey.currentContext!.findRenderObject() as RenderBox;
+      final position = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
+
+      setState(() {
+        _headerDropdownPosition = position;
+        _headerDropdownSize = size;
+      });
     }
-    _headerDropdownPosition = headerDropdownRenderBox.localToGlobal(Offset.zero);
   }
 
   void _updateStickyHeaderDropdownPosition() {
@@ -193,14 +204,16 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       _stickyHeaderVisible = true;
       _isHeaderDropdownVisible = false;
     });
-    RenderBox? stickyHeaderDropdownRenderBox;
+    if (_stickyHeaderDropdownKey.currentContext != null) {
+      final renderBox = _stickyHeaderDropdownKey.currentContext!.findRenderObject() as RenderBox;
+      final position = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
 
-    stickyHeaderDropdownRenderBox =
-        _stickyHeaderDropdownKey.currentContext?.findRenderObject() as RenderBox;
-    if (_stickyHeaderDropdownSize == Size.zero) {
-      _stickyHeaderDropdownSize = stickyHeaderDropdownRenderBox.size;
+      setState(() {
+        _stickyHeaderDropdownPosition = position;
+        _stickyHeaderDropdownSize = size;
+      });
     }
-    _stickyHeaderDropdownPosition = stickyHeaderDropdownRenderBox.localToGlobal(Offset.zero);
   }
 
   void _removeFilterDropdown() {
@@ -214,12 +227,14 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     return UtxoListHeader(
         key: ValueKey(viewModel.utxoTagListKey),
         dropdownGlobalKey: _headerDropdownKey,
+        canShowDropdown: _canShowDropdown,
         animatedBalanceData: AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
         selectedFilter: viewModel.selectedUtxoOrder.text,
         utxoTagList: viewModel.utxoTagList,
         selectedUtxoTagName: viewModel.selectedUtxoTagName,
         onTapDropdown: () {
           setState(() {
+            _updateHeaderDropdownPosition();
             if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
               _isHeaderDropdownVisible = false;
             } else {
@@ -263,6 +278,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
           dropdownGlobalKey: _stickyHeaderDropdownKey,
           height: _appBarSize.height,
           isVisible: _stickyHeaderVisible,
+          canShowDropdown: _canShowDropdown,
           animatedBalanceData: AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
           totalCount: _viewModel.utxoList.length,
           selectedFilter: _viewModel.selectedUtxoOrder.text,
@@ -317,10 +333,12 @@ class UtxoList extends StatefulWidget {
     super.key,
     required this.walletId,
     this.onRemoveDropdown,
+    this.onFirstBuildCompleted,
   });
 
   final int walletId;
   final Function? onRemoveDropdown;
+  final VoidCallback? onFirstBuildCompleted;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -395,6 +413,8 @@ class _UtxoListState extends State<UtxoList> {
   }
 
   Future<void> _handleUtxoListChange(List<UtxoState> utxoList) async {
+    final isFirstLoad = _displayedUtxoList.isEmpty && utxoList.isNotEmpty;
+
     if (_isListLoading) return;
     _isListLoading = true;
 
@@ -442,6 +462,9 @@ class _UtxoListState extends State<UtxoList> {
     }
 
     _isListLoading = false;
+    if (isFirstLoad && widget.onFirstBuildCompleted != null) {
+      widget.onFirstBuildCompleted!();
+    }
   }
 
   Widget _buildRemoveUtxoItem(UtxoState utxo, Animation<double> animation) {
