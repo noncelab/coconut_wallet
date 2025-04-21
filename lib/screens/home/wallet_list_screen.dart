@@ -28,7 +28,6 @@ import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_glossary_shortcut_card.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_onboarding_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_glossary_bottom_sheet.dart';
@@ -226,22 +225,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         final faucetRenderBox = _dropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
         _dropdownButtonPosition = faucetRenderBox.localToGlobal(Offset.zero);
         _dropdownButtonSize = faucetRenderBox.size;
-      }
-
-      if (_viewModel.isOnBoardingVisible) {
-        Future.delayed(const Duration(milliseconds: 1000)).then((_) {
-          if (mounted) {
-            CommonBottomSheets.showBottomSheet_100(
-              context: context,
-              child: const OnboardingBottomSheet(),
-              enableDrag: false,
-              backgroundColor: CoconutColors.gray900,
-              isDismissible: false,
-              isScrollControlled: true,
-              useSafeArea: false,
-            );
-          }
-        });
       }
 
       if (_viewModel.isReviewScreenVisible) {
