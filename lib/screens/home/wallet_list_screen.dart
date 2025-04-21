@@ -158,6 +158,12 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     _buildOfflineWarningBar(context, isOffline),
                     _buildDropdownBackdrop(),
                     _buildDropdownMenu(),
+
+                    /// 임시 테스트
+                    GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, "/wallet-add-input"),
+                      child: Container(width: 100, height: 100, color: Colors.green),
+                    ),
                   ],
                 ),
               ),

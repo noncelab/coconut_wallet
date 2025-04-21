@@ -124,6 +124,22 @@ pin_check_screen:
 wallet_add_scanner_screen:
   text: "보기 전용 지갑 추가"
 
+wallet_add_input_screen:
+  app_bar_title_text: "직접 입력"
+  placeholder_text: "확장공개키(zpub) 또는 디스크립터를 입력해 주세요"
+  error_text: "확인할 수 없는 형식이에요"
+  wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
+  blue_wallet_texts:
+    - "· 블루월렛"
+    - "· 핫월렛 - 더보기(•••) - Show Wallet XPUB 버튼 클릭"
+    - "· 보기 전용 지갑 - 더보기(•••) - Export/Backup 버튼 클릭"
+    - "zpub6rFR7y4Q2AijBEqt..."
+  nunchuck_wallet_texts:
+    - "· 넌척"
+    - "· Keys 탭 - 키 선택 - Key spec 정보"
+    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
+    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
+
 # lib/screens/review
 negative_feedback_screen:
   text1: "죄송합니다😭"
