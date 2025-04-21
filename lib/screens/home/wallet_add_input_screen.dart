@@ -2,13 +2,12 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-
-import '../../providers/wallet_provider.dart';
 
 class WalletAddInputScreen extends StatefulWidget {
   const WalletAddInputScreen({super.key});
