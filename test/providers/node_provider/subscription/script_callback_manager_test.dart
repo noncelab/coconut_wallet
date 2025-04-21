@@ -83,7 +83,7 @@ void main() {
         scriptCallbackManager.registerFetchUtxosCallback(scriptKey1, callback1);
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash1, false);
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash2, false);
-        await scriptCallbackManager
+        scriptCallbackManager
             .registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1, txHash2]);
 
         // When
@@ -231,7 +231,7 @@ void main() {
 
         // When
         // 이미 모든 트랜잭션이 완료된 상태에서 종속성 등록 시도
-        await scriptCallbackManager
+        scriptCallbackManager
             .registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1, txHash2]);
 
         // Then
@@ -258,9 +258,9 @@ void main() {
         // 각 스크립트에 대한 종속성 등록
         // script1 -> txHash1
         // script2 -> txHash1, txHash2
-        await scriptCallbackManager
+        scriptCallbackManager
             .registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1]);
-        await scriptCallbackManager
+        scriptCallbackManager
             .registerTransactionDependency(testWalletItem, testScriptStatus2, [txHash1, txHash2]);
 
         // When
