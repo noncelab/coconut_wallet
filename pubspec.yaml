@@ -229,7 +229,7 @@ flutter:
     - assets/svg/scan.svg
     - assets/svg/wallet-eyes.svg
     - assets/svg/kebab.svg
-    - assets/svg/vault.svg
+    - assets/svg/coconut-vault.svg
     - assets/svg/seed-signer.svg
     - assets/svg/keystone.svg
     - assets/svg/zpub.svg

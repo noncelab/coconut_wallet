@@ -646,7 +646,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
     switch (scanType) {
       case WalletImportSource.coconutVault:
-        svgPath = 'assets/svg/vault.svg';
+        svgPath = 'assets/svg/coconut-vault.svg';
         scanText = t.wallet_add_scanner_screen.vault;
         break;
       case WalletImportSource.keystone:
