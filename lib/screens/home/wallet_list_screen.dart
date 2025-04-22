@@ -414,6 +414,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     if (_resultOfSyncFromVault == null) return;
   }
 
+  void _goToManualInputScreen() {
+    Navigator.pop(context);
+    Navigator.pushNamed(context, "/wallet-add-input");
+  }
+
   void _onAddScannerPressed() {
     showGeneralDialog(
       context: context,
@@ -473,8 +478,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                         SizedBox(
                           width: MediaQuery.sizeOf(context).width,
                           child: _buildWalletIconShrinkButton(
-                            // TODO: 직접 입력 화면 연결 #176
-                            () => debugPrint('클릭'),
+                            () => _goToManualInputScreen(),
                             WalletImportSource.zpub,
                           ),
                         ),
