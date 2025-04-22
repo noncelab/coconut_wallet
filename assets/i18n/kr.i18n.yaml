@@ -278,9 +278,7 @@ transaction_fee_bumping_screen:
 
 # lib/widgets/card
 wallet_list_add_guide_card:
-  add_watch_only: "보기 전용 지갑을 추가해 주세요"
-  top_right_icon: "오른쪽 위 + 버튼을 눌러도 추가할 수 있어요"
-  btn_add: "바로 추가하기"
+  add_watch_only: "보기 전용 지갑을 추가해 보세요!"
 wallet_list_glossary_shortcut_card:
   any_word_you_dont_know: "모르는 용어가 있으신가요?"
   top_right: "오른쪽 위 "
