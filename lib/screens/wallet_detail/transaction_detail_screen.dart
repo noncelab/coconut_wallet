@@ -18,6 +18,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -193,6 +194,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         ],
                       ),
                     ),
+                    // todo
+                    TransactionInputOutputCard(
+                        transaction: _viewModel
+                            .transactionList![_viewModel.selectedTransactionIndex].transaction!,
+                        isSameAddress: _viewModel.isSameAddress),
                     const SizedBox(height: 12),
                     UnderlineButtonItemCard(
                       label: t.block_num,

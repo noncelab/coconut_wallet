@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
+import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
@@ -115,6 +116,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     _buildPrice()
                   else ...{_buildPendingStatus(viewModel.utxoStatus)},
                   _buildTxInputOutputSection(viewModel, tx),
+                  TransactionInputOutputCard(
+                    transaction: tx,
+                    isSameAddress: (address, _) {
+                      return address == widget.utxo.to;
+                    },
+                    isForTransaction: false,
+                  ),
                   _buildAddress(),
                   _buildTxMemo(
                     tx.memo,

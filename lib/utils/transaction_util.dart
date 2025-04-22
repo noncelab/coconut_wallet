@@ -7,6 +7,8 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:flutter/material.dart';
 
+enum TransactionDirection { incoming, outgoing, unknown }
+
 class TransactionUtil {
   static TransactionStatus? getStatus(TransactionRecord tx) {
     if (tx.transactionType == TransactionType.received) {
@@ -29,6 +31,18 @@ class TransactionUtil {
     }
 
     return null;
+  }
+
+  static TransactionDirection getDirection(TransactionRecord tx) {
+    switch (tx.transactionType) {
+      case TransactionType.received:
+        return TransactionDirection.incoming;
+      case TransactionType.sent:
+      case TransactionType.self:
+        return TransactionDirection.outgoing;
+      default:
+        return TransactionDirection.unknown;
+    }
   }
 
   static String getInputAddress(TransactionRecord? transaction, index) =>
