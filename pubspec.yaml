@@ -206,7 +206,6 @@ flutter:
     - assets/images/x-logo.jpg
     - assets/images/telegram-circle-logo.png
     - assets/images/mail-icon.png
-    - assets/images/onboarding.png
     - assets/svg/github-logo-white.svg
     - assets/svg/github-logo.svg
     - assets/files/LICENSE
