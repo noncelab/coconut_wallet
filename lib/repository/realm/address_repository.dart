@@ -9,7 +9,6 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
-import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 class AddressRepository extends BaseRepository {

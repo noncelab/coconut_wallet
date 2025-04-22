@@ -19,7 +19,7 @@ import '../../repository/realm/test_realm_manager.dart';
   ElectrumService,
   NodeStateManager,
 ])
-import 'utxo_manager_test.mocks.dart';
+import 'utxo_sync_service_test.mocks.dart';
 
 void main() {
   late TestRealmManager realmManager;

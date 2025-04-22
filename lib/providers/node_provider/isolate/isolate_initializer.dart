@@ -1,6 +1,5 @@
 import 'dart:isolate';
 
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_controller.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';

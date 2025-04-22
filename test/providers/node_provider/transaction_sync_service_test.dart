@@ -34,7 +34,7 @@ import '../../repository/realm/test_realm_manager.dart';
   WalletProvider,
   WalletListItemBase,
 ])
-import 'transaction_manager_test.mocks.dart';
+import 'transaction_sync_service_test.mocks.dart';
 
 void main() {
   late TestRealmManager realmManager;

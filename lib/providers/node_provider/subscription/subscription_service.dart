@@ -9,7 +9,6 @@ import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
