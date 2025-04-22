@@ -33,12 +33,10 @@ class _SettingsScreen extends State<SettingsScreen> {
         child: Consumer<SettingsViewModel>(builder: (context, viewModel, child) {
           return Scaffold(
               backgroundColor: CoconutColors.black,
-              appBar: CustomAppBar.build(
+              appBar: CoconutAppBar.build(
                 title: t.settings,
                 context: context,
-                hasRightIcon: false,
                 isBottom: true,
-                showTestnetLabel: false,
               ),
               body: SafeArea(
                   child: SingleChildScrollView(

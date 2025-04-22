@@ -18,7 +18,11 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 import '../../widgets/appbar/custom_appbar.dart';
 
 class WalletAddScannerScreen extends StatefulWidget {
-  const WalletAddScannerScreen({super.key});
+  final WalletImportSource walletImportSource;
+  const WalletAddScannerScreen({
+    super.key,
+    required this.walletImportSource,
+  });
 
   @override
   State<WalletAddScannerScreen> createState() => _WalletAddScannerScreenState();
@@ -44,22 +48,22 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: CustomAppBar.build(
-          title: t.wallet_add_scanner_screen.text,
+        appBar: CoconutAppBar.build(
+          title: t.wallet_add_scanner_screen.add_watch_only_wallet,
           context: context,
-          hasRightIcon: true,
           isBottom: true,
           backgroundColor: CoconutColors.black.withOpacity(0.95),
-          rightIconButton: IconButton(
-            onPressed: () {
-              if (controller != null) {
-                controller!.flipCamera();
-              }
-            },
-            icon: const Icon(CupertinoIcons.camera_rotate, size: 20),
-            color: CoconutColors.white,
-          ),
-          showTestnetLabel: false,
+          actionButtonList: [
+            IconButton(
+              onPressed: () {
+                if (controller != null) {
+                  controller!.flipCamera();
+                }
+              },
+              icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+              color: CoconutColors.white,
+            ),
+          ],
         ),
         body: Stack(children: [
           Container(

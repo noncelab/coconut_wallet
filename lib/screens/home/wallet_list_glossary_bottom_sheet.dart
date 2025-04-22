@@ -104,13 +104,12 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: CoconutColors.black,
-        appBar: CustomAppBar.build(
-            title: t.glossary,
-            context: context,
-            onBackPressed: null,
-            hasRightIcon: false,
-            isBottom: true,
-            showTestnetLabel: false),
+        appBar: CoconutAppBar.build(
+          title: t.glossary,
+          context: context,
+          onBackPressed: null,
+          isBottom: true,
+        ),
         body: Padding(
             padding: EdgeInsets.only(
                 left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),

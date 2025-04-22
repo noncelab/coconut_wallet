@@ -9,3 +9,11 @@ enum WalletSyncResult {
   existingWalletNoUpdate,
   existingName, // fail sync
 }
+
+enum WalletImportSource {
+  coconutVault,
+  keystone,
+  seedSigner,
+  zpub,
+  descriptor,
+}
