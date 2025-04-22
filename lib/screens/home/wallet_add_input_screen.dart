@@ -17,9 +17,9 @@ class WalletAddInputScreen extends StatefulWidget {
 }
 
 class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
-  final TextEditingController _xpubInputController = TextEditingController();
-  final _xpubInputFocusNode = FocusNode();
-  bool _isXpubError = false;
+  final TextEditingController _inputController = TextEditingController();
+  final _inputFocusNode = FocusNode();
+  bool _isError = false;
   bool _isWalletInfoExpanded = false;
   bool _isButtonEnabled = false;
   bool _hasAddedListener = false;
@@ -28,8 +28,8 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
 
   @override
   void dispose() {
-    _xpubInputController.dispose();
-    _xpubInputFocusNode.dispose();
+    _inputController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 
@@ -37,22 +37,22 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
     FocusScope.of(context).unfocus();
   }
 
-  void _handleXpubInput(BuildContext context) {
+  void _handleInput(BuildContext context) {
     final viewModel = context.read<WalletAddInputViewModel>();
-    if (_xpubInputController.text.isEmpty) {
+    if (_inputController.text.isEmpty) {
       setState(() {
         _isButtonEnabled = false;
-        _isXpubError = false;
+        _isError = false;
       });
       return;
     }
 
     setState(() {
       _isButtonEnabled = viewModel.isExtendedPublicKey(
-            _xpubInputController.text,
+            _inputController.text,
           ) ||
-          viewModel.isDescriptor(_xpubInputController.text);
-      _isXpubError = !_isButtonEnabled;
+          viewModel.isDescriptor(_inputController.text);
+      _isError = !_isButtonEnabled;
     });
   }
 
@@ -64,8 +64,8 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
             ),
         child: Consumer<WalletAddInputViewModel>(builder: (context, viewModel, child) {
           if (!_hasAddedListener) {
-            _xpubInputController.addListener(() {
-              _handleXpubInput(context);
+            _inputController.addListener(() {
+              _handleInput(context);
             });
             _hasAddedListener = true;
           }
@@ -96,12 +96,13 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                   cursorColor: CoconutColors.white,
                                   activeColor: CoconutColors.white,
                                   placeholderColor: CoconutColors.gray700,
-                                  controller: _xpubInputController,
-                                  focusNode: _xpubInputFocusNode,
+                                  controller: _inputController,
+                                  focusNode: _inputFocusNode,
                                   maxLines: 5,
+                                  fontFamily: 'SpaceGrotesk',
                                   textInputAction: TextInputAction.done,
                                   onChanged: (text) {},
-                                  isError: _isXpubError,
+                                  isError: _isError,
                                   isLengthVisible: false,
                                   errorText: t.wallet_add_input_screen.error_text,
                                   placeholderText: t.wallet_add_input_screen.placeholder_text,
@@ -110,15 +111,15 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                     padding: EdgeInsets.zero,
                                     onPressed: () {
                                       setState(() {
-                                        _xpubInputController.text = '';
+                                        _inputController.text = '';
                                       });
                                     },
                                     icon: SvgPicture.asset(
                                       'assets/svg/text-field-clear.svg',
                                       colorFilter: ColorFilter.mode(
-                                          _isXpubError
+                                          _isError
                                               ? CoconutColors.hotPink
-                                              : _xpubInputController.text.isNotEmpty
+                                              : _inputController.text.isNotEmpty
                                                   ? CoconutColors.white
                                                   : CoconutColors.gray700,
                                           BlendMode.srcIn),
@@ -146,7 +147,9 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                           child: Row(
                                             children: [
                                               SvgPicture.asset(
-                                                'assets/svg/circle-help.svg',
+                                                _isWalletInfoExpanded
+                                                    ? 'assets/svg/circle-warning.svg'
+                                                    : 'assets/svg/circle-help.svg',
                                                 colorFilter: const ColorFilter.mode(
                                                     CoconutColors.white, BlendMode.srcIn),
                                               ),
@@ -224,15 +227,28 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
                   child: Container(
-                      width: double.infinity,
-                      decoration: const BoxDecoration(
-                        color: CoconutColors.black,
-                        borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_100)),
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: CoconutColors.black,
+                      borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_100)),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
+                    child: RichText(
+                      text: TextSpan(
+                        text: addressText.substring(0, 4),
+                        style: addressText.startsWith("zpub")
+                            ? CoconutTypography.body3_12_NumberBold
+                            : CoconutTypography.body3_12_Number,
+                        children: [
+                          TextSpan(
+                              text: addressText.substring(4),
+                              style: CoconutTypography.body3_12_Number)
+                        ],
                       ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: Sizes.size12, vertical: Sizes.size8),
-                      child: Text(addressText, style: CoconutTypography.caption_10_NumberBold)),
-                )
+                    ),
+                  ),
+                ),
               ],
             ))
       ],
