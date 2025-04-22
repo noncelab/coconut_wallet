@@ -15,7 +15,9 @@ class MultisigWalletListItem extends WalletListItemBase {
       required this.requiredSignatureCount,
       super.receiveUsedIndex,
       super.changeUsedIndex})
-      : super(walletType: WalletType.multiSignature) {
+      : super(
+            walletType: WalletType.multiSignature,
+            walletImportSource: WalletImportSource.coconutVault) {
     walletBase = MultisignatureWallet.fromDescriptor(descriptor);
     name = name.replaceAll('\n', ' ');
   }
