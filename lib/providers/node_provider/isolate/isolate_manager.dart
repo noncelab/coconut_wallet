@@ -11,7 +11,6 @@ import 'package:coconut_wallet/providers/node_provider/isolate/isolate_initializ
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/logger.dart';

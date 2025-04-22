@@ -3,17 +3,17 @@ import 'dart:isolate';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 class IsolateController {
-  final SubscriptionManager _subscriptionManager;
+  final SubscriptionService _subscriptionService;
   final NetworkService _networkManager;
   final IsolateStateManager _isolateStateManager;
   final ElectrumService _electrumService;
-  IsolateController(this._subscriptionManager, this._networkManager, this._isolateStateManager,
+  IsolateController(this._subscriptionService, this._networkManager, this._isolateStateManager,
       this._electrumService);
 
   Future<void> executeNetworkCommand(
@@ -31,7 +31,7 @@ class IsolateController {
           _isolateStateManager.setMainClientSyncingState();
 
           for (var walletItem in walletItems) {
-            final result = await _subscriptionManager.subscribeWallet(walletItem);
+            final result = await _subscriptionService.subscribeWallet(walletItem);
             if (result.isFailure) {
               isolateToMainSendPort.send(result);
               return;
@@ -41,10 +41,10 @@ class IsolateController {
           isolateToMainSendPort.send(Result.success(true));
           break;
         case IsolateControllerCommand.subscribeWallet:
-          isolateToMainSendPort.send(await _subscriptionManager.subscribeWallet(params[0]));
+          isolateToMainSendPort.send(await _subscriptionService.subscribeWallet(params[0]));
           break;
         case IsolateControllerCommand.unsubscribeWallet:
-          isolateToMainSendPort.send(await _subscriptionManager.unsubscribeWallet(params[0]));
+          isolateToMainSendPort.send(await _subscriptionService.unsubscribeWallet(params[0]));
           break;
         case IsolateControllerCommand.broadcast:
           isolateToMainSendPort.send(await _networkManager.broadcast(params[0]));

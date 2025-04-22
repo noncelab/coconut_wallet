@@ -7,17 +7,16 @@ import 'package:coconut_wallet/services/model/response/electrum_response_types.d
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
-import '../../../mock/script_event_handler_mock.dart';
+import '../../../mock/script_sync_service_mock.dart';
 import '../../../mock/script_status_mock.dart';
 import '../../../mock/transaction_mock.dart';
 import '../../../mock/wallet_mock.dart';
-import '../../../repository/realm/test_realm_manager.dart';
 import '../../../services/shared_prefs_service_test.mocks.dart';
 
 void main() {
   group('ScriptEventHandler 테스트', () {
     setUp(() {
-      ScriptEventHandlerMock.init();
+      ScriptSyncServiceMock.init();
     });
     test('handleScriptStatusChanged 정상 동작 테스트', () async {
       // Given - 상수 및 환경 설정
@@ -41,11 +40,11 @@ void main() {
         walletItem: walletItem,
         scriptStatus: scriptStatus,
       );
-      final transactionRepository = ScriptEventHandlerMock.transactionRepository;
-      final addressRepository = ScriptEventHandlerMock.addressRepository;
-      final walletRepository = ScriptEventHandlerMock.walletRepository;
-      final scriptEventHandler = ScriptEventHandlerMock.createMockScriptEventHandler();
-      final utxoRepository = ScriptEventHandlerMock.utxoRepository;
+      final transactionRepository = ScriptSyncServiceMock.transactionRepository;
+      final addressRepository = ScriptSyncServiceMock.addressRepository;
+      final walletRepository = ScriptSyncServiceMock.walletRepository;
+      final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
+      final utxoRepository = ScriptSyncServiceMock.utxoRepository;
       final previousMockTx = TransactionMock.createMockTransaction(
         toAddress: otherWalletItem.walletBase.getAddress(index),
         amount: txAmount + 1000,
@@ -62,7 +61,7 @@ void main() {
       await addressRepository.ensureAddressesInit(walletItemBase: walletItem);
 
       // Given - ElectrumService만 모킹
-      final electrumService = ScriptEventHandlerMock.electrumService;
+      final electrumService = ScriptSyncServiceMock.electrumService;
       when(electrumService.getHistory(any, any)).thenAnswer(
         (_) async => [GetHistoryRes(height: height, txHash: mockTx.transactionHash)],
       );
@@ -110,11 +109,11 @@ void main() {
       expect(beforeUtxoList.length, 0);
 
       /// When - 이벤트 실행
-      await scriptEventHandler.syncScriptStatus(dto);
+      await scriptSyncService.syncScriptStatus(dto);
 
       /// Then - 이벤트 실행 후 검증
       // 검증 - 1. Callback
-      final isCompleted = ScriptEventHandlerMock.scriptCallbackService.areAllTransactionsCompleted(
+      final isCompleted = ScriptSyncServiceMock.scriptCallbackService.areAllTransactionsCompleted(
         walletId,
         [mockTx.transactionHash],
       );
@@ -150,7 +149,7 @@ void main() {
       );
 
       // 검증 - 7. 구독중인 스크립트 목록 갱신
-      expect(ScriptEventHandlerMock.callSubscribeWalletCount, 1,
+      expect(ScriptSyncServiceMock.callSubscribeWalletCount, 1,
           reason: '지갑 인덱스가 갱신되어 다시 지갑 구독을 해야한다.');
     });
 
@@ -176,11 +175,11 @@ void main() {
         walletItem: walletItem,
         scriptStatus: scriptStatus,
       );
-      final transactionRepository = ScriptEventHandlerMock.transactionRepository;
-      final addressRepository = ScriptEventHandlerMock.addressRepository;
-      final walletRepository = ScriptEventHandlerMock.walletRepository;
-      final scriptEventHandler = ScriptEventHandlerMock.createMockScriptEventHandler();
-      final utxoRepository = ScriptEventHandlerMock.utxoRepository;
+      final transactionRepository = ScriptSyncServiceMock.transactionRepository;
+      final addressRepository = ScriptSyncServiceMock.addressRepository;
+      final walletRepository = ScriptSyncServiceMock.walletRepository;
+      final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
+      final utxoRepository = ScriptSyncServiceMock.utxoRepository;
       final previousMockTx = TransactionMock.createMockTransaction(
         toAddress: otherWalletItem.walletBase.getAddress(index),
         amount: txAmount + 1000,
@@ -197,7 +196,7 @@ void main() {
       await addressRepository.ensureAddressesInit(walletItemBase: walletItem);
 
       // Given - ElectrumService만 모킹
-      final electrumService = ScriptEventHandlerMock.electrumService;
+      final electrumService = ScriptSyncServiceMock.electrumService;
       when(electrumService.getHistory(any, any)).thenAnswer(
         (_) async => [GetHistoryRes(height: height, txHash: mockTx.transactionHash)],
       );
@@ -226,13 +225,13 @@ void main() {
 
       /// When - 이벤트 실행
       await Future.wait([
-        scriptEventHandler.syncScriptStatus(dto),
-        scriptEventHandler.syncScriptStatus(dto),
+        scriptSyncService.syncScriptStatus(dto),
+        scriptSyncService.syncScriptStatus(dto),
       ]);
 
       /// Then - 이벤트 실행 후 검증
       // 검증 - 1. Callback
-      final isCompleted = ScriptEventHandlerMock.scriptCallbackService.areAllTransactionsCompleted(
+      final isCompleted = ScriptSyncServiceMock.scriptCallbackService.areAllTransactionsCompleted(
         walletId,
         [mockTx.transactionHash],
       );
@@ -268,7 +267,7 @@ void main() {
       );
 
       // 검증 - 7. 구독중인 스크립트 목록 갱신
-      expect(ScriptEventHandlerMock.callSubscribeWalletCount, 1,
+      expect(ScriptSyncServiceMock.callSubscribeWalletCount, 1,
           reason: '지갑 인덱스가 갱신되어 다시 지갑 구독을 해야한다.');
     });
   });

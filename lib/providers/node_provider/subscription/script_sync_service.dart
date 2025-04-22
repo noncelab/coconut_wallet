@@ -21,8 +21,8 @@ class ScriptSyncService {
   final TransactionSyncService _transactionSyncService;
   final UtxoSyncService _utxoSyncService;
   final AddressRepository _addressRepository;
-  final Future<Result<bool>> Function(WalletListItemBase walletItem) _subscribeWallet;
   final ScriptCallbackService _scriptCallbackService;
+  late Future<Result<bool>> Function(WalletListItemBase walletItem) _subscribeWallet;
 
   ScriptSyncService(
     this._stateManager,
@@ -30,9 +30,13 @@ class ScriptSyncService {
     this._transactionSyncService,
     this._utxoSyncService,
     this._addressRepository,
-    this._subscribeWallet,
     this._scriptCallbackService,
   );
+
+  set subscribeWallet(
+      Future<Result<bool>> Function(WalletListItemBase walletItem) subscribeWallet) {
+    _subscribeWallet = subscribeWallet;
+  }
 
   /// 스크립트 상태 변경 이벤트 처리
   Future<void> syncScriptStatus(SubscribeScriptStreamDto dto) async {
@@ -53,12 +57,6 @@ class ScriptSyncService {
         },
       );
 
-      // 스크립트 상태가 변경되었으면 주소 사용 여부 업데이트
-      if (dto.scriptStatus.status != null) {
-        _addressRepository.setWalletAddressUsed(
-            dto.walletItem, dto.scriptStatus.index, dto.scriptStatus.isChange);
-      }
-
       // 기존 인덱스 저장 (변경 전)
       final oldUsedIndex = dto.scriptStatus.isChange
           ? dto.walletItem.changeUsedIndex
@@ -70,6 +68,12 @@ class ScriptSyncService {
         dto.scriptStatus.index,
         isChange: dto.scriptStatus.isChange,
       );
+
+      // 스크립트 상태가 변경되었으면 주소 사용 여부 업데이트
+      if (dto.scriptStatus.status != null) {
+        _addressRepository.setWalletAddressUsed(
+            dto.walletItem, dto.scriptStatus.index, dto.scriptStatus.isChange);
+      }
 
       // Balance 동기화
       await _balanceSyncService.fetchScriptBalance(dto.walletItem, dto.scriptStatus);

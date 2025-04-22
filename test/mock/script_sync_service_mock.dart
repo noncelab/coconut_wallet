@@ -87,7 +87,7 @@ void printState(NodeProviderState state) {
   Logger.log(buffer.toString());
 }
 
-class ScriptEventHandlerMock {
+class ScriptSyncServiceMock {
   static int callSubscribeWalletCount = 0;
   static late MockElectrumService electrumService;
   static late NodeStateManager stateManager;
@@ -107,14 +107,13 @@ class ScriptEventHandlerMock {
     return Result.success(true);
   }
 
-  static ScriptSyncService createMockScriptEventHandler() {
+  static ScriptSyncService createMockScriptSyncService() {
     return ScriptSyncService(
       stateManager,
       balanceSyncService,
       transactionSyncService,
       utxoSyncService,
       addressRepository,
-      subscribeWallet,
       scriptCallbackService,
     );
   }

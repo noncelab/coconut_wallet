@@ -9,6 +9,7 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
+import 'package:coconut_wallet/services/model/response/subscribe_wallet_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 class AddressRepository extends BaseRepository {
@@ -319,7 +320,9 @@ class AddressRepository extends BaseRepository {
   }
 
   Future<void> setWalletAddressUsedBatch(
-      WalletListItemBase walletItem, List<ScriptStatus> changedScriptStatuses) async {
+      WalletListItemBase walletItem, List<ScriptStatus> scriptStatuses) async {
+    final changedScriptStatuses = scriptStatuses.where((status) => status.status != null).toList();
+
     final receiveIndices = changedScriptStatuses
         .where((status) => !status.isChange)
         .map((status) => status.index)
@@ -387,7 +390,7 @@ class AddressRepository extends BaseRepository {
     );
 
     // 지갑 인덱스 업데이트
-    realm.write(() {
+    await realm.writeAsync(() {
       if (usedIndex > dbUsedIndex) {
         if (isChange) {
           realmWalletBase.usedChangeIndex = usedIndex;
@@ -502,5 +505,30 @@ class AddressRepository extends BaseRepository {
       return existingAddress.derivationPath;
     }
     return '';
+  }
+
+  Future<void> syncWalletWithSubscriptionData(
+    WalletListItemBase walletItem,
+    List<ScriptStatus> scriptStatuses,
+    int receiveUsedIndex,
+    int changeUsedIndex,
+  ) async {
+    // 지갑 인덱스 업데이트
+    await updateWalletUsedIndex(
+      walletItem,
+      receiveUsedIndex,
+      isChange: false,
+    );
+    await updateWalletUsedIndex(
+      walletItem,
+      changeUsedIndex,
+      isChange: true,
+    );
+
+    // 주소 사용 여부 업데이트
+    await setWalletAddressUsedBatch(
+      walletItem,
+      scriptStatuses,
+    );
   }
 }

@@ -1,11 +1,13 @@
 import 'dart:isolate';
 
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_controller.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
@@ -46,19 +48,24 @@ class IsolateInitializer {
         utxoSyncService,
         scriptCallbackService);
     final NetworkService networkManager = NetworkService(electrumService, transactionRepository);
-    final SubscriptionManager subscriptionManager = SubscriptionManager(
+    final ScriptSyncService scriptSyncService = ScriptSyncService(
+        isolateStateManager,
+        balanceSyncService,
+        transactionSyncService,
+        utxoSyncService,
+        addressRepository,
+        scriptCallbackService);
+
+    final SubscriptionService subscriptionService = SubscriptionService(
       electrumService,
       isolateStateManager,
-      balanceSyncService,
-      transactionSyncService,
-      utxoSyncService,
       addressRepository,
       subscribeRepository,
-      scriptCallbackService,
+      scriptSyncService,
     );
 
     final isolateController = IsolateController(
-      subscriptionManager,
+      subscriptionService,
       networkManager,
       isolateStateManager,
       electrumService,

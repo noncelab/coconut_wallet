@@ -62,6 +62,8 @@ void main() {
     walletProvider = MockWalletProvider();
     scriptCallbackService = ScriptCallbackService();
 
+    transactionRecordService = TransactionRecordService(electrumService, addressRepository);
+
     // TransactionManager 생성
     transactionSyncService = TransactionSyncService(
       electrumService,
@@ -71,8 +73,6 @@ void main() {
       utxoSyncService,
       scriptCallbackService,
     );
-
-    transactionRecordService = TransactionRecordService(electrumService, addressRepository);
     transactionSyncService = TransactionSyncService(
       electrumService,
       transactionRepository,
