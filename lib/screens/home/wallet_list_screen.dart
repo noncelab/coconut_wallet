@@ -30,7 +30,6 @@ import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_glossary_shortcut_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_security_self_check_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_glossary_bottom_sheet.dart';
 
 class WalletListScreen extends StatefulWidget {
@@ -507,7 +506,16 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                         bottom: 0,
                         child: IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: SvgPicture.asset('assets/svg/close-bold.svg'),
+                          highlightColor: CoconutColors.gray800,
+                          icon: SvgPicture.asset(
+                            'packages/coconut_design_system/assets/svg/close.svg',
+                            colorFilter: ColorFilter.mode(
+                              CoconutColors.onPrimary(Brightness.dark),
+                              BlendMode.srcIn,
+                            ),
+                            width: 24,
+                            height: 24,
+                          ),
                         ),
                       ),
                       Center(
@@ -515,7 +523,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           alignment: Alignment.center,
                           child: Text(
                             t.wallet_add_scanner_screen.add_wallet,
-                            style: CoconutTypography.body1_16,
+                            style: CoconutTypography.heading4_18,
                           ),
                         ),
                       ),
