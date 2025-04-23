@@ -33,39 +33,50 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   static const int kInputMaxCount = kIncomingTxInputCount;
   static const int kOutputMaxCount = kOutgoingTxOutputCount;
 
-  bool _canSeeMoreInputs = false;
-  bool _canSeeMoreOutputs = false;
+  bool _canShowMoreInputs = false;
+  bool _canShowMoreOutputs = false;
+  bool _canShowLessInputs = false;
+  bool _canShowLessOutputs = false;
+
   int _inputCountToShow = 0;
   int _outputCountToShow = 0;
 
+  late final TransactionRecord _transaction = widget.transaction;
   late List<TransactionAddress> _inputAddressList = [];
   late List<TransactionAddress> _outputAddressList = [];
   late final TransactionStatus _status;
+
+  final GlobalKey _balanceWidthKey = GlobalKey();
+  Size _balanceWidthSize = Size.zero;
 
   @override
   void initState() {
     super.initState();
 
-    final transaction = widget.transaction;
-    _inputCountToShow = transaction.inputAddressList.length;
-    _outputCountToShow = transaction.outputAddressList.length;
-    _inputAddressList = transaction.inputAddressList;
-    _outputAddressList = transaction.outputAddressList;
-    _status = TransactionUtil.getStatus(transaction)!;
-    final direction = TransactionUtil.getDirection(transaction);
+    _inputCountToShow = _transaction.inputAddressList.length;
+    _outputCountToShow = _transaction.outputAddressList.length;
+    _inputAddressList = _transaction.inputAddressList;
+    _outputAddressList = _transaction.outputAddressList;
+    _status = TransactionUtil.getStatus(_transaction)!;
 
-    if (transaction.inputAddressList.length > kInputMaxCount) {
-      _canSeeMoreInputs = true;
-      _inputCountToShow = direction == TransactionDirection.outgoing
-          ? kOutgoingTxInputCount
-          : kIncomingTxInputCount;
+    if (_inputAddressList.length > kInputMaxCount) {
+      _canShowMoreInputs = true;
+      _setInitialInputCountToShow();
     }
-    if (transaction.outputAddressList.length > kOutputMaxCount) {
-      _canSeeMoreOutputs = true;
-      _outputCountToShow = direction == TransactionDirection.outgoing
-          ? kOutgoingTxOutputCount
-          : kIncomingTxOutputCount;
+    if (_outputAddressList.length > kOutputMaxCount) {
+      _canShowMoreOutputs = true;
+      _setInitialOutputCountToShow();
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final renderBox = _balanceWidthKey.currentContext?.findRenderObject();
+      if (renderBox is RenderBox) {
+        setState(() {
+          _balanceWidthSize = renderBox.size;
+        });
+      }
+    });
   }
 
   @override
@@ -78,12 +89,12 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildAddressList(
-              list: _canSeeMoreInputs
+              list: _canShowMoreInputs
                   ? _inputAddressList.sublist(0, _inputCountToShow)
                   : _inputAddressList,
               rowType: InputOutputRowType.input),
           Visibility(
-            visible: _canSeeMoreInputs,
+            visible: _canShowMoreInputs,
             child: Center(
               child: CustomUnderlinedButton(
                 text: t.view_more,
@@ -93,20 +104,54 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
               ),
             ),
           ),
+          Visibility(
+            visible: _canShowLessInputs,
+            child: Center(
+              child: CustomUnderlinedButton(
+                text: t.view_less,
+                onTap: _onTapViewLessInputs,
+                fontSize: 12,
+                lineHeight: 14,
+              ),
+            ),
+          ),
           _buildFee(widget.transaction.fee),
           _buildAddressList(
-              list: _canSeeMoreOutputs
+              list: _canShowMoreOutputs
                   ? _outputAddressList.sublist(0, _outputCountToShow)
                   : _outputAddressList,
               rowType: InputOutputRowType.output),
           Visibility(
-            visible: _canSeeMoreOutputs,
+            visible: _canShowMoreOutputs,
             child: Center(
               child: CustomUnderlinedButton(
                 text: t.view_more,
                 onTap: _onTapViewMoreOutputs,
                 fontSize: 12,
                 lineHeight: 14,
+              ),
+            ),
+          ),
+          Visibility(
+            visible: _canShowLessOutputs,
+            child: Center(
+              child: CustomUnderlinedButton(
+                text: t.view_less,
+                onTap: _onTapViewLessOutputs,
+                fontSize: 12,
+                lineHeight: 14,
+              ),
+            ),
+          ),
+
+          /// balance 최대 너비 체크를 위함
+          Visibility(
+            visible: false,
+            child: Text(
+              key: _balanceWidthKey,
+              '0.0000 0000',
+              style: CoconutTypography.body2_14_Number.setColor(
+                Colors.transparent,
               ),
             ),
           ),
@@ -119,7 +164,6 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
     required List<TransactionAddress> list,
     required InputOutputRowType rowType,
   }) {
-    debugPrint('>>> _buildAddressList : ${list.length}');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -132,7 +176,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
             child: InputOutputDetailRow(
               address: item.address,
               balance: item.amount,
-              balanceMaxWidth: 100,
+              balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
               rowType: rowType,
               isCurrentAddress: widget.isSameAddress(item.address, index),
               transactionStatus: widget.isForTransaction ? _status : null,
@@ -149,10 +193,28 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         child: InputOutputDetailRow(
           address: t.fee,
           balance: fee,
-          balanceMaxWidth: 100,
+          balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
           rowType: InputOutputRowType.fee,
           transactionStatus: widget.isForTransaction ? _status : null,
         ));
+  }
+
+  void _setInitialInputCountToShow() {
+    final direction = TransactionUtil.getDirection(_transaction);
+    setState(() {
+      _inputCountToShow = direction == TransactionDirection.outgoing
+          ? kOutgoingTxInputCount
+          : kIncomingTxInputCount;
+    });
+  }
+
+  void _setInitialOutputCountToShow() {
+    final direction = TransactionUtil.getDirection(_transaction);
+    setState(() {
+      _outputCountToShow = direction == TransactionDirection.outgoing
+          ? kOutgoingTxOutputCount
+          : kIncomingTxOutputCount;
+    });
   }
 
   void _onTapViewMoreInputs() {
@@ -161,8 +223,17 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         _inputCountToShow += kViewMoreCount;
       } else {
         _inputCountToShow = _inputAddressList.length;
-        _canSeeMoreInputs = false;
+        _canShowMoreInputs = false;
+        _canShowLessInputs = true;
       }
+    });
+  }
+
+  void _onTapViewLessInputs() {
+    _setInitialInputCountToShow();
+    setState(() {
+      _canShowMoreInputs = true;
+      _canShowLessInputs = false;
     });
   }
 
@@ -172,8 +243,17 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         _outputCountToShow += kViewMoreCount;
       } else {
         _outputCountToShow = _outputAddressList.length;
-        _canSeeMoreOutputs = false;
+        _canShowMoreOutputs = false;
+        _canShowLessOutputs = true;
       }
+    });
+  }
+
+  void _onTapViewLessOutputs() {
+    _setInitialOutputCountToShow();
+    setState(() {
+      _canShowMoreOutputs = true;
+      _canShowLessOutputs = false;
     });
   }
 }

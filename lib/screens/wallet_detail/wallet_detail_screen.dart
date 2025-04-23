@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -221,6 +223,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   // 스크롤 시 sticky header 렌더링을 위한 상태 변수들
   final ScrollController _scrollController = ScrollController();
+  OverlayEntry? _statusBarTapOverlayEntry;
 
   final GlobalKey _appBarKey = GlobalKey();
   Size _appBarSize = const Size(0, 0);
@@ -302,12 +305,45 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         }
       });
     });
+
+    if (Platform.isIOS) {
+      _enableStatusBarTapScroll();
+    }
   }
 
   @override
   void dispose() {
+    _statusBarTapOverlayEntry?.remove();
+    _statusBarTapOverlayEntry = null;
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _enableStatusBarTapScroll() {
+    if (_statusBarTapOverlayEntry != null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _statusBarTapOverlayEntry = OverlayEntry(
+        builder: (context) => Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: MediaQuery.of(context).padding.top,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+          ),
+        ),
+      );
+
+      final overlayState = Overlay.of(context);
+      overlayState.insert(_statusBarTapOverlayEntry!);
+    });
   }
 
   bool _checkStateAndShowToast() {
