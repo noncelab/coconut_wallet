@@ -396,6 +396,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       isLastItem: isLastItem,
       isBalanceHidden: isBalanceHidden,
       signers: signers,
+      walletImportSource: WalletImportSource.coconutVault,
     );
     return walletItemCard;
   }

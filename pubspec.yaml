@@ -71,9 +71,10 @@ dependencies:
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
   coconut_design_system: 
-    git:
-      url: https://github.com/noncelab/coconut_design_system.git
-      ref: feat/17-pulldown-menu-group
+    path: ../design_system/coconut_design_system
+    # git:
+    #   url: https://github.com/noncelab/coconut_design_system.git
+    #   ref: feat/17-pulldown-menu-group
   coconut_lib: ^0.9.2
   realm: ^20.0.0
   cryptography: ^2.7.0
