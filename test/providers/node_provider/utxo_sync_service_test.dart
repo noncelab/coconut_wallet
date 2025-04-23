@@ -67,7 +67,7 @@ void main() {
 
         // UTXO 추가 (unspent 상태)
         realmManager.realm.write(() {
-          final utxo = UtxoMock.createUnspentUtxo(
+          final utxo = UtxoMock.createUnspentRealmUtxo(
             walletId: testWalletId,
             address: testAddress,
             amount: 1000000,

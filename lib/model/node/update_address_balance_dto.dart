@@ -1,14 +1,14 @@
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
-class AddressBalanceUpdateDto {
+class UpdateAddressBalanceDto {
   final ScriptStatus scriptStatus;
   final int confirmed;
   final int unconfirmed;
 
   int get total => confirmed + unconfirmed;
 
-  AddressBalanceUpdateDto({
+  UpdateAddressBalanceDto({
     required this.scriptStatus,
     required this.confirmed,
     required this.unconfirmed,

@@ -424,7 +424,7 @@ void main() {
     test('RBF가 아닌 트랜잭션은 null을 반환해야 함', () async {
       // RBF가 아닌 상황 설정: UTXO가 outgoing 상태가 아님
       realmManager.realm.write(() {
-        final utxo = UtxoMock.createUnspentUtxo(
+        final utxo = UtxoMock.createUnspentRealmUtxo(
           walletId: testWalletId,
           address: testWalletItem.walletBase.getAddress(0),
           amount: 1000000,

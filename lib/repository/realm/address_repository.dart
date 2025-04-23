@@ -2,13 +2,13 @@ import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/node/update_address_balance_dto.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 class AddressRepository extends BaseRepository {
@@ -435,7 +435,7 @@ class AddressRepository extends BaseRepository {
   /// @param updateDataList 업데이트할 DTO 객체 목록
   /// @return 전체 잔액 변화량
   Future<Balance> updateAddressBalanceBatch(
-      int walletId, List<AddressBalanceUpdateDto> updateDataList) async {
+      int walletId, List<UpdateAddressBalanceDto> updateDataList) async {
     if (updateDataList.isEmpty) {
       return Balance(0, 0);
     }
