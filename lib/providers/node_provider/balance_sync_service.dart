@@ -7,7 +7,7 @@ import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
+import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 
 /// NodeProvider의 잔액 관련 기능을 담당하는 매니저 클래스
 class BalanceSyncService {

@@ -2,13 +2,13 @@ import 'dart:isolate';
 
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_controller.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/state/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction_sync_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';

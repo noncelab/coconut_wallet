@@ -1,7 +1,7 @@
 import 'dart:isolate';
 
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
+import 'package:coconut_wallet/providers/node_provider/state/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';

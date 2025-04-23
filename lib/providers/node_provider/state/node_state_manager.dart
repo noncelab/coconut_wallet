@@ -3,7 +3,7 @@ import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
+import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 /// NodeProvider의 상태 관리를 담당하는 매니저 클래스

@@ -5,7 +5,7 @@ import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/model/node/wallet_update_counter.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
+import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 /// Isolate 스레드에서 메인 스레드로 상태 관리 메시지를 전달하는 클래스

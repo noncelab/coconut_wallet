@@ -16,7 +16,7 @@ import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager_interface.dart';
+import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 
 // Helper record for step 3 return type (Moved before class)
 typedef FetchedTransactionDetails = ({
