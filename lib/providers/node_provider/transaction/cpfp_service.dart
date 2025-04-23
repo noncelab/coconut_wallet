@@ -1,12 +1,17 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/node/cpfp_info.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
+
+typedef CpfpInfo = ({
+  String parentTransactionHash, // 부모 트랜잭션
+  double originalFee, // 원본 수수료율
+  List<Transaction> previousTransactions,
+});
 
 /// CPFP(Child-Pays-For-Parent) 트랜잭션 처리를 담당하는 클래스
 class CpfpService {
@@ -57,7 +62,7 @@ class CpfpService {
       // 수수료 계산을 위한 정보 수집
       final prevTxs = await _electrumService.getPreviousTransactions(tx);
 
-      return CpfpInfo(
+      return (
         parentTransactionHash: parentTxHash,
         originalFee: originalFee,
         previousTransactions: prevTxs,

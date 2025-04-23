@@ -2,12 +2,16 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/node/rbf_info.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
+
+typedef RbfInfo = ({
+  String originalTransactionHash,
+  String spentTransactionHash,
+});
 
 /// RBF(Replace-By-Fee) 트랜잭션 처리를 담당하는 클래스
 class RbfService {
@@ -75,7 +79,7 @@ class RbfService {
         // 첫 번째 RBF인 경우, 대체되는 트랜잭션이 originalTransactionHash
         originalTxHash = spentTxHash;
       }
-      return RbfInfo(
+      return (
         originalTransactionHash: originalTxHash,
         spentTransactionHash: spentTxHash,
       );

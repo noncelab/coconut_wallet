@@ -6,8 +6,6 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_service.dart';
-import 'package:coconut_wallet/model/node/cpfp_info.dart';
-import 'package:coconut_wallet/model/node/rbf_info.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
