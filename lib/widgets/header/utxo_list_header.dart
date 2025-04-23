@@ -18,6 +18,7 @@ class UtxoListHeader extends StatefulWidget {
   final List<UtxoTag> utxoTagList;
   final String selectedUtxoTagName;
   final Function(String) onTagSelected;
+  final bool canShowDropdown;
 
   const UtxoListHeader(
       {super.key,
@@ -27,7 +28,8 @@ class UtxoListHeader extends StatefulWidget {
       required this.onTapDropdown,
       required this.utxoTagList,
       required this.selectedUtxoTagName,
-      required this.onTagSelected});
+      required this.onTagSelected,
+      required this.canShowDropdown});
 
   @override
   State<UtxoListHeader> createState() => _UtxoListHeaderState();
@@ -91,15 +93,21 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                         padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
                         minSize: 0,
                         onPressed: () {
+                          if (!widget.canShowDropdown) return;
                           widget.onTapDropdown();
                         },
                         child: Row(
                           children: [
                             Text(widget.selectedFilter,
-                                style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+                                style: CoconutTypography.body3_12.setColor(widget.canShowDropdown
+                                    ? CoconutColors.white
+                                    : CoconutColors.gray700)),
                             CoconutLayout.spacing_200w,
                             SvgPicture.asset(
                               'assets/svg/arrow-down.svg',
+                              colorFilter: widget.canShowDropdown
+                                  ? null
+                                  : const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn),
                             ),
                           ],
                         ),

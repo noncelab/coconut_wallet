@@ -114,12 +114,11 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: CoconutColors.black,
-        appBar: CustomAppBar.build(
-            title: _titleText,
-            context: context,
-            hasRightIcon: false,
-            showTestnetLabel: false,
-            isBottom: true),
+        appBar: CoconutAppBar.build(
+          title: _titleText,
+          context: context,
+          isBottom: true,
+        ),
         floatingActionButton: Visibility(
           visible: _isFabShown,
           child: FloatingActionButton(

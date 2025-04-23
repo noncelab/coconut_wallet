@@ -35,6 +35,8 @@ tag: "태그"
 change: "잔돈"
 sign: "서명하기"
 glossary: "용어집"
+tool: "도구"
+tutorial: "튜토리얼"
 settings: "설정"
 tx_list: "거래 내역"
 utxo_list: "UTXO 목록"
@@ -122,7 +124,29 @@ pin_check_screen:
 
 # lib/screens/home
 wallet_add_scanner_screen:
-  text: "보기 전용 지갑 추가"
+  add_wallet: "지갑 추가"
+  add_watch_only_wallet: "보기 전용 지갑 추가"
+  vault: "코코넛 볼트"
+  keystone: "키스톤"
+  seed_signer: "시드사이너"
+  self: "직접 입력"
+  self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
+
+wallet_add_input_screen:
+  app_bar_title_text: "직접 입력"
+  placeholder_text: "확장공개키(zpub) 또는 디스크립터를 입력해 주세요"
+  error_text: "확인할 수 없는 형식이에요"
+  wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
+  blue_wallet_texts:
+    - "· 블루월렛"
+    - "· 핫월렛 - 더보기(•••) - Show Wallet XPUB 버튼 클릭"
+    - "· 보기 전용 지갑 - 더보기(•••) - Export/Backup 버튼 클릭"
+    - "zpub6rFR7y4Q2AijBEqt..."
+  nunchuck_wallet_texts:
+    - "· 넌척"
+    - "· Keys 탭 - 키 선택 - Key spec 정보"
+    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
+    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
 
 # lib/screens/review
 negative_feedback_screen:
@@ -253,11 +277,6 @@ license_bottom_sheet:
   copyright_text2: "에서 확인해 주세요.\n\n이 애플리케이션에 포함된 타사 소프트웨어에 대한 저작권을 다음과 같이 명시합니다. 이에 대해 궁금한 사항이 있으시면 "
   copyright_text3: "으로 문의해 주시기 바랍니다."
   email_subject: "[월렛] 라이선스 문의"
-onboarding_bottom_sheet:
-  skip: "건너뛰기 |"
-  when_need_help: "사용하시다 도움이 필요할 때"
-  guide_btn: "튜토리얼 안내 버튼"
-  press: "을 눌러주세요"
 security_self_check_bottom_sheet:
   check1: "나의 개인키는 내가 스스로 책임집니다."
   check2: "니모닉 문구 화면을 캡처하거나 촬영하지 않습니다."
