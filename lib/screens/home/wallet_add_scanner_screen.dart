@@ -192,8 +192,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           Navigator.pop(context);
         });
       }
-      // TODO:
-      rethrow;
+      // TODO: remove rethrow; after test
+      //rethrow;
     } finally {
       vibrateMedium();
       if (mounted) {
@@ -202,7 +202,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     }
   }
 
-  // TODO:
+  // TODO: 변경된 로직에 맞게 에러 핸들링 점검
   void _onFailedScanning(String message) {
     if (_isProcessing) return;
     _isProcessing = true;
