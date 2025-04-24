@@ -17,3 +17,12 @@ enum WalletImportSource {
   seedSigner,
   extendedPublicKey,
 }
+
+extension WalletImportSourceExtension on WalletImportSource {
+  static WalletImportSource fromString(String name) {
+    return WalletImportSource.values.firstWhere(
+      (type) => type.name == name,
+      orElse: () => WalletImportSource.coconutVault,
+    );
+  }
+}

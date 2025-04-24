@@ -31,5 +31,6 @@ abstract class WalletListItemBase {
       this.changeUsedIndex = -1});
 
   @override
-  String toString() => 'Wallet($id) / type=$walletType / name=$name';
+  String toString() =>
+      'Wallet($id) / type=$walletType / source=${walletImportSource.name}/ name=$name';
 }

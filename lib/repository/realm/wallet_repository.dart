@@ -22,11 +22,13 @@ class WalletRepository extends BaseRepository {
 
   /// 지갑 목록을 DB에서 로드
   Future<List<WalletListItemBase>> getWalletItemList() async {
-    int multisigWalletIndex = 0;
     List<WalletListItemBase> walletList = [];
+    int multisigWalletIndex = 0;
+    int externalWalletIndex = 0;
 
     var walletBases = realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id DESC)');
     var multisigWallets = realm.all<RealmMultisigWallet>().query('TRUEPREDICATE SORT(id DESC)');
+    var externalWallets = realm.all<RealmExternalWallet>().query('TRUEPREDICATE SORT(id DESC)');
 
     for (var i = 0; i < walletBases.length; i++) {
       String? decryptedDescriptor;
@@ -35,7 +37,17 @@ class WalletRepository extends BaseRepository {
       }
 
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
-        walletList.add(mapRealmToSingleSigWalletItem(walletBases[i], decryptedDescriptor));
+        // 외부 지갑인 경우 WalletImportSource 데이터 추가
+        if (externalWalletIndex < externalWallets.length &&
+            walletBases[i].id == externalWallets[externalWalletIndex].id) {
+          walletList.add(mapRealmToSingleSigWalletItem(
+              walletBases[i],
+              decryptedDescriptor,
+              WalletImportSourceExtension.fromString(
+                  externalWallets[externalWalletIndex++].walletImportSource)));
+        } else {
+          walletList.add(mapRealmToSingleSigWalletItem(walletBases[i], decryptedDescriptor, null));
+        }
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         walletList.add(mapRealmToMultisigWalletItem(
@@ -53,16 +65,23 @@ class WalletRepository extends BaseRepository {
         ? await cryptography!.encrypt(watchOnlyWallet.descriptor)
         : watchOnlyWallet.descriptor;
 
-    var wallet = RealmWalletBase(id, watchOnlyWallet.colorIndex, watchOnlyWallet.iconIndex,
+    var realmWalletBase = RealmWalletBase(id, watchOnlyWallet.colorIndex, watchOnlyWallet.iconIndex,
         descriptor, watchOnlyWallet.name, WalletType.singleSignature.name);
 
     realm.write(() {
-      realm.add(wallet);
+      realm.add(realmWalletBase);
+
+      // 외부 지갑인 경우 ExternalWallet 생성
+      if (watchOnlyWallet.walletImportSource.name != WalletImportSource.coconutVault.name) {
+        var realmExternalWallet = RealmExternalWallet(id, watchOnlyWallet.walletImportSource.name,
+            walletBase: realmWalletBase);
+        realm.add(realmExternalWallet);
+      }
     });
 
     _recordNextWalletId(id + 1);
-
-    return mapRealmToSingleSigWalletItem(wallet, descriptor);
+    return mapRealmToSingleSigWalletItem(
+        realmWalletBase, descriptor, watchOnlyWallet.walletImportSource);
   }
 
   /// 멀티시그 지갑 추가
@@ -126,6 +145,11 @@ class WalletRepository extends BaseRepository {
         : null;
     final realmMultisigWallet = realmMultisigWalletResults?.first;
 
+    final realmExternalWalletResults = walletBase.walletType == WalletType.singleSignature.name
+        ? realm.query<RealmExternalWallet>('id == $walletId')
+        : null;
+    final realmExternalWallet = realmExternalWalletResults?.first;
+
     await realm.writeAsync(() {
       realm.delete(walletBase);
       if (transactions.isNotEmpty) {
@@ -133,6 +157,9 @@ class WalletRepository extends BaseRepository {
       }
       if (realmMultisigWallet != null) {
         realm.delete(realmMultisigWallet);
+      }
+      if (realmExternalWallet != null) {
+        realm.delete(realmExternalWallet);
       }
       if (walletBalance.isNotEmpty) {
         realm.deleteMany(walletBalance);
