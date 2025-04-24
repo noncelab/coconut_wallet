@@ -3,11 +3,13 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -53,7 +55,7 @@ void main() {
       inputTransactionHash: inputTx.transactionHash,
     ); // 수수료를 처음 올리려고 시도한 RBF 트랜잭션
 
-    setUp(() {
+    setUp(() async {
       if (realmManager == null) {
         realmManager = TestRealmManager()..init(false);
       } else {
@@ -71,7 +73,7 @@ void main() {
 
       walletRepository.addSinglesigWallet(WatchOnlyWallet(walletItem.name, walletItem.colorIndex,
           walletItem.iconIndex, walletItem.descriptor, null, null));
-      addressRepository.ensureAddressesInit(walletItemBase: walletItem);
+      await addressRepository.ensureAddressesInit(walletItemBase: walletItem);
       electrumService = MockElectrumService();
       rbfService = RbfService(transactionRepository, utxoRepository, electrumService);
     });
@@ -275,6 +277,186 @@ void main() {
             reason: '원본 트랜잭션 해시 ${originalTx.transactionHash.substring(0, 6)}...가 반환되어야 함.');
         expect(result?.spentTransactionHash, firstRbfTx.transactionHash,
             reason: '첫 RBF 트랜잭션 해시 ${firstRbfTx.transactionHash.substring(0, 6)}...가 반환되어야 함.');
+      });
+      test('이미 RBF 내역이 있는 경우 null 반환', () async {
+        // Given
+        final rbfHistoryList = [
+          RbfHistoryDto(
+            walletId: walletId,
+            originalTransactionHash: originalTx.transactionHash,
+            transactionHash: originalTx.transactionHash,
+            feeRate: 1.0,
+            timestamp: DateTime.now(),
+          ),
+          RbfHistoryDto(
+            walletId: walletId,
+            originalTransactionHash: originalTx.transactionHash,
+            transactionHash: firstRbfTx.transactionHash,
+            feeRate: 2.0,
+            timestamp: DateTime.now(),
+          ),
+        ];
+
+        // 기존 RBF 내역 있음
+        transactionRepository.addAllRbfHistory(rbfHistoryList);
+
+        // When
+        final result = await rbfService.detectSendingRbfTransaction(walletId, firstRbfTx);
+
+        // Then
+        expect(result, isNull);
+      });
+    });
+
+    group('detectReceivingRbfTransaction', () {
+      test('incoming 트랜잭션이 대체된 경우 해당 트랜잭션 해시 반환', () async {
+        // Given
+        final incomingUtxoList = [
+          UtxoMock.createIncomingUtxo(
+            transactionHash: originalTx.transactionHash,
+            id: makeUtxoId(originalTx.transactionHash, 0),
+          ),
+        ];
+
+        utxoRepository.addAllUtxos(walletId, incomingUtxoList);
+
+        // 트랜잭션 대체됨 (예외 발생)
+        when(electrumService.getTransaction(originalTx.transactionHash, verbose: true))
+            .thenThrow(Exception('Transaction not found'));
+
+        // When
+        final result = await rbfService.detectReceivingRbfTransaction(walletId, firstRbfTx);
+
+        // Then
+        expect(result, originalTx.transactionHash);
+      });
+
+      test('incoming 트랜잭션이 유효한 경우 null 반환', () async {
+        // Given
+        final incomingUtxoList = [
+          UtxoMock.createIncomingUtxo(
+            transactionHash: originalTx.transactionHash,
+            id: makeUtxoId(originalTx.transactionHash, 0),
+          ),
+        ];
+
+        utxoRepository.addAllUtxos(walletId, incomingUtxoList);
+
+        // 트랜잭션 유효함 (예외 발생하지 않음)
+        when(electrumService.getTransaction(originalTx.transactionHash, verbose: true))
+            .thenAnswer((_) async => originalTx.serialize());
+
+        // When
+        final result = await rbfService.detectReceivingRbfTransaction(walletId, firstRbfTx);
+
+        // Then
+        expect(result, isNull);
+      });
+    });
+
+    group('saveRbfHistory', () {
+      test('첫 RBF 내역 저장 시 원본 트랜잭션 내역과 첫 RBF 트랜잭션 내역이 모두 저장되어야 함', () async {
+        // Given
+        final rbfInfo = TransactionMock.createMockRbfInfo(
+          originalTransactionHash: originalTx.transactionHash,
+          spentTransactionHash: firstRbfTx.transactionHash,
+        );
+
+        final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
+          transactionHash: originalTx.transactionHash,
+        );
+
+        final firstRbfTxRecord = TransactionMock.createRbfTransactionRecord(
+          transactionHash: firstRbfTx.transactionHash,
+        );
+        transactionRepository.addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord]);
+
+        final beforeRbfHistoryList =
+            transactionRepository.getRbfHistoryList(walletId, firstRbfTx.transactionHash);
+        expect(beforeRbfHistoryList.length, 0);
+
+        // When
+        await rbfService.saveRbfHistoryMap(
+            RbfSaveRequest(
+                walletItem: walletItem,
+                rbfInfoMap: {firstRbfTx.transactionHash: rbfInfo},
+                txRecordMap: {firstRbfTx.transactionHash: firstRbfTxRecord}),
+            walletId);
+
+        // Then
+        final afterRbfHistoryList =
+            transactionRepository.getRbfHistoryList(walletId, firstRbfTx.transactionHash);
+        expect(afterRbfHistoryList.length, 2);
+      });
+    });
+
+    group('saveRbfHistoryMap', () {
+      test('2번째 RBF 내역 저장 시 추가로 1개만 저장되어야 함', () async {
+        // Given
+        final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
+          transactionHash: originalTx.transactionHash,
+        );
+        final firstRbfTxRecord = TransactionMock.createRbfTransactionRecord(
+          transactionHash: firstRbfTx.transactionHash,
+        );
+        final secondRbfTx = TransactionMock.createMockTransaction(
+          toAddress: otherWalletItem.walletBase.getAddress(0),
+          amount: 7000,
+          inputTransactionHash: inputTx.transactionHash,
+        );
+        final secondRbfTxRecord = TransactionMock.createRbfTransactionRecord(
+          transactionHash: secondRbfTx.transactionHash,
+        );
+
+        final rbfInfoMap = {
+          secondRbfTx.transactionHash: TransactionMock.createMockRbfInfo(
+            originalTransactionHash: originalTx.transactionHash,
+            spentTransactionHash: secondRbfTx.transactionHash,
+          )
+        };
+
+        final txRecordMap = {
+          originalTx.transactionHash: originalTxRecord,
+          firstRbfTx.transactionHash: firstRbfTxRecord,
+          secondRbfTx.transactionHash: secondRbfTxRecord,
+        };
+
+        final rbfSaveRequest = RbfSaveRequest(
+          walletItem: walletItem,
+          rbfInfoMap: rbfInfoMap,
+          txRecordMap: txRecordMap,
+        );
+
+        transactionRepository.addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord]);
+        transactionRepository.addAllRbfHistory([
+          RbfHistoryDto(
+            walletId: walletId,
+            originalTransactionHash: originalTx.transactionHash,
+            transactionHash: originalTx.transactionHash,
+            feeRate: 1.0,
+            timestamp: DateTime.now(),
+          ),
+          RbfHistoryDto(
+            walletId: walletId,
+            originalTransactionHash: originalTx.transactionHash,
+            transactionHash: firstRbfTx.transactionHash,
+            feeRate: 2.0,
+            timestamp: DateTime.now(),
+          ),
+        ]);
+
+        final beforeRbfHistoryList =
+            transactionRepository.getRbfHistoryList(walletId, firstRbfTx.transactionHash);
+        expect(beforeRbfHistoryList.length, 2, reason: '2번째 RBF 내역 저장 전 총 갯수는 2개여야 함.');
+
+        // When
+        await rbfService.saveRbfHistoryMap(rbfSaveRequest, walletId);
+
+        // Then
+        final afterRbfHistoryList =
+            transactionRepository.getRbfHistoryList(walletId, secondRbfTx.transactionHash);
+        expect(afterRbfHistoryList.length, 3,
+            reason: '2번째 RBF 내역 저장 시 추가로 1개만 저장되어 전체 갯수는 3개여야 함.');
       });
     });
   });

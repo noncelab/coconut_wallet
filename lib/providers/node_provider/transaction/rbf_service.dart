@@ -44,9 +44,10 @@ class RbfService {
     // RBF 입력 검사
     final rbfInputInfo = await findRbfCandidate(walletId, tx);
     if (rbfInputInfo != null && rbfInputInfo.spentByTransactionHash != null) {
-      final spentTxHash = rbfInputInfo.spentByTransactionHash!;
+      final spentTxHash = tx.transactionHash;
       // 원본 트랜잭션 해시 찾기
-      final originalTxHash = await findOriginalTransactionHash(walletId, spentTxHash);
+      final originalTxHash =
+          await findOriginalTransactionHash(walletId, rbfInputInfo.spentByTransactionHash!);
 
       return (
         originalTransactionHash: originalTxHash,
@@ -136,18 +137,6 @@ class RbfService {
     } catch (e) {
       // 예외 발생 시 트랜잭션이 대체된 것으로 판단
       return true;
-    }
-  }
-
-  /// RBF 내역을 저장하는 함수
-  Future<void> saveRbfHistory(
-      WalletListItemBase walletItem, RbfInfo rbfInfo, TransactionRecord txRecord) async {
-    final rbfHistoryDtos = <RbfHistoryDto>[];
-    await _processRbfEntry(walletItem.id, rbfInfo, txRecord, rbfHistoryDtos);
-
-    // 일괄 저장
-    if (rbfHistoryDtos.isNotEmpty) {
-      _transactionRepository.addAllRbfHistory(rbfHistoryDtos);
     }
   }
 
