@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 class VisibilityProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final SecureStorageRepository _secureStorageService = SecureStorageRepository();
+  bool _isDisposed = false;
 
   /// iOS에서 앱 지워도 secureStorage가 남아있어서 지우기 위해 사용
   /// onBoading 노출 여부
@@ -24,6 +25,12 @@ class VisibilityProvider extends ChangeNotifier {
 
   late int _walletCount;
   int get walletCount => _walletCount;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
 
   VisibilityProvider() {
     _hasLaunchedBefore = _sharedPrefs.getBool(SharedPrefKeys.kHasLaunchedBefore);
@@ -39,12 +46,12 @@ class VisibilityProvider extends ChangeNotifier {
   Future<void> hideTermsShortcut() async {
     _hideTermsShortcut = true;
     await _sharedPrefs.setBool(SharedPrefKeys.kHideTermsShortcut, true);
-    notifyListeners();
+    if (!_isDisposed) notifyListeners();
   }
 
   Future<void> setWalletCount(int count) async {
     _walletCount = count;
     await _sharedPrefs.setInt(SharedPrefKeys.kWalletCount, count);
-    notifyListeners();
+    if (!_isDisposed) notifyListeners();
   }
 }

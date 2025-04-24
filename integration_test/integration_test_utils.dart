@@ -38,19 +38,12 @@ Future<void> waitForWidgetAndTap(WidgetTester tester, Finder element, String ele
 
 Future<void> setWalletData(bool isEnabled) async {
   if (!isEnabled) return;
-  // 월렛이 있는 경우에는 핀코드도 설정되어 있어야 한다.
   await addWallets();
-  await savePinCode("0000");
 }
 
 Future<void> skipTutorial(bool skip) async {
   final prefs = await SharedPreferences.getInstance();
   prefs.setBool(SharedPrefKeys.kHasLaunchedBefore, skip);
-}
-
-Future<void> setWalletCount(int count) async {
-  final prefs = await SharedPreferences.getInstance();
-  prefs.setInt(SharedPrefKeys.kWalletCount, count);
 }
 
 Future<void> savePinCode(String pinCode) async {
@@ -69,6 +62,11 @@ void verifyWalletListItem(WalletListItemBase wallet, Map<String, dynamic> wallet
       walletData["signers"] == null ? WalletType.singleSignature : WalletType.multiSignature);
   expect(wallet.walletImportSource.name,
       walletData["walletImportSource"] ?? WalletImportSource.coconutVault.name);
+}
+
+Future<void> _setWalletCount(int count) async {
+  final prefs = await SharedPreferences.getInstance();
+  prefs.setInt(SharedPrefKeys.kWalletCount, count);
 }
 
 Future<int> addWallets({WalletProvider? walletProvider}) async {
@@ -118,7 +116,7 @@ Future<int> addWallets({WalletProvider? walletProvider}) async {
 
     var item3 = await walletRepository.addMultisigWallet(WatchOnlyWallet.fromJson(multiSigWallet1));
     await addressRepository.ensureAddressesInit(walletItemBase: item3);
-    await setWalletCount(3);
+    await _setWalletCount(3);
   }
 
   return 3;

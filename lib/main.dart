@@ -15,8 +15,6 @@ import 'package:provider/provider.dart';
 
 import 'app.dart';
 
-late final String dbDirectoryPath;
-
 const methodChannelOS = 'onl.coconut.wallet/os';
 
 void main() {
@@ -66,11 +64,9 @@ void main() {
 
     await SharedPrefsRepository().init();
 
-    // coconut 0.6 버전까지만 사용, 0.7버전부터 필요 없어짐
-    final dbDirectory = await getAppDocumentDirectory(paths: ['objectbox']);
-    dbDirectoryPath = dbDirectory.path;
-    // coconut_lib 0.6까지 사용하던 db 경로 데이터 삭제
     try {
+      // coconut 0.6 버전까지만 사용, 0.7버전부터 필요 없어짐, 사용하던 db 경로 데이터 삭제
+      final dbDirectory = await getAppDocumentDirectory(paths: ['objectbox']);
       if (dbDirectory.existsSync()) {
         dbDirectory.deleteSync(recursive: true);
       }

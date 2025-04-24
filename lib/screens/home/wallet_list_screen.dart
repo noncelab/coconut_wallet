@@ -479,7 +479,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           width: MediaQuery.sizeOf(context).width,
                           child: _buildWalletIconShrinkButton(
                             () => _goToManualInputScreen(),
-                            WalletImportSource.zpub,
+                            WalletImportSource.extendedPublicKey,
                           ),
                         ),
                       ],
@@ -664,7 +664,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         svgPath = 'assets/svg/seed-signer.svg';
         scanText = t.wallet_add_scanner_screen.seed_signer;
         break;
-      case WalletImportSource.zpub:
+      case WalletImportSource.extendedPublicKey:
       case WalletImportSource.descriptor:
         svgPath = 'assets/svg/zpub.svg';
         scanText = t.wallet_add_scanner_screen.self;
@@ -673,7 +673,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       defaultColor: CoconutColors.black,
       pressedColor: CoconutColors.gray800,
       onPressed: () => onPressed(),
-      child: scanType == WalletImportSource.zpub
+      child: scanType == WalletImportSource.extendedPublicKey
           ? Padding(
               padding: const EdgeInsets.symmetric(
                 vertical: 16,
