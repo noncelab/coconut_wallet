@@ -12,6 +12,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   final GlobalKey dropdownGlobalKey;
   final double height;
   final bool isVisible;
+  final bool canShowDropdown;
   final AnimatedBalanceData animatedBalanceData;
   final int? totalCount;
   final String selectedFilter;
@@ -22,6 +23,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.dropdownGlobalKey,
     required this.height,
     required this.isVisible,
+    required this.canShowDropdown,
     required this.animatedBalanceData,
     required this.totalCount,
     required this.selectedFilter,
@@ -96,37 +98,37 @@ class UtxoListStickyHeader extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Visibility(
-                        visible: totalCount != 0,
-                        maintainAnimation: true,
-                        maintainState: true,
-                        maintainSize: true,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Container(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(),
+                          ),
+                          CupertinoButton(
+                            key: dropdownGlobalKey,
+                            padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
+                            minSize: 0,
+                            onPressed: () {
+                              if (!canShowDropdown) return;
+                              onTapDropdown();
+                            },
+                            child: Row(
+                              children: [
+                                Text(selectedFilter,
+                                    style: CoconutTypography.body3_12.setColor(canShowDropdown
+                                        ? CoconutColors.white
+                                        : CoconutColors.gray700)),
+                                CoconutLayout.spacing_200w,
+                                SvgPicture.asset(
+                                  'assets/svg/arrow-down.svg',
+                                  colorFilter: canShowDropdown
+                                      ? null
+                                      : const ColorFilter.mode(
+                                          CoconutColors.gray700, BlendMode.srcIn),
+                                ),
+                              ],
                             ),
-                            CupertinoButton(
-                              key: dropdownGlobalKey,
-                              padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
-                              minSize: 0,
-                              onPressed: () {
-                                onTapDropdown();
-                              },
-                              child: Row(
-                                children: [
-                                  Text(selectedFilter,
-                                      style:
-                                          CoconutTypography.body3_12.setColor(CoconutColors.white)),
-                                  CoconutLayout.spacing_200w,
-                                  SvgPicture.asset(
-                                    'assets/svg/arrow-down.svg',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                       CoconutLayout.spacing_50h,
                       Visibility(

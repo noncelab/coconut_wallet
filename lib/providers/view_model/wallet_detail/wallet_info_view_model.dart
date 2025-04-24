@@ -15,10 +15,10 @@ class WalletInfoViewModel extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   late String _walletName;
-  late WalletListItemBase _walletItemBase;
   late String _extendedPublicKey;
   late int _multisigTotalSignerCount;
   late int _multisigRequiredSignerCount;
+  late WalletListItemBase _walletItemBase;
 
   WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, bool _isMultisig) {
     final walletItemBase = _walletProvider.getWalletById(_walletId);
@@ -60,5 +60,10 @@ class WalletInfoViewModel extends ChangeNotifier {
   String getSignerMasterFingerprint(int index) {
     final multisigWallet = walletItemBase.walletBase as MultisignatureWallet;
     return multisigWallet.keyStoreList[index].masterFingerprint;
+  }
+
+  void updateWalletName(String updatedName) {
+    _walletName = updatedName;
+    notifyListeners();
   }
 }

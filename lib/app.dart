@@ -17,6 +17,7 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
@@ -39,6 +40,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -243,10 +245,15 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     ),
                   ),
         routes: {
-          '/wallet-add-scanner': (context) =>
-              // TODO: importSource
-              const CustomLoadingOverlay(
-                  child: WalletAddScannerScreen(importSource: WalletImportSource.keystone)),
+          '/wallet-add-scanner': (context) => buildScreenWithArguments(
+                context,
+                (args) => CustomLoadingOverlay(
+                  child: WalletAddScannerScreen(
+                    importSource: args['walletImportSource'],
+                  ),
+                ),
+              ),
+          '/wallet-add-input': (context) => const WalletAddInputScreen(),
           '/app-info': (context) => const AppInfoScreen(),
           '/wallet-detail': (context) => buildScreenWithArguments(
                 context,

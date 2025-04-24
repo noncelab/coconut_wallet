@@ -11,4 +11,9 @@ enum WalletSyncResult {
   existingWalletUpdateImpossible, // 이미 추가된 descriptor를 서드파티 방법으로 또 추가한 경우
 }
 
-enum WalletImportSource { coconutVault, keystone, seedSigner, extendedPublicKey }
+enum WalletImportSource {
+  coconutVault,
+  keystone,
+  seedSigner,
+  extendedPublicKey,
+}

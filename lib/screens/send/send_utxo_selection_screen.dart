@@ -429,10 +429,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     return Material(
       borderRadius: BorderRadius.circular(16),
       child: CoconutPulldownMenu(
-        buttons: _utxoOrderOptions.map((order) => order.text).toList(),
+        entries:
+            _utxoOrderOptions.map((order) => CoconutPulldownMenuItem(title: order.text)).toList(),
         shadowColor: CoconutColors.gray800,
         dividerColor: CoconutColors.gray800,
-        onTap: (index) async {
+        onSelected: (index, selectedText) async {
           bool isChanged = _selectedUtxoOrder != _utxoOrderOptions[index];
           setState(() {
             if (isChanged) {

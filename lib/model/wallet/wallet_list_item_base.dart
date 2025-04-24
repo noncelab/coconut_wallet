@@ -11,6 +11,7 @@ abstract class WalletListItemBase {
   int iconIndex;
   final String descriptor;
   WalletType walletType;
+  WalletImportSource walletImportSource;
   int receiveUsedIndex;
   int changeUsedIndex;
 
@@ -25,6 +26,7 @@ abstract class WalletListItemBase {
       required this.iconIndex,
       required this.descriptor,
       required this.walletType,
+      required this.walletImportSource,
       this.receiveUsedIndex = -1,
       this.changeUsedIndex = -1});
 

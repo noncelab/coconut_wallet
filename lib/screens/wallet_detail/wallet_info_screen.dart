@@ -63,6 +63,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                         Padding(
                           padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
                           child: WalletInfoItemCard(
+                            id: widget.id,
                             walletItem: viewModel.walletItemBase,
                             onTooltipClicked: () {
                               _removeTooltip();
@@ -83,6 +84,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               });
                             },
                             tooltipKey: _walletTooltipKey,
+                            onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
                           ),
                         ),
                         if (widget.isMultisig) ...{

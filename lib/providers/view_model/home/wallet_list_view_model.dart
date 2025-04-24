@@ -15,7 +15,6 @@ typedef BalanceGetter = int Function(int id);
 class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
   late WalletProvider _walletProvider;
-  late final bool _hasLaunchedAppBefore;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
@@ -31,7 +30,6 @@ class WalletListViewModel extends ChangeNotifier {
     this._isBalanceHidden,
     this._connectivityProvider,
   ) {
-    _hasLaunchedAppBefore = _visibilityProvider.hasLaunchedBefore;
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _walletSyncingState = _walletProvider.walletSubscriptionState;
@@ -39,7 +37,6 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
-  bool get isOnBoardingVisible => !_hasLaunchedAppBefore;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _walletProvider.isAnyBalanceUpdating;

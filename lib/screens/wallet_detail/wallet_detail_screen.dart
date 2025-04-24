@@ -139,6 +139,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       'id': widget.id,
       'isMultisig': _viewModel.walletType == WalletType.multiSignature
     });
+
+    _viewModel.updateWalletName();
   }
 
   void _onRefresh() async {
