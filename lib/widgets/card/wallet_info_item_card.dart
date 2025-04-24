@@ -7,10 +7,9 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class WalletInfoItemCard extends StatefulWidget {
   final int id;
@@ -98,21 +97,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 아이콘
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: ColorUtil.getColor(colorIndex).backgroundColor,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: SvgPicture.asset(
-                  CustomIcons.getPathByIndex(iconIndex),
-                  colorFilter: ColorFilter.mode(
-                    ColorUtil.getColor(colorIndex).color,
-                    BlendMode.srcIn,
-                  ),
-                  width: 24.0,
-                ),
-              ),
+              // TODO: 만약 멀티시그의 외부지갑도 지원하게 된다면 이 부분 수정해야합니다.
+              WalletItemIcon(
+                  walletImportSource: walletImportSource ?? WalletImportSource.coconutVault),
               CoconutLayout.spacing_200w,
               // 이름
               Expanded(

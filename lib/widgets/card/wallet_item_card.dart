@@ -1,15 +1,13 @@
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 
 class WalletItemCard extends StatelessWidget {
@@ -39,11 +37,11 @@ class WalletItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isFromCoconutVault = walletImportSource == WalletImportSource.coconutVault;
+    final isExternalWawllet = walletImportSource != WalletImportSource.coconutVault;
     final row = Padding(
       padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
       child: ShrinkAnimationButton(
-          defaultColor: isFromCoconutVault ? CoconutColors.gray800 : CoconutColors.gray900,
+          defaultColor: isExternalWawllet ? CoconutColors.gray900 : CoconutColors.gray800,
           onPressed: () {
             Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id});
           },
@@ -53,40 +51,11 @@ class WalletItemCard extends StatelessWidget {
           borderGradientColors: signers?.isNotEmpty == true
               ? ColorUtil.getGradientColors(signers!)
               : [CoconutColors.gray800, CoconutColors.gray800],
-          pressedColor: isFromCoconutVault ? CoconutColors.gray900 : CoconutColors.black,
+          pressedColor: isExternalWawllet ? CoconutColors.black : CoconutColors.gray900,
           child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
               child: Row(children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  constraints: const BoxConstraints(
-                    // zpub일 경우에 아이콘 사이즈가 작게 나오기 때문에 minimum 설정
-                    minHeight: 44,
-                    minWidth: 44,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isFromCoconutVault
-                        ? ColorUtil.getColor(colorIndex).backgroundColor
-                        : CoconutColors.gray700,
-                    borderRadius: BorderRadius.circular(16.0),
-                  ),
-                  child: isFromCoconutVault
-                      ? SvgPicture.asset(
-                          CustomIcons.getPathByIndex(iconIndex),
-                          colorFilter: ColorFilter.mode(
-                            ColorUtil.getColor(colorIndex).color,
-                            BlendMode.srcIn,
-                          ),
-                          width: 20.0,
-                        )
-                      : SvgPicture.asset(
-                          _getExternalWalletIconPath(),
-                          colorFilter: const ColorFilter.mode(
-                            Colors.black,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                ),
+                WalletItemIcon(walletImportSource: walletImportSource),
                 CoconutLayout.spacing_200w,
                 Expanded(
                   child: Column(
@@ -137,10 +106,4 @@ class WalletItemCard extends StatelessWidget {
       ],
     );
   }
-
-  String _getExternalWalletIconPath() => walletImportSource == WalletImportSource.keystone
-      ? kKeystoneIconPath
-      : walletImportSource == WalletImportSource.seedSigner
-          ? kSeedSignerIconPath
-          : kZpubIconPath;
 }
