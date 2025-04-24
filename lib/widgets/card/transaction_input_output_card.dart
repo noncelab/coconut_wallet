@@ -32,8 +32,10 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   static const int kOutgoingTxOutputCount = 2;
 
   static const int kViewMoreCount = 5;
-  static const int kInputMaxCount = kIncomingTxInputCount;
-  static const int kOutputMaxCount = kOutgoingTxOutputCount;
+  static const int kInputMaxCount =
+      kIncomingTxInputCount; // txInputCount의 min값: kIncomingTxInputCount
+  static const int kOutputMaxCount =
+      kOutgoingTxOutputCount; // txOutputCount의 min값: kOutgoingTxOutputCount
 
   bool _canShowMoreInputs = false;
   bool _canShowMoreOutputs = false;
