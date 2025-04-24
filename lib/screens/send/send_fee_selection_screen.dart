@@ -18,6 +18,7 @@ import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -48,164 +49,174 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   int? _estimatedFee = 0;
   FeeInfo? _customFeeInfo;
   bool? _isRecommendedFeeFetchSuccess;
+  bool _isLoading = false;
   late SendFeeSelectionViewModel _viewModel;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, UpbitConnectModel,
-            SendFeeSelectionViewModel>(
-        create: (_) => _viewModel,
-        update: (_, connectivityProvider, walletProvider, upbitConnectModel, viewModel) {
-          if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
+        SendFeeSelectionViewModel>(
+      create: (_) => _viewModel,
+      update: (_, connectivityProvider, walletProvider, upbitConnectModel, viewModel) {
+        if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+          });
+        }
+        if (upbitConnectModel.bitcoinPriceKrw != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
+          });
+        }
+
+        return viewModel;
+      },
+      child: Consumer<SendFeeSelectionViewModel>(
+        builder: (context, viewModel, child) {
+          if (!viewModel.isNetworkOn) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+              _showAlertAndGoHome(networkOffMessage);
             });
           }
-          if (upbitConnectModel.bitcoinPriceKrw != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
-            });
-          }
 
-          return viewModel;
-        },
-        child: Consumer<SendFeeSelectionViewModel>(
-          builder: (context, viewModel, child) {
-            if (!viewModel.isNetworkOn) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _showAlertAndGoHome(networkOffMessage);
-              });
-            }
+          return Scaffold(
+            backgroundColor: CoconutColors.black,
+            appBar: CustomAppBar.buildWithNext(
+                title: t.fee,
+                context: context,
+                isActive: _canGoNext(),
+                onBackPressed: () {
+                  Navigator.pop(context);
+                },
+                nextButtonTitle: t.complete,
+                onNextPressed: () {
+                  if (_viewModel.isNetworkOn != true) {
+                    CustomToast.showWarningToast(
+                        context: context, text: ErrorCodes.networkError.message);
+                    return;
+                  }
 
-            return Scaffold(
-                backgroundColor: CoconutColors.black,
-                appBar: CustomAppBar.buildWithNext(
-                    title: t.fee,
-                    context: context,
-                    isActive: _canGoNext(),
-                    onBackPressed: () {
-                      Navigator.pop(context);
-                    },
-                    nextButtonTitle: t.complete,
-                    onNextPressed: () {
-                      if (_viewModel.isNetworkOn != true) {
-                        CustomToast.showWarningToast(
-                            context: context, text: ErrorCodes.networkError.message);
-                        return;
-                      }
+                  int satsPerVb = _customSelected
+                      ? _customFeeInfo!.satsPerVb!
+                      : feeInfos
+                          .firstWhere((element) => element.level == _selectedLevel)
+                          .satsPerVb!;
 
-                      int satsPerVb = _customSelected
-                          ? _customFeeInfo!.satsPerVb!
-                          : feeInfos
-                              .firstWhere((element) => element.level == _selectedLevel)
-                              .satsPerVb!;
+                  _viewModel.saveFinalSendInfo(_estimatedFee!, satsPerVb);
+                  Navigator.pushNamed(context, '/send-confirm');
+                }),
+            body: SafeArea(
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Fee 선택 현황
+                        Center(
+                            child: Column(children: [
+                          const SizedBox(height: 32),
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                color: MyColors.transparentWhite_06,
+                                border: Border.all(color: MyColors.transparentWhite_12, width: 1)),
+                            child: Text(_selectedFeeLevel ?? "", style: Styles.caption),
+                          ),
+                          Text(
+                              _estimatedFee != null
+                                  ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
+                                  : '',
+                              style: Styles.fee),
+                          FiatPrice(
+                              satoshiAmount: _estimatedFee ?? 0,
+                              textStyle: CoconutTypography.body2_14_Number
+                                  .setColor(CoconutColors.gray400)),
+                          const SizedBox(height: 32),
+                        ])),
 
-                      _viewModel.saveFinalSendInfo(_estimatedFee!, satsPerVb);
-                      Navigator.pushNamed(context, '/send-confirm');
-                    }),
-                body: SafeArea(
-                    child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Fee 선택 현황
-                      Center(
-                          child: Column(children: [
-                        const SizedBox(height: 32),
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              color: MyColors.transparentWhite_06,
-                              border: Border.all(color: MyColors.transparentWhite_12, width: 1)),
-                          child: Text(_selectedFeeLevel ?? "", style: Styles.caption),
-                        ),
-                        Text(
-                            _estimatedFee != null
-                                ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
-                                : '',
-                            style: Styles.fee),
-                        FiatPrice(
-                            satoshiAmount: _estimatedFee ?? 0,
-                            textStyle:
-                                CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
-                        const SizedBox(height: 32),
-                      ])),
-
-                      if (viewModel.isNetworkOn == false)
-                        _buildFixedTooltip(
-                          tooltipState: CoconutTooltipState.warning,
-                          richText: RichText(text: TextSpan(text: ErrorCodes.networkError.message)),
-                        ),
-                      if (viewModel.isNetworkOn == true && _isRecommendedFeeFetchSuccess == false)
-                        _buildFixedTooltip(
-                            tooltipState: CoconutTooltipState.error,
-                            richText: RichText(text: TextSpan(text: t.tooltip.recommended_fee1))),
-                      if (_estimatedFee != null && _estimatedFee! >= maxFeeLimit)
-                        _buildFixedTooltip(
-                          tooltipState: CoconutTooltipState.warning,
-                          richText: RichText(
-                              text: TextSpan(
-                                  text: t.tooltip.recommended_fee2(
-                                      bitcoin: UnitUtil.satoshiToBitcoin(maxFeeLimit)))),
-                        ),
-                      if (_estimatedFee != null &&
-                          _estimatedFee! != 0 &&
-                          !_viewModel.isBalanceEnough(_estimatedFee) &&
-                          _estimatedFee! < maxFeeLimit)
-                        _buildFixedTooltip(
-                          tooltipState: CoconutTooltipState.warning,
-                          richText: RichText(text: TextSpan(text: t.errors.insufficient_balance)),
-                        ),
-                      Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
-                          child: Column(
-                            children: [
-                              ...List.generate(
-                                  3,
-                                  (index) => FeeSelectionItemCard(
-                                      feeInfo: feeInfos[index],
-                                      isSelected: _customSelected
-                                          ? false
-                                          : _selectedLevel == feeInfos[index].level,
-                                      onPressed: () {
-                                        setState(() {
-                                          _selectedLevel = feeInfos[index].level;
-                                          _selectedFeeLevel = feeInfos[index].level.text;
-                                          _estimatedFee = feeInfos[index].estimatedFee;
-                                          _customSelected = false;
-                                        });
-                                      })),
-                              CustomUnderlinedButton(
-                                padding: Paddings.widgetContainer,
-                                onTap: () {
-                                  showModalBottomSheet(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    builder: (context) => TextFieldBottomSheet(
-                                      title: t.input_directly,
-                                      placeholder: t.text_field.enter_fee_as_natural_number,
-                                      onComplete: (text) {
-                                        _handleCustomFeeInput(text);
-                                      },
-                                      keyboardType: TextInputType.number,
-                                      visibleTextLimit: false,
-                                    ),
-                                  );
-                                },
-                                text: t.text_field.enter_fee_directly,
-                                fontSize: 14,
-                                lineHeight: 21,
-                                defaultColor: CoconutColors.gray200,
-                              ),
-                            ],
-                          )),
-                    ],
+                        if (viewModel.isNetworkOn == false)
+                          _buildFixedTooltip(
+                            tooltipState: CoconutTooltipState.warning,
+                            richText:
+                                RichText(text: TextSpan(text: ErrorCodes.networkError.message)),
+                          ),
+                        if (viewModel.isNetworkOn == true && _isRecommendedFeeFetchSuccess == false)
+                          _buildFixedTooltip(
+                              tooltipState: CoconutTooltipState.error,
+                              richText: RichText(text: TextSpan(text: t.tooltip.recommended_fee1))),
+                        if (_estimatedFee != null && _estimatedFee! >= maxFeeLimit)
+                          _buildFixedTooltip(
+                            tooltipState: CoconutTooltipState.warning,
+                            richText: RichText(
+                                text: TextSpan(
+                                    text: t.tooltip.recommended_fee2(
+                                        bitcoin: UnitUtil.satoshiToBitcoin(maxFeeLimit)))),
+                          ),
+                        if (_estimatedFee != null &&
+                            _estimatedFee! != 0 &&
+                            !_viewModel.isBalanceEnough(_estimatedFee) &&
+                            _estimatedFee! < maxFeeLimit)
+                          _buildFixedTooltip(
+                            tooltipState: CoconutTooltipState.warning,
+                            richText: RichText(text: TextSpan(text: t.errors.insufficient_balance)),
+                          ),
+                        Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+                            child: Column(
+                              children: [
+                                ...List.generate(
+                                    3,
+                                    (index) => FeeSelectionItemCard(
+                                        feeInfo: feeInfos[index],
+                                        isSelected: _customSelected
+                                            ? false
+                                            : _selectedLevel == feeInfos[index].level,
+                                        onPressed: () {
+                                          setState(() {
+                                            _selectedLevel = feeInfos[index].level;
+                                            _selectedFeeLevel = feeInfos[index].level.text;
+                                            _estimatedFee = feeInfos[index].estimatedFee;
+                                            _customSelected = false;
+                                          });
+                                        })),
+                                CustomUnderlinedButton(
+                                  padding: Paddings.widgetContainer,
+                                  onTap: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      builder: (context) => TextFieldBottomSheet(
+                                        title: t.input_directly,
+                                        placeholder: t.text_field.enter_fee_as_natural_number,
+                                        onComplete: (text) {
+                                          _handleCustomFeeInput(text);
+                                        },
+                                        keyboardType: TextInputType.number,
+                                        visibleTextLimit: false,
+                                      ),
+                                    );
+                                  },
+                                  text: t.text_field.enter_fee_directly,
+                                  fontSize: 14,
+                                  lineHeight: 21,
+                                  defaultColor: CoconutColors.gray200,
+                                ),
+                              ],
+                            )),
+                      ],
+                    ),
                   ),
-                )));
-          },
-        ));
+                  if (_isLoading) const CoconutLoadingOverlay(),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -240,7 +251,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         (satsPerVb != null && satsPerVb > 0) &&
         _viewModel.isBalanceEnough(_estimatedFee) &&
         _estimatedFee != null &&
-        _estimatedFee! < maxFeeLimit;
+        _estimatedFee! < maxFeeLimit &&
+        !_isLoading;
   }
 
   void _handleCustomFeeInput(String input) async {
@@ -269,7 +281,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       return;
     }
 
-    context.loaderOverlay.show();
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       int estimatedFee = _viewModel.estimateFee(customSatsPerVb);
@@ -297,7 +311,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     }
     _customFeeController.clear();
     if (mounted) {
-      context.loaderOverlay.hide();
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -386,7 +402,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
   void _showAlertAndGoHome(String message) {
     if (context.loaderOverlay.visible) {
-      context.loaderOverlay.hide();
+      setState(() {
+        _isLoading = false;
+      });
     }
 
     showAlertDialog(
@@ -410,10 +428,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Future<void> _startToSetRecommendedFee() async {
-    context.loaderOverlay.show();
+    setState(() {
+      _isLoading = true;
+    });
     await _setRecommendedFees();
     if (mounted) {
-      context.loaderOverlay.hide();
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 

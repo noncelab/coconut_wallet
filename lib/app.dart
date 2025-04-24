@@ -272,13 +272,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               ),
           '/transaction-fee-bumping': (context) => buildScreenWithArguments(
                 context,
-                (args) => CustomLoadingOverlay(
-                  child: TransactionFeeBumpingScreen(
-                    transaction: args['transaction'],
-                    feeBumpingType: args['feeBumpingType'],
-                    walletId: args['walletId'],
-                    walletName: args['walletName'],
-                  ),
+                (args) => TransactionFeeBumpingScreen(
+                  transaction: args['transaction'],
+                  feeBumpingType: args['feeBumpingType'],
+                  walletId: args['walletId'],
+                  walletName: args['walletName'],
                 ),
               ),
           '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
@@ -296,9 +294,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
               ),
           '/send-amount': (context) => const SendAmountScreen(),
-          '/fee-selection': (context) => const CustomLoadingOverlay(
-                child: SendFeeSelectionScreen(),
-              ),
+          '/fee-selection': (context) => const SendFeeSelectionScreen(),
           '/utxo-selection': (context) => const CustomLoadingOverlay(
                 child: SendUtxoSelectionScreen(),
               ),
