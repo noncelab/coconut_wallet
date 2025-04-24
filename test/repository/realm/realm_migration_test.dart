@@ -17,7 +17,7 @@ import '../../mock/realm/realm_utxo_mock.dart';
 ///
 /// 테스트 실패 시 로컬 Realm 파일을 수동으로 삭제하는 명령어
 /// `cd <project_root>`
-/// `sudo rm -rf ./test/mock/realm/defaultMigration*`
+/// `sudo rm -rf ./test/mock/realm/migration*`
 ///
 void deleteRealmFiles(String path) {
   if (File(path).existsSync()) {
@@ -36,49 +36,59 @@ void deleteRealmFiles(String path) {
   }
 }
 
+String getUniqueRealmPath(String testName) {
+  return 'test/mock/realm/${testName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch % 10000}.realm';
+}
+
 void main() {
   late Configuration config;
+  late Realm realm;
   const oldVersion = kRealmVersion - 1;
+  const newVersion = kRealmVersion;
+  String? testPath;
 
-  String getUniqueRealmPath(String testName) {
-    return 'test/mock/realm/${testName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch % 10000}.realm';
-  }
+  setUp(() async {
+    // 매 테스트마다 고유한 파일 경로 사용 (타임스탬프 추가)
+    testPath = getUniqueRealmPath('migration');
+
+    // 기존 파일이 있는 경우 삭제 시도
+    final file = File(testPath!);
+    if (await file.exists()) {
+      await file.delete();
+    }
+
+    // 테스트용 Realm 설정
+    config = Configuration.local(
+      realmAllSchemas,
+      schemaVersion: oldVersion,
+      path: testPath,
+    );
+
+    // 새로운 Realm 인스턴스 생성
+    realm = Realm(config);
+  });
+
+  tearDown(() async {
+    // Realm 인스턴스 정리
+    if (!realm.isClosed) {
+      realm.close();
+    }
+
+    // 테스트 종료 후 Realm 파일 정리
+    deleteRealmFiles(testPath!);
+  });
+
+  group('removeIsLatestTxBlockHeightZero test', () {
+    test("버전 변동이 없는 경우, 마이그레이션 하지 않음", () {
+      removeIsLatestTxBlockHeightZeroFlow(realm, oldVersion, testPath!);
+    });
+
+    test("버전 변동이 있는 경우, 마이그레이션 실행", () {
+      removeIsLatestTxBlockHeightZeroFlow(realm, newVersion, testPath!);
+    });
+  });
 
   group('defaultMigration 테스트', () {
-    late Realm realm;
-    String? testPath;
-
-    setUp(() async {
-      // 매 테스트마다 고유한 파일 경로 사용 (타임스탬프 추가)
-      testPath = getUniqueRealmPath('defaultMigration');
-
-      // 기존 파일이 있는 경우 삭제 시도
-      final file = File(testPath!);
-      if (await file.exists()) {
-        await file.delete();
-      }
-
-      // 테스트용 Realm 설정
-      config = Configuration.local(
-        realmAllSchemas,
-        schemaVersion: oldVersion,
-        path: testPath,
-      );
-
-      // 새로운 Realm 인스턴스 생성
-      realm = Realm(config);
-    });
-
-    tearDown(() async {
-      // Realm 인스턴스 정리
-      if (!realm.isClosed) {
-        realm.close();
-      }
-
-      // 테스트 종료 후 Realm 파일 정리
-      deleteRealmFiles(testPath!);
-    });
-
     test('버전 변동이 없을 경우 마이그레이션이 실행되지 않아야 함', () {
       // Given
       int usedReceiveIndex = 5;
@@ -152,7 +162,6 @@ void main() {
       // Given
       int usedReceiveIndex = 5;
       int usedChangeIndex = 3;
-      int newVersion = kRealmVersion;
 
       realm.write(() {
         realm.add(RealmWalletBaseMock.getMock(
@@ -220,4 +229,65 @@ void main() {
       newRealm.close();
     });
   });
+}
+
+Future<void> removeIsLatestTxBlockHeightZeroFlow(
+    Realm originalRealm, int newRealmVersion, String newRealmPath) async {
+  originalRealm.write(() {
+    originalRealm.add(RealmWalletBaseMock.getMock(
+      name: 'Test Wallet1',
+      id: 1,
+    ));
+    originalRealm.add(RealmWalletBaseMock.getMock(
+      name: 'Test Wallet2',
+      id: 2,
+    ));
+  });
+
+  final testWallet1BeforeMigration = originalRealm
+      .query<RealmWalletBase>(
+        'id == 1',
+      )
+      .first;
+
+  final testWallet2BeforeMigration = originalRealm
+      .query<RealmWalletBase>(
+        'id == 2',
+      )
+      .first;
+
+  expect(testWallet1BeforeMigration.name, 'Test Wallet1');
+  expect(testWallet1BeforeMigration.id, 1);
+  expect(testWallet2BeforeMigration.name, 'Test Wallet2');
+  expect(testWallet2BeforeMigration.id, 2);
+
+  if (!originalRealm.isClosed) {
+    originalRealm.close();
+  }
+
+  // Change RealmConfig
+  final newRealmConfig = Configuration.local(realmAllSchemas,
+      schemaVersion: newRealmVersion,
+      migrationCallback: removeIsLatestTxBlockHeightZero,
+      path: newRealmPath);
+  final newRealm = Realm(newRealmConfig);
+
+  final testWallet1AfterMigration = newRealm
+      .query<RealmWalletBase>(
+        'id == 1',
+      )
+      .first;
+
+  final testWallet2AfterMigration = newRealm
+      .query<RealmWalletBase>(
+        'id == 2',
+      )
+      .first;
+
+  expect(testWallet1AfterMigration.name, 'Test Wallet1');
+  expect(testWallet1AfterMigration.id, 1);
+  expect(testWallet2AfterMigration.name, 'Test Wallet2');
+  expect(testWallet2AfterMigration.id, 2);
+
+  newRealm.close();
 }

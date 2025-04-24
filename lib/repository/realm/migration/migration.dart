@@ -24,6 +24,19 @@ void defaultMigration(Migration migration, int oldVersion) {
   }
 }
 
+void removeIsLatestTxBlockHeightZero(Migration migration, int oldVersion) {
+  if (canSkipMigration(migration, oldVersion)) {
+    return;
+  }
+
+  try {
+    Logger.log("removeIsLatestTxBlockHeightZero Passed");
+  } catch (e, stackTrace) {
+    Logger.log('Migration error: $e\n$stackTrace');
+    rethrow;
+  }
+}
+
 bool canSkipMigration(Migration migration, int oldVersion) {
   return oldVersion == kRealmVersion;
 }
