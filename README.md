@@ -63,7 +63,7 @@
    ```bash
    flutter pub run build_runner clean # realm generate 오류 발생 시 캐시 삭제
 
-   flutter pub run build_runner build --delete-conflicting-outputs
+   dart run build_runner build --delete-conflicting-outputs
 
    dart run realm generate
 
