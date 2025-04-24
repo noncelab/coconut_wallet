@@ -248,6 +248,7 @@ utxo_tag_screen:
 wallet_info_screen:
   title: "$name 정보"
   view_xpub: "확장 공개키 보기"
+  duplicated_name: "이미 사용중인 이름이에요"
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"

@@ -14,6 +14,5 @@ enum WalletImportSource {
   coconutVault,
   keystone,
   seedSigner,
-  zpub,
-  descriptor,
+  extendedPublicKey,
 }

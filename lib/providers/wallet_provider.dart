@@ -392,6 +392,22 @@ class WalletProvider extends ChangeNotifier {
     });
   }
 
+  /// [싱글시그니처] 외부지갑 이름변경
+  Future<void> updateWalletName(int id, String name) async {
+    final index = _walletItemList.indexWhere((element) => element.id == id);
+    if (walletItemList[index] is! SinglesigWalletListItem) {
+      throw Exception('해당 지갑은 싱글시그가 아닙니다. 멀티시그의 이름은 변경할 수 없습니다.');
+    }
+
+    // 싱글시그니처 지갑만 허용하므로, _requiredSignatureCount과 _signers는 null로 할당
+    WatchOnlyWallet watchOnlyWallet = WatchOnlyWallet(name, walletItemList[index].colorIndex,
+        walletItemList[index].iconIndex, walletItemList[index].descriptor, null, null);
+    _walletRepository.updateWalletUI(id, watchOnlyWallet);
+    _walletItemList = await _fetchWalletListFromDB();
+
+    notifyListeners();
+  }
+
   /// WalletProvider 생성자에서 isNetworkOn은 null로 초기화 됩니다.
   /// 아직 앱 내에서 네트워크 상태가 확인이 안된 채로 지갑 동기화 함수가 호출됩니다.
   /// 따라서 네트워크 상태가 null -> true로 변경 되었을 때 지갑 동기화를 해줍니다.
