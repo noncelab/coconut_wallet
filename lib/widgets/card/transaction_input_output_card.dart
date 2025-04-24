@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -203,8 +205,12 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
     final direction = TransactionUtil.getDirection(_transaction);
     setState(() {
       _inputCountToShow = direction == TransactionDirection.outgoing
-          ? kOutgoingTxInputCount
-          : kIncomingTxInputCount;
+          ? min(kOutgoingTxInputCount, _inputAddressList.length)
+          : min(kIncomingTxInputCount, _inputAddressList.length);
+      if (_inputAddressList.length < kOutgoingTxInputCount ||
+          _inputAddressList.length < kIncomingTxInputCount) {
+        _canShowMoreInputs = false;
+      }
     });
   }
 
@@ -212,8 +218,12 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
     final direction = TransactionUtil.getDirection(_transaction);
     setState(() {
       _outputCountToShow = direction == TransactionDirection.outgoing
-          ? kOutgoingTxOutputCount
-          : kIncomingTxOutputCount;
+          ? min(kOutgoingTxOutputCount, _outputAddressList.length)
+          : min(kIncomingTxOutputCount, _outputAddressList.length);
+      if (_outputAddressList.length < kOutgoingTxOutputCount ||
+          _outputAddressList.length < kIncomingTxOutputCount) {
+        _canShowMoreOutputs = false;
+      }
     });
   }
 
