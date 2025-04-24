@@ -188,6 +188,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                       ]
                                     ],
                                   )),
+                              CoconutLayout.spacing_2500h,
                             ],
                           ),
                         ),
