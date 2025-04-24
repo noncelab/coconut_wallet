@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -15,10 +19,10 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import '../../widgets/appbar/custom_appbar.dart';
 
 class WalletAddScannerScreen extends StatefulWidget {
-  const WalletAddScannerScreen({super.key});
+  final WalletImportSource importSource;
+  const WalletAddScannerScreen({super.key, required this.importSource});
 
   @override
   State<WalletAddScannerScreen> createState() => _WalletAddScannerScreenState();
@@ -26,9 +30,18 @@ class WalletAddScannerScreen extends StatefulWidget {
 
 class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  Barcode? result;
   QRViewController? controller;
   bool _isProcessing = false;
+  Timer? _failedScanningTimer;
+  late WalletAddScannerViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = WalletAddScannerViewModel(
+        widget.importSource, Provider.of<WalletProvider>(context, listen: false));
+  }
+
   // In order to get hot reload to work we need to pause the camera if the platform
   // is android, or resume the camera if the platform is iOS.
   @override
@@ -62,31 +75,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           showTestnetLabel: false,
         ),
         body: Stack(children: [
-          Container(
-            color: CoconutColors.black,
-            child: Column(
-              children: <Widget>[
-                Expanded(
-                  flex: 5,
-                  child: QRView(
-                    key: qrKey,
-                    onQRViewCreated: _onQRViewCreated,
-                    overlay: QrScannerOverlayShape(
-                        borderColor: CoconutColors.white,
-                        borderRadius: 8,
-                        borderLength: (MediaQuery.of(context).size.width < 400 ||
-                                MediaQuery.of(context).size.height < 400)
-                            ? 160.0
-                            : MediaQuery.of(context).size.width * 0.9 / 2,
-                        borderWidth: 8,
-                        cutOutSize: (MediaQuery.of(context).size.width < 400 ||
-                                MediaQuery.of(context).size.height < 400)
-                            ? 320.0
-                            : MediaQuery.of(context).size.width * 0.9),
-                  ),
-                ),
-              ],
-            ),
+          CoconutQrScanner(
+            setQRViewController: (QRViewController qrViewcontroller) {
+              controller = qrViewcontroller;
+            },
+            onComplete: _onCompletedScanning,
+            onFailed: _onFailedScanning,
+            qrDataHandler: _viewModel.qrDataHandler,
           ),
           Padding(
               padding: const EdgeInsets.only(
@@ -136,84 +131,101 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         ]));
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      if (_isProcessing || scanData.code == null) return;
-      _isProcessing = true;
+  Future<void> _onCompletedScanning(dynamic additionInfo) async {
+    if (_isProcessing) return;
+    _isProcessing = true;
 
+    try {
+      ResultOfSyncFromVault addResult = await _viewModel.addWallet(additionInfo);
       if (!mounted) return;
-
-      context.loaderOverlay.show();
-      final model = Provider.of<WalletProvider>(context, listen: false);
-      WatchOnlyWallet watchOnlyWallet;
-      try {
-        // 2. 유효한 데이터인지 확인 (WalletSyncObject)
-        Map<String, dynamic> jsonData = jsonDecode(scanData.code!);
-        watchOnlyWallet = WatchOnlyWallet.fromJson(jsonData);
-
-        model.syncFromVault(watchOnlyWallet).then((ResultOfSyncFromVault value) {
-          if (!mounted) return;
-          switch (value.result) {
-            case WalletSyncResult.newWalletAdded:
-            case WalletSyncResult.existingWalletUpdated:
-              {
-                Navigator.pop(context, value);
-                break;
-              }
-            case WalletSyncResult.existingWalletNoUpdate:
-              {
-                vibrateLightDouble();
-                CustomDialogs.showCustomAlertDialog(context,
-                    title: t.alert.wallet_add.update_failed,
-                    message: t.alert.wallet_add.update_failed_description(
-                        name: TextUtils.ellipsisIfLonger(
-                      model.getWalletById(value.walletId!).name,
-                      maxLength: 15,
-                    )), onConfirm: () {
-                  _isProcessing = false;
-                  Navigator.pop(context);
-                });
-                break;
-              }
-            case WalletSyncResult.existingName:
-              vibrateLightDouble();
-              if (mounted) {
-                CustomDialogs.showCustomAlertDialog(context,
-                    title: t.alert.wallet_add.duplicate_name,
-                    message: t.alert.wallet_add.duplicate_name_description, onConfirm: () {
-                  _isProcessing = false;
-                  Navigator.pop(context);
-                });
-              }
+      switch (addResult.result) {
+        case WalletSyncResult.newWalletAdded:
+        case WalletSyncResult.existingWalletUpdated:
+          {
+            Navigator.pop(context, addResult);
+            break;
           }
-        }).catchError((error) {
+        case WalletSyncResult.existingWalletNoUpdate:
+          {
+            vibrateLightDouble();
+            CustomDialogs.showCustomAlertDialog(context,
+                title: t.alert.wallet_add.update_failed,
+                message: t.alert.wallet_add.update_failed_description(
+                    name: TextUtils.ellipsisIfLonger(
+                  _viewModel.getWalletName(addResult.walletId!),
+                  maxLength: 15,
+                )), onConfirm: () {
+              _isProcessing = false;
+              Navigator.pop(context);
+            });
+            break;
+          }
+        case WalletSyncResult.existingName:
           vibrateLightDouble();
           if (mounted) {
             CustomDialogs.showCustomAlertDialog(context,
-                title: t.alert.wallet_add.add_failed, message: error.toString(), onConfirm: () {
+                title: t.alert.wallet_add.duplicate_name,
+                message: t.alert.wallet_add.duplicate_name_description, onConfirm: () {
               _isProcessing = false;
               Navigator.pop(context);
             });
           }
-        }).whenComplete(() {
-          vibrateMedium();
+        case WalletSyncResult.existingWalletUpdateImpossible:
+          vibrateLightDouble();
           if (mounted) {
-            context.loaderOverlay.hide();
+            CustomDialogs.showCustomAlertDialog(context,
+                title: t.alert.wallet_add.already_exist,
+                message: t.alert.wallet_add.already_exist_description(
+                    name: TextUtils.ellipsisIfLonger(_viewModel.getWalletName(addResult.walletId!),
+                        maxLength: 15)), onConfirm: () {
+              _isProcessing = false;
+              Navigator.pop(context);
+            });
           }
-        });
-      } catch (error) {
-        vibrateLightDouble();
-        context.loaderOverlay.hide();
-        Logger.log('Exception while QR Processing : $error');
+      }
+    } catch (e) {
+      vibrateLightDouble();
+      if (mounted) {
         CustomDialogs.showCustomAlertDialog(context,
-            title: t.alert.wallet_add.add_failed,
-            message: t.alert.wallet_add.add_failed_description, onConfirm: () {
+            title: t.alert.wallet_add.add_failed, message: e.toString(), onConfirm: () {
           _isProcessing = false;
           Navigator.pop(context);
         });
-        rethrow;
       }
+      // TODO:
+      rethrow;
+    } finally {
+      vibrateMedium();
+      if (mounted) {
+        context.loaderOverlay.hide();
+      }
+    }
+  }
+
+  // TODO:
+  void _onFailedScanning(String message) {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    // _isProcessing 상관 없이 2번 연속 호출되는 현상으로 추가됨
+    if (_failedScanningTimer?.isActive ?? false) {
+      return;
+    }
+    _failedScanningTimer = Timer(const Duration(milliseconds: 500), () {});
+
+    Logger.log("[SignedPsbtScannerScreen] onFailed: $message");
+
+    String errorMessage;
+    if (message.contains('Invalid Scheme')) {
+      errorMessage = t.alert.signed_psbt.invalid_signature;
+    } else {
+      errorMessage = t.alert.scan_failed_description(error: message);
+    }
+
+    CustomDialogs.showCustomAlertDialog(context, title: t.alert.scan_failed, message: errorMessage,
+        onConfirm: () {
+      _isProcessing = false;
+      Navigator.pop(context);
     });
   }
 

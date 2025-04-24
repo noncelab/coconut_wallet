@@ -383,7 +383,7 @@ alert:
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
     need_more_sign: "$count개 서명이 더 필요해요"
     invalid_signature: "잘못된 서명 정보에요. 다시 시도해 주세요."
-  scan_failed: "'[스캔 실패] $error'"
+  scan_failed: "스캔 실패"
   scan_failed_description: "QR코드 스캔에 실패했어요. 다시 시도해 주세요.\n$error"
   tutorial:
     title: "도움이 필요하신가요?"
@@ -400,6 +400,8 @@ alert:
     duplicate_name_description: "같은 이름을 가진 지갑이 있습니다.\n이름을 변경한 후 동기화 해주세요."
     add_failed: "보기 전용 지갑 추가 실패"
     add_failed_description: "잘못된 지갑 정보입니다."
+    already_exist: "지갑 중복"
+    already_exist_description: "이미 추가된 지갑입니다. ($name)"
   wallet_delete:
     confirm_delete: "지갑 삭제"
     confirm_delete_description: "지갑을 정말 삭제하시겠어요?"
@@ -429,3 +431,8 @@ alert:
     try_again: "$count 후에 다시 시도해 주세요"
   fee_bumping:
     not_enough_amount: "$bumpingType를 실행하기에 충분한 잔액이 없습니다.\n현재 사용 가능한 잔액을 확인해 주세요."
+
+third_party:
+  keystone: "키스톤"
+  seedSigner: "시드사이너"
+  zpub: "zpub"

@@ -323,6 +323,36 @@ class WalletProvider extends ChangeNotifier {
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
   }
 
+  Future<ResultOfSyncFromVault> syncFromThirdparty(
+      WalletImportSource walletImportSource, WatchOnlyWallet watchOnlyWallet) async {
+    final sameNameIndex =
+        _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
+    assert(sameNameIndex == -1);
+
+    WalletSyncResult result = WalletSyncResult.newWalletAdded;
+    final index =
+        _walletItemList.indexWhere((element) => element.descriptor == watchOnlyWallet.descriptor);
+    bool isMultisig = watchOnlyWallet.signers != null;
+
+    if (index != -1) {
+      return ResultOfSyncFromVault(
+          result: WalletSyncResult.existingWalletUpdateImpossible,
+          walletId: _walletItemList[index].id);
+    }
+    // case 1: 새 지갑 생성
+    var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
+    // 기존 지갑들의 구독이 완료될 때까지 기다립니다.
+    while (_walletSubscriptionState != WalletSubscriptionState.completed &&
+        _walletSubscriptionState != WalletSubscriptionState.failed) {
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    if (_walletSubscriptionState != WalletSubscriptionState.failed) {
+      _nodeProvider.subscribeWallet(newWallet);
+    }
+
+    return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
+  }
+
   Future<WalletListItemBase> _addNewWallet(WatchOnlyWallet wallet, bool isMultisig) async {
     WalletListItemBase newItem;
     if (isMultisig) {

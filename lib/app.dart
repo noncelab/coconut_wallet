@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -243,7 +244,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   ),
         routes: {
           '/wallet-add-scanner': (context) =>
-              const CustomLoadingOverlay(child: WalletAddScannerScreen()),
+              // TODO: importSource
+              const CustomLoadingOverlay(
+                  child: WalletAddScannerScreen(importSource: WalletImportSource.keystone)),
           '/app-info': (context) => const AppInfoScreen(),
           '/wallet-detail': (context) => buildScreenWithArguments(
                 context,
