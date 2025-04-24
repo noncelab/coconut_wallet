@@ -15,7 +15,7 @@ import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
-import '../providers/node_provider/utxo_sync_service_test.mocks.dart';
+import '../providers/node_provider/transaction/rbf_service_test.mocks.dart';
 import '../repository/realm/test_realm_manager.dart';
 
 void printState(NodeProviderState state) {
@@ -159,7 +159,7 @@ class ScriptSyncServiceMock {
       transactionRepository,
       transactionRecordService,
       stateManager,
-      utxoSyncService,
+      utxoRepository,
       scriptCallbackService,
     );
   }

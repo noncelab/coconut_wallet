@@ -8,8 +8,8 @@ import 'package:coconut_wallet/providers/node_provider/subscription/script_callb
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
@@ -36,7 +36,7 @@ class TransactionSyncService {
   final TransactionRepository _transactionRepository;
   final TransactionRecordService _transactionRecordService;
   final StateManagerInterface _stateManager;
-  final UtxoSyncService _utxoSyncService;
+  final UtxoRepository _utxoRepository;
   final RbfService _rbfService;
   final CpfpService _cpfpService;
   final ScriptCallbackService _scriptCallbackService;
@@ -46,10 +46,10 @@ class TransactionSyncService {
     this._transactionRepository,
     this._transactionRecordService,
     this._stateManager,
-    this._utxoSyncService,
+    this._utxoRepository,
     this._scriptCallbackService,
-  )   : _rbfService = RbfService(_transactionRepository, _utxoSyncService, _electrumService),
-        _cpfpService = CpfpService(_transactionRepository, _utxoSyncService, _electrumService);
+  )   : _rbfService = RbfService(_transactionRepository, _utxoRepository, _electrumService),
+        _cpfpService = CpfpService(_transactionRepository, _utxoRepository, _electrumService);
 
   /// 특정 스크립트의 트랜잭션을 조회하고 DB에 업데이트합니다.
   Future<List<String>> fetchScriptTransaction(
@@ -205,11 +205,11 @@ class TransactionSyncService {
         final cpfpInfo = await _cpfpService.detectCpfpTransaction(walletId, fetchedTx);
         if (cpfpInfo != null) cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
 
-        _utxoSyncService.updateUtxoStatusToOutgoingByTransaction(walletId, fetchedTx);
+        _utxoRepository.updateUtxoStatusToOutgoingByTransaction(walletId, fetchedTx);
       }
 
       if (confirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
-        _utxoSyncService.deleteUtxosByTransaction(walletId, fetchedTx);
+        _utxoRepository.deleteUtxosByTransaction(walletId, fetchedTx);
         _transactionRepository.deleteRbfHistory(walletId, fetchedTx);
         _transactionRepository.deleteCpfpHistory(walletId, fetchedTx);
       }
@@ -262,12 +262,12 @@ class TransactionSyncService {
         walletId,
       );
       _transactionRepository.markAsRbfReplaced(walletId, rbfCpfpResult.sendingRbfInfoMap);
-      _utxoSyncService.deleteUtxosByReplacedTransactionHashSet(walletId,
+      _utxoRepository.deleteUtxosByReplacedTransactionHashSet(walletId,
           rbfCpfpResult.sendingRbfInfoMap.values.map((info) => info.spentTransactionHash).toSet());
     }
 
     if (rbfCpfpResult.receivingRbfTxHashSet.isNotEmpty) {
-      _utxoSyncService.deleteUtxosByReplacedTransactionHashSet(
+      _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
           walletId, rbfCpfpResult.receivingRbfTxHashSet);
     }
 

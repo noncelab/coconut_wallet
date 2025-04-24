@@ -7,11 +7,11 @@ import 'package:coconut_wallet/providers/node_provider/subscription/script_callb
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
@@ -30,7 +30,6 @@ import '../../repository/realm/test_realm_manager.dart';
 @GenerateMocks([
   ElectrumService,
   NodeStateManager,
-  UtxoSyncService,
   WalletProvider,
   WalletListItemBase,
 ])
@@ -41,7 +40,7 @@ void main() {
   late TransactionRepository transactionRepository;
   late MockElectrumService electrumService;
   late MockNodeStateManager stateManager;
-  late MockUtxoSyncService utxoSyncService;
+  late UtxoRepository utxoRepository;
   late AddressRepository addressRepository;
   late MockWalletProvider walletProvider;
   late TransactionSyncService transactionSyncService;
@@ -58,7 +57,7 @@ void main() {
     addressRepository = AddressRepository(realmManager);
     electrumService = MockElectrumService();
     stateManager = MockNodeStateManager();
-    utxoSyncService = MockUtxoSyncService();
+    utxoRepository = UtxoRepository(realmManager);
     walletProvider = MockWalletProvider();
     scriptCallbackService = ScriptCallbackService();
 
@@ -70,7 +69,7 @@ void main() {
       transactionRepository,
       transactionRecordService,
       stateManager,
-      utxoSyncService,
+      utxoRepository,
       scriptCallbackService,
     );
     transactionSyncService = TransactionSyncService(
@@ -78,11 +77,11 @@ void main() {
       transactionRepository,
       transactionRecordService,
       stateManager,
-      utxoSyncService,
+      utxoRepository,
       scriptCallbackService,
     );
 
-    rbfService = RbfService(transactionRepository, utxoSyncService, electrumService);
+    rbfService = RbfService(transactionRepository, utxoRepository, electrumService);
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
@@ -244,9 +243,6 @@ void main() {
       when(electrumService.getTransaction(mockTx.inputs[0].transactionHash))
           .thenAnswer((_) async => prevTx.serialize());
 
-      // UTXO 관리자 모킹
-      when(utxoSyncService.updateUtxoStatusToOutgoingByTransaction(any, any)).thenReturn(null);
-
       // 함수 실행
       await transactionSyncService.fetchScriptTransaction(
         testWalletItem,
@@ -257,7 +253,6 @@ void main() {
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
       verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
-      verify(utxoSyncService.updateUtxoStatusToOutgoingByTransaction(testWalletId, any)).called(1);
     });
 
     test('확인된 트랜잭션 처리를 올바르게 하는지 확인', () async {
@@ -282,9 +277,6 @@ void main() {
       when(electrumService.getTransaction(mockTx.inputs[0].transactionHash))
           .thenAnswer((_) async => prevTx.serialize());
 
-      // UTXO 관리자 모킹
-      when(utxoSyncService.deleteUtxosByTransaction(any, any)).thenReturn(null);
-
       // 함수 실행
       await transactionSyncService.fetchScriptTransaction(
         testWalletItem,
@@ -295,7 +287,6 @@ void main() {
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
       verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
-      verify(utxoSyncService.deleteUtxosByTransaction(testWalletId, any)).called(1);
     });
 
     test('일괄 처리 모드에서 상태 관리자를 호출하지 않는지 확인', () async {
@@ -367,9 +358,6 @@ void main() {
           .thenAnswer((_) async => mockOriginalTx.serialize());
       when(electrumService.getTransaction(prevTx.inputs[0].transactionHash))
           .thenAnswer((_) async => mockOriginalTx.serialize());
-
-      // UTXO 관리자 모킹 - _detectRbfTransaction에서 사용될 입력 준비
-      when(utxoSyncService.updateUtxoStatusToOutgoingByTransaction(any, any)).thenAnswer((_) {});
 
       await transactionSyncService.fetchScriptTransaction(
         testWalletItem,
@@ -702,9 +690,6 @@ void main() {
 
       expect(rbfHistoriesBeforeCount, 1);
       expect(rbfHistories.isEmpty, isTrue, reason: 'RBF 내역이 삭제되지 않았습니다.');
-
-      // 추가 검증 - 관련 함수 호출이 발생했는지 확인
-      verify(utxoSyncService.deleteUtxosByTransaction(testWalletId, any)).called(1);
     });
   });
 }

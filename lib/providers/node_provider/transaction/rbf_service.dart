@@ -2,8 +2,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
@@ -29,10 +29,10 @@ class RbfSaveRequest {
 /// RBF(Replace-By-Fee) 트랜잭션 처리를 담당하는 클래스
 class RbfService {
   final TransactionRepository _transactionRepository;
-  final UtxoSyncService _utxoSyncService;
+  final UtxoRepository _utxoRepository;
   final ElectrumService _electrumService;
 
-  RbfService(this._transactionRepository, this._utxoSyncService, this._electrumService);
+  RbfService(this._transactionRepository, this._utxoRepository, this._electrumService);
 
   /// RBF를 보내는 지갑 관점에서 이미 소비한 UTXO를 다시 소비하는지 확인
   Future<RbfInfo?> detectSendingRbfTransaction(int walletId, Transaction tx) async {
@@ -67,7 +67,7 @@ class RbfService {
   Future<UtxoState?> findRbfCandidate(int walletId, Transaction tx) async {
     for (final input in tx.inputs) {
       final utxoId = makeUtxoId(input.transactionHash, input.index);
-      final utxo = _utxoSyncService.getUtxoState(walletId, utxoId);
+      final utxo = _utxoRepository.getUtxoState(walletId, utxoId);
 
       if (utxo == null) continue;
 
@@ -94,7 +94,7 @@ class RbfService {
         _transactionRepository.getTransactionRecord(walletId, utxo.spentByTransactionHash!);
 
     // 미확인 상태인 트랜잭션만 RBF 대상
-    return spentTransaction == null || spentTransaction.blockHeight < 1;
+    return spentTransaction != null && spentTransaction.blockHeight < 1;
   }
 
   /// 원본 트랜잭션 해시를 찾는 함수
@@ -117,7 +117,7 @@ class RbfService {
     int walletId,
     Transaction tx,
   ) async {
-    final incomingUtxoList = _utxoSyncService.getIncomingUtxoList(walletId);
+    final incomingUtxoList = _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.incoming);
 
     for (final utxo in incomingUtxoList) {
       if (await _isTransactionReplaced(utxo.transactionHash)) {

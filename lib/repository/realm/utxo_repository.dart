@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart' as lib;
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -5,6 +6,7 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:realm/realm.dart';
 
 class UtxoRepository extends BaseRepository {
@@ -293,5 +295,40 @@ class UtxoRepository extends BaseRepository {
     realm.write(() {
       realm.deleteMany(utxosToDelete);
     });
+  }
+
+  void updateUtxoStatusToOutgoingByTransaction(int walletId, lib.Transaction transaction) {
+    /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.
+    for (var input in transaction.inputs) {
+      // UTXO 소유 지갑 ID 찾기
+      final utxoId = makeUtxoId(input.transactionHash, input.index);
+      final utxo = getUtxoState(walletId, utxoId);
+
+      // UTXO가 자기 자신을 참조하지 않는지 확인
+      if (utxo?.spentByTransactionHash == transaction.transactionHash) {
+        continue;
+      }
+
+      if (utxo == null) {
+        continue;
+      }
+
+      // UTXO를 outgoing 상태로 표시하고 RBF 관련 정보 저장
+      markUtxoAsOutgoing(
+        walletId,
+        utxoId,
+        transaction.transactionHash,
+      );
+    }
+  }
+
+  void deleteUtxosByTransaction(
+    int walletId,
+    lib.Transaction transaction,
+  ) {
+    final utxoIds =
+        transaction.inputs.map((input) => makeUtxoId(input.transactionHash, input.index)).toList();
+
+    deleteUtxoList(walletId, utxoIds);
   }
 }

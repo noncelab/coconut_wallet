@@ -4,6 +4,7 @@ import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.d
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
@@ -29,7 +30,7 @@ void main() {
     late TransactionRepository transactionRepository;
     late WalletRepository walletRepository;
     late AddressRepository addressRepository;
-    late MockUtxoSyncService utxoSyncService;
+    late UtxoRepository utxoRepository;
     late MockElectrumService electrumService;
     late RbfService rbfService;
 
@@ -40,17 +41,17 @@ void main() {
     final Transaction inputTx = TransactionMock.createMockTransaction(
       toAddress: walletItem.walletBase.getAddress(0),
       amount: 10000,
-    );
+    ); // 이미 컨펌된 OriginalTx에 사용된 입력 트랜잭션
     final originalTx = TransactionMock.createMockTransaction(
       toAddress: otherWalletItem.walletBase.getAddress(0),
       amount: 9000,
       inputTransactionHash: inputTx.transactionHash,
-    );
+    ); // 수수료가 낮은 트랜잭션
     final firstRbfTx = TransactionMock.createMockTransaction(
       toAddress: otherWalletItem.walletBase.getAddress(0),
       amount: 8000,
-      inputTransactionHash: originalTx.transactionHash,
-    );
+      inputTransactionHash: inputTx.transactionHash,
+    ); // 수수료를 처음 올리려고 시도한 RBF 트랜잭션
 
     setUp(() {
       if (realmManager == null) {
@@ -60,6 +61,7 @@ void main() {
         realmManager = TestRealmManager()..init(false);
       }
       transactionRepository = TransactionRepository(realmManager!);
+      utxoRepository = UtxoRepository(realmManager!);
       walletRepository = WalletRepository(realmManager!);
       addressRepository = AddressRepository(realmManager!);
       final sharedPrefsRepository = SharedPrefsRepository()
@@ -70,9 +72,8 @@ void main() {
       walletRepository.addSinglesigWallet(WatchOnlyWallet(walletItem.name, walletItem.colorIndex,
           walletItem.iconIndex, walletItem.descriptor, null, null));
       addressRepository.ensureAddressesInit(walletItemBase: walletItem);
-      utxoSyncService = MockUtxoSyncService();
       electrumService = MockElectrumService();
-      rbfService = RbfService(transactionRepository, utxoSyncService, electrumService);
+      rbfService = RbfService(transactionRepository, utxoRepository, electrumService);
     });
 
     group('hasExistingRbfHistory', () {
@@ -82,20 +83,21 @@ void main() {
           RbfHistoryDto(
             walletId: walletId,
             originalTransactionHash: originalTx.transactionHash,
-            transactionHash: firstRbfTx.transactionHash,
+            transactionHash: originalTx.transactionHash,
             feeRate: 1.0,
+            timestamp: DateTime.now(),
+          ),
+          RbfHistoryDto(
+            walletId: walletId,
+            originalTransactionHash: originalTx.transactionHash,
+            transactionHash: firstRbfTx.transactionHash,
+            feeRate: 2.0,
             timestamp: DateTime.now(),
           ),
         ];
         transactionRepository.addAllRbfHistory(rbfHistoryList);
-        final secondRbfTx = TransactionMock.createMockTransaction(
-          toAddress: otherWalletItem.walletBase.getAddress(0),
-          amount: 7000,
-          inputTransactionHash: firstRbfTx.transactionHash,
-        );
-
         // When
-        final result = rbfService.hasExistingRbfHistory(walletId, secondRbfTx.transactionHash);
+        final result = rbfService.hasExistingRbfHistory(walletId, firstRbfTx.transactionHash);
 
         // Then
         expect(result, true);
@@ -115,7 +117,7 @@ void main() {
         // Given
         final utxo = UtxoMock.createOutgoingUtxo(
           walletId: walletId,
-          spentByTransactionHash: inputTx.transactionHash,
+          spentByTransactionHash: originalTx.transactionHash,
         );
         final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
           transactionHash: originalTx.transactionHash,
@@ -167,18 +169,23 @@ void main() {
     group('findOriginalTransactionHash', () {
       test('첫 RBF인 경우 대체되는 트랜잭션 해시 반환', () async {
         // Given
-        final firstRbfTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
-          transactionHash: firstRbfTx.transactionHash,
+        final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
+          transactionHash: originalTx.transactionHash,
+        );
+        final utxo = UtxoMock.createOutgoingUtxo(
+          walletId: walletId,
+          transactionHash: originalTx.transactionHash,
         );
 
-        transactionRepository.addAllTransactions(walletId, [firstRbfTxRecord]);
+        transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
+        utxoRepository.addAllUtxos(walletId, [utxo]);
 
         // When
         final result =
             await rbfService.findOriginalTransactionHash(walletId, firstRbfTx.transactionHash);
 
         // Then
-        expect(result, originalTx.transactionHash);
+        expect(result, firstRbfTx.transactionHash);
       });
 
       test('이미 RBF된 트랜잭션인 경우 원본 트랜잭션 해시 반환', () async {
@@ -207,6 +214,67 @@ void main() {
 
         // Then
         expect(result, originalTx.transactionHash);
+      });
+    });
+    group('findRbfCandidate', () {
+      test('RBF 후보가 있을 경우 해당 UTXO 반환', () async {
+        // Given
+
+        final utxo = UtxoMock.createOutgoingUtxo(
+          transactionHash: inputTx.transactionHash,
+          spentByTransactionHash: originalTx.transactionHash,
+        );
+
+        utxoRepository.addAllUtxos(walletId, [utxo]);
+
+        final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
+          transactionHash: originalTx.transactionHash,
+        );
+        transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
+
+        // When
+        final result = await rbfService.findRbfCandidate(walletId, firstRbfTx);
+
+        // Then
+        expect(result, isNotNull);
+        expect(result?.transactionHash, inputTx.transactionHash);
+        expect(result?.spentByTransactionHash, originalTx.transactionHash);
+      });
+
+      test('RBF 후보가 없을 경우 null 반환', () async {
+        // When
+        final result = await rbfService.findRbfCandidate(walletId, firstRbfTx);
+
+        // Then
+        expect(result, isNull);
+      });
+    });
+
+    group('detectSendingRbfTransaction', () {
+      test('RBF 트랜잭션 감지 성공', () async {
+        // Given
+        final utxo = UtxoMock.createOutgoingUtxo(
+          transactionHash: inputTx.transactionHash,
+          spentByTransactionHash: originalTx.transactionHash,
+        );
+
+        utxoRepository.addAllUtxos(walletId, [utxo]);
+
+        final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
+          transactionHash: originalTx.transactionHash,
+        );
+
+        transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
+
+        // When
+        final result = await rbfService.detectSendingRbfTransaction(walletId, firstRbfTx);
+
+        // Then
+        expect(result, isNotNull);
+        expect(result?.originalTransactionHash, originalTx.transactionHash,
+            reason: '원본 트랜잭션 해시 ${originalTx.transactionHash.substring(0, 6)}...가 반환되어야 함.');
+        expect(result?.spentTransactionHash, firstRbfTx.transactionHash,
+            reason: '첫 RBF 트랜잭션 해시 ${firstRbfTx.transactionHash.substring(0, 6)}...가 반환되어야 함.');
       });
     });
   });
