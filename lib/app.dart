@@ -253,7 +253,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   ),
                 ),
               ),
-          '/wallet-add-input': (context) => const WalletAddInputScreen(),
+          '/wallet-add-input': (context) => const CustomLoadingOverlay(
+                child: WalletAddInputScreen(),
+              ),
           '/app-info': (context) => const AppInfoScreen(),
           '/wallet-detail': (context) => buildScreenWithArguments(
                 context,

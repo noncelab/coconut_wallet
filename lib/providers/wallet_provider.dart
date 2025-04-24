@@ -430,8 +430,14 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // 싱글시그니처 지갑만 허용하므로, _requiredSignatureCount과 _signers는 null로 할당
-    WatchOnlyWallet watchOnlyWallet = WatchOnlyWallet(name, walletItemList[index].colorIndex,
-        walletItemList[index].iconIndex, walletItemList[index].descriptor, null, null);
+    WatchOnlyWallet watchOnlyWallet = WatchOnlyWallet(
+        name,
+        walletItemList[index].colorIndex,
+        walletItemList[index].iconIndex,
+        walletItemList[index].descriptor,
+        null,
+        null,
+        walletItemList[index].walletImportSource.name);
     _walletRepository.updateWalletUI(id, watchOnlyWallet);
     _walletItemList = await _fetchWalletListFromDB();
 

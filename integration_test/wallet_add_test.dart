@@ -72,7 +72,7 @@ void main() {
       String testPubKey =
           "vpub5ZZ1q76vi2LR9PeQDoV13u8TZwsyqKa7yBfD3GnPPvBjVU9ZnBTMkwzCHCVBZaPHDKJNEdMKo8MTyrQ9234idzSG9nHFD6hsUB8HJ14NBg7";
       Descriptor descriptor =
-          Descriptor.forSingleSignature("wpkh", testPubKey, "84'/1'/0'", "98C7D774");
+          Descriptor.forSingleSignature(AddressType.p2wpkh, testPubKey, "84'/1'/0'", "98C7D774");
       var xpubWalletData = {
         "name": "xpub 1",
         "colorIndex": 3,
@@ -89,7 +89,7 @@ void main() {
         "colorIndex": 4,
         "iconIndex": 4,
         "descriptor": testDescriptor,
-        "walletImportSource": WalletImportSource.descriptor.name
+        "walletImportSource": WalletImportSource.extendedPublicKey.name
       };
 
       var xpubWalletResult =
@@ -114,8 +114,8 @@ void main() {
       // Verify Wallet
       var extendedPublicKeyWalletFromRealm = walletBaseList
           .firstWhere((v) => v.walletImportSource == WalletImportSource.extendedPublicKey);
-      var descriptorWalletFromRealm =
-          walletBaseList.firstWhere((v) => v.walletImportSource == WalletImportSource.descriptor);
+      var descriptorWalletFromRealm = walletBaseList
+          .firstWhere((v) => v.walletImportSource == WalletImportSource.extendedPublicKey);
       verifyWalletListItem(extendedPublicKeyWalletFromRealm, xpubWalletData);
       verifyWalletListItem(descriptorWalletFromRealm, descriptorWalletData);
 

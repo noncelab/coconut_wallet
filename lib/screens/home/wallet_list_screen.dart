@@ -380,6 +380,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       name: name,
       iconIndex: iconIndex,
       colorIndex: colorIndex,
+      walletImportSource: walletImportSource,
     ) = walletItem;
     List<MultisigSigner>? signers;
     if (walletItem.walletType == WalletType.multiSignature) {
@@ -396,7 +397,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       isLastItem: isLastItem,
       isBalanceHidden: isBalanceHidden,
       signers: signers,
-      walletImportSource: WalletImportSource.coconutVault,
+      walletImportSource: walletImportSource,
     );
     return walletItemCard;
   }

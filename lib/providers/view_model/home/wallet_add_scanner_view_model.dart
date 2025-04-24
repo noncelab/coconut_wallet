@@ -1,21 +1,19 @@
-import 'package:cbor/simple.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/descriptor_util.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
-import 'package:coconut_wallet/utils/type_converter_utils.dart';
+import 'package:flutter/material.dart';
+import 'package:ur/ur.dart';
 import 'package:coconut_wallet/widgets/animated_qr/bc_ur_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/descriptor_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/i_coconut_qr_data_handler.dart';
-import 'package:flutter/material.dart';
-import 'package:ur/ur.dart';
 
 class WalletAddScannerViewModel extends ChangeNotifier {
   final WalletImportSource _walletImportSource;
   final WalletProvider _walletProvider;
+  final WalletAddService _walletAddService = WalletAddService();
   late final ICoconutQrDataHandler _qrDataHandler;
 
   WalletAddScannerViewModel(this._walletImportSource, this._walletProvider) {
@@ -58,36 +56,17 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   }
 
   Future<ResultOfSyncFromVault> addKeystoneWallet(UR ur) async {
-    final cborBytes = ur.cbor;
-    final decodedCbor = cbor.decode(cborBytes); // TODO: cborBytes랑 decodedCbor 값이 같은 것으로 보임
-    Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
-    Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
-    final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
-    // TODO: icon, color, name
-    final watchOnlyWallet = WatchOnlyWallet(
-        getNextThirdPartyWalletName(WalletImportSource.keystone,
-            _walletProvider.walletItemList.map((e) => e.name).toList()),
-        9,
-        9,
-        singleSigWallet.descriptor,
-        null,
-        null);
-    return await _walletProvider.syncFromThirdparty(WalletImportSource.keystone, watchOnlyWallet);
+    final name = getNextThirdPartyWalletName(
+        WalletImportSource.keystone, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final wallet = _walletAddService.createKeystoneWallet(ur, name);
+    return await _walletProvider.syncFromThirdparty(WalletImportSource.keystone, wallet);
   }
 
   Future<ResultOfSyncFromVault> addSeedSignerWallet(String descriptor) async {
-    final singleSigWallet = SingleSignatureWallet.fromDescriptor(descriptor,
-        ignoreChecksum: !DescriptorUtil.hasDescriptorChecksum(descriptor));
-    // TODO: icon, color, name
-    final watchOnlyWallet = WatchOnlyWallet(
-        getNextThirdPartyWalletName(WalletImportSource.seedSigner,
-            _walletProvider.walletItemList.map((e) => e.name).toList()),
-        9,
-        9,
-        singleSigWallet.descriptor,
-        null,
-        null);
-    return await _walletProvider.syncFromThirdparty(WalletImportSource.seedSigner, watchOnlyWallet);
+    final name = getNextThirdPartyWalletName(
+        WalletImportSource.seedSigner, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final wallet = _walletAddService.createSeedSignerWallet(descriptor, name);
+    return await _walletProvider.syncFromThirdparty(WalletImportSource.seedSigner, wallet);
   }
 
   String getWalletName(int walletId) {

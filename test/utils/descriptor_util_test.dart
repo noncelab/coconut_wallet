@@ -135,6 +135,12 @@ void main() {
         const descriptor = 'invalid-descriptor';
         expect(() => DescriptorUtil.normalizeDescriptor(descriptor), throwsFormatException);
       });
+
+      test('ExtendedPublicKey만으로 descriptor 생성', () {
+        const descriptor =
+            'wpkh([00000000/84\'/1\'/0\']vpub5TmYRnYy8ScbkG2WmearTx1DG91gJC4TM9kRTvSQjgVMGRUdx4vRUD8UHjZn8fJZfjUoBHPnVX1q5AmHJHTHw3CRtHzfK4yqMhAKS93Xb3y/<0;1>/*)';
+        expect(() => DescriptorUtil.normalizeDescriptor(descriptor), descriptor);
+      });
     });
   });
 }

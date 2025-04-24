@@ -164,7 +164,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       isScrollControlled: true,
       builder: (context) => WalletInfoEditBottomSheet(
         id: widget.id,
-        walletImportSource: WalletImportSource.keystone, //TODO 실제 값으로 교체
+        walletImportSource: walletImportSource,
       ),
     ).then((result) {
       if (result != null) {
