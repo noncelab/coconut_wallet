@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -55,7 +56,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             ),
           ];
         }
-      case WalletImportSource.keystone:
+      case WalletImportSource.seedSigner:
         {
           return [
             TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
@@ -84,7 +85,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step6_end),
           ];
         }
-      case WalletImportSource.seedSigner:
+      case WalletImportSource.keystone:
         {
           return [
             TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
@@ -162,14 +163,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             child: CoconutToolTip(
               backgroundColor: CoconutColors.gray900,
               borderColor: CoconutColors.gray900,
-              // TODO: CDS #20 머지 후 주석 삭제
-              // icon: SvgPicture.asset(
-              //   'packages/coconut_design_system/assets/svg/info_circle.svg',
-              //   colorFilter: const ColorFilter.mode(
-              //     CoconutColors.white,
-              //     BlendMode.srcIn,
-              //   ),
-              // ),
+              icon: SvgPicture.asset(
+                'packages/coconut_design_system/assets/svg/info_circle.svg',
+                colorFilter: const ColorFilter.mode(
+                  CoconutColors.white,
+                  BlendMode.srcIn,
+                ),
+              ),
               tooltipType: CoconutTooltipType.fixed,
               richText: RichText(
                 text: TextSpan(
