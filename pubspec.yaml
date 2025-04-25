@@ -77,7 +77,7 @@ dependencies:
   coconut_design_system: 
     git:
       url: https://github.com/noncelab/coconut_design_system.git
-      ref: main
+      ref: fix/appbar-height-dialog-padding
   realm: ^20.0.0
   cryptography: ^2.7.0
   slang: ^4.4.1

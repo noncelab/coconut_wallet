@@ -192,49 +192,42 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         case WalletSyncResult.existingWalletNoUpdate:
           {
             vibrateLightDouble();
-            CustomDialogs.showCustomAlertDialog(context,
-                title: t.alert.wallet_add.update_failed,
-                message: t.alert.wallet_add.update_failed_description(
+            _showErrorDialog(
+                t.alert.wallet_add.update_failed,
+                t.alert.wallet_add.update_failed_description(
                     name: TextUtils.ellipsisIfLonger(
                   _viewModel.getWalletName(addResult.walletId!),
                   maxLength: 15,
-                )), onConfirm: () {
-              _isProcessing = false;
-              Navigator.pop(context);
-            });
+                )));
+
             break;
           }
         case WalletSyncResult.existingName:
           vibrateLightDouble();
           if (mounted) {
-            CustomDialogs.showCustomAlertDialog(context,
-                title: t.alert.wallet_add.duplicate_name,
-                message: t.alert.wallet_add.duplicate_name_description, onConfirm: () {
-              _isProcessing = false;
-              Navigator.pop(context);
-            });
+            _showErrorDialog(
+              t.alert.wallet_add.duplicate_name,
+              t.alert.wallet_add.duplicate_name_description,
+            );
           }
         case WalletSyncResult.existingWalletUpdateImpossible:
           vibrateLightDouble();
           if (mounted) {
-            CustomDialogs.showCustomAlertDialog(context,
-                title: t.alert.wallet_add.already_exist,
-                message: t.alert.wallet_add.already_exist_description(
-                    name: TextUtils.ellipsisIfLonger(_viewModel.getWalletName(addResult.walletId!),
-                        maxLength: 15)), onConfirm: () {
-              _isProcessing = false;
-              Navigator.pop(context);
-            });
+            _showErrorDialog(
+              t.alert.wallet_add.already_exist,
+              t.alert.wallet_add.already_exist_description(
+                  name: TextUtils.ellipsisIfLonger(_viewModel.getWalletName(addResult.walletId!),
+                      maxLength: 15)),
+            );
           }
       }
     } catch (e) {
       vibrateLightDouble();
       if (mounted) {
-        CustomDialogs.showCustomAlertDialog(context,
-            title: t.alert.wallet_add.add_failed, message: e.toString(), onConfirm: () {
-          _isProcessing = false;
-          Navigator.pop(context);
-        });
+        _showErrorDialog(
+          t.alert.wallet_add.add_failed,
+          e.toString(),
+        );
       }
       // TODO: remove rethrow; after test
       //rethrow;
@@ -271,6 +264,29 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       _isProcessing = false;
       Navigator.pop(context);
     });
+  }
+
+  void _showErrorDialog(String title, String description) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          title: title,
+          backgroundColor: CoconutColors.black.withOpacity(0.7),
+          description: description,
+          descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 50,
+          ),
+          rightButtonColor: CoconutColors.white,
+          rightButtonTextStyle: CoconutTypography.body2_14,
+          onTapRight: () {
+            _isProcessing = false;
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
   }
 
   String _getAppBarTitle() => switch (widget.importSource) {
