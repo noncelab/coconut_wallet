@@ -55,7 +55,10 @@ class WalletItemCard extends StatelessWidget {
           child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
               child: Row(children: [
-                WalletItemIcon(walletImportSource: walletImportSource),
+                WalletItemIcon(
+                    walletImportSource: walletImportSource,
+                    iconIndex: iconIndex,
+                    colorIndex: colorIndex),
                 CoconutLayout.spacing_200w,
                 Expanded(
                   child: Column(
