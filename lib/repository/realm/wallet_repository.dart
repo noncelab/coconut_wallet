@@ -148,7 +148,7 @@ class WalletRepository extends BaseRepository {
     final realmExternalWalletResults = walletBase.walletType == WalletType.singleSignature.name
         ? realm.query<RealmExternalWallet>('id == $walletId')
         : null;
-    final realmExternalWallet = realmExternalWalletResults?.first;
+    final realmExternalWallet = realmExternalWalletResults?.firstOrNull;
 
     await realm.writeAsync(() {
       realm.delete(walletBase);
