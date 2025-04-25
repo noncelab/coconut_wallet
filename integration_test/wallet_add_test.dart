@@ -125,12 +125,11 @@ Future<void> externalWalletCrudFlow(WidgetTester tester, WalletRepository wallet
   expect(walletBaseList.length, initialWalletCount + 2);
 
   // Verify Wallets
-  var extendedPublicKeyWalletFromRealm = walletBaseList
-      .firstWhere((v) => v.walletImportSource == WalletImportSource.extendedPublicKey);
-  var descriptorWalletFromRealm = walletBaseList
-      .firstWhere((v) => v.walletImportSource == WalletImportSource.extendedPublicKey);
-  verifyWalletListItem(extendedPublicKeyWalletFromRealm, xpubWalletData);
-  verifyWalletListItem(descriptorWalletFromRealm, descriptorWalletData);
+  var extendedPublicKeyWallets = walletBaseList
+      .where((v) => v.walletImportSource == WalletImportSource.extendedPublicKey)
+      .toList();
+  verifyWalletListItem(extendedPublicKeyWallets[1], xpubWalletData);
+  verifyWalletListItem(extendedPublicKeyWallets[0], descriptorWalletData);
 
   // Delete Wallets
   await walletProvider.deleteWallet(xpubWalletResult.walletId!);
