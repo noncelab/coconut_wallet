@@ -59,7 +59,7 @@ class DescriptorUtil {
 
     final finalDescriptor =
         descriptorFunction == null ? wrapWithDescriptorFunction(descriptor) : descriptor;
-    Descriptor.parse(finalDescriptor, ignoreChecksum: !hasDescriptorChecksum(finalDescriptor));
+    Descriptor.parse(finalDescriptor, ignoreChecksum: !finalDescriptor.contains("#"));
     return finalDescriptor;
   }
 }

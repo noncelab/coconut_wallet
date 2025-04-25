@@ -17,6 +17,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
 
   bool isExtendedPublicKey(String xpub) {
     try {
+      xpub = xpub.trim();
       ExtendedPublicKey.parse(xpub);
       validExtendedPublicKey = xpub;
       validDescriptor = null;
@@ -29,7 +30,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
 
   bool normalizeDescriptor(String descriptor) {
     try {
-      validDescriptor = DescriptorUtil.normalizeDescriptor(descriptor);
+      validDescriptor = DescriptorUtil.normalizeDescriptor(descriptor.trim());
       validExtendedPublicKey = null;
       return true;
     } catch (_) {
