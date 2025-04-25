@@ -46,6 +46,9 @@ Flutter Test를 클릭해주고, Test File 경로를 지정합니다. Additional
 1. `wallet_add_test.dart`
    - 외부 월렛 추가, 삭제, 로드 테스트(공개확장키, 디스크립터)
 
+2. `realm_migration_test.dart`
+   - 스키마 버전, 월렛 여부에 따른 Realm 마이그레이션 테스트
+
 ## 주의사항
 
 - 테스트는 실제 디바이스의 저장소와 보안 기능을 사용합니다.
