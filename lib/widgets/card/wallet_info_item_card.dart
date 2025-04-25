@@ -117,7 +117,8 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                 children: [
                   if (rightText.isNotEmpty)
                     Text(
-                      rightText,
+                      rightText.replaceAllMapped(
+                          RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
                       style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
                     ),
                   TooltipButton(
