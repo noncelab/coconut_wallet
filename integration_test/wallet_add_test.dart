@@ -84,7 +84,7 @@ Future<void> externalWalletCrudFlow(WidgetTester tester, WalletRepository wallet
   String testPubKey =
       "vpub5ZZ1q76vi2LR9PeQDoV13u8TZwsyqKa7yBfD3GnPPvBjVU9ZnBTMkwzCHCVBZaPHDKJNEdMKo8MTyrQ9234idzSG9nHFD6hsUB8HJ14NBg7";
   Descriptor descriptor =
-      Descriptor.forSingleSignature("wpkh", testPubKey, "84'/1'/0'", "98C7D774");
+      Descriptor.forSingleSignature(AddressType.p2wpkh, testPubKey, "84'/1'/0'", "98C7D774");
   var xpubWalletData = {
     "name": "xpub 1",
     "colorIndex": 3,
@@ -127,8 +127,8 @@ Future<void> externalWalletCrudFlow(WidgetTester tester, WalletRepository wallet
   // Verify Wallets
   var extendedPublicKeyWalletFromRealm = walletBaseList
       .firstWhere((v) => v.walletImportSource == WalletImportSource.extendedPublicKey);
-  var descriptorWalletFromRealm =
-      walletBaseList.firstWhere((v) => v.walletImportSource == WalletImportSource.extendedPublicKey);
+  var descriptorWalletFromRealm = walletBaseList
+      .firstWhere((v) => v.walletImportSource == WalletImportSource.extendedPublicKey);
   verifyWalletListItem(extendedPublicKeyWalletFromRealm, xpubWalletData);
   verifyWalletListItem(descriptorWalletFromRealm, descriptorWalletData);
 
