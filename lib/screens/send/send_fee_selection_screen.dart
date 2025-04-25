@@ -73,12 +73,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       },
       child: Consumer<SendFeeSelectionViewModel>(
         builder: (context, viewModel, child) {
-          if (!viewModel.isNetworkOn) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _showAlertAndGoHome(networkOffMessage);
-            });
-          }
-
           return Scaffold(
             backgroundColor: CoconutColors.black,
             appBar: CustomAppBar.buildWithNext(
@@ -232,9 +226,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_viewModel.isNetworkOn) {
         _startToSetRecommendedFee();
-      } else {
-        _showAlertAndGoHome(networkOffMessage);
-        return;
       }
 
       // TODO:
@@ -398,33 +389,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         }
       }
     }
-  }
-
-  void _showAlertAndGoHome(String message) {
-    if (context.loaderOverlay.visible) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-
-    showAlertDialog(
-        context: context,
-        content: message,
-        dismissible: false,
-        onClosed: () {
-          Navigator.of(context).pop(); // 다이얼로그 닫기
-
-          // 약간의 지연 후 popUntil 호출
-          Future.delayed(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/',
-                (Route<dynamic> route) => false,
-              );
-            }
-          });
-        });
   }
 
   Future<void> _startToSetRecommendedFee() async {
