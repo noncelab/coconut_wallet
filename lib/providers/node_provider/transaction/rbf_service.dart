@@ -69,14 +69,13 @@ class RbfService {
     for (final input in tx.inputs) {
       final utxoId = makeUtxoId(input.transactionHash, input.index);
       final utxo = _utxoRepository.getUtxoState(walletId, utxoId);
-
       if (utxo == null) continue;
 
       // 자기 참조 케이스 확인 (spentByTransactionHash가 현재 트랜잭션과 동일한 경우는 무시)
       if (utxo.spentByTransactionHash == tx.transactionHash) continue;
 
       // RBF 조건 확인
-      if (await isRbfTransaction(walletId, tx, utxo)) {
+      if (await isRbfTransaction(walletId, utxo)) {
         return utxo;
       }
     }
@@ -85,7 +84,7 @@ class RbfService {
   }
 
   /// 해당 UTXO가 RBF를 위한 조건을 만족하는지 확인
-  Future<bool> isRbfTransaction(int walletId, Transaction tx, UtxoState utxo) async {
+  Future<bool> isRbfTransaction(int walletId, UtxoState utxo) async {
     if (utxo.status != UtxoStatus.outgoing || utxo.spentByTransactionHash == null) {
       return false;
     }
@@ -151,9 +150,8 @@ class RbfService {
     final walletItem = request.walletItem;
 
     for (final entry in request.rbfInfoMap.entries) {
-      final txHash = entry.key;
       final rbfInfo = entry.value;
-      final txRecord = request.txRecordMap[txHash];
+      final txRecord = request.txRecordMap[rbfInfo.spentTransactionHash];
 
       if (txRecord != null) {
         await _processRbfEntry(walletItem.id, rbfInfo, txRecord, rbfHistoryDtos);

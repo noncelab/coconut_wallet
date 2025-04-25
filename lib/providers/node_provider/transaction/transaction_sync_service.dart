@@ -102,11 +102,13 @@ class TransactionSyncService {
         confirmedFetchedTxHashes);
 
     // 5. 트랜잭션 레코드 생성 및 저장
-    final List<TransactionRecord> txRecords = await _createAndSaveTransactionRecords(
+    final List<TransactionRecord> txRecords =
+        await _transactionRecordService.createTransactionRecords(
       walletItem,
       fetchedTransactionDetails,
       now: now,
     );
+    await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
 
     // 6. RBF/CPFP 히스토리 저장
     await _saveRbfAndCpfpHistory(
@@ -115,7 +117,7 @@ class TransactionSyncService {
       rbfCpfpResult,
     );
 
-    // 7. 오래된 언컨펌 트랜잭션 정리
+    // 7. 대체된 언컨펌 트랜잭션 삭제
     await _cleanupStaleUnconfirmedTransactions(walletId);
 
     // 8. 마무리 단계
@@ -196,7 +198,9 @@ class TransactionSyncService {
       Logger.log('Processing transaction: ${fetchedTx.transactionHash}');
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
         final sendingRbfInfo = await _rbfService.detectSendingRbfTransaction(walletId, fetchedTx);
-        if (sendingRbfInfo != null) sendingRbfInfoMap[fetchedTx.transactionHash] = sendingRbfInfo;
+        if (sendingRbfInfo != null) {
+          sendingRbfInfoMap[sendingRbfInfo.originalTransactionHash] = sendingRbfInfo;
+        }
 
         final receivingRbfTxHash =
             await _rbfService.detectReceivingRbfTransaction(walletId, fetchedTx);
@@ -205,7 +209,7 @@ class TransactionSyncService {
         final cpfpInfo = await _cpfpService.detectCpfpTransaction(walletId, fetchedTx);
         if (cpfpInfo != null) cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
 
-        _utxoRepository.updateUtxoStatusToOutgoingByTransaction(walletId, fetchedTx);
+        _utxoRepository.markUtxoAsOutgoing(walletId, fetchedTx);
       }
 
       if (confirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
@@ -220,22 +224,6 @@ class TransactionSyncService {
       receivingRbfTxHashSet: receivingRbfTxHashSet,
       cpfpInfoMap: cpfpInfoMap
     );
-  }
-
-  /// 5. 트랜잭션 레코드 생성 및 저장
-  Future<List<TransactionRecord>> _createAndSaveTransactionRecords(
-    WalletListItemBase walletItem,
-    FetchedTransactionDetails fetchedTransactionDetails, {
-    DateTime? now,
-  }) async {
-    final txRecords = await _transactionRecordService.createTransactionRecords(
-      walletItem,
-      fetchedTransactionDetails,
-      now: now,
-    );
-
-    await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
-    return txRecords;
   }
 
   /// 6. RBF/CPFP 히스토리 저장
@@ -278,7 +266,7 @@ class TransactionSyncService {
     }
   }
 
-  /// 7. 오래된 언컨펌 트랜잭션 정리
+  /// 7. 대체된 언컨펌 트랜잭션 삭제
   Future<void> _cleanupStaleUnconfirmedTransactions(
     int walletId,
   ) async {
@@ -295,8 +283,10 @@ class TransactionSyncService {
     }
 
     if (toDeleteTxs.isNotEmpty) {
-      _transactionRepository.deleteTransaction(walletId, toDeleteTxs);
-      Logger.log('Deleted stale unconfirmed transactions: $toDeleteTxs');
+      final deleted = _transactionRepository.deleteTransaction(walletId, toDeleteTxs);
+      if (deleted.isSuccess) {
+        Logger.log('Deleted stale unconfirmed transactions: $toDeleteTxs');
+      }
     }
   }
 

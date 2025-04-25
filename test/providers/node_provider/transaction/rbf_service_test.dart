@@ -122,10 +122,10 @@ void main() {
           transactionHash: originalTx.transactionHash,
         );
 
-        transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
+        await transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
 
         // When
-        final result = await rbfService.isRbfTransaction(walletId, firstRbfTx, utxo);
+        final result = await rbfService.isRbfTransaction(walletId, utxo);
 
         // Then
         expect(result, true);
@@ -144,7 +144,7 @@ void main() {
         transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
 
         // When
-        final result = await rbfService.isRbfTransaction(walletId, firstRbfTx, utxo);
+        final result = await rbfService.isRbfTransaction(walletId, utxo);
 
         // Then
         expect(result, false);
@@ -158,7 +158,7 @@ void main() {
         );
 
         // When
-        final result = await rbfService.isRbfTransaction(walletId, originalTx, utxo);
+        final result = await rbfService.isRbfTransaction(walletId, utxo);
 
         // Then
         expect(result, false);
@@ -229,7 +229,7 @@ void main() {
         final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
           transactionHash: originalTx.transactionHash,
         );
-        transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
+        await transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
 
         // When
         final result = await rbfService.findRbfCandidate(walletId, firstRbfTx);
@@ -263,7 +263,11 @@ void main() {
           transactionHash: originalTx.transactionHash,
         );
 
-        transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
+        final inputTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
+          transactionHash: inputTx.transactionHash,
+        );
+
+        await transactionRepository.addAllTransactions(walletId, [originalTxRecord, inputTxRecord]);
 
         // When
         final result = await rbfService.detectSendingRbfTransaction(walletId, firstRbfTx);

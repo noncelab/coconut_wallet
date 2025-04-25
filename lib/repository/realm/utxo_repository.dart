@@ -195,7 +195,7 @@ class UtxoRepository extends BaseRepository {
   }
 
   // UTXO 상태를 "출금 중(outgoing)"으로 표시
-  void markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) {
+  void _markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) {
     final utxoToMark = realm.find<RealmUtxo>(utxoId);
 
     if (utxoToMark == null) return;
@@ -297,7 +297,7 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  void updateUtxoStatusToOutgoingByTransaction(int walletId, lib.Transaction transaction) {
+  void markUtxoAsOutgoing(int walletId, lib.Transaction transaction) {
     /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.
     for (var input in transaction.inputs) {
       // UTXO 소유 지갑 ID 찾기
@@ -314,7 +314,7 @@ class UtxoRepository extends BaseRepository {
       }
 
       // UTXO를 outgoing 상태로 표시하고 RBF 관련 정보 저장
-      markUtxoAsOutgoing(
+      _markUtxoAsOutgoing(
         walletId,
         utxoId,
         transaction.transactionHash,

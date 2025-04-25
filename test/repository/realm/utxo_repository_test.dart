@@ -48,7 +48,7 @@ void main() {
         });
 
         // When
-        utxoRepository.updateUtxoStatusToOutgoingByTransaction(
+        utxoRepository.markUtxoAsOutgoing(
           testWalletId,
           mockTx,
         );
@@ -86,7 +86,7 @@ void main() {
         });
 
         // When
-        utxoRepository.updateUtxoStatusToOutgoingByTransaction(
+        utxoRepository.markUtxoAsOutgoing(
           testWalletId,
           mockTx,
         );
@@ -126,7 +126,7 @@ void main() {
         });
 
         // When
-        utxoRepository.updateUtxoStatusToOutgoingByTransaction(
+        utxoRepository.markUtxoAsOutgoing(
           testWalletId,
           mockTx,
         );
