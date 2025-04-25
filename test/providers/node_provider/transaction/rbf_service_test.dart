@@ -1,9 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -23,7 +21,6 @@ import 'rbf_service_test.mocks.dart';
 
 // 테스트에 필요한 모킹 클래스 생성
 @GenerateMocks([
-  UtxoSyncService,
   ElectrumService,
 ])
 void main() {

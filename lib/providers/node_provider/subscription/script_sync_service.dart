@@ -71,7 +71,7 @@ class ScriptSyncService {
 
       // 스크립트 상태가 변경되었으면 주소 사용 여부 업데이트
       if (dto.scriptStatus.status != null) {
-        _addressRepository.setWalletAddressUsed(
+        await _addressRepository.setWalletAddressUsed(
             dto.walletItem, dto.scriptStatus.index, dto.scriptStatus.isChange);
       }
 

@@ -82,8 +82,8 @@ class TransactionSyncService {
         txFetchResults.where((tx) => tx.height > 0).map((tx) => tx.transactionHash).toSet();
 
     // 2. 처리 대상 트랜잭션 식별 및 등록
-    final Set<String> newTxHashes = _identifyAndRegisterProcessableTransactions(
-        walletId, txFetchResults, _scriptCallbackService);
+    final Set<String> newTxHashes =
+        _registerProcessableTransactions(walletId, txFetchResults, _scriptCallbackService);
 
     if (newTxHashes.isEmpty) {
       _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
@@ -132,7 +132,7 @@ class TransactionSyncService {
   }
 
   /// 2. 처리 대상 트랜잭션 식별 및 등록
-  Set<String> _identifyAndRegisterProcessableTransactions(
+  Set<String> _registerProcessableTransactions(
     int walletId,
     List<FetchTransactionResponse> txFetchResults,
     ScriptCallbackService scriptCallbackManager,
@@ -233,7 +233,8 @@ class TransactionSyncService {
       fetchedTransactionDetails,
       now: now,
     );
-    _transactionRepository.addAllTransactions(walletItem.id, txRecords);
+
+    await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
     return txRecords;
   }
 

@@ -301,7 +301,8 @@ class AddressRepository extends BaseRepository {
     return realmWalletBase;
   }
 
-  void setWalletAddressUsed(WalletListItemBase walletItem, int addressIndex, bool isChange) {
+  Future<void> setWalletAddressUsed(
+      WalletListItemBase walletItem, int addressIndex, bool isChange) async {
     final realmWalletAddress = realm.query<RealmWalletAddress>(
       r'walletId == $0 AND index == $1 AND isChange == $2',
       [walletItem.id, addressIndex, isChange],
@@ -313,7 +314,7 @@ class AddressRepository extends BaseRepository {
       return;
     }
 
-    realm.write(() {
+    await realm.writeAsync(() {
       realmWalletAddress.isUsed = true;
     });
   }

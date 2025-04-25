@@ -134,7 +134,7 @@ class TransactionRepository extends BaseRepository {
   }
 
   /// 모든 트랜잭션 추가
-  void addAllTransactions(int walletId, List<TransactionRecord> txList) {
+  Future<void> addAllTransactions(int walletId, List<TransactionRecord> txList) async {
     final realmWalletBase = realm.find<RealmWalletBase>(walletId);
     if (realmWalletBase == null) {
       throw StateError('[addAllTransactions] Wallet not found');
@@ -168,7 +168,7 @@ class TransactionRepository extends BaseRepository {
       // 이미 확인된 트랜잭션이거나 여전히 미확인 상태인 트랜잭션은 무시
     }
 
-    realm.write(() {
+    await realm.writeAsync(() {
       // 새 트랜잭션 추가
       if (newTxsToAdd.isNotEmpty) {
         realm.addAll<RealmTransaction>(newTxsToAdd);
