@@ -52,6 +52,8 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
       // _showToastAboutNetwork(isNetworkOn);
 
       if (isNetworkOn) {
+        _nodeProvider.reconnect();
+
         /// 네트워크가 꺼졌다가 다시 켜지면 시세를 위한 소켓을 연결함.
         _upbitConnectModel.initUpbitWebSocketService();
       } else {
