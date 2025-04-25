@@ -79,12 +79,12 @@ void main() {
   });
 
   group('removeIsLatestTxBlockHeightZero test', () {
-    test("버전 변동이 없는 경우, 마이그레이션 하지 않음", () {
-      removeIsLatestTxBlockHeightZeroFlow(realm, oldVersion, testPath!);
+    test("[Migration O]", () {
+      removeIsLatestTxBlockHeightZeroFlow(realm, newVersion, testPath!);
     });
 
-    test("버전 변동이 있는 경우, 마이그레이션 실행", () {
-      removeIsLatestTxBlockHeightZeroFlow(realm, newVersion, testPath!);
+    test("[Migration X]", () {
+      removeIsLatestTxBlockHeightZeroFlow(realm, oldVersion, testPath!);
     });
   });
 
