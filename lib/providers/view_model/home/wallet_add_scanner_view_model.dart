@@ -52,21 +52,21 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   }
 
   Future<ResultOfSyncFromVault> addCoconutVaultWallet(WatchOnlyWallet watchOnlyWallet) async {
-    return await _walletProvider.syncFromVault(watchOnlyWallet);
+    return await _walletProvider.syncFromCoconutVault(watchOnlyWallet);
   }
 
   Future<ResultOfSyncFromVault> addKeystoneWallet(UR ur) async {
     final name = getNextThirdPartyWalletName(
         WalletImportSource.keystone, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createKeystoneWallet(ur, name);
-    return await _walletProvider.syncFromThirdparty(WalletImportSource.keystone, wallet);
+    return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   Future<ResultOfSyncFromVault> addSeedSignerWallet(String descriptor) async {
     final name = getNextThirdPartyWalletName(
         WalletImportSource.seedSigner, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createSeedSignerWallet(descriptor, name);
-    return await _walletProvider.syncFromThirdparty(WalletImportSource.seedSigner, wallet);
+    return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   String getWalletName(int walletId) {

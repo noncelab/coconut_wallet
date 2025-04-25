@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
@@ -19,6 +20,7 @@ import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
@@ -267,26 +269,44 @@ class WalletProvider extends ChangeNotifier {
     return await _walletRepository.getWalletItemList();
   }
 
-  // syncFromVault start
-  /// case1. 새로운 fingerprint인지 확인 후 지갑으로 추가하기 ("지갑을 추가했습니다.")
+  int _findSameWalletIndex(String descriptorString, {required bool isMultisig}) {
+    for (var index = 0; index < _walletItemList.length; index++) {
+      if (isMultisig) {
+        if (_walletItemList[index] is MultisigWalletListItem &&
+            (_walletItemList[index] as MultisigWalletListItem).descriptor == descriptorString) {
+          return index;
+        }
+      } else {
+        Descriptor descriptor = Descriptor.parse(descriptorString,
+            ignoreChecksum: !DescriptorUtil.hasDescriptorChecksum(descriptorString));
+        if (_walletItemList[index] is SinglesigWalletListItem &&
+            (_walletItemList[index] as SinglesigWalletListItem).extendedPublicKey ==
+                descriptor.getPublicKey(0)) {
+          return index;
+        }
+      }
+    }
+    return -1;
+  }
+
+  /// case1. 새로운 pubkey인지 확인 후 지갑으로 추가하기 ("지갑을 추가했습니다.")
   /// case2. 이미 존재하는 fingerprint이지만 이름/계정/칼라 중 하나라도 변경되었을 경우 ("동기화를 완료했습니다.")
   /// case3. 이미 존재하고 변화가 없는 경우 ("이미 추가된 지갑입니다.")
   /// case4. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
-  Future<ResultOfSyncFromVault> syncFromVault(WatchOnlyWallet watchOnlyWallet) async {
-    // _walletList 동시 변경 방지를 위해 상태 확인 후 sync 진행하기
-    // while (_walletInitState == WalletInitState.never ||
-    //     _walletInitState == WalletInitState.processing) {
-    //   await Future.delayed(const Duration(seconds: 2));
-    // }
-
+  /// case5. 외부 지갑 형태로 이미 추가된 지갑 ("이미 추가된 지갑입니다. ([지갑 이름])")
+  Future<ResultOfSyncFromVault> syncFromCoconutVault(WatchOnlyWallet watchOnlyWallet) async {
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
-    final index =
-        _walletItemList.indexWhere((element) => element.descriptor == watchOnlyWallet.descriptor);
-
     bool isMultisig = watchOnlyWallet.signers != null;
+    int index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: isMultisig);
 
     if (index != -1) {
-      // case 3: 변경사항 없음
+      if (_walletItemList[index].walletImportSource != WalletImportSource.coconutVault) {
+        // case 5
+        return ResultOfSyncFromVault(
+            result: WalletSyncResult.existingWalletUpdateImpossible,
+            walletId: _walletItemList[index].id);
+      }
+      // case 3
       result = WalletSyncResult.existingWalletNoUpdate;
 
       // case 2: 변경 사항 체크하며 업데이트
@@ -323,16 +343,14 @@ class WalletProvider extends ChangeNotifier {
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
   }
 
-  Future<ResultOfSyncFromVault> syncFromThirdparty(
-      WalletImportSource walletImportSource, WatchOnlyWallet watchOnlyWallet) async {
+  Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
     final sameNameIndex =
         _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
     assert(sameNameIndex == -1);
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
-    final index =
-        _walletItemList.indexWhere((element) => element.descriptor == watchOnlyWallet.descriptor);
     bool isMultisig = watchOnlyWallet.signers != null;
+    int index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: isMultisig);
 
     if (index != -1) {
       return ResultOfSyncFromVault(

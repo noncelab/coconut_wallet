@@ -51,7 +51,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
     final name = getNextThirdPartyWalletName(
         importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createExtendedPublicKeyWallet(extendedPublicKey, name);
-    return await _walletProvider.syncFromThirdparty(importSource, wallet);
+    return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   Future<ResultOfSyncFromVault> addWalletFromDescriptor(String descriptor) async {
@@ -59,7 +59,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
         importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createWalletFromDescriptor(
         descriptor: descriptor, name: name, walletImportSource: importSource);
-    return await _walletProvider.syncFromThirdparty(importSource, wallet);
+    return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   String getWalletName(int walletId) {
