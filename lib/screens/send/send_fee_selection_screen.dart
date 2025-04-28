@@ -13,7 +13,6 @@ import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -74,13 +73,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         builder: (context, viewModel, child) {
           return Scaffold(
             backgroundColor: CoconutColors.black,
-            appBar: CustomAppBar.buildWithNext(
+            appBar: CoconutAppBar.buildWithNext(
                 title: t.fee,
                 context: context,
                 isActive: _canGoNext(),
                 onBackPressed: () {
                   Navigator.pop(context);
                 },
+                usePrimaryActiveColor: true,
                 nextButtonTitle: t.complete,
                 onNextPressed: () {
                   int satsPerVb = _customSelected

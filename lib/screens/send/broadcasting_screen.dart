@@ -1,7 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/error/app_error.dart'; // FIXME: remove model import
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -17,10 +16,8 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -104,9 +101,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         builder: (context, viewModel, child) => Scaffold(
           floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
           backgroundColor: CoconutColors.black,
-          appBar: CustomAppBar.buildWithNext(
+          appBar: CoconutAppBar.buildWithNext(
               title: t.broadcasting_screen.title,
               context: context,
+              usePrimaryActiveColor: true,
               isActive: viewModel.isNetworkOn && viewModel.isInitDone,
               onNextPressed: () async {
                 if (!viewModel.isNetworkOn) {
