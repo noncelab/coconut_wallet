@@ -18,10 +18,14 @@ import 'package:coconut_wallet/main.dart' as app;
 ///
 /// 실행 명령어:
 /// ```bash
-/// flutter test --plain-name "[Migration O] [Wallet O]" --flavor regtest integration_test/realm_migration_test.dart
-/// flutter test --plain-name "[Migration O] [Wallet X]" --flavor regtest integration_test/realm_migration_test.dart
-/// flutter test --plain-name "[Migration X] [Wallet O]" --flavor regtest integration_test/realm_migration_test.dart
-/// flutter test --plain-name "[Migration X] [Wallet X]" --flavor regtest integration_test/realm_migration_test.dart
+/// flutter test --plain-name "[Migration X] [Wallet O]" --flavor regtest integration_test/realm_migration_test.dart &&
+/// flutter test --plain-name "[Migration X] [Wallet X]" --flavor regtest integration_test/realm_migration_test.dart &&
+/// flutter test --plain-name "[0 -> kRealmVersion] [Wallet O]" --flavor regtest integration_test/realm_migration_test.dart &&
+/// flutter test --plain-name "[0 -> kRealmVersion] [Wallet X]" --flavor regtest integration_test/realm_migration_test.dart &&
+/// flutter test --plain-name "[1 -> kRealmVersion] [Wallet O]" --flavor regtest integration_test/realm_migration_test.dart &&
+/// flutter test --plain-name "[1 -> kRealmVersion] [Wallet X]" --flavor regtest integration_test/realm_migration_test.dart &&
+/// flutter test --plain-name "[2 -> kRealmVersion] [Wallet O]" --flavor regtest integration_test/realm_migration_test.dart &&
+/// flutter test --plain-name "[2 -> kRealmVersion] [Wallet X]" --flavor regtest integration_test/realm_migration_test.dart
 /// ```
 ///
 /// 자세한 내용은 README.md 참고
@@ -37,12 +41,10 @@ void main() {
     }
   }
 
-  Future<void> realmDataSetup({required bool migration, required bool wallet}) async {
-    const oldVersion = kRealmVersion - 1;
-    const curVersion = kRealmVersion;
+  Future<void> realmDataSetup({required int initialVersion, required bool wallet}) async {
     config = Configuration.local(
       realmAllSchemas,
-      schemaVersion: migration ? oldVersion : curVersion,
+      schemaVersion: initialVersion,
     );
 
     realm = Realm(config);
@@ -58,37 +60,56 @@ void main() {
     await prefs.init();
     await prefs.clearSharedPref();
     await SecureStorageRepository().deleteAll();
+    await skipTutorial(true);
   });
 
   tearDown(() async {
     closeRealm();
   });
 
-  group("removeIsLatestTxBlockHeightZero test", () {
-    setUp(() async {
-      await skipTutorial(true);
+  group('Realm migration test', () {
+    group("[Migration X]", () {
+      testWidgets("[Migration X] [Wallet O]", (tester) async {
+        await realmDataSetup(initialVersion: kRealmVersion, wallet: true);
+        await walletListFlow(tester);
+      });
+
+      testWidgets("[Migration X] [Wallet X]", (tester) async {
+        await realmDataSetup(initialVersion: kRealmVersion, wallet: false);
+        await walletListFlow(tester);
+      });
     });
 
-    testWidgets('[Migration O] [Wallet O]', (tester) async {
-      // Set realm configuration and Wallet Data
-      await realmDataSetup(migration: true, wallet: true);
-      // The app will use new realm Configuration(kRealmVersion, removeIsLatestTxBlockHeightZero function) for migration
-      await walletListFlow(tester);
-    });
+    group("[Migration O]", () {
+      testWidgets("[0 -> kRealmVersion] [Wallet O]", (tester) async {
+        await realmDataSetup(initialVersion: 0, wallet: true);
+        await walletListFlow(tester);
+      });
 
-    testWidgets('[Migration O] [Wallet X]', (tester) async {
-      await realmDataSetup(migration: true, wallet: false);
-      await walletListFlow(tester);
-    });
+      testWidgets("[0 -> kRealmVersion] [Wallet X]", (tester) async {
+        await realmDataSetup(initialVersion: 0, wallet: false);
+        await walletListFlow(tester);
+      });
 
-    testWidgets('[Migration X] [Wallet O]', (tester) async {
-      await realmDataSetup(migration: false, wallet: true);
-      await walletListFlow(tester);
-    });
+      testWidgets("[1 -> kRealmVersion] [Wallet O]", (tester) async {
+        await realmDataSetup(initialVersion: 1, wallet: true);
+        await walletListFlow(tester);
+      });
 
-    testWidgets('[Migration X] [Wallet X]', (tester) async {
-      await realmDataSetup(migration: false, wallet: false);
-      await walletListFlow(tester);
+      testWidgets("[1 -> kRealmVersion] [Wallet X]", (tester) async {
+        await realmDataSetup(initialVersion: 1, wallet: false);
+        await walletListFlow(tester);
+      });
+
+      testWidgets("[2 -> kRealmVersion] [Wallet O]", (tester) async {
+        await realmDataSetup(initialVersion: 2, wallet: true);
+        await walletListFlow(tester);
+      });
+
+      testWidgets("[2 -> kRealmVersion] [Wallet X]", (tester) async {
+        await realmDataSetup(initialVersion: 2, wallet: false);
+        await walletListFlow(tester);
+      });
     });
   });
 }

@@ -34,7 +34,7 @@ class RealmManager {
               Configuration.local(
                 realmAllSchemas,
                 schemaVersion: kRealmVersion,
-                migrationCallback: removeIsLatestTxBlockHeightZero,
+                migrationCallback: defaultMigration,
               ),
             );
 
