@@ -11,7 +11,6 @@ import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
@@ -21,7 +20,6 @@ import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 class SendFeeSelectionScreen extends StatefulWidget {
@@ -35,7 +33,6 @@ class SendFeeSelectionScreen extends StatefulWidget {
 
 class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   static const maxFeeLimit = 1000000; // sats, 사용자가 실수로 너무 큰 금액을 수수료로 지불하지 않도록 지정했습니다.
-  final networkOffMessage = t.alert.error_send.poor_network;
   final TextEditingController _customFeeController = TextEditingController();
   List<FeeInfoWithLevel> feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
