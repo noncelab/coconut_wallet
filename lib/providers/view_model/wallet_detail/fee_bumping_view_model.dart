@@ -38,6 +38,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final int _walletId;
   Transaction? _bumpingTransaction;
   late WalletListItemBase _walletListItemBase;
+  late bool? _isNetworkOn;
 
   final List<FeeInfoWithLevel> _feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
@@ -59,6 +60,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._walletProvider,
     this._addressRepository,
     this._utxoRepository,
+    this._isNetworkOn,
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
   }
@@ -70,6 +72,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   List<FeeInfoWithLevel> get feeInfos => _feeInfos;
   bool? get didFetchRecommendedFeesSuccessfully => _isFeeFetchSuccess;
   bool? get isInitializedSuccess => _isInitializedSuccess;
+  bool get isNetworkOn => _isNetworkOn == true;
 
   TransactionRecord get transaction => _pendingTx;
   int get walletId => _walletId;
@@ -140,6 +143,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setTxWaitingForSign(
         Psbt.fromTransaction(_bumpingTransaction!, _walletListItemBase.walletBase).serialize());
     _sendInfoProvider.setFeeBumpfingType(feeBumpingType);
+  }
+
+  void setIsNetworkOn(bool? isNetworkOn) {
+    _isNetworkOn = isNetworkOn;
+    notifyListeners();
   }
 
   List<TransactionAddress> _getExternalOutputs() => _pendingTx.outputAddressList

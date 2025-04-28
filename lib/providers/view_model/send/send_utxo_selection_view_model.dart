@@ -45,7 +45,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final UtxoTagProvider _tagProvider;
   final SendInfoProvider _sendInfoProvider;
-  final ConnectivityProvider _connectivityProvider;
   final NodeProvider _nodeProvider;
   final UpbitConnectModel _upbitConnectProvider;
   late int? _bitcoinPriceKrw;
@@ -54,6 +53,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   late String _changeAddressDerivationPath;
   late WalletBase _walletBase;
   late bool _isMaxMode;
+  late bool? _isNetworkOn;
   late Transaction _transaction;
   late int? _requiredSignature;
   late int? _totalSigner;
@@ -88,9 +88,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       this._walletProvider,
       this._tagProvider,
       this._sendInfoProvider,
-      this._connectivityProvider,
       this._nodeProvider,
       this._upbitConnectProvider,
+      this._isNetworkOn,
       UtxoOrder initialUtxoOrder) {
     _walletId = _sendInfoProvider.walletId!;
     _walletBaseItem = _walletProvider.getWalletById(_walletId);
@@ -209,6 +209,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   bool get isMaxMode => _isMaxMode;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
+  bool get isNetworkOn => _isNetworkOn == true;
   int get needAmount => _sendAmount + (_estimatedFee ?? 0);
 
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus => _recommendedFeeFetchStatus;
@@ -246,8 +247,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isNetworkOn() {
-    return _connectivityProvider.isNetworkOn == true;
+  void setIsNetworkOn(bool? isNetworkOn) {
+    _isNetworkOn = isNetworkOn;
+    notifyListeners();
   }
 
   void deselectAllUtxo() {
