@@ -122,12 +122,16 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             child: Stack(
               children: [
                 SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   child: Container(
                     width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.sizeOf(context).height -
+                        kToolbarHeight -
+                        MediaQuery.of(context).padding.top,
                     padding: Paddings.container,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         CoconutLayout.spacing_1000h,
                         Text(
