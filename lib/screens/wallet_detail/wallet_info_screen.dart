@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -49,15 +50,16 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       ),
       child: Consumer<WalletInfoViewModel>(
         builder: (_, viewModel, child) {
-          return Scaffold(
-            backgroundColor: CoconutColors.black,
-            appBar: CoconutAppBar.build(
-                title: t.wallet_info_screen.title(name: viewModel.walletName), context: context),
-            body: SafeArea(
-              child: SingleChildScrollView(
-                child: Stack(
-                  children: [
-                    Column(
+          return Stack(
+            children: [
+              Scaffold(
+                backgroundColor: CoconutColors.black,
+                appBar: CoconutAppBar.build(
+                    title: t.wallet_info_screen.title(name: viewModel.walletName),
+                    context: context),
+                body: SafeArea(
+                  child: SingleChildScrollView(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Padding(
@@ -242,40 +244,40 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                         ),
                       ],
                     ),
-                    Positioned(
-                      top: _walletTooltipIconPosition.dy - _tooltipTopPadding,
-                      right: MediaQuery.of(context).size.width -
-                          _walletTooltipIconPosition.dx -
-                          (_walletTooltipIconRenderBox == null
-                              ? 0
-                              : _walletTooltipIconRenderBox!.size.width) -
-                          10,
-                      child: CoconutToolTip(
-                        width: MediaQuery.sizeOf(context).width,
-                        isBubbleClipperSideLeft: false,
-                        tooltipType: CoconutTooltipType.placement,
-                        richText: RichText(
-                          text: TextSpan(
-                            text: widget.isMultisig
-                                ? t.tooltip.multisig_wallet(
-                                    total: viewModel.multisigTotalSignerCount,
-                                    count: viewModel.multisigRequiredSignerCount)
-                                : t.tooltip.mfp,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.black).merge(
-                                  const TextStyle(
-                                    height: 1.3,
-                                  ),
-                                ),
-                          ),
-                        ),
-                        onTapRemove: _removeTooltip,
-                        isPlacementTooltipVisible: _tooltipRemainingTime > 0,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              Positioned(
+                top: _tooltipTopPadding,
+                right: MediaQuery.of(context).size.width -
+                    _walletTooltipIconPosition.dx -
+                    (_walletTooltipIconRenderBox == null
+                        ? 0
+                        : _walletTooltipIconRenderBox!.size.width) -
+                    10,
+                child: CoconutToolTip(
+                  width: MediaQuery.sizeOf(context).width,
+                  isBubbleClipperSideLeft: false,
+                  tooltipType: CoconutTooltipType.placement,
+                  richText: RichText(
+                    text: TextSpan(
+                      text: widget.isMultisig
+                          ? t.tooltip.multisig_wallet(
+                              total: viewModel.multisigTotalSignerCount,
+                              count: viewModel.multisigRequiredSignerCount)
+                          : t.tooltip.mfp,
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.black).merge(
+                            const TextStyle(
+                              height: 1.3,
+                            ),
+                          ),
+                    ),
+                  ),
+                  onTapRemove: _removeTooltip,
+                  isPlacementTooltipVisible: _tooltipRemainingTime > 0,
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -303,7 +305,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           _walletTooltipKey.currentContext?.findRenderObject() as RenderBox?;
       if (_walletTooltipIconRenderBox != null) {
         _walletTooltipIconPosition = _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
-        _tooltipTopPadding = MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
+        _tooltipTopPadding =
+            _walletTooltipIconPosition.dy + _walletTooltipIconRenderBox!.size.height;
+
+        debugPrint('MediaQuery.paddingOf(context).top = ${MediaQuery.paddingOf(context).top}');
+        debugPrint('kToolbarHeight = $kToolbarHeight');
+        debugPrint(
+            '_walletTooltipIconRenderBox!.size.height: ${_walletTooltipIconRenderBox!.size.height}');
+        debugPrint('_tooltipTopPadding: $_tooltipTopPadding');
       }
     } catch (e) {
       debugPrint('Tooltip position initialization failed: $e');

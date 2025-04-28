@@ -30,6 +30,13 @@ class _WalletInfoEditBottomSheetState extends State<WalletInfoEditBottomSheet> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    _textFieldFocusNode.requestFocus();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<WalletInfoEditViewModel>(
       create: (context) => WalletInfoEditViewModel(
@@ -108,9 +115,11 @@ class _WalletInfoEditBottomSheetState extends State<WalletInfoEditBottomSheet> {
                               focusNode: _textFieldFocusNode,
                               onChanged: (text) {},
                               backgroundColor: CoconutColors.white.withOpacity(0.15),
+                              errorColor: CoconutColors.hotPink,
+                              placeholderColor: CoconutColors.gray700,
                               activeColor: CoconutColors.white,
-                              maxLength: 15,
                               cursorColor: CoconutColors.white,
+                              maxLength: 15,
                               errorText: viewModel.isNameDuplicated || viewModel.isSameAsCurrentName
                                   ? t.wallet_info_screen.duplicated_name
                                   : '',
