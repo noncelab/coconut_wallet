@@ -20,6 +20,7 @@ import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class SendFeeSelectionScreen extends StatefulWidget {
@@ -81,12 +82,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                 },
                 nextButtonTitle: t.complete,
                 onNextPressed: () {
-                  if (_viewModel.isNetworkOn != true) {
-                    CustomToast.showWarningToast(
-                        context: context, text: ErrorCodes.networkError.message);
-                    return;
-                  }
-
                   int satsPerVb = _customSelected
                       ? _customFeeInfo!.satsPerVb!
                       : feeInfos
@@ -130,9 +125,11 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
                         if (viewModel.isNetworkOn == false)
                           _buildFixedTooltip(
-                            tooltipState: CoconutTooltipState.warning,
-                            richText:
-                                RichText(text: TextSpan(text: ErrorCodes.networkError.message)),
+                            tooltipState: CoconutTooltipState.error,
+                            richText: RichText(
+                              text: TextSpan(text: ErrorCodes.networkError.message),
+                            ),
+                            isNetworkError: true,
                           ),
                         if (viewModel.isNetworkOn == true && _isRecommendedFeeFetchSuccess == false)
                           _buildFixedTooltip(
@@ -155,7 +152,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                             richText: RichText(text: TextSpan(text: t.errors.insufficient_balance)),
                           ),
                         Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                             child: Column(
                               children: [
                                 ...List.generate(
@@ -401,7 +398,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Widget _buildFixedTooltip(
-      {required RichText richText, CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
+      {required RichText richText,
+      CoconutTooltipState tooltipState = CoconutTooltipState.info,
+      bool isNetworkError = false}) {
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: CoconutLayout.defaultPadding),
         child: CoconutToolTip(
@@ -409,6 +408,15 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
           showIcon: true,
           tooltipType: CoconutTooltipType.fixed,
           tooltipState: tooltipState,
+          icon: isNetworkError
+              ? SvgPicture.asset(
+                  'assets/svg/triangle-warning.svg',
+                  colorFilter: const ColorFilter.mode(
+                    CoconutColors.hotPink,
+                    BlendMode.srcIn,
+                  ),
+                )
+              : null,
         ));
   }
 }

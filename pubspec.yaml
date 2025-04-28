@@ -73,7 +73,7 @@ dependencies:
   coconut_design_system: 
     git:
       url: https://github.com/noncelab/coconut_design_system.git
-      ref: feat/17-pulldown-menu-group
+      ref: main
   coconut_lib: ^0.9.2
   realm: ^20.0.0
   cryptography: ^2.7.0
