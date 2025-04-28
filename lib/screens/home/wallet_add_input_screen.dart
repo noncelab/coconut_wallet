@@ -100,10 +100,11 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
     }
 
     setState(() {
-      _isButtonEnabled = viewModel.isExtendedPublicKey(
-            _inputController.text,
-          ) ||
-          viewModel.normalizeDescriptor(_inputController.text);
+      _isButtonEnabled = viewModel.isValidCharacters(_inputController.text) &&
+          (viewModel.isExtendedPublicKey(
+                _inputController.text,
+              ) ||
+              viewModel.normalizeDescriptor(_inputController.text));
       _isError = !_isButtonEnabled;
     });
   }
@@ -156,7 +157,9 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                   onChanged: (text) {},
                                   isError: _isError,
                                   isLengthVisible: false,
-                                  errorText: t.wallet_add_input_screen.error_text,
+                                  errorText: !viewModel.isValidCharacters(_inputController.text)
+                                      ? t.wallet_add_input_screen.invalid_character_error_text
+                                      : t.wallet_add_input_screen.format_error_text,
                                   placeholderText: t.wallet_add_input_screen.placeholder_text,
                                   suffix: IconButton(
                                     iconSize: 14,

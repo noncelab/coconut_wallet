@@ -39,6 +39,10 @@ class WalletAddInputViewModel extends ChangeNotifier {
     }
   }
 
+  bool isValidCharacters(String text) {
+    return RegExp(r"^[a-zA-Z0-9#*() ;<>/'`\[`\]]+$").hasMatch(text);
+  }
+
   Future<ResultOfSyncFromVault> addWallet() async {
     assert(validExtendedPublicKey != null || validDescriptor != null);
     if (validExtendedPublicKey != null) {
