@@ -23,6 +23,7 @@ class NetworkErrorTooltip extends StatelessWidget {
           richText: RichText(
             text: TextSpan(
               text: t.errors.network_error,
+              style: CoconutTypography.body3_12,
             ),
           ),
           showIcon: true,
