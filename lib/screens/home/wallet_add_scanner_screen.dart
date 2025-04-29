@@ -33,7 +33,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
   bool _isProcessing = false;
-  Timer? _failedScanningTimer;
   late WalletAddScannerViewModel _viewModel;
 
   @override
@@ -240,17 +239,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   }
 
   // TODO: 변경된 로직에 맞게 에러 핸들링 점검
-  void _onFailedScanning(String message) {
+  void _onFailedScanning(String message) async {
     if (_isProcessing) return;
     _isProcessing = true;
-
-    // _isProcessing 상관 없이 2번 연속 호출되는 현상으로 추가됨
-    if (_failedScanningTimer?.isActive ?? false) {
-      return;
-    }
-    _failedScanningTimer = Timer(const Duration(milliseconds: 500), () {});
-
-    Logger.log("[SignedPsbtScannerScreen] onFailed: $message");
 
     String errorMessage;
     if (message.contains('Invalid Scheme')) {
@@ -259,8 +250,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       errorMessage = t.alert.scan_failed_description(error: message);
     }
 
-    CustomDialogs.showCustomAlertDialog(context, title: t.alert.scan_failed, message: errorMessage,
-        onConfirm: () {
+    await CustomDialogs.showCustomAlertDialog(context,
+        title: t.alert.scan_failed, message: errorMessage, onConfirm: () {
       _isProcessing = false;
       Navigator.pop(context);
     });

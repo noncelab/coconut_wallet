@@ -152,7 +152,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     }
   }
 
-  void _onFailedScanning(String message) {
+  void _onFailedScanning(String message) async {
     if (_isProcessing) return;
     _isProcessing = true;
 
@@ -171,8 +171,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       errorMessage = t.alert.scan_failed_description(error: message);
     }
 
-    CustomDialogs.showCustomAlertDialog(context, title: t.alert.scan_failed, message: errorMessage,
-        onConfirm: () {
+    await CustomDialogs.showCustomAlertDialog(context,
+        title: t.alert.scan_failed, message: errorMessage, onConfirm: () {
       _isProcessing = false;
       Navigator.pop(context);
     });

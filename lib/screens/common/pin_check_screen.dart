@@ -149,10 +149,10 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     }
   }
 
-  void _showDialog() {
+  void _showDialog() async {
     vibrateMedium();
 
-    CustomDialogs.showCustomAlertDialog(context,
+    await CustomDialogs.showCustomAlertDialog(context,
         title: t.alert.forgot_password.title,
         message: t.alert.forgot_password.description,
         confirmButtonText: t.alert.forgot_password.btn_reset,
