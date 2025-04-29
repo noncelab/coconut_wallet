@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
@@ -330,8 +331,19 @@ class WalletProvider extends ChangeNotifier {
     assert(sameNameIndex == -1);
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
-    final index =
-        _walletItemList.indexWhere((element) => element.descriptor == watchOnlyWallet.descriptor);
+    final index = _walletItemList.indexWhere((element) {
+      if (element.descriptor == watchOnlyWallet.descriptor) {
+        return true;
+      }
+      final elementParentFingerprint =
+          ExtendedPublicKey.parse(Descriptor.parse(element.descriptor).getPublicKey(0))
+              .parentFingerprint;
+      final watchOnlyParentFingerprint =
+          ExtendedPublicKey.parse(Descriptor.parse(watchOnlyWallet.descriptor).getPublicKey(0))
+              .parentFingerprint;
+
+      return elementParentFingerprint == watchOnlyParentFingerprint;
+    });
     bool isMultisig = watchOnlyWallet.signers != null;
 
     if (index != -1) {
