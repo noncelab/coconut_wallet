@@ -17,7 +17,6 @@ class WalletAddInputViewModel extends ChangeNotifier {
 
   bool isExtendedPublicKey(String xpub) {
     try {
-      xpub = xpub.trim();
       ExtendedPublicKey.parse(xpub);
       validExtendedPublicKey = xpub;
       validDescriptor = null;
@@ -30,7 +29,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
 
   bool normalizeDescriptor(String descriptor) {
     try {
-      validDescriptor = DescriptorUtil.normalizeDescriptor(descriptor.trim());
+      validDescriptor = DescriptorUtil.normalizeDescriptor(descriptor);
       validExtendedPublicKey = null;
       return true;
     } catch (_) {
@@ -40,7 +39,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
   }
 
   bool isValidCharacters(String text) {
-    return RegExp(r"^[a-zA-Z0-9#*() ;<>/'`\[`\]]+$").hasMatch(text);
+    return RegExp(r"^[a-zA-Z0-9#*();<>/'`\[\]]+$").hasMatch(text);
   }
 
   Future<ResultOfSyncFromVault> addWallet() async {

@@ -9,6 +9,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -143,6 +144,9 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                             children: [
                               CoconutLayout.spacing_600h,
                               CoconutTextField(
+                                  textInputFormatter: [
+                                    FilteringTextInputFormatter.deny(RegExp(r'\s+')),
+                                  ],
                                   textAlign: TextAlign.left,
                                   backgroundColor: CoconutColors.gray800,
                                   errorColor: CoconutColors.hotPink,
