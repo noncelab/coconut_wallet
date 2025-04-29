@@ -74,8 +74,6 @@ void main() {
       // ignore
     }
 
-    NetworkType.setNetworkType(NetworkType.regtest);
-
     String envFile = '$appFlavor.env';
     await dotenv.load(fileName: envFile);
     CoconutWalletApp.kElectrumHost = dotenv.env[DotenvKeys.electrumHost] ?? '';
@@ -84,6 +82,8 @@ void main() {
     CoconutWalletApp.kElectrumIsSSL = dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
     CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
     CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
+    CoconutWalletApp.kNetworkType = NetworkType.getNetworkType(dotenv.env[DotenvKeys.networkType]!);
+    NetworkType.setNetworkType(CoconutWalletApp.kNetworkType);
     runApp(const CoconutWalletApp());
   }, (error, stackTrace) {
     Logger.error(">>>>> runZoneGuarded error: $error");

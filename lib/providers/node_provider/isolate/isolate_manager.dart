@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -113,9 +114,10 @@ class IsolateManager {
     _receivePortListening = false;
   }
 
-  Future<void> initialize(String host, int port, bool ssl) async {
+  Future<void> initialize(String host, int port, bool ssl, NetworkType networkType) async {
     try {
-      Logger.log('IsolateManager: initializing with $host:$port, ssl=$ssl');
+      Logger.log(
+          'IsolateManager: initializing with $host:$port, ssl=$ssl, networkType=$networkType');
 
       // 기존 자원 정리
       if (_isolate != null) {
@@ -129,7 +131,7 @@ class IsolateManager {
       _isolateReady = Completer<void>();
 
       final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
-      final data = IsolateConnectorData(isolateToMainSendPort, host, port, ssl);
+      final data = IsolateConnectorData(isolateToMainSendPort, host, port, ssl, networkType);
 
       Logger.log('IsolateManager: spawning new isolate');
       _isolate = await Isolate.spawn<IsolateConnectorData>(_isolateEntry, data);
@@ -191,8 +193,7 @@ class IsolateManager {
 
   /// Isolate 내부에서 실행되는 메인 로직
   static void _isolateEntry(IsolateConnectorData data) async {
-    // TODO: 메인넷/테스트넷 설정을 isolate 스레드에서도 적용해야 함. (환경변수로 등록하면 좋을듯)
-    NetworkType.setNetworkType(NetworkType.regtest);
+    NetworkType.setNetworkType(data.networkType);
 
     final isolateFromMainReceivePort = ReceivePort('isolateFromMainReceivePort');
 

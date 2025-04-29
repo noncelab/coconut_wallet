@@ -18,6 +18,8 @@ class NodeProvider extends ChangeNotifier {
   final String _host;
   final int _port;
   final bool _ssl;
+  final NetworkType _networkType;
+
   NodeStateManager? _stateManager;
   StreamSubscription<IsolateStateMessage>? _stateSubscription;
 
@@ -34,7 +36,8 @@ class NodeProvider extends ChangeNotifier {
 
   bool get needSubscribe => _needSubscribeWallets;
 
-  NodeProvider(this._host, this._port, this._ssl, {IsolateManager? isolateManager})
+  NodeProvider(this._host, this._port, this._ssl, this._networkType,
+      {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
     initialize();
   }
@@ -47,7 +50,7 @@ class NodeProvider extends ChangeNotifier {
     try {
       _initCompleter = Completer<void>();
       _createStateManager();
-      await _isolateManager.initialize(host, port, ssl);
+      await _isolateManager.initialize(host, port, ssl, _networkType);
       _initCompleter?.complete();
       _subscribeToStateChanges();
       notifyListeners();

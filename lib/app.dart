@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -60,6 +61,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late bool kElectrumIsSSL;
   static late String kMempoolHost;
   static late String kFaucetHost;
+  static late NetworkType kNetworkType;
   const CoconutWalletApp({super.key});
 
   @override
@@ -141,10 +143,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ProxyProvider5<AddressRepository, TransactionRepository, UtxoRepository,
             SubscriptionRepository, WalletRepository, NodeProvider>(
           create: (context) => NodeProvider(
-            CoconutWalletApp.kElectrumHost,
-            CoconutWalletApp.kElectrumPort,
-            CoconutWalletApp.kElectrumIsSSL,
-          ),
+              CoconutWalletApp.kElectrumHost,
+              CoconutWalletApp.kElectrumPort,
+              CoconutWalletApp.kElectrumIsSSL,
+              CoconutWalletApp.kNetworkType),
           update: (context, addressRepository, transactionRepository, utxoRepository,
                   subscribeRepository, walletRepository, previous) =>
               previous ??
@@ -152,6 +154,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 CoconutWalletApp.kElectrumHost,
                 CoconutWalletApp.kElectrumPort,
                 CoconutWalletApp.kElectrumIsSSL,
+                CoconutWalletApp.kNetworkType,
               ),
         ),
 
