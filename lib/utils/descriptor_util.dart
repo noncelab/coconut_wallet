@@ -12,8 +12,8 @@ class DescriptorUtil {
   static String wrapWithDescriptorFunction(String descriptor) {
     // Invalid Descriptor Function인 경우 처리를 막는다. ex: invalid(~)
     if (descriptor.contains("(") || descriptor.contains(")")) {
-      Logger.log("Invalid descriptor function");
-      throw const FormatException('Invalid descriptor function');
+      Logger.log('Invalid descriptor function: $descriptor');
+      throw FormatException('Invalid descriptor function: $descriptor');
     }
 
     return '$allowedDescriptorFunction($descriptor)';
@@ -68,21 +68,21 @@ class DescriptorUtil {
   static void validateBracelets(String descriptor) {
     // 중괄호의 수가 각각 1개씩 있어야 한다.
     if ('('.allMatches(descriptor).length != 1 || ')'.allMatches(descriptor).length != 1) {
-      Logger.log("Invalid length of bracelets: $descriptor");
-      throw FormatException("Invalid length of bracelets: $descriptor");
+      Logger.log("Invalid length of () bracelets: $descriptor");
+      throw FormatException("Invalid length of () bracelets: $descriptor");
     }
 
     // 마지막 중괄호 이후 문자 있는지 확인(체크섬이 있는 경우 제외)
     if (!descriptor.contains("#") && descriptor.substring(descriptor.lastIndexOf(')')).length > 1) {
-      Logger.log("Invalid letters after bracelet: $descriptor");
-      throw FormatException("Invalid letters after bracelet: $descriptor");
+      Logger.log("Invalid letters after ) bracelet: $descriptor");
+      throw FormatException("Invalid letters after ) bracelet: $descriptor");
     }
 
     // MFP를 사용하는 경우 wpkh( [ 사이에 문자가 있는지 확인한다.
     if (descriptor.contains('[') &&
         descriptor.substring(descriptor.indexOf('('), descriptor.indexOf('[')).length > 1) {
-      Logger.log("Invalid letters before bracelet: $descriptor");
-      throw FormatException("Invalid letters before bracelet: $descriptor");
+      Logger.log("Invalid letters after ( bracelet: $descriptor");
+      throw FormatException("Invalid letters after ( bracelet: $descriptor");
     }
 
     // 대괄호의 개수가 같아야 하며 각각 2개 이상 존재할 수 없다.
@@ -91,8 +91,8 @@ class DescriptorUtil {
     if (squareBracketStartLength != squareBracketEndLength ||
         squareBracketStartLength > 1 ||
         squareBracketEndLength > 1) {
-      Logger.log("Invalid length of bracelets: $descriptor");
-      throw FormatException("Invalid length of bracelets: $descriptor");
+      Logger.log("Invalid length of [] bracelets: $descriptor");
+      throw FormatException("Invalid length of [] bracelets: $descriptor");
     }
   }
 
