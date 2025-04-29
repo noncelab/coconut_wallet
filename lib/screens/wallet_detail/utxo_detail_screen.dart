@@ -299,9 +299,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.utxo.to,
-                  style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                CopyTextContainer(
+                  text: widget.utxo.to,
+                  textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                 ),
                 const SizedBox(height: 2),
                 Row(children: [
