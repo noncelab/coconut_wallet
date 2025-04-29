@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
+import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -298,9 +299,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  widget.utxo.to,
-                  style: CoconutTypography.body2_14_Number,
+                CopyTextContainer(
+                  text: widget.utxo.to,
+                  textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                 ),
                 const SizedBox(height: 2),
                 Row(children: [
@@ -344,7 +345,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           label: t.tx_memo,
           child: Text(
             memo?.isNotEmpty == true ? memo! : '-',
-            style: CoconutTypography.body2_14_Number,
+            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
           ),
         ),
         _divider
@@ -362,9 +363,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             Navigator.pushNamed(context, '/transaction-detail',
                 arguments: {'id': widget.id, 'txHash': widget.utxo.transactionHash});
           },
-          child: Text(
-            widget.utxo.transactionHash,
-            style: CoconutTypography.body2_14_Number,
+          child: CopyTextContainer(
+            text: widget.utxo.transactionHash,
+            textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
           ),
         ),
         _divider,
@@ -384,7 +385,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         },
         child: Text(
           widget.utxo.blockHeight != 0 ? widget.utxo.blockHeight.toString() : '-',
-          style: CoconutTypography.body2_14_Number,
+          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
         ));
   }
 
@@ -400,7 +401,10 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (selectedTags.isEmpty) ...{
-                Text('-', style: CoconutTypography.body2_14_Number)
+                Text(
+                  '-',
+                  style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                )
               } else ...{
                 Wrap(
                   spacing: 4,
