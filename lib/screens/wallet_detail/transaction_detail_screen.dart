@@ -17,6 +17,7 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -204,7 +205,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                 height: tx.blockHeight.toString(),
                                 count: _confirmedCountText(tx, viewModel.currentBlock?.height))
                             : '-',
-                        style: CoconutTypography.body1_16_Number,
+                        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                       ),
                     ),
                     TransactionDetailScreen._divider,
@@ -215,21 +216,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       onTapUnderlineButton: () {},
                       child: Text(
                         '${tx.feeRate.toStringAsFixed(2)} sats/vb',
-                        style: CoconutTypography.body1_16_Number,
+                        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                       ),
                     ),
                     TransactionDetailScreen._divider,
                     UnderlineButtonItemCard(
-                        label: t.tx_id,
-                        underlineButtonLabel: t.view_mempool,
-                        onTapUnderlineButton: () {
-                          launchUrl(Uri.parse(
-                              "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
-                        },
-                        child: Text(
-                          viewModel.isSendType! ? tx.transactionHash : widget.txHash,
-                          style: CoconutTypography.body1_16_Number,
-                        )),
+                      label: t.tx_id,
+                      underlineButtonLabel: t.view_mempool,
+                      onTapUnderlineButton: () {
+                        launchUrl(
+                            Uri.parse("${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
+                      },
+                      child: CopyTextContainer(
+                        text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
+                        textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                      ),
+                    ),
                     TransactionDetailScreen._divider,
                     UnderlineButtonItemCard(
                         label: t.tx_memo,
@@ -253,7 +255,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         },
                         child: Text(
                           txMemo?.isNotEmpty == true ? txMemo! : '-',
-                          style: CoconutTypography.body1_16_Number,
+                          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                         )),
                     const SizedBox(
                       height: 40,

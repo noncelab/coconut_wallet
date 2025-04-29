@@ -234,6 +234,7 @@ flutter:
     - assets/svg/seed-signer.svg
     - assets/svg/keystone.svg
     - assets/svg/zpub.svg
+    - assets/svg/copy.svg
 
 
   fonts:
