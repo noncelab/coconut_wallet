@@ -54,11 +54,12 @@ void main() {
 
     setUp(() async {
       if (realmManager == null) {
-        realmManager = TestRealmManager()..init(false);
+        realmManager = await setupTestRealmManager();
       } else {
         realmManager!.dispose();
-        realmManager = TestRealmManager()..init(false);
+        realmManager = await setupTestRealmManager();
       }
+      // await Future.delayed(const Duration(milliseconds: 300));
       transactionRepository = TransactionRepository(realmManager!);
       utxoRepository = UtxoRepository(realmManager!);
       walletRepository = WalletRepository(realmManager!);
@@ -141,7 +142,7 @@ void main() {
           transactionHash: originalTx.transactionHash,
         );
 
-        transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
+        await transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
 
         // When
         final result = await rbfService.isRbfTransaction(walletId, utxo);
@@ -176,7 +177,7 @@ void main() {
           transactionHash: originalTx.transactionHash,
         );
 
-        transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
+        await transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
         utxoRepository.addAllUtxos(walletId, [utxo]);
 
         // When
@@ -370,7 +371,8 @@ void main() {
         final firstRbfTxRecord = TransactionMock.createRbfTransactionRecord(
           transactionHash: firstRbfTx.transactionHash,
         );
-        transactionRepository.addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord]);
+        await transactionRepository
+            .addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord]);
 
         final beforeRbfHistoryList =
             transactionRepository.getRbfHistoryList(walletId, firstRbfTx.transactionHash);
@@ -428,7 +430,8 @@ void main() {
           txRecordMap: txRecordMap,
         );
 
-        transactionRepository.addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord]);
+        await transactionRepository
+            .addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord]);
         transactionRepository.addAllRbfHistory([
           RbfHistoryDto(
             walletId: walletId,
