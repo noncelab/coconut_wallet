@@ -192,7 +192,6 @@ flutter:
     - assets/svg/status-impossible.svg
     - assets/svg/status-loading.svg
     - assets/svg/faucet.svg
-    - assets/svg/book.svg
     - assets/svg/wallet-info.svg
     - assets/svg/close.svg
     - assets/svg/close-bold.svg

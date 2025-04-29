@@ -47,6 +47,7 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
             CoconutLayout.spacing_600h,
             CopyTextContainer(
               text: widget.qrData,
+              textStyle: CoconutTypography.body2_14,
             ),
           ],
         ));

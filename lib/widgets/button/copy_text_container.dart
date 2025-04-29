@@ -89,7 +89,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
                     CoconutTypography.body1_16_Number.setColor(_textColor),
               ),
             ),
-            CoconutLayout.spacing_800w,
+            CoconutLayout.spacing_400w,
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
