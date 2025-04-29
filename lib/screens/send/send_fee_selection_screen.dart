@@ -20,7 +20,6 @@ import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class SendFeeSelectionScreen extends StatefulWidget {
@@ -402,9 +401,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Widget _buildFixedTooltip(
-      {required RichText richText,
-      CoconutTooltipState tooltipState = CoconutTooltipState.info,
-      bool isNetworkError = false}) {
+      {required RichText richText, CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: CoconutLayout.defaultPadding),
       child: CoconutToolTip(
@@ -412,15 +409,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         showIcon: true,
         tooltipType: CoconutTooltipType.fixed,
         tooltipState: tooltipState,
-        icon: isNetworkError
-            ? SvgPicture.asset(
-                'assets/svg/triangle-warning.svg',
-                colorFilter: const ColorFilter.mode(
-                  CoconutColors.hotPink,
-                  BlendMode.srcIn,
-                ),
-              )
-            : null,
       ),
     );
   }
