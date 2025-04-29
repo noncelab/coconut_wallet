@@ -396,7 +396,6 @@ alert:
     broadcasting_failed: "[전송 실패]\n$error"
     insufficient_balance: "잔액이 부족해요"
     minimum_amount: "$bitcoin BTC 부터 전송할 수 있어요"
-    poor_network: "네트워크 상태가 좋지 않아\n처음으로 돌아갑니다."
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
   signed_psbt:
     invalid_qr: "잘못된 QR코드예요.\n다시 확인해 주세요."

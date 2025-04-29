@@ -15,7 +15,6 @@ class SocketManager {
   SocketConnectionStatus _connectionStatus = SocketConnectionStatus.reconnecting;
   int _connectionAttempts = 0;
   final int _maxConnectionAttempts;
-  final int _reconnectDelaySeconds;
 
   SocketConnectionStatus get connectionStatus => _connectionStatus;
 
@@ -39,13 +38,9 @@ class SocketManager {
   /// [factory]: 테스트용 모킹 객체를 주입하기 위한 클래스로 실제 사용 시 별도로 지정하지 않아도 됨 <br/>
   /// [maxConnectionAttempts]: 최대 연결 시도 횟수, default: 30 <br/>
   /// [reconnectDelaySeconds]: 재연결 주기, default: 10 (s) <br/>
-  SocketManager(
-      {SocketFactory? factory,
-      int maxConnectionAttempts = kSocketMaxConnectionAttempts,
-      int reconnectDelaySeconds = kSocketReconnectDelaySeconds})
+  SocketManager({SocketFactory? factory, int maxConnectionAttempts = kSocketMaxConnectionAttempts})
       : socketFactory = factory ?? DefaultSocketFactory(),
-        _maxConnectionAttempts = maxConnectionAttempts,
-        _reconnectDelaySeconds = reconnectDelaySeconds {
+        _maxConnectionAttempts = maxConnectionAttempts {
     _streamController.stream.listen(_handleResponse);
   }
 
@@ -79,17 +74,16 @@ class SocketManager {
 
     _connectionStatus = SocketConnectionStatus.connecting;
     try {
-      if (ssl) {
-        _socket = await socketFactory.createSecureSocket(host, port);
+      if (_ssl) {
+        _socket = await socketFactory.createSecureSocket(_host, _port);
       } else {
-        _socket = await socketFactory.createSocket(host, port);
+        _socket = await socketFactory.createSocket(_host, _port);
       }
       _connectionStatus = SocketConnectionStatus.connected;
       _connectionAttempts = 0;
       _socket!.listen(_onData, onError: _onError, onDone: _onDone, cancelOnError: true);
     } catch (e) {
-      _connectionStatus = SocketConnectionStatus.reconnecting;
-      _scheduleReconnect(host, port, ssl: ssl);
+      _connectionStatus = SocketConnectionStatus.terminated;
     }
   }
 
@@ -107,8 +101,7 @@ class SocketManager {
   }
 
   void _onError(error) {
-    _connectionStatus = SocketConnectionStatus.reconnecting;
-    _scheduleReconnect(_host, _port, ssl: _ssl);
+    _connectionStatus = SocketConnectionStatus.terminated;
   }
 
   Future<void> send(String data) async {
@@ -121,14 +114,6 @@ class SocketManager {
       _connectionStatus = SocketConnectionStatus.reconnecting;
       rethrow;
     }
-  }
-
-  void _scheduleReconnect(String host, int port, {bool ssl = true}) {
-    Future.delayed(Duration(seconds: _reconnectDelaySeconds), () {
-      connect(host, port, ssl: ssl).then((any) {
-        onReconnect?.call();
-      });
-    });
   }
 
   void _handleResponse(String data) {

@@ -36,6 +36,7 @@ class IsolateManager {
   StreamController<IsolateStateMessage>? _stateController;
   Stream<IsolateStateMessage>? _stateStream;
   bool _receivePortListening = false;
+  bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
   // 매번 새로운 스트림을 생성하도록 getter 추가
   Stream<IsolateStateMessage> get stateStream {
@@ -98,8 +99,6 @@ class IsolateManager {
     Logger.log("IsolateManager.entryInitialize: Handler created successfully");
     return isolateHandler;
   }
-
-  bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
   IsolateManager() {
     _isolateReady = Completer<void>();
@@ -257,10 +256,19 @@ class IsolateManager {
 
       T result;
       try {
-        // 타임아웃 설정으로 무한 대기 방지
+        bool isSocketConnectionStatusMessage =
+            messageType == IsolateHandlerMessage.getSocketConnectionStatus;
+        // 소켓 연결 상태 확인 요청은 타임아웃 시간을 빠르게 처리
+        final timeLimit = isSocketConnectionStatusMessage
+            ? const Duration(milliseconds: 100)
+            : kIsolateResponseTimeout;
+
         result = await mainFromIsolateReceivePort.first.timeout(
-          kIsolateResponseTimeout,
+          timeLimit,
           onTimeout: () {
+            if (isSocketConnectionStatusMessage) {
+              return SocketConnectionStatus.terminated;
+            }
             throw TimeoutException('Isolate response timeout');
           },
         );
@@ -366,7 +374,7 @@ class IsolateManager {
 
   Future<SocketConnectionStatus> getSocketConnectionStatus() async {
     try {
-      return await _send(IsolateHandlerMessage.getSocketConnectionStatus, []);
+      return _send(IsolateHandlerMessage.getSocketConnectionStatus, []);
     } catch (e) {
       Logger.error('IsolateManager: Error in getSocketConnectionStatus: $e');
       return SocketConnectionStatus.terminated;

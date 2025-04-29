@@ -16,10 +16,10 @@ import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
+import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 enum FeeBumpingType {
@@ -60,6 +60,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   bool _isEstimatedFeeTooLow = false;
   bool _isEstimatedFeeTooHigh = false;
 
+  bool _isLoading = false;
+
   final FocusNode _feeTextFieldFocusNode = FocusNode();
 
   final TextEditingController _textEditingController = TextEditingController();
@@ -94,45 +96,50 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                       )
                     ],
                   ),
-                  body: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: CoconutLayout.defaultPadding,
-                        vertical: 30,
-                      ),
-                      height: MediaQuery.sizeOf(context).height -
-                          kToolbarHeight -
-                          MediaQuery.of(context).padding.top,
-                      child: Column(
-                        children: [
-                          _buildPendingTxFeeWidget(),
-                          CoconutLayout.spacing_200h,
-                          const Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 3,
-                            ),
-                            child: Divider(
-                              color: CoconutColors.gray800,
-                              height: 1,
-                            ),
+                  body: Stack(
+                    children: [
+                      SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CoconutLayout.defaultPadding,
+                            vertical: 30,
                           ),
-                          CoconutLayout.spacing_500h,
-                          _buildBumpingFeeTextFieldWidget(),
-                          CoconutLayout.spacing_400h,
-                          if (viewModel.isInitializedSuccess == true) ...[
-                            _buildRecommendFeeWidget(),
-                            CoconutLayout.spacing_300h,
-                            _buildCurrentMempoolFeesWidget(
-                              viewModel.feeInfos[0].satsPerVb ?? 0,
-                              viewModel.feeInfos[1].satsPerVb ?? 0,
-                              viewModel.feeInfos[2].satsPerVb ?? 0,
-                            ),
-                          ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
-                            _buildFetchFailedWidget()
-                        ],
+                          height: MediaQuery.sizeOf(context).height -
+                              kToolbarHeight -
+                              MediaQuery.of(context).padding.top,
+                          child: Column(
+                            children: [
+                              _buildPendingTxFeeWidget(),
+                              CoconutLayout.spacing_200h,
+                              const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 3,
+                                ),
+                                child: Divider(
+                                  color: CoconutColors.gray800,
+                                  height: 1,
+                                ),
+                              ),
+                              CoconutLayout.spacing_500h,
+                              _buildBumpingFeeTextFieldWidget(),
+                              CoconutLayout.spacing_400h,
+                              if (viewModel.isInitializedSuccess == true) ...[
+                                _buildRecommendFeeWidget(),
+                                CoconutLayout.spacing_300h,
+                                _buildCurrentMempoolFeesWidget(
+                                  viewModel.feeInfos[0].satsPerVb ?? 0,
+                                  viewModel.feeInfos[1].satsPerVb ?? 0,
+                                  viewModel.feeInfos[2].satsPerVb ?? 0,
+                                ),
+                              ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
+                                _buildFetchFailedWidget()
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                      if (_isLoading) const CoconutLoadingOverlay(),
+                    ],
                   ),
                 ),
                 FixedBottomButton(
@@ -183,7 +190,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   @override
   void initState() {
     super.initState();
-    context.loaderOverlay.show();
+    setState(() {
+      _isLoading = true;
+    });
     //_textEditingController.clear();
     _isRbf = widget.feeBumpingType == FeeBumpingType.rbf;
     _viewModel = _getViewModel(context);
@@ -203,7 +212,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       });
     }).whenComplete(() {
       if (mounted) {
-        context.loaderOverlay.hide();
+        setState(() {
+          _isLoading = false;
+        });
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (_viewModel.insufficientUtxos) {
             _showInsufficientUtxoToast(context);
