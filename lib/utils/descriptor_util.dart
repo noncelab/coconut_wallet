@@ -108,7 +108,8 @@ class DescriptorUtil {
 
     validateNativeSegwitDescriptor(finalDescriptor);
     validateChecksum(finalDescriptor);
-    Descriptor.parse(finalDescriptor, ignoreChecksum: !finalDescriptor.contains("#"));
+    SingleSignatureWallet.fromDescriptor(finalDescriptor,
+        ignoreChecksum: !finalDescriptor.contains("#"));
     return finalDescriptor;
   }
 }
