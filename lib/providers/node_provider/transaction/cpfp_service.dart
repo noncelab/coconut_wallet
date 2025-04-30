@@ -32,24 +32,6 @@ class CpfpService {
     return existingCpfpHistory != null;
   }
 
-  /// CPFP 대상이 되는 UTXO를 찾는 함수
-  Future<UtxoState?> findCpfpCandidate(int walletId, Transaction tx) async {
-    for (final input in tx.inputs) {
-      final utxoId = makeUtxoId(input.transactionHash, input.index);
-      final utxo = _utxoRepository.getUtxoState(walletId, utxoId);
-
-      if (utxo != null) {
-        final parentTxRecord =
-            _transactionRepository.getTransactionRecord(walletId, input.transactionHash);
-        // 부모 트랜잭션이 미확인 상태인 경우 CPFP 후보
-        if (parentTxRecord != null && parentTxRecord.blockHeight == 0) {
-          return utxo;
-        }
-      }
-    }
-    return null;
-  }
-
   /// CPFP 트랜잭션을 감지하는 함수
   Future<CpfpInfo?> detectCpfpTransaction(int walletId, Transaction tx) async {
     // 이미 CPFP 내역이 있는지 확인

@@ -5,7 +5,6 @@ import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.d
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -144,8 +143,6 @@ class TransactionRepository extends BaseRepository {
     final existingTxs = realm.query<RealmTransaction>('walletId == $walletId');
     final existingTxMap = {for (var tx in existingTxs) tx.transactionHash: tx};
 
-    int lastId = getLastId(realm, (RealmTransaction).toString());
-
     // 새 트랜잭션과 업데이트할 트랜잭션을 분리
     List<RealmTransaction> newTxsToAdd = [];
     List<MapEntry<RealmTransaction, TransactionRecord>> txsToUpdate = [];
@@ -153,13 +150,11 @@ class TransactionRepository extends BaseRepository {
     for (var tx in txList) {
       final existingTx = existingTxMap[tx.transactionHash];
 
-      // 기존 트랜잭션이 없거나, 모든 경우에 중복 저장 방지
       if (existingTx == null) {
-        // 완전 새로운 트랜잭션 - 추가
         newTxsToAdd.add(mapTransactionToRealmTransaction(
           tx,
           walletId,
-          ++lastId,
+          Object.hash(walletId, tx.transactionHash),
         ));
       } else if (existingTx.blockHeight == 0 && tx.blockHeight > 0) {
         // 미확인 -> 확인 상태로 변경된 트랜잭션 - 업데이트
@@ -183,10 +178,6 @@ class TransactionRepository extends BaseRepository {
         existingTx.timestamp = newTx.timestamp;
       }
     });
-
-    if (newTxsToAdd.isNotEmpty) {
-      saveLastId(realm, (RealmTransaction).toString(), lastId);
-    }
   }
 
   /// 해당 지갑에 존재하는 트랜잭션 해시 set 조회

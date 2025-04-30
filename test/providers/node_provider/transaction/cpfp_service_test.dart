@@ -16,7 +16,6 @@ import '../../../mock/wallet_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 import '../../../services/shared_prefs_service_test.mocks.dart';
 import 'rbf_service_test.mocks.dart';
-import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 
 @GenerateMocks([
   ElectrumService,
@@ -88,42 +87,11 @@ void main() {
       });
 
       test('기존 CPFP 내역이 없을 경우 false 반환', () async {
-        // When: 아무 내역도 없는 상태에서 조회
+        // When
         final result = cpfpService.hasExistingCpfpHistory(walletId, childTx.transactionHash);
 
-        // Then: false 반환
+        // Then
         expect(result, false);
-      });
-    });
-
-    group('findCpfpCandidate', () {
-      test('CPFP 후보가 있을 경우 해당 UTXO 반환', () async {
-        // Given
-        final utxo = UtxoMock.createOutgoingUtxo(
-          walletId: walletId,
-          transactionHash: parentTx.transactionHash,
-          index: 0,
-        );
-        utxoRepository.addAllUtxos(walletId, [utxo]);
-        final parentTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
-          transactionHash: parentTx.transactionHash,
-        );
-        await transactionRepository.addAllTransactions(walletId, [parentTxRecord]);
-
-        // When
-        final result = await cpfpService.findCpfpCandidate(walletId, childTx);
-
-        // Then
-        expect(result, isNotNull);
-        expect(result?.transactionHash, parentTx.transactionHash);
-      });
-
-      test('CPFP 후보가 없을 경우 null 반환', () async {
-        // When
-        final result = await cpfpService.findCpfpCandidate(walletId, childTx);
-
-        // Then
-        expect(result, isNull);
       });
     });
 
