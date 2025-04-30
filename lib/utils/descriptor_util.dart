@@ -65,7 +65,7 @@ class DescriptorUtil {
     }
   }
 
-  static void validateBracelets(String descriptor) {
+  static void validateNativeSegwitDescriptor(String descriptor) {
     // 중괄호의 수가 각각 1개씩 있어야 한다.
     if ('('.allMatches(descriptor).length != 1 || ')'.allMatches(descriptor).length != 1) {
       Logger.log("Invalid length of () bracelets: $descriptor");
@@ -106,7 +106,7 @@ class DescriptorUtil {
     final finalDescriptor =
         descriptorFunction == null ? wrapWithDescriptorFunction(descriptor) : descriptor;
 
-    validateBracelets(finalDescriptor);
+    validateNativeSegwitDescriptor(finalDescriptor);
     validateChecksum(finalDescriptor);
     Descriptor.parse(finalDescriptor, ignoreChecksum: !finalDescriptor.contains("#"));
     return finalDescriptor;
