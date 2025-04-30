@@ -25,7 +25,7 @@ typedef FetchedTransactionDetails = ({
 
 // Helper record for step 4 return type (Moved before class)
 typedef RbfCpfpDetectionResult = ({
-  Map<String, RbfInfo> sendingRbfInfoMap,
+  Map<String, String> sendingRbfInfoMap,
   Set<String> receivingRbfTxHashSet,
   Map<String, CpfpInfo> cpfpInfoMap
 });
@@ -190,7 +190,7 @@ class TransactionSyncService {
     Set<String> unconfirmedFetchedTxHashes,
     Set<String> confirmedFetchedTxHashes,
   ) async {
-    Map<String, RbfInfo> sendingRbfInfoMap = {};
+    Map<String, String> sendingRbfInfoMap = {}; // originalTransactionHash -> spentTransactionHash
     Set<String> receivingRbfTxHashSet = {};
     Map<String, CpfpInfo> cpfpInfoMap = {};
 
@@ -199,7 +199,8 @@ class TransactionSyncService {
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
         final sendingRbfInfo = await _rbfService.detectSendingRbfTransaction(walletId, fetchedTx);
         if (sendingRbfInfo != null) {
-          sendingRbfInfoMap[sendingRbfInfo.originalTransactionHash] = sendingRbfInfo;
+          sendingRbfInfoMap[sendingRbfInfo.originalTransactionHash] =
+              sendingRbfInfo.spentTransactionHash;
         }
 
         final receivingRbfTxHash =
@@ -251,8 +252,8 @@ class TransactionSyncService {
         walletId,
       );
       _transactionRepository.markAsRbfReplaced(walletId, rbfCpfpResult.sendingRbfInfoMap);
-      _utxoRepository.deleteUtxosByReplacedTransactionHashSet(walletId,
-          rbfCpfpResult.sendingRbfInfoMap.values.map((info) => info.spentTransactionHash).toSet());
+      _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
+          walletId, rbfCpfpResult.sendingRbfInfoMap.keys.toSet());
     }
 
     if (rbfCpfpResult.receivingRbfTxHashSet.isNotEmpty) {

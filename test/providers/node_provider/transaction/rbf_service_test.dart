@@ -382,7 +382,7 @@ void main() {
         await rbfService.saveRbfHistoryMap(
             RbfSaveRequest(
                 walletItem: walletItem,
-                rbfInfoMap: {firstRbfTx.transactionHash: rbfInfo},
+                rbfInfoMap: {rbfInfo.originalTransactionHash: rbfInfo.spentTransactionHash},
                 txRecordMap: {firstRbfTx.transactionHash: firstRbfTxRecord}),
             walletId);
 
@@ -412,10 +412,7 @@ void main() {
         );
 
         final rbfInfoMap = {
-          secondRbfTx.transactionHash: TransactionMock.createMockRbfInfo(
-            originalTransactionHash: originalTx.transactionHash,
-            spentTransactionHash: secondRbfTx.transactionHash,
-          )
+          firstRbfTx.transactionHash: secondRbfTx.transactionHash,
         };
 
         final txRecordMap = {
@@ -431,7 +428,7 @@ void main() {
         );
 
         await transactionRepository
-            .addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord]);
+            .addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord, secondRbfTxRecord]);
         transactionRepository.addAllRbfHistory([
           RbfHistoryDto(
             walletId: walletId,

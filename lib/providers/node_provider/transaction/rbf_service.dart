@@ -16,7 +16,7 @@ typedef RbfInfo = ({
 /// RBF 내역 저장 요청을 위한 DTO 클래스
 class RbfSaveRequest {
   final WalletListItemBase walletItem;
-  final Map<String, RbfInfo> rbfInfoMap;
+  final Map<String, String> rbfInfoMap;
   final Map<String, TransactionRecord> txRecordMap;
 
   RbfSaveRequest({
@@ -150,11 +150,14 @@ class RbfService {
     final walletItem = request.walletItem;
 
     for (final entry in request.rbfInfoMap.entries) {
-      final rbfInfo = entry.value;
-      final txRecord = request.txRecordMap[rbfInfo.spentTransactionHash];
+      final txRecord = request.txRecordMap[entry.value];
 
       if (txRecord != null) {
-        await _processRbfEntry(walletItem.id, rbfInfo, txRecord, rbfHistoryDtos);
+        await _processRbfEntry(
+            walletItem.id,
+            (originalTransactionHash: entry.key, spentTransactionHash: entry.value),
+            txRecord,
+            rbfHistoryDtos);
       }
     }
 
