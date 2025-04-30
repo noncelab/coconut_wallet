@@ -24,6 +24,7 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_reques
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/tooltip/faucet_tooltip.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -156,26 +157,31 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   Widget _buildStickyHeader() {
-    return Selector<WalletDetailViewModel, int>(
-      selector: (_, viewModel) => viewModel.balance,
-      builder: (context, balance, child) {
-        return WalletDetailStickyHeader(
-          widgetKey: _stickyHeaderWidgetKey,
-          height: _appBarSize.height,
-          isVisible: _stickyHeaderVisible,
-          currentUnit: _currentUnit,
-          animatedBalanceData: AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
-          onTapReceive: () {
-            _viewModel.removeFaucetTooltip();
-            _onTapReceive();
-          },
-          onTapSend: () {
-            _viewModel.removeFaucetTooltip();
-            _onTapSend();
-          },
-        );
-      },
-    );
+    return ValueListenableBuilder<bool>(
+        valueListenable: _stickyHeaderVisibleNotifier,
+        builder: (context, isVisible, child) {
+          return Selector<WalletDetailViewModel, int>(
+            selector: (_, viewModel) => viewModel.balance,
+            builder: (context, balance, child) {
+              return WalletDetailStickyHeader(
+                widgetKey: _stickyHeaderWidgetKey,
+                height: _appBarSize.height,
+                isVisible: isVisible,
+                currentUnit: _currentUnit,
+                animatedBalanceData:
+                    AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
+                onTapReceive: () {
+                  _viewModel.removeFaucetTooltip();
+                  _onTapReceive();
+                },
+                onTapSend: () {
+                  _viewModel.removeFaucetTooltip();
+                  _onTapSend();
+                },
+              );
+            },
+          );
+        });
   }
 
   Selector<WalletDetailViewModel, bool> _buildLoadingWidget() {
@@ -237,7 +243,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   final GlobalKey _stickyHeaderWidgetKey = GlobalKey();
   RenderBox? _stickyHeaderRenderBox;
-  bool _stickyHeaderVisible = false;
+  final ValueNotifier<bool> _stickyHeaderVisibleNotifier = ValueNotifier<bool>(false);
 
   final GlobalKey _txListLabelWidgetKey = GlobalKey();
 
@@ -291,15 +297,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         if (_scrollController.offset > _topPadding) {
           if (!_isPullToRefreshing) {
             setState(() {
-              _stickyHeaderVisible = true;
+              _stickyHeaderVisibleNotifier.value = true;
+              _stickyHeaderRenderBox ??=
+                  _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
             });
-            _stickyHeaderRenderBox ??=
-                _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
           }
         } else {
           if (!_isPullToRefreshing) {
             setState(() {
-              _stickyHeaderVisible = false;
+              _stickyHeaderVisibleNotifier.value = false;
             });
           }
         }
@@ -316,6 +322,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _statusBarTapOverlayEntry?.remove();
     _statusBarTapOverlayEntry = null;
     _scrollController.dispose();
+    _stickyHeaderVisibleNotifier.dispose();
     super.dispose();
   }
 
@@ -446,9 +453,10 @@ class TransactionList extends StatefulWidget {
 }
 
 class _TransactionListState extends State<TransactionList> {
-  late List<TransactionRecord> _previousTxList = [];
+  late List<TransactionRecord> _displayedTxList = [];
   final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
+  bool _isListLoading = false;
 
   @override
   void initState() {
@@ -460,14 +468,25 @@ class _TransactionListState extends State<TransactionList> {
     return Selector<WalletDetailViewModel, List<TransactionRecord>>(
         selector: (_, viewModel) => viewModel.txList,
         builder: (_, txList, __) {
-          _handleTransactionListUpdate(txList);
-
-          return txList.isNotEmpty ? _buildSliverAnimatedList(txList) : _buildEmptyState();
+          if (!listEquals(_displayedTxList, txList)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _handleTransactionListUpdate(txList);
+            });
+          }
+          return txList.isNotEmpty
+              ? _buildSliverAnimatedList(_displayedTxList)
+              : _buildEmptyState();
         });
   }
 
-  void _handleTransactionListUpdate(List<TransactionRecord> txList) {
-    final oldTxMap = {for (var tx in _previousTxList) tx.transactionHash: tx};
+  Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {
+    final isFirstLoad = _displayedTxList.isEmpty && txList.isNotEmpty;
+
+    if (_isListLoading) return;
+    _isListLoading = true;
+
+    const Duration animationDuration = Duration(milliseconds: 100);
+    final oldTxMap = {for (var tx in _displayedTxList) tx.transactionHash: tx};
     final newTxMap = {for (var tx in txList) tx.transactionHash: tx};
 
     final List<int> insertedIndexes = [];
@@ -479,27 +498,35 @@ class _TransactionListState extends State<TransactionList> {
       }
     }
 
-    for (int i = 0; i < _previousTxList.length; i++) {
-      if (!newTxMap.containsKey(_previousTxList[i].transactionHash)) {
+    for (int i = 0; i < _displayedTxList.length; i++) {
+      if (!newTxMap.containsKey(_displayedTxList[i].transactionHash)) {
         removedIndexes.add(i);
       }
     }
 
+    setState(() {
+      _displayedTxList = List.from(txList);
+    });
+
     // 마지막 인덱스부터 삭제 (index shift 문제 방지)
     for (var index in removedIndexes.reversed) {
+      await Future.delayed(animationDuration);
       _txListKey.currentState?.removeItem(
         index,
-        (context, animation) => _buildRemoveTransactionItem(_previousTxList[index], animation),
+        (context, animation) => _buildRemoveTransactionItem(_displayedTxList[index], animation),
         duration: _duration,
       );
     }
 
     // 삽입된 인덱스 순서대로 추가
     for (var index in insertedIndexes) {
+      if (isFirstLoad) {
+        await Future.delayed(animationDuration);
+      }
       _txListKey.currentState?.insertItem(index, duration: _duration);
     }
 
-    _previousTxList = List.from(txList);
+    _isListLoading = false;
   }
 
   Widget _buildSliverAnimatedList(List<TransactionRecord> txList) {
@@ -507,7 +534,9 @@ class _TransactionListState extends State<TransactionList> {
       key: _txListKey,
       initialItemCount: txList.length,
       itemBuilder: (context, index, animation) {
-        return _buildTransactionItem(txList[index], animation, txList.length - 1 == index);
+        return index < txList.length
+            ? _buildTransactionItem(txList[index], animation, txList.length - 1 == index)
+            : const SizedBox();
       },
     );
   }

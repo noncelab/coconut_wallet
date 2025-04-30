@@ -13,7 +13,7 @@ import 'package:provider/provider.dart';
 class UtxoListHeader extends StatefulWidget {
   final GlobalKey dropdownGlobalKey;
   final AnimatedBalanceData animatedBalanceData;
-  final String selectedFilter;
+  final String selectedOption;
   final Function onTapDropdown;
   final List<UtxoTag> utxoTagList;
   final String selectedUtxoTagName;
@@ -24,7 +24,7 @@ class UtxoListHeader extends StatefulWidget {
       {super.key,
       required this.dropdownGlobalKey,
       required this.animatedBalanceData,
-      required this.selectedFilter,
+      required this.selectedOption,
       required this.onTapDropdown,
       required this.utxoTagList,
       required this.selectedUtxoTagName,
@@ -98,7 +98,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                         },
                         child: Row(
                           children: [
-                            Text(widget.selectedFilter,
+                            Text(widget.selectedOption,
                                 style: CoconutTypography.body3_12.setColor(widget.canShowDropdown
                                     ? CoconutColors.white
                                     : CoconutColors.gray700)),
