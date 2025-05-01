@@ -241,7 +241,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                       ],
                     ),
                     Positioned(
-                      top: _walletTooltipIconPosition.dy - _tooltipTopPadding,
+                      top: _walletTooltipIconPosition.dy - _tooltipTopPadding + 10,
                       right: MediaQuery.of(context).size.width -
                           _walletTooltipIconPosition.dx -
                           (_walletTooltipIconRenderBox == null
