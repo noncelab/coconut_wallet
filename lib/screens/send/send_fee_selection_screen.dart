@@ -224,9 +224,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       if (_viewModel.isNetworkOn) {
         _startToSetRecommendedFee();
       }
-
-      // TODO:
-      //_model.recordUsedUtxoIdListWhenSend([]);
     });
   }
 

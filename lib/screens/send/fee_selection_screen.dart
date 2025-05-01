@@ -14,7 +14,8 @@ import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// [INFO] send_utxo_selection_screen에서 필요한 정보를 전달 받고, 선택된 결과만 반환하는 화면이어서 ConnectivityProvider와 UpbitConnectModel을 사용하지만, 별도 view_model을 추가하지 않았습니다.
+/// [INFO] send_utxo_selection_screen에서 필요한 정보를 전달 받고, 선택된 결과만 반환하는 화면
+/// ConnectivityProvider를 사용하지만, 별도 view_model을 추가하지 않음.
 class FeeSelectionScreen extends StatefulWidget {
   static const String selectedOptionField = 'selectedOption';
   static const String feeInfoField = 'feeInfo';
@@ -208,10 +209,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       return;
     }
 
-    // if (_customFeeController.text.isEmpty) {
-    //   return;
-    // }
-
     int customSatsPerVb = int.parse(input);
     if (widget.networkMinimumFeeRate != null && customSatsPerVb < widget.networkMinimumFeeRate!) {
       CustomToast.showToast(
@@ -244,10 +241,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
     Map<String, dynamic> returnData = {
       FeeSelectionScreen.selectedOptionField: _selectedFeeLevel,
       FeeSelectionScreen.feeInfoField: (_selectedFeeLevel == null && _customSatsPerVb != null)
-          ? FeeInfo(
-              estimatedFee: _estimatedFee,
-              // fiatValue: fiatValueInKrw?.toInt(),
-              satsPerVb: _customSatsPerVb)
+          ? FeeInfo(estimatedFee: _estimatedFee, satsPerVb: _customSatsPerVb)
           : _findFeeInfoWithLevel(_selectedFeeLevel!),
     };
 
