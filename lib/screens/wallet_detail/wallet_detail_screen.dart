@@ -296,17 +296,15 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       _scrollController.addListener(() {
         if (_scrollController.offset > _topPadding) {
           if (!_isPullToRefreshing) {
+            _stickyHeaderVisibleNotifier.value = true;
             setState(() {
-              _stickyHeaderVisibleNotifier.value = true;
               _stickyHeaderRenderBox ??=
                   _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
             });
           }
         } else {
           if (!_isPullToRefreshing) {
-            setState(() {
-              _stickyHeaderVisibleNotifier.value = false;
-            });
+            _stickyHeaderVisibleNotifier.value = false;
           }
         }
       });
