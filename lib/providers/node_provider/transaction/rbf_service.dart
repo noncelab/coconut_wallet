@@ -9,14 +9,14 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 
 typedef RbfInfo = ({
-  String originalTransactionHash,
-  String spentTransactionHash,
+  String originalTransactionHash, // RBF 체인의 최초 트랜잭션
+  String previousTransactionHash, // 이 트랜잭션이 대체하는 직전 트랜잭션
 });
 
 /// RBF 내역 저장 요청을 위한 DTO 클래스
 class RbfSaveRequest {
   final WalletListItemBase walletItem;
-  final Map<String, String> rbfInfoMap;
+  final Map<String, RbfInfo> rbfInfoMap;
   final Map<String, TransactionRecord> txRecordMap;
 
   RbfSaveRequest({
@@ -44,14 +44,14 @@ class RbfService {
     // RBF 입력 검사
     final rbfInputInfo = await findRbfCandidate(walletId, tx);
     if (rbfInputInfo != null && rbfInputInfo.spentByTransactionHash != null) {
-      final spentTxHash = tx.transactionHash;
+      final prevTxHash = rbfInputInfo.spentByTransactionHash!;
       // 원본 트랜잭션 해시 찾기
       final originalTxHash =
           await findOriginalTransactionHash(walletId, rbfInputInfo.spentByTransactionHash!);
 
       return (
         originalTransactionHash: originalTxHash,
-        spentTransactionHash: spentTxHash,
+        previousTransactionHash: prevTxHash,
       );
     }
 
@@ -150,14 +150,10 @@ class RbfService {
     final walletItem = request.walletItem;
 
     for (final entry in request.rbfInfoMap.entries) {
-      final txRecord = request.txRecordMap[entry.value];
+      final txRecord = request.txRecordMap[entry.key];
 
       if (txRecord != null) {
-        await _processRbfEntry(
-            walletItem.id,
-            (originalTransactionHash: entry.key, spentTransactionHash: entry.value),
-            txRecord,
-            rbfHistoryDtos);
+        await _processRbfEntry(walletItem.id, entry.value, txRecord, rbfHistoryDtos);
       }
     }
 

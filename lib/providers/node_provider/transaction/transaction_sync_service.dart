@@ -25,7 +25,7 @@ typedef FetchedTransactionDetails = ({
 
 // Helper record for step 4 return type (Moved before class)
 typedef RbfCpfpDetectionResult = ({
-  Map<String, String> sendingRbfInfoMap,
+  Map<String, RbfInfo> sendingRbfInfoMap,
   Set<String> receivingRbfTxHashSet,
   Map<String, CpfpInfo> cpfpInfoMap
 });
@@ -190,7 +190,7 @@ class TransactionSyncService {
     Set<String> unconfirmedFetchedTxHashes,
     Set<String> confirmedFetchedTxHashes,
   ) async {
-    Map<String, String> sendingRbfInfoMap = {}; // originalTransactionHash -> spentTransactionHash
+    Map<String, RbfInfo> sendingRbfInfoMap = {}; // fetchedTxHash -> RbfInfo
     Set<String> receivingRbfTxHashSet = {};
     Map<String, CpfpInfo> cpfpInfoMap = {};
 
@@ -199,8 +199,7 @@ class TransactionSyncService {
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
         final sendingRbfInfo = await _rbfService.detectSendingRbfTransaction(walletId, fetchedTx);
         if (sendingRbfInfo != null) {
-          sendingRbfInfoMap[sendingRbfInfo.originalTransactionHash] =
-              sendingRbfInfo.spentTransactionHash;
+          sendingRbfInfoMap[fetchedTx.transactionHash] = sendingRbfInfo;
         }
 
         final receivingRbfTxHash =

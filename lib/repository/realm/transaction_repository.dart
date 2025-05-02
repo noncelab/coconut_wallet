@@ -359,17 +359,22 @@ class TransactionRepository extends BaseRepository {
     }
   }
 
-  /// rbfInfoMap - {key(대체될 prevTransactionHash): value(대체된 spentTransactionHash)}
+  /// rbfInfoMap - {key(fetchedTxHash): value(RbfInfo)}
   /// 기존 트랜잭션을 찾아서 rbf로 대체되었다는 표시를 하기 위한 메서드
-  void markAsRbfReplaced(int walletId, Map<String, String> rbfInfoMap) {
+  void markAsRbfReplaced(int walletId, Map<String, RbfInfo> rbfInfoMap) {
     final txListToReplce = realm.query<RealmTransaction>(
       r'walletId == $0 AND transactionHash IN $1',
-      [walletId, rbfInfoMap.keys.toList()],
+      [walletId, rbfInfoMap.values.map((rbf) => rbf.previousTransactionHash).toList()],
     );
+
+    final prevToCurrentTxMap = <String, String>{};
+    for (var rbfInfo in rbfInfoMap.entries) {
+      prevToCurrentTxMap[rbfInfo.value.previousTransactionHash] = rbfInfo.key;
+    }
 
     realm.write(() {
       for (final realmPrevTx in txListToReplce) {
-        realmPrevTx.replaceByTransactionHash = rbfInfoMap[realmPrevTx.transactionHash]!;
+        realmPrevTx.replaceByTransactionHash = prevToCurrentTxMap[realmPrevTx.transactionHash];
       }
     });
   }

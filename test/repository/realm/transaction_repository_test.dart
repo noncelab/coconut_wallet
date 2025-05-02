@@ -400,7 +400,10 @@ void main() {
 
       // RBF 정보 맵 생성
       final rbfInfoMap = {
-        'original_tx': 'spent_tx',
+        'spent_tx': TransactionMock.createMockRbfInfo(
+          originalTransactionHash: 'original_tx',
+          previousTransactionHash: 'original_tx',
+        ),
       };
 
       // markAsRbfReplaced 함수 호출
@@ -435,8 +438,14 @@ void main() {
 
       // 존재하는 트랜잭션과 존재하지 않는 트랜잭션에 대한 RBF 정보 맵 생성
       final rbfInfoMap = {
-        'original_tx': 'spent_tx',
-        'not_exists': 'spent_tx2',
+        'spent_tx': TransactionMock.createMockRbfInfo(
+          originalTransactionHash: 'original_tx',
+          previousTransactionHash: 'original_tx',
+        ),
+        'not_exists': TransactionMock.createMockRbfInfo(
+          originalTransactionHash: 'original_tx',
+          previousTransactionHash: 'spent_tx2',
+        ),
       };
 
       // markAsRbfReplaced 함수 호출
@@ -480,7 +489,10 @@ void main() {
 
       // RBF 1회차 정보 맵 생성
       final rbfInfoMap = {
-        'original_tx': 'rbf_tx_1',
+        'rbf_tx_1': TransactionMock.createMockRbfInfo(
+          originalTransactionHash: 'original_tx',
+          previousTransactionHash: 'original_tx',
+        ),
       };
 
       // markAsRbfReplaced 함수 호출
@@ -498,7 +510,10 @@ void main() {
 
       // RBF 2회차 정보 맵 생성
       final rbfInfoMap2 = {
-        'rbf_tx_1': 'rbf_tx_2',
+        'rbf_tx_2': TransactionMock.createMockRbfInfo(
+          originalTransactionHash: 'original_tx',
+          previousTransactionHash: 'rbf_tx_1',
+        ),
       };
 
       // markAsRbfReplaced 함수 호출
@@ -516,7 +531,10 @@ void main() {
 
       // RBF 3회차 정보 맵 생성
       final rbfInfoMap3 = {
-        'rbf_tx_2': 'rbf_tx_3',
+        'rbf_tx_3': TransactionMock.createMockRbfInfo(
+          originalTransactionHash: 'original_tx',
+          previousTransactionHash: 'rbf_tx_2',
+        ),
       };
 
       // markAsRbfReplaced 함수 호출

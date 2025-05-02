@@ -277,8 +277,8 @@ void main() {
         expect(result, isNotNull);
         expect(result?.originalTransactionHash, originalTx.transactionHash,
             reason: '원본 트랜잭션 해시 ${originalTx.transactionHash.substring(0, 6)}...가 반환되어야 함.');
-        expect(result?.spentTransactionHash, firstRbfTx.transactionHash,
-            reason: '첫 RBF 트랜잭션 해시 ${firstRbfTx.transactionHash.substring(0, 6)}...가 반환되어야 함.');
+        expect(result?.previousTransactionHash, originalTx.transactionHash,
+            reason: '첫 RBF 트랜잭션 해시 ${originalTx.transactionHash.substring(0, 6)}...가 반환되어야 함.');
       });
       test('이미 RBF 내역이 있는 경우 null 반환', () async {
         // Given
@@ -361,7 +361,7 @@ void main() {
         // Given
         final rbfInfo = TransactionMock.createMockRbfInfo(
           originalTransactionHash: originalTx.transactionHash,
-          spentTransactionHash: firstRbfTx.transactionHash,
+          previousTransactionHash: originalTx.transactionHash,
         );
 
         final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
@@ -382,7 +382,7 @@ void main() {
         await rbfService.saveRbfHistoryMap(
             RbfSaveRequest(
                 walletItem: walletItem,
-                rbfInfoMap: {rbfInfo.originalTransactionHash: rbfInfo.spentTransactionHash},
+                rbfInfoMap: {firstRbfTx.transactionHash: rbfInfo},
                 txRecordMap: {firstRbfTx.transactionHash: firstRbfTxRecord}),
             walletId);
 
@@ -411,8 +411,11 @@ void main() {
           transactionHash: secondRbfTx.transactionHash,
         );
 
-        final rbfInfoMap = {
-          firstRbfTx.transactionHash: secondRbfTx.transactionHash,
+        final Map<String, RbfInfo> rbfInfoMap = {
+          secondRbfTxRecord.transactionHash: TransactionMock.createMockRbfInfo(
+            originalTransactionHash: originalTx.transactionHash,
+            previousTransactionHash: firstRbfTx.transactionHash,
+          ),
         };
 
         final txRecordMap = {

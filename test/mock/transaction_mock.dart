@@ -96,12 +96,11 @@ class TransactionMock {
   /// RBF 테스트를 위한 RbfInfo 생성 메서드
   static RbfInfo createMockRbfInfo({
     required String originalTransactionHash,
-    required String spentTransactionHash,
-    List<Transaction>? previousTransactions,
+    required String previousTransactionHash,
   }) {
     return (
       originalTransactionHash: originalTransactionHash,
-      spentTransactionHash: spentTransactionHash,
+      previousTransactionHash: previousTransactionHash,
     );
   }
 

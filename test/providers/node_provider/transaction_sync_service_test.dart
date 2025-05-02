@@ -479,7 +479,7 @@ void main() {
       expect(result, isNotNull);
       // 실제 구현에서는 utxo.spentByTransactionHash를 사용하므로 이 값을 기대
       expect(result!.originalTransactionHash, equals(mockSpentTxHash));
-      expect(result.spentTransactionHash, equals(mockSpentTxHash));
+      expect(result.previousTransactionHash, equals(mockSpentTxHash));
     });
 
     test('연속된 RBF 트랜잭션은 원본 트랜잭션 해시를 유지해야 함', () async {
@@ -520,7 +520,7 @@ void main() {
       expect(result, isNotNull);
       // 연속 RBF의 경우 원본 트랜잭션 해시를 유지
       expect(result!.originalTransactionHash, equals(mockOriginalTxHash));
-      expect(result.spentTransactionHash, equals(mockSpentTxHash));
+      expect(result.previousTransactionHash, equals(mockSpentTxHash));
     });
 
     test('여러 입력이 있는 트랜잭션에서 RBF를 감지해야 함', () async {
@@ -565,7 +565,7 @@ void main() {
       expect(result, isNotNull);
       // 실제 구현에서는 utxo.spentByTransactionHash를 사용하므로 이 값을 기대
       expect(result!.originalTransactionHash, equals(mockSpentTxHash));
-      expect(result.spentTransactionHash, equals(mockSpentTxHash));
+      expect(result.previousTransactionHash, equals(mockSpentTxHash));
     });
   });
 
