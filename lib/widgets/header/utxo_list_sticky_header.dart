@@ -12,10 +12,10 @@ class UtxoListStickyHeader extends StatelessWidget {
   final GlobalKey dropdownGlobalKey;
   final double height;
   final bool isVisible;
-  final bool canShowDropdown;
+  final bool enableDropdown;
   final AnimatedBalanceData animatedBalanceData;
   final int? totalCount;
-  final String selectedFilter;
+  final String selectedOption;
   final Function onTapDropdown;
   final Function removePopup;
   const UtxoListStickyHeader({
@@ -23,10 +23,10 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.dropdownGlobalKey,
     required this.height,
     required this.isVisible,
-    required this.canShowDropdown,
+    required this.enableDropdown,
     required this.animatedBalanceData,
     required this.totalCount,
-    required this.selectedFilter,
+    required this.selectedOption,
     required this.onTapDropdown,
     required this.removePopup,
   });
@@ -108,19 +108,19 @@ class UtxoListStickyHeader extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
                             minSize: 0,
                             onPressed: () {
-                              if (!canShowDropdown) return;
+                              if (!enableDropdown) return;
                               onTapDropdown();
                             },
                             child: Row(
                               children: [
-                                Text(selectedFilter,
-                                    style: CoconutTypography.body3_12.setColor(canShowDropdown
+                                Text(selectedOption,
+                                    style: CoconutTypography.body3_12.setColor(enableDropdown
                                         ? CoconutColors.white
                                         : CoconutColors.gray700)),
                                 CoconutLayout.spacing_200w,
                                 SvgPicture.asset(
                                   'assets/svg/arrow-down.svg',
-                                  colorFilter: canShowDropdown
+                                  colorFilter: enableDropdown
                                       ? null
                                       : const ColorFilter.mode(
                                           CoconutColors.gray700, BlendMode.srcIn),

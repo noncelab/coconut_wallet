@@ -3,6 +3,7 @@ import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
@@ -18,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
+import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _divider = Divider(color: CoconutColors.gray800);
@@ -53,15 +55,17 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               Provider.of<UtxoTagProvider>(_, listen: false),
               Provider.of<TransactionProvider>(_, listen: false),
             ),
-        child: GestureDetector(
-          onTap: _removeUtxoTooltip,
-          child: Stack(
-            children: [
-              _buildScaffold(context),
-              if (_isUtxoTooltipVisible) _buildTooltip(context),
-            ],
-          ),
-        ));
+        child: Builder(builder: (context) {
+          return GestureDetector(
+            onTap: _removeUtxoTooltip,
+            child: Stack(
+              children: [
+                _buildScaffold(context),
+                if (_isUtxoTooltipVisible) _buildTooltip(context),
+              ],
+            ),
+          );
+        }));
   }
 
   void _showTagBottomSheet(
@@ -96,46 +100,54 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             horizontal: 16,
             vertical: 20,
           ),
-          child: Consumer<UtxoDetailViewModel>(builder: (_, viewModel, child) {
-            final tx = viewModel.transaction;
-            final tags = viewModel.utxoTagList;
-            final selectedTags = viewModel.selectedUtxoTagList;
+          child: Selector<
+                  UtxoDetailViewModel,
+                  Tuple5<TransactionRecord?, List<String>, List<UtxoTag>, List<UtxoTag>,
+                      UtxoStatus>>(
+              selector: (_, viewModel) => Tuple5(
+                    viewModel.transaction,
+                    viewModel.dateString,
+                    viewModel.utxoTagList,
+                    viewModel.selectedUtxoTagList,
+                    viewModel.utxoStatus,
+                  ),
+              builder: (_, data, __) {
+                final tx = data.item1;
+                final dateString = data.item2;
+                final tags = data.item3;
+                final selectedTags = data.item4;
+                final utxoStatus = data.item5;
 
-            return Column(
-              children: [
-                if (tx == null)
-                  const Center(child: CircularProgressIndicator())
-                else ...{
-                  _buildDateTime(viewModel.dateString),
-                  _buildAmount(),
-                  if (viewModel.utxoStatus == UtxoStatus.unspent)
-                    _buildPrice()
-                  else ...{_buildPendingStatus(viewModel.utxoStatus)},
-                  TransactionInputOutputCard(
-                    transaction: tx,
-                    isSameAddress: (address, _) {
-                      return address == widget.utxo.to;
-                    },
-                    isForTransaction: false,
-                  ),
-                  _buildAddress(),
-                  _buildTxMemo(
-                    tx.memo,
-                  ),
-                  _buildTagSection(
-                    context,
-                    tags,
-                    selectedTags,
-                    viewModel,
-                  ),
-                  _buildTxId(),
-                  _buildBlockHeight(),
-                  CoconutLayout.spacing_1000h,
-                  _buildBalanceWidthCheck(),
-                }
-              ],
-            );
-          }),
+                return Column(
+                  children: [
+                    if (tx == null)
+                      const Center(child: CircularProgressIndicator())
+                    else ...{
+                      _buildDateTime(dateString),
+                      _buildAmount(),
+                      if (utxoStatus == UtxoStatus.unspent)
+                        _buildPrice()
+                      else ...{_buildPendingStatus(utxoStatus)},
+                      TransactionInputOutputCard(
+                        transaction: tx,
+                        isSameAddress: (address, _) {
+                          return address == widget.utxo.to;
+                        },
+                        isForTransaction: false,
+                      ),
+                      _buildAddress(),
+                      _buildTxMemo(
+                        tx.memo,
+                      ),
+                      _buildTagSection(context, tags, selectedTags),
+                      _buildTxId(),
+                      _buildBlockHeight(),
+                      CoconutLayout.spacing_1000h,
+                      _buildBalanceWidthCheck(),
+                    }
+                  ],
+                );
+              }),
         ),
       ),
     );
@@ -389,8 +401,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         ));
   }
 
-  Widget _buildTagSection(BuildContext context, List<UtxoTag> tags, List<UtxoTag> selectedTags,
-      UtxoDetailViewModel viewModel) {
+  Widget _buildTagSection(
+    BuildContext context,
+    List<UtxoTag> tags,
+    List<UtxoTag> selectedTags,
+  ) {
+    final viewModel = context.read<UtxoDetailViewModel>();
     return Column(
       children: [
         UnderlineButtonItemCard(
