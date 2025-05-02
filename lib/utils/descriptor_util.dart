@@ -42,7 +42,7 @@ class DescriptorUtil {
 
   static void validatePurpose(String purpose) {
     if (purpose != '84') {
-      throw const FormatException('Invalid purpose');
+      throw FormatException("purpose $purpose is not supported");
     }
   }
 
@@ -84,6 +84,7 @@ class DescriptorUtil {
   }
 
   static String normalizeDescriptor(String descriptor) {
+    validatePurpose(extractPurpose(descriptor));
     final descriptorFunction = getDescriptorFunction(descriptor);
     if (descriptorFunction != null) {
       validateDescriptorFunction(descriptorFunction);

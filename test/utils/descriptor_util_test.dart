@@ -8,30 +8,30 @@ void main() {
     group('getDescriptorFunction', () {
       test('wpkh 함수 추출', () {
         const descriptor =
-            'wpkh([76223a6f/84"/0"/0"]tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0';
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
         expect(DescriptorUtil.getDescriptorFunction(descriptor), 'wpkh');
       });
 
       test('sh 함수 추출', () {
         const descriptor =
-            'sh(wpkh([76223a6f/84"/0"/0"]tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*))';
+            "sh(wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*))";
         expect(DescriptorUtil.getDescriptorFunction(descriptor), 'sh');
       });
 
       test('wsh 함수 추출', () {
-        const descriptor = 'wsh(multi(2,[76223a6f/84"/0"/0"]tpub1,[76223a6f/84"/0"/0"]tpub2))';
+        const descriptor = "wsh(multi(2,[76223a6f/84'/0'/0']tpub1,[76223a6f/84'/0'/0']tpub2))";
         expect(DescriptorUtil.getDescriptorFunction(descriptor), 'wsh');
       });
 
       test('함수가 없는 디스크립터는 null 반환', () {
         const descriptor =
-            '[76223a6f/84"/0"/0"]tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*';
+            "[76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*";
         expect(DescriptorUtil.getDescriptorFunction(descriptor), null);
       });
 
       test('지원하지 않는 함수는 null 반환', () {
         const descriptor =
-            'unknown([76223a6f/84"/0"/0"]tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)';
+            "unknown([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)";
         expect(DescriptorUtil.getDescriptorFunction(descriptor), null);
       });
 
@@ -44,7 +44,7 @@ void main() {
     group('extractPurpose', () {
       test('올바른 디스크립터에서 purpose를 추출', () {
         const descriptor =
-            'wpkh([76223a6f/84\'/0\'/0\']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0';
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
         expect(DescriptorUtil.extractPurpose(descriptor), '84');
       });
 
@@ -73,31 +73,31 @@ void main() {
     group('hasDescriptorChecksum', () {
       test('체크섬이 있는 디스크립터 확인', () {
         const descriptor =
-            'wpkh([76223a6f/84\'/0\'/0\']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0';
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
         expect(DescriptorUtil.hasDescriptorChecksum(descriptor), true);
       });
 
       test('체크섬이 없는 디스크립터 확인', () {
         const descriptor =
-            'wpkh([76223a6f/84\'/0\'/0\']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)';
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)";
         expect(DescriptorUtil.hasDescriptorChecksum(descriptor), false);
       });
 
       test('잘못된 체크섬 형식 확인', () {
         const descriptor =
-            'wpkh([76223a6f/84\'/0\'/0\']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#invalid';
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#invalid";
         expect(DescriptorUtil.hasDescriptorChecksum(descriptor), false);
       });
 
       test('공백이 있는 디스크립터 처리', () {
         const descriptor =
-            '  wpkh([76223a6f/84\'/0\'/0\']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0  ';
+            "  wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0  ";
         expect(DescriptorUtil.hasDescriptorChecksum(descriptor), true);
       });
     });
 
     group('normalizeDescriptor', () {
-      test('wtttttttt', () {
+      test('wpkh 함수가 있는 디스크립터는 그대로 반환', () {
         const descriptor =
             "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)";
         expect(DescriptorUtil.normalizeDescriptor(descriptor), descriptor);
@@ -134,13 +134,13 @@ void main() {
 
       test('잘못된 purpose를 가진 디스크립터는 예외 발생', () {
         const descriptor =
-            'wpkh([76223a6f/44\'/0\'/0\']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0';
+            "wpkh([76223a6f/44'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
         expect(() => DescriptorUtil.normalizeDescriptor(descriptor), throwsException);
       });
 
       test('지원하지 않는 함수는 예외 발생', () {
         const descriptor =
-            'sh([76223a6f/84\'/0\'/0\']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0';
+            "sh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
         expect(() => DescriptorUtil.normalizeDescriptor(descriptor), throwsException);
       });
 
@@ -306,68 +306,87 @@ void main() {
       test("NetworkType에 따른 주소가 맞는지 검증(Descriptor)", () {
         // 테스트넷
         var descriptor1 =
-            "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)"; // 테스트넷
+            "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)";
         var descriptor2 =
             "wpkh([98C7D774/84'/1'/0']vpub5ZZ1q76vi2LR9PeQDoV13u8TZwsyqKa7yBfD3GnPPvBjVU9ZnBTMkwzCHCVBZaPHDKJNEdMKo8MTyrQ9234idzSG9nHFD6hsUB8HJ14NBg7/<0;1>/*)";
         var descriptor3 =
             "wpkh([98c7d774/84'/1'/0']tpubDDbAxgGSifNq7nDVLi3LfzeqF1GXhx4BM3HwxcdJVqhPLxSjMida9WyJZeV95teMpW4tMA4KFYtcSc7srHjz7uFkx4RQ4T15baqyqBdYTgm/<0;1>/*)";
+        // 메인넷
+        var descriptor4 =
+            "wpkh([33a0cbfd/49'/1'/0']xpub6CorSC5E8wkNboiq84Ndxvm3w4ccSA4MbEva8khZ4a5Cxk8hQYwrsJoPsmL8KsmCeFWzD4irCJdEqcd7kKRi5SAg355pTxTgHW2eVzQu2dd/<0;1>/*)";
 
         NetworkType.setNetworkType(NetworkType.regtest);
-        expect(DescriptorUtil.normalizeDescriptor(descriptor1), isNotEmpty);
-        expect(DescriptorUtil.normalizeDescriptor(descriptor2), isNotEmpty);
-        expect(DescriptorUtil.normalizeDescriptor(descriptor3), isNotEmpty);
+        expect(DescriptorUtil.normalizeDescriptor(descriptor1), isNotEmpty); // o 통과
+        expect(DescriptorUtil.normalizeDescriptor(descriptor2), isNotEmpty); // o 통과
+        expect(DescriptorUtil.normalizeDescriptor(descriptor3), isNotEmpty); // o 통과
+        expect(() => DescriptorUtil.normalizeDescriptor(descriptor4),
+            throwsException); // 49 o 지원하지 않는 지갑이에요
 
         NetworkType.setNetworkType(NetworkType.mainnet);
-        expect(() => DescriptorUtil.normalizeDescriptor(descriptor1), throwsException);
-        expect(() => DescriptorUtil.normalizeDescriptor(descriptor2), throwsException);
-        expect(() => DescriptorUtil.normalizeDescriptor(descriptor3), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor(descriptor1),
+            throwsException); // o 메인넷 지갑이 아니에요
+        expect(() => DescriptorUtil.normalizeDescriptor(descriptor2),
+            throwsException); // o 메인넷 지갑이 아니에요
+        expect(() => DescriptorUtil.normalizeDescriptor(descriptor3),
+            throwsException); // o 메인넷 지갑이 아니에요
+        expect(() => DescriptorUtil.normalizeDescriptor(descriptor4),
+            throwsException); // o 지원하지 않는 지갑이에요
       });
     });
 
     group('SingleSignatureWallet.fromExtendedPublicKey', () {
+      // AddWalletInputViewModel 사용 형태와 동일하게 구성
+      String getDescriptorFromSingleSigWallet(String xpub) {
+        if (NetworkType.currentNetworkType.isTestnet) {
+          if (xpub.toLowerCase().startsWith("upub")) {
+            throw Exception("[testnet] upub is not supported");
+          }
+        } else {
+          if (xpub.toLowerCase().startsWith("ypub")) {
+            throw Exception("[mainnet] ypub is not supported");
+          }
+        }
+        return SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, xpub, '-')
+            .descriptor;
+      }
+
       test("NetworkType에 따른 주소가 맞는지 검증", () {
-        // 테스트넷 t, v
-        var vpub =
-            "vpub5Zqvq9Zcs7aixHKwhyuyctgNQDw12wLv61fSWZz9QwodYLUH5hnSAC53jynrkXdzQKijGMut3KuFB1oGndWp6rDNb56mMqdNyYuKTzM3UyR";
+        // 테스트넷 t, v, u(not supported)
         var tpub =
             "tpubDDt5xij8skd8vfu2ptUKEzCk5HKYuZpyTsJBRuq4WsKHPpmSfExeYm4A2RnpGqu51WVFNtcsVkSPdmX1ctC5am2sPMEvDBvb6xd216itFG6";
-        // 메인넷 x, z
+        var vpub =
+            "vpub5Z6wrDZJQ78faJ3PYfYs7et7ep8d8uCXivpa3cdxw3joZrN2dfkYuP2xfCgFWscYcvQFAHoVDMcPKrmF7ekcrwQiKcn8qQtEBwuqoMSfJte";
+        var upub =
+            "upub5Dcn3jR5giMjX6QnUw6YXzq4xdMPFF4iJajHAqyaVdYbWCmoCsowgQguE5CBB25vDduA2tyygBbM9KojtzCf5W9x8ddCHVodj5igVzJf39j";
+        // 메인넷 x, z, y(not supported)
         var xpub =
             "xpub6DWTSUuTAUfgesiBNhVE34sNkADtvBKuvEht5MmvAxZPeY6jb27ZQKPKnPi2kLwqDbxLmK6zxecLwb2QE2LqhKaaKkVcXfGMX12cF84D74X";
         var zpub =
-            "zpub6sAz3pFHTqkeMU6R3R4UTF4P66WnoRJukTkKe9ZgvyK9kjjC6LSgeShbpodCkAFg2tBxGGJ7syKSiAFXfRAsHnwn4RtThUuL4T9u2EtUh3v";
+            "zpub6rpahWwxVNAsVwTTXvUuZLa2CvWVPWbfeEVn4L2n2oP9x85jyRuNhzsLC9ct82D1y3rWrR2EA2JN35n7G5EfwkcQd8NzpKzyJaz5sCceErG";
+        var ypub =
+            "ypub6XzKPrH3LgdPeeGLhZhHMFUX2xN3StcAj7yZGw8teo1Gu2GWimjp5wDCAwfJ87Z6ZQji6wRfhMwp9oAYYNpf9WvokngaERBV2rvSUcYfaPN";
 
+        // regtest 설정 시
+        // 통과: t, v
+        // 실패: u, x, z, y
         NetworkType.setNetworkType(NetworkType.regtest);
-        expect(
-            SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, vpub, '-').descriptor,
-            isNotEmpty);
-        expect(
-            SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, tpub, '-').descriptor,
-            isNotEmpty);
-        expect(
-            () => SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, xpub, '-')
-                .descriptor,
-            throwsException);
-        expect(
-            () => SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, zpub, '-')
-                .descriptor,
-            throwsException);
+        expect(getDescriptorFromSingleSigWallet(tpub), isNotEmpty); // o 통과
+        expect(getDescriptorFromSingleSigWallet(vpub), isNotEmpty); // o 통과
+        expect(() => getDescriptorFromSingleSigWallet(upub), throwsException); // o 지원하지 않는 지갑이에요
+        expect(() => getDescriptorFromSingleSigWallet(xpub), throwsException); // o 테스트넷 지갑이 아니에요
+        expect(() => getDescriptorFromSingleSigWallet(zpub), throwsException); // o 테스트넷 지갑이 아니에요
+        expect(() => getDescriptorFromSingleSigWallet(ypub), throwsException); // o 테스트넷 지갑이 아니에요
 
+        // mainnet 설정시
+        // 통과: x, z
+        // 실패: y, t, v, u
         NetworkType.setNetworkType(NetworkType.mainnet);
-        expect(
-            SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, xpub, '-').descriptor,
-            isNotEmpty);
-        expect(
-            SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, zpub, '-').descriptor,
-            isNotEmpty);
-        expect(
-            () => SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, vpub, '-')
-                .descriptor,
-            throwsException);
-        expect(
-            () => SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, tpub, '-')
-                .descriptor,
-            throwsException);
+        expect(getDescriptorFromSingleSigWallet(xpub), isNotEmpty); // o 통과
+        expect(getDescriptorFromSingleSigWallet(zpub), isNotEmpty); // o 통과
+        expect(() => getDescriptorFromSingleSigWallet(ypub), throwsException); // o 지원하지 않는 지갑이에요
+        expect(() => getDescriptorFromSingleSigWallet(tpub), throwsException); // o 메인넷 지갑이 아니에요
+        expect(() => getDescriptorFromSingleSigWallet(vpub), throwsException); // o 메인넷 지갑이 아니에요
+        expect(() => getDescriptorFromSingleSigWallet(upub), throwsException); // o 메인넷 지갑이 아니에요
       });
 
       test("공개키 테스트 케이스", () {
@@ -394,10 +413,7 @@ void main() {
         ];
 
         for (int i = 0; i < validXpubList.length; ++i) {
-          expect(
-              SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, validXpubList[i], '-')
-                  .descriptor,
-              isNotEmpty);
+          expect(getDescriptorFromSingleSigWallet(validXpubList[i]), isNotEmpty);
         }
 
         var invalidXpubList = [
@@ -414,8 +430,7 @@ void main() {
         int invalidXpubCount = 0;
         for (int i = 0; i < invalidXpubList.length; ++i) {
           try {
-            SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, invalidXpubList[i], '-')
-                .descriptor;
+            getDescriptorFromSingleSigWallet(invalidXpubList[i]);
           } catch (e) {
             expect((e is Error) || (e is Exception), true);
             ++invalidXpubCount;

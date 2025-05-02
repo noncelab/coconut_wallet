@@ -163,6 +163,7 @@ wallet_add_input_screen:
   invalid_character_error_text: "허용되지 않는 문자가 있어요"
   mainnet_wallet_error_text: "메인넷 지갑이 아니에요"
   testnet_wallet_error_text: "테스트넷 지갑이 아니에요"
+  unsupported_wallet_error_text: "지원하지 않는 지갑이에요"
   wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
   blue_wallet_texts:
     - "· 블루월렛"

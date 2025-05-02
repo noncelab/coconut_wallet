@@ -19,6 +19,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
 
   bool isExtendedPublicKey(String xpub) {
     try {
+      _validateUnsupportedXpub(xpub);
       SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, xpub, '-');
       validExtendedPublicKey = xpub;
       validDescriptor = null;
@@ -51,11 +52,25 @@ class WalletAddInputViewModel extends ChangeNotifier {
     return isValid;
   }
 
+  void _validateUnsupportedXpub(String xpub) {
+    if (NetworkType.currentNetworkType.isTestnet) {
+      if (xpub.toLowerCase().startsWith("upub")) {
+        throw Exception("[testnet] upub is not supported");
+      }
+    } else {
+      if (xpub.toLowerCase().startsWith("ypub")) {
+        throw Exception("[mainnet] ypub is not supported");
+      }
+    }
+  }
+
   void _setErrorMessageByError(e) {
     if (e.toString().contains("network type")) {
       errorMessage = NetworkType.currentNetworkType == NetworkType.mainnet
           ? t.wallet_add_input_screen.mainnet_wallet_error_text
           : t.wallet_add_input_screen.testnet_wallet_error_text;
+    } else if (e.toString().contains("not supported")) {
+      errorMessage = t.wallet_add_input_screen.unsupported_wallet_error_text;
     } else {
       errorMessage = t.wallet_add_input_screen.format_error_text;
     }
