@@ -66,38 +66,24 @@ class DescriptorUtil {
   }
 
   static void validateNativeSegwitDescriptor(String descriptor) {
-    // 중괄호의 수가 각각 1개씩 있어야 한다.
-    if ('('.allMatches(descriptor).length != 1 || ')'.allMatches(descriptor).length != 1) {
-      Logger.log("Invalid length of () bracelets: $descriptor");
-      throw FormatException("Invalid length of () bracelets: $descriptor");
-    }
+    final regexWpkhFormatWithoutChecksum = RegExp(
+      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](vpub|ypub|zpub|xpub|tpub)[1-9A-HJ-NP-Za-km-z]{107}\)$",
+    );
+    final regexWpkhFormatWithChecksumPath = RegExp(
+      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](vpub|ypub|zpub|xpub|tpub)[1-9A-HJ-NP-Za-km-z]{107}/<\d+;\d+>\/\*\)$",
+    );
+    final regexWpkhFormatWithChecksum = RegExp(
+      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](vpub|ypub|zpub|xpub|tpub)[1-9A-HJ-NP-Za-km-z]{107}/<\d+;\d+>\/\*\)#([A-Za-z0-9]{8})$",
+    );
 
-    // 마지막 중괄호 이후 문자 있는지 확인(체크섬이 있는 경우 제외)
-    if (!descriptor.contains("#") && descriptor.substring(descriptor.lastIndexOf(')')).length > 1) {
-      Logger.log("Invalid letters after ) bracelet: $descriptor");
-      throw FormatException("Invalid letters after ) bracelet: $descriptor");
-    }
-
-    // MFP를 사용하는 경우 wpkh( [ 사이에 문자가 있는지 확인한다.
-    if (descriptor.contains('[') &&
-        descriptor.substring(descriptor.indexOf('('), descriptor.indexOf('[')).length > 1) {
-      Logger.log("Invalid letters after ( bracelet: $descriptor");
-      throw FormatException("Invalid letters after ( bracelet: $descriptor");
-    }
-
-    // 대괄호의 개수가 같아야 하며 각각 2개 이상 존재할 수 없다.
-    int squareBracketStartLength = '['.allMatches(descriptor).length;
-    int squareBracketEndLength = ']'.allMatches(descriptor).length;
-    if (squareBracketStartLength != squareBracketEndLength ||
-        squareBracketStartLength > 1 ||
-        squareBracketEndLength > 1) {
-      Logger.log("Invalid length of [] bracelets: $descriptor");
-      throw FormatException("Invalid length of [] bracelets: $descriptor");
+    if (!(regexWpkhFormatWithoutChecksum.hasMatch(descriptor) ||
+        regexWpkhFormatWithChecksumPath.hasMatch(descriptor) ||
+        regexWpkhFormatWithChecksum.hasMatch(descriptor))) {
+      throw Exception("Invalid format error");
     }
   }
 
   static String normalizeDescriptor(String descriptor) {
-    validatePurpose(extractPurpose(descriptor));
     final descriptorFunction = getDescriptorFunction(descriptor);
     if (descriptorFunction != null) {
       validateDescriptorFunction(descriptorFunction);
@@ -107,7 +93,6 @@ class DescriptorUtil {
         descriptorFunction == null ? wrapWithDescriptorFunction(descriptor) : descriptor;
 
     validateNativeSegwitDescriptor(finalDescriptor);
-    validateChecksum(finalDescriptor);
     SingleSignatureWallet.fromDescriptor(finalDescriptor,
         ignoreChecksum: !finalDescriptor.contains("#"));
     return finalDescriptor;
