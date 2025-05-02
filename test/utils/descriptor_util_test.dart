@@ -337,15 +337,14 @@ void main() {
     group('SingleSignatureWallet.fromExtendedPublicKey', () {
       // AddWalletInputViewModel 사용 형태와 동일하게 구성
       String getDescriptorFromSingleSigWallet(String xpub) {
-        if (NetworkType.currentNetworkType.isTestnet) {
-          if (xpub.toLowerCase().startsWith("upub")) {
-            throw Exception("[testnet] upub is not supported");
-          }
-        } else {
-          if (xpub.toLowerCase().startsWith("ypub")) {
-            throw Exception("[mainnet] ypub is not supported");
-          }
+        final allowedPrefixes =
+            NetworkType.currentNetworkType.isTestnet ? ["vpub", "tpub"] : ["xpub", "zpub"];
+        final prefix = xpub.substring(0, 4).toLowerCase();
+
+        if (!allowedPrefixes.contains(prefix)) {
+          throw Exception("[${NetworkType.currentNetworkType}] '$prefix' is not supported.");
         }
+
         return SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, xpub, '-')
             .descriptor;
       }
