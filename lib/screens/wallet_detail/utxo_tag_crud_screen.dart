@@ -4,7 +4,6 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_crud_view_model.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
 import 'package:flutter/material.dart';
@@ -125,7 +124,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
         if (model.deleteUtxoTag()) {
           Navigator.of(context).pop();
         } else {
-          CustomToast.showWarningToast(
+          CoconutToast.showWarningToast(
             context: context,
             text: t.toast.tag_delete_failed,
           );
@@ -150,7 +149,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
         onUpdated: (utxoTag) {
           final success = model.updateUtxoTag(utxoTag);
           if (!success) {
-            CustomToast.showWarningToast(
+            CoconutToast.showWarningToast(
               context: context,
               text: t.toast.tag_update_failed,
             );
@@ -170,7 +169,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
         utxoTags: model.utxoTagList,
         onUpdated: (utxoTag) {
           if (!model.addUtxoTag(utxoTag)) {
-            CustomToast.showWarningToast(
+            CoconutToast.showWarningToast(
               context: context,
               text: t.toast.tag_add_failed,
             );

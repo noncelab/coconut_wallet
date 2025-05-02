@@ -16,7 +16,6 @@ import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -353,12 +352,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   bool _checkStateAndShowToast() {
     if (_viewModel.isNetworkOn != true) {
-      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
       return false;
     }
 
     if (_viewModel.isWalletSyncing) {
-      CustomToast.showToast(context: context, text: t.toast.fetching_onchain_data);
+      CoconutToast.showToast(
+          isVisibleIcon: true, context: context, text: t.toast.fetching_onchain_data);
       return false;
     }
 
@@ -423,10 +423,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               if (success) {
                 Navigator.pop(context);
                 vibrateLight();
-                CustomToast.showToast(context: context, text: message);
+                CoconutToast.showToast(isVisibleIcon: true, context: context, text: message);
               } else {
                 vibrateMedium();
-                CustomToast.showWarningToast(context: context, text: message);
+                CoconutToast.showWarningToast(context: context, text: message);
               }
             });
           },

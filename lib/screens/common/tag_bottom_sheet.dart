@@ -5,7 +5,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -208,10 +207,12 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                               _prevSelectedUtxoTagNames.remove(tag);
                             } else {
                               if (_prevSelectedUtxoTagNames.length == 5) {
-                                CustomToast.showToast(
-                                    context: context,
-                                    text: t.tag_bottom_sheet.max_tag_count,
-                                    seconds: 2);
+                                CoconutToast.showToast(
+                                  context: context,
+                                  isVisibleIcon: true,
+                                  text: t.tag_bottom_sheet.max_tag_count,
+                                  seconds: 2,
+                                );
                                 return;
                               }
                               _prevSelectedUtxoTagNames.add(tag);

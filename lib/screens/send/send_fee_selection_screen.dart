@@ -18,7 +18,6 @@ import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -249,7 +248,13 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     try {
       customSatsPerVb = int.parse(input.trim());
       if (_minimumSatsPerVb != null && customSatsPerVb < _minimumSatsPerVb!) {
-        CustomToast.showToast(context: context, text: t.toast.min_fee(minimum: _minimumSatsPerVb!));
+        CoconutToast.showToast(
+          isVisibleIcon: true,
+          context: context,
+          text: t.toast.min_fee(
+            minimum: _minimumSatsPerVb!,
+          ),
+        );
         _customFeeController.clear();
         return;
       }
@@ -287,7 +292,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       } else {
         // custom 수수료 조회 실패 알림
         if (mounted) {
-          CustomToast.showWarningToast(
+          CoconutToast.showWarningToast(
               context: context,
               text:
                   ErrorCodes.withMessage(ErrorCodes.feeEstimationError, error.toString()).message);
@@ -375,7 +380,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
           _isRecommendedFeeFetchSuccess = false;
           // custom 수수료 조회 실패 알림
           WidgetsBinding.instance.addPostFrameCallback((duration) {
-            CustomToast.showWarningToast(
+            CoconutToast.showWarningToast(
                 context: context,
                 text: ErrorCodes.withMessage(ErrorCodes.feeEstimationError, error.toString())
                     .message);

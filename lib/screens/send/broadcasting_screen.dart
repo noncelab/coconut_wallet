@@ -20,7 +20,6 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -109,8 +108,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               isActive: viewModel.isInitDone,
               onNextPressed: () async {
                 if (viewModel.isNetworkOn == false) {
-                  CustomToast.showWarningToast(
-                      context: context, text: ErrorCodes.networkError.message);
+                  CoconutToast.showWarningToast(
+                    context: context,
+                    text: ErrorCodes.networkError.message,
+                  );
                   return;
                 }
                 if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
