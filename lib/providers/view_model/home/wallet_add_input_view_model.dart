@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
@@ -12,17 +13,20 @@ class WalletAddInputViewModel extends ChangeNotifier {
   final WalletAddService _walletAddService = WalletAddService();
   String? validExtendedPublicKey;
   String? validDescriptor;
+  String? errorMessage;
 
   WalletAddInputViewModel(this._walletProvider);
 
   bool isExtendedPublicKey(String xpub) {
     try {
-      ExtendedPublicKey.parse(xpub);
+      _validateXpubPrefixSupport(xpub);
+      SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, xpub, '-');
       validExtendedPublicKey = xpub;
       validDescriptor = null;
       return true;
-    } catch (_) {
+    } catch (e) {
       validExtendedPublicKey = validDescriptor = null;
+      _setErrorMessageByError(e);
       return false;
     }
   }
@@ -32,10 +36,43 @@ class WalletAddInputViewModel extends ChangeNotifier {
       validDescriptor = DescriptorUtil.normalizeDescriptor(descriptor);
       validExtendedPublicKey = null;
       return true;
-    } catch (_) {
+    } catch (e) {
       validExtendedPublicKey = validDescriptor = null;
+      _setErrorMessageByError(e);
       return false;
     }
+  }
+
+  bool isValidCharacters(String text) {
+    bool isValid = RegExp(r"^[a-zA-Z0-9#*();<>/'`\[\]]+$").hasMatch(text);
+    if (!isValid) {
+      errorMessage = t.wallet_add_input_screen.invalid_character_error_text;
+      notifyListeners();
+    }
+    return isValid;
+  }
+
+  void _validateXpubPrefixSupport(String xpub) {
+    final allowedPrefixes =
+        NetworkType.currentNetworkType.isTestnet ? ["vpub", "tpub"] : ["xpub", "zpub"];
+    final prefix = xpub.substring(0, 4).toLowerCase();
+
+    if (!allowedPrefixes.contains(prefix)) {
+      throw Exception("[${NetworkType.currentNetworkType}] '$prefix' is not supported.");
+    }
+  }
+
+  void _setErrorMessageByError(e) {
+    if (e.toString().contains("network type")) {
+      errorMessage = NetworkType.currentNetworkType == NetworkType.mainnet
+          ? t.wallet_add_input_screen.mainnet_wallet_error_text
+          : t.wallet_add_input_screen.testnet_wallet_error_text;
+    } else if (e.toString().contains("not supported")) {
+      errorMessage = t.wallet_add_input_screen.unsupported_wallet_error_text;
+    } else {
+      errorMessage = t.wallet_add_input_screen.format_error_text;
+    }
+    notifyListeners();
   }
 
   Future<ResultOfSyncFromVault> addWallet() async {

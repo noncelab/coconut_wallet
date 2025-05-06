@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 class DescriptorUtil {
   static const String allowedDescriptorFunction = 'wpkh';
@@ -9,6 +10,12 @@ class DescriptorUtil {
   }
 
   static String wrapWithDescriptorFunction(String descriptor) {
+    // Invalid Descriptor Function인 경우 처리를 막는다. ex: invalid(~)
+    if (descriptor.contains("(") || descriptor.contains(")")) {
+      Logger.log('Invalid descriptor function: $descriptor');
+      throw FormatException('Invalid descriptor function: $descriptor');
+    }
+
     return '$allowedDescriptorFunction($descriptor)';
   }
 
@@ -35,7 +42,7 @@ class DescriptorUtil {
 
   static void validatePurpose(String purpose) {
     if (purpose != '84') {
-      throw const FormatException('Invalid purpose');
+      throw FormatException("purpose $purpose is not supported");
     }
   }
 
@@ -50,6 +57,32 @@ class DescriptorUtil {
     }
   }
 
+  static void validateChecksum(String descriptor) {
+    // 체크섬 있는 경우 검증
+    if (descriptor.contains("#") && !hasDescriptorChecksum(descriptor)) {
+      Logger.log("Invalid descriptor checksum: $descriptor");
+      throw FormatException("Invalid descriptor checksum: $descriptor");
+    }
+  }
+
+  static void validateNativeSegwitDescriptor(String descriptor) {
+    final regexWpkhFormatWithoutChecksum = RegExp(
+      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](vpub|ypub|zpub|xpub|tpub)[1-9A-HJ-NP-Za-km-z]{107}\)$",
+    );
+    final regexWpkhFormatWithChecksumPath = RegExp(
+      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](vpub|ypub|zpub|xpub|tpub)[1-9A-HJ-NP-Za-km-z]{107}/<\d+;\d+>\/\*\)$",
+    );
+    final regexWpkhFormatWithChecksum = RegExp(
+      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](vpub|ypub|zpub|xpub|tpub)[1-9A-HJ-NP-Za-km-z]{107}/<\d+;\d+>\/\*\)#([A-Za-z0-9]{8})$",
+    );
+
+    if (!(regexWpkhFormatWithoutChecksum.hasMatch(descriptor) ||
+        regexWpkhFormatWithChecksumPath.hasMatch(descriptor) ||
+        regexWpkhFormatWithChecksum.hasMatch(descriptor))) {
+      throw Exception("Invalid format error");
+    }
+  }
+
   static String normalizeDescriptor(String descriptor) {
     validatePurpose(extractPurpose(descriptor));
     final descriptorFunction = getDescriptorFunction(descriptor);
@@ -59,7 +92,10 @@ class DescriptorUtil {
 
     final finalDescriptor =
         descriptorFunction == null ? wrapWithDescriptorFunction(descriptor) : descriptor;
-    Descriptor.parse(finalDescriptor, ignoreChecksum: !hasDescriptorChecksum(finalDescriptor));
+
+    validateNativeSegwitDescriptor(finalDescriptor);
+    SingleSignatureWallet.fromDescriptor(finalDescriptor,
+        ignoreChecksum: !finalDescriptor.contains("#"));
     return finalDescriptor;
   }
 }

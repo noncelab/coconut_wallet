@@ -9,6 +9,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -61,7 +62,6 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
           throw 'No Support Result: ${addResult.result.name}';
       }
     } catch (e) {
-      /// TODO: network type mistmatch 에러메시지 개선
       vibrateLightDouble();
       if (mounted) {
         CustomDialogs.showCustomAlertDialog(context,
@@ -100,10 +100,10 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
     }
 
     setState(() {
-      _isButtonEnabled = viewModel.isExtendedPublicKey(
-            _inputController.text,
-          ) ||
-          viewModel.normalizeDescriptor(_inputController.text);
+      _isButtonEnabled = viewModel.isValidCharacters(_inputController.text) &&
+          (_inputController.text.contains("[") // 대괄호 입력시 descriptor 입력을 가정
+              ? viewModel.normalizeDescriptor(_inputController.text)
+              : viewModel.isExtendedPublicKey(_inputController.text));
       _isError = !_isButtonEnabled;
     });
   }
@@ -142,6 +142,9 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                             children: [
                               CoconutLayout.spacing_600h,
                               CoconutTextField(
+                                  textInputFormatter: [
+                                    FilteringTextInputFormatter.deny(RegExp(r'\s+')),
+                                  ],
                                   textAlign: TextAlign.left,
                                   backgroundColor: CoconutColors.gray800,
                                   errorColor: CoconutColors.hotPink,
@@ -156,7 +159,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                   onChanged: (text) {},
                                   isError: _isError,
                                   isLengthVisible: false,
-                                  errorText: t.wallet_add_input_screen.error_text,
+                                  errorText: viewModel.errorMessage,
                                   placeholderText: t.wallet_add_input_screen.placeholder_text,
                                   suffix: IconButton(
                                     iconSize: 14,

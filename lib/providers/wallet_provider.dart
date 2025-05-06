@@ -349,8 +349,20 @@ class WalletProvider extends ChangeNotifier {
     assert(sameNameIndex == -1);
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
-    bool isMultisig = watchOnlyWallet.signers != null;
-    int index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: isMultisig);
+
+    final index = _walletItemList.indexWhere((element) {
+      if (element.descriptor == watchOnlyWallet.descriptor) {
+        return true;
+      }
+      final elementParentFingerprint =
+          ExtendedPublicKey.parse(Descriptor.parse(element.descriptor).getPublicKey(0))
+              .parentFingerprint;
+      final watchOnlyParentFingerprint =
+          ExtendedPublicKey.parse(Descriptor.parse(watchOnlyWallet.descriptor).getPublicKey(0))
+              .parentFingerprint;
+
+      return elementParentFingerprint == watchOnlyParentFingerprint;
+    });
 
     if (index != -1) {
       return ResultOfSyncFromVault(
@@ -358,6 +370,7 @@ class WalletProvider extends ChangeNotifier {
           walletId: _walletItemList[index].id);
     }
     // case 1: 새 지갑 생성
+    bool isMultisig = watchOnlyWallet.signers != null;
     var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
     // 기존 지갑들의 구독이 완료될 때까지 기다립니다.
     while (_walletSubscriptionState != WalletSubscriptionState.completed &&
