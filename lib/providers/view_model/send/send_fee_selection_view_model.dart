@@ -138,6 +138,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     _sendInfoProvider.setEstimatedFee(estimatedFee);
     _sendInfoProvider.setTransaction(_createTransaction(satsPerVb));
     _sendInfoProvider.setFeeBumpfingType(null);
+    _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {

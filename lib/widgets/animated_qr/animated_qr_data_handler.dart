@@ -1,14 +1,17 @@
 import 'package:coconut_wallet/utils/logger.dart';
 
+// TODO: unsigned_transaction_qr_screen.dart에서만 사용되고 있음
+// TODO: 코코넛 볼트와 에어갭 통신할 때 사용되어야함..!
+// TODO: 코코넛 볼트도 bc_ur 방식으로 통일하면 삭제해도 됨~!
 class AnimatedQRDataHandler {
-  static const psbtUrType = 'ur:crypto-psbt';
+  static const psbtUrType = 'ur:crypto-psbt'; // 14자
 
   static List<String> splitData(String data) {
     List<String> result = [];
     int length = data.length;
     int start = 0;
-    int end = 300;
-    int splitCount = (length / 300).ceil();
+    int end = 200; // 232 - 17(헤더 필수문자열들) - 6(N-M 3자리로 가정) = 209
+    int splitCount = (length / 200).ceil();
     int index = 1;
     while (start < length) {
       if (end > length) {
@@ -16,7 +19,7 @@ class AnimatedQRDataHandler {
       }
       result.add('$psbtUrType/$index-$splitCount/${data.substring(start, end)}');
       start = end;
-      end += 300;
+      end += 200;
       index += 1;
     }
     return result;

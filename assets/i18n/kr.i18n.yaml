@@ -77,6 +77,9 @@ quick_send: "빨리 보내기"
 copy: "복사하기"
 copied: "복사 완료"
 change_color: "색 변경"
+selection: "선택"
+hardware_wallet: "하드웨어 월렛"
+vault_app: "볼트 앱"
 
 bitcoin_text: "$bitcoin BTC"
 apply_item: "$count개에 적용"
@@ -202,7 +205,20 @@ send_confirm_screen:
   title: "입력 정보 확인"
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
-  
+unsigned_tx_qr_screen:
+  guide_keystone:
+    step1: "키스톤 메인 화면에서 "
+    step1_em: "SCAN"
+  guide_seedsigner:
+    step1: "1. 홈 화면에서 "
+    step1_em: "Seeds"
+    step2: "2. "
+    step2_em: "Master Fingerprint"
+    step3: "3. "
+    step3_em: "Scan PSBT"
+  guide_hardware_wallet:
+    step1: "하드웨어 월렛으로 아래 QR코드를 스캔하여 서명 과정을 시작해 주세요."
+
 
 # lib/screens/settings
 app_info_screen:
@@ -383,7 +399,7 @@ tooltip:
   wallet_add4: "내보내기 "
   wallet_add5: "화면에 나타나는 QR 코드를 스캔해 주세요."
   amount_to_be_sent: "받기 완료된 비트코인만 전송 가능해요.\n받는 중인 금액: $bitcoin BTC"
-  scan_signed_psbt: "볼트 앱에서 생성된 서명 트랜잭션이 보이시나요? 이제, QR 코드를 스캔해 주세요."
+  scan_signed_psbt: "${hardware_wallet}에서 생성한 서명 트랜잭션 QR이 보이시나요? 이제, QR 코드를 스캔해 주세요."
   unsigned_tx_qr:
     in_vault: "볼트에서"
     select_wallet: "$name 선택, "
@@ -412,6 +428,7 @@ toast:
 
 alert:
   error_tx:
+    created_failed: "트랜잭션 생성 실패"
     not_parsed: "트랜잭션 파싱 실패: $error"
     not_created: "트랜잭션 생성 실패 $error"
   error_send:

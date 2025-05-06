@@ -17,8 +17,8 @@ class WalletAddService {
   }
 
   WatchOnlyWallet createExtendedPublicKeyWallet(String extendedPublicKey, String name) {
-    final singleSigWallet =
-        SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, extendedPublicKey, '-');
+    final singleSigWallet = SingleSignatureWallet.fromExtendedPublicKey(
+        AddressType.p2wpkh, extendedPublicKey, '00000000');
     return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null,
         WalletImportSource.extendedPublicKey.name);
   }

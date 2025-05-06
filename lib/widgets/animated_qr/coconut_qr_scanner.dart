@@ -1,6 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/animated_qr/i_coconut_qr_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
@@ -9,7 +9,7 @@ class CoconutQrScanner extends StatefulWidget {
   final Function(dynamic) onComplete;
   final Function(String) onFailed;
   final Color borderColor;
-  final ICoconutQrDataHandler qrDataHandler;
+  final IQrScanDataHandler qrDataHandler;
 
   const CoconutQrScanner({
     super.key,

@@ -151,10 +151,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       return null;
     }
 
-    if (_sendInfoProvider.walletId == null) {
-      return null;
-    }
-
     // 트랜잭션 출력 주소 중 change 주소를 모두 조회
     final changeAddresses = _walletProvider.filterChangeAddressesFromList(
         _sendInfoProvider.walletId!,
@@ -492,6 +488,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMultisig(_requiredSignature != null);
     _sendInfoProvider.setTransaction(_transaction);
     _sendInfoProvider.setFeeBumpfingType(null);
+    _sendInfoProvider.setWalletImportSource(_walletBaseItem.walletImportSource);
   }
 
   @override
