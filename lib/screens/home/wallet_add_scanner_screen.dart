@@ -15,7 +15,6 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import '../../widgets/appbar/custom_appbar.dart';
 
 class WalletAddScannerScreen extends StatefulWidget {
   final WalletImportSource walletImportSource;

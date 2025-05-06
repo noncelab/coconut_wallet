@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -18,6 +19,7 @@ import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -68,8 +70,16 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<FeeBumpingViewModel>(
+    return ChangeNotifierProxyProvider<ConnectivityProvider, FeeBumpingViewModel>(
       create: (_) => _viewModel,
+      update: (_, connectivityProvider, viewModel) {
+        if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+          });
+        }
+        return viewModel;
+      },
       child: Consumer<FeeBumpingViewModel>(
         builder: (_, viewModel, child) {
           return GestureDetector(
@@ -98,45 +108,61 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                   ),
                   body: Stack(
                     children: [
-                      SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: CoconutLayout.defaultPadding,
-                            vertical: 30,
+                      Column(
+                        children: [
+                          Visibility(
+                            visible: !viewModel.isNetworkOn,
+                            maintainSize: false,
+                            maintainAnimation: false,
+                            maintainState: false,
+                            child: NetworkErrorTooltip(
+                              isNetworkOn: viewModel.isNetworkOn,
+                            ),
                           ),
-                          height: MediaQuery.sizeOf(context).height -
-                              kToolbarHeight -
-                              MediaQuery.of(context).padding.top,
-                          child: Column(
-                            children: [
-                              _buildPendingTxFeeWidget(),
-                              CoconutLayout.spacing_200h,
-                              const Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 3,
+                          Expanded(
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: CoconutLayout.defaultPadding,
+                                  vertical: 30,
                                 ),
-                                child: Divider(
-                                  color: CoconutColors.gray800,
-                                  height: 1,
+                                height: MediaQuery.sizeOf(context).height -
+                                    kToolbarHeight -
+                                    MediaQuery.of(context).padding.top,
+                                child: Column(
+                                  children: [
+                                    _buildPendingTxFeeWidget(),
+                                    CoconutLayout.spacing_200h,
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 3,
+                                      ),
+                                      child: Divider(
+                                        color: CoconutColors.gray800,
+                                        height: 1,
+                                      ),
+                                    ),
+                                    CoconutLayout.spacing_500h,
+                                    _buildBumpingFeeTextFieldWidget(),
+                                    CoconutLayout.spacing_400h,
+                                    if (viewModel.isInitializedSuccess == true) ...[
+                                      _buildRecommendFeeWidget(),
+                                      CoconutLayout.spacing_300h,
+                                      _buildCurrentMempoolFeesWidget(
+                                        viewModel.feeInfos[0].satsPerVb ?? 0,
+                                        viewModel.feeInfos[1].satsPerVb ?? 0,
+                                        viewModel.feeInfos[2].satsPerVb ?? 0,
+                                      ),
+                                    ] else if (viewModel.didFetchRecommendedFeesSuccessfully ==
+                                        false)
+                                      _buildFetchFailedWidget()
+                                  ],
                                 ),
                               ),
-                              CoconutLayout.spacing_500h,
-                              _buildBumpingFeeTextFieldWidget(),
-                              CoconutLayout.spacing_400h,
-                              if (viewModel.isInitializedSuccess == true) ...[
-                                _buildRecommendFeeWidget(),
-                                CoconutLayout.spacing_300h,
-                                _buildCurrentMempoolFeesWidget(
-                                  viewModel.feeInfos[0].satsPerVb ?? 0,
-                                  viewModel.feeInfos[1].satsPerVb ?? 0,
-                                  viewModel.feeInfos[2].satsPerVb ?? 0,
-                                ),
-                              ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
-                                _buildFetchFailedWidget()
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                       if (_isLoading) const CoconutLoadingOverlay(),
                     ],
@@ -152,7 +178,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                   gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 150),
                   isActive: !viewModel.insufficientUtxos &&
                       !_isEstimatedFeeTooLow &&
-                      _textEditingController.text.isNotEmpty,
+                      _textEditingController.text.isNotEmpty &&
+                      viewModel.isNetworkOn,
                   subWidget: _textEditingController.text.isEmpty ||
                           _textEditingController.text == '0'
                       ? Container()
@@ -340,6 +367,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       walletProvider,
       addressRepository,
       utxoRepositry,
+      Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
     );
   }
 

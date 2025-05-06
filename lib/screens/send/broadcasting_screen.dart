@@ -1,7 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/error/app_error.dart'; // FIXME: remove model import
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -17,10 +16,9 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -103,14 +101,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         builder: (context, viewModel, child) => Scaffold(
           floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
           backgroundColor: CoconutColors.black,
-          appBar: CustomAppBar.buildWithNext(
+          appBar: CoconutAppBar.buildWithNext(
               title: t.broadcasting_screen.title,
               context: context,
-              isActive: viewModel.isInitDone,
+              usePrimaryActiveColor: true,
+              isActive: viewModel.isNetworkOn && viewModel.isInitDone,
               onNextPressed: () async {
-                if (viewModel.isNetworkOn == false) {
-                  CustomToast.showWarningToast(
-                      context: context, text: ErrorCodes.networkError.message);
+                if (!viewModel.isNetworkOn) {
                   return;
                 }
                 if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
@@ -122,88 +119,99 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 }
               }),
           body: SafeArea(
-            child: SingleChildScrollView(
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                padding: Paddings.container,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CoconutLayout.spacing_1000h,
-                    Text(
-                      t.broadcasting_screen.description,
-                      style: Styles.h3,
-                    ),
-                    CoconutLayout.spacing_400h,
-                    Center(
-                      child: Text.rich(
-                        TextSpan(
-                            text: viewModel.amount != null
-                                ? satoshiToBitcoinString(
-                                    viewModel.sendingAmountWhenAddressIsMyChange != null
-                                        ? viewModel.sendingAmountWhenAddressIsMyChange!
-                                        : viewModel.amount!)
-                                : "",
-                            children: <TextSpan>[TextSpan(text: ' ${t.btc}', style: Styles.unit)]),
-                        style: Styles.balance1,
-                      ),
-                    ),
-                    FiatPrice(
-                        satoshiAmount: viewModel.amount ?? 0,
-                        textStyle:
-                            CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
-                    CoconutLayout.spacing_1000h,
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28.0),
-                            color: MyColors.transparentWhite_06,
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Container(
+                    width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.sizeOf(context).height -
+                        kToolbarHeight -
+                        MediaQuery.of(context).padding.top,
+                    padding: Paddings.container,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        CoconutLayout.spacing_1000h,
+                        Text(
+                          t.broadcasting_screen.description,
+                          style: Styles.h3,
+                        ),
+                        CoconutLayout.spacing_400h,
+                        Center(
+                          child: Text.rich(
+                            TextSpan(
+                                text: viewModel.amount != null
+                                    ? satoshiToBitcoinString(
+                                        viewModel.sendingAmountWhenAddressIsMyChange != null
+                                            ? viewModel.sendingAmountWhenAddressIsMyChange!
+                                            : viewModel.amount!)
+                                    : "",
+                                children: <TextSpan>[
+                                  TextSpan(text: ' ${t.btc}', style: Styles.unit)
+                                ]),
+                            style: Styles.balance1,
                           ),
+                        ),
+                        FiatPrice(
+                            satoshiAmount: viewModel.amount ?? 0,
+                            textStyle:
+                                CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
+                        CoconutLayout.spacing_1000h,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: Column(
-                                children: [
-                                  InformationItemCard(
-                                      label: t.receiver,
-                                      value: viewModel.recipientAddresses,
-                                      isNumber: true,
-                                      crossAxisAlignment: CrossAxisAlignment.start),
-                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
-                                  InformationItemCard(
-                                      label: t.estimated_fee,
-                                      value: [
-                                        viewModel.fee != null
-                                            ? "${satoshiToBitcoinString(viewModel.fee!)} ${t.btc}"
-                                            : ''
-                                      ],
-                                      isNumber: true),
-                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
-                                  InformationItemCard(
-                                      label: t.total_cost,
-                                      value: [
-                                        viewModel.totalAmount != null
-                                            ? "${satoshiToBitcoinString(viewModel.totalAmount!)} ${t.btc}"
-                                            : ''
-                                      ],
-                                      isNumber: true),
-                                ],
-                              ))),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(28.0),
+                                color: MyColors.transparentWhite_06,
+                              ),
+                              child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  child: Column(
+                                    children: [
+                                      InformationItemCard(
+                                          label: t.receiver,
+                                          value: viewModel.recipientAddresses,
+                                          isNumber: true,
+                                          crossAxisAlignment: CrossAxisAlignment.start),
+                                      const Divider(color: MyColors.transparentWhite_12, height: 1),
+                                      InformationItemCard(
+                                          label: t.estimated_fee,
+                                          value: [
+                                            viewModel.fee != null
+                                                ? "${satoshiToBitcoinString(viewModel.fee!)} ${t.btc}"
+                                                : ''
+                                          ],
+                                          isNumber: true),
+                                      const Divider(color: MyColors.transparentWhite_12, height: 1),
+                                      InformationItemCard(
+                                          label: t.total_cost,
+                                          value: [
+                                            viewModel.totalAmount != null
+                                                ? "${satoshiToBitcoinString(viewModel.totalAmount!)} ${t.btc}"
+                                                : ''
+                                          ],
+                                          isNumber: true),
+                                    ],
+                                  ))),
+                        ),
+                        if (viewModel.isSendingToMyAddress) ...[
+                          const SizedBox(
+                            height: 20,
+                          ),
+                          Text(
+                            t.broadcasting_screen.self_sending,
+                            textAlign: TextAlign.center,
+                            style: Styles.caption,
+                          ),
+                        ],
+                      ],
                     ),
-                    if (viewModel.isSendingToMyAddress) ...[
-                      const SizedBox(
-                        height: 20,
-                      ),
-                      Text(
-                        t.broadcasting_screen.self_sending,
-                        textAlign: TextAlign.center,
-                        style: Styles.caption,
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
+                NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+              ],
             ),
           ),
         ),

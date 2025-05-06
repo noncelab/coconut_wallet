@@ -353,7 +353,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   bool _checkStateAndShowToast() {
     if (_viewModel.isNetworkOn != true) {
-      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      CustomToast.showWarningToast(
+        context: context,
+        text: ErrorCodes.networkError.message,
+      );
       return false;
     }
 

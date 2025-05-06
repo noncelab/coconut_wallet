@@ -13,14 +13,13 @@ import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
+import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class SendFeeSelectionScreen extends StatefulWidget {
@@ -73,13 +72,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         builder: (context, viewModel, child) {
           return Scaffold(
             backgroundColor: CoconutColors.black,
-            appBar: CustomAppBar.buildWithNext(
+            appBar: CoconutAppBar.buildWithNext(
                 title: t.fee,
                 context: context,
                 isActive: _canGoNext(),
                 onBackPressed: () {
                   Navigator.pop(context);
                 },
+                usePrimaryActiveColor: true,
                 nextButtonTitle: t.complete,
                 onNextPressed: () {
                   int satsPerVb = _customSelected
@@ -95,108 +95,111 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
               child: Stack(
                 children: [
                   SingleChildScrollView(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Fee 선택 현황
-                        Center(
-                            child: Column(children: [
-                          const SizedBox(height: 32),
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                color: MyColors.transparentWhite_06,
-                                border: Border.all(color: MyColors.transparentWhite_12, width: 1)),
-                            child: Text(_selectedFeeLevel ?? "", style: Styles.caption),
-                          ),
-                          Text(
-                              _estimatedFee != null
-                                  ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
-                                  : '',
-                              style: Styles.fee),
-                          FiatPrice(
-                              satoshiAmount: _estimatedFee ?? 0,
-                              textStyle: CoconutTypography.body2_14_Number
-                                  .setColor(CoconutColors.gray400)),
-                          const SizedBox(height: 32),
-                        ])),
-
-                        if (viewModel.isNetworkOn == false)
-                          _buildFixedTooltip(
-                            tooltipState: CoconutTooltipState.error,
-                            richText: RichText(
-                              text: TextSpan(text: ErrorCodes.networkError.message),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.sizeOf(context).height -
+                          kToolbarHeight -
+                          MediaQuery.of(context).padding.top,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          // Fee 선택 현황
+                          Center(
+                              child: Column(children: [
+                            const SizedBox(height: 32),
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  color: MyColors.transparentWhite_06,
+                                  border:
+                                      Border.all(color: MyColors.transparentWhite_12, width: 1)),
+                              child: Text(_selectedFeeLevel ?? "", style: Styles.caption),
                             ),
-                            isNetworkError: true,
-                          ),
-                        if (viewModel.isNetworkOn == true && _isRecommendedFeeFetchSuccess == false)
-                          _buildFixedTooltip(
-                              tooltipState: CoconutTooltipState.error,
-                              richText: RichText(text: TextSpan(text: t.tooltip.recommended_fee1))),
-                        if (_estimatedFee != null && _estimatedFee! >= maxFeeLimit)
-                          _buildFixedTooltip(
-                            tooltipState: CoconutTooltipState.warning,
-                            richText: RichText(
-                                text: TextSpan(
-                                    text: t.tooltip.recommended_fee2(
-                                        bitcoin: UnitUtil.satoshiToBitcoin(maxFeeLimit)))),
-                          ),
-                        if (_estimatedFee != null &&
-                            _estimatedFee! != 0 &&
-                            !_viewModel.isBalanceEnough(_estimatedFee) &&
-                            _estimatedFee! < maxFeeLimit)
-                          _buildFixedTooltip(
-                            tooltipState: CoconutTooltipState.warning,
-                            richText: RichText(text: TextSpan(text: t.errors.insufficient_balance)),
-                          ),
-                        Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                            child: Column(
-                              children: [
-                                ...List.generate(
-                                    3,
-                                    (index) => FeeSelectionItemCard(
-                                        feeInfo: feeInfos[index],
-                                        isSelected: _customSelected
-                                            ? false
-                                            : _selectedLevel == feeInfos[index].level,
-                                        onPressed: () {
-                                          setState(() {
-                                            _selectedLevel = feeInfos[index].level;
-                                            _selectedFeeLevel = feeInfos[index].level.text;
-                                            _estimatedFee = feeInfos[index].estimatedFee;
-                                            _customSelected = false;
-                                          });
-                                        })),
-                                CustomUnderlinedButton(
-                                  padding: Paddings.widgetContainer,
-                                  onTap: () {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      builder: (context) => TextFieldBottomSheet(
-                                        title: t.input_directly,
-                                        placeholder: t.text_field.enter_fee_as_natural_number,
-                                        onComplete: (text) {
-                                          _handleCustomFeeInput(text);
-                                        },
-                                        keyboardType: TextInputType.number,
-                                        visibleTextLimit: false,
-                                      ),
-                                    );
-                                  },
-                                  text: t.text_field.enter_fee_directly,
-                                  fontSize: 14,
-                                  lineHeight: 21,
-                                  defaultColor: CoconutColors.gray200,
-                                ),
-                              ],
-                            )),
-                      ],
+                            Text(
+                                _estimatedFee != null
+                                    ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
+                                    : '',
+                                style: Styles.fee),
+                            FiatPrice(
+                                satoshiAmount: _estimatedFee ?? 0,
+                                textStyle: CoconutTypography.body2_14_Number
+                                    .setColor(CoconutColors.gray400)),
+                            const SizedBox(height: 32),
+                          ])),
+
+                          if (viewModel.isNetworkOn == true &&
+                              _isRecommendedFeeFetchSuccess == false)
+                            _buildFixedTooltip(
+                                tooltipState: CoconutTooltipState.error,
+                                richText:
+                                    RichText(text: TextSpan(text: t.tooltip.recommended_fee1))),
+                          if (_estimatedFee != null && _estimatedFee! >= maxFeeLimit)
+                            _buildFixedTooltip(
+                              tooltipState: CoconutTooltipState.warning,
+                              richText: RichText(
+                                  text: TextSpan(
+                                      text: t.tooltip.recommended_fee2(
+                                          bitcoin: UnitUtil.satoshiToBitcoin(maxFeeLimit)))),
+                            ),
+                          if (_estimatedFee != null &&
+                              _estimatedFee! != 0 &&
+                              !_viewModel.isBalanceEnough(_estimatedFee) &&
+                              _estimatedFee! < maxFeeLimit)
+                            _buildFixedTooltip(
+                              tooltipState: CoconutTooltipState.warning,
+                              richText:
+                                  RichText(text: TextSpan(text: t.errors.insufficient_balance)),
+                            ),
+                          Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                              child: Column(
+                                children: [
+                                  ...List.generate(
+                                      3,
+                                      (index) => FeeSelectionItemCard(
+                                          feeInfo: feeInfos[index],
+                                          isSelected: _customSelected
+                                              ? false
+                                              : _selectedLevel == feeInfos[index].level,
+                                          onPressed: () {
+                                            setState(() {
+                                              _selectedLevel = feeInfos[index].level;
+                                              _selectedFeeLevel = feeInfos[index].level.text;
+                                              _estimatedFee = feeInfos[index].estimatedFee;
+                                              _customSelected = false;
+                                            });
+                                          })),
+                                  CustomUnderlinedButton(
+                                    padding: Paddings.widgetContainer,
+                                    onTap: () {
+                                      showModalBottomSheet(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        builder: (context) => TextFieldBottomSheet(
+                                          title: t.input_directly,
+                                          placeholder: t.text_field.enter_fee_as_natural_number,
+                                          onComplete: (text) {
+                                            _handleCustomFeeInput(text);
+                                          },
+                                          keyboardType: TextInputType.number,
+                                          visibleTextLimit: false,
+                                        ),
+                                      );
+                                    },
+                                    text: t.text_field.enter_fee_directly,
+                                    fontSize: 14,
+                                    lineHeight: 21,
+                                    defaultColor: CoconutColors.gray200,
+                                  ),
+                                ],
+                              )),
+                        ],
+                      ),
                     ),
                   ),
+                  NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
                   if (_isLoading) const CoconutLoadingOverlay(),
                 ],
               ),
@@ -221,9 +224,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       if (_viewModel.isNetworkOn) {
         _startToSetRecommendedFee();
       }
-
-      // TODO:
-      //_model.recordUsedUtxoIdListWhenSend([]);
     });
   }
 
@@ -398,25 +398,15 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Widget _buildFixedTooltip(
-      {required RichText richText,
-      CoconutTooltipState tooltipState = CoconutTooltipState.info,
-      bool isNetworkError = false}) {
+      {required RichText richText, CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
     return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: CoconutLayout.defaultPadding),
-        child: CoconutToolTip(
-          richText: richText,
-          showIcon: true,
-          tooltipType: CoconutTooltipType.fixed,
-          tooltipState: tooltipState,
-          icon: isNetworkError
-              ? SvgPicture.asset(
-                  'assets/svg/triangle-warning.svg',
-                  colorFilter: const ColorFilter.mode(
-                    CoconutColors.hotPink,
-                    BlendMode.srcIn,
-                  ),
-                )
-              : null,
-        ));
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: CoconutLayout.defaultPadding),
+      child: CoconutToolTip(
+        richText: richText,
+        showIcon: true,
+        tooltipType: CoconutTooltipType.fixed,
+        tooltipState: tooltipState,
+      ),
+    );
   }
 }
