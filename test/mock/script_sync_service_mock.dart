@@ -84,7 +84,7 @@ void printState(NodeProviderState state) {
   }
 
   buffer.writeln('└─────────┴─────────┴─────────┴─────────┘');
-  Logger.log(buffer.toString());
+  // Logger.log(buffer.toString());
 }
 
 class ScriptSyncServiceMock {

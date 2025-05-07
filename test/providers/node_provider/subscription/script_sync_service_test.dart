@@ -44,6 +44,7 @@ void main() {
       final addressRepository = ScriptSyncServiceMock.addressRepository;
       final walletRepository = ScriptSyncServiceMock.walletRepository;
       final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
+      scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
       final utxoRepository = ScriptSyncServiceMock.utxoRepository;
       final previousMockTx = TransactionMock.createMockTransaction(
         toAddress: otherWalletItem.walletBase.getAddress(index),
@@ -179,6 +180,7 @@ void main() {
       final addressRepository = ScriptSyncServiceMock.addressRepository;
       final walletRepository = ScriptSyncServiceMock.walletRepository;
       final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
+      scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
       final utxoRepository = ScriptSyncServiceMock.utxoRepository;
       final previousMockTx = TransactionMock.createMockTransaction(
         toAddress: otherWalletItem.walletBase.getAddress(index),
