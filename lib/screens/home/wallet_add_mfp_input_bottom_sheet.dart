@@ -120,10 +120,22 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(t.wallet_add_input_screen.mfp_description_texts[0],
-                                      style: CoconutTypography.body3_12),
-                                  Text(t.wallet_add_input_screen.mfp_description_texts[1],
-                                      style: CoconutTypography.body3_12),
+                                  RichText(
+                                    text: TextSpan(
+                                      text: t.wallet_add_input_screen.mfp_description_texts[0],
+                                      style: CoconutTypography.body3_12,
+                                      children: [
+                                        TextSpan(
+                                            text:
+                                                "\n${t.wallet_add_input_screen.mfp_description_texts[1]}",
+                                            style: CoconutTypography.body3_12),
+                                        TextSpan(
+                                            text:
+                                                " ${t.wallet_add_input_screen.mfp_description_texts[2]}",
+                                            style: CoconutTypography.body3_12_Bold)
+                                      ],
+                                    ),
+                                  ),
                                 ],
                               )),
                         ],
