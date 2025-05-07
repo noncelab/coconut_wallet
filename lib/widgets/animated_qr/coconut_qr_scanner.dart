@@ -48,6 +48,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
       } catch (e) {
         Logger.log(e.toString());
         widget.onFailed(e.toString());
+        handler.reset();
       }
     }, onError: (e) {
       widget.onFailed(e.toString());

@@ -116,7 +116,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     }
 
     try {
-      if (!_viewModel.isPsbtAmountAndTxHashEqualTo(psbt)) {
+      if (!_viewModel.isSignedPsbtMatchingUnsignedPsbt(psbt)) {
         await _showErrorDialog(t.alert.signed_psbt.wrong_send_info);
         return;
       }
@@ -162,7 +162,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     }
 
     try {
-      if (!_viewModel.isPsbtAmountAndTxHashEqualTo(psbt)) {
+      if (!_viewModel.isSignedPsbtMatchingUnsignedPsbt(psbt)) {
         await _showErrorDialog(t.alert.signed_psbt.wrong_send_info);
         return;
       }
