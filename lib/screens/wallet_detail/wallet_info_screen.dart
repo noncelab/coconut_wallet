@@ -49,20 +49,22 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       ),
       child: Consumer<WalletInfoViewModel>(
         builder: (_, viewModel, child) {
-          return Scaffold(
-            backgroundColor: CoconutColors.black,
-            appBar: CoconutAppBar.build(
-                title: t.wallet_info_screen.title(name: viewModel.walletName), context: context),
-            body: SafeArea(
-              child: SingleChildScrollView(
-                child: Stack(
-                  children: [
-                    Column(
+          return Stack(
+            children: [
+              Scaffold(
+                backgroundColor: CoconutColors.black,
+                appBar: CoconutAppBar.build(
+                    title: t.wallet_info_screen.title(name: viewModel.walletName),
+                    context: context),
+                body: SafeArea(
+                  child: SingleChildScrollView(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Padding(
                           padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
                           child: WalletInfoItemCard(
+                            id: widget.id,
                             walletItem: viewModel.walletItemBase,
                             onTooltipClicked: () {
                               _removeTooltip();
@@ -83,6 +85,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               });
                             },
                             tooltipKey: _walletTooltipKey,
+                            onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
                           ),
                         ),
                         if (widget.isMultisig) ...{
@@ -240,40 +243,40 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                         ),
                       ],
                     ),
-                    Positioned(
-                      top: _walletTooltipIconPosition.dy - _tooltipTopPadding + 10,
-                      right: MediaQuery.of(context).size.width -
-                          _walletTooltipIconPosition.dx -
-                          (_walletTooltipIconRenderBox == null
-                              ? 0
-                              : _walletTooltipIconRenderBox!.size.width) -
-                          10,
-                      child: CoconutToolTip(
-                        width: MediaQuery.sizeOf(context).width,
-                        isBubbleClipperSideLeft: false,
-                        tooltipType: CoconutTooltipType.placement,
-                        richText: RichText(
-                          text: TextSpan(
-                            text: widget.isMultisig
-                                ? t.tooltip.multisig_wallet(
-                                    total: viewModel.multisigTotalSignerCount,
-                                    count: viewModel.multisigRequiredSignerCount)
-                                : t.tooltip.mfp,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.black).merge(
-                                  const TextStyle(
-                                    height: 1.3,
-                                  ),
-                                ),
-                          ),
-                        ),
-                        onTapRemove: _removeTooltip,
-                        isPlacementTooltipVisible: _tooltipRemainingTime > 0,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              Positioned(
+                top: _tooltipTopPadding,
+                right: MediaQuery.of(context).size.width -
+                    _walletTooltipIconPosition.dx -
+                    (_walletTooltipIconRenderBox == null
+                        ? 0
+                        : _walletTooltipIconRenderBox!.size.width) -
+                    10,
+                child: CoconutToolTip(
+                  width: MediaQuery.sizeOf(context).width,
+                  isBubbleClipperSideLeft: false,
+                  tooltipType: CoconutTooltipType.placement,
+                  richText: RichText(
+                    text: TextSpan(
+                      text: widget.isMultisig
+                          ? t.tooltip.multisig_wallet(
+                              total: viewModel.multisigTotalSignerCount,
+                              count: viewModel.multisigRequiredSignerCount)
+                          : t.tooltip.mfp,
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.black).merge(
+                            const TextStyle(
+                              height: 1.3,
+                            ),
+                          ),
+                    ),
+                  ),
+                  onTapRemove: _removeTooltip,
+                  isPlacementTooltipVisible: _tooltipRemainingTime > 0,
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -301,7 +304,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           _walletTooltipKey.currentContext?.findRenderObject() as RenderBox?;
       if (_walletTooltipIconRenderBox != null) {
         _walletTooltipIconPosition = _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
-        _tooltipTopPadding = MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
+        _tooltipTopPadding =
+            _walletTooltipIconPosition.dy + _walletTooltipIconRenderBox!.size.height;
+
+        debugPrint('MediaQuery.paddingOf(context).top = ${MediaQuery.paddingOf(context).top}');
+        debugPrint('kToolbarHeight = $kToolbarHeight');
+        debugPrint(
+            '_walletTooltipIconRenderBox!.size.height: ${_walletTooltipIconRenderBox!.size.height}');
+        debugPrint('_tooltipTopPadding: $_tooltipTopPadding');
       }
     } catch (e) {
       debugPrint('Tooltip position initialization failed: $e');

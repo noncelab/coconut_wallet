@@ -380,6 +380,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       name: name,
       iconIndex: iconIndex,
       colorIndex: colorIndex,
+      walletImportSource: walletImportSource,
     ) = walletItem;
     List<MultisigSigner>? signers;
     if (walletItem.walletType == WalletType.multiSignature) {
@@ -396,6 +397,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       isLastItem: isLastItem,
       isBalanceHidden: isBalanceHidden,
       signers: signers,
+      walletImportSource: walletImportSource,
     );
     return walletItemCard;
   }
@@ -479,7 +481,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           width: MediaQuery.sizeOf(context).width,
                           child: _buildWalletIconShrinkButton(
                             () => _goToManualInputScreen(),
-                            WalletImportSource.zpub,
+                            WalletImportSource.extendedPublicKey,
                           ),
                         ),
                       ],
@@ -664,8 +666,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         svgPath = 'assets/svg/seed-signer.svg';
         scanText = t.wallet_add_scanner_screen.seed_signer;
         break;
-      case WalletImportSource.zpub:
-      case WalletImportSource.descriptor:
+      case WalletImportSource.extendedPublicKey:
         svgPath = 'assets/svg/zpub.svg';
         scanText = t.wallet_add_scanner_screen.self;
     }
@@ -673,7 +674,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       defaultColor: CoconutColors.black,
       pressedColor: CoconutColors.gray800,
       onPressed: () => onPressed(),
-      child: scanType == WalletImportSource.zpub
+      child: scanType == WalletImportSource.extendedPublicKey
           ? Padding(
               padding: const EdgeInsets.symmetric(
                 vertical: 16,

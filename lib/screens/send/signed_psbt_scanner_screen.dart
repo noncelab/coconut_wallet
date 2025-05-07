@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
@@ -149,7 +150,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     }
   }
 
-  void _onFailedScanning(String message) {
+  void _onFailedScanning(String message) async {
     if (_isProcessing) return;
     _isProcessing = true;
 
@@ -165,15 +166,14 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     if (message.contains('Invalid Scheme')) {
       errorMessage = t.alert.signed_psbt.invalid_signature;
     } else {
-      errorMessage = t.alert.scan_failed(error: message);
+      errorMessage = t.alert.scan_failed_description(error: message);
     }
 
-    showAlertDialog(
-        context: context,
-        content: errorMessage,
-        onClosed: () {
-          _isProcessing = false;
-        });
+    await CustomDialogs.showCustomAlertDialog(context,
+        title: t.alert.scan_failed, message: errorMessage, onConfirm: () {
+      _isProcessing = false;
+      Navigator.pop(context);
+    });
   }
 
   void _showAlert(String errorMessage, {bool isBack = false}) {

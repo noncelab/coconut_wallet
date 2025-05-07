@@ -99,12 +99,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     ],
                   ),
                 ),
+                _buildStickyHeader(),
                 Selector<WalletDetailViewModel, bool>(
                     selector: (_, viewModel) => viewModel.faucetTooltipVisible,
                     builder: (_, isFaucetTooltipVisible, __) {
                       return _buildFaucetTooltip(isFaucetTooltipVisible);
                     }),
-                _buildStickyHeader(),
               ],
             ),
           ),
@@ -142,6 +142,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       'id': widget.id,
       'isMultisig': _viewModel.walletType == WalletType.multiSignature
     });
+
+    _viewModel.updateWalletName();
   }
 
   void _onRefresh() async {

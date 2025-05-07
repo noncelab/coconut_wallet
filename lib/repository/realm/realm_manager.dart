@@ -69,6 +69,7 @@ class RealmManager {
     realm.write(() {
       realm.deleteAll<RealmWalletBase>();
       realm.deleteAll<RealmMultisigWallet>();
+      realm.deleteAll<RealmExternalWallet>();
       realm.deleteAll<RealmTransaction>();
       realm.deleteAll<RealmUtxoTag>();
       realm.deleteAll<RealmWalletBalance>();

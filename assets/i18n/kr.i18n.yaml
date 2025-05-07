@@ -131,11 +131,39 @@ wallet_add_scanner_screen:
   seed_signer: "시드사이너"
   self: "직접 입력"
   self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
+  select: " 선택"
+  guide_vault: "코코넛 볼트 앱 - 지갑 선택 - 지갑 정보 내보내기"
+  guide_keystone:
+    step1: "1. 홈 화면에서 "
+    step1_em: "Seeds"
+    step2: "2. "
+    step2_em: "Master Fingerprint"
+    step3: "3. "
+    step3_em: "Export Xpub"
+    step4: "4. "
+    step4_em1: "Single Sig"
+    next: " > "
+    step4_em2: "Native Segwit"
+    step5: "5. "
+    step5_em: "BlueWallet"
+    step6: "6. 안내 메시지 확인 후 "
+    step6_em: "I understand"
+    step6_end: " > Export Xpub"
+  guide_seedsigner:
+    step1: "1. 메인 화면에서 "
+    step1_em: "더보기(•••)"
+    step2: "2. "
+    step2_em: "Connect Software Wallet"
+    step3: "3. 어떤 지갑이든 선택"
 
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
   placeholder_text: "확장공개키(zpub) 또는 디스크립터를 입력해 주세요"
-  error_text: "확인할 수 없는 형식이에요"
+  format_error_text: "확인할 수 없는 형식이에요"
+  invalid_character_error_text: "허용되지 않는 문자가 있어요"
+  mainnet_wallet_error_text: "메인넷 지갑이 아니에요"
+  testnet_wallet_error_text: "테스트넷 지갑이 아니에요"
+  unsupported_wallet_error_text: "지원하지 않는 지갑이에요"
   wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
   blue_wallet_texts:
     - "· 블루월렛"
@@ -224,6 +252,7 @@ utxo_tag_screen:
 wallet_info_screen:
   title: "$name 정보"
   view_xpub: "확장 공개키 보기"
+  duplicated_name: "이미 사용중인 이름이에요"
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
@@ -254,9 +283,7 @@ transaction_fee_bumping_screen:
 
 # lib/widgets/card
 wallet_list_add_guide_card:
-  add_watch_only: "보기 전용 지갑을 추가해 주세요"
-  top_right_icon: "오른쪽 위 + 버튼을 눌러도 추가할 수 있어요"
-  btn_add: "바로 추가하기"
+  add_watch_only: "보기 전용 지갑을 추가해 보세요!"
 wallet_list_glossary_shortcut_card:
   any_word_you_dont_know: "모르는 용어가 있으신가요?"
   top_right: "오른쪽 위 "
@@ -401,7 +428,7 @@ alert:
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
     need_more_sign: "$count개 서명이 더 필요해요"
     invalid_signature: "잘못된 서명 정보에요. 다시 시도해 주세요."
-  scan_failed: "'[스캔 실패] $error'"
+  scan_failed: "스캔 실패"
   scan_failed_description: "QR코드 스캔에 실패했어요. 다시 시도해 주세요.\n$error"
   tutorial:
     title: "도움이 필요하신가요?"
@@ -418,6 +445,8 @@ alert:
     duplicate_name_description: "같은 이름을 가진 지갑이 있습니다.\n이름을 변경한 후 동기화 해주세요."
     add_failed: "보기 전용 지갑 추가 실패"
     add_failed_description: "잘못된 지갑 정보입니다."
+    already_exist: "지갑 중복"
+    already_exist_description: "이미 추가된 지갑입니다. ($name)"
   wallet_delete:
     confirm_delete: "지갑 삭제"
     confirm_delete_description: "지갑을 정말 삭제하시겠어요?"
@@ -447,3 +476,8 @@ alert:
     try_again: "$count 후에 다시 시도해 주세요"
   fee_bumping:
     not_enough_amount: "$bumpingType를 실행하기에 충분한 잔액이 없습니다.\n현재 사용 가능한 잔액을 확인해 주세요."
+
+third_party:
+  keystone: "키스톤"
+  seedSigner: "시드사이너"
+  zpub: "zpub"

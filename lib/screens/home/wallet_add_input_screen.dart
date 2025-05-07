@@ -1,11 +1,17 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
@@ -23,8 +29,54 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
   bool _isWalletInfoExpanded = false;
   bool _isButtonEnabled = false;
   bool _hasAddedListener = false;
+  bool _isProcessing = false;
 
-  void _onButtonPressed() {}
+  Future<void> _onButtonPressed(WalletAddInputViewModel viewModel) async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+    context.loaderOverlay.show();
+    await Future.delayed(const Duration(seconds: 2));
+    try {
+      if (!mounted) return;
+      ResultOfSyncFromVault addResult = await viewModel.addWallet();
+      if (!mounted) return;
+      switch (addResult.result) {
+        case WalletSyncResult.newWalletAdded:
+          {
+            Navigator.pop(context, addResult);
+            break;
+          }
+        case WalletSyncResult.existingWalletUpdateImpossible:
+          vibrateLightDouble();
+          if (mounted) {
+            CustomDialogs.showCustomAlertDialog(context,
+                title: t.alert.wallet_add.already_exist,
+                message: t.alert.wallet_add.already_exist_description(
+                    name: TextUtils.ellipsisIfLonger(viewModel.getWalletName(addResult.walletId!),
+                        maxLength: 15)), onConfirm: () {
+              _isProcessing = false;
+              Navigator.pop(context);
+            });
+          }
+        default:
+          throw 'No Support Result: ${addResult.result.name}';
+      }
+    } catch (e) {
+      vibrateLightDouble();
+      if (mounted) {
+        CustomDialogs.showCustomAlertDialog(context,
+            title: t.alert.wallet_add.add_failed, message: e.toString(), onConfirm: () {
+          _isProcessing = false;
+          Navigator.pop(context);
+        });
+      }
+    } finally {
+      vibrateMedium();
+      if (mounted) {
+        context.loaderOverlay.hide();
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -48,10 +100,10 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
     }
 
     setState(() {
-      _isButtonEnabled = viewModel.isExtendedPublicKey(
-            _inputController.text,
-          ) ||
-          viewModel.isDescriptor(_inputController.text);
+      _isButtonEnabled = viewModel.isValidCharacters(_inputController.text) &&
+          (_inputController.text.contains("[") // 대괄호 입력시 descriptor 입력을 가정
+              ? viewModel.normalizeDescriptor(_inputController.text)
+              : viewModel.isExtendedPublicKey(_inputController.text));
       _isError = !_isButtonEnabled;
     });
   }
@@ -90,6 +142,9 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                             children: [
                               CoconutLayout.spacing_600h,
                               CoconutTextField(
+                                  textInputFormatter: [
+                                    FilteringTextInputFormatter.deny(RegExp(r'\s+')),
+                                  ],
                                   textAlign: TextAlign.left,
                                   backgroundColor: CoconutColors.gray800,
                                   errorColor: CoconutColors.hotPink,
@@ -104,7 +159,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                   onChanged: (text) {},
                                   isError: _isError,
                                   isLengthVisible: false,
-                                  errorText: t.wallet_add_input_screen.error_text,
+                                  errorText: viewModel.errorMessage,
                                   placeholderText: t.wallet_add_input_screen.placeholder_text,
                                   suffix: IconButton(
                                     iconSize: 14,
@@ -193,7 +248,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                           ),
                         ),
                         FixedBottomButton(
-                          onButtonClicked: _onButtonPressed,
+                          onButtonClicked: () => _onButtonPressed(viewModel),
                           text: t.complete,
                           showGradient: true,
                           gradientPadding:

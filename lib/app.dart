@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -58,6 +59,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late bool kElectrumIsSSL;
   static late String kMempoolHost;
   static late String kFaucetHost;
+  static late NetworkType kNetworkType;
   const CoconutWalletApp({super.key});
 
   @override
@@ -139,10 +141,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ProxyProvider5<AddressRepository, TransactionRepository, UtxoRepository,
             SubscriptionRepository, WalletRepository, NodeProvider>(
           create: (context) => NodeProvider(
-            CoconutWalletApp.kElectrumHost,
-            CoconutWalletApp.kElectrumPort,
-            CoconutWalletApp.kElectrumIsSSL,
-          ),
+              CoconutWalletApp.kElectrumHost,
+              CoconutWalletApp.kElectrumPort,
+              CoconutWalletApp.kElectrumIsSSL,
+              CoconutWalletApp.kNetworkType),
           update: (context, addressRepository, transactionRepository, utxoRepository,
                   subscribeRepository, walletRepository, previous) =>
               previous ??
@@ -150,6 +152,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 CoconutWalletApp.kElectrumHost,
                 CoconutWalletApp.kElectrumPort,
                 CoconutWalletApp.kElectrumIsSSL,
+                CoconutWalletApp.kNetworkType,
               ),
         ),
 
@@ -247,11 +250,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 context,
                 (args) => CustomLoadingOverlay(
                   child: WalletAddScannerScreen(
-                    walletImportSource: args['walletImportSource'],
+                    importSource: args['walletImportSource'],
                   ),
                 ),
               ),
-          '/wallet-add-input': (context) => const WalletAddInputScreen(),
+          '/wallet-add-input': (context) => const CustomLoadingOverlay(
+                child: WalletAddInputScreen(),
+              ),
           '/app-info': (context) => const AppInfoScreen(),
           '/wallet-detail': (context) => buildScreenWithArguments(
                 context,

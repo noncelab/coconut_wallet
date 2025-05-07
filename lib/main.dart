@@ -15,8 +15,6 @@ import 'package:provider/provider.dart';
 
 import 'app.dart';
 
-late final String dbDirectoryPath;
-
 const methodChannelOS = 'onl.coconut.wallet/os';
 
 void main() {
@@ -66,19 +64,15 @@ void main() {
 
     await SharedPrefsRepository().init();
 
-    // coconut 0.6 버전까지만 사용, 0.7버전부터 필요 없어짐
-    final dbDirectory = await getAppDocumentDirectory(paths: ['objectbox']);
-    dbDirectoryPath = dbDirectory.path;
-    // coconut_lib 0.6까지 사용하던 db 경로 데이터 삭제
     try {
+      // coconut 0.6 버전까지만 사용, 0.7버전부터 필요 없어짐, 사용하던 db 경로 데이터 삭제
+      final dbDirectory = await getAppDocumentDirectory(paths: ['objectbox']);
       if (dbDirectory.existsSync()) {
         dbDirectory.deleteSync(recursive: true);
       }
     } catch (_) {
       // ignore
     }
-
-    NetworkType.setNetworkType(NetworkType.regtest);
 
     String envFile = '$appFlavor.env';
     await dotenv.load(fileName: envFile);
@@ -88,6 +82,8 @@ void main() {
     CoconutWalletApp.kElectrumIsSSL = dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
     CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
     CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
+    CoconutWalletApp.kNetworkType = NetworkType.getNetworkType(dotenv.env[DotenvKeys.networkType]!);
+    NetworkType.setNetworkType(CoconutWalletApp.kNetworkType);
     runApp(const CoconutWalletApp());
   }, (error, stackTrace) {
     Logger.error(">>>>> runZoneGuarded error: $error");
