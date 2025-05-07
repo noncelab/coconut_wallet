@@ -1,5 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// 명령어: flutter test test/utils/descriptor_util_test.dart
@@ -315,30 +317,31 @@ void main() {
         var descriptor4 =
             "wpkh([33a0cbfd/49'/1'/0']xpub6CorSC5E8wkNboiq84Ndxvm3w4ccSA4MbEva8khZ4a5Cxk8hQYwrsJoPsmL8KsmCeFWzD4irCJdEqcd7kKRi5SAg355pTxTgHW2eVzQu2dd/<0;1>/*)";
 
+        // 성공: 1~3, 실패: 4(purpose 49)
         NetworkType.setNetworkType(NetworkType.regtest);
-        expect(DescriptorUtil.normalizeDescriptor(descriptor1), isNotEmpty); // o 통과
-        expect(DescriptorUtil.normalizeDescriptor(descriptor2), isNotEmpty); // o 통과
-        expect(DescriptorUtil.normalizeDescriptor(descriptor3), isNotEmpty); // o 통과
-        expect(() => DescriptorUtil.normalizeDescriptor(descriptor4),
-            throwsException); // 49 o 지원하지 않는 지갑이에요
+        expect(DescriptorUtil.normalizeDescriptor(descriptor1), isNotEmpty);
+        expect(DescriptorUtil.normalizeDescriptor(descriptor2), isNotEmpty);
+        expect(DescriptorUtil.normalizeDescriptor(descriptor3), isNotEmpty);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor4),
+            t.wallet_add_input_screen.unsupported_wallet_error_text);
 
+        // 실패: 1~3(테스트넷 지갑), 4(purpose 49)
         NetworkType.setNetworkType(NetworkType.mainnet);
-        expect(() => DescriptorUtil.normalizeDescriptor(descriptor1),
-            throwsException); // o 메인넷 지갑이 아니에요
-        expect(() => DescriptorUtil.normalizeDescriptor(descriptor2),
-            throwsException); // o 메인넷 지갑이 아니에요
-        expect(() => DescriptorUtil.normalizeDescriptor(descriptor3),
-            throwsException); // o 메인넷 지갑이 아니에요
-        expect(() => DescriptorUtil.normalizeDescriptor(descriptor4),
-            throwsException); // o 지원하지 않는 지갑이에요
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor1),
+            t.wallet_add_input_screen.mainnet_wallet_error_text);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor2),
+            t.wallet_add_input_screen.mainnet_wallet_error_text);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor3),
+            t.wallet_add_input_screen.mainnet_wallet_error_text);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor4),
+            t.wallet_add_input_screen.unsupported_wallet_error_text);
       });
     });
 
     group('SingleSignatureWallet.fromExtendedPublicKey', () {
-      // AddWalletInputViewModel 사용 형태와 동일하게 구성
+      // AddWalletInputViewModel isExtendedPublicKey
       String getDescriptorFromSingleSigWallet(String xpub) {
-        final allowedPrefixes =
-            NetworkType.currentNetworkType.isTestnet ? ["vpub", "tpub"] : ["xpub", "zpub"];
+        final allowedPrefixes = ["vpub", "tpub", "xpub", "zpub"];
         final prefix = xpub.substring(0, 4).toLowerCase();
 
         if (!allowedPrefixes.contains(prefix)) {
@@ -367,25 +370,37 @@ void main() {
 
         // regtest 설정 시
         // 통과: t, v
-        // 실패: u, x, z, y
+        // 실패: x, z(메인넷 지갑) u, y(지원하지 않음)
         NetworkType.setNetworkType(NetworkType.regtest);
-        expect(getDescriptorFromSingleSigWallet(tpub), isNotEmpty); // o 통과
-        expect(getDescriptorFromSingleSigWallet(vpub), isNotEmpty); // o 통과
-        expect(() => getDescriptorFromSingleSigWallet(upub), throwsException); // o 지원하지 않는 지갑이에요
-        expect(() => getDescriptorFromSingleSigWallet(xpub), throwsException); // o 테스트넷 지갑이 아니에요
-        expect(() => getDescriptorFromSingleSigWallet(zpub), throwsException); // o 테스트넷 지갑이 아니에요
-        expect(() => getDescriptorFromSingleSigWallet(ypub), throwsException); // o 테스트넷 지갑이 아니에요
+        expect(getDescriptorFromSingleSigWallet(tpub), isNotEmpty);
+        expect(getDescriptorFromSingleSigWallet(vpub), isNotEmpty);
+
+        expectErrorMessage(() => getDescriptorFromSingleSigWallet(xpub),
+            t.wallet_add_input_screen.testnet_wallet_error_text);
+        expectErrorMessage(() => getDescriptorFromSingleSigWallet(zpub),
+            t.wallet_add_input_screen.testnet_wallet_error_text);
+
+        expectErrorMessage(() => getDescriptorFromSingleSigWallet(upub),
+            t.wallet_add_input_screen.unsupported_wallet_error_text);
+        expectErrorMessage(() => getDescriptorFromSingleSigWallet(ypub),
+            t.wallet_add_input_screen.unsupported_wallet_error_text);
 
         // mainnet 설정시
         // 통과: x, z
-        // 실패: y, t, v, u
+        // 실패: t, v(테스트넷 지갑) u, y(지원하지 않음)
         NetworkType.setNetworkType(NetworkType.mainnet);
-        expect(getDescriptorFromSingleSigWallet(xpub), isNotEmpty); // o 통과
-        expect(getDescriptorFromSingleSigWallet(zpub), isNotEmpty); // o 통과
-        expect(() => getDescriptorFromSingleSigWallet(ypub), throwsException); // o 지원하지 않는 지갑이에요
-        expect(() => getDescriptorFromSingleSigWallet(tpub), throwsException); // o 메인넷 지갑이 아니에요
-        expect(() => getDescriptorFromSingleSigWallet(vpub), throwsException); // o 메인넷 지갑이 아니에요
-        expect(() => getDescriptorFromSingleSigWallet(upub), throwsException); // o 메인넷 지갑이 아니에요
+        expect(getDescriptorFromSingleSigWallet(xpub), isNotEmpty);
+        expect(getDescriptorFromSingleSigWallet(zpub), isNotEmpty);
+
+        expectErrorMessage(() => getDescriptorFromSingleSigWallet(tpub),
+            t.wallet_add_input_screen.mainnet_wallet_error_text);
+        expectErrorMessage(() => getDescriptorFromSingleSigWallet(vpub),
+            t.wallet_add_input_screen.mainnet_wallet_error_text);
+
+        expectErrorMessage(() => getDescriptorFromSingleSigWallet(upub),
+            t.wallet_add_input_screen.unsupported_wallet_error_text);
+        expectErrorMessage(() => getDescriptorFromSingleSigWallet(ypub),
+            t.wallet_add_input_screen.unsupported_wallet_error_text);
       });
 
       test("공개키 테스트 케이스", () {
@@ -439,4 +454,28 @@ void main() {
       });
     });
   });
+}
+
+void expectErrorMessage(VoidCallback func, String errorText) {
+  // AddWalletInputViewModel _setErrorMessageByError
+  String getErrorMessageByError(e) {
+    if (e.toString().contains("network type")) {
+      return NetworkType.currentNetworkType == NetworkType.mainnet
+          ? t.wallet_add_input_screen.mainnet_wallet_error_text
+          : t.wallet_add_input_screen.testnet_wallet_error_text;
+    } else if (e.toString().contains("not supported")) {
+      return t.wallet_add_input_screen.unsupported_wallet_error_text;
+    } else {
+      return t.wallet_add_input_screen.format_error_text;
+    }
+  }
+
+  bool isCaught = false;
+  try {
+    func();
+  } catch (e) {
+    isCaught = true;
+    expect(getErrorMessageByError(e), errorText);
+  }
+  expect(isCaught, true);
 }
