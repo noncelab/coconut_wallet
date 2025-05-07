@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -31,7 +32,9 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
   bool _hasAddedListener = false;
   bool _isProcessing = false;
 
-  Future<void> _onButtonPressed(WalletAddInputViewModel viewModel) async {
+  bool get isDescriptorAdding => _inputController.text.contains('['); // 대괄호 입력시 descriptor 입력을 가정
+
+  Future<void> _addWallet(WalletAddInputViewModel viewModel) async {
     if (_isProcessing) return;
     _isProcessing = true;
     context.loaderOverlay.show();
@@ -86,7 +89,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
   }
 
   void _closeKeyboard() {
-    FocusScope.of(context).unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   void _handleInput(BuildContext context) {
@@ -101,7 +104,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
 
     setState(() {
       _isButtonEnabled = viewModel.isValidCharacters(_inputController.text) &&
-          (_inputController.text.contains("[") // 대괄호 입력시 descriptor 입력을 가정
+          (isDescriptorAdding
               ? viewModel.normalizeDescriptor(_inputController.text)
               : viewModel.isExtendedPublicKey(_inputController.text));
       _isError = !_isButtonEnabled;
@@ -248,7 +251,15 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                           ),
                         ),
                         FixedBottomButton(
-                          onButtonClicked: () => _onButtonPressed(viewModel),
+                          onButtonClicked: () {
+                            _closeKeyboard();
+                            if (isDescriptorAdding) {
+                              _addWallet(viewModel);
+                            } else {
+                              // 확장공개키의 경우에는 Master Finger Print를 추가로 입력받는다.
+                              showMfpInputBottomSheet(viewModel);
+                            }
+                          },
                           text: t.complete,
                           showGradient: true,
                           gradientPadding:
@@ -263,6 +274,31 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
             ),
           );
         }));
+  }
+
+  void showMfpInputBottomSheet(WalletAddInputViewModel viewModel) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: WalletAddMfpInputBottomSheet(
+            onSkip: () {
+              viewModel.masterFingerPrint = null;
+              _addWallet(viewModel);
+            },
+            onComplete: (text) {
+              viewModel.masterFingerPrint = text;
+              _addWallet(viewModel);
+            },
+          ),
+        );
+      },
+      backgroundColor: CoconutColors.black,
+      isScrollControlled: true,
+      enableDrag: true,
+      useSafeArea: true,
+    );
   }
 
   Widget _buildWalletInfo(
