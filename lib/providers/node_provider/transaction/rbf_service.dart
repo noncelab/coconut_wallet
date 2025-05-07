@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -146,7 +147,7 @@ class RbfService {
 
   /// RBF 저장 요청을 처리하는 내부 함수
   Future<void> _processRbfSaveRequest(RbfSaveRequest request, int walletId) async {
-    final rbfHistoryDtos = <RbfHistoryDto>[];
+    final rbfHistoryDtos = <RbfHistory>[];
     final walletItem = request.walletItem;
 
     for (final entry in request.rbfInfoMap.entries) {
@@ -165,7 +166,7 @@ class RbfService {
 
   /// 개별 RBF 항목을 처리하는 함수
   Future<void> _processRbfEntry(int walletId, RbfInfo rbfInfo, TransactionRecord txRecord,
-      List<RbfHistoryDto> rbfHistoryDtos) async {
+      List<RbfHistory> rbfHistoryDtos) async {
     // 원본 트랜잭션 조회
     final originalTx =
         _transactionRepository.getTransactionRecord(walletId, rbfInfo.originalTransactionHash);
@@ -176,7 +177,7 @@ class RbfService {
 
       // 최초로 RBF 내역을 등록하는 경우 원본 트랜잭션 내역도 등록
       if (existingRbfHistory.isEmpty) {
-        rbfHistoryDtos.add(RbfHistoryDto(
+        rbfHistoryDtos.add(RbfHistory(
           walletId: walletId,
           originalTransactionHash: rbfInfo.originalTransactionHash,
           transactionHash: rbfInfo.originalTransactionHash,
@@ -186,7 +187,7 @@ class RbfService {
       }
 
       // 새 RBF 트랜잭션 내역 등록
-      rbfHistoryDtos.add(RbfHistoryDto(
+      rbfHistoryDtos.add(RbfHistory(
         walletId: walletId,
         originalTransactionHash: rbfInfo.originalTransactionHash,
         transactionHash: txRecord.transactionHash,

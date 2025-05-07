@@ -16,14 +16,12 @@ import 'package:coconut_wallet/services/model/response/fetch_transaction_respons
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
 
-// Helper record for step 3 return type (Moved before class)
 typedef FetchedTransactionDetails = ({
   List<Transaction> fetchedTransactions,
   Map<String, int> txBlockHeightMap,
   Map<int, BlockTimestamp> blockTimestampMap
 });
 
-// Helper record for step 4 return type (Moved before class)
 typedef RbfCpfpDetectionResult = ({
   Map<String, RbfInfo> sendingRbfInfoMap,
   Set<String> receivingRbfTxHashSet,

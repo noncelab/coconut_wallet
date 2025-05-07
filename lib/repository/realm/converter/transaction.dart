@@ -1,10 +1,11 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/cpfp_history.dart';
+import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 
 // TransactionRecord -> _RealmTransaction 변환 함수
 RealmTransaction mapTransactionToRealmTransaction(
@@ -48,10 +49,12 @@ TransactionRecord mapRealmTransactionToTransaction(RealmTransaction realmTransac
       realmTransaction.vSize,
       realmTransaction.createdAt,
       rbfHistoryList: realmRbfHistoryList
-          ?.map((element) => RbfHistory(
-                feeRate: element.feeRate,
-                timestamp: element.timestamp,
-                transactionHash: element.transactionHash,
+          ?.map((realmRbfHistory) => RbfHistory(
+                feeRate: realmRbfHistory.feeRate,
+                timestamp: realmRbfHistory.timestamp,
+                transactionHash: realmRbfHistory.transactionHash,
+                walletId: realmRbfHistory.walletId,
+                originalTransactionHash: realmRbfHistory.originalTransactionHash,
               ))
           .toList(),
       cpfpHistory: realmCpfpHistory != null
@@ -61,6 +64,7 @@ TransactionRecord mapRealmTransactionToTransaction(RealmTransaction realmTransac
               timestamp: realmCpfpHistory.timestamp,
               parentTransactionHash: realmCpfpHistory.parentTransactionHash,
               childTransactionHash: realmCpfpHistory.childTransactionHash,
+              walletId: realmCpfpHistory.walletId,
             )
           : null);
 }
@@ -73,7 +77,7 @@ TransactionAddress jsonToAddress(Map<String, dynamic> json) {
   return TransactionAddress(json['address'], json['amount']);
 }
 
-RealmCpfpHistory mapCpfpHistoryToRealmCpfpHistory(CpfpHistoryDto cpfpHistory) {
+RealmCpfpHistory mapCpfpHistoryToRealmCpfpHistory(CpfpHistory cpfpHistory) {
   return RealmCpfpHistory(
     cpfpHistory.id,
     cpfpHistory.walletId,
@@ -85,7 +89,7 @@ RealmCpfpHistory mapCpfpHistoryToRealmCpfpHistory(CpfpHistoryDto cpfpHistory) {
   );
 }
 
-RealmRbfHistory mapRbfHistoryToRealmRbfHistory(RbfHistoryDto rbfHistory) {
+RealmRbfHistory mapRbfHistoryToRealmRbfHistory(RbfHistory rbfHistory) {
   return RealmRbfHistory(
     rbfHistory.id,
     rbfHistory.walletId,

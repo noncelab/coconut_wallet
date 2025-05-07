@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -80,14 +81,14 @@ void main() {
       test('기존 RBF 내역이 있을 경우 true 반환', () async {
         // Given
         final rbfHistoryList = [
-          RbfHistoryDto(
+          RbfHistory(
             walletId: walletId,
             originalTransactionHash: originalTx.transactionHash,
             transactionHash: originalTx.transactionHash,
             feeRate: 1.0,
             timestamp: DateTime.now(),
           ),
-          RbfHistoryDto(
+          RbfHistory(
             walletId: walletId,
             originalTransactionHash: originalTx.transactionHash,
             transactionHash: firstRbfTx.transactionHash,
@@ -191,14 +192,14 @@ void main() {
       test('이미 RBF된 트랜잭션인 경우 원본 트랜잭션 해시 반환', () async {
         // Given
         final rbfHistoryList = [
-          RbfHistoryDto(
+          RbfHistory(
             walletId: walletId,
             originalTransactionHash: originalTx.transactionHash,
             transactionHash: originalTx.transactionHash,
             feeRate: 1.0,
             timestamp: DateTime.now(),
           ),
-          RbfHistoryDto(
+          RbfHistory(
             walletId: walletId,
             originalTransactionHash: originalTx.transactionHash,
             transactionHash: firstRbfTx.transactionHash,
@@ -283,14 +284,14 @@ void main() {
       test('이미 RBF 내역이 있는 경우 null 반환', () async {
         // Given
         final rbfHistoryList = [
-          RbfHistoryDto(
+          RbfHistory(
             walletId: walletId,
             originalTransactionHash: originalTx.transactionHash,
             transactionHash: originalTx.transactionHash,
             feeRate: 1.0,
             timestamp: DateTime.now(),
           ),
-          RbfHistoryDto(
+          RbfHistory(
             walletId: walletId,
             originalTransactionHash: originalTx.transactionHash,
             transactionHash: firstRbfTx.transactionHash,
@@ -433,14 +434,14 @@ void main() {
         await transactionRepository
             .addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord, secondRbfTxRecord]);
         transactionRepository.addAllRbfHistory([
-          RbfHistoryDto(
+          RbfHistory(
             walletId: walletId,
             originalTransactionHash: originalTx.transactionHash,
             transactionHash: originalTx.transactionHash,
             feeRate: 1.0,
             timestamp: DateTime.now(),
           ),
-          RbfHistoryDto(
+          RbfHistory(
             walletId: walletId,
             originalTransactionHash: originalTx.transactionHash,
             transactionHash: firstRbfTx.transactionHash,

@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -78,7 +79,7 @@ class CpfpService {
     Map<String, TransactionRecord> txRecordMap,
     int walletId,
   ) async {
-    final cpfpHistoryDtos = <CpfpHistoryDto>[];
+    final cpfpHistoryDtos = <CpfpHistory>[];
 
     for (final entry in cpfpInfoMap.entries) {
       final txHash = entry.key;
@@ -86,7 +87,7 @@ class CpfpService {
       final txRecord = txRecordMap[txHash];
 
       if (txRecord != null) {
-        cpfpHistoryDtos.add(CpfpHistoryDto(
+        cpfpHistoryDtos.add(CpfpHistory(
           walletId: walletItem.id,
           parentTransactionHash: cpfpInfo.parentTransactionHash,
           childTransactionHash: txRecord.transactionHash,

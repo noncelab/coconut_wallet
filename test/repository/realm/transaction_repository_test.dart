@@ -1,4 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/node/cpfp_history.dart';
+import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -129,14 +131,14 @@ void main() {
     test('RBF 내역을 일괄 추가할 수 있어야 함', () async {
       // 테스트용 RBF DTO 생성
       final rbfDtoList = [
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_1',
           transactionHash: 'new_tx_1',
           feeRate: 5.0,
           timestamp: DateTime.now(),
         ),
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_2',
           transactionHash: 'new_tx_2',
@@ -164,21 +166,21 @@ void main() {
     test('RBF 내역을 조회할 때 연관된 RBF 내역도 함께 조회되어야 함', () async {
       // 테스트용 RBF DTO 생성
       final rbfDtoList = [
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_1',
           transactionHash: 'new_tx_1',
           feeRate: 5.0,
           timestamp: DateTime.now(),
         ),
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_1',
           transactionHash: 'new_tx_2',
           feeRate: 7.5,
           timestamp: DateTime.now(),
         ),
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_1',
           transactionHash: 'new_tx_3',
@@ -206,7 +208,7 @@ void main() {
 
     test('RBF 내역 일괄 추가 시 중복은 무시되어야 함', () async {
       // 첫 번째 추가
-      final rbfDto = RbfHistoryDto(
+      final rbfDto = RbfHistory(
         walletId: testWalletItem.id,
         originalTransactionHash: 'original_tx',
         transactionHash: 'new_tx',
@@ -231,7 +233,7 @@ void main() {
     test('CPFP 내역을 일괄 추가할 수 있어야 함', () async {
       // 테스트용 CPFP DTO 생성
       final cpfpDtoList = [
-        CpfpHistoryDto(
+        CpfpHistory(
           walletId: testWalletItem.id,
           parentTransactionHash: 'parent_tx_1',
           childTransactionHash: 'child_tx_1',
@@ -239,7 +241,7 @@ void main() {
           newFee: 10.0,
           timestamp: DateTime.now(),
         ),
-        CpfpHistoryDto(
+        CpfpHistory(
           walletId: testWalletItem.id,
           parentTransactionHash: 'parent_tx_2',
           childTransactionHash: 'child_tx_2',
@@ -267,7 +269,7 @@ void main() {
 
     test('CPFP 내역 일괄 추가 시 중복은 무시되어야 함', () async {
       // 첫 번째 추가
-      final cpfpDto = CpfpHistoryDto(
+      final cpfpDto = CpfpHistory(
         walletId: testWalletItem.id,
         parentTransactionHash: 'parent_tx',
         childTransactionHash: 'child_tx',

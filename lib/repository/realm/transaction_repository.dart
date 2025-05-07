@@ -1,5 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart' as lib;
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/cpfp_history.dart';
+import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
@@ -226,7 +228,7 @@ class TransactionRepository extends BaseRepository {
   /// RBF 내역을 일괄 저장합니다.
   ///
   /// 중복 체크를 수행하여 이미 저장된 내역은 다시 저장하지 않습니다.
-  void addAllRbfHistory(List<RbfHistoryDto> rbfHistoryList) {
+  void addAllRbfHistory(List<RbfHistory> rbfHistoryList) {
     if (rbfHistoryList.isEmpty) return;
 
     try {
@@ -260,7 +262,7 @@ class TransactionRepository extends BaseRepository {
   /// CPFP 내역을 일괄 저장합니다.
   ///
   /// 중복 체크를 수행하여 이미 저장된 내역은 다시 저장하지 않습니다.
-  void addAllCpfpHistory(List<CpfpHistoryDto> cpfpHistoryList) {
+  void addAllCpfpHistory(List<CpfpHistory> cpfpHistoryList) {
     if (cpfpHistoryList.isEmpty) return;
 
     // 중복 체크를 위한 기존 ID 목록 생성
@@ -397,54 +399,4 @@ class TransactionRepository extends BaseRepository {
 
     return Result.failure(ErrorCodes.realmNotFound);
   }
-}
-
-/// RBF 내역 일괄 저장을 위한 DTO 클래스
-class RbfHistoryDto {
-  final int _id;
-  final int walletId;
-  final String originalTransactionHash;
-  final String transactionHash;
-  final double feeRate;
-  final DateTime timestamp;
-
-  int get id => _id;
-
-  RbfHistoryDto({
-    required this.walletId,
-    required this.originalTransactionHash,
-    required this.transactionHash,
-    required this.feeRate,
-    required this.timestamp,
-  }) : _id = Object.hash(
-          walletId,
-          originalTransactionHash,
-          transactionHash,
-        );
-}
-
-/// CPFP 내역 일괄 저장을 위한 DTO 클래스
-class CpfpHistoryDto {
-  final int _id;
-  final int walletId;
-  final String parentTransactionHash;
-  final String childTransactionHash;
-  final double originalFee;
-  final double newFee;
-  final DateTime timestamp;
-
-  int get id => _id;
-
-  CpfpHistoryDto({
-    required this.walletId,
-    required this.parentTransactionHash,
-    required this.childTransactionHash,
-    required this.originalFee,
-    required this.newFee,
-    required this.timestamp,
-  }) : _id = Object.hash(
-          walletId,
-          parentTransactionHash,
-          childTransactionHash,
-        );
 }

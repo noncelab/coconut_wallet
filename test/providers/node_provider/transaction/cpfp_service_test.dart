@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -69,7 +70,7 @@ void main() {
     group('hasExistingCpfpHistory', () {
       test('기존 CPFP 내역이 있을 경우 true 반환', () async {
         // Given
-        final cpfpHistory = CpfpHistoryDto(
+        final cpfpHistory = CpfpHistory(
           walletId: walletId,
           parentTransactionHash: parentTx.transactionHash,
           childTransactionHash: childTx.transactionHash,
@@ -123,7 +124,7 @@ void main() {
 
       test('이미 CPFP 내역이 있는 경우 null 반환', () async {
         // Given
-        final cpfpHistory = CpfpHistoryDto(
+        final cpfpHistory = CpfpHistory(
           walletId: walletId,
           parentTransactionHash: parentTx.transactionHash,
           childTransactionHash: childTx.transactionHash,
