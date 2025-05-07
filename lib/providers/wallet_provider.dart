@@ -331,11 +331,9 @@ class WalletProvider extends ChangeNotifier {
 
     // case 1: 새 지갑 생성
     var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
-    // 기존 지갑들의 구독이 완료될 때까지 기다립니다.
-    while (_walletSubscriptionState != WalletSubscriptionState.completed &&
-        _walletSubscriptionState != WalletSubscriptionState.failed) {
-      await Future.delayed(const Duration(seconds: 1));
-    }
+
+    await _waitForSubscriptionDone();
+
     if (_walletSubscriptionState != WalletSubscriptionState.failed) {
       _nodeProvider.subscribeWallet(newWallet);
     }
@@ -372,16 +370,22 @@ class WalletProvider extends ChangeNotifier {
     // case 1: 새 지갑 생성
     bool isMultisig = watchOnlyWallet.signers != null;
     var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
-    // 기존 지갑들의 구독이 완료될 때까지 기다립니다.
-    while (_walletSubscriptionState != WalletSubscriptionState.completed &&
-        _walletSubscriptionState != WalletSubscriptionState.failed) {
-      await Future.delayed(const Duration(seconds: 1));
-    }
+
+    await _waitForSubscriptionDone();
+
     if (_walletSubscriptionState != WalletSubscriptionState.failed) {
       _nodeProvider.subscribeWallet(newWallet);
     }
 
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
+  }
+
+  // 기존 지갑들의 구독이 완료될 때까지 기다립니다.
+  Future<void> _waitForSubscriptionDone() async {
+    while (_walletSubscriptionState != WalletSubscriptionState.completed &&
+        _walletSubscriptionState != WalletSubscriptionState.failed) {
+      await Future.delayed(const Duration(seconds: 1));
+    }
   }
 
   Future<WalletListItemBase> _addNewWallet(WatchOnlyWallet wallet, bool isMultisig) async {
