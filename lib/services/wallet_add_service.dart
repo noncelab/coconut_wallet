@@ -16,9 +16,10 @@ class WalletAddService {
     return createWalletFromUR(ur: ur, name: name, walletImportSource: WalletImportSource.keystone);
   }
 
-  WatchOnlyWallet createExtendedPublicKeyWallet(String extendedPublicKey, String name) {
-    final singleSigWallet =
-        SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, extendedPublicKey, '-');
+  WatchOnlyWallet createExtendedPublicKeyWallet(
+      String extendedPublicKey, String name, String? masterFingerPrint) {
+    final singleSigWallet = SingleSignatureWallet.fromExtendedPublicKey(
+        AddressType.p2wpkh, extendedPublicKey, masterFingerPrint ?? '-');
     return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null,
         WalletImportSource.extendedPublicKey.name);
   }
