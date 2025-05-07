@@ -427,17 +427,23 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                   runSpacing: 4,
                   children: List.generate(
                     selectedTags.length,
-                    (index) => IntrinsicWidth(
-                      child: CoconutChip(
-                        minWidth: 40,
-                        color: CoconutColors
-                            .backgroundColorPaletteDark[selectedTags[index].colorIndex],
-                        borderColor: CoconutColors.colorPalette[selectedTags[index].colorIndex],
-                        label: '#${selectedTags[index].name}',
-                        labelSize: 12,
-                        labelColor: CoconutColors.colorPalette[selectedTags[index].colorIndex],
-                      ),
-                    ),
+                    (index) {
+                      Color foregroundColor = selectedTags[index].colorIndex != 8
+                          ? CoconutColors.colorPalette[selectedTags[index].colorIndex]
+                          : CoconutColors
+                              .gray400; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
+                      return IntrinsicWidth(
+                        child: CoconutChip(
+                          minWidth: 40,
+                          color: CoconutColors
+                              .backgroundColorPaletteDark[selectedTags[index].colorIndex],
+                          borderColor: foregroundColor,
+                          label: '#${selectedTags[index].name}',
+                          labelSize: 12,
+                          labelColor: foregroundColor,
+                        ),
+                      );
+                    },
                   ),
                 ),
               },

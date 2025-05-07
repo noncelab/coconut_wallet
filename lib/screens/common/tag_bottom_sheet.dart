@@ -190,16 +190,20 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                   _utxoTags.length,
                   (index) {
                     bool isSelected = _prevSelectedUtxoTagNames.contains(_utxoTags[index].name);
+                    Color foregroundColor = _utxoTags[index].colorIndex != 8
+                        ? CoconutColors.colorPalette[_utxoTags[index].colorIndex]
+                        : CoconutColors
+                            .gray400; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
                     return IntrinsicWidth(
                       child: CoconutChip(
                         minWidth: 40,
                         color:
                             CoconutColors.backgroundColorPaletteDark[_utxoTags[index].colorIndex],
                         hasOpacity: true,
-                        borderColor: CoconutColors.colorPalette[_utxoTags[index].colorIndex],
+                        borderColor: foregroundColor,
                         label: '#${_utxoTags[index].name}',
                         labelSize: 12,
-                        labelColor: CoconutColors.colorPalette[_utxoTags[index].colorIndex],
+                        labelColor: foregroundColor,
                         isSelected: isSelected,
                         onTap: () {
                           final tag = _utxoTags[index].name;

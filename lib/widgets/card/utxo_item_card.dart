@@ -90,18 +90,22 @@ class UtxoItemCard extends StatelessWidget {
                     runSpacing: 4,
                     children: List.generate(
                       utxo.tags?.length ?? 0,
-                      (index) => IntrinsicWidth(
-                        child: CoconutChip(
-                          minWidth: 40,
-                          color: CoconutColors
-                              .backgroundColorPaletteDark[utxo.tags?[index].colorIndex ?? 0],
-                          borderColor:
-                              CoconutColors.colorPalette[utxo.tags?[index].colorIndex ?? 0],
-                          label: '#${utxo.tags?[index].name ?? ''}',
-                          labelSize: 12,
-                          labelColor: CoconutColors.colorPalette[utxo.tags?[index].colorIndex ?? 0],
-                        ),
-                      ),
+                      (index) {
+                        Color foregroundColor = utxo.tags?[index].colorIndex != 8
+                            ? CoconutColors.colorPalette[utxo.tags?[index].colorIndex ?? 0]
+                            : CoconutColors.gray400;
+                        return IntrinsicWidth(
+                          child: CoconutChip(
+                            minWidth: 40,
+                            color: CoconutColors
+                                .backgroundColorPaletteDark[utxo.tags?[index].colorIndex ?? 0],
+                            borderColor: foregroundColor,
+                            label: '#${utxo.tags?[index].name ?? ''}',
+                            labelSize: 12,
+                            labelColor: foregroundColor,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
