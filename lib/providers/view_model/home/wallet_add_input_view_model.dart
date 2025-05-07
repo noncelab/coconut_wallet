@@ -14,6 +14,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
   String? validExtendedPublicKey;
   String? validDescriptor;
   String? errorMessage;
+  String? masterFingerPrint;
 
   WalletAddInputViewModel(this._walletProvider);
 
@@ -87,7 +88,8 @@ class WalletAddInputViewModel extends ChangeNotifier {
   Future<ResultOfSyncFromVault> addWalletFromExtendedPublicKey(String extendedPublicKey) async {
     final name = getNextThirdPartyWalletName(
         importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
-    final wallet = _walletAddService.createExtendedPublicKeyWallet(extendedPublicKey, name);
+    final wallet =
+        _walletAddService.createExtendedPublicKeyWallet(extendedPublicKey, name, masterFingerPrint);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
