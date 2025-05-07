@@ -19,13 +19,13 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   WalletAddScannerViewModel(this._walletImportSource, this._walletProvider) {
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
-        _qrDataHandler = CoconutQRScanDataHandler();
+        _qrDataHandler = CoconutQrScanDataHandler();
         break;
       case WalletImportSource.keystone:
         _qrDataHandler = BcUrQrScanDataHandler();
         break;
       case WalletImportSource.seedSigner:
-        _qrDataHandler = DescriptorQRScanDataHandler();
+        _qrDataHandler = DescriptorQrScanDataHandler();
         break;
       case WalletImportSource.extendedPublicKey:
         throw 'No Support extendedPublicKey';

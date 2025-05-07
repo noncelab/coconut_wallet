@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class AnimatedQrScanner extends StatefulWidget {
-  final Function(QRViewController) setQRViewController;
+  final Function(QRViewController) setQrViewController;
   final Function(String) onComplete;
   final Function(String) onFailed;
   final Color borderColor;
 
   const AnimatedQrScanner(
       {super.key,
-      required this.setQRViewController,
+      required this.setQrViewController,
       required this.onComplete,
       required this.onFailed,
       this.borderColor = CoconutColors.white});
@@ -34,27 +34,27 @@ class _AnimatedQrScannerState extends State<AnimatedQrScanner> {
     _totalCount = null;
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    widget.setQRViewController(controller);
+  void _onQrViewCreated(QRViewController controller) {
+    widget.setQrViewController(controller);
 
     controller.scannedDataStream.listen((scanData) async {
       if (scanData.code == null) return;
 
       try {
-        if (!scanData.code!.startsWith(AnimatedQRDataHandler.psbtUrType)) {
+        if (!scanData.code!.startsWith(AnimatedQrDataHandler.psbtUrType)) {
           throw 'No psbtUrType';
         }
 
         // 배열 insert를 위해서 scannedData Size 설정
         if (scannedData == null) {
-          int totalCount = AnimatedQRDataHandler.parseTotalCount(scanData.code!);
+          int totalCount = AnimatedQrDataHandler.parseTotalCount(scanData.code!);
           scannedData = List<String>.filled(totalCount, '');
           setState(() {
             _totalCount = totalCount;
           });
         }
 
-        final index = AnimatedQRDataHandler.parseIndex(scanData.code!);
+        final index = AnimatedQrDataHandler.parseIndex(scanData.code!);
         // 이미 저장된 경우
         if (scannedData![index - 1].isNotEmpty) return;
 
@@ -64,7 +64,7 @@ class _AnimatedQrScannerState extends State<AnimatedQrScanner> {
         });
 
         if (scannedData!.length == _insertCount) {
-          String psbt = AnimatedQRDataHandler.joinData(scannedData!);
+          String psbt = AnimatedQrDataHandler.joinData(scannedData!);
           reset();
           widget.onComplete(psbt);
         }
@@ -103,7 +103,7 @@ class _AnimatedQrScannerState extends State<AnimatedQrScanner> {
           children: [
             QRView(
               key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
+              onQRViewCreated: _onQrViewCreated,
               overlay: _getOverlayShape(),
             ),
             Positioned(

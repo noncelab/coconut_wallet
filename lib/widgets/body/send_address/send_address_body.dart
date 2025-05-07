@@ -6,21 +6,21 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class SendAddressBody extends StatelessWidget {
   final Key qrKey;
-  final void Function(QRViewController) onQRViewCreated;
+  final void Function(QRViewController) onQrViewCreated;
   final String? address;
   final void Function()? pasteAddress;
 
   const SendAddressBody(
       {super.key,
       required this.qrKey,
-      required this.onQRViewCreated,
+      required this.onQrViewCreated,
       this.address,
       this.pasteAddress});
 
   Widget _buildQrView(BuildContext context) {
     return QRView(
       key: qrKey,
-      onQRViewCreated: onQRViewCreated,
+      onQRViewCreated: onQrViewCreated,
       overlay: QrScannerOverlayShape(
           borderColor: CoconutColors.white,
           borderRadius: 8,

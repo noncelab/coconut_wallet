@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:ur/ur.dart';
 import 'package:ur/ur_encoder.dart';

@@ -11,17 +11,17 @@ import 'package:flutter/services.dart';
 
 import '../utils/toast.dart';
 
-class QRCodeInfo extends StatefulWidget {
+class QrCodeInfo extends StatefulWidget {
   final String qrData;
   final Widget? qrcodeTopWidget;
 
-  const QRCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget});
+  const QrCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget});
 
   @override
-  State<QRCodeInfo> createState() => _QRCodeInfoState();
+  State<QrCodeInfo> createState() => _QrCodeInfoState();
 }
 
-class _QRCodeInfoState extends State<QRCodeInfo> {
+class _QrCodeInfoState extends State<QrCodeInfo> {
   static const MethodChannel _channel = MethodChannel(methodChannelOS);
   @override
   Widget build(BuildContext context) {

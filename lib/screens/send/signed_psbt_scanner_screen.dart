@@ -56,13 +56,13 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           /// CoconutQrScanner가 AnimatedQrScanner로 renaming 되는 형태
           if (_viewModel.walletImportSource == WalletImportSource.coconutVault) ...[
             AnimatedQrScanner(
-              setQRViewController: _setQRViewController,
+              setQrViewController: _setQRViewController,
               onComplete: _onCompletedScanningForCoconut,
               onFailed: _onFailedScanning,
             )
           ] else ...[
             CoconutQrScanner(
-                setQRViewController: _setQRViewController,
+                setQrViewController: _setQRViewController,
                 onComplete: _onCompletedScanningForBcUr,
                 onFailed: _onFailedScanning,
                 qrDataHandler: BcUrQrScanDataHandler())

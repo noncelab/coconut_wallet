@@ -271,7 +271,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                   _disposeQrViewController();
                   Navigator.of(context).pop<String>('');
                 }),
-            body: SendAddressBody(qrKey: qrKey, onQRViewCreated: _onQRViewCreated)));
+            body: SendAddressBody(qrKey: qrKey, onQrViewCreated: _onQRViewCreated)));
     if (scannedAddress != null) {
       _addressController.text = scannedAddress;
       _onAddressChanged(scannedAddress);

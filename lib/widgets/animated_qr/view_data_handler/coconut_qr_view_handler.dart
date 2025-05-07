@@ -7,7 +7,7 @@ class CoconutQrViewHandler implements IQrViewDataHandler {
   int _dataIndex = 0;
 
   CoconutQrViewHandler(this._source) {
-    splitedData = AnimatedQRDataHandler.splitData(_source);
+    splitedData = AnimatedQrDataHandler.splitData(_source);
   }
 
   @override

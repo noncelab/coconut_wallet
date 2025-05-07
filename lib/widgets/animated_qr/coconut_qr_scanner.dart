@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class CoconutQrScanner extends StatefulWidget {
-  final Function(QRViewController) setQRViewController;
+  final Function(QRViewController) setQrViewController;
   final Function(dynamic) onComplete;
   final Function(String) onFailed;
   final Color borderColor;
@@ -13,7 +13,7 @@ class CoconutQrScanner extends StatefulWidget {
 
   const CoconutQrScanner({
     super.key,
-    required this.setQRViewController,
+    required this.setQrViewController,
     required this.onComplete,
     required this.onFailed,
     required this.qrDataHandler,
@@ -28,8 +28,8 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final double _borderWidth = 8;
 
-  void _onQRViewCreated(QRViewController controller) {
-    widget.setQRViewController(controller);
+  void _onQrViewCreated(QRViewController controller) {
+    widget.setQrViewController(controller);
     var handler = widget.qrDataHandler;
     controller.scannedDataStream.listen((scanData) async {
       if (scanData.code == null) return;
@@ -80,7 +80,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
           children: [
             QRView(
               key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
+              onQRViewCreated: _onQrViewCreated,
               overlay: _getOverlayShape(),
             ),
           ],

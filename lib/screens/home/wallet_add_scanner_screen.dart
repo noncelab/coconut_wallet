@@ -140,7 +140,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       body: Stack(
         children: [
           CoconutQrScanner(
-            setQRViewController: (QRViewController qrViewcontroller) {
+            setQrViewController: (QRViewController qrViewcontroller) {
               controller = qrViewcontroller;
             },
             onComplete: _onCompletedScanning,
