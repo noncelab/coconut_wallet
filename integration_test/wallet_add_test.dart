@@ -176,8 +176,8 @@ Future<void> validateDuplicatedExternalWalletAddFailed(
   // fix: 첫 테스트에서만 Connectivity 리스너가 호출되는 문제가 있다. 두 번째 테스트부터 임의로 함수를 호출하여 isolate.subscribeWallets가 호출되도록 한다.
   //walletProvider.setIsNetworkOn(true);
 
-  final walletFromExtendedPubKey =
-      WalletAddService().createExtendedPublicKeyWallet(singleSigWallet1ExtendedPublicKey, 'zpub');
+  final walletFromExtendedPubKey = WalletAddService()
+      .createExtendedPublicKeyWallet(singleSigWallet1ExtendedPublicKey, 'zpub', null);
 
   var pubKeyWalletAddResult = await walletProvider.syncFromThirdParty(walletFromExtendedPubKey);
   expect(pubKeyWalletAddResult.result, WalletSyncResult.existingWalletUpdateImpossible);
