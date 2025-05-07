@@ -2,7 +2,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
@@ -13,19 +12,6 @@ typedef RbfInfo = ({
   String originalTransactionHash, // RBF 체인의 최초 트랜잭션
   String previousTransactionHash, // 이 트랜잭션이 대체하는 직전 트랜잭션
 });
-
-/// RBF 내역 저장 요청을 위한 DTO 클래스
-class RbfSaveRequest {
-  final WalletListItemBase walletItem;
-  final Map<String, RbfInfo> rbfInfoMap;
-  final Map<String, TransactionRecord> txRecordMap;
-
-  RbfSaveRequest({
-    required this.walletItem,
-    required this.rbfInfoMap,
-    required this.txRecordMap,
-  });
-}
 
 /// RBF(Replace-By-Fee) 트랜잭션 처리를 담당하는 클래스
 class RbfService {
@@ -141,20 +127,18 @@ class RbfService {
   }
 
   /// RBF 내역을 일괄 저장하는 함수
-  Future<void> saveRbfHistoryMap(RbfSaveRequest request, int walletId) async {
-    await _processRbfSaveRequest(request, walletId);
-  }
-
-  /// RBF 저장 요청을 처리하는 내부 함수
-  Future<void> _processRbfSaveRequest(RbfSaveRequest request, int walletId) async {
+  Future<void> saveRbfHistoryMap({
+    required int walletId,
+    required Map<String, RbfInfo> rbfInfoMap,
+    required Map<String, TransactionRecord> txRecordMap,
+  }) async {
     final rbfHistoryDtos = <RbfHistory>[];
-    final walletItem = request.walletItem;
 
-    for (final entry in request.rbfInfoMap.entries) {
-      final txRecord = request.txRecordMap[entry.key];
+    for (final entry in rbfInfoMap.entries) {
+      final txRecord = txRecordMap[entry.key];
 
       if (txRecord != null) {
-        await _processRbfEntry(walletItem.id, entry.value, txRecord, rbfHistoryDtos);
+        await _processRbfEntry(walletId, entry.value, txRecord, rbfHistoryDtos);
       }
     }
 

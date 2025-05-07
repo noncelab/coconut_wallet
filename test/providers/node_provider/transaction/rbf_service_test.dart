@@ -381,11 +381,10 @@ void main() {
 
         // When
         await rbfService.saveRbfHistoryMap(
-            RbfSaveRequest(
-                walletItem: walletItem,
-                rbfInfoMap: {firstRbfTx.transactionHash: rbfInfo},
-                txRecordMap: {firstRbfTx.transactionHash: firstRbfTxRecord}),
-            walletId);
+          walletId: walletId,
+          rbfInfoMap: {firstRbfTx.transactionHash: rbfInfo},
+          txRecordMap: {firstRbfTx.transactionHash: firstRbfTxRecord},
+        );
 
         // Then
         final afterRbfHistoryList =
@@ -425,12 +424,6 @@ void main() {
           secondRbfTx.transactionHash: secondRbfTxRecord,
         };
 
-        final rbfSaveRequest = RbfSaveRequest(
-          walletItem: walletItem,
-          rbfInfoMap: rbfInfoMap,
-          txRecordMap: txRecordMap,
-        );
-
         await transactionRepository
             .addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord, secondRbfTxRecord]);
         transactionRepository.addAllRbfHistory([
@@ -455,7 +448,11 @@ void main() {
         expect(beforeRbfHistoryList.length, 2, reason: '2번째 RBF 내역 저장 전 총 갯수는 2개여야 함.');
 
         // When
-        await rbfService.saveRbfHistoryMap(rbfSaveRequest, walletId);
+        await rbfService.saveRbfHistoryMap(
+          walletId: walletId,
+          rbfInfoMap: rbfInfoMap,
+          txRecordMap: txRecordMap,
+        );
 
         // Then
         final afterRbfHistoryList =

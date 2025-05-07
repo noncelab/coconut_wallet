@@ -241,12 +241,9 @@ class TransactionSyncService {
 
     if (rbfCpfpResult.sendingRbfInfoMap.isNotEmpty) {
       await _rbfService.saveRbfHistoryMap(
-        RbfSaveRequest(
-          walletItem: walletItem,
-          rbfInfoMap: rbfCpfpResult.sendingRbfInfoMap,
-          txRecordMap: txRecordMap,
-        ),
-        walletId,
+        walletId: walletId,
+        rbfInfoMap: rbfCpfpResult.sendingRbfInfoMap,
+        txRecordMap: txRecordMap,
       );
       _transactionRepository.markAsRbfReplaced(walletId, rbfCpfpResult.sendingRbfInfoMap);
       _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
