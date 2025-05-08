@@ -163,7 +163,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
                               },
                               InformationItemCard(
-                                label: t.tag_manage,
+                                label: t.tag_manage_label,
                                 showIcon: true,
                                 onPressed: () {
                                   Navigator.pushNamed(context, '/utxo-tag',
@@ -192,7 +192,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                             children: [
                               InformationItemCard(
                                 showIcon: true,
-                                label: t.delete,
+                                label: t.delete_label,
                                 rightIcon: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(

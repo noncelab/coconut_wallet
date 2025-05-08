@@ -11,6 +11,7 @@ class WalletInfoEditViewModel extends ChangeNotifier {
   bool _isProcessing = false;
   bool _isNameDuplicated = false;
   bool _isSameAsCurrentName = false;
+  bool _isInputEmpty = true;
 
   WalletInfoEditViewModel(this._walletId, this._walletProvider) {
     final walletItemBase = _walletProvider.getWalletById(_walletId);
@@ -20,13 +21,19 @@ class WalletInfoEditViewModel extends ChangeNotifier {
 
   String get walletName => _walletName;
   bool get canUpdateName =>
-      _walletName.isNotEmpty && !_isNameDuplicated && !_isSameAsCurrentName && !_isProcessing;
+      _walletName.isNotEmpty &&
+      !_isNameDuplicated &&
+      !_isSameAsCurrentName &&
+      !_isProcessing &&
+      !_isInputEmpty;
   bool get isProcessing => _isProcessing;
   bool get isNameDuplicated => _isNameDuplicated;
   bool get isSameAsCurrentName => _isSameAsCurrentName;
+  bool get isInputEmpty => _isInputEmpty;
 
   void checkNameValidity(String input) {
-    if (_walletName == input) {
+    _isInputEmpty = input.trim().isEmpty;
+    if (_walletName == input.trim()) {
       _isSameAsCurrentName = true;
       notifyListeners();
       return;
@@ -34,7 +41,7 @@ class WalletInfoEditViewModel extends ChangeNotifier {
     _isSameAsCurrentName = false;
 
     for (var walletItem in _walletList) {
-      if (walletItem.name == input) {
+      if (walletItem.name == input.trim()) {
         _isNameDuplicated = true;
         notifyListeners();
         return;
