@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -383,6 +384,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _onTapSend() {
+    if (!_viewModel.isMultisigWallet &&
+        _viewModel.masterFingerprint == WalletAddService.masterFingerprintPlaceholder) {
+      CustomToast.showToast(
+          context: context, text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send);
+      return;
+    }
     if (!_checkStateAndShowToast()) return;
     _viewModel.clearSendInfo();
     Navigator.pushNamed(context, '/send-address', arguments: {'id': widget.id});

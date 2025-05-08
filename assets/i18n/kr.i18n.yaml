@@ -258,6 +258,9 @@ settings_screen:
   hide_balance: "홈 화면 잔액 숨기기"
 
 # lib/screens/wallet_detail
+wallet_detail_screen:
+  toast: 
+    no_mfp_wallet_cant_send: "마스터 핑거프린트가 없는 지갑은 보내기를 할 수 없어요"
 address_list_screen:
   wallet_name: "$name의 주소"
   address_index: "주소 - $index"
