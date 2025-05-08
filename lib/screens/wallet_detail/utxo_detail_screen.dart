@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
@@ -428,10 +429,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                   children: List.generate(
                     selectedTags.length,
                     (index) {
-                      Color foregroundColor = selectedTags[index].colorIndex != 8
-                          ? CoconutColors.colorPalette[selectedTags[index].colorIndex]
-                          : CoconutColors
-                              .gray400; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
+                      Color foregroundColor = tagColorPalette[selectedTags[index]
+                          .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
                       return IntrinsicWidth(
                         child: CoconutChip(
                           minWidth: 40,

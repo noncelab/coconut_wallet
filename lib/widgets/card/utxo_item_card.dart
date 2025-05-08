@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -91,9 +92,7 @@ class UtxoItemCard extends StatelessWidget {
                     children: List.generate(
                       utxo.tags?.length ?? 0,
                       (index) {
-                        Color foregroundColor = utxo.tags?[index].colorIndex != 8
-                            ? CoconutColors.colorPalette[utxo.tags?[index].colorIndex ?? 0]
-                            : CoconutColors.gray400;
+                        Color foregroundColor = tagColorPalette[utxo.tags?[index].colorIndex ?? 0];
                         return IntrinsicWidth(
                           child: CoconutChip(
                             minWidth: 40,
