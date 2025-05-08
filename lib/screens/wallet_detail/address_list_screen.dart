@@ -281,7 +281,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
             ? _depositTooltipIconPosition.dy + _depositTooltipIconRenderBox.size.height
             : _depositTooltipIconPosition.dy - 70,
         left: _depositTooltipIconPosition.dx - 30,
-        right: MediaQuery.of(context).size.width - _depositTooltipIconPosition.dx - 150,
+        right: MediaQuery.of(context).size.width - _depositTooltipIconPosition.dx - 200,
         child: CoconutToolTip(
           onTapRemove: () => _removeTooltip(),
           width: MediaQuery.sizeOf(context).width,
@@ -310,7 +310,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
         top: widget.isFullScreen
             ? _changeTooltipIconPosition.dy + _changeTooltipIconRenderBox.size.height
             : _changeTooltipIconPosition.dy - 70,
-        left: _changeTooltipIconPosition.dx - 150,
+        left: _changeTooltipIconPosition.dx - 200,
         right: MediaQuery.of(context).size.width -
             _changeTooltipIconPosition.dx +
             (_changeTooltipIconRenderBox.size.width) -

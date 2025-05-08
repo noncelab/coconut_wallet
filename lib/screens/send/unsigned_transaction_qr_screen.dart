@@ -10,7 +10,6 @@ import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/coconut_qr_view_handler.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/svg.dart';
@@ -34,9 +33,10 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       backgroundColor: CoconutColors.black,
-      appBar: CustomAppBar.buildWithNext(
+      appBar: CoconutAppBar.buildWithNext(
           title: t.send,
           context: context,
+          usePrimaryActiveColor: true,
           onNextPressed: () {
             Navigator.pushNamed(context, '/signed-psbt-scanner');
           }),

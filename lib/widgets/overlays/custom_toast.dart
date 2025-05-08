@@ -131,36 +131,64 @@ class _ToastWidgetState extends State<ToastWidget> with SingleTickerProviderStat
     return SlideTransition(
       position: _offsetAnimation,
       child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: GestureDetector(
-              onVerticalDragUpdate: (details) {
-                if (details.primaryDelta! < -5) {
-                  _startFadeOut();
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: Sizes.size12),
-                width: MediaQuery.of(context).size.width,
-                color: Colors.transparent,
-                child: Container(
-                    padding: const EdgeInsets.all(Sizes.size16),
-                    width: MediaQuery.of(context).size.width - 24,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-                      color: widget.backgroundColor,
-                    ),
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        opacity: _fadeAnimation,
+        child: GestureDetector(
+          onVerticalDragUpdate: (details) {
+            if (details.primaryDelta! < -5) {
+              _startFadeOut();
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: Sizes.size12),
+            width: MediaQuery.of(context).size.width,
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(Sizes.size16),
+              width: MediaQuery.of(context).size.width - 24,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+                color: widget.backgroundColor,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final textPainter = TextPainter(
+                    text: TextSpan(text: widget.text),
+                    maxLines: null,
+                    textDirection: TextDirection.ltr,
+                  )..layout(maxWidth: constraints.maxWidth);
+
+                  final isMultiline = textPainter.computeLineMetrics().length > 1;
+
+                  return Row(
+                    crossAxisAlignment:
+                        isMultiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+                    children: [
                       if (widget.visibleIcon)
                         Padding(
-                            padding: const EdgeInsets.only(right: Sizes.size4),
-                            child: SvgPicture.asset(widget.svgIconPath,
-                                width: Sizes.size12,
-                                colorFilter: ColorFilter.mode(widget.iconColor, BlendMode.srcIn))),
+                          padding: const EdgeInsets.only(right: Sizes.size4),
+                          child: SvgPicture.asset(
+                            widget.svgIconPath,
+                            width: Sizes.size16,
+                            colorFilter: ColorFilter.mode(
+                              widget.iconColor,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
                       Expanded(
-                          child: Text(widget.text,
-                              style: CoconutTypography.body3_12.setColor(CoconutColors.black)))
-                    ])),
-              ))),
+                        child: Text(
+                          widget.text,
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.black),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

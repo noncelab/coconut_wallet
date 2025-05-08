@@ -36,6 +36,11 @@ class NodeProvider extends ChangeNotifier {
 
   bool get needSubscribe => _needSubscribeWallets;
 
+  /// 정상적으로 연결된 후 다시 연결이 끊겼을 떄에만 이 함수가 동작하도록 설계되어 있음.
+  /// 최초 [reconnect] 호출은 앱 실행 시 `_checkConnectivity` 에서 호출되어 state 처리 관련된 로직이 일부 비정상적으로 동작함.
+  /// 따라서 최초 호출 1번만 동작을 하지 않도록 함
+  bool _isFirstReconnect = true;
+
   NodeProvider(this._host, this._port, this._ssl, this._networkType,
       {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
@@ -127,17 +132,25 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> reconnect() async {
+    if (_isFirstReconnect) {
+      _isFirstReconnect = false;
+      return;
+    }
+
     try {
+      SocketConnectionStatus socketConnectionStatus;
       _needSubscribeWallets = true;
       if (isInitialized && _isolateManager.isInitialized) {
-        return;
+        socketConnectionStatus = await _isolateManager.getSocketConnectionStatus();
+        if (socketConnectionStatus != SocketConnectionStatus.terminated) {
+          return;
+        }
       }
 
       _stateSubscription?.cancel();
       _stateSubscription = null;
 
-      final socketConnectionStatus = await _isolateManager.getSocketConnectionStatus();
-
+      socketConnectionStatus = await _isolateManager.getSocketConnectionStatus();
       if (socketConnectionStatus != SocketConnectionStatus.connected) {
         await initialize();
       }

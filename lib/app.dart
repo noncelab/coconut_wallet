@@ -1,7 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -41,7 +40,6 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_info_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -279,13 +277,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               ),
           '/transaction-fee-bumping': (context) => buildScreenWithArguments(
                 context,
-                (args) => CustomLoadingOverlay(
-                  child: TransactionFeeBumpingScreen(
-                    transaction: args['transaction'],
-                    feeBumpingType: args['feeBumpingType'],
-                    walletId: args['walletId'],
-                    walletName: args['walletName'],
-                  ),
+                (args) => TransactionFeeBumpingScreen(
+                  transaction: args['transaction'],
+                  feeBumpingType: args['feeBumpingType'],
+                  walletId: args['walletId'],
+                  walletName: args['walletName'],
                 ),
               ),
           '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
@@ -303,9 +299,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
               ),
           '/send-amount': (context) => const SendAmountScreen(),
-          '/fee-selection': (context) => const CustomLoadingOverlay(
-                child: SendFeeSelectionScreen(),
-              ),
+          '/fee-selection': (context) => const SendFeeSelectionScreen(),
           '/utxo-selection': (context) => const CustomLoadingOverlay(
                 child: SendUtxoSelectionScreen(),
               ),

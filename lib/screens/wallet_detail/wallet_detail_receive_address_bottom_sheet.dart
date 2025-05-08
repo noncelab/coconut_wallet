@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
@@ -29,10 +28,9 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: CoconutColors.black,
-          appBar: CustomAppBar.build(
+          appBar: CoconutAppBar.build(
             title: t.receive,
             context: context,
-            hasRightIcon: false,
             isBottom: true,
           ),
           body: SafeArea(

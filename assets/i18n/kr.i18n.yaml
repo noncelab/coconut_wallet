@@ -74,7 +74,6 @@ status_updating: "업데이트 중"
 no_status: "상태 없음"
 quick_receive: "빨리 받기"
 quick_send: "빨리 보내기"
-copy: "복사하기"
 copied: "복사 완료"
 change_color: "색 변경"
 selection: "선택"
@@ -90,6 +89,7 @@ total_utxo_count: "(총 $count개)"
 view_app_info: "앱 정보 보기"
 view_tx_details: "거래 자세히 보기"
 view_more: "더보기"
+view_less: "간단히 보기"
 view_mempool: "멤풀 보기"
 view_all_addresses: "전체 주소 보기"
 select_utxo: "UTXO 고르기"
@@ -162,7 +162,11 @@ wallet_add_scanner_screen:
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
   placeholder_text: "확장공개키(zpub) 또는 디스크립터를 입력해 주세요"
-  error_text: "확인할 수 없는 형식이에요"
+  format_error_text: "확인할 수 없는 형식이에요"
+  invalid_character_error_text: "허용되지 않는 문자가 있어요"
+  mainnet_wallet_error_text: "메인넷 지갑이 아니에요"
+  testnet_wallet_error_text: "테스트넷 지갑이 아니에요"
+  unsupported_wallet_error_text: "지원하지 않는 지갑이에요"
   wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
   blue_wallet_texts:
     - "· 블루월렛"
@@ -174,6 +178,14 @@ wallet_add_input_screen:
     - "· Keys 탭 - 키 선택 - Key spec 정보"
     - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
     - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
+  mfp_title: "마스터 핑거프린트 입력"
+  mfp_description_title: "마스터 핑거프린트(Master Fingerprint)"
+  mfp_description_texts:
+    - "보기 전용 지갑을 식별할 때 필요한 고유 값이에요."
+    - "입력한 정보만으로는 이 값을 자동으로 알 수 없기 때문에, 안전하고 정확한 지갑 연결을 위해 직접 입력해주셔야 해요."
+    - "이 정보가 없으면 보내기 기능을 사용하실 수 없어요."
+  mfp_input_placeholder: "f75f7ab5"
+  mfp_skip: "건너뛰기"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -435,7 +447,6 @@ alert:
     broadcasting_failed: "[전송 실패]\n$error"
     insufficient_balance: "잔액이 부족해요"
     minimum_amount: "$bitcoin BTC 부터 전송할 수 있어요"
-    poor_network: "네트워크 상태가 좋지 않아\n처음으로 돌아갑니다."
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
   signed_psbt:
     invalid_qr: "잘못된 QR코드예요.\n다시 확인해 주세요."

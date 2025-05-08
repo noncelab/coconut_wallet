@@ -6,7 +6,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -32,10 +31,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         builder: (context, viewModel, child) {
           return Scaffold(
               backgroundColor: CoconutColors.black,
-              appBar: CustomAppBar.buildWithNext(
+              appBar: CoconutAppBar.buildWithNext(
                   title: t.send_confirm_screen.title,
                   context: context,
                   isActive: true,
+                  usePrimaryActiveColor: true,
                   onNextPressed: () {
                     context.loaderOverlay.show();
                     viewModel.generateUnsignedPsbt().then((value) {

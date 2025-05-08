@@ -19,6 +19,8 @@ class WalletInfoEditViewModel extends ChangeNotifier {
   }
 
   String get walletName => _walletName;
+  bool get canUpdateName =>
+      _walletName.isNotEmpty && !_isNameDuplicated && !_isSameAsCurrentName && !_isProcessing;
   bool get isProcessing => _isProcessing;
   bool get isNameDuplicated => _isNameDuplicated;
   bool get isSameAsCurrentName => _isSameAsCurrentName;

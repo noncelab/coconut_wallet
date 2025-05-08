@@ -83,6 +83,7 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
+    notifyListeners();
   }
 
   void setTxInfo() async {

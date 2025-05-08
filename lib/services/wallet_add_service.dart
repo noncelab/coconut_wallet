@@ -7,6 +7,7 @@ import 'package:coconut_wallet/utils/type_converter_utils.dart';
 import 'package:ur/ur.dart';
 
 class WalletAddService {
+  static const String masterFingerprintPlaceholder = '00000000';
   WatchOnlyWallet createSeedSignerWallet(String descriptor, String name) {
     return createWalletFromDescriptor(
         descriptor: descriptor, name: name, walletImportSource: WalletImportSource.seedSigner);
@@ -16,9 +17,10 @@ class WalletAddService {
     return createWalletFromUR(ur: ur, name: name, walletImportSource: WalletImportSource.keystone);
   }
 
-  WatchOnlyWallet createExtendedPublicKeyWallet(String extendedPublicKey, String name) {
+  WatchOnlyWallet createExtendedPublicKeyWallet(
+      String extendedPublicKey, String name, String? masterFingerPrint) {
     final singleSigWallet = SingleSignatureWallet.fromExtendedPublicKey(
-        AddressType.p2wpkh, extendedPublicKey, '00000000');
+        AddressType.p2wpkh, extendedPublicKey, masterFingerPrint ?? masterFingerprintPlaceholder);
     return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null,
         WalletImportSource.extendedPublicKey.name);
   }
