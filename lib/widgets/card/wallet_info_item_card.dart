@@ -69,75 +69,80 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _onTap(context, walletImportSource),
+    return Container(
+      decoration: isMultisig
+          ? BoxDecoration(
+              color: CoconutColors.black,
+              borderRadius: BorderRadius.circular(26),
+              gradient: ColorUtil.getMultisigLinearGradient(ColorUtil.getGradientColors(signers!)),
+            )
+          : null,
       child: Container(
+        margin: isMultisig ? const EdgeInsets.all(2) : const EdgeInsets.all(0),
+        padding: isMultisig ? const EdgeInsets.all(20) : const EdgeInsets.all(24),
         decoration: isMultisig
             ? BoxDecoration(
                 color: CoconutColors.black,
-                borderRadius: BorderRadius.circular(26),
-                gradient:
-                    ColorUtil.getMultisigLinearGradient(ColorUtil.getGradientColors(signers!)),
+                borderRadius: BorderRadius.circular(26), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
               )
-            : null,
-        child: Container(
-          margin: isMultisig ? const EdgeInsets.all(2) : const EdgeInsets.all(0),
-          padding: isMultisig ? const EdgeInsets.all(20) : const EdgeInsets.all(24),
-          decoration: isMultisig
-              ? BoxDecoration(
-                  color: CoconutColors.black,
-                  borderRadius:
-                      BorderRadius.circular(26), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
-                )
-              : BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: CoconutColors.gray700, width: 1),
-                ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 아이콘
-              // TODO: 만약 멀티시그의 외부지갑도 지원하게 된다면 이 부분 수정해야합니다.
-              WalletItemIcon(
-                  walletImportSource: walletImportSource ?? WalletImportSource.coconutVault),
-              CoconutLayout.spacing_200w,
-              // 이름
-              Expanded(
-                child: Text(
-                  nameText,
-                  style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+            : BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: CoconutColors.gray700, width: 1),
+              ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // 아이콘
+            // TODO: 만약 멀티시그의 외부지갑도 지원하게 된다면 이 부분 수정해야합니다.
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _onTap(context, walletImportSource),
+                child: Row(
+                  children: [
+                    WalletItemIcon(
+                        walletImportSource: walletImportSource ?? WalletImportSource.coconutVault),
+                    CoconutLayout.spacing_200w,
+                    // 이름
+                    Expanded(
+                      child: Text(
+                        nameText,
+                        style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              CoconutLayout.spacing_200w,
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (rightText.isNotEmpty)
-                    Text(
-                      rightText.replaceAllMapped(
-                          RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
-                      style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
-                    ),
-                  TooltipButton(
-                    isSelected: false,
-                    text: tooltipText,
-                    isLeft: true,
-                    iconKey: widget.tooltipKey,
-                    containerMargin: EdgeInsets.zero,
-                    containerPadding: EdgeInsets.zero,
-                    iconPadding: const EdgeInsets.only(left: 10),
-                    onTap: () {},
-                    onTapDown: (details) {
-                      widget.onTooltipClicked();
-                    },
+            ),
+
+            CoconutLayout.spacing_200w,
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (rightText.isNotEmpty)
+                  Text(
+                    rightText.replaceAllMapped(
+                        RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
+                    style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
                   ),
-                ],
-              )
-            ],
-          ),
+                TooltipButton(
+                  isSelected: false,
+                  text: tooltipText,
+                  isLeft: true,
+                  iconKey: widget.tooltipKey,
+                  containerMargin: EdgeInsets.zero,
+                  containerPadding: EdgeInsets.zero,
+                  iconPadding: const EdgeInsets.only(left: 10),
+                  onTap: () {},
+                  onTapDown: (details) {
+                    widget.onTooltipClicked();
+                  },
+                ),
+              ],
+            )
+          ],
         ),
       ),
     );
