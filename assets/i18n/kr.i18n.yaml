@@ -280,6 +280,8 @@ wallet_info_screen:
   title: "$name 정보"
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
+  tooltip:
+    mfp_placeholder_description: "확장공개키로 추가한 지갑이며\n마스터 핑거프린트를 입력하지 않아\n00000000으로 표기돼요."
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"

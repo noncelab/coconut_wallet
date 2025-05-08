@@ -264,7 +264,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           ? t.tooltip.multisig_wallet(
                               total: viewModel.multisigTotalSignerCount,
                               count: viewModel.multisigRequiredSignerCount)
-                          : t.tooltip.mfp,
+                          : t.tooltip.mfp +
+                              (viewModel.isMfpPlaceholder
+                                  ? '\n${t.wallet_info_screen.tooltip.mfp_placeholder_description}'
+                                  : ''),
                       style: CoconutTypography.body3_12.setColor(CoconutColors.black).merge(
                             const TextStyle(
                               height: 1.3,
