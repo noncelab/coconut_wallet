@@ -316,6 +316,14 @@ void main() {
         // 메인넷
         var descriptor4 =
             "wpkh([33a0cbfd/49'/1'/0']xpub6CorSC5E8wkNboiq84Ndxvm3w4ccSA4MbEva8khZ4a5Cxk8hQYwrsJoPsmL8KsmCeFWzD4irCJdEqcd7kKRi5SAg355pTxTgHW2eVzQu2dd/<0;1>/*)";
+        var descriptor5 =
+            "wpkh([d34db33f/84'/0'/0']zpub6r3x6MdKZ7NpMoPoBJbCVLSvT5zsw2Ne1fBHQ46cT4rKHLR3EBNnNBW8EbnAxTFEJqGKyJ9BeLfnzZcr8NVEXLEgfR1RCypJdzKiSTeKq3k/<0;1>/*)";
+        var descriptor6 =
+            "wpkh([abcdef12/84'/0'/0']zpub6qij8vBzCwAfGpXYiEPYQq1q3K4xZWWC2FwLeEf4Cj5AxhKhT4AHgQkK7Bd98AL14VbUHEzHa2e8Vbg3nTZDX7pFWrgoEqdE4wYiyNC9EpQ/<0;1>/*)";
+        var descriptor7 =
+            "wpkh([12345678/84'/0'/0']xpub6C7Hd6RGti63xR4C6ZfThPB7R8ogQK98j34tf7aWddxY8zA1QXZX5pGgEZHGDWtz7A67MyTof3kY9A1EjD5fSEeL6B7Q8Ko3A8xRy7S12RxE/<0;1>/*)";
+        var descriptor8 =
+            "wpkh([12345678/84'/0'/0']zpub6r3x6MdKZ7NpMoPoBJbCVLSvT5zsw2Ne1fBHQ46cT4rKHLR3EBNnNBW8EbnAxTFEJqGKyJ9BeLfnzZcr8NVEXLEgfR1RCypJdzKiSTeKq3k/<0;1>/*)";
 
         // 성공: 1~3, 실패: 4(purpose 49)
         NetworkType.setNetworkType(NetworkType.regtest);
@@ -324,6 +332,16 @@ void main() {
         expect(DescriptorUtil.normalizeDescriptor(descriptor3), isNotEmpty);
         expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor4),
             t.wallet_add_input_screen.unsupported_wallet_error_text);
+
+        // 실패: 5~8(메인넷 지갑)
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor5),
+            t.wallet_add_input_screen.testnet_wallet_error_text);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor6),
+            t.wallet_add_input_screen.testnet_wallet_error_text);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor7),
+            t.wallet_add_input_screen.testnet_wallet_error_text);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor8),
+            t.wallet_add_input_screen.testnet_wallet_error_text);
 
         // 실패: 1~3(테스트넷 지갑), 4(purpose 49)
         NetworkType.setNetworkType(NetworkType.mainnet);
@@ -335,6 +353,16 @@ void main() {
             t.wallet_add_input_screen.mainnet_wallet_error_text);
         expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor4),
             t.wallet_add_input_screen.unsupported_wallet_error_text);
+
+        // 실패: 5~8
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor5),
+            t.wallet_add_input_screen.format_error_text);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor6),
+            t.wallet_add_input_screen.format_error_text);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor7),
+            t.wallet_add_input_screen.format_error_text);
+        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor8),
+            t.wallet_add_input_screen.format_error_text);
       });
     });
 
@@ -476,6 +504,7 @@ void expectErrorMessage(VoidCallback func, String errorText) {
   } catch (e) {
     isCaught = true;
     expect(getErrorMessageByError(e), errorText);
+    print(e);
   }
   expect(isCaught, true);
 }

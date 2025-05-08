@@ -65,18 +65,19 @@ class DescriptorUtil {
 
   static void validateNativeSegwitDescriptor(String descriptor) {
     final regexWpkhFormatWithoutChecksum = RegExp(
-      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](tpub|vpub|xpub|zpub)[1-9A-HJ-NP-Za-km-z]{107}\)$",
+      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](tpub|vpub|xpub|zpub)[1-9A-HJ-NP-Za-km-z]{107,108}\)$",
     );
     final regexWpkhFormatWithChecksumPath = RegExp(
-      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](tpub|vpub|xpub|zpub)[1-9A-HJ-NP-Za-km-z]{107}/<\d+;\d+>\/\*\)$",
+      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](tpub|vpub|xpub|zpub)[1-9A-HJ-NP-Za-km-z]{107,108}/<\d+;\d+>\/\*\)$",
     );
     final regexWpkhFormatWithChecksum = RegExp(
-      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](tpub|vpub|xpub|zpub)[1-9A-HJ-NP-Za-km-z]{107}/<\d+;\d+>\/\*\)#([A-Za-z0-9]{8})$",
+      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](tpub|vpub|xpub|zpub)[1-9A-HJ-NP-Za-km-z]{107,108}/<\d+;\d+>\/\*\)#([A-Za-z0-9]{8})$",
     );
 
     if (!(regexWpkhFormatWithoutChecksum.hasMatch(descriptor) ||
         regexWpkhFormatWithChecksumPath.hasMatch(descriptor) ||
         regexWpkhFormatWithChecksum.hasMatch(descriptor))) {
+      Logger.log("Invalid format error: $descriptor");
       throw Exception("Invalid format error");
     }
   }
