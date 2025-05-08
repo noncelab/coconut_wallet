@@ -9,7 +9,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -211,8 +210,10 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
     int customSatsPerVb = int.parse(input);
     if (widget.networkMinimumFeeRate != null && customSatsPerVb < widget.networkMinimumFeeRate!) {
-      CustomToast.showToast(
-          context: context, text: t.toast.min_fee(minimum: widget.networkMinimumFeeRate!));
+      CoconutToast.showToast(
+          isVisibleIcon: true,
+          context: context,
+          text: t.toast.min_fee(minimum: widget.networkMinimumFeeRate!));
       _customFeeController.clear();
       return null;
     }
@@ -228,9 +229,13 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       }
     } catch (e) {
       if (mounted) {
-        CustomToast.showWarningToast(
-            context: context,
-            text: ErrorCodes.withMessage(ErrorCodes.feeEstimationError, e.toString()).message);
+        CoconutToast.showWarningToast(
+          context: context,
+          text: ErrorCodes.withMessage(
+            ErrorCodes.feeEstimationError,
+            e.toString(),
+          ).message,
+        );
       }
     } finally {
       _customFeeController.clear();

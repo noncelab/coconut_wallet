@@ -18,7 +18,6 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -725,7 +724,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   }
 
   void _showInsufficientUtxoToast(BuildContext context) {
-    CustomToast.showToast(
+    CoconutToast.showToast(
+        isVisibleIcon: true,
         context: context,
         text: t.transaction_fee_bumping_screen.toast.insufficient_utxo,
         seconds: 10);

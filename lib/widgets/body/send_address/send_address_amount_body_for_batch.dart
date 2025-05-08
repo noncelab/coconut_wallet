@@ -5,7 +5,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/address_and_amount_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -266,7 +265,8 @@ class _SendAddressAmountBodyForBatchState extends State<SendAddressAmountBodyFor
         _recipients.fold(0, (sum, recipient) => sum + (double.parse(recipient.amount)));
     bool isAffordable = widget.checkSendAvailable(UnitUtil.bitcoinToSatoshi(totalAmount));
     if (!isAffordable) {
-      CustomToast.showToast(context: context, text: t.errors.insufficient_balance);
+      CoconutToast.showToast(
+          isVisibleIcon: true, context: context, text: t.errors.insufficient_balance);
     } else {
       widget.onRecipientsConfirmed(_recipients.fold({}, (result, recipient) {
         result[recipient.address] = double.parse(recipient.amount);
