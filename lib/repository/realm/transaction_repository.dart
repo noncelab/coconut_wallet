@@ -121,9 +121,6 @@ class TransactionRepository extends BaseRepository {
           tx.timestamp = blockTimestampMap[fetchedTx.height]!.timestamp;
         }
       }
-
-      // 3. 지갑의 최신 트랜잭션 상태 업데이트
-      realmWalletBase.isLatestTxBlockHeightZero = fetchedTxMap.values.any((tx) => tx.height == 0);
     });
   }
 
