@@ -192,7 +192,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                   (index) {
                     bool isSelected = _prevSelectedUtxoTagNames.contains(_utxoTags[index].name);
                     Color foregroundColor = tagColorPalette[_utxoTags[index]
-                          .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
+                        .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
                     return IntrinsicWidth(
                       child: CoconutChip(
                         minWidth: 40,

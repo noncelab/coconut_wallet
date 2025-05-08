@@ -51,7 +51,7 @@ void main() {
     realmManager = RealmManager(realm: realm);
     realmManager.reset();
 
-    await setWalletData(wallet, realmManager: realmManager);
+    await setTwoSinglesAndOneMultiCoconutWallets(wallet, realmManager: realmManager);
     closeRealm();
   }
 

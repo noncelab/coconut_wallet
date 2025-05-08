@@ -83,7 +83,8 @@ Future<void> waitForWidgetAndTap(WidgetTester tester, Finder element, String ele
   await tester.pumpAndSettle();
 }
 
-Future<void> setTwoSinglesAndOneMultiCoconutWallets(bool isEnabled, {RealmManager? realmManager}) async {
+Future<void> setTwoSinglesAndOneMultiCoconutWallets(bool isEnabled,
+    {RealmManager? realmManager}) async {
   if (!isEnabled) return;
   await addWallets(realmManager: realmManager);
 }
