@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -345,7 +346,8 @@ void main() {
           throw Exception("[${NetworkType.currentNetworkType}] '$prefix' is not supported.");
         }
 
-        return SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, xpub, '-')
+        return SingleSignatureWallet.fromExtendedPublicKey(
+                AddressType.p2wpkh, xpub, WalletAddService.masterFingerprintPlaceholder)
             .descriptor;
       }
 

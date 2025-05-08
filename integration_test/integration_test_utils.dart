@@ -9,6 +9,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,8 +54,8 @@ final exSingleSigWallet1 = {
   "name": "zpub",
   "colorIndex": 0,
   "iconIndex": 0,
-  "descriptor": SingleSignatureWallet.fromExtendedPublicKey(
-          AddressType.p2wpkh, externalWallet1ExtendedPublicKey, '-')
+  "descriptor": SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh,
+          externalWallet1ExtendedPublicKey, WalletAddService.masterFingerprintPlaceholder)
       .descriptor,
   "walletImportSource": WalletImportSource.extendedPublicKey.name
 };
