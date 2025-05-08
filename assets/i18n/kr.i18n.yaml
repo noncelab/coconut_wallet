@@ -295,6 +295,7 @@ wallet_list_add_guide_card:
 wallet_list_glossary_shortcut_card:
   any_word_you_dont_know: "모르는 용어가 있으신가요?"
   top_right: "오른쪽 위 "
+  kebab_button: "⋮ 버튼"
   click_to_jump: " - 용어집 또는 여기를 눌러 바로가기"
 
 # lib/widgets/overlays
@@ -401,7 +402,7 @@ tooltip:
     select_wallet: "$name 선택, "
     scan_qr_below: "로 이동하여 아래 QR 코드를 스캔해 주세요."
   address_receiving: "비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라고 해요."
-  address_change: "다른 사람에게 비트코인을 보내고 남은 비트코인을 거슬러 받는 주소예요. 영어로 Change라고 해요."
+  address_change: "비트코인을 보내고 남으면 거슬러받는 주소예요. 영어로 Change라고 해요."
   utxo: "UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요."
   faucet: "테스트용 비트코인으로 마음껏 테스트 해보세요"
   multisig_wallet: "$total개의 키 중 $count개로 서명해야 하는\n다중 서명 지갑이에요."
