@@ -47,7 +47,7 @@ void main() {
       test('올바른 디스크립터에서 purpose를 추출', () {
         const descriptor =
             "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
-        expect(DescriptorUtil.extractPurpose(descriptor), '84');
+        expect(DescriptorUtil.extractPurpose(descriptor), "84'");
       });
 
       test('purpose가 없는 디스크립터는 예외 발생', () {
@@ -64,11 +64,11 @@ void main() {
 
     group('validatePurpose', () {
       test('올바른 purpose는 예외를 발생시키지 않음', () {
-        expect(() => DescriptorUtil.validatePurpose('84'), returnsNormally);
+        expect(() => DescriptorUtil.validatePurpose("84'"), returnsNormally);
       });
 
       test('잘못된 purpose는 예외 발생', () {
-        expect(() => DescriptorUtil.validatePurpose('44'), throwsException);
+        expect(() => DescriptorUtil.validatePurpose("44'"), throwsException);
       });
     });
 
