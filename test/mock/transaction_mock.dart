@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 
 class TransactionMock {
   static const String testTxHash = 'test_tx_hash';
@@ -96,12 +96,11 @@ class TransactionMock {
   /// RBF 테스트를 위한 RbfInfo 생성 메서드
   static RbfInfo createMockRbfInfo({
     required String originalTransactionHash,
-    required String spentTransactionHash,
-    List<Transaction>? previousTransactions,
+    required String previousTransactionHash,
   }) {
-    return RbfInfo(
+    return (
       originalTransactionHash: originalTransactionHash,
-      spentTransactionHash: spentTransactionHash,
+      previousTransactionHash: previousTransactionHash,
     );
   }
 

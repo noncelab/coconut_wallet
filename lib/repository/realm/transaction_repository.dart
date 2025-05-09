@@ -1,11 +1,12 @@
 import 'package:coconut_lib/coconut_lib.dart' as lib;
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/cpfp_history.dart';
+import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/models/rbf_info.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -131,7 +132,7 @@ class TransactionRepository extends BaseRepository {
   }
 
   /// 모든 트랜잭션 추가
-  void addAllTransactions(int walletId, List<TransactionRecord> txList) {
+  Future<void> addAllTransactions(int walletId, List<TransactionRecord> txList) async {
     final realmWalletBase = realm.find<RealmWalletBase>(walletId);
     if (realmWalletBase == null) {
       throw StateError('[addAllTransactions] Wallet not found');
@@ -141,8 +142,6 @@ class TransactionRepository extends BaseRepository {
     final existingTxs = realm.query<RealmTransaction>('walletId == $walletId');
     final existingTxMap = {for (var tx in existingTxs) tx.transactionHash: tx};
 
-    int lastId = getLastId(realm, (RealmTransaction).toString());
-
     // 새 트랜잭션과 업데이트할 트랜잭션을 분리
     List<RealmTransaction> newTxsToAdd = [];
     List<MapEntry<RealmTransaction, TransactionRecord>> txsToUpdate = [];
@@ -150,13 +149,11 @@ class TransactionRepository extends BaseRepository {
     for (var tx in txList) {
       final existingTx = existingTxMap[tx.transactionHash];
 
-      // 기존 트랜잭션이 없거나, 모든 경우에 중복 저장 방지
       if (existingTx == null) {
-        // 완전 새로운 트랜잭션 - 추가
         newTxsToAdd.add(mapTransactionToRealmTransaction(
           tx,
           walletId,
-          ++lastId,
+          Object.hash(walletId, tx.transactionHash),
         ));
       } else if (existingTx.blockHeight == 0 && tx.blockHeight > 0) {
         // 미확인 -> 확인 상태로 변경된 트랜잭션 - 업데이트
@@ -165,7 +162,7 @@ class TransactionRepository extends BaseRepository {
       // 이미 확인된 트랜잭션이거나 여전히 미확인 상태인 트랜잭션은 무시
     }
 
-    realm.write(() {
+    await realm.writeAsync(() {
       // 새 트랜잭션 추가
       if (newTxsToAdd.isNotEmpty) {
         realm.addAll<RealmTransaction>(newTxsToAdd);
@@ -180,10 +177,6 @@ class TransactionRepository extends BaseRepository {
         existingTx.timestamp = newTx.timestamp;
       }
     });
-
-    if (newTxsToAdd.isNotEmpty) {
-      saveLastId(realm, (RealmTransaction).toString(), lastId);
-    }
   }
 
   /// 해당 지갑에 존재하는 트랜잭션 해시 set 조회
@@ -232,7 +225,7 @@ class TransactionRepository extends BaseRepository {
   /// RBF 내역을 일괄 저장합니다.
   ///
   /// 중복 체크를 수행하여 이미 저장된 내역은 다시 저장하지 않습니다.
-  void addAllRbfHistory(List<RbfHistoryDto> rbfHistoryList) {
+  void addAllRbfHistory(List<RbfHistory> rbfHistoryList) {
     if (rbfHistoryList.isEmpty) return;
 
     try {
@@ -266,7 +259,7 @@ class TransactionRepository extends BaseRepository {
   /// CPFP 내역을 일괄 저장합니다.
   ///
   /// 중복 체크를 수행하여 이미 저장된 내역은 다시 저장하지 않습니다.
-  void addAllCpfpHistory(List<CpfpHistoryDto> cpfpHistoryList) {
+  void addAllCpfpHistory(List<CpfpHistory> cpfpHistoryList) {
     if (cpfpHistoryList.isEmpty) return;
 
     // 중복 체크를 위한 기존 ID 목록 생성
@@ -365,27 +358,22 @@ class TransactionRepository extends BaseRepository {
     }
   }
 
-  /// rbfInfoMap - {key(새로운 rbfTransactionHash): [RbfInfo]}
+  /// rbfInfoMap - {key(fetchedTxHash): value(RbfInfo)}
   /// 기존 트랜잭션을 찾아서 rbf로 대체되었다는 표시를 하기 위한 메서드
   void markAsRbfReplaced(int walletId, Map<String, RbfInfo> rbfInfoMap) {
-    final Map<String, String> spentToOriginalTxMap = {};
-
-    for (final entry in rbfInfoMap.entries) {
-      final originalTxHash = entry.key;
-      final rbfInfo = entry.value;
-      final spentTxHash = rbfInfo.spentTransactionHash;
-
-      spentToOriginalTxMap[spentTxHash] = originalTxHash;
-    }
-
     final txListToReplce = realm.query<RealmTransaction>(
       r'walletId == $0 AND transactionHash IN $1',
-      [walletId, spentToOriginalTxMap.keys.toList()],
+      [walletId, rbfInfoMap.values.map((rbf) => rbf.previousTransactionHash).toList()],
     );
 
+    final prevToCurrentTxMap = <String, String>{};
+    for (var rbfInfo in rbfInfoMap.entries) {
+      prevToCurrentTxMap[rbfInfo.value.previousTransactionHash] = rbfInfo.key;
+    }
+
     realm.write(() {
-      for (final realmTx in txListToReplce) {
-        realmTx.replaceByTransactionHash = spentToOriginalTxMap[realmTx.transactionHash];
+      for (final realmPrevTx in txListToReplce) {
+        realmPrevTx.replaceByTransactionHash = prevToCurrentTxMap[realmPrevTx.transactionHash];
       }
     });
   }
@@ -408,54 +396,4 @@ class TransactionRepository extends BaseRepository {
 
     return Result.failure(ErrorCodes.realmNotFound);
   }
-}
-
-/// RBF 내역 일괄 저장을 위한 DTO 클래스
-class RbfHistoryDto {
-  final int _id;
-  final int walletId;
-  final String originalTransactionHash;
-  final String transactionHash;
-  final double feeRate;
-  final DateTime timestamp;
-
-  int get id => _id;
-
-  RbfHistoryDto({
-    required this.walletId,
-    required this.originalTransactionHash,
-    required this.transactionHash,
-    required this.feeRate,
-    required this.timestamp,
-  }) : _id = Object.hash(
-          walletId,
-          originalTransactionHash,
-          transactionHash,
-        );
-}
-
-/// CPFP 내역 일괄 저장을 위한 DTO 클래스
-class CpfpHistoryDto {
-  final int _id;
-  final int walletId;
-  final String parentTransactionHash;
-  final String childTransactionHash;
-  final double originalFee;
-  final double newFee;
-  final DateTime timestamp;
-
-  int get id => _id;
-
-  CpfpHistoryDto({
-    required this.walletId,
-    required this.parentTransactionHash,
-    required this.childTransactionHash,
-    required this.originalFee,
-    required this.newFee,
-    required this.timestamp,
-  }) : _id = Object.hash(
-          walletId,
-          parentTransactionHash,
-          childTransactionHash,
-        );
 }

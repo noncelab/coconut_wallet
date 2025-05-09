@@ -1,4 +1,4 @@
-enum IsolateHandlerMessage {
+enum IsolateControllerCommand {
   subscribeWallets,
   subscribeWallet,
   unsubscribeWallet,
@@ -19,7 +19,7 @@ enum IsolateStateMethod {
   setMainClientWaitingState,
 }
 
-enum IsolateManagerMessage {
+enum IsolateManagerCommand {
   initialize,
   updateState,
 }

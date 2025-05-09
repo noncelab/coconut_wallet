@@ -1,4 +1,6 @@
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/cpfp_history.dart';
+import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 
 class TransactionRecord {
@@ -104,32 +106,4 @@ class TransactionRecord {
   DateTime? getDateTimeToDisplay() {
     return timestamp;
   }
-}
-
-class RbfHistory {
-  final double feeRate;
-  final DateTime timestamp;
-  final String transactionHash;
-
-  RbfHistory({
-    required this.feeRate,
-    required this.timestamp,
-    required this.transactionHash,
-  });
-}
-
-class CpfpHistory {
-  final double originalFee;
-  final double newFee;
-  final DateTime timestamp;
-  final String parentTransactionHash;
-  final String childTransactionHash;
-
-  CpfpHistory({
-    required this.originalFee,
-    required this.newFee,
-    required this.timestamp,
-    required this.parentTransactionHash,
-    required this.childTransactionHash,
-  });
 }

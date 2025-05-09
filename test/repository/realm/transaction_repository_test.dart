@@ -1,4 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/node/cpfp_history.dart';
+import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -39,12 +41,12 @@ void main() {
   });
 
   group('트랜잭션 기본 CRUD 테스트', () {
-    test('새 트랜잭션을 추가하고 조회할 수 있어야 함', () {
+    test('새 트랜잭션을 추가하고 조회할 수 있어야 함', () async {
       // 테스트용 트랜잭션 생성
       final testTransaction = TransactionMock.createMockTransactionRecord();
 
       // 트랜잭션 추가
-      transactionRepository.addAllTransactions(testWalletItem.id, [testTransaction]);
+      await transactionRepository.addAllTransactions(testWalletItem.id, [testTransaction]);
 
       // 트랜잭션 조회
       final transactions = transactionRepository.getTransactionRecordList(testWalletItem.id);
@@ -126,14 +128,14 @@ void main() {
     test('RBF 내역을 일괄 추가할 수 있어야 함', () async {
       // 테스트용 RBF DTO 생성
       final rbfDtoList = [
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_1',
           transactionHash: 'new_tx_1',
           feeRate: 5.0,
           timestamp: DateTime.now(),
         ),
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_2',
           transactionHash: 'new_tx_2',
@@ -161,21 +163,21 @@ void main() {
     test('RBF 내역을 조회할 때 연관된 RBF 내역도 함께 조회되어야 함', () async {
       // 테스트용 RBF DTO 생성
       final rbfDtoList = [
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_1',
           transactionHash: 'new_tx_1',
           feeRate: 5.0,
           timestamp: DateTime.now(),
         ),
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_1',
           transactionHash: 'new_tx_2',
           feeRate: 7.5,
           timestamp: DateTime.now(),
         ),
-        RbfHistoryDto(
+        RbfHistory(
           walletId: testWalletItem.id,
           originalTransactionHash: 'original_tx_1',
           transactionHash: 'new_tx_3',
@@ -193,17 +195,57 @@ void main() {
       // 검증
       expect(rbfHistory, isNotEmpty);
       expect(rbfHistory.length, 3);
-      expect(rbfHistory[0].originalTransactionHash, 'original_tx_1');
-      expect(rbfHistory[0].transactionHash, 'new_tx_1');
+      expect(rbfHistory[2].originalTransactionHash, 'original_tx_1');
+      expect(rbfHistory[2].transactionHash, 'new_tx_1');
       expect(rbfHistory[1].originalTransactionHash, 'original_tx_1');
       expect(rbfHistory[1].transactionHash, 'new_tx_2');
-      expect(rbfHistory[2].originalTransactionHash, 'original_tx_1');
-      expect(rbfHistory[2].transactionHash, 'new_tx_3');
+      expect(rbfHistory[0].originalTransactionHash, 'original_tx_1');
+      expect(rbfHistory[0].transactionHash, 'new_tx_3');
+    });
+
+    test('RBF 내역 조회 시 수수료 내림차순으로 정렬되어야 함', () async {
+      // 테스트용 RBF DTO 생성
+      final rbfDtoList = [
+        RbfHistory(
+          walletId: testWalletItem.id,
+          originalTransactionHash: 'original_tx_1',
+          transactionHash: 'new_tx_2',
+          feeRate: 5.0,
+          timestamp: DateTime.now(),
+        ),
+        RbfHistory(
+          walletId: testWalletItem.id,
+          originalTransactionHash: 'original_tx_1',
+          transactionHash: 'new_tx_1',
+          feeRate: 3.5,
+          timestamp: DateTime.now(),
+        ),
+        RbfHistory(
+          walletId: testWalletItem.id,
+          originalTransactionHash: 'original_tx_1',
+          transactionHash: 'new_tx_3',
+          feeRate: 10.0,
+          timestamp: DateTime.now(),
+        ),
+      ];
+
+      // RBF 내역 일괄 추가
+      transactionRepository.addAllRbfHistory(rbfDtoList);
+
+      // RBF 내역 조회
+      final rbfHistory = transactionRepository.getRbfHistoryList(testWalletItem.id, 'new_tx_1');
+
+      // 검증
+      expect(rbfHistory, isNotEmpty);
+      expect(rbfHistory.length, 3);
+      expect(rbfHistory[0].feeRate, 10.0);
+      expect(rbfHistory[1].feeRate, 5.0);
+      expect(rbfHistory[2].feeRate, 3.5);
     });
 
     test('RBF 내역 일괄 추가 시 중복은 무시되어야 함', () async {
       // 첫 번째 추가
-      final rbfDto = RbfHistoryDto(
+      final rbfDto = RbfHistory(
         walletId: testWalletItem.id,
         originalTransactionHash: 'original_tx',
         transactionHash: 'new_tx',
@@ -228,7 +270,7 @@ void main() {
     test('CPFP 내역을 일괄 추가할 수 있어야 함', () async {
       // 테스트용 CPFP DTO 생성
       final cpfpDtoList = [
-        CpfpHistoryDto(
+        CpfpHistory(
           walletId: testWalletItem.id,
           parentTransactionHash: 'parent_tx_1',
           childTransactionHash: 'child_tx_1',
@@ -236,7 +278,7 @@ void main() {
           newFee: 10.0,
           timestamp: DateTime.now(),
         ),
-        CpfpHistoryDto(
+        CpfpHistory(
           walletId: testWalletItem.id,
           parentTransactionHash: 'parent_tx_2',
           childTransactionHash: 'child_tx_2',
@@ -264,7 +306,7 @@ void main() {
 
     test('CPFP 내역 일괄 추가 시 중복은 무시되어야 함', () async {
       // 첫 번째 추가
-      final cpfpDto = CpfpHistoryDto(
+      final cpfpDto = CpfpHistory(
         walletId: testWalletItem.id,
         parentTransactionHash: 'parent_tx',
         childTransactionHash: 'child_tx',
@@ -287,7 +329,7 @@ void main() {
   });
 
   group('트랜잭션 목록 관련 테스트', () {
-    test('미확인 트랜잭션과 확인된 트랜잭션이 정렬되어 반환되어야 함', () {
+    test('미확인 트랜잭션과 확인된 트랜잭션이 정렬되어 반환되어야 함', () async {
       // 테스트용 트랜잭션 생성
       final confirmedTx1 = TransactionMock.createConfirmedTransactionRecord(
         transactionHash: 'confirmed_tx_1',
@@ -309,7 +351,7 @@ void main() {
       );
 
       // 트랜잭션 추가 (순서 섞어서)
-      transactionRepository
+      await transactionRepository
           .addAllTransactions(testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
 
       // 트랜잭션 목록 조회
@@ -322,7 +364,7 @@ void main() {
       expect(transactions[2].transactionHash, 'confirmed_tx_1');
     });
 
-    test('getExistingConfirmedTxHashes는 확인된 트랜잭션 해시 목록을 반환해야 함', () {
+    test('getExistingConfirmedTxHashes는 확인된 트랜잭션 해시 목록을 반환해야 함', () async {
       // 테스트용 트랜잭션 생성 (확인된 것과 미확인된 것)
       final confirmedTx1 = TransactionMock.createConfirmedTransactionRecord(
         transactionHash: 'confirmed_tx_1',
@@ -341,7 +383,7 @@ void main() {
       );
 
       // 트랜잭션 추가
-      transactionRepository
+      await transactionRepository
           .addAllTransactions(testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
 
       // 확인된 트랜잭션 해시 목록 조회
@@ -380,30 +422,26 @@ void main() {
   });
 
   group('RBF 대체 표시 테스트', () {
-    test('markAsRbfReplaced 함수가 트랜잭션에 대체 정보를 올바르게 설정해야 함', () {
+    test('markAsRbfReplaced 함수가 트랜잭션에 대체 정보를 올바르게 설정해야 함', () async {
       // 테스트용 트랜잭션 생성 및 추가
-      final spentTx1 = TransactionMock.createMockTransactionRecord(
-        transactionHash: 'spent_tx_1',
+      final originalTx = TransactionMock.createMockTransactionRecord(
+        transactionHash: 'original_tx',
         blockHeight: 0, // 미확인 트랜잭션
       );
 
-      final spentTx2 = TransactionMock.createMockTransactionRecord(
-        transactionHash: 'spent_tx_2',
+      final spentTx = TransactionMock.createMockTransactionRecord(
+        transactionHash: 'spent_tx',
         blockHeight: 0,
       );
 
       // 두 개의 원본 트랜잭션을 DB에 추가
-      transactionRepository.addAllTransactions(testWalletItem.id, [spentTx1, spentTx2]);
+      await transactionRepository.addAllTransactions(testWalletItem.id, [originalTx, spentTx]);
 
       // RBF 정보 맵 생성
       final rbfInfoMap = {
-        'new_tx_1': TransactionMock.createMockRbfInfo(
-          originalTransactionHash: 'original_tx_1',
-          spentTransactionHash: 'spent_tx_1',
-        ),
-        'new_tx_2': TransactionMock.createMockRbfInfo(
-          originalTransactionHash: 'original_tx_2',
-          spentTransactionHash: 'spent_tx_2',
+        'spent_tx': TransactionMock.createMockRbfInfo(
+          originalTransactionHash: 'original_tx',
+          previousTransactionHash: 'original_tx',
         ),
       };
 
@@ -411,39 +449,41 @@ void main() {
       transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap);
 
       // 트랜잭션 조회 및 검증
-      final updatedTx1 = realmManager.realm.query<RealmTransaction>(
+      final updatedTx = realmManager.realm.query<RealmTransaction>(
         r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'spent_tx_1'],
+        [testWalletItem.id, 'original_tx'],
       ).first;
-
-      final updatedTx2 = realmManager.realm.query<RealmTransaction>(
-        r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'spent_tx_2'],
-      ).first;
-
       // replaceByTransactionHash 필드가 올바르게 설정되었는지 확인
-      expect(updatedTx1.replaceByTransactionHash, 'new_tx_1');
-      expect(updatedTx2.replaceByTransactionHash, 'new_tx_2');
+      expect(updatedTx.replaceByTransactionHash, 'spent_tx');
     });
 
-    test('존재하지 않는 트랜잭션에 대한 RBF 정보는 처리되지 않아야 함', () {
+    test('존재하지 않는 트랜잭션에 대한 RBF 정보는 처리되지 않아야 함', () async {
       // 테스트용 트랜잭션 추가 - 하나만 DB에 추가
+      final originalTx = TransactionMock.createMockTransactionRecord(
+        transactionHash: 'original_tx',
+        blockHeight: 0,
+      );
       final spentTx = TransactionMock.createMockTransactionRecord(
-        transactionHash: 'spent_tx_exists',
+        transactionHash: 'spent_tx',
+        blockHeight: 0,
+      );
+      final spentTx2 = TransactionMock.createMockTransactionRecord(
+        transactionHash: 'spent_tx2',
         blockHeight: 0,
       );
 
-      transactionRepository.addAllTransactions(testWalletItem.id, [spentTx]);
+      await transactionRepository
+          .addAllTransactions(testWalletItem.id, [originalTx, spentTx, spentTx2]);
 
       // 존재하는 트랜잭션과 존재하지 않는 트랜잭션에 대한 RBF 정보 맵 생성
       final rbfInfoMap = {
-        'new_tx_1': TransactionMock.createMockRbfInfo(
-          originalTransactionHash: 'new_tx_1',
-          spentTransactionHash: 'spent_tx_exists',
+        'spent_tx': TransactionMock.createMockRbfInfo(
+          originalTransactionHash: 'original_tx',
+          previousTransactionHash: 'original_tx',
         ),
-        'new_tx_2': TransactionMock.createMockRbfInfo(
-          originalTransactionHash: 'new_tx_2',
-          spentTransactionHash: 'spent_tx_not_exists',
+        'not_exists': TransactionMock.createMockRbfInfo(
+          originalTransactionHash: 'original_tx',
+          previousTransactionHash: 'spent_tx2',
         ),
       };
 
@@ -453,22 +493,22 @@ void main() {
       // 존재하는 트랜잭션 조회 및 검증
       final updatedTx = realmManager.realm.query<RealmTransaction>(
         r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'spent_tx_exists'],
+        [testWalletItem.id, 'original_tx'],
       ).first;
 
       // 존재하는 트랜잭션만 업데이트되었는지 확인
-      expect(updatedTx.replaceByTransactionHash, 'new_tx_1');
+      expect(updatedTx.replaceByTransactionHash, 'spent_tx');
 
       // 존재하지 않는 트랜잭션에 대한 쿼리 실행 - 결과가 없어야 함
       final nonExistentTx = realmManager.realm.query<RealmTransaction>(
         r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'spent_tx_not_exists'],
+        [testWalletItem.id, 'not_exists'],
       );
 
       expect(nonExistentTx.isEmpty, true);
     });
 
-    test('3회 RBF를 시도할 때에 1,2번째 RBF 트랜잭션에 대해서 처리되어야 함', () {
+    test('3회 RBF를 시도할 때에 1,2번째 RBF 트랜잭션에 대해서 처리되어야 함', () async {
       // 원본 트랜잭션
       final originalTx = TransactionMock.createMockTransactionRecord(
         transactionHash: 'original_tx',
@@ -481,7 +521,7 @@ void main() {
         blockHeight: 0, // 미확인 트랜잭션
       );
 
-      transactionRepository.addAllTransactions(testWalletItem.id, [
+      await transactionRepository.addAllTransactions(testWalletItem.id, [
         originalTx,
         rbfTx1,
       ]);
@@ -490,7 +530,7 @@ void main() {
       final rbfInfoMap = {
         'rbf_tx_1': TransactionMock.createMockRbfInfo(
           originalTransactionHash: 'original_tx',
-          spentTransactionHash: 'original_tx',
+          previousTransactionHash: 'original_tx',
         ),
       };
 
@@ -503,7 +543,7 @@ void main() {
         blockHeight: 0, // 미확인 트랜잭션
       );
 
-      transactionRepository.addAllTransactions(testWalletItem.id, [
+      await transactionRepository.addAllTransactions(testWalletItem.id, [
         rbfTx2,
       ]);
 
@@ -511,7 +551,7 @@ void main() {
       final rbfInfoMap2 = {
         'rbf_tx_2': TransactionMock.createMockRbfInfo(
           originalTransactionHash: 'original_tx',
-          spentTransactionHash: 'rbf_tx_1',
+          previousTransactionHash: 'rbf_tx_1',
         ),
       };
 
@@ -524,7 +564,7 @@ void main() {
         blockHeight: 0, // 미확인 트랜잭션
       );
 
-      transactionRepository.addAllTransactions(testWalletItem.id, [
+      await transactionRepository.addAllTransactions(testWalletItem.id, [
         rbfTx3,
       ]);
 
@@ -532,7 +572,7 @@ void main() {
       final rbfInfoMap3 = {
         'rbf_tx_3': TransactionMock.createMockRbfInfo(
           originalTransactionHash: 'original_tx',
-          spentTransactionHash: 'rbf_tx_2',
+          previousTransactionHash: 'rbf_tx_2',
         ),
       };
 

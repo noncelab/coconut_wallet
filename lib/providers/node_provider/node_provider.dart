@@ -4,8 +4,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/state_manager.dart';
+import 'package:coconut_wallet/model/node/isolate_state_message.dart';
+import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -96,35 +96,35 @@ class NodeProvider extends ChangeNotifier {
     List<WalletListItemBase> walletItems,
   ) async {
     _needSubscribeWallets = false;
-    return await _isolateManager.subscribeWallets(walletItems);
+    return _isolateManager.subscribeWallets(walletItems);
   }
 
   Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
-    return await _isolateManager.subscribeWallet(walletItem);
+    return _isolateManager.subscribeWallet(walletItem);
   }
 
   Future<Result<bool>> unsubscribeWallet(WalletListItemBase walletItem) async {
-    return await _isolateManager.unsubscribeWallet(walletItem);
+    return _isolateManager.unsubscribeWallet(walletItem);
   }
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
-    return await _isolateManager.broadcast(signedTx);
+    return _isolateManager.broadcast(signedTx);
   }
 
   Future<Result<int>> getNetworkMinimumFeeRate() async {
-    return await _isolateManager.getNetworkMinimumFeeRate();
+    return _isolateManager.getNetworkMinimumFeeRate();
   }
 
   Future<Result<BlockTimestamp>> getLatestBlock() async {
-    return await _isolateManager.getLatestBlock();
+    return _isolateManager.getLatestBlock();
   }
 
   Future<Result<String>> getTransaction(String txHash) async {
-    return await _isolateManager.getTransaction(txHash);
+    return _isolateManager.getTransaction(txHash);
   }
 
   Future<Result<RecommendedFee>> getRecommendedFees() async {
-    return await _isolateManager.getRecommendedFees();
+    return _isolateManager.getRecommendedFees();
   }
 
   void unregisterWalletUpdateState(int walletId) {

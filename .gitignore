@@ -159,4 +159,7 @@ default.realm.management
 *.realm.dart
 *.g.dart
 
+# Cursor IDE
+.cursor
+
 .metadata

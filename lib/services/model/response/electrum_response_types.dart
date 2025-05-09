@@ -54,17 +54,17 @@ class HostsPort {
 }
 
 @JsonSerializable()
-class GetHistoryRes {
+class GetTxHistoryRes {
   int height;
   @JsonKey(name: 'tx_hash')
   String txHash;
 
-  GetHistoryRes({required this.height, required this.txHash});
+  GetTxHistoryRes({required this.height, required this.txHash});
 
-  factory GetHistoryRes.fromJson(Map<String, dynamic> json) => _$GetHistoryResFromJson(json);
+  factory GetTxHistoryRes.fromJson(Map<String, dynamic> json) => _$GetTxHistoryResFromJson(json);
 
   @override
-  bool operator ==(covariant GetHistoryRes other) {
+  bool operator ==(covariant GetTxHistoryRes other) {
     return txHash == other.txHash && height == other.height;
   }
 

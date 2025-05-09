@@ -45,7 +45,7 @@ class UtxoMock {
   }
 
   /// 사용 가능한(unspent) UTXO 생성 메서드
-  static RealmUtxo createUnspentUtxo({
+  static RealmUtxo createUnspentRealmUtxo({
     required int walletId,
     required String address,
     int amount = 1000000,
@@ -69,7 +69,7 @@ class UtxoMock {
   }
 
   /// 출금 중인(outgoing) UTXO 생성 메서드
-  static RealmUtxo createOutgoingUtxo({
+  static RealmUtxo createOutgoingRealmUtxo({
     required int walletId,
     required String address,
     int amount = 1000000,
@@ -95,7 +95,7 @@ class UtxoMock {
   }
 
   /// 입금 중인(incoming) UTXO 생성 메서드
-  static RealmUtxo createIncomingUtxo({
+  static RealmUtxo createIncomingRealmUtxo({
     required int walletId,
     required String address,
     int amount = 1000000,
@@ -140,6 +140,81 @@ class UtxoMock {
       blockHeight: 0, // 미확인 상태
       status: UtxoStatus.outgoing,
       spentByTransactionHash: spentByTransactionHash,
+    );
+  }
+
+  /// 기본 UTXO 상태 객체 생성 메서드
+  static UtxoState createMockUtxoState({
+    String id = 'mock_utxo_id',
+    int walletId = 1,
+    String transactionHash = 'mock_tx_hash',
+    int index = 0,
+    String address = 'mock_address',
+    int amount = 1000,
+    UtxoStatus status = UtxoStatus.unspent,
+    String? spentByTransactionHash,
+    int blockHeight = 0,
+  }) {
+    return UtxoState(
+      derivationPath: _buildDerivationPath(index),
+      blockHeight: blockHeight,
+      timestamp: DateTime.now(),
+      transactionHash: transactionHash,
+      index: index,
+      to: address,
+      amount: amount,
+      status: status,
+      spentByTransactionHash: spentByTransactionHash,
+    );
+  }
+
+  /// 미사용 UTXO 객체 생성
+  static UtxoState createUnspentUtxo({
+    String id = 'unspent_utxo_id',
+    int walletId = 1,
+    String transactionHash = 'unspent_tx_hash',
+    int index = 0,
+  }) {
+    return createMockUtxoState(
+      id: id,
+      walletId: walletId,
+      transactionHash: transactionHash,
+      index: index,
+      status: UtxoStatus.unspent,
+    );
+  }
+
+  /// 송금중인 UTXO 객체 생성 (RBF 테스트용)
+  static UtxoState createOutgoingUtxo({
+    String id = 'outgoing_utxo_id',
+    int walletId = 1,
+    String transactionHash = 'outgoing_tx_hash',
+    int index = 0,
+    String? spentByTransactionHash = 'spent_by_tx_hash',
+  }) {
+    return createMockUtxoState(
+      id: id,
+      walletId: walletId,
+      transactionHash: transactionHash,
+      index: index,
+      status: UtxoStatus.outgoing,
+      spentByTransactionHash: spentByTransactionHash,
+    );
+  }
+
+  /// 수신중인 UTXO 객체 생성 (RBF 테스트용)
+  static UtxoState createIncomingUtxo({
+    String id = 'incoming_utxo_id',
+    int walletId = 1,
+    String transactionHash = 'incoming_tx_hash',
+    int index = 0,
+  }) {
+    return createMockUtxoState(
+      id: id,
+      walletId: walletId,
+      transactionHash: transactionHash,
+      index: index,
+      status: UtxoStatus.incoming,
     );
   }
 }
