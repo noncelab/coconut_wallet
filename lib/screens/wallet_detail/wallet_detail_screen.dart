@@ -383,7 +383,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   void _onTapSend() {
     if (!_viewModel.isMultisigWallet &&
         _viewModel.masterFingerprint == WalletAddService.masterFingerprintPlaceholder) {
-      CustomToast.showToast(
+      CoconutToast.showToast(
           context: context, text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send);
       return;
     }

@@ -152,25 +152,25 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       case WalletImportSource.seedSigner:
         {
           return [
-            TextSpan(text: t.unsigned_tx_qr_screen.guide_seedsigner.step1),
+            TextSpan(
+                text:
+                    '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1} '),
             _em(t.unsigned_tx_qr_screen.guide_seedsigner.step1_em),
-            TextSpan(text: ' ${t.selection}'),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.unsigned_tx_qr_screen.guide_seedsigner.step2),
-            _em(t.unsigned_tx_qr_screen.guide_seedsigner.step2_em),
-            TextSpan(text: ' ${t.selection}'),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.unsigned_tx_qr_screen.guide_seedsigner.step3),
-            _em(t.unsigned_tx_qr_screen.guide_seedsigner.step3_em),
-            TextSpan(text: ' ${t.selection}'),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1_end}\n'),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step2}'),
           ];
         }
       case WalletImportSource.keystone:
         {
           return [
-            TextSpan(text: t.unsigned_tx_qr_screen.guide_keystone.step1),
+            TextSpan(
+                text:
+                    '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1} '),
             _em(t.unsigned_tx_qr_screen.guide_keystone.step1_em),
-            TextSpan(text: ' ${t.selection}'),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1_end}\n'),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step2}'),
           ];
         }
       // case WalletImportSource.coconutVault: TODO: 추후 BC_UR QR로 변경합니다.

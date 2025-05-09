@@ -67,35 +67,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       case WalletImportSource.seedSigner:
         {
           return [
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
-            _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step2),
-            _em(t.wallet_add_scanner_screen.guide_keystone.step2_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step3),
-            _em(t.wallet_add_scanner_screen.guide_keystone.step3_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step4),
-            _em(t.wallet_add_scanner_screen.guide_keystone.step4_em1),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.next),
-            _em(t.wallet_add_scanner_screen.guide_keystone.step4_em2),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step5),
-            _em(t.wallet_add_scanner_screen.guide_keystone.step5_em),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step6),
-            _em(t.wallet_add_scanner_screen.guide_keystone.step6_em),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step6_end),
-          ];
-        }
-      case WalletImportSource.keystone:
-        {
-          return [
             TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
             _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
             TextSpan(text: t.wallet_add_scanner_screen.select),
@@ -105,6 +76,35 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             TextSpan(text: t.wallet_add_scanner_screen.select),
             const TextSpan(text: '\n'),
             TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step3),
+            _em(t.wallet_add_scanner_screen.guide_seedsigner.step3_em),
+            TextSpan(text: t.wallet_add_scanner_screen.select),
+            const TextSpan(text: '\n'),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step4),
+            _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em1),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.next),
+            _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em2),
+            TextSpan(text: t.wallet_add_scanner_screen.select),
+            const TextSpan(text: '\n'),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step5),
+            _em(t.wallet_add_scanner_screen.guide_seedsigner.step5_em),
+            const TextSpan(text: '\n'),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step6),
+            _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_em),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step6_end),
+          ];
+        }
+      case WalletImportSource.keystone:
+        {
+          return [
+            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
+            _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
+            TextSpan(text: t.wallet_add_scanner_screen.select),
+            const TextSpan(text: '\n'),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step2),
+            _em(t.wallet_add_scanner_screen.guide_keystone.step2_em),
+            TextSpan(text: t.wallet_add_scanner_screen.select),
+            const TextSpan(text: '\n'),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step3),
           ];
         }
       default:

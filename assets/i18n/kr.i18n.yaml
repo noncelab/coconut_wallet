@@ -138,7 +138,7 @@ wallet_add_scanner_screen:
   self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
   guide_vault: "코코넛 볼트 앱 - 지갑 선택 - 지갑 정보 내보내기"
-  guide_keystone:
+  guide_seedsigner:
     step1: "1. 홈 화면에서 "
     step1_em: "Seeds"
     step2: "2. "
@@ -154,8 +154,8 @@ wallet_add_scanner_screen:
     step6: "6. 안내 메시지 확인 후 "
     step6_em: "I understand"
     step6_end: " > Export Xpub"
-  guide_seedsigner:
-    step1: "1. 메인 화면에서 "
+  guide_keystone:
+    step1: "1. 홈 화면에서 "
     step1_em: "더보기(•••)"
     step2: "2. "
     step2_em: "Connect Software Wallet"
@@ -220,18 +220,20 @@ send_confirm_screen:
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
 unsigned_tx_qr_screen:
+  hardware_wallet_screen_guide: "화면 안내"
   guide_keystone:
-    step1: "키스톤 메인 화면에서 "
+    step1: "1. 홈 화면에서"
     step1_em: "SCAN"
+    step1_end: "선택"
+    step2: "2. 카메라로 아래 QR 코드 스캔"
   guide_seedsigner:
-    step1: "1. 홈 화면에서 "
-    step1_em: "Seeds"
-    step2: "2. "
-    step2_em: "Master Fingerprint"
-    step3: "3. "
-    step3_em: "Scan PSBT"
+    step1: "1. 홈 화면에서"
+    step1_em: "Scan"
+    step1_end: "선택"
+    step2: "2. 카메라로 아래 QR 코드 스캔"
+  
   guide_hardware_wallet:
-    step1: "하드웨어 월렛으로 아래 QR코드를 스캔하여 서명 과정을 시작해 주세요."
+    step1: "하드웨어 월렛으로 아래 QR 코드를 스캔하여 서명 과정을 시작해 주세요."
 
 
 # lib/screens/settings
@@ -462,12 +464,12 @@ alert:
     minimum_amount: "$bitcoin BTC 부터 전송할 수 있어요"
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
   signed_psbt:
-    invalid_qr: "잘못된 QR코드예요.\n다시 확인해 주세요."
+    invalid_qr: "잘못된 QR 코드예요.\n다시 확인해 주세요."
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
     need_more_sign: "$count개 서명이 더 필요해요"
     invalid_signature: "잘못된 서명 정보에요. 다시 시도해 주세요."
   scan_failed: "스캔 실패"
-  scan_failed_description: "QR코드 스캔에 실패했어요. 다시 시도해 주세요.\n$error"
+  scan_failed_description: "QR 코드 스캔에 실패했어요. 다시 시도해 주세요.\n$error"
   tutorial:
     title: "도움이 필요하신가요?"
     description: "튜토리얼 사이트로\n안내해 드릴게요"
