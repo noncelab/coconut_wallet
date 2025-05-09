@@ -206,6 +206,46 @@ void main() {
       expect(rbfHistory[0].transactionHash, 'new_tx_3');
     });
 
+    test('RBF 내역 조회 시 수수료 내림차순으로 정렬되어야 함', () async {
+      // 테스트용 RBF DTO 생성
+      final rbfDtoList = [
+        RbfHistory(
+          walletId: testWalletItem.id,
+          originalTransactionHash: 'original_tx_1',
+          transactionHash: 'new_tx_2',
+          feeRate: 5.0,
+          timestamp: DateTime.now(),
+        ),
+        RbfHistory(
+          walletId: testWalletItem.id,
+          originalTransactionHash: 'original_tx_1',
+          transactionHash: 'new_tx_1',
+          feeRate: 3.5,
+          timestamp: DateTime.now(),
+        ),
+        RbfHistory(
+          walletId: testWalletItem.id,
+          originalTransactionHash: 'original_tx_1',
+          transactionHash: 'new_tx_3',
+          feeRate: 10.0,
+          timestamp: DateTime.now(),
+        ),
+      ];
+
+      // RBF 내역 일괄 추가
+      transactionRepository.addAllRbfHistory(rbfDtoList);
+
+      // RBF 내역 조회
+      final rbfHistory = transactionRepository.getRbfHistoryList(testWalletItem.id, 'new_tx_1');
+
+      // 검증
+      expect(rbfHistory, isNotEmpty);
+      expect(rbfHistory.length, 3);
+      expect(rbfHistory[0].feeRate, 10.0);
+      expect(rbfHistory[1].feeRate, 5.0);
+      expect(rbfHistory[2].feeRate, 3.5);
+    });
+
     test('RBF 내역 일괄 추가 시 중복은 무시되어야 함', () async {
       // 첫 번째 추가
       final rbfDto = RbfHistory(
