@@ -4,6 +4,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -125,19 +126,21 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                         runSpacing: 4,
                         children: List.generate(
                           widget.utxoTags?.length ?? 0,
-                          (index) => IntrinsicWidth(
-                            child: CoconutChip(
-                              minWidth: 40,
-                              color: CoconutColors.backgroundColorPaletteDark[
-                                  widget.utxoTags?[index].colorIndex ?? 0],
-                              borderColor: CoconutColors
-                                  .colorPalette[widget.utxoTags?[index].colorIndex ?? 0],
-                              label: '#${widget.utxoTags?[index].name ?? ''}',
-                              labelSize: 12,
-                              labelColor: CoconutColors
-                                  .colorPalette[widget.utxoTags?[index].colorIndex ?? 0],
-                            ),
-                          ),
+                          (index) {
+                            Color foregroundColor =
+                                tagColorPalette[widget.utxoTags?[index].colorIndex ?? 0];
+                            return IntrinsicWidth(
+                              child: CoconutChip(
+                                minWidth: 40,
+                                color: CoconutColors.backgroundColorPaletteDark[
+                                    widget.utxoTags?[index].colorIndex ?? 0],
+                                borderColor: foregroundColor,
+                                label: '#${widget.utxoTags?[index].name ?? ''}',
+                                labelSize: 12,
+                                labelColor: foregroundColor,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),

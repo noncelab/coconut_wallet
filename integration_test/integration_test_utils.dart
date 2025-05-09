@@ -84,9 +84,10 @@ Future<void> waitForWidgetAndTap(WidgetTester tester, Finder element, String ele
   await tester.pumpAndSettle();
 }
 
-Future<void> setTwoSinglesAndOneMultiCoconutWallets(bool isEnabled) async {
+Future<void> setTwoSinglesAndOneMultiCoconutWallets(bool isEnabled,
+    {RealmManager? realmManager}) async {
   if (!isEnabled) return;
-  await addWallets();
+  await addWallets(realmManager: realmManager);
 }
 
 Future<void> skipTutorial(bool skip) async {
@@ -117,15 +118,15 @@ Future<void> _setWalletCount(int count) async {
   prefs.setInt(SharedPrefKeys.kWalletCount, count);
 }
 
-Future<int> addWallets({WalletProvider? walletProvider}) async {
+Future<int> addWallets({WalletProvider? walletProvider, RealmManager? realmManager}) async {
   if (walletProvider != null) {
     await walletProvider.syncFromCoconutVault(WatchOnlyWallet.fromJson(singleSigWallet1));
     await walletProvider.syncFromCoconutVault(WatchOnlyWallet.fromJson(singleSigWallet2));
     await walletProvider.syncFromCoconutVault(WatchOnlyWallet.fromJson(multiSigWallet1));
   } else {
-    var realmManager = RealmManager();
-    var walletRepository = WalletRepository(realmManager);
-    var addressRepository = AddressRepository(realmManager);
+    var realmManagerForSetup = realmManager ?? RealmManager();
+    var walletRepository = WalletRepository(realmManagerForSetup);
+    var addressRepository = AddressRepository(realmManagerForSetup);
 
     var item1 =
         await walletRepository.addSinglesigWallet(WatchOnlyWallet.fromJson(singleSigWallet1));

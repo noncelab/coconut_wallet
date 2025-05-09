@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
@@ -222,9 +223,15 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     } catch (e) {
       vibrateLightDouble();
       if (mounted) {
+        String errorMessage = t.wallet_add_input_screen.format_error_text;
+        if (e.toString().contains("network type")) {
+          errorMessage = NetworkType.currentNetworkType == NetworkType.mainnet
+              ? t.wallet_add_input_screen.mainnet_wallet_error_text
+              : t.wallet_add_input_screen.testnet_wallet_error_text;
+        }
         _showErrorDialog(
           t.alert.wallet_add.add_failed,
-          e.toString(),
+          errorMessage,
         );
       }
       // TODO: remove rethrow; after test

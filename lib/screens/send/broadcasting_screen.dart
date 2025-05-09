@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -107,7 +108,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               usePrimaryActiveColor: true,
               isActive: viewModel.isNetworkOn && viewModel.isInitDone,
               onNextPressed: () async {
-                if (!viewModel.isNetworkOn) {
+                if (viewModel.isNetworkOn == false) {
+                  CoconutToast.showWarningToast(
+                    context: context,
+                    text: ErrorCodes.networkError.message,
+                  );
                   return;
                 }
                 if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {

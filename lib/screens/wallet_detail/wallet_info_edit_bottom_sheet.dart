@@ -47,6 +47,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _textFieldFocusNode.requestFocus();
     });
+
     _textEditingController.addListener(() {
       context.read<WalletInfoEditViewModel>().checkNameValidity(_textEditingController.text);
     });

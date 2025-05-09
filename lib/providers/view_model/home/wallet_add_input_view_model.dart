@@ -55,8 +55,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
   }
 
   void _validateXpubPrefixSupport(String xpub) {
-    final allowedPrefixes =
-        NetworkType.currentNetworkType.isTestnet ? ["vpub", "tpub"] : ["xpub", "zpub"];
+    final allowedPrefixes = ["vpub", "tpub", "xpub", "zpub"];
     final prefix = xpub.substring(0, 4).toLowerCase();
 
     if (!allowedPrefixes.contains(prefix)) {

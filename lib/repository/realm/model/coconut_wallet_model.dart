@@ -32,7 +32,6 @@ class _RealmWalletBase {
   int usedChangeIndex = -1;
   int generatedReceiveIndex = -1;
   int generatedChangeIndex = -1;
-  bool isLatestTxBlockHeightZero = false;
 }
 
 @RealmModel()

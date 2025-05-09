@@ -69,6 +69,19 @@ final List<Color> backgroundColorPalette = [
   CoconutColors.mint.withOpacity(0.18),
 ];
 
+const List<Color> tagColorPalette = [
+  CoconutColors.purple,
+  CoconutColors.tangerine,
+  CoconutColors.yellow,
+  CoconutColors.green,
+  CoconutColors.sky,
+  CoconutColors.pink,
+  CoconutColors.red,
+  CoconutColors.orange,
+  CoconutColors.gray400,
+  CoconutColors.mint,
+];
+
 class ColorUtil {
   static ColorSet getColor(int index) {
     if (index < 0 || index >= colorPalette.length) {
