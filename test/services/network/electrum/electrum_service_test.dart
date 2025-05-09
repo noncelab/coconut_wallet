@@ -100,7 +100,7 @@ void main() {
     expect(response.unconfirmed, 0);
   });
 
-  test('getHistory should return GetHistoryRes List', () async {
+  test('getHistory should return GetTxHistoryRes List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
     when(mockSocketManager.send(any)).thenAnswer((_) async {
@@ -383,23 +383,23 @@ void main() {
     verify(mockSocketManager.disconnect()).called(1);
   });
 
-  group('GetHistoryRes Set', () {
-    test('Should remove duplicates when adding identical GetHistoryRes objects to Set', () {
-      final history1 = GetHistoryRes(height: 100, txHash: 'abc123');
-      final history2 = GetHistoryRes(height: 100, txHash: 'abc123');
+  group('GetTxHistoryRes Set', () {
+    test('Should remove duplicates when adding identical GetTxHistoryRes objects to Set', () {
+      final history1 = GetTxHistoryRes(height: 100, txHash: 'abc123');
+      final history2 = GetTxHistoryRes(height: 100, txHash: 'abc123');
 
-      final historySet = <GetHistoryRes>{history1, history2};
+      final historySet = <GetTxHistoryRes>{history1, history2};
 
       expect(historySet.length, 1);
       expect(historySet.first, history1);
     });
 
-    test('Should include all different GetHistoryRes objects when added to Set', () {
-      final history1 = GetHistoryRes(height: 100, txHash: 'abc123');
-      final history2 = GetHistoryRes(height: 200, txHash: 'abc123');
-      final history3 = GetHistoryRes(height: 100, txHash: 'def456');
+    test('Should include all different GetTxHistoryRes objects when added to Set', () {
+      final history1 = GetTxHistoryRes(height: 100, txHash: 'abc123');
+      final history2 = GetTxHistoryRes(height: 200, txHash: 'abc123');
+      final history3 = GetTxHistoryRes(height: 100, txHash: 'def456');
 
-      final historySet = <GetHistoryRes>{history1, history2, history3};
+      final historySet = <GetTxHistoryRes>{history1, history2, history3};
 
       expect(historySet.length, 3);
       expect(historySet.contains(history1), true);

@@ -5,7 +5,6 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -46,7 +45,6 @@ void main() {
   late MockWalletProvider walletProvider;
   late TransactionSyncService transactionSyncService;
   late TransactionRecordService transactionRecordService;
-  late RbfService rbfService;
   late ScriptCallbackService scriptCallbackService;
 
   const int testWalletId = 1;
@@ -82,8 +80,6 @@ void main() {
       scriptCallbackService,
     );
 
-    rbfService = RbfService(transactionRepository, utxoRepository, electrumService);
-
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
       realmManager.realm.add(RealmWalletBase(
@@ -109,8 +105,8 @@ void main() {
 
       // 모의 historyList 설정
       final historyList = [
-        GetHistoryRes(height: 100, txHash: 'tx1'),
-        GetHistoryRes(height: 0, txHash: 'tx2'),
+        GetTxHistoryRes(height: 100, txHash: 'tx1'),
+        GetTxHistoryRes(height: 0, txHash: 'tx2'),
       ];
 
       // mock 동작 설정
@@ -239,7 +235,7 @@ void main() {
 
       // 모의 응답 설정
       when(electrumService.getHistory(any, any)).thenAnswer((_) async => [
-            GetHistoryRes(height: 0, txHash: mockTx.transactionHash), // 미확인 트랜잭션
+            GetTxHistoryRes(height: 0, txHash: mockTx.transactionHash), // 미확인 트랜잭션
           ]);
       when(electrumService.getTransaction(mockTx.transactionHash))
           .thenAnswer((_) async => mockTx.serialize());
@@ -274,7 +270,7 @@ void main() {
 
       // 모의 응답 설정
       when(electrumService.getHistory(any, any)).thenAnswer((_) async => [
-            GetHistoryRes(height: mockBlockHeight, txHash: mockTx.transactionHash),
+            GetTxHistoryRes(height: mockBlockHeight, txHash: mockTx.transactionHash),
           ]);
       when(electrumService.getTransaction(mockTx.transactionHash))
           .thenAnswer((_) async => mockTx.serialize());
@@ -359,7 +355,7 @@ void main() {
       ]);
 
       when(electrumService.getHistory(any, any)).thenAnswer((_) async => [
-            GetHistoryRes(height: 0, txHash: rbfTx.transactionHash), // 미확인 RBF 트랜잭션
+            GetTxHistoryRes(height: 0, txHash: rbfTx.transactionHash), // 미확인 RBF 트랜잭션
           ]);
       when(electrumService.getTransaction(rbfTx.transactionHash))
           .thenAnswer((_) async => rbfTx.serialize());

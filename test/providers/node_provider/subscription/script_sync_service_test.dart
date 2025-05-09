@@ -64,7 +64,7 @@ void main() {
       // Given - ElectrumService만 모킹
       final electrumService = ScriptSyncServiceMock.electrumService;
       when(electrumService.getHistory(any, any)).thenAnswer(
-        (_) async => [GetHistoryRes(height: height, txHash: mockTx.transactionHash)],
+        (_) async => [GetTxHistoryRes(height: height, txHash: mockTx.transactionHash)],
       );
       when(electrumService.getTransaction(mockTx.transactionHash))
           .thenAnswer((_) async => mockTx.serialize());
@@ -200,7 +200,7 @@ void main() {
       // Given - ElectrumService만 모킹
       final electrumService = ScriptSyncServiceMock.electrumService;
       when(electrumService.getHistory(any, any)).thenAnswer(
-        (_) async => [GetHistoryRes(height: height, txHash: mockTx.transactionHash)],
+        (_) async => [GetTxHistoryRes(height: height, txHash: mockTx.transactionHash)],
       );
       when(electrumService.getTransaction(mockTx.transactionHash))
           .thenAnswer((_) async => mockTx.serialize());
