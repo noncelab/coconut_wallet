@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class CustomDialogs {
-  static void showCustomAlertDialog(BuildContext context,
+  static Future<void> showCustomAlertDialog(BuildContext context,
       {required String title,
       required String message,
       required VoidCallback onConfirm,
       VoidCallback? onCancel,
       String confirmButtonText = '확인',
       String cancelButtonText = '취소',
-      Color confirmButtonColor = CoconutColors.white}) {
-    showDialog(
+      Color confirmButtonColor = CoconutColors.white}) async {
+    await showDialog(
       context: context,
       builder: (BuildContext context) {
         return CupertinoAlertDialog(

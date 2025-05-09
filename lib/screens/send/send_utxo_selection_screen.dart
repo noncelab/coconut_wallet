@@ -18,8 +18,8 @@ import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/send_utxo_sticky_header.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -53,20 +53,28 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   final GlobalKey _orderDropdownButtonKey = GlobalKey();
   final GlobalKey _scrolledOrderDropdownButtonKey = GlobalKey();
+  final GlobalKey _headerTopContainerKey = GlobalKey();
   bool _isStickyHeaderVisible = false; // 스크롤시 상단에 붙어있는 위젯
   bool _isOrderDropdownVisible = false; // 필터 드롭다운(확장형)
   bool _isScrolledOrderDropdownVisible = false; // 필터 드롭다운(축소형)
   late Offset _orderDropdownButtonPosition;
   late Offset _scrolledOrderDropdownButtonPosition;
-  final GlobalKey _headerTopContainerKey = GlobalKey();
   Size _headerTopContainerSize = const Size(0, 0);
 
   @override
   Widget build(BuildContext context) {
     // try-catch: initState _viewModel 생성 실패로 lateError 발생 할 수 있음
     try {
-      return ChangeNotifierProvider<SendUtxoSelectionViewModel>(
+      return ChangeNotifierProxyProvider<ConnectivityProvider, SendUtxoSelectionViewModel>(
         create: (_) => _viewModel,
+        update: (_, connectivityProvider, viewModel) {
+          if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+            });
+          }
+          return viewModel;
+        },
         child: Consumer<SendUtxoSelectionViewModel>(
           builder: (context, viewModel, child) => Scaffold(
             appBar: CoconutAppBar.buildWithNext(
@@ -75,30 +83,43 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 context: context,
                 nextButtonTitle: t.complete,
                 usePrimaryActiveColor: true,
-                isActive: viewModel.estimatedFee != null &&
+                isActive: viewModel.isNetworkOn &&
+                    viewModel.estimatedFee != null &&
                     viewModel.estimatedFee != 0 &&
                     viewModel.errorState == null,
                 onNextPressed: () => _goNext()),
-            body: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: MediaQuery.sizeOf(context).height),
-              child: Stack(
-                children: [
-                  SingleChildScrollView(
-                    controller: _scrollController,
-                    child: Column(
-                      children: [
-                        _buildSendInfoHeader(
-                          viewModel,
-                        ),
-                        _buildUtxoTagList(viewModel),
-                        _buildUtxoList(viewModel),
-                      ],
-                    ),
+            body: Column(
+              children: [
+                Visibility(
+                  visible: !viewModel.isNetworkOn,
+                  maintainSize: false,
+                  maintainAnimation: false,
+                  maintainState: false,
+                  child: NetworkErrorTooltip(
+                    isNetworkOn: viewModel.isNetworkOn,
                   ),
-                  _buildStickyHeader(viewModel),
-                  _buildUtxoOrderDropdown(viewModel),
-                ],
-              ),
+                ),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      SingleChildScrollView(
+                        controller: _scrollController,
+                        child: Column(
+                          children: [
+                            _buildSendInfoHeader(
+                              viewModel,
+                            ),
+                            _buildUtxoTagList(viewModel),
+                            _buildUtxoList(viewModel),
+                          ],
+                        ),
+                      ),
+                      _buildStickyHeader(viewModel),
+                      _buildUtxoOrderDropdown(viewModel),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -123,9 +144,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           Provider.of<WalletProvider>(context, listen: false),
           Provider.of<UtxoTagProvider>(context, listen: false),
           Provider.of<SendInfoProvider>(context, listen: false),
-          Provider.of<ConnectivityProvider>(context, listen: false),
           Provider.of<NodeProvider>(context, listen: false),
           Provider.of<UpbitConnectModel>(context, listen: false),
+          Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
           _selectedUtxoOrder);
 
       _scrollController.addListener(() {
@@ -173,8 +194,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _goNext() {
-    if (!_viewModel.isNetworkOn()) {
-      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+    if (!_viewModel.isNetworkOn) {
+      CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
       return;
     }
 
@@ -429,10 +450,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     return Material(
       borderRadius: BorderRadius.circular(16),
       child: CoconutPulldownMenu(
-        buttons: _utxoOrderOptions.map((order) => order.text).toList(),
+        entries:
+            _utxoOrderOptions.map((order) => CoconutPulldownMenuItem(title: order.text)).toList(),
         shadowColor: CoconutColors.gray800,
         dividerColor: CoconutColors.gray800,
-        onTap: (index) async {
+        onSelected: (index, selectedText) async {
           bool isChanged = _selectedUtxoOrder != _utxoOrderOptions[index];
           setState(() {
             if (isChanged) {
@@ -602,7 +624,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               ),
               child: SendUtxoStickyHeader(
                 errorState: viewModel.errorState,
-                recommendedFeeFetchStatus: viewModel.recommendedFeeFetchStatus,
+                recommendedFeeFetchStatus: viewModel.isNetworkOn
+                    ? viewModel.recommendedFeeFetchStatus
+                    : RecommendedFeeFetchStatus.fetching,
                 selectedLevel: viewModel.selectedLevel,
                 onTapFeeButton: () => _onTapFeeChangeButton(),
                 isMaxMode: viewModel.isMaxMode,

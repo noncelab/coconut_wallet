@@ -94,8 +94,7 @@ void main() {
 
       // 지갑의 최근 트랜잭션 상태 플래그 설정
       realmManager.realm.write(() {
-        final wallet = realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
-        wallet!.isLatestTxBlockHeightZero = true;
+        realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
       });
 
       // 트랜잭션 상태 업데이트
@@ -110,7 +109,7 @@ void main() {
       // 업데이트된 트랜잭션 조회
       final updatedTransaction = transactionRepository.getTransactionRecord(
           testWalletItem.id, testTransaction.transactionHash);
-      final wallet = realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
+      realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
 
       // 검증
       expect(updatedTransaction?.blockHeight, blockHeight);
@@ -122,8 +121,6 @@ void main() {
         expect(actualTimestamp.millisecondsSinceEpoch ~/ 1000,
             blockTimestamp.timestamp.millisecondsSinceEpoch ~/ 1000);
       }
-
-      expect(wallet?.isLatestTxBlockHeightZero, false);
     });
   });
 

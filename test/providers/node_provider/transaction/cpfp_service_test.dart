@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_service.dart';
@@ -58,8 +59,14 @@ void main() {
       walletRepository = WalletRepository(realmManager!);
       electrumService = MockElectrumService();
       cpfpService = CpfpService(transactionRepository, utxoRepository, electrumService);
-      walletRepository.addSinglesigWallet(WatchOnlyWallet(walletItem.name, walletItem.colorIndex,
-          walletItem.iconIndex, walletItem.descriptor, null, null));
+      walletRepository.addSinglesigWallet(WatchOnlyWallet(
+          walletItem.name,
+          walletItem.colorIndex,
+          walletItem.iconIndex,
+          walletItem.descriptor,
+          null,
+          null,
+          WalletImportSource.coconutVault.name));
     });
 
     tearDown(() {

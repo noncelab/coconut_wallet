@@ -1,0 +1,2 @@
+const int MAX_UINT32 = 0xFFFFFFFF;
+const int MAX_UINT64 = 0xFFFFFFFFFFFFFFFF;

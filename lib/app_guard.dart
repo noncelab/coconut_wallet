@@ -1,10 +1,11 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
 
@@ -38,7 +39,14 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
     _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
     _connectivity.onConnectivityChanged.listen(_checkConnectivity);
     _screenListener.addScreenShotListener((_) {
-      CustomToast.showToast(context: context, text: '스크린 캡처가 감지되었습니다.', seconds: 4);
+      CoconutToast.showToast(
+        context: context,
+        text: t.toast.screen_capture,
+        seconds: 4,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/triangle-warning.svg',
+        iconSize: Sizes.size16,
+      );
     });
     _screenListener.watch();
   }
@@ -52,6 +60,8 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
       // _showToastAboutNetwork(isNetworkOn);
 
       if (isNetworkOn) {
+        _nodeProvider.reconnect();
+
         /// 네트워크가 꺼졌다가 다시 켜지면 시세를 위한 소켓을 연결함.
         _upbitConnectModel.initUpbitWebSocketService();
       } else {

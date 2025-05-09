@@ -138,6 +138,12 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateWalletName() {
+    final updatedName = _walletProvider.getWalletById(_walletId).name;
+    _walletName = updatedName;
+    notifyListeners();
+  }
+
   int _getBalance() {
     return _walletProvider.getWalletBalance(_walletId).total;
   }

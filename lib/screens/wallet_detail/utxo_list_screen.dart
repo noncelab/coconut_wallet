@@ -40,6 +40,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   final GlobalKey _headerDropdownKey = GlobalKey();
   final GlobalKey _stickyHeaderDropdownKey = GlobalKey();
 
+  final ValueNotifier<bool> _stickyHeaderVisibleNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _dropdownEnabledNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _dropdownVisibleNotifier = ValueNotifier<bool>(false);
+
   Size _appBarSize = const Size(0, 0);
 
   Offset _headerDropdownPosition = Offset.zero;
@@ -48,18 +52,11 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Size _headerDropdownSize = Size.zero;
   Size _stickyHeaderDropdownSize = Size.zero;
 
-  bool _isHeaderDropdownVisible = false;
-  bool _stickyHeaderVisible = false;
-  bool _isStickyHeaderDropdownVisible = false;
-
-  late UtxoListViewModel _viewModel;
   OverlayEntry? _statusBarTapOverlayEntry; // iOS 노치 터치 시 scrol to top
 
   @override
   void initState() {
     super.initState();
-    _viewModel = _createViewModel();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topHeaderWidgetSize = const Size(0, 0);
       Size positionedTopWidgetSize = const Size(0, 0);
@@ -80,13 +77,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       });
 
       _scrollController.addListener(() {
-        if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
-          _removeFilterDropdown();
-        }
+        _hideDropdown();
+
         if (_scrollController.offset > _topPadding) {
-          _updateStickyHeaderDropdownPosition();
+          _showStickyHeaderAndUpdateDropdownPosition();
         } else {
-          _updateHeaderDropdownPosition();
+          _hideStickyHeaderAndUpdateDropdownPosition();
         }
       });
     });
@@ -118,170 +114,207 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, UtxoTagProvider, UtxoListViewModel>(
-        create: (_) => _viewModel,
+        create: (_) => _createViewModel(),
         update: (_, walletProvider, utxoTagProvider, viewModel) {
           viewModel ??= _createViewModel();
           return viewModel..updateProvider();
         },
-        child: PopScope(
-          canPop: true,
-          onPopInvokedWithResult: (didPop, _) {
-            _removeFilterDropdown();
-          },
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              _removeFilterDropdown();
+        child: Builder(builder: (context) {
+          return PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (didPop, _) {
+              _hideDropdown();
             },
-            child: Stack(
-              children: [
-                Scaffold(
-                  backgroundColor: CoconutColors.black,
-                  appBar: CoconutAppBar.build(
-                    entireWidgetKey: _appBarKey,
-                    title: t.utxo_list,
-                    context: context,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                _hideDropdown();
+              },
+              child: Stack(
+                children: [
+                  Scaffold(
                     backgroundColor: CoconutColors.black,
+                    appBar: CoconutAppBar.build(
+                      entireWidgetKey: _appBarKey,
+                      title: t.utxo_list,
+                      context: context,
+                      backgroundColor: CoconutColors.black,
+                    ),
+                    body: Selector<UtxoListViewModel, Tuple3<bool, bool, List<UtxoState>>>(
+                        selector: (_, viewModel) => Tuple3(
+                            viewModel.isSyncing, viewModel.isUtxoTagListEmpty, viewModel.utxoList),
+                        builder: (context, data, child) {
+                          final isSyncing = data.item1;
+                          final isUtxoTagListEmpty = data.item2;
+                          final utxoList = data.item3;
+
+                          return CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            controller: _scrollController,
+                            semanticChildCount: isUtxoTagListEmpty ? 1 : utxoList.length,
+                            slivers: [
+                              if (isSyncing) const SliverToBoxAdapter(child: LoadingIndicator()),
+                              CupertinoSliverRefreshControl(
+                                onRefresh: () async {
+                                  final viewModel = context.read<UtxoListViewModel>();
+                                  viewModel.refetchFromDB();
+                                },
+                              ),
+                              SliverToBoxAdapter(child: _buildHeader(context)),
+                              UtxoList(
+                                walletId: widget.id,
+                                onRemoveDropdown: _hideDropdown,
+                                onFirstBuildCompleted: () {
+                                  if (!mounted) return;
+                                  _dropdownEnabledNotifier.value = true;
+                                },
+                              ),
+                            ],
+                          );
+                        }),
                   ),
-                  body: Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
-                    return CustomScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      controller: _scrollController,
-                      semanticChildCount:
-                          viewModel.isUtxoTagListEmpty ? 1 : viewModel.utxoList.length,
-                      slivers: [
-                        if (viewModel.isSyncing)
-                          const SliverToBoxAdapter(child: LoadingIndicator()),
-                        CupertinoSliverRefreshControl(
-                          onRefresh: () async {
-                            viewModel.refetchFromDB();
-                          },
-                        ),
-                        SliverToBoxAdapter(child: _buildHeader(viewModel)),
-                        UtxoList(
-                          walletId: widget.id,
-                          onRemoveDropdown: _removeFilterDropdown,
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-                _buildStickyHeader(),
-                _buildUtxoOrderDropdownMenu(),
-              ],
+                  _buildStickyHeader(context),
+                  _buildUtxoOrderDropdownMenu(context),
+                ],
+              ),
             ),
-          ),
-        ));
+          );
+        }));
   }
 
-  void _updateHeaderDropdownPosition() {
-    RenderBox? headerDropdownRenderBox;
-    setState(() {
-      _stickyHeaderVisible = false;
-      _isStickyHeaderDropdownVisible = false;
-    });
+  void _hideStickyHeaderAndUpdateDropdownPosition() {
+    _stickyHeaderVisibleNotifier.value = false;
 
-    headerDropdownRenderBox = _headerDropdownKey.currentContext?.findRenderObject() as RenderBox;
-    if (_headerDropdownSize == Size.zero) {
-      _headerDropdownSize = headerDropdownRenderBox.size;
+    if (_headerDropdownKey.currentContext != null) {
+      final renderBox = _headerDropdownKey.currentContext!.findRenderObject() as RenderBox;
+      final position = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
+
+      setState(() {
+        _headerDropdownPosition = position;
+        _headerDropdownSize = size;
+      });
     }
-    _headerDropdownPosition = headerDropdownRenderBox.localToGlobal(Offset.zero);
   }
 
-  void _updateStickyHeaderDropdownPosition() {
-    setState(() {
-      _stickyHeaderVisible = true;
-      _isHeaderDropdownVisible = false;
-    });
-    RenderBox? stickyHeaderDropdownRenderBox;
+  void _showStickyHeaderAndUpdateDropdownPosition() {
+    _stickyHeaderVisibleNotifier.value = true;
 
-    stickyHeaderDropdownRenderBox =
-        _stickyHeaderDropdownKey.currentContext?.findRenderObject() as RenderBox;
-    if (_stickyHeaderDropdownSize == Size.zero) {
-      _stickyHeaderDropdownSize = stickyHeaderDropdownRenderBox.size;
+    if (_stickyHeaderDropdownKey.currentContext != null) {
+      final renderBox = _stickyHeaderDropdownKey.currentContext!.findRenderObject() as RenderBox;
+      final position = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
+
+      setState(() {
+        _stickyHeaderDropdownPosition = position;
+        _stickyHeaderDropdownSize = size;
+      });
     }
-    _stickyHeaderDropdownPosition = stickyHeaderDropdownRenderBox.localToGlobal(Offset.zero);
   }
 
-  void _removeFilterDropdown() {
-    setState(() {
-      _isHeaderDropdownVisible = false;
-      _isStickyHeaderDropdownVisible = false;
-    });
+  void _hideDropdown() {
+    if (_dropdownVisibleNotifier.value) {
+      _dropdownVisibleNotifier.value = false;
+    }
   }
 
-  Widget _buildHeader(UtxoListViewModel viewModel) {
-    return UtxoListHeader(
-        key: ValueKey(viewModel.utxoTagListKey),
-        dropdownGlobalKey: _headerDropdownKey,
-        animatedBalanceData: AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
-        selectedFilter: viewModel.selectedUtxoOrder.text,
-        utxoTagList: viewModel.utxoTagList,
-        selectedUtxoTagName: viewModel.selectedUtxoTagName,
-        onTapDropdown: () {
-          setState(() {
-            if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
-              _isHeaderDropdownVisible = false;
-            } else {
-              _isHeaderDropdownVisible = true;
-            }
-          });
-        },
-        onTagSelected: (tagName) {
-          viewModel.setSelectedUtxoTagName(tagName);
+  Widget _buildHeader(BuildContext context) {
+    final viewModel = context.read<UtxoListViewModel>();
+    return ValueListenableBuilder<bool>(
+        valueListenable: _dropdownEnabledNotifier,
+        builder: (context, canShowDropdown, child) {
+          return Selector<UtxoListViewModel, UtxoOrder>(
+              selector: (_, viewModel) => viewModel.selectedUtxoOrder,
+              builder: (context, selectedOrder, child) {
+                return UtxoListHeader(
+                    key: ValueKey(viewModel.utxoTagListKey),
+                    dropdownGlobalKey: _headerDropdownKey,
+                    canShowDropdown: canShowDropdown,
+                    animatedBalanceData:
+                        AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+                    selectedOption: selectedOrder.text,
+                    utxoTagList: viewModel.utxoTagList,
+                    selectedUtxoTagName: viewModel.selectedUtxoTagName,
+                    onTapDropdown: () {
+                      if (!canShowDropdown) return;
+                      _dropdownVisibleNotifier.value = !_dropdownVisibleNotifier.value;
+                      _hideStickyHeaderAndUpdateDropdownPosition();
+                    },
+                    onTagSelected: (tagName) {
+                      viewModel.setSelectedUtxoTagName(tagName);
+                    });
+              });
         });
   }
 
-  Widget _buildUtxoOrderDropdownMenu() {
-    return UtxoOrderDropdown(
-      isVisible: _isHeaderDropdownVisible || _isStickyHeaderDropdownVisible,
-      positionTop: _isHeaderDropdownVisible
-          ? _headerDropdownPosition.dy + _headerDropdownSize.height
-          : _isStickyHeaderDropdownVisible
-              ? _stickyHeaderDropdownPosition.dy + _stickyHeaderDropdownSize.height
-              : 0,
-      selectedFilter: _viewModel.selectedUtxoOrder,
-      onSelected: (filter) {
-        setState(() {
-          _isHeaderDropdownVisible = _isStickyHeaderDropdownVisible = false;
+  Widget _buildUtxoOrderDropdownMenu(BuildContext context) {
+    final viewModel = context.read<UtxoListViewModel>();
+    final selectedOrder = viewModel.selectedUtxoOrder;
+    return ValueListenableBuilder<bool>(
+        valueListenable: _dropdownEnabledNotifier,
+        builder: (context, canShowDropdown, child) {
+          return ValueListenableBuilder<bool>(
+              valueListenable: _stickyHeaderVisibleNotifier,
+              builder: (context, isStickyHeaderVisible, child) {
+                return ValueListenableBuilder<bool>(
+                    valueListenable: _dropdownVisibleNotifier,
+                    builder: (context, isDropdownVisible, child) {
+                      return UtxoOrderDropdown(
+                        isVisible: isDropdownVisible,
+                        positionTop: isStickyHeaderVisible
+                            ? _stickyHeaderDropdownPosition.dy + _stickyHeaderDropdownSize.height
+                            : _headerDropdownPosition.dy + _headerDropdownSize.height,
+                        selectedOption: selectedOrder,
+                        onOptionSelected: (filter) {
+                          _hideDropdown();
+                          if (isStickyHeaderVisible) {
+                            _scrollController.animateTo(kToolbarHeight + 28,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut);
+                          }
+                          viewModel.updateUtxoFilter(filter);
+                        },
+                      );
+                    });
+              });
         });
-        if (_stickyHeaderVisible) {
-          _scrollController.animateTo(kToolbarHeight + 28,
-              duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-        }
-        _viewModel.updateUtxoFilter(filter);
-      },
-    );
   }
 
-  Widget _buildStickyHeader() {
-    return Selector<UtxoListViewModel, int>(
-      selector: (_, viewModel) => viewModel.balance,
-      builder: (context, balance, child) {
-        return UtxoListStickyHeader(
-          key: ValueKey(_viewModel.utxoTagListKey),
-          dropdownGlobalKey: _stickyHeaderDropdownKey,
-          height: _appBarSize.height,
-          isVisible: _stickyHeaderVisible,
-          animatedBalanceData: AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
-          totalCount: _viewModel.utxoList.length,
-          selectedFilter: _viewModel.selectedUtxoOrder.text,
-          onTapDropdown: () {
-            setState(() {
-              _scrollController.jumpTo(_scrollController.offset);
-              if (_isHeaderDropdownVisible || _isStickyHeaderDropdownVisible) {
-                _isStickyHeaderDropdownVisible = false;
-              } else {
-                _isStickyHeaderDropdownVisible = true;
-              }
-            });
-          },
-          removePopup: () {
-            _removeFilterDropdown();
-          },
-        );
-      },
-    );
+  Widget _buildStickyHeader(BuildContext context) {
+    final viewModel = context.read<UtxoListViewModel>();
+    final currentBalane = viewModel.balance;
+    final prevBalance = viewModel.prevBalance;
+    final totalCount = viewModel.utxoList.length;
+    return ValueListenableBuilder<bool>(
+        valueListenable: _dropdownEnabledNotifier,
+        builder: (context, enableDropdown, _) {
+          return ValueListenableBuilder<bool>(
+              valueListenable: _stickyHeaderVisibleNotifier,
+              builder: (context, isStickyHeaderVisible, _) {
+                return Selector<UtxoListViewModel, UtxoOrder>(
+                  selector: (_, viewModel) => viewModel.selectedUtxoOrder,
+                  builder: (context, order, child) {
+                    return UtxoListStickyHeader(
+                      key: ValueKey(viewModel.utxoTagListKey),
+                      dropdownGlobalKey: _stickyHeaderDropdownKey,
+                      height: _appBarSize.height,
+                      isVisible: isStickyHeaderVisible,
+                      enableDropdown: enableDropdown,
+                      animatedBalanceData: AnimatedBalanceData(currentBalane, prevBalance),
+                      totalCount: totalCount,
+                      selectedOption: order.text,
+                      onTapDropdown: () {
+                        _dropdownVisibleNotifier.value = !_dropdownVisibleNotifier.value;
+                        _scrollController.jumpTo(_scrollController.offset);
+                      },
+                      removePopup: () {
+                        _hideDropdown();
+                      },
+                    );
+                  },
+                );
+              });
+        });
   }
 
   void _enableStatusBarTapScroll() {
@@ -317,10 +350,12 @@ class UtxoList extends StatefulWidget {
     super.key,
     required this.walletId,
     this.onRemoveDropdown,
+    this.onFirstBuildCompleted,
   });
 
   final int walletId;
   final Function? onRemoveDropdown;
+  final VoidCallback? onFirstBuildCompleted;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -395,6 +430,8 @@ class _UtxoListState extends State<UtxoList> {
   }
 
   Future<void> _handleUtxoListChange(List<UtxoState> utxoList) async {
+    final isFirstLoad = _displayedUtxoList.isEmpty && utxoList.isNotEmpty;
+
     if (_isListLoading) return;
     _isListLoading = true;
 
@@ -442,6 +479,9 @@ class _UtxoListState extends State<UtxoList> {
     }
 
     _isListLoading = false;
+    if (isFirstLoad && widget.onFirstBuildCompleted != null) {
+      widget.onFirstBuildCompleted!();
+    }
   }
 
   Widget _buildRemoveUtxoItem(UtxoState utxo, Animation<double> animation) {

@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -57,8 +58,14 @@ void main() {
       );
 
       // Given - 로컬 DB 초기화
-      await walletRepository.addSinglesigWallet(WatchOnlyWallet(walletItem.name,
-          walletItem.colorIndex, walletItem.iconIndex, walletItem.descriptor, null, null));
+      await walletRepository.addSinglesigWallet(WatchOnlyWallet(
+          walletItem.name,
+          walletItem.colorIndex,
+          walletItem.iconIndex,
+          walletItem.descriptor,
+          null,
+          null,
+          WalletImportSource.coconutVault.name));
       await addressRepository.ensureAddressesInit(walletItemBase: walletItem);
 
       // Given - ElectrumService만 모킹
@@ -193,8 +200,14 @@ void main() {
       );
 
       // Given - 로컬 DB 초기화
-      await walletRepository.addSinglesigWallet(WatchOnlyWallet(walletItem.name,
-          walletItem.colorIndex, walletItem.iconIndex, walletItem.descriptor, null, null));
+      await walletRepository.addSinglesigWallet(WatchOnlyWallet(
+          walletItem.name,
+          walletItem.colorIndex,
+          walletItem.iconIndex,
+          walletItem.descriptor,
+          null,
+          null,
+          WalletImportSource.coconutVault.name));
       await addressRepository.ensureAddressesInit(walletItemBase: walletItem);
 
       // Given - ElectrumService만 모킹

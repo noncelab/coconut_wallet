@@ -41,6 +41,8 @@ abstract final class CustomIcons {
   static const String car = 'assets/svg/wallet-icons/car.svg';
   static const String couch = 'assets/svg/wallet-icons/couch.svg';
 
+  static const String triangleWarning = 'assets/svg/triangle-warning.svg';
+
   static List<String> icons = [
     'assets/svg/wallet-icons/man-head.svg',
     'assets/svg/wallet-icons/woman-head.svg',

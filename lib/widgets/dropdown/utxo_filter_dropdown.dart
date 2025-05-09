@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 class UtxoOrderDropdown extends StatelessWidget {
   final bool isVisible;
   final double positionTop;
-  final UtxoOrder selectedFilter;
-  final Function onSelected;
+  final UtxoOrder selectedOption;
+  final Function onOptionSelected;
   const UtxoOrderDropdown({
     super.key,
     required this.isVisible,
     required this.positionTop,
-    required this.selectedFilter,
-    required this.onSelected,
+    required this.selectedOption,
+    required this.onOptionSelected,
   });
 
   @override
@@ -24,33 +24,33 @@ class UtxoOrderDropdown extends StatelessWidget {
             child: Material(
               borderRadius: BorderRadius.circular(16),
               child: CoconutPulldownMenu(
-                buttons: [
-                  UtxoOrder.byTimestampDesc.text,
-                  UtxoOrder.byTimestampAsc.text,
-                  UtxoOrder.byAmountDesc.text,
-                  UtxoOrder.byAmountAsc.text,
+                entries: [
+                  CoconutPulldownMenuItem(title: UtxoOrder.byTimestampDesc.text),
+                  CoconutPulldownMenuItem(title: UtxoOrder.byTimestampAsc.text),
+                  CoconutPulldownMenuItem(title: UtxoOrder.byAmountDesc.text),
+                  CoconutPulldownMenuItem(title: UtxoOrder.byAmountAsc.text),
                 ],
                 dividerColor: Colors.black,
-                onTap: (index) {
+                onSelected: (index, filterName) {
                   switch (index) {
                     case 0: // 최신순
-                      if (selectedFilter != UtxoOrder.byTimestampDesc) {
-                        onSelected(UtxoOrder.byTimestampDesc);
+                      if (selectedOption != UtxoOrder.byTimestampDesc) {
+                        onOptionSelected(UtxoOrder.byTimestampDesc);
                       }
                       break;
                     case 1: // 오래된 순
-                      if (selectedFilter != UtxoOrder.byTimestampAsc) {
-                        onSelected(UtxoOrder.byTimestampAsc);
+                      if (selectedOption != UtxoOrder.byTimestampAsc) {
+                        onOptionSelected(UtxoOrder.byTimestampAsc);
                       }
                       break;
                     case 2: // 큰 금액순
-                      if (selectedFilter != UtxoOrder.byAmountDesc) {
-                        onSelected(UtxoOrder.byAmountDesc);
+                      if (selectedOption != UtxoOrder.byAmountDesc) {
+                        onOptionSelected(UtxoOrder.byAmountDesc);
                       }
                       break;
                     case 3: // 작은 금액순
-                      if (selectedFilter != UtxoOrder.byAmountAsc) {
-                        onSelected(UtxoOrder.byAmountAsc);
+                      if (selectedOption != UtxoOrder.byAmountAsc) {
+                        onOptionSelected(UtxoOrder.byAmountAsc);
                       }
                       break;
                   }
@@ -63,7 +63,7 @@ class UtxoOrderDropdown extends StatelessWidget {
   }
 
   int _getIndexBySelectedFilter() {
-    switch (selectedFilter) {
+    switch (selectedOption) {
       case UtxoOrder.byTimestampDesc:
         return 0;
       case UtxoOrder.byTimestampAsc:

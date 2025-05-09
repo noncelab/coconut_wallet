@@ -91,9 +91,9 @@ class _GlossaryShortcutCardState extends State<GlossaryShortcutCard>
                                         CoconutTypography.body2_14.setColor(CoconutColors.gray400),
                                   ),
                                   TextSpan(
-                                    text: '•••',
-                                    style: CoconutTypography.body2_14.copyWith(
-                                        letterSpacing: -2.0, color: CoconutColors.gray400),
+                                    text: t.wallet_list_glossary_shortcut_card.kebab_button,
+                                    style: CoconutTypography.body2_14
+                                        .copyWith(color: CoconutColors.gray400),
                                   ),
                                   TextSpan(
                                     text: t.wallet_list_glossary_shortcut_card.click_to_jump,

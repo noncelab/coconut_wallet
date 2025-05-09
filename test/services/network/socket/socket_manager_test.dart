@@ -75,7 +75,6 @@ void main() {
       socketManager = SocketManager(
         factory: mockSocketFactory,
         maxConnectionAttempts: 3,
-        reconnectDelaySeconds: 1,
       );
     });
 

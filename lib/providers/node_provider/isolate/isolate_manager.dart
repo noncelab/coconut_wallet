@@ -24,6 +24,7 @@ class IsolateManager {
   StreamController<IsolateStateMessage>? _stateController;
   Stream<IsolateStateMessage>? _stateStream;
   bool _receivePortListening = false;
+  bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
   Stream<IsolateStateMessage> get stateStream {
     if (_stateController == null || _stateController!.isClosed) {
@@ -34,8 +35,6 @@ class IsolateManager {
   }
 
   final Set<ReceivePort> _activeReceivePorts = {};
-
-  bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
   IsolateManager() {
     _isolateReady = Completer<void>();
@@ -49,9 +48,10 @@ class IsolateManager {
     _receivePortListening = false;
   }
 
-  Future<void> initialize(String host, int port, bool ssl) async {
+  Future<void> initialize(String host, int port, bool ssl, NetworkType networkType) async {
     try {
-      Logger.log('IsolateManager: initializing with $host:$port, ssl=$ssl');
+      Logger.log(
+          'IsolateManager: initializing with $host:$port, ssl=$ssl, networkType=$networkType');
 
       if (_isolate != null) {
         Logger.log('IsolateManager: killing existing isolate');
@@ -64,7 +64,7 @@ class IsolateManager {
       _isolateReady = Completer<void>();
 
       final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
-      final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl);
+      final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl, networkType);
 
       Logger.log('IsolateManager: spawning new isolate');
       _isolate = await Isolate.spawn<SpawnIsolateDto>(_isolateEntry, data);
@@ -168,8 +168,7 @@ class IsolateManager {
 
   /// Isolate 내부에서 실행되는 메인 로직
   static void _isolateEntry(SpawnIsolateDto data) async {
-    // TODO: 메인넷/테스트넷 설정을 isolate 스레드에서도 적용해야 함. (환경변수로 등록하면 좋을듯)
-    NetworkType.setNetworkType(NetworkType.regtest);
+    NetworkType.setNetworkType(data.networkType);
 
     final isolateFromMainReceivePort = ReceivePort('isolateFromMainReceivePort');
 
@@ -235,10 +234,19 @@ class IsolateManager {
 
       T result;
       try {
-        // 타임아웃 설정으로 무한 대기 방지
+        bool isSocketConnectionStatusMessage =
+            messageType == IsolateControllerCommand.getSocketConnectionStatus;
+        // 소켓 연결 상태 확인 요청은 타임아웃 시간을 빠르게 처리
+        final timeLimit = isSocketConnectionStatusMessage
+            ? const Duration(milliseconds: 100)
+            : kIsolateResponseTimeout;
+
         result = await mainFromIsolateReceivePort.first.timeout(
-          kIsolateResponseTimeout,
+          timeLimit,
           onTimeout: () {
+            if (isSocketConnectionStatusMessage) {
+              return SocketConnectionStatus.terminated;
+            }
             throw TimeoutException('Isolate response timeout');
           },
         );
