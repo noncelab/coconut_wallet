@@ -3,17 +3,17 @@ import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-class QRCodeInfo extends StatefulWidget {
+class QrCodeInfo extends StatefulWidget {
   final String qrData;
   final Widget? qrcodeTopWidget;
 
-  const QRCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget});
+  const QrCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget});
 
   @override
-  State<QRCodeInfo> createState() => _QRCodeInfoState();
+  State<QrCodeInfo> createState() => _QrCodeInfoState();
 }
 
-class _QRCodeInfoState extends State<QRCodeInfo> {
+class _QrCodeInfoState extends State<QrCodeInfo> {
   @override
   Widget build(BuildContext context) {
     final double qrSize = MediaQuery.of(context).size.width * 275 / 375;

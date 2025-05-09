@@ -507,20 +507,20 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     color: CoconutColors.black,
                     child: Stack(children: [
                       Positioned(
-                        top: 0,
+                        top: 4,
                         left: 0,
                         bottom: 0,
                         child: IconButton(
                           onPressed: () => Navigator.pop(context),
                           highlightColor: CoconutColors.gray800,
                           icon: SvgPicture.asset(
-                            'packages/coconut_design_system/assets/svg/close.svg',
+                            'assets/svg/close-bold.svg',
                             colorFilter: ColorFilter.mode(
                               CoconutColors.onPrimary(Brightness.dark),
                               BlendMode.srcIn,
                             ),
-                            width: 24,
-                            height: 24,
+                            width: 14,
+                            height: 14,
                           ),
                         ),
                       ),

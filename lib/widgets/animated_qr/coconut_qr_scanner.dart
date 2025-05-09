@@ -1,19 +1,19 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/widgets/animated_qr/i_coconut_qr_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class CoconutQrScanner extends StatefulWidget {
-  final Function(QRViewController) setQRViewController;
+  final Function(QRViewController) setQrViewController;
   final Function(dynamic) onComplete;
   final Function(String) onFailed;
   final Color borderColor;
-  final ICoconutQrDataHandler qrDataHandler;
+  final IQrScanDataHandler qrDataHandler;
 
   const CoconutQrScanner({
     super.key,
-    required this.setQRViewController,
+    required this.setQrViewController,
     required this.onComplete,
     required this.onFailed,
     required this.qrDataHandler,
@@ -28,8 +28,8 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final double _borderWidth = 8;
 
-  void _onQRViewCreated(QRViewController controller) {
-    widget.setQRViewController(controller);
+  void _onQrViewCreated(QRViewController controller) {
+    widget.setQrViewController(controller);
     var handler = widget.qrDataHandler;
     controller.scannedDataStream.listen((scanData) async {
       if (scanData.code == null) return;
@@ -48,6 +48,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
       } catch (e) {
         Logger.log(e.toString());
         widget.onFailed(e.toString());
+        handler.reset();
       }
     }, onError: (e) {
       widget.onFailed(e.toString());
@@ -79,7 +80,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
           children: [
             QRView(
               key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
+              onQRViewCreated: _onQrViewCreated,
               overlay: _getOverlayShape(),
             ),
           ],

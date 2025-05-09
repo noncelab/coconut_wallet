@@ -42,7 +42,7 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    QRCodeInfo(
+                    QrCodeInfo(
                       qrcodeTopWidget: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Row(

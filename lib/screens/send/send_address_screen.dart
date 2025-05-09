@@ -88,7 +88,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                     ? SendAddressBody(
                         key: const ValueKey('qr_body'),
                         qrKey: qrKey,
-                        onQRViewCreated: _onQRViewCreated,
+                        onQrViewCreated: _onQRViewCreated,
                         address: viewModel.address,
                         pasteAddress: _setClipboardAddressAsRecipient,
                       )

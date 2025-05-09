@@ -1,7 +1,9 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -108,11 +110,15 @@ class WalletDetailViewModel extends ChangeNotifier {
   List<TransactionRecord> get txList => _txProvider.txList;
 
   int get walletId => _walletId;
-  WalletListItemBase? get walletListBaseItem => _walletListBaseItem;
+  WalletListItemBase get walletListBaseItem => _walletListBaseItem;
   String get walletName => _walletName;
   WalletProvider? get walletProvider => _walletProvider;
   WalletType get walletType => _walletType;
   bool? get isNetworkOn => _connectProvider.isNetworkOn;
+  bool get isMultisigWallet => _walletListBaseItem is MultisigWalletListItem;
+  String? get masterFingerprint => isMultisigWallet
+      ? null
+      : (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
 
   int _bitcoinPriceKrw = 0;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;

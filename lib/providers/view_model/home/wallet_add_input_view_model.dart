@@ -21,7 +21,8 @@ class WalletAddInputViewModel extends ChangeNotifier {
   bool isExtendedPublicKey(String xpub) {
     try {
       _validateXpubPrefixSupport(xpub);
-      SingleSignatureWallet.fromExtendedPublicKey(AddressType.p2wpkh, xpub, '-');
+      SingleSignatureWallet.fromExtendedPublicKey(
+          AddressType.p2wpkh, xpub, WalletAddService.masterFingerprintPlaceholder);
       validExtendedPublicKey = xpub;
       validDescriptor = null;
       return true;

@@ -1,7 +1,5 @@
-abstract class ICoconutQrDataHandler {
+abstract class IQrScanDataHandler {
   dynamic get result;
-
-  Future<void> initialize(Map<String, dynamic> data);
 
   bool isCompleted();
 

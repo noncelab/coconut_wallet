@@ -5,27 +5,27 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/material.dart';
 import 'package:ur/ur.dart';
-import 'package:coconut_wallet/widgets/animated_qr/bc_ur_qr_data_handler.dart';
-import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_data_handler.dart';
-import 'package:coconut_wallet/widgets/animated_qr/descriptor_qr_data_handler.dart';
-import 'package:coconut_wallet/widgets/animated_qr/i_coconut_qr_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/coconut_wallet_add_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/descriptor_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
 class WalletAddScannerViewModel extends ChangeNotifier {
   final WalletImportSource _walletImportSource;
   final WalletProvider _walletProvider;
   final WalletAddService _walletAddService = WalletAddService();
-  late final ICoconutQrDataHandler _qrDataHandler;
+  late final IQrScanDataHandler _qrDataHandler;
 
   WalletAddScannerViewModel(this._walletImportSource, this._walletProvider) {
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
-        _qrDataHandler = CoconutQRDataHandler();
+        _qrDataHandler = CoconutQrScanDataHandler();
         break;
       case WalletImportSource.keystone:
-        _qrDataHandler = BcUrQrDataHandler();
+        _qrDataHandler = BcUrQrScanDataHandler();
         break;
       case WalletImportSource.seedSigner:
-        _qrDataHandler = DescriptorQRDataHandler();
+        _qrDataHandler = DescriptorQrScanDataHandler();
         break;
       case WalletImportSource.extendedPublicKey:
         throw 'No Support extendedPublicKey';
@@ -34,7 +34,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     }
   }
 
-  ICoconutQrDataHandler get qrDataHandler => _qrDataHandler;
+  IQrScanDataHandler get qrDataHandler => _qrDataHandler;
 
   Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
     switch (_walletImportSource) {
