@@ -169,7 +169,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                       ],
                     ),
                   ),
-                  NetworkErrorTooltip(isNetworkOn: _isNetworkOn ?? false),
+                  NetworkErrorTooltip(isNetworkOn: _isNetworkOn != false),
                 ],
               ),
             ),
