@@ -240,7 +240,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             ),
             children: [
               TextSpan(
-                text: t.tooltip.scan_signed_psbt(hardware_wallet: t.vault_app),
+                text: t.tooltip.scan_signed_psbt.guide(
+                    by_hardware_wallet: t.tooltip.scan_signed_psbt.by_vault_app,
+                    hardware_wallet: t.vault_app),
                 style: const TextStyle(
                   fontWeight: FontWeight.normal,
                 ),
@@ -255,7 +257,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         backgroundColor: CoconutColors.gray900,
         borderColor: CoconutColors.gray900,
         icon: SvgPicture.asset(
-          'packages/coconut_design_system/assets/svg/info_circle.svg',
+          'assets/svg/circle-info.svg',
           colorFilter: const ColorFilter.mode(
             CoconutColors.white,
             BlendMode.srcIn,
@@ -273,21 +275,24 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   List<TextSpan> _getGuideTextSpan() {
+    final hardwareWalletWords = _getHardwareWalletWords();
     return [
-      TextSpan(text: t.tooltip.scan_signed_psbt(hardware_wallet: _getHardwareWalletWords())),
+      TextSpan(
+          text: t.tooltip.scan_signed_psbt.guide(
+              by_hardware_wallet: hardwareWalletWords[0], hardware_wallet: hardwareWalletWords[1])),
     ];
   }
 
-  String _getHardwareWalletWords() {
+  List<String> _getHardwareWalletWords() {
     switch (_viewModel.walletImportSource) {
       case WalletImportSource.coconutVault:
-        return t.vault_app;
+        return [t.tooltip.scan_signed_psbt.by_vault_app, t.vault_app];
       case WalletImportSource.keystone:
-        return t.third_party.keystone;
+        return [t.tooltip.scan_signed_psbt.by_keystone, t.third_party.keystone];
       case WalletImportSource.seedSigner:
-        return t.third_party.seedSigner;
+        return [t.tooltip.scan_signed_psbt.by_seed_signer, t.third_party.seed_signer];
       default:
-        return t.hardware_wallet;
+        return [t.tooltip.scan_signed_psbt.by_hardware_wallet, t.hardware_wallet];
     }
   }
 }

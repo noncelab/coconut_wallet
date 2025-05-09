@@ -416,7 +416,12 @@ tooltip:
   wallet_add4: "내보내기 "
   wallet_add5: "화면에 나타나는 QR 코드를 스캔해 주세요."
   amount_to_be_sent: "받기 완료된 비트코인만 전송 가능해요.\n받는 중인 금액: $bitcoin BTC"
-  scan_signed_psbt: "${hardware_wallet}에서 생성한 서명 트랜잭션 QR이 보이시나요? 이제, QR 코드를 스캔해 주세요."
+  scan_signed_psbt:
+    guide: "${by_hardware_wallet} 서명을 완료하셨나요?\n이제, ${hardware_wallet} 화면에 보이는 QR 코드를 스캔해 주세요."
+    by_seed_signer: "시드사이너로"
+    by_keystone: "키스톤으로"
+    by_hardware_wallet: "하드웨어 월렛으로"
+    by_vault_app: "볼트 앱으로"
   unsigned_tx_qr:
     in_vault: "볼트에서"
     select_wallet: "$name 선택, "
@@ -509,5 +514,5 @@ alert:
 
 third_party:
   keystone: "키스톤"
-  seedSigner: "시드사이너"
+  seed_signer: "시드사이너"
   zpub: "zpub"
