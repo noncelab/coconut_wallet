@@ -514,7 +514,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           onPressed: () => Navigator.pop(context),
                           highlightColor: CoconutColors.gray800,
                           icon: SvgPicture.asset(
-                            'packages/coconut_design_system/assets/svg/close.svg',
+                            'assets/svg/close.svg',
                             colorFilter: ColorFilter.mode(
                               CoconutColors.onPrimary(Brightness.dark),
                               BlendMode.srcIn,

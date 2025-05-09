@@ -154,7 +154,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               backgroundColor: CoconutColors.gray900,
               borderColor: CoconutColors.gray900,
               icon: SvgPicture.asset(
-                'packages/coconut_design_system/assets/svg/info_circle.svg',
+                'assets/svg/circle-info.svg',
                 colorFilter: const ColorFilter.mode(
                   CoconutColors.white,
                   BlendMode.srcIn,
