@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -246,6 +247,26 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                       ]
                                     ],
                                   )),
+
+                              /// 테스트 후 삭제
+                              GestureDetector(
+                                onTap: () {
+                                  var newNetworkType =
+                                      NetworkType.currentNetworkType == NetworkType.mainnet
+                                          ? NetworkType.regtest
+                                          : NetworkType.mainnet;
+                                  NetworkType.setNetworkType(newNetworkType);
+                                  _handleInput(context);
+                                },
+                                child: Container(
+                                    color: Colors.green,
+                                    width: 100,
+                                    height: 100,
+                                    child: Text(
+                                        NetworkType.currentNetworkType == NetworkType.mainnet
+                                            ? "현재 메인넷"
+                                            : "현재 테스트넷")),
+                              ),
                             ],
                           ),
                         ),
