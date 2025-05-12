@@ -2,13 +2,13 @@ import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/node/update_address_balance_dto.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:coconut_wallet/model/node/address_balance_update_dto.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 class AddressRepository extends BaseRepository {
@@ -141,34 +141,78 @@ class AddressRepository extends BaseRepository {
   /// 주소를 DB에 저장
   Future<void> _addAllAddressList(
       RealmWalletBase realmWalletBase, List<WalletAddress> addresses) async {
+    if (addresses.isEmpty) {
+      return;
+    }
+
     int maxReceiveIndex = 0;
     int maxChangeIndex = 0;
-    final realmAddresses = addresses.map(
-      (address) {
-        if (address.isChange) {
-          maxChangeIndex = max(maxChangeIndex, address.index);
-        } else {
-          maxReceiveIndex = max(maxReceiveIndex, address.index);
+
+    // 주소 인덱스 최대값 계산
+    for (final address in addresses) {
+      if (address.isChange) {
+        maxChangeIndex = max(maxChangeIndex, address.index);
+      } else {
+        maxReceiveIndex = max(maxReceiveIndex, address.index);
+      }
+    }
+
+    await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
+
+    // 이미 존재하는 주소들의 ID를 미리 확인
+    final existingIds = realm
+        .query<RealmWalletAddress>('walletId == ${realmWalletBase.id}')
+        .map((addr) => addr.id)
+        .toSet();
+
+    // 중복되지 않는 주소 필터링
+    final addressesToAdd = <RealmWalletAddress>[];
+
+    for (final address in addresses) {
+      final addressId = Object.hash(realmWalletBase.id, address.index, address.address);
+
+      // 이미 존재하는 주소는 건너뛰기
+      if (existingIds.contains(addressId)) {
+        continue;
+      }
+
+      addressesToAdd.add(mapWalletAddressToRealm(
+        realmWalletBase.id,
+        address,
+      ));
+    }
+
+    // 추가할 주소가 없으면 종료
+    if (addressesToAdd.isEmpty) {
+      return;
+    }
+
+    await _safelyAddAddresses(addressesToAdd);
+  }
+
+  /// 안전하게 주소를 추가하는 헬퍼 메서드
+  Future<void> _safelyAddAddresses(List<RealmWalletAddress> addresses) async {
+    for (final address in addresses) {
+      try {
+        await realm.writeAsync(() {
+          realm.add<RealmWalletAddress>(address);
+        });
+      } catch (e) {
+        if (e.toString().contains('RLM_ERR_OBJECT_ALREADY_EXISTS')) {
+          Logger.log('[_safelyAddAddresses] Address already exists, skipping: ${address.address}');
+          continue;
         }
-        return RealmWalletAddress(
-          Object.hash(realmWalletBase.id, address.index, address.address),
-          realmWalletBase.id,
-          address.address,
-          address.index,
-          address.isChange,
-          address.derivationPath,
-          address.isUsed,
-          address.confirmed,
-          address.unconfirmed,
-          address.total,
-        );
-      },
-    ).toList();
 
+        Logger.error('[_safelyAddAddresses] Failed to add address: $e');
+        rethrow;
+      }
+    }
+  }
+
+  /// 지갑 인덱스만 업데이트하는 헬퍼 메서드
+  Future<void> _updateWalletIndices(
+      RealmWalletBase realmWalletBase, int maxReceiveIndex, int maxChangeIndex) async {
     await realm.writeAsync(() {
-      realm.addAll<RealmWalletAddress>(realmAddresses);
-
-      // 생성된 주소 인덱스 업데이트
       if (maxChangeIndex > realmWalletBase.generatedChangeIndex) {
         realmWalletBase.generatedChangeIndex = maxChangeIndex;
       }
@@ -257,7 +301,8 @@ class AddressRepository extends BaseRepository {
     return realmWalletBase;
   }
 
-  void setWalletAddressUsed(WalletListItemBase walletItem, int addressIndex, bool isChange) {
+  Future<void> setWalletAddressUsed(
+      WalletListItemBase walletItem, int addressIndex, bool isChange) async {
     final realmWalletAddress = realm.query<RealmWalletAddress>(
       r'walletId == $0 AND index == $1 AND isChange == $2',
       [walletItem.id, addressIndex, isChange],
@@ -269,13 +314,15 @@ class AddressRepository extends BaseRepository {
       return;
     }
 
-    realm.write(() {
+    await realm.writeAsync(() {
       realmWalletAddress.isUsed = true;
     });
   }
 
   Future<void> setWalletAddressUsedBatch(
-      WalletListItemBase walletItem, List<ScriptStatus> changedScriptStatuses) async {
+      WalletListItemBase walletItem, List<ScriptStatus> scriptStatuses) async {
+    final changedScriptStatuses = scriptStatuses.where((status) => status.status != null).toList();
+
     final receiveIndices = changedScriptStatuses
         .where((status) => !status.isChange)
         .map((status) => status.index)
@@ -343,7 +390,7 @@ class AddressRepository extends BaseRepository {
     );
 
     // 지갑 인덱스 업데이트
-    realm.write(() {
+    await realm.writeAsync(() {
       if (usedIndex > dbUsedIndex) {
         if (isChange) {
           realmWalletBase.usedChangeIndex = usedIndex;
@@ -389,7 +436,7 @@ class AddressRepository extends BaseRepository {
   /// @param updateDataList 업데이트할 DTO 객체 목록
   /// @return 전체 잔액 변화량
   Future<Balance> updateAddressBalanceBatch(
-      int walletId, List<AddressBalanceUpdateDto> updateDataList) async {
+      int walletId, List<UpdateAddressBalanceDto> updateDataList) async {
     if (updateDataList.isEmpty) {
       return Balance(0, 0);
     }
@@ -458,5 +505,30 @@ class AddressRepository extends BaseRepository {
       return existingAddress.derivationPath;
     }
     return '';
+  }
+
+  Future<void> syncWalletWithSubscriptionData(
+    WalletListItemBase walletItem,
+    List<ScriptStatus> scriptStatuses,
+    int receiveUsedIndex,
+    int changeUsedIndex,
+  ) async {
+    // 지갑 인덱스 업데이트
+    await updateWalletUsedIndex(
+      walletItem,
+      receiveUsedIndex,
+      isChange: false,
+    );
+    await updateWalletUsedIndex(
+      walletItem,
+      changeUsedIndex,
+      isChange: true,
+    );
+
+    // 주소 사용 여부 업데이트
+    await setWalletAddressUsedBatch(
+      walletItem,
+      scriptStatuses,
+    );
   }
 }

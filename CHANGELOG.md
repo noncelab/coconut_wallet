@@ -1,3 +1,8 @@
+## 3.1.0 - 2025-05-09
+### Added
+* SeedSigner, KeyStone의 보기 전용 지갑 추가, 트랜잭션 보내기 가능
+* 확장 공개키, Descriptor로 보기 전용 지갑 추가, 트랜잭션 보내기 가능
+
 ## 3.0.1 - 2025-04-17
 ### Changed
 * `Coconut_Design_System` 패키지 적용

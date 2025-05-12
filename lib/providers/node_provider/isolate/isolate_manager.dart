@@ -6,23 +6,11 @@ import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/balance_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
-import 'package:coconut_wallet/providers/node_provider/network_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/subscription_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/transaction_manager.dart';
-import 'package:coconut_wallet/providers/node_provider/utxo_manager.dart';
-import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/repository/realm/realm_manager.dart';
-import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
-import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/providers/node_provider/isolate/isolate_initializer.dart';
+import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_connector_data.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_handler.dart';
-import 'package:coconut_wallet/providers/node_provider/isolate/isolate_state_manager.dart';
+import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -36,8 +24,8 @@ class IsolateManager {
   StreamController<IsolateStateMessage>? _stateController;
   Stream<IsolateStateMessage>? _stateStream;
   bool _receivePortListening = false;
+  bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
-  // 매번 새로운 스트림을 생성하도록 getter 추가
   Stream<IsolateStateMessage> get stateStream {
     if (_stateController == null || _stateController!.isClosed) {
       _stateController = StreamController<IsolateStateMessage>.broadcast();
@@ -46,60 +34,7 @@ class IsolateManager {
     return _stateStream!;
   }
 
-  // 현재 활성 상태인 ReceivePort를 추적하기 위한 Set
   final Set<ReceivePort> _activeReceivePorts = {};
-
-  static Future<IsolateHandler> entryInitialize(
-    SendPort sendPort,
-    ElectrumService electrumService,
-  ) async {
-    // TODO: isSetPin, 핀 설정/해제할 때 isolate에서도 인지할 수 있는 로직 추가
-    final realmManager = RealmManager()..init(false);
-    final addressRepository = AddressRepository(realmManager);
-    final walletRepository = WalletRepository(realmManager);
-    final utxoRepository = UtxoRepository(realmManager);
-    final transactionRepository = TransactionRepository(realmManager);
-    final subscribeRepository = SubscriptionRepository(realmManager);
-
-    // IsolateStateManager 초기화
-    final isolateStateManager = IsolateStateManager(sendPort);
-    final BalanceManager balanceManager =
-        BalanceManager(electrumService, isolateStateManager, addressRepository, walletRepository);
-    final UtxoManager utxoManager = UtxoManager(electrumService, isolateStateManager,
-        utxoRepository, transactionRepository, addressRepository);
-    final ScriptCallbackManager scriptCallbackManager = ScriptCallbackManager();
-    final TransactionManager transactionManager = TransactionManager(
-        electrumService,
-        isolateStateManager,
-        transactionRepository,
-        utxoManager,
-        addressRepository,
-        scriptCallbackManager);
-    final NetworkManager networkManager = NetworkManager(electrumService);
-    final SubscriptionManager subscriptionManager = SubscriptionManager(
-      electrumService,
-      isolateStateManager,
-      balanceManager,
-      transactionManager,
-      utxoManager,
-      addressRepository,
-      subscribeRepository,
-      scriptCallbackManager,
-    );
-
-    final isolateHandler = IsolateHandler(
-      subscriptionManager,
-      transactionManager,
-      networkManager,
-      isolateStateManager,
-      electrumService,
-    );
-
-    Logger.log("IsolateManager.entryInitialize: Handler created successfully");
-    return isolateHandler;
-  }
-
-  bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
   IsolateManager() {
     _isolateReady = Completer<void>();
@@ -113,11 +48,11 @@ class IsolateManager {
     _receivePortListening = false;
   }
 
-  Future<void> initialize(String host, int port, bool ssl) async {
+  Future<void> initialize(String host, int port, bool ssl, NetworkType networkType) async {
     try {
-      Logger.log('IsolateManager: initializing with $host:$port, ssl=$ssl');
+      Logger.log(
+          'IsolateManager: initializing with $host:$port, ssl=$ssl, networkType=$networkType');
 
-      // 기존 자원 정리
       if (_isolate != null) {
         Logger.log('IsolateManager: killing existing isolate');
         _isolate!.kill(priority: Isolate.immediate);
@@ -129,12 +64,11 @@ class IsolateManager {
       _isolateReady = Completer<void>();
 
       final isolateToMainSendPort = _mainFromIsolateReceivePort!.sendPort;
-      final data = IsolateConnectorData(isolateToMainSendPort, host, port, ssl);
+      final data = SpawnIsolateDto(isolateToMainSendPort, host, port, ssl, networkType);
 
       Logger.log('IsolateManager: spawning new isolate');
-      _isolate = await Isolate.spawn<IsolateConnectorData>(_isolateEntry, data);
+      _isolate = await Isolate.spawn<SpawnIsolateDto>(_isolateEntry, data);
 
-      // ReceivePort가 이미 리스닝 중인지 확인
       _setUpReceivePortListener();
 
       await _isolateReady.future.timeout(kIsolateInitTimeout);
@@ -145,7 +79,6 @@ class IsolateManager {
     }
   }
 
-  // StreamController를 안전하게 닫기 위한 메서드
   void _closeStateController() {
     if (_stateController != null && !_stateController!.isClosed) {
       try {
@@ -158,9 +91,7 @@ class IsolateManager {
     }
   }
 
-  // ReceivePort 리스너 설정을 별도 메서드로 분리
   void _setUpReceivePortListener() {
-    // 이미 리스닝 중인 경우 처리하지 않음
     if (_receivePortListening || _mainFromIsolateReceivePort == null) {
       return;
     }
@@ -189,17 +120,62 @@ class IsolateManager {
     }
   }
 
+  void _handleIsolateManagerMessage(List<dynamic> message) {
+    if (message[0] is! IsolateManagerCommand) {
+      Logger.error('Invalid message type: ${message[0]}');
+      return;
+    }
+
+    final isolateManagerMessage = message[0] as IsolateManagerCommand;
+    final params = message[1];
+
+    switch (isolateManagerMessage) {
+      case IsolateManagerCommand.initialize:
+        if (params is SendPort) {
+          _mainToIsolateSendPort = params;
+          if (!_isolateReady.isCompleted) {
+            _isolateReady.complete();
+          }
+        }
+        break;
+
+      case IsolateManagerCommand.updateState:
+        IsolateStateMessage? stateMessage;
+
+        // List 타입인 경우 - 실제로 사용되는 형식
+        if (params is List && params.isNotEmpty) {
+          try {
+            if (params[0] is IsolateStateMethod) {
+              final methodName = params[0] as IsolateStateMethod;
+              final methodParams = params.length > 1 ? params.sublist(1) : [];
+              stateMessage = IsolateStateMessage(methodName, methodParams);
+            }
+          } catch (e) {
+            Logger.error('Error processing List: $e');
+          }
+        }
+
+        // stateMessage가 생성되었으면 콜백과 스트림으로 전달
+        if (stateMessage != null) {
+          // 스트림으로 전달
+          if (_stateController != null && !_stateController!.isClosed) {
+            _stateController!.add(stateMessage);
+          }
+        }
+        break;
+    }
+  }
+
   /// Isolate 내부에서 실행되는 메인 로직
-  static void _isolateEntry(IsolateConnectorData data) async {
-    // TODO: 메인넷/테스트넷 설정을 isolate 스레드에서도 적용해야 함. (환경변수로 등록하면 좋을듯)
-    NetworkType.setNetworkType(NetworkType.regtest);
+  static void _isolateEntry(SpawnIsolateDto data) async {
+    NetworkType.setNetworkType(data.networkType);
 
     final isolateFromMainReceivePort = ReceivePort('isolateFromMainReceivePort');
 
     // 초기화 됐음을 알리는 목적으로 사용
     try {
       data.isolateToMainSendPort
-          .send([IsolateManagerMessage.initialize, isolateFromMainReceivePort.sendPort]);
+          .send([IsolateManagerCommand.initialize, isolateFromMainReceivePort.sendPort]);
     } catch (e) {
       Logger.error("Isolate: ERROR sending initialization message: $e");
     }
@@ -213,22 +189,23 @@ class IsolateManager {
     }
 
     // IsolateStateManager에 올바른 SendPort 전달
-    final isolateHandler = await entryInitialize(data.isolateToMainSendPort, electrumService);
+    final isolateController =
+        await IsolateInitializer.entryInitialize(data.isolateToMainSendPort, electrumService);
 
     isolateFromMainReceivePort.listen((message) async {
       if (message is List && message.length == 3) {
-        IsolateHandlerMessage messageType = message[0];
+        IsolateControllerCommand messageType = message[0];
         SendPort isolateToMainSendPort = message[1]; // 이 SendPort는 일회성 응답용
         List<dynamic> params = message[2];
 
-        isolateHandler.handleMessage(messageType, isolateToMainSendPort, params);
+        isolateController.executeNetworkCommand(messageType, isolateToMainSendPort, params);
       }
     }, onError: (error) {
       Logger.error("Isolate: Error in isolate ReceivePort: $error");
     });
   }
 
-  Future<T> _send<T>(IsolateHandlerMessage messageType, List<dynamic> params) async {
+  Future<T> _send<T>(IsolateControllerCommand messageType, List<dynamic> params) async {
     // 초기화가 진행 중인지 확인하고 완료될 때까지 대기
     try {
       if (!isInitialized) {
@@ -257,10 +234,19 @@ class IsolateManager {
 
       T result;
       try {
-        // 타임아웃 설정으로 무한 대기 방지
+        bool isSocketConnectionStatusMessage =
+            messageType == IsolateControllerCommand.getSocketConnectionStatus;
+        // 소켓 연결 상태 확인 요청은 타임아웃 시간을 빠르게 처리
+        final timeLimit = isSocketConnectionStatusMessage
+            ? const Duration(milliseconds: 100)
+            : kIsolateResponseTimeout;
+
         result = await mainFromIsolateReceivePort.first.timeout(
-          kIsolateResponseTimeout,
+          timeLimit,
           onTimeout: () {
+            if (isSocketConnectionStatusMessage) {
+              return SocketConnectionStatus.terminated;
+            }
             throw TimeoutException('Isolate response timeout');
           },
         );
@@ -287,86 +273,40 @@ class IsolateManager {
   Future<Result<bool>> subscribeWallets(
     List<WalletListItemBase> walletItems,
   ) async {
-    return await _send(IsolateHandlerMessage.subscribeWallets, [walletItems]);
+    return _send(IsolateControllerCommand.subscribeWallets, [walletItems]);
   }
 
   Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
-    return await _send(IsolateHandlerMessage.subscribeWallet, [walletItem]);
+    return _send(IsolateControllerCommand.subscribeWallet, [walletItem]);
   }
 
   Future<Result<bool>> unsubscribeWallet(WalletListItemBase walletItem) async {
-    return await _send(IsolateHandlerMessage.unsubscribeWallet, [walletItem]);
+    return _send(IsolateControllerCommand.unsubscribeWallet, [walletItem]);
   }
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
-    return await _send(IsolateHandlerMessage.broadcast, [signedTx]);
+    return _send(IsolateControllerCommand.broadcast, [signedTx]);
   }
 
   Future<Result<int>> getNetworkMinimumFeeRate() async {
-    return await _send(IsolateHandlerMessage.getNetworkMinimumFeeRate, []);
+    return _send(IsolateControllerCommand.getNetworkMinimumFeeRate, []);
   }
 
   Future<Result<BlockTimestamp>> getLatestBlock() async {
-    return await _send(IsolateHandlerMessage.getLatestBlock, []);
+    return _send(IsolateControllerCommand.getLatestBlock, []);
   }
 
   Future<Result<String>> getTransaction(String txHash) async {
-    return await _send(IsolateHandlerMessage.getTransaction, [txHash]);
+    return _send(IsolateControllerCommand.getTransaction, [txHash]);
   }
 
   Future<Result<RecommendedFee>> getRecommendedFees() async {
-    return await _send(IsolateHandlerMessage.getRecommendedFees, []);
-  }
-
-  void _handleIsolateManagerMessage(List<dynamic> message) {
-    if (message[0] is! IsolateManagerMessage) {
-      Logger.error('Invalid message type: ${message[0]}');
-      return;
-    }
-
-    final isolateManagerMessage = message[0] as IsolateManagerMessage;
-    final params = message[1];
-
-    switch (isolateManagerMessage) {
-      case IsolateManagerMessage.initialize:
-        if (params is SendPort) {
-          _mainToIsolateSendPort = params;
-          if (!_isolateReady.isCompleted) {
-            _isolateReady.complete();
-          }
-        }
-        break;
-
-      case IsolateManagerMessage.updateState:
-        IsolateStateMessage? stateMessage;
-
-        // List 타입인 경우 - 실제로 사용되는 형식
-        if (params is List && params.isNotEmpty) {
-          try {
-            if (params[0] is IsolateStateMethod) {
-              final methodName = params[0] as IsolateStateMethod;
-              final methodParams = params.length > 1 ? params.sublist(1) : [];
-              stateMessage = IsolateStateMessage(methodName, methodParams);
-            }
-          } catch (e) {
-            Logger.error('Error processing List: $e');
-          }
-        }
-
-        // stateMessage가 생성되었으면 콜백과 스트림으로 전달
-        if (stateMessage != null) {
-          // 스트림으로 전달
-          if (_stateController != null && !_stateController!.isClosed) {
-            _stateController!.add(stateMessage);
-          }
-        }
-        break;
-    }
+    return _send(IsolateControllerCommand.getRecommendedFees, []);
   }
 
   Future<SocketConnectionStatus> getSocketConnectionStatus() async {
     try {
-      return await _send(IsolateHandlerMessage.getSocketConnectionStatus, []);
+      return _send(IsolateControllerCommand.getSocketConnectionStatus, []);
     } catch (e) {
       Logger.error('IsolateManager: Error in getSocketConnectionStatus: $e');
       return SocketConnectionStatus.terminated;

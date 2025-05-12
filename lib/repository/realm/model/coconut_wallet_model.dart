@@ -5,6 +5,7 @@ part 'coconut_wallet_model.realm.dart'; // dart run realm generate
 final realmAllSchemas = [
   RealmWalletBase.schema,
   RealmMultisigWallet.schema,
+  RealmExternalWallet.schema,
   RealmTransaction.schema,
   RealmIntegerId.schema,
   TempBroadcastTimeRecord.schema,
@@ -31,7 +32,6 @@ class _RealmWalletBase {
   int usedChangeIndex = -1;
   int generatedReceiveIndex = -1;
   int generatedChangeIndex = -1;
-  bool isLatestTxBlockHeightZero = false;
 }
 
 @RealmModel()
@@ -42,6 +42,14 @@ class _RealmMultisigWallet {
   late _RealmWalletBase? walletBase;
   late String signersInJsonSerialization;
   late int requiredSignatureCount;
+}
+
+@RealmModel()
+class _RealmExternalWallet {
+  @PrimaryKey()
+  late int id;
+  late String walletImportSource;
+  late _RealmWalletBase? walletBase;
 }
 
 @RealmModel()

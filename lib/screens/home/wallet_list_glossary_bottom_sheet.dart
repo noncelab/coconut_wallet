@@ -7,7 +7,6 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class GlossaryBottomSheet extends StatefulWidget {
@@ -104,13 +103,12 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
   Widget build(BuildContext context) {
     return Scaffold(
         backgroundColor: CoconutColors.black,
-        appBar: CustomAppBar.build(
-            title: t.glossary,
-            context: context,
-            onBackPressed: null,
-            hasRightIcon: false,
-            isBottom: true,
-            showTestnetLabel: false),
+        appBar: CoconutAppBar.build(
+          title: t.glossary,
+          context: context,
+          onBackPressed: null,
+          isBottom: true,
+        ),
         body: Padding(
             padding: EdgeInsets.only(
                 left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),

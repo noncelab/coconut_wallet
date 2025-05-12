@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
@@ -82,12 +83,20 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
+    notifyListeners();
   }
 
   void setTxInfo() async {
     Psbt signedPsbt = Psbt.parse(signedTransaction);
+    Psbt psbt;
+    if (_hasAllInputsBip32Derivation(signedPsbt)) {
+      psbt = signedPsbt;
+    } else {
+      psbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+    }
+
     // print("!!! -> ${_model.signedTransaction!}");
-    List<PsbtOutput> outputs = signedPsbt.outputs;
+    List<PsbtOutput> outputs = psbt.outputs;
 
     // case1. 다른 사람에게 보내고(B1) 잔액이 있는 경우(A2)
     // case2. 다른 사람에게 보내고(B1) 잔액이 없는 경우
@@ -128,7 +137,7 @@ class BroadcastingViewModel extends ChangeNotifier {
           recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
         }
       }
-      _sendingAmount = signedPsbt.sendingAmount;
+      _sendingAmount = psbt.sendingAmount;
       _recipientAddresses
           .addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
     } else {
@@ -149,13 +158,13 @@ class BroadcastingViewModel extends ChangeNotifier {
         _isSendingToMyAddress = true;
       }
 
-      _sendingAmount = signedPsbt.sendingAmount;
+      _sendingAmount = psbt.sendingAmount;
       if (output != null) {
         _recipientAddresses.add(output.outAddress);
       }
     }
-    _fee = signedPsbt.fee;
-    _totalAmount = signedPsbt.sendingAmount + signedPsbt.fee;
+    _fee = psbt.fee;
+    _totalAmount = psbt.sendingAmount + psbt.fee;
     _isInitDone = true;
     notifyListeners();
   }
@@ -184,5 +193,9 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   Future<void> updateTagsOfUsedUtxos(String signedTx) async {
     await _tagProvider.applyTagsToNewUtxos(_walletId, signedTx, _outputIndexesToMyAddress);
+  }
+
+  bool _hasAllInputsBip32Derivation(Psbt psbt) {
+    return psbt.inputs.every((input) => input.bip32Derivation != null);
   }
 }

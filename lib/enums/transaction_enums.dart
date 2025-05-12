@@ -4,6 +4,8 @@ enum TransactionStatus { received, receiving, sent, sending, self, selfsending }
 
 enum TransactionFeeLevel { fastest, halfhour, hour }
 
+enum TransactionDirection { incoming, outgoing, unknown }
+
 extension TransactionFeeLevelExtension on TransactionFeeLevel {
   String get text {
     switch (this) {

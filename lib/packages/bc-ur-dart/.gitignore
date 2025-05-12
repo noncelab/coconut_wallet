@@ -1,0 +1,57 @@
+# Dart-specific
+.dart_tool/
+.packages
+build/
+pubspec.lock
+
+# IDE-specific
+.idea/
+.vscode/
+
+# Flutter/Dart package-specific
+*.iml
+*.lock
+*.log
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# macOS-specific
+.DS_Store
+
+# Windows-specific
+Thumbs.db
+
+# Coverage reports
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+
+# Generated documentation
+doc/api/
+
+# Avoid committing generated JavaScript files
+*.dart.js
+*.info.json
+*.js
+*.js_
+*.js.deps
+*.js.map
+
+# Avoid committing generated files for pub
+.pub/
+.pub-cache/
+
+# Avoid committing build outputs
+*.aot
+*.dill
+*.dill.track.dill
+*.dill.incremental.dill
+
+# Avoid committing test failures
+failures/
+
+# Avoid committing performance profiling data
+*.timeline

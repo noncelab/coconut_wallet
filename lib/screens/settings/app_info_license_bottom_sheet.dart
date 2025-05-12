@@ -4,7 +4,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 
 import '../../oss_licenses.dart';
 
@@ -64,13 +63,11 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
       borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
       child: Scaffold(
         backgroundColor: CoconutColors.black,
-        appBar: CustomAppBar.build(
+        appBar: CoconutAppBar.build(
           title: t.license_bottom_sheet.title,
           context: context,
           onBackPressed: null,
-          hasRightIcon: false,
           isBottom: true,
-          showTestnetLabel: false,
         ),
         body: SafeArea(
           child: ListView.builder(

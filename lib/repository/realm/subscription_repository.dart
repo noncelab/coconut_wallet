@@ -51,13 +51,13 @@ class SubscriptionRepository extends BaseRepository {
   /// 여러 스크립트 상태 일괄 업데이트
   /// [subscribeResponse] 구독 응답
   /// [walletId] 지갑 ID
-  Result<void> batchUpdateScriptStatuses(
+  Result<void> updateScriptStatusList(
     int walletId,
     List<ScriptStatus> fetchedStatuses,
-    Map<String, RealmScriptStatus> existingStatusMap,
   ) {
     return handleRealm(() {
       final now = DateTime.now();
+      final existingStatusMap = getExistingScriptStatusMap(fetchedStatuses);
       final (:toAddStatuses, :toUpdateStatuses) = _prepareScriptStatusList(
         fetchedStatuses: fetchedStatuses,
         existingStatusMap: existingStatusMap,
@@ -125,14 +125,34 @@ class SubscriptionRepository extends BaseRepository {
     );
   }
 
-  /// 모든 스크립트 상태를 맵으로 가져오기 { scriptPubKey: scriptStatus }
-  Map<String, RealmScriptStatus> getScriptStatusMap(int walletId) {
-    final scriptStatuses = realm.query<RealmScriptStatus>(
-      r'walletId == $0',
-      [walletId],
-    );
+  List<ScriptStatus> getUpdatedScriptStatuses(
+    List<ScriptStatus> fetchedScriptStatuses,
+    int walletId,
+  ) {
+    final updatedScriptStatuses = <ScriptStatus>[];
+    final existingScriptStatusMap = getExistingScriptStatusMap(fetchedScriptStatuses);
+
+    for (final status in fetchedScriptStatuses) {
+      final existingStatus = existingScriptStatusMap[status.scriptPubKey];
+
+      if (status.status != existingStatus?.status) {
+        updatedScriptStatuses.add(status);
+      }
+    }
+
+    return updatedScriptStatuses;
+  }
+
+  Map<String, RealmScriptStatus> getExistingScriptStatusMap(List<ScriptStatus> scriptStatuses) {
+    final scriptPubKeyList = scriptStatuses.map((e) => e.scriptPubKey).toList();
+    // scriptPubKey 목록에 해당하는 기존 스크립트 상태 조회
+    final existingScriptStatuses = realm.query<RealmScriptStatus>(
+      r'scriptPubKey IN $0',
+      [scriptPubKeyList],
+    ).toList();
+
     return {
-      for (final status in scriptStatuses) status.scriptPubKey: status,
+      for (final status in existingScriptStatuses) status.scriptPubKey: status,
     };
   }
 }

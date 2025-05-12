@@ -6,9 +6,9 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -31,10 +31,11 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         builder: (context, viewModel, child) {
           return Scaffold(
               backgroundColor: CoconutColors.black,
-              appBar: CustomAppBar.buildWithNext(
+              appBar: CoconutAppBar.buildWithNext(
                   title: t.send_confirm_screen.title,
                   context: context,
                   isActive: true,
+                  usePrimaryActiveColor: true,
                   onNextPressed: () {
                     context.loaderOverlay.show();
                     viewModel.generateUnsignedPsbt().then((value) {
@@ -44,12 +45,15 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                         Navigator.pushNamed(context, '/unsigned-transaction-qr',
                             arguments: {'walletName': viewModel.walletName});
                       }
-                    }).catchError((error) {
+                    }).catchError((error) async {
                       if (context.mounted) {
                         context.loaderOverlay.hide();
-                        showAlertDialog(
-                            context: context,
-                            content: t.alert.error_tx.not_created(error: error.toString()));
+                        CustomDialogs.showCustomAlertDialog(context,
+                            title: t.alert.error_tx.created_failed,
+                            message: t.alert.error_tx.not_created(error: error.toString()),
+                            onConfirm: () {
+                          Navigator.pop(context);
+                        });
                       }
                     });
                   }),

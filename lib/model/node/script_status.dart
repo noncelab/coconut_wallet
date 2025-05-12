@@ -14,14 +14,32 @@ class ScriptStatus extends UnaddressedScriptStatus {
     required super.status,
     required super.timestamp,
   });
+
+  @override
+  set status(String? status) {
+    super.status = status;
+  }
+
+  @override
+  set timestamp(DateTime timestamp) {
+    super.timestamp = timestamp;
+  }
+
+  UnaddressedScriptStatus toUnaddressedScriptStatus() {
+    return UnaddressedScriptStatus(
+      scriptPubKey: scriptPubKey,
+      status: status,
+      timestamp: timestamp,
+    );
+  }
 }
 
 class UnaddressedScriptStatus {
   final String scriptPubKey;
 
   /// script status (sha256 hash)
-  final String? status;
-  final DateTime timestamp;
+  String? status;
+  DateTime timestamp;
 
   UnaddressedScriptStatus({
     required this.scriptPubKey,

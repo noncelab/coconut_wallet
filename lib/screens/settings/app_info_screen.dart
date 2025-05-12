@@ -124,10 +124,19 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
             _isScrollOverTitleHeight ? CoconutColors.black.withOpacity(0.5) : CoconutColors.black,
         toolbarHeight: kToolbarHeight,
         leading: IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            icon: const Icon(Icons.close_rounded, color: CoconutColors.white, size: 22)),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          icon: SvgPicture.asset(
+            'assets/svg/close-bold.svg',
+            colorFilter: ColorFilter.mode(
+              CoconutColors.onPrimary(Brightness.dark),
+              BlendMode.srcIn,
+            ),
+            width: 16,
+            height: 16,
+          ),
+        ),
         flexibleSpace: _isScrollOverTitleHeight
             ? ClipRect(
                 child: BackdropFilter(

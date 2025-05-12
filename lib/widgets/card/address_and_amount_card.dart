@@ -5,7 +5,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
@@ -234,7 +233,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
         }
       }).catchError((e) {
         if (mounted) {
-          CustomToast.showToast(context: context, text: e.toString());
+          CoconutToast.showToast(isVisibleIcon: true, context: context, text: e.toString());
         }
       }).whenComplete(() async {
         // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
@@ -271,7 +270,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                   _disposeQrViewController();
                   Navigator.of(context).pop<String>('');
                 }),
-            body: SendAddressBody(qrKey: qrKey, onQRViewCreated: _onQRViewCreated)));
+            body: SendAddressBody(qrKey: qrKey, onQrViewCreated: _onQRViewCreated)));
     if (scannedAddress != null) {
       _addressController.text = scannedAddress;
       _onAddressChanged(scannedAddress);

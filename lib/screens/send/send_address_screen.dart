@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_amount_body_for_batch.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -89,7 +88,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
                     ? SendAddressBody(
                         key: const ValueKey('qr_body'),
                         qrKey: qrKey,
-                        onQRViewCreated: _onQRViewCreated,
+                        onQrViewCreated: _onQRViewCreated,
                         address: viewModel.address,
                         pasteAddress: _setClipboardAddressAsRecipient,
                       )
@@ -175,7 +174,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
           });
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            CustomToast.showWarningToast(
+            CoconutToast.showWarningToast(
               context: context,
               text: ErrorCodes.networkError.message,
             );
@@ -184,7 +183,11 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
         }
       }).catchError((e) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          CustomToast.showToast(context: context, text: e.toString());
+          CoconutToast.showToast(
+            isVisibleIcon: true,
+            context: context,
+            text: e.toString(),
+          );
         });
         _isProcessing = false;
       });
@@ -198,7 +201,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
       _viewModel.saveWalletIdAndRecipientAddress(widget.id, _viewModel.address!);
       _goNext();
     } else {
-      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
     }
   }
 
@@ -233,7 +236,10 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     if (_viewModel.isNetworkOn) {
       Navigator.pushNamed(context, "/fee-selection");
     } else {
-      CustomToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      CoconutToast.showWarningToast(
+        context: context,
+        text: ErrorCodes.networkError.message,
+      );
     }
   }
 }

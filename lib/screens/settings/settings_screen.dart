@@ -6,7 +6,6 @@ import 'package:coconut_wallet/providers/view_model/settings/settings_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/widgets/appbar/custom_appbar.dart';
 import 'package:coconut_wallet/widgets/button/button_container.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:provider/provider.dart';
@@ -33,12 +32,10 @@ class _SettingsScreen extends State<SettingsScreen> {
         child: Consumer<SettingsViewModel>(builder: (context, viewModel, child) {
           return Scaffold(
               backgroundColor: CoconutColors.black,
-              appBar: CustomAppBar.build(
+              appBar: CoconutAppBar.build(
                 title: t.settings,
                 context: context,
-                hasRightIcon: false,
                 isBottom: true,
-                showTestnetLabel: false,
               ),
               body: SafeArea(
                   child: SingleChildScrollView(

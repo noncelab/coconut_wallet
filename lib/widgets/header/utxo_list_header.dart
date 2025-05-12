@@ -13,21 +13,23 @@ import 'package:provider/provider.dart';
 class UtxoListHeader extends StatefulWidget {
   final GlobalKey dropdownGlobalKey;
   final AnimatedBalanceData animatedBalanceData;
-  final String selectedFilter;
+  final String selectedOption;
   final Function onTapDropdown;
   final List<UtxoTag> utxoTagList;
   final String selectedUtxoTagName;
   final Function(String) onTagSelected;
+  final bool canShowDropdown;
 
   const UtxoListHeader(
       {super.key,
       required this.dropdownGlobalKey,
       required this.animatedBalanceData,
-      required this.selectedFilter,
+      required this.selectedOption,
       required this.onTapDropdown,
       required this.utxoTagList,
       required this.selectedUtxoTagName,
-      required this.onTagSelected});
+      required this.onTagSelected,
+      required this.canShowDropdown});
 
   @override
   State<UtxoListHeader> createState() => _UtxoListHeaderState();
@@ -91,15 +93,21 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                         padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
                         minSize: 0,
                         onPressed: () {
+                          if (!widget.canShowDropdown) return;
                           widget.onTapDropdown();
                         },
                         child: Row(
                           children: [
-                            Text(widget.selectedFilter,
-                                style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+                            Text(widget.selectedOption,
+                                style: CoconutTypography.body3_12.setColor(widget.canShowDropdown
+                                    ? CoconutColors.white
+                                    : CoconutColors.gray700)),
                             CoconutLayout.spacing_200w,
                             SvgPicture.asset(
                               'assets/svg/arrow-down.svg',
+                              colorFilter: widget.canShowDropdown
+                                  ? null
+                                  : const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn),
                             ),
                           ],
                         ),

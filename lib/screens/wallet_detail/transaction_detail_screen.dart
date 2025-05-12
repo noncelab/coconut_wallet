@@ -17,13 +17,12 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
-import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_memo_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
@@ -49,15 +48,10 @@ class TransactionDetailScreen extends StatefulWidget {
 class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     with TickerProviderStateMixin {
   Timer? _timer; // timeGap을 최신화 하기 위한 타이머
-  final GlobalKey _balanceWidthKey = GlobalKey();
-  Size _balanceWidthSize = Size.zero;
   late TransactionDetailViewModel _viewModel;
   late AnimationController _animationController;
   late Animation<Offset> _slideInAnimation;
   late Animation<Offset> _slideOutAnimation;
-
-  int tInputCountToShow = 0;
-  int tOutputCountToShow = 0;
 
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
 
@@ -78,9 +72,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
         );
 
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
-        _viewModel.loadCompletedNotifier.addListener(_loadCompletedListener);
         _viewModel.setTransactionStatus(TransactionUtil.getStatus(
-            _viewModel.transactionList![_viewModel.selectedTransactionIndex].transaction!));
+            _viewModel.transactionList![_viewModel.selectedTransactionIndex]));
 
         _updateAnimation();
         return _viewModel;
@@ -95,7 +88,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           if (txList == null || txList.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-          final tx = viewModel.transactionList![viewModel.selectedTransactionIndex].transaction!;
+          final tx = viewModel.transactionList![viewModel.selectedTransactionIndex];
           final txMemo = viewModel.fetchTransactionMemo();
 
           return Scaffold(
@@ -137,34 +130,27 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             textStyle:
                                 CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500))),
                     CoconutLayout.spacing_400h,
-                    if (_isTransactionStatusPending(txList.last.transaction!) &&
+                    if (_isTransactionStatusPending(txList.last) &&
                         viewModel.isSendType != null) ...{
                       Column(
                         children: [
-                          _pendingWidget(txList.first.transaction!),
+                          _pendingWidget(txList.first),
                           if (viewModel.isSendType!)
-                            (txList.last.transaction!.rbfHistoryList != null &&
-                                    txList.last.transaction!.rbfHistoryList!.isNotEmpty)
+                            (txList.last.rbfHistoryList != null &&
+                                    txList.last.rbfHistoryList!.isNotEmpty)
                                 ? _rbfHistoryWidget()
                                 : Container()
                           else
-                            txList.last.transaction!.cpfpHistory != null
-                                ? _cpfpHistoryWidget()
-                                : Container(),
+                            txList.last.cpfpHistory != null ? _cpfpHistoryWidget() : Container(),
                           CoconutLayout.spacing_300h,
                         ],
                       )
                     },
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20), color: CoconutColors.gray800),
-                      child: Stack(
-                        children: [
-                          if (_viewModel.previousTransactionIndex !=
-                              _viewModel.selectedTransactionIndex)
-                            AnimatedBuilder(
+                    Stack(
+                      children: [
+                        if (_viewModel.previousTransactionIndex !=
+                            _viewModel.selectedTransactionIndex)
+                          AnimatedBuilder(
                               animation: _animationController,
                               builder: (context, child) {
                                 return SlideTransition(
@@ -175,9 +161,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                   ),
                                 );
                               },
-                              child: _buildTransactionDetail(_viewModel.previousTransactionIndex),
-                            ),
-                          AnimatedBuilder(
+                              child: TransactionInputOutputCard(
+                                  key: ValueKey(_viewModel
+                                      .transactionList![_viewModel.previousTransactionIndex]
+                                      .transactionHash),
+                                  transaction: _viewModel
+                                      .transactionList![_viewModel.previousTransactionIndex],
+                                  isSameAddress: _viewModel.isSameAddress)),
+                        AnimatedBuilder(
                             animation: _animationController,
                             builder: (context, child) {
                               return SlideTransition(
@@ -188,10 +179,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                 ),
                               );
                             },
-                            child: _buildTransactionDetail(_viewModel.selectedTransactionIndex),
-                          ),
-                        ],
-                      ),
+                            child: TransactionInputOutputCard(
+                                key: ValueKey(_viewModel
+                                    .transactionList![_viewModel.selectedTransactionIndex]
+                                    .transactionHash),
+                                transaction: _viewModel
+                                    .transactionList![_viewModel.selectedTransactionIndex],
+                                isSameAddress: _viewModel.isSameAddress)),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     UnderlineButtonItemCard(
@@ -209,7 +204,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                 height: tx.blockHeight.toString(),
                                 count: _confirmedCountText(tx, viewModel.currentBlock?.height))
                             : '-',
-                        style: CoconutTypography.body1_16_Number,
+                        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                       ),
                     ),
                     TransactionDetailScreen._divider,
@@ -220,21 +215,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       onTapUnderlineButton: () {},
                       child: Text(
                         '${tx.feeRate.toStringAsFixed(2)} sats/vb',
-                        style: CoconutTypography.body1_16_Number,
+                        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                       ),
                     ),
                     TransactionDetailScreen._divider,
                     UnderlineButtonItemCard(
-                        label: t.tx_id,
-                        underlineButtonLabel: t.view_mempool,
-                        onTapUnderlineButton: () {
-                          launchUrl(Uri.parse(
-                              "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
-                        },
-                        child: Text(
-                          viewModel.isSendType! ? tx.transactionHash : widget.txHash,
-                          style: CoconutTypography.body1_16_Number,
-                        )),
+                      label: t.tx_id,
+                      underlineButtonLabel: t.view_mempool,
+                      onTapUnderlineButton: () {
+                        launchUrl(
+                            Uri.parse("${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
+                      },
+                      child: CopyTextContainer(
+                        text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
+                        textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                      ),
+                    ),
                     TransactionDetailScreen._divider,
                     UnderlineButtonItemCard(
                         label: t.tx_memo,
@@ -247,7 +243,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                               originalMemo: txMemo ?? '',
                               onComplete: (memo) {
                                 if (!viewModel.updateTransactionMemo(memo)) {
-                                  CustomToast.showWarningToast(
+                                  CoconutToast.showWarningToast(
                                     context: context,
                                     text: t.toast.memo_update_failed,
                                   );
@@ -258,121 +254,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         },
                         child: Text(
                           txMemo?.isNotEmpty == true ? txMemo! : '-',
-                          style: CoconutTypography.body1_16_Number,
+                          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                         )),
                     const SizedBox(
                       height: 40,
-                    ),
-                    Text(
-                      /// inputOutput 위젯에 들어갈 balance 최대 너비 체크용
-                      key: _balanceWidthKey,
-                      '0.0000 0000',
-                      style: CoconutTypography.body2_14_Number.setColor(
-                        Colors.transparent,
-                      ),
                     ),
                   ]),
                 ),
               ));
         },
       ),
-    );
-  }
-
-  Widget _buildTransactionDetail(int index) {
-    final transactionDetail = _viewModel.transactionList![index];
-    tInputCountToShow = transactionDetail.inputCountToShow;
-    tOutputCountToShow = transactionDetail.outputCountToShow;
-    return Column(
-      key: ValueKey(_viewModel
-          .transactionList![_viewModel.selectedTransactionIndex].transaction!.transactionHash),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _viewModel.previousInputCountToShow ?? transactionDetail.inputCountToShow,
-          padding: EdgeInsets.zero,
-          itemBuilder: (context, index) {
-            final address = _viewModel.getInputAddress(index);
-            final amount = _viewModel.getInputAmount(index);
-            return Column(
-              children: [
-                InputOutputDetailRow(
-                  address: address,
-                  balance: amount,
-                  balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
-                  rowType: InputOutputRowType.input,
-                  isCurrentAddress: _viewModel.isSameAddress(address, index),
-                  transactionStatus: _viewModel.transactionStatus,
-                ),
-                const SizedBox(height: 8),
-              ],
-            );
-          },
-        ),
-        Visibility(
-          visible: _viewModel.previousCanSeeMoreInputs ??
-              _viewModel.transactionList![_viewModel.selectedTransactionIndex].canSeeMoreInputs,
-          child: Center(
-            child: CustomUnderlinedButton(
-              text: t.view_more,
-              onTap: () {
-                _viewModel.onTapViewMoreInputs();
-              },
-              fontSize: 12,
-              lineHeight: 14,
-            ),
-          ),
-        ),
-        SizedBox(height: transactionDetail.canSeeMoreInputs ? 8 : 16),
-        InputOutputDetailRow(
-          address: t.fee,
-          balance: transactionDetail.transaction?.fee ?? 0,
-          balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
-          rowType: InputOutputRowType.fee,
-          transactionStatus: _viewModel.transactionStatus,
-        ),
-        const SizedBox(
-          height: 8,
-        ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _viewModel.previousOutputCountToShow ?? transactionDetail.outputCountToShow,
-          padding: EdgeInsets.zero,
-          itemBuilder: (context, index) {
-            final address = _viewModel.getOutputAddress(index);
-            final amount = _viewModel.getOutputAmount(index);
-            return Column(
-              children: [
-                InputOutputDetailRow(
-                  address: address,
-                  balance: amount,
-                  balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
-                  rowType: InputOutputRowType.output,
-                  isCurrentAddress: _viewModel.isSameAddress(address, index),
-                  transactionStatus: _viewModel.transactionStatus,
-                ),
-                const SizedBox(height: 8),
-              ],
-            );
-          },
-        ),
-        Visibility(
-          visible: _viewModel.previousCanSeeMoreOutputs ?? transactionDetail.canSeeMoreOutputs,
-          child: Center(
-            child: CustomUnderlinedButton(
-              text: t.view_more,
-              onTap: () {
-                _viewModel.onTapViewMoreOutputs();
-              },
-              fontSize: 12,
-              lineHeight: 14,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -383,9 +274,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       _timer = null;
     }
     _animationController.dispose();
-    // _viewModel.init();
     _viewModel.showDialogNotifier.removeListener(_showDialogListener);
-    _viewModel.showDialogNotifier.removeListener(_loadCompletedListener);
     _viewModel.clearTransationList();
     super.dispose();
   }
@@ -399,7 +288,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadCompletedListener();
       _animationController.value = 1.0;
     });
   }
@@ -487,7 +375,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                               : CoconutColors.white,
                           isSelected: _viewModel.selectedTransactionIndex == index,
                           onTap: () {
-                            _viewModel.resetPreviousCountValues();
                             _changeTransaction(index);
                           },
                         ),
@@ -680,7 +567,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                 child: GestureDetector(
                   onTap: () async {
                     if (!_viewModel.isNetworkOn) {
-                      CustomToast.showWarningToast(
+                      CoconutToast.showWarningToast(
                           context: context, text: ErrorCodes.networkError.message);
                       return;
                     }
@@ -711,11 +598,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   }
 
   String _getTimeGapString() {
-    if (_viewModel.transactionList?.last.transaction?.timestamp == null) {
+    if (_viewModel.transactionList?.last.timestamp == null) {
       return '';
     }
 
-    DateTime? timeStamp = _viewModel.transactionList?.last.transaction!.timestamp;
+    DateTime? timeStamp = _viewModel.transactionList?.last.timestamp;
     if (timeStamp == null) return '';
 
     DateTime now = DateTime.now();
@@ -767,18 +654,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
       }
     }
     return '';
-  }
-
-  void _loadCompletedListener() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final renderBox = _balanceWidthKey.currentContext?.findRenderObject();
-      if (renderBox is RenderBox) {
-        setState(() {
-          _balanceWidthSize = renderBox.size;
-        });
-      }
-    });
   }
 
   void _showDialogListener() {

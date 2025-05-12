@@ -133,12 +133,12 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<List<GetHistoryRes>> getHistory(AddressType addressType, String address) async {
+  Future<List<GetTxHistoryRes>> getHistory(AddressType addressType, String address) async {
     var reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
         _BlockchainScripthashGetHistoryReq(reversedScriptHash),
         (json, {int? id}) => ElectrumResponse(
-            result: (json as List<dynamic>).map((e) => GetHistoryRes.fromJson(e)).toList()));
+            result: (json as List<dynamic>).map((e) => GetTxHistoryRes.fromJson(e)).toList()));
 
     response.result.sort((prev, curr) => prev.height.compareTo(curr.height));
 

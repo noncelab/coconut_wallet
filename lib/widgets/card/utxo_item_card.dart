@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -90,18 +91,20 @@ class UtxoItemCard extends StatelessWidget {
                     runSpacing: 4,
                     children: List.generate(
                       utxo.tags?.length ?? 0,
-                      (index) => IntrinsicWidth(
-                        child: CoconutChip(
-                          minWidth: 40,
-                          color: CoconutColors
-                              .backgroundColorPaletteDark[utxo.tags?[index].colorIndex ?? 0],
-                          borderColor:
-                              CoconutColors.colorPalette[utxo.tags?[index].colorIndex ?? 0],
-                          label: '#${utxo.tags?[index].name ?? ''}',
-                          labelSize: 12,
-                          labelColor: CoconutColors.colorPalette[utxo.tags?[index].colorIndex ?? 0],
-                        ),
-                      ),
+                      (index) {
+                        Color foregroundColor = tagColorPalette[utxo.tags?[index].colorIndex ?? 0];
+                        return IntrinsicWidth(
+                          child: CoconutChip(
+                            minWidth: 40,
+                            color: CoconutColors
+                                .backgroundColorPaletteDark[utxo.tags?[index].colorIndex ?? 0],
+                            borderColor: foregroundColor,
+                            label: '#${utxo.tags?[index].name ?? ''}',
+                            labelSize: 12,
+                            labelColor: foregroundColor,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],

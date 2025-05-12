@@ -103,6 +103,7 @@ class SendAmountViewModel extends ChangeNotifier {
 
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
+    notifyListeners();
   }
 
   void setMaxAmount() {

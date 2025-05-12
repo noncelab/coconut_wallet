@@ -10,7 +10,7 @@ class ScriptStatusMock {
         scriptPubKey: address,
         status: Hash.sha256(address),
         timestamp: DateTime.now(),
-        derivationPath: '${walletItem.walletBase.derivationPath}/$index/${isChange ? '1' : '0'}',
+        derivationPath: '${walletItem.walletBase.derivationPath}/${isChange ? '1' : '0'}/$index',
         address: address,
         index: index,
         isChange: isChange);

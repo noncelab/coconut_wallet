@@ -66,7 +66,9 @@ class WebSocketService {
       final decodedData = jsonDecode(utf8.decode(data));
       if (decodedData is Map<String, dynamic> && decodedData['trade_price'] != null) {
         final ticker = UpbitResponse.fromJson(decodedData);
-        _tickerController.add(ticker);
+        if (!_tickerController.isClosed) {
+          _tickerController.add(ticker);
+        }
       }
     } catch (e) {
       Logger.log('Data processing error: $e');

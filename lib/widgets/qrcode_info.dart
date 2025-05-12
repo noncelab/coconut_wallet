@@ -1,28 +1,19 @@
-import 'dart:io';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/main.dart';
-import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:flutter/services.dart';
 
-import '../utils/toast.dart';
-
-class QRCodeInfo extends StatefulWidget {
+class QrCodeInfo extends StatefulWidget {
   final String qrData;
   final Widget? qrcodeTopWidget;
 
-  const QRCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget});
+  const QrCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget});
 
   @override
-  State<QRCodeInfo> createState() => _QRCodeInfoState();
+  State<QrCodeInfo> createState() => _QrCodeInfoState();
 }
 
-class _QRCodeInfoState extends State<QRCodeInfo> {
-  static const MethodChannel _channel = MethodChannel(methodChannelOS);
+class _QrCodeInfoState extends State<QrCodeInfo> {
   @override
   Widget build(BuildContext context) {
     final double qrSize = MediaQuery.of(context).size.width * 275 / 375;
@@ -54,36 +45,10 @@ class _QRCodeInfoState extends State<QRCodeInfo> {
               ],
             ),
             CoconutLayout.spacing_600h,
-            GestureDetector(
-                onTap: () async {
-                  Clipboard.setData(ClipboardData(text: widget.qrData)).then((value) => null);
-                  if (Platform.isAndroid) {
-                    try {
-                      final int version = await _channel.invokeMethod('getSdkVersion');
-
-                      // 안드로이드13 부터는 클립보드 복사 메세지가 나오기 때문에 예외 적용
-                      if (version > 31) {
-                        return;
-                      }
-                    } on PlatformException catch (e) {
-                      Logger.log("Failed to get platform version: '${e.message}'.");
-                    }
-                  }
-
-                  FToast fToast = FToast();
-
-                  if (!context.mounted) return;
-
-                  fToast.init(context);
-                  final toast = MyToast.getToastWidget(t.copied);
-                  fToast.showToast(
-                      child: toast,
-                      gravity: ToastGravity.BOTTOM,
-                      toastDuration: const Duration(seconds: 2));
-                },
-                child: Text(widget.qrData,
-                    style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
-                    textAlign: TextAlign.center)),
+            CopyTextContainer(
+              text: widget.qrData,
+              textStyle: CoconutTypography.body2_14,
+            ),
           ],
         ));
   }

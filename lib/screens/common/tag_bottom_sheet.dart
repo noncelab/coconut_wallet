@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/overlays/custom_toast.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -190,16 +190,18 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                   _utxoTags.length,
                   (index) {
                     bool isSelected = _prevSelectedUtxoTagNames.contains(_utxoTags[index].name);
+                    Color foregroundColor = tagColorPalette[_utxoTags[index]
+                        .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
                     return IntrinsicWidth(
                       child: CoconutChip(
                         minWidth: 40,
                         color:
                             CoconutColors.backgroundColorPaletteDark[_utxoTags[index].colorIndex],
                         hasOpacity: true,
-                        borderColor: CoconutColors.colorPalette[_utxoTags[index].colorIndex],
+                        borderColor: foregroundColor,
                         label: '#${_utxoTags[index].name}',
                         labelSize: 12,
-                        labelColor: CoconutColors.colorPalette[_utxoTags[index].colorIndex],
+                        labelColor: foregroundColor,
                         isSelected: isSelected,
                         onTap: () {
                           final tag = _utxoTags[index].name;
@@ -208,10 +210,12 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
                               _prevSelectedUtxoTagNames.remove(tag);
                             } else {
                               if (_prevSelectedUtxoTagNames.length == 5) {
-                                CustomToast.showToast(
-                                    context: context,
-                                    text: t.tag_bottom_sheet.max_tag_count,
-                                    seconds: 2);
+                                CoconutToast.showToast(
+                                  context: context,
+                                  isVisibleIcon: true,
+                                  text: t.tag_bottom_sheet.max_tag_count,
+                                  seconds: 2,
+                                );
                                 return;
                               }
                               _prevSelectedUtxoTagNames.add(tag);

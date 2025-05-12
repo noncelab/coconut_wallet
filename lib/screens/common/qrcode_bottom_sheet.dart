@@ -42,7 +42,7 @@ class QrcodeBottomSheet extends StatelessWidget {
               height: MediaQuery.of(context).size.height * 0.9,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
               color: CoconutColors.black,
-              child: QRCodeInfo(qrData: qrData, qrcodeTopWidget: qrcodeTopWidget),
+              child: QrCodeInfo(qrData: qrData, qrcodeTopWidget: qrcodeTopWidget),
             ),
           ),
         ),

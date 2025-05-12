@@ -31,6 +31,18 @@ class TransactionUtil {
     return null;
   }
 
+  static TransactionDirection getDirection(TransactionRecord tx) {
+    switch (tx.transactionType) {
+      case TransactionType.received:
+        return TransactionDirection.incoming;
+      case TransactionType.sent:
+      case TransactionType.self:
+        return TransactionDirection.outgoing;
+      default:
+        return TransactionDirection.unknown;
+    }
+  }
+
   static String getInputAddress(TransactionRecord? transaction, index) =>
       _getTransactionField<String>(
           transaction, index, (tx) => transaction!.inputAddressList, (item) => item.address,
