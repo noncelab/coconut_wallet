@@ -10,13 +10,14 @@ class TestnetLabelWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.only(bottom: Sizes.size10, left: Sizes.size4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
         color: MyColors.cyanblue,
       ),
       padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 4,
+        horizontal: Sizes.size6,
+        vertical: Sizes.size2,
       ),
       child: Text(
         t.testnet,

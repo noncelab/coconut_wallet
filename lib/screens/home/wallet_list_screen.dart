@@ -12,6 +12,7 @@ import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_b
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/label_testnet.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -553,6 +554,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       leadingSvgAsset: SvgPicture.asset('assets/svg/coconut.svg',
           colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn), width: 24),
       appTitle: t.wallet,
+      subLabel: const TestnetLabelWidget(),
       actionButtonList: [
         // 보기 전용 지갑 추가하기
         _buildAppBarIconButton(
