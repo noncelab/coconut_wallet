@@ -16,8 +16,8 @@ class TestnetLabelWidget extends StatelessWidget {
         color: MyColors.cyanblue,
       ),
       padding: const EdgeInsets.symmetric(
-        horizontal: Sizes.size6,
-        vertical: Sizes.size2,
+        horizontal: 16,
+        vertical: 3,
       ),
       child: Text(
         t.testnet,
