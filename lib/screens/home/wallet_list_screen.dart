@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -554,7 +555,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       leadingSvgAsset: SvgPicture.asset('assets/svg/coconut.svg',
           colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn), width: 24),
       appTitle: t.wallet,
-      subLabel: const TestnetLabelWidget(),
+      subLabel: NetworkType.currentNetworkType.isTestnet ? const TestnetLabelWidget() : null,
       actionButtonList: [
         // 보기 전용 지갑 추가하기
         _buildAppBarIconButton(
