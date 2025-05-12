@@ -77,15 +77,9 @@ android {
     productFlavors {
          regtest {
             dimension "network"
-            resValue "string", "app_name", "코코넛 월렛"
+            resValue "string", "app_name", "코코넛 월렛 학습용"
             applicationIdSuffix ".regtest"
             versionNameSuffix "-regtest"
-        }
-        regtestlocal {
-            dimension "network"
-            resValue "string", "app_name", "(LR)코코넛 월렛"
-            applicationIdSuffix ".regtest.local"
-            versionNameSuffix "-regtestlocal"
         }
     }
 }
