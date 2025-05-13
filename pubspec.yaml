@@ -209,6 +209,7 @@ flutter:
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg
     - assets/images/telegram-circle-logo.png
+    - assets/images/discord-logo.png
     - assets/images/mail-icon.png
     - assets/svg/github-logo-white.svg
     - assets/svg/github-logo.svg
