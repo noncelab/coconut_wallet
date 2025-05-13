@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
@@ -92,12 +93,14 @@ class AppReviewService {
 
   static Future<dynamic>? showReviewScreenIfFirstSending(BuildContext context,
       {AnimationController? animationController}) {
+    if (!NetworkType.currentNetworkType.isTestnet) return null;
     if (_hasCompletedBitcoinTransaction() == true) return null;
     _setCompletedBitcoinTransaction();
     return _showReviewScreen(context, isFirst: true, animationController: animationController);
   }
 
   static bool shouldShowReviewScreen() {
+    if (!NetworkType.currentNetworkType.isTestnet) return false;
     if (_hasCompletedBitcoinTransaction() != true) return false;
     return _canRequestReview();
   }

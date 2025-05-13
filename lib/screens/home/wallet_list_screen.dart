@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -60,19 +61,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   double? itemCardWidth;
   double? itemCardHeight;
   late WalletListViewModel _viewModel;
-
-  final List<CoconutPulldownMenuEntry> _dropdownButtons = [
-    CoconutPulldownMenuGroup(
-      groupTitle: t.tool,
-      items: [
-        CoconutPulldownMenuItem(title: t.glossary),
-        CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
-        CoconutPulldownMenuItem(title: t.tutorial),
-      ],
-    ),
-    CoconutPulldownMenuItem(title: t.settings),
-    CoconutPulldownMenuItem(title: t.view_app_info),
-  ];
   late final List<Future<Object?> Function()> _dropdownActions;
 
   bool isWalletLoading = false;
@@ -554,6 +542,21 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn), width: 24),
       appTitle: t.wallet,
       actionButtonList: [
+        /// TEST
+        GestureDetector(
+            onTap: () {
+              NetworkType.setNetworkType(NetworkType.currentNetworkType == NetworkType.mainnet
+                  ? NetworkType.regtest
+                  : NetworkType.mainnet);
+              setState(() {});
+            },
+            child: Container(
+                width: 50,
+                height: 50,
+                color: Colors.green,
+                child:
+                    Text(NetworkType.currentNetworkType == NetworkType.mainnet ? "메인넷" : "테스트넷"))),
+
         // 보기 전용 지갑 추가하기
         _buildAppBarIconButton(
           key: GlobalKey(),
@@ -632,13 +635,30 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           child: CoconutPulldownMenu(
             shadowColor: CoconutColors.gray800,
             dividerColor: CoconutColors.gray800,
-            entries: _dropdownButtons,
+            entries: [
+              CoconutPulldownMenuGroup(
+                groupTitle: t.tool,
+                items: [
+                  CoconutPulldownMenuItem(title: t.glossary),
+                  CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
+                  if (NetworkType.currentNetworkType.isTestnet)
+                    CoconutPulldownMenuItem(title: t.tutorial),
+                ],
+              ),
+              CoconutPulldownMenuItem(title: t.settings),
+              CoconutPulldownMenuItem(title: t.view_app_info),
+            ],
             dividerHeight: 1,
             thickDividerHeight: 3,
-            thickDividerIndexList: const [
-              2,
+            thickDividerIndexList: [
+              NetworkType.currentNetworkType.isTestnet ? 2 : 1,
             ],
             onSelected: ((index, selectedText) {
+              // 메인넷의 경우 튜토리얼 항목을 넘어간다.
+              if (!NetworkType.currentNetworkType.isTestnet && index >= 2) {
+                ++index;
+              }
+
               _setPulldownMenuVisiblility(false);
               _dropdownActions[index].call();
             }),
