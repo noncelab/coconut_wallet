@@ -119,10 +119,12 @@ flutter:
   assets:
     - assets/files/glossary_details.json
     - assets/files/status_loading.json
-    - assets/images/splash_logo.png
+    - assets/images/splash_logo_mainnet.png
+    - assets/images/splash_logo_regtest.png
     - assets/images/pow_logo.png
     - assets/images/telegram_logo.png
-    - assets/svg/coconut.svg
+    - assets/svg/coconut-mainnet.svg
+    - assets/svg/coconut-regtest.svg
     - assets/svg/bell.svg
     - assets/svg/add-circle.svg
     - assets/svg/arrow-right.svg
@@ -235,7 +237,8 @@ flutter:
     - assets/svg/scan.svg
     - assets/svg/wallet-eyes.svg
     - assets/svg/kebab.svg
-    - assets/svg/coconut-vault.svg
+    - assets/svg/coconut-vault-mainnet.svg
+    - assets/svg/coconut-vault-regtest.svg
     - assets/svg/seed-signer.svg
     - assets/svg/keystone.svg
     - assets/svg/zpub.svg

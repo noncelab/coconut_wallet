@@ -538,8 +538,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   SliverAppBar _buildAppBar(WalletListViewModel viewModel) {
     return CoconutAppBar.buildHomeAppbar(
       context: context,
-      leadingSvgAsset: SvgPicture.asset('assets/svg/coconut.svg',
-          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn), width: 24),
+      leadingSvgAsset: SvgPicture.asset(
+          'assets/svg/coconut-${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.svg',
+          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+          width: 24),
       appTitle: t.wallet,
       actionButtonList: [
         /// TEST
@@ -675,7 +677,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
     switch (scanType) {
       case WalletImportSource.coconutVault:
-        svgPath = 'assets/svg/coconut-vault.svg';
+        svgPath =
+            'assets/svg/coconut-vault-${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.svg';
         scanText = t.wallet_add_scanner_screen.vault;
         break;
       case WalletImportSource.keystone:

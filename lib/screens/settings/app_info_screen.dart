@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -219,10 +220,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     ),
                     color: Colors.black,
                   ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/splash_logo.png',
-                    ),
+                  child: Image.asset(
+                    'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
                   ),
                 ),
                 const SizedBox(

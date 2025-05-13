@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -28,7 +29,7 @@ class _StartScreenState extends State<StartScreen> {
         backgroundColor: CoconutColors.black,
         body: Center(
           child: Image.asset(
-            'assets/images/splash_logo.png',
+            'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
           ),
         ));
   }

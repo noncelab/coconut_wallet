@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -47,8 +48,10 @@ class FrostedAppBar extends StatelessWidget {
                 children: [
                   Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 10),
-                      child: SvgPicture.asset('assets/svg/coconut.svg',
-                          color: CoconutColors.white, width: 24)),
+                      child: SvgPicture.asset(
+                          'assets/svg/coconut-${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.svg',
+                          color: CoconutColors.white,
+                          width: 24)),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 4),
