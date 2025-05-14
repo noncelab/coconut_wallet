@@ -127,7 +127,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
                   AskCard(
                       imagePath: 'assets/images/discord-logo.png',
                       title: t.glossary_bottom_sheet.ask_to_discord,
-                      backgroundColor: const Color.fromRGBO(233, 242, 255, 1),
+                      backgroundColor: const Color.fromARGB(255, 240, 224, 251),
                       gutter: GlossaryBottomSheet.gutter,
                       url: DISCORD_COCONUT),
                 ],

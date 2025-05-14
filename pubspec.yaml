@@ -122,7 +122,6 @@ flutter:
     - assets/images/splash_logo_mainnet.png
     - assets/images/splash_logo_regtest.png
     - assets/images/pow_logo.png
-    - assets/images/telegram_logo.png
     - assets/svg/coconut-mainnet.svg
     - assets/svg/coconut-regtest.svg
     - assets/svg/bell.svg
@@ -210,8 +209,8 @@ flutter:
     - assets/lottie/arrow-down.json
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg
-    - assets/images/telegram-circle-logo.png
     - assets/images/discord-logo.png
+    - assets/images/discord-full-logo.png
     - assets/images/mail-icon.png
     - assets/svg/github-logo-white.svg
     - assets/svg/github-logo.svg
