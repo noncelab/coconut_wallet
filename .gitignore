@@ -74,6 +74,7 @@ devtools_options.yaml
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
 **/android/key.properties
+**/android/key_*.properties
 *.jks
 
 # iOS/XCode related

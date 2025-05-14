@@ -44,6 +44,7 @@ class NodeProvider extends ChangeNotifier {
   NodeProvider(this._host, this._port, this._ssl, this._networkType,
       {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
+    Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
     initialize();
   }
 

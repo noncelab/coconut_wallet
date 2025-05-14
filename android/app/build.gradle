@@ -22,12 +22,24 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0.0'
 }
 
+def getFlavor() {
+    def taskNames = gradle.startParameter.taskNames
+    if (taskNames.any { it.toLowerCase().contains("regtest")}) {
+        return "regtest"
+    } else if (taskNames.any { it.toLowerCase().contains("mainnet")}) {
+        return "mainnet"
+    }
+    throw GradleException("❌ build flavor를 추론할 수 없습니다. taskNames: ${taskNames}")
+}
+def flavor = getFlavor()
 def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
+def keystorePropertiesFile = rootProject.file("key_${flavor}.properties")
 if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.withReader('UTF-8') { reader ->
         keystoreProperties.load(reader)
     }
+} else {
+    throw GradleException("❌ keystore properties 파일이 존재하지 않습니다: ${keystorePropertiesFile}")
 }
 
 android {
@@ -80,6 +92,12 @@ android {
             resValue "string", "app_name", "코코넛 월렛 학습용"
             applicationIdSuffix ".regtest"
             versionNameSuffix "-regtest"
+        }
+        mainnet {
+            dimension "network"
+            resValue "string", "app_name", "코코넛 월렛"
+            applicationIdSuffix ""
+            versionNameSuffix ""
         }
     }
 }
