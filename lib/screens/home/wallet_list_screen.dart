@@ -153,7 +153,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                       onCloseTap: viewModel.hideTermsShortcut,
                                     ),
                                 if (viewModel.walletItemList.isEmpty)
-                                  WalletAdditionGuideCard(onPressed: _onAddScannerPressed)
+                                  WalletAdditionGuideCard(onPressed: _onAddWalletPressed)
                               ],
                             )),
                           },
@@ -423,7 +423,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     Navigator.pushNamed(context, "/wallet-add-input");
   }
 
-  void _onAddScannerPressed() {
+  void _onAddWalletPressed() {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -507,14 +507,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     height: kToolbarHeight,
                     color: CoconutColors.black,
-                    child: Stack(children: [
-                      Positioned(
-                        top: 4,
-                        left: 0,
-                        bottom: 0,
+                    child: Row(children: [
+                      SizedBox(
+                        width: 40,
+                        height: 40,
                         child: IconButton(
                           onPressed: () => Navigator.pop(context),
                           highlightColor: CoconutColors.gray800,
+                          splashRadius: 20,
+                          padding: EdgeInsets.zero,
                           icon: SvgPicture.asset(
                             'assets/svg/close-bold.svg',
                             colorFilter: ColorFilter.mode(
@@ -526,15 +527,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           ),
                         ),
                       ),
-                      Center(
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: Text(
-                            t.wallet_add_scanner_screen.add_wallet,
-                            style: CoconutTypography.heading4_18,
-                          ),
-                        ),
+                      const Spacer(),
+                      Text(
+                        t.wallet_add_scanner_screen.add_wallet,
+                        style: CoconutTypography.heading4_18,
                       ),
+                      const Spacer(),
+                      const SizedBox(width: 40)
                     ]),
                   ),
                 ],
@@ -562,7 +561,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           key: GlobalKey(),
           icon: SvgPicture.asset('assets/svg/wallet-eyes.svg'),
           onPressed: () {
-            _onAddScannerPressed();
+            _onAddWalletPressed();
           },
         ),
         // 더보기(풀다운 메뉴 열림)
