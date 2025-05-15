@@ -201,7 +201,7 @@ flutter:
     - assets/svg/close.svg
     - assets/svg/close-bold.svg
     - regtest.env
-    - regtestlocal.env
+    - mainnet.env
     - assets/lottie/pin-locked-success.json
     - assets/lottie/loading-three-dots.json
     - assets/lottie/arrow-up.json
