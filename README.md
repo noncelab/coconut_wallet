@@ -4,7 +4,7 @@
 [![GitHub tag](https://img.shields.io/badge/dynamic/yaml.svg?url=https://raw.githubusercontent.com/noncelab/coconut_wallet/main/pubspec.yaml&query=$.version&label=Version)](https://github.com/noncelab/coconut_wallet)
 [![License](https://img.shields.io/badge/License-X11-green.svg)](https://github.com/noncelab/coconut_wallet/blob/main/LICENSE)
 
-[![Coconut Wallet Logo](./assets/readme/wallet_logo.png)]()
+[![Coconut Wallet Logo](./assets/readme/wallet_logo_mainnet.png)]()
 [![App Store Badge](./assets/readme/app-store-badge.png)](https://apps.apple.com/app/id6654902298)
 [![Google Play Badge](./assets/readme/google-play-badge.png)](https://play.google.com/store/apps/details?id=onl.coconut.wallet.regtest)
 
@@ -23,7 +23,7 @@
 
 <br/>
 
-<img src="./assets/readme/coconut_universe.webp" width="600"/>
+<img src="./assets/readme/coconut_universe_mainnet.webp" width="600"/>
 
 <br/>
 
@@ -100,8 +100,8 @@
           "name": "coconut_wallet (debug)",
             "request": "launch",
             "type": "dart",
-            "args": ["--flavor", "regtest",]
-          },
+            "args": ["--flavor", "regtest"]
+          }
           ```
 6. 터미널 실행 가이드
     ```bash

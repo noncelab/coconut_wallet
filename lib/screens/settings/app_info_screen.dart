@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -24,7 +25,6 @@ class AppInfoScreen extends StatefulWidget {
 
 class _AppInfoScreenState extends State<AppInfoScreen> {
   late ScrollController _scrollController;
-  double topPadding = 0;
   bool _isScrollOverTitleHeight = false;
   bool _appbarTitleVisible = false;
   late Future<PackageInfo> _packageInfoFuture;
@@ -114,7 +114,6 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    topPadding = kToolbarHeight + MediaQuery.of(context).padding.top + 30;
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: CoconutColors.black,
@@ -162,25 +161,15 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
             color: CoconutColors.black,
             child: Column(
               children: [
-                Container(
-                  height: topPadding,
-                  color: CoconutColors.black,
-                ),
+                SizedBox(height: kToolbarHeight + MediaQuery.of(context).padding.top + 30),
                 headerWidget(_packageInfoFuture),
-                Container(
-                  height: 50,
-                  color: CoconutColors.black,
-                ),
+                CoconutLayout.spacing_1200h,
                 socialMediaWidget(),
-                Container(
-                  height: 50,
-                  color: CoconutColors.black,
-                ),
+                CoconutLayout.spacing_1200h,
                 githubWidget(),
-                Container(
-                  height: 50,
-                  color: CoconutColors.black,
-                ),
+                CoconutLayout.spacing_1200h,
+                termsOfServiceWidget(),
+                CoconutLayout.spacing_1200h,
                 footerWidget(_packageInfoFuture),
               ],
             ),
@@ -231,10 +220,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     ),
                     color: Colors.black,
                   ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/splash_logo.png',
-                    ),
+                  child: Image.asset(
+                    'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
                   ),
                 ),
                 const SizedBox(
@@ -289,18 +276,18 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
-              title: t.app_info_screen.ask_to_telegram,
+              title: t.app_info_screen.ask_to_discord,
               leftElement: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
                 child: Image.asset(
-                  'assets/images/telegram-circle-logo.png',
+                  'assets/images/discord-full-logo.png',
                   width: 24,
                   height: 24,
                   fit: BoxFit.cover,
                 ),
               ),
               onPressed: () {
-                launchURL(TELEGRAM_POW);
+                launchURL(DISCORD_COCONUT);
               },
             ),
             SingleButton(
@@ -385,18 +372,49 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              title: t.app_info_screen.contribution,
+              onPressed: () {
+                launchURL(CONTRIBUTING_URL);
+              },
+            )
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget termsOfServiceWidget() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+      ),
+      decoration: const BoxDecoration(
+        color: CoconutColors.black,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _category(t.app_info_screen.tos_and_policy),
+          ButtonGroup(buttons: [
+            SingleButton(
+              title: t.app_info_screen.terms_of_service,
+              onPressed: () {
+                launchURL(TERMS_OF_SERVICE_URL);
+              },
+            ),
+            SingleButton(
+              title: t.app_info_screen.privacy_policy,
+              onPressed: () {
+                launchURL(PRIVACY_POLICY_URL);
+              },
+            ),
+            SingleButton(
               title: t.app_info_screen.license,
               onPressed: () {
                 CommonBottomSheets.showBottomSheet_95(
                     context: context, child: const LicenseBottomSheet());
               },
             ),
-            SingleButton(
-              title: t.app_info_screen.contribution,
-              onPressed: () {
-                launchURL(CONTRIBUTING_URL);
-              },
-            )
           ]),
         ],
       ),

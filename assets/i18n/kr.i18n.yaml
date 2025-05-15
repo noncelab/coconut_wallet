@@ -241,12 +241,15 @@ app_info_screen:
   made_by_team_pow: "포우팀이 만듭니다."
   category1_ask: "궁금한 점이 있으신가요?"
   go_to_pow: "POW 커뮤니티 바로가기"
-  ask_to_telegram: "텔레그램 채널로 문의하기"
+  ask_to_discord: "디스코드 채널로 문의하기"
   ask_to_x: "X로 문의하기"
   ask_to_email: "이메일로 문의하기"
   category2_opensource: "Coconut Wallet은 오픈소스입니다"
-  license: "라이선스 안내"
   contribution: "오픈소스 개발 참여하기"
+  tos_and_policy: "약관 및 정책"
+  terms_of_service: "이용 약관"
+  privacy_policy: "개인정보 처리방침"
+  license: "오픈소스 라이선스"
   version_and_date: "CoconutWallet ver. $version (released at $releasedAt)"
   inquiry: "문의 내용"
 bip39_list_screen:
@@ -356,7 +359,7 @@ tag_bottom_sheet:
   max_tag_count: "태그는 최대 5개 지정할 수 있어요"
 glossary_bottom_sheet:
   ask_to_pow: "포우에 물어보기"
-  ask_to_telegram: "텔레그램에 물어보기"
+  ask_to_discord: "디스코드에 물어보기"
   synonym: "같은 용어"
   related: "관련 용어"
 user_experience_survey_bottom_sheet:

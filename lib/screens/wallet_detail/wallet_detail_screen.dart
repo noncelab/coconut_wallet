@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -120,11 +121,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       context: context,
       onTitlePressed: () => _navigateToWalletInfo(context),
       actionButtonList: [
-        IconButton(
-          key: _faucetIconKey,
-          onPressed: () => _onFaucetIconPressed(),
-          icon: SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
-        ),
+        if (NetworkType.currentNetworkType.isTestnet)
+          IconButton(
+            key: _faucetIconKey,
+            onPressed: () => _onFaucetIconPressed(),
+            icon: SvgPicture.asset('assets/svg/faucet.svg', width: 18, height: 18),
+          ),
         IconButton(
           onPressed: () => _navigateToUtxoList(context),
           icon: SvgPicture.asset('assets/svg/coins.svg', width: 18, height: 18),
