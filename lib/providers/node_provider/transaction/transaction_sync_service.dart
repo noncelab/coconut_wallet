@@ -116,7 +116,8 @@ class TransactionSyncService {
     );
 
     // 7. 대체된 언컨펌 트랜잭션 삭제
-    await _cleanupStaleUnconfirmedTransactions(walletId);
+    await _cleanupStaleUnconfirmedTransactions(
+        walletId, fetchedTransactionDetails.fetchedTransactions);
 
     // 8. 마무리 단계
     _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
@@ -262,18 +263,44 @@ class TransactionSyncService {
   }
 
   /// 7. 대체된 언컨펌 트랜잭션 삭제
-  Future<void> _cleanupStaleUnconfirmedTransactions(
-    int walletId,
-  ) async {
+  Future<void> _cleanupStaleUnconfirmedTransactions(int walletId, List<Transaction> newTxs) async {
     final unconfirmedTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
     final toDeleteTxs = <String>[];
 
-    for (final tx in unconfirmedTxs) {
+    for (final localUnconfirmedTxRecord in unconfirmedTxs) {
+      Transaction? unconfirmedTx;
       try {
-        await _electrumService.getTransaction(tx.transactionHash, verbose: true);
+        unconfirmedTx = Transaction.parse(
+            await _electrumService.getTransaction(localUnconfirmedTxRecord.transactionHash));
       } catch (e) {
-        Logger.log('Transaction ${tx.transactionHash} not found, marking for deletion.');
-        toDeleteTxs.add(tx.transactionHash);
+        Logger.log(
+            'Transaction ${localUnconfirmedTxRecord.transactionHash} not found, marking for deletion.');
+        toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);
+        continue;
+      }
+
+      // 언컨펌 트랜잭션의 모든 인풋을 수집
+      final unconfirmedInputs =
+          unconfirmedTx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
+
+      // 새로운 트랜잭션들을 순회하면서 인풋이 겹치는 것이 있는지 확인
+      for (final newTx in newTxs) {
+        // 새 트랜잭션의 인풋 수집
+        final newTxInputs =
+            newTx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
+
+        // 인풋이 겹치는 것이 있는지 확인 (교집합이 있는지)
+        final overlappingInputs = unconfirmedInputs.intersection(newTxInputs);
+
+        // 겹치는 인풋이 있다면 로컬의 언컨펌 트랜잭션은 대체된 것으로 간주
+        if (overlappingInputs.isNotEmpty) {
+          if (unconfirmedTx.transactionHash != newTx.transactionHash) {
+            toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);
+            Logger.log(
+                '[$walletId] Transaction ${localUnconfirmedTxRecord.transactionHash} is replaced by ${newTx.transactionHash}');
+          }
+          break; // 대체된 것으로 확인되면 다른 새 트랜잭션과 비교 불필요
+        }
       }
     }
 
