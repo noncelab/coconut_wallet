@@ -28,17 +28,19 @@ class _StartScreenState extends State<StartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: Platform.isIOS
-            ? CoconutColors.black
-            : (NetworkType.currentNetworkType.isTestnet
-                ? splashBackgroundColorRegtest
-                : splashBackgroundColorMainnet),
-        body: Center(
-          child: Image.asset(
-            'assets/images/splash_logo.png',
-          ),
-        ));
+    return Container(
+      color: Platform.isIOS
+          ? CoconutColors.black
+          : (NetworkType.currentNetworkType.isTestnet
+              ? splashBackgroundColorRegtest
+              : splashBackgroundColorMainnet),
+      padding: Platform.isIOS ? null : const EdgeInsets.only(top: Sizes.size48),
+      child: Center(
+        child: Image.asset(
+          'assets/images/splash_logo.png',
+        ),
+      ),
+    );
   }
 
   @override
