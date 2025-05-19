@@ -545,21 +545,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       appTitle: t.wallet,
       subLabel: NetworkType.currentNetworkType.isTestnet ? const TestnetLabelWidget() : null,
       actionButtonList: [
-        /// TEST
-        GestureDetector(
-            onTap: () {
-              NetworkType.setNetworkType(NetworkType.currentNetworkType == NetworkType.mainnet
-                  ? NetworkType.regtest
-                  : NetworkType.mainnet);
-              setState(() {});
-            },
-            child: Container(
-                width: 50,
-                height: 50,
-                color: Colors.green,
-                child:
-                    Text(NetworkType.currentNetworkType == NetworkType.mainnet ? "메인넷" : "테스트넷"))),
-
         // 보기 전용 지갑 추가하기
         _buildAppBarIconButton(
           key: GlobalKey(),
