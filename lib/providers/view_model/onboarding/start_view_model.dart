@@ -39,7 +39,7 @@ class StartViewModel extends ChangeNotifier {
   /// 시작 화면 결정
   Future<AppEntryFlow> determineStartScreen() async {
     // Splash 보여주기 위한 딜레이
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 1));
     if (!hasLaunchedBefore) {
       await _visibilityProvider.setHasLaunchedBefore();
     }
