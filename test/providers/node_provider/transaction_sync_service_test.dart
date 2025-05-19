@@ -251,7 +251,7 @@ void main() {
 
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
-      verify(electrumService.getTransaction(mockTx.transactionHash)).called(1);
+      verify(electrumService.getTransaction(mockTx.transactionHash)).called(2);
     });
 
     test('확인된 트랜잭션 처리를 올바르게 하는지 확인', () async {
