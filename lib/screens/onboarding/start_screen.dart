@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,13 +28,19 @@ class _StartScreenState extends State<StartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        backgroundColor: CoconutColors.black,
-        body: Center(
-          child: Image.asset(
-            'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
-          ),
-        ));
+    return Container(
+      color: Platform.isIOS
+          ? CoconutColors.black
+          : (NetworkType.currentNetworkType.isTestnet
+              ? splashBackgroundColorRegtest
+              : splashBackgroundColorMainnet),
+      padding: Platform.isIOS ? null : const EdgeInsets.only(top: Sizes.size48),
+      child: Center(
+        child: Image.asset(
+          'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
+        ),
+      ),
+    );
   }
 
   @override
@@ -43,6 +52,14 @@ class _StartScreenState extends State<StartScreen> {
     );
 
     _initialize();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    if (Platform.isAndroid) {
+      setSystemBarColor(CoconutColors.black);
+    }
   }
 
   void _initialize() async {

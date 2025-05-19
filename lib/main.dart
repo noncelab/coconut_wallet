@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
+import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,9 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 
 const methodChannelOS = 'onl.coconut.wallet/os';
+// Android Only
+const splashBackgroundColorMainnet = Color(0xff1e1e1e);
+const splashBackgroundColorRegtest = Color(0xff323232);
 
 void main() {
   if (kReleaseMode) {
@@ -51,17 +55,13 @@ void main() {
         SystemUiOverlay.bottom,
       ],
     );
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: CoconutColors.black, //상단바 색상
-        statusBarIconBrightness: Brightness.light, //상단바 아이콘 색상
-        systemNavigationBarDividerColor: CoconutColors.black, //하단바 디바이더 색상
-        systemNavigationBarColor: CoconutColors.black, //하단바 색상
-        systemNavigationBarIconBrightness: Brightness.light, //하단바 아이콘 색상
-      ),
-    );
-    Provider.debugCheckInvalidValueType = null;
 
+    setSystemBarColor(Platform.isIOS
+        ? CoconutColors.black
+        : appFlavor == "mainnet"
+            ? splashBackgroundColorMainnet
+            : splashBackgroundColorRegtest);
+    Provider.debugCheckInvalidValueType = null;
     await SharedPrefsRepository().init();
 
     try {
