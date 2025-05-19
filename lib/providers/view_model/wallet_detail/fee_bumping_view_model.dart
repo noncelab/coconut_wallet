@@ -143,6 +143,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setTxWaitingForSign(
         Psbt.fromTransaction(_bumpingTransaction!, _walletListItemBase.walletBase).serialize());
     _sendInfoProvider.setFeeBumpfingType(feeBumpingType);
+    _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
