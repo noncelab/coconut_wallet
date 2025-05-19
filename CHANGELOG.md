@@ -1,3 +1,7 @@
+## 3.1.1 - 2025-05-19
+### Fixed
+* rbf/cpfp 시 walletImportSource 지정 누락
+
 ## 3.1.0 - 2025-05-09
 ### Added
 * SeedSigner, KeyStone의 보기 전용 지갑 추가, 트랜잭션 보내기 가능

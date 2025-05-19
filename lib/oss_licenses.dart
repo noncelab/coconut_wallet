@@ -8700,13 +8700,13 @@ const _scoped_model = Package(
     isSdk: false,
     dependencies: [PackageRef('flutter')]);
 
-/// screen_capture_event 1.2.0
+/// screen_capture_event 1.1.1
 const _screen_capture_event = Package(
     name: 'screen_capture_event',
     description: 'Catch screen capture (Screenshot & Screen Record) event for Android and iOS',
     homepage: 'https://github.com/nizwar/screen_capture_event.git',
     authors: [],
-    version: '1.2.0',
+    version: '1.1.1',
     license: '''MIT License
 
 Copyright (c) 2019 Mochamad Nizwar Syafuan
