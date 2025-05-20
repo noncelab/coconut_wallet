@@ -106,24 +106,58 @@ class RbfService {
   ) async {
     final incomingUtxoList = _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.incoming);
 
+    // 수신 중인 UTXO가 없으면 RBF 대상이 아님
+    if (incomingUtxoList.isEmpty) {
+      return null;
+    }
+
     for (final utxo in incomingUtxoList) {
-      if (await _isTransactionReplaced(utxo.transactionHash)) {
-        return utxo.transactionHash;
+      // 이미 확인된 트랜잭션은 RBF 대상이 아님
+      final txRecord = _transactionRepository.getTransactionRecord(walletId, utxo.transactionHash);
+      if (txRecord == null || txRecord.blockHeight > 0) {
+        continue;
+      }
+
+      try {
+        // 새 트랜잭션과 기존 트랜잭션이 동일한 경우 제외
+        if (utxo.transactionHash == tx.transactionHash) {
+          continue;
+        }
+
+        // 기존 트랜잭션 조회
+        final oldTx =
+            Transaction.parse(await _electrumService.getTransaction(utxo.transactionHash));
+
+        // 인풋이 겹치는지 확인
+        final oldTxInputs =
+            oldTx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
+        final newTxInputs =
+            tx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
+        final overlappingInputs = oldTxInputs.intersection(newTxInputs);
+
+        // 겹치는 인풋이 있고 새 트랜잭션의 수수료율이 더 높다면 RBF로 간주
+        if (overlappingInputs.isNotEmpty) {
+          final oldTxRecord =
+              _transactionRepository.getTransactionRecord(walletId, oldTx.transactionHash);
+          final newTxRecord =
+              _transactionRepository.getTransactionRecord(walletId, tx.transactionHash);
+
+          if (oldTxRecord != null &&
+              newTxRecord != null &&
+              oldTxRecord.feeRate < newTxRecord.feeRate) {
+            Logger.log(
+                '[$walletId] 수신 RBF 감지: ${oldTx.transactionHash}이(가) ${tx.transactionHash}에 의해 대체됨');
+            return oldTx.transactionHash;
+          }
+        }
+      } catch (e) {
+        // 기존 트랜잭션을 조회할 수 없는 경우 (이미 mempool에서 제거된 경우)
+        Logger.log('트랜잭션 ${utxo.transactionHash} 조회 실패: $e');
+        return null;
       }
     }
-    return null;
-  }
 
-  /// 트랜잭션이 대체되었는지 확인
-  Future<bool> _isTransactionReplaced(String transactionHash) async {
-    try {
-      // 대체된 트랜잭션인지 확인, 대체된 트랜잭션은 mempool에 존재하지 않아 예외 발생
-      await _electrumService.getTransaction(transactionHash, verbose: true);
-      return false; // 예외가 발생하지 않으면 트랜잭션이 유효함
-    } catch (e) {
-      // 예외 발생 시 트랜잭션이 대체된 것으로 판단
-      return true;
-    }
+    return null;
   }
 
   /// RBF 내역을 일괄 저장하는 함수
