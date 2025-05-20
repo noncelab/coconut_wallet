@@ -111,7 +111,7 @@ void main() {
           transactionHash: parentTx.transactionHash,
           index: 0,
         );
-        utxoRepository.addAllUtxos(walletId, [utxo]);
+        await utxoRepository.addAllUtxos(walletId, [utxo]);
         final parentTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
           transactionHash: parentTx.transactionHash,
           fee: 1000,
@@ -155,7 +155,7 @@ void main() {
           transactionHash: parentTx.transactionHash,
           index: 0,
         );
-        utxoRepository.addAllUtxos(walletId, [utxo]);
+        await utxoRepository.addAllUtxos(walletId, [utxo]);
         final parentTxRecord = TransactionMock.createConfirmedTransactionRecord(
           transactionHash: parentTx.transactionHash,
         );

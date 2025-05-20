@@ -37,7 +37,7 @@ class UtxoSyncService {
     // UTXO 목록 조회
     final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
 
-    _utxoRepository.addAllUtxos(walletItem.id, utxos);
+    await _utxoRepository.addAllUtxos(walletItem.id, utxos);
 
     if (!inBatchProcess) {
       // UTXO 업데이트 완료 state 업데이트
@@ -49,17 +49,17 @@ class UtxoSyncService {
   Future<List<UtxoState>> fetchUtxoStateList(
       WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
     try {
-      final utxos = await _electrumService.getUnspentList(
+      final unspentResList = await _electrumService.getUnspentList(
           walletItem.walletBase.addressType, scriptStatus.address);
 
       final realmTransactions = _transactionRepository.getRealmTransactionListByHashes(
-          walletItem.id, utxos.map((e) => e.txHash).toSet());
-
+          walletItem.id, unspentResList.map((unspentRes) => unspentRes.txHash).toSet());
       final transactionMap = {
         for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx
       };
 
-      return utxos
+      return unspentResList
+          // 이미 사용된 UTXO는 필터링하여 제외
           .map((e) => UtxoState(
                 transactionHash: e.txHash,
                 index: e.txPos,
@@ -88,10 +88,6 @@ class UtxoSyncService {
           '${utxo.transactionHash.substring(0, 10)}:${utxo.index} - ${utxo.status} isRbfable: ${utxo.isRbfable} isCpfpable: ${utxo.isCpfpable} amount: ${utxo.amount} spentByTransactionHash: ${utxo.spentByTransactionHash?.substring(0, 10)}');
     }
     Logger.log('---------------- utxoStateList end ----------------');
-  }
-
-  void deleteUtxosByReplacedTransactionHashSet(int walletId, Set<String> replacedTxHashs) {
-    _utxoRepository.deleteUtxosByReplacedTransactionHashSet(walletId, replacedTxHashs);
   }
 
   /// 언컨펌 출금 트랜잭션에 대한 UTXO를 생성합니다.
@@ -173,7 +169,7 @@ class UtxoSyncService {
       }
 
       // 생성한 UTXO 추가
-      _utxoRepository.addAllUtxos(walletItem.id, newUtxoList);
+      await _utxoRepository.addAllUtxos(walletItem.id, newUtxoList);
     } catch (e, stackTrace) {
       Logger.error('Failed to create outgoing UTXOs: $e');
       Logger.error('Stack trace: $stackTrace');

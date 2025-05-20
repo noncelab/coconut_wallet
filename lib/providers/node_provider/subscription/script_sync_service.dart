@@ -85,7 +85,7 @@ class ScriptSyncService {
         now: now,
       );
 
-      _scriptCallbackService.registerTransactionDependency(
+      await _scriptCallbackService.registerTransactionDependency(
         dto.walletItem,
         dto.scriptStatus,
         txHashes,
