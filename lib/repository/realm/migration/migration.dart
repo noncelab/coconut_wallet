@@ -32,9 +32,17 @@ void defaultMigration(Migration migration, int oldVersion) {
     Logger.log('oldVersion: $oldVersion');
     if (oldVersion < 2) resetExceptForWallet(migration.newRealm);
     if (oldVersion < 3) removeIsLatestTxBlockHeightZero(migration.newRealm);
+    if (oldVersion < 4) addIsDeletedToUtxo(migration.newRealm);
   } catch (e, stackTrace) {
-    Logger.log('Migration error: $e\n$stackTrace');
+    Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
+  }
+}
+
+void addIsDeletedToUtxo(Realm realm) {
+  final oldUtxos = realm.all<RealmUtxo>();
+  for (var utxo in oldUtxos) {
+    utxo.isDeleted = false;
   }
 }
 
