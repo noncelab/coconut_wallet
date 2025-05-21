@@ -386,7 +386,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (!_viewModel.isMultisigWallet &&
         _viewModel.masterFingerprint == WalletAddService.masterFingerprintPlaceholder) {
       CoconutToast.showToast(
-          context: context, text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send);
+          isVisibleIcon: true,
+          context: context,
+          text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send);
       return;
     }
     if (!_checkStateAndShowToast()) return;
@@ -442,7 +444,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             });
           },
           walletProvider: _viewModel.walletProvider!,
-          walletItem: _viewModel.walletListBaseItem!,
+          walletItem: _viewModel.walletListBaseItem,
         ));
   }
 }

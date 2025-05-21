@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -37,6 +38,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
   TransactionStatus? _transactionStatus = TransactionStatus.receiving;
   bool _isSendType = false;
 
+  bool? _canBumpingTx;
+  bool get canBumpingTx => _canBumpingTx == true;
+
   TransactionDetailViewModel(
       this._walletId,
       this._txHash,
@@ -46,8 +50,22 @@ class TransactionDetailViewModel extends ChangeNotifier {
       this._addressRepository,
       this._connectivityProvider,
       this._sendInfoProvider) {
+    _setCanBumpingTx();
     _initTransactionList();
   }
+
+  void _setCanBumpingTx() {
+    final wallet = _walletProvider.getWalletById(_walletId);
+    if (wallet is MultisigWalletListItem) {
+      _canBumpingTx = true;
+      return;
+    }
+
+    final masterFingerprint =
+        (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+    _canBumpingTx = masterFingerprint != "00000000";
+  }
+
   BlockTimestamp? get currentBlock => _currentBlock;
 
   Utxo? get currentUtxo => _currentUtxo;
