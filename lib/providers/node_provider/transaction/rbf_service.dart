@@ -104,7 +104,11 @@ class RbfService {
     int walletId,
     Transaction tx,
   ) async {
-    final incomingUtxoList = _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.incoming);
+    List<UtxoState> incomingUtxoList =
+        _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.incoming);
+
+    incomingUtxoList =
+        incomingUtxoList.where((utxo) => utxo.transactionHash != tx.transactionHash).toList();
 
     // 수신 중인 UTXO가 없으면 RBF 대상이 아님
     if (incomingUtxoList.isEmpty) {
@@ -119,11 +123,6 @@ class RbfService {
       }
 
       try {
-        // 새 트랜잭션과 기존 트랜잭션이 동일한 경우 제외
-        if (utxo.transactionHash == tx.transactionHash) {
-          continue;
-        }
-
         // 기존 트랜잭션 조회
         final oldTx =
             Transaction.parse(await _electrumService.getTransaction(utxo.transactionHash));
@@ -153,7 +152,7 @@ class RbfService {
       } catch (e) {
         // 기존 트랜잭션을 조회할 수 없는 경우 (이미 mempool에서 제거된 경우)
         Logger.log('트랜잭션 ${utxo.transactionHash} 조회 실패: $e');
-        return null;
+        return utxo.transactionHash;
       }
     }
 

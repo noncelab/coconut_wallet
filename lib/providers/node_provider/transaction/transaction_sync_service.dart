@@ -92,14 +92,7 @@ class TransactionSyncService {
     final FetchedTransactionDetails fetchedTransactionDetails =
         await _fetchTransactionDetails(newTxHashes, txFetchResults, _electrumService);
 
-    // 4. UTXO 상태 업데이트 및 RBF/CPFP 처리
-    final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
-        walletId,
-        fetchedTransactionDetails.fetchedTransactions,
-        unconfirmedFetchedTxHashes,
-        confirmedFetchedTxHashes);
-
-    // 5. 트랜잭션 레코드 생성 및 저장
+    // 4. 트랜잭션 레코드 생성 및 저장
     final List<TransactionRecord> txRecords =
         await _transactionRecordService.createTransactionRecords(
       walletItem,
@@ -107,6 +100,13 @@ class TransactionSyncService {
       now: now,
     );
     await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
+
+    // 5. UTXO 상태 업데이트 및 RBF/CPFP 처리
+    final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
+        walletId,
+        fetchedTransactionDetails.fetchedTransactions,
+        unconfirmedFetchedTxHashes,
+        confirmedFetchedTxHashes);
 
     // 6. RBF/CPFP 히스토리 저장
     await _saveRbfAndCpfpHistory(

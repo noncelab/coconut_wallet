@@ -238,19 +238,6 @@ class UtxoRepository extends BaseRepository {
     return mapRealmToUtxoState(realmUtxo);
   }
 
-  Future<void> deleteUtxo(int walletId, String utxoId) async {
-    final utxoToDelete = realm.query<RealmUtxo>(
-      r'walletId == $0 AND id == $1 AND isDeleted == false',
-      [walletId, utxoId],
-    ).firstOrNull;
-
-    if (utxoToDelete == null) return;
-
-    await realm.writeAsync(() {
-      utxoToDelete.isDeleted = true;
-    });
-  }
-
   Future<void> deleteUtxoList(int walletId, List<String> utxoIds) async {
     final utxosToDelete = realm.query<RealmUtxo>(
       r'walletId == $0 AND id IN $1 AND isDeleted == false',
