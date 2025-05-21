@@ -55,12 +55,15 @@ class TransactionDetailViewModel extends ChangeNotifier {
   }
 
   void _setCanBumpingTx() {
-    final walletBaseItem = _walletProvider.getWalletById(_walletId);
-    bool isMultisigWallet = walletBaseItem is MultisigWalletListItem;
-    String? masterFingerprint = isMultisigWallet
-        ? null
-        : (walletBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
-    _canBumpingTx = masterFingerprint != null && masterFingerprint != "00000000";
+    final wallet = _walletProvider.getWalletById(_walletId);
+    if (wallet is MultisigWalletListItem) {
+      _canBumpingTx = true;
+      return;
+    }
+
+    final masterFingerprint =
+        (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+    _canBumpingTx = masterFingerprint != "00000000";
   }
 
   BlockTimestamp? get currentBlock => _currentBlock;
