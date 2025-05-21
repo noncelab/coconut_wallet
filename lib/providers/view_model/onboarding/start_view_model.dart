@@ -56,7 +56,8 @@ class StartViewModel extends ChangeNotifier {
   Future<void> launchUpdate() async {
     Uri storeUrl = Platform.isAndroid
         ? Uri.parse('https://play.google.com/store/apps/details?id=${_packageInfo.packageName}')
-        : Uri.parse('https://apps.apple.com/kr/app/$APPSTORE_ID');
+        : Uri.parse(
+            'https://apps.apple.com/kr/app/${CoconutWalletApp.kNetworkType.isTestnet ? APPSTORE_ID_REGTEST : APPSTORE_ID_MAINNET}');
 
     if (await canLaunchUrl(storeUrl)) {
       await launchUrl(storeUrl);

@@ -6,4 +6,5 @@ const COPYRIGHT_TEXT =
     '© 2025 Nonce Lab. Inc. in S.Korea.\nLicensed under the MIT License with Commons Clause.';
 
 /// AppStore App ID (iOS)
-const APPSTORE_ID = '6654902298';
+const APPSTORE_ID_REGTEST = '6654902298';
+const APPSTORE_ID_MAINNET = '6745778545';

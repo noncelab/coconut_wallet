@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
@@ -17,10 +18,15 @@ class AppReviewService {
       if (await _inAppReview.isAvailable()) {
         _inAppReview.requestReview();
       } else {
-        _inAppReview.openStoreListing(appStoreId: APPSTORE_ID);
+        _inAppReview.openStoreListing(
+            appStoreId: CoconutWalletApp.kNetworkType.isTestnet
+                ? APPSTORE_ID_REGTEST
+                : APPSTORE_ID_MAINNET);
       }
     } catch (_) {
-      _inAppReview.openStoreListing(appStoreId: APPSTORE_ID);
+      _inAppReview.openStoreListing(
+          appStoreId:
+              CoconutWalletApp.kNetworkType.isTestnet ? APPSTORE_ID_REGTEST : APPSTORE_ID_MAINNET);
     } finally {
       setHasReviewed();
     }

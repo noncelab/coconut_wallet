@@ -58,7 +58,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late int kElectrumPort;
   static late bool kElectrumIsSSL;
   static late String kMempoolHost;
-  static late String kFaucetHost;
+  static late String kApiHost;
   static late NetworkType kNetworkType;
   const CoconutWalletApp({super.key});
 
