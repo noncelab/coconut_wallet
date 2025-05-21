@@ -99,7 +99,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                     title: t.settings_screen.hide_balance,
                     rightElement: CupertinoSwitch(
                         value: viewModel.isBalanceHidden,
-                        activeColor: CoconutColors.primary,
+                        activeColor: CoconutColors.gray100,
+                        trackColor: CoconutColors.gray600,
+                        thumbColor: CoconutColors.gray800,
                         onChanged: (value) {
                           viewModel.changeIsBalanceHidden(value);
                         }),

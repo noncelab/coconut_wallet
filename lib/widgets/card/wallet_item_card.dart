@@ -71,24 +71,28 @@ class WalletItemCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       CoconutLayout.spacing_50h,
-                      ImageFiltered(
-                        imageFilter: isBalanceHidden
-                            ? ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0)
-                            : ImageFilter.blur(sigmaX: 0),
-                        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                          AnimatedBalance(
-                              prevValue: animatedBalanceData.previous,
-                              value: animatedBalanceData.current,
-                              isBtcUnit: true,
-                              textStyle: CoconutTypography.heading3_21_NumberBold
-                                  .setColor(CoconutColors.white)),
-                          Text(
-                            " BTC",
-                            style: CoconutTypography.body3_12_Number.copyWith(
-                                color: CoconutColors.gray500, fontWeight: FontWeight.w500),
-                          ),
-                        ]),
-                      ),
+                      isBalanceHidden
+                          ? Container(
+                              width: 100,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: CoconutColors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            )
+                          : Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                              AnimatedBalance(
+                                  prevValue: animatedBalanceData.previous,
+                                  value: animatedBalanceData.current,
+                                  isBtcUnit: true,
+                                  textStyle: CoconutTypography.heading3_21_NumberBold
+                                      .setColor(CoconutColors.white)),
+                              Text(
+                                " BTC",
+                                style: CoconutTypography.body3_12_Number.copyWith(
+                                    color: CoconutColors.gray500, fontWeight: FontWeight.w500),
+                              ),
+                            ]),
                     ],
                   ),
                 ),
