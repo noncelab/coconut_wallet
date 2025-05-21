@@ -100,7 +100,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                 child: Row(
                   children: [
                     WalletItemIcon(
-                        walletImportSource: walletImportSource ?? WalletImportSource.coconutVault),
+                      walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
+                      colorIndex: colorIndex,
+                      iconIndex: iconIndex,
+                    ),
                     CoconutLayout.spacing_200w,
                     // 이름
                     Expanded(
