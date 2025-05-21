@@ -205,7 +205,7 @@ class IsolateManager {
     });
   }
 
-  Future<T> _send<T>(IsolateControllerCommand messageType, List<dynamic> params) async {
+  Future<Result<T>> _send<T>(IsolateControllerCommand messageType, List<dynamic> params) async {
     // 초기화가 진행 중인지 확인하고 완료될 때까지 대기
     try {
       if (!isInitialized) {
@@ -232,7 +232,7 @@ class IsolateManager {
 
       _mainToIsolateSendPort!.send([messageType, mainFromIsolateReceivePort.sendPort, params]);
 
-      T result;
+      Result<T> result;
       try {
         bool isSocketConnectionStatusMessage =
             messageType == IsolateControllerCommand.getSocketConnectionStatus;
@@ -257,16 +257,16 @@ class IsolateManager {
       }
 
       if (result is Exception) {
-        throw result;
+        return Result.failure(ErrorCodes.nodeUnknown);
       }
 
       return result;
     } catch (e) {
       Logger.error('IsolateManager: Error in _send: $e');
       if (e is TimeoutException) {
-        throw ErrorCodes.nodeIsolateError;
+        return Result.failure(ErrorCodes.nodeIsolateError);
       }
-      rethrow;
+      return Result.failure(ErrorCodes.nodeUnknown);
     }
   }
 
@@ -304,12 +304,12 @@ class IsolateManager {
     return _send(IsolateControllerCommand.getRecommendedFees, []);
   }
 
-  Future<SocketConnectionStatus> getSocketConnectionStatus() async {
+  Future<Result<SocketConnectionStatus>> getSocketConnectionStatus() async {
     try {
       return _send(IsolateControllerCommand.getSocketConnectionStatus, []);
     } catch (e) {
       Logger.error('IsolateManager: Error in getSocketConnectionStatus: $e');
-      return SocketConnectionStatus.terminated;
+      return Result.success(SocketConnectionStatus.terminated);
     }
   }
 

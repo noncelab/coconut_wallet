@@ -83,11 +83,11 @@ void main() {
         scriptCallbackManager.registerFetchUtxosCallback(scriptKey1, callback1);
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash1, false);
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash2, false);
-        scriptCallbackManager
+        await scriptCallbackManager
             .registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1, txHash2]);
 
         // When
-        scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
+        await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
 
         // Then
         expect(callback1Called, isFalse, reason: 'txHash2가 완료되지 않았으므로 콜백은 아직 호출되지 않아야 합니다.');
@@ -98,7 +98,7 @@ void main() {
             reason: 'txHash1은 완료되었으나 txHash2가 완료되지 않았으므로 false를 반환해야 합니다.');
 
         // txHash2 완료 처리
-        scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
+        await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
 
         // 비동기 콜백 완료 대기
         await Future.delayed(Duration.zero);
@@ -112,7 +112,7 @@ void main() {
             reason: 'txHash1과 txHash2 모두 완료 처리되었습니다.');
       });
 
-      test('areAllTransactionsCompleted가 정확한 완료 상태를 반환해야 함', () {
+      test('areAllTransactionsCompleted가 정확한 완료 상태를 반환해야 함', () async {
         // Given
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash1, false);
         scriptCallbackManager.registerTransactionProcessing(
@@ -129,7 +129,7 @@ void main() {
             reason: '두 트랜잭션 모두 아직 완료되지 않았습니다.');
 
         // When
-        scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
+        await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
 
         // Then
         expect(
@@ -142,7 +142,7 @@ void main() {
             reason: 'txHash2는 아직 완료되지 않았습니다.'); // txHash2는 아직
 
         // When
-        scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
+        await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
 
         // Then
         expect(
@@ -182,8 +182,7 @@ void main() {
         scriptCallbackManager.registerFetchUtxosCallback(scriptKey1, testCallback);
 
         // When
-        scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
-        await Future.delayed(Duration.zero);
+        await scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
 
         // Then
         expect(callbackCalled, isTrue, reason: '등록된 콜백은 호출 시 실행되어야 합니다.');
@@ -202,25 +201,22 @@ void main() {
         scriptCallbackManager.registerFetchUtxosCallback(scriptKey1, callback);
 
         // Then
-        scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
+        await scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
         expect(callCount, 1, reason: '콜백이 1번 실행되어야 합니다.');
-        await Future.delayed(Duration.zero);
-        scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
+        await scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
         expect(callCount, 2, reason: '콜백이 2번 실행되어야 합니다.');
-        await Future.delayed(Duration.zero);
-        scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
+        await scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
         expect(callCount, 3, reason: '콜백이 3번 실행되어야 합니다.');
-        await Future.delayed(Duration.zero);
-        scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
+        await scriptCallbackManager.callFetchUtxosCallback(scriptKey1);
         expect(callCount, 3, reason: '등록된 횟수만큼만 호출되어야 합니다.');
       });
 
       test('모든 종속 트랜잭션이 이미 완료된 경우 콜백을 즉시 호출해야 함', () async {
         // Given
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash1, false);
-        scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
+        await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash2, false);
-        scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
+        await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
 
         bool callbackCalled = false;
         Future<void> testCallback() async {
@@ -231,7 +227,7 @@ void main() {
 
         // When
         // 이미 모든 트랜잭션이 완료된 상태에서 종속성 등록 시도
-        scriptCallbackManager
+        await scriptCallbackManager
             .registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1, txHash2]);
 
         // Then
@@ -258,14 +254,14 @@ void main() {
         // 각 스크립트에 대한 종속성 등록
         // script1 -> txHash1
         // script2 -> txHash1, txHash2
-        scriptCallbackManager
+        await scriptCallbackManager
             .registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1]);
-        scriptCallbackManager
+        await scriptCallbackManager
             .registerTransactionDependency(testWalletItem, testScriptStatus2, [txHash1, txHash2]);
 
         // When
         // txHash1 완료 처리
-        scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
+        await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
 
         // Then
         await Future.delayed(Duration.zero);
@@ -273,7 +269,7 @@ void main() {
         expect(callback2Called, isFalse, reason: "Callback2는 아직 호출되면 안 됩니다.");
 
         // txHash2 완료 처리
-        scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
+        await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
 
         // script2의 모든 종속성이 해결되었으므로 callback2 호출됨
         await Future.delayed(Duration.zero);

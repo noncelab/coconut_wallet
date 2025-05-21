@@ -62,7 +62,7 @@ class IsolateStateManager implements StateManagerInterface {
   }
 
   /// 업데이트 요소에 따른 상태 업데이트 및 상태 변경 여부 반환
-  bool _updateElementStatus(
+  bool _isUpdatedElementStatus(
       WalletUpdateInfo walletUpdateInfo, UpdateElement updateType, UpdateStatus newStatus) {
     UpdateStatus prevStatus;
 
@@ -101,7 +101,7 @@ class IsolateStateManager implements StateManagerInterface {
 
     _walletUpdateCounter[walletId]!.incrementCounter(updateType);
 
-    if (_updateElementStatus(walletUpdateInfo, updateType, UpdateStatus.syncing)) {
+    if (_isUpdatedElementStatus(walletUpdateInfo, updateType, UpdateStatus.syncing)) {
       isChange = true;
     }
 
@@ -122,7 +122,7 @@ class IsolateStateManager implements StateManagerInterface {
 
     if (isCounterZero) {
       // 카운터가 0이면 상태를 completed로 변경
-      if (_updateElementStatus(walletUpdateInfo, updateType, UpdateStatus.completed)) {
+      if (_isUpdatedElementStatus(walletUpdateInfo, updateType, UpdateStatus.completed)) {
         isChange = true;
       }
     }
