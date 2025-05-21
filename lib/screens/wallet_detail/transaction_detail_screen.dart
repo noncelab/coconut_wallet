@@ -511,6 +511,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     if (_viewModel.transactionStatus == null || _viewModel.isSendType == null) {
       return Container();
     }
+    bool canBumpingTx = _viewModel.canBumpingTx;
+
     return Container(
       width: MediaQuery.sizeOf(context).width,
       decoration: BoxDecoration(
@@ -571,6 +573,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           context: context, text: ErrorCodes.networkError.message);
                       return;
                     }
+
+                    if (!canBumpingTx) return;
+
                     _viewModel.clearSendInfo();
                     Navigator.pushNamed(context, '/transaction-fee-bumping', arguments: {
                       'transaction': tx,
@@ -584,8 +589,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                     padding: const EdgeInsets.all(8.0),
                     child: Text(
                       _viewModel.isSendType! ? t.quick_send : t.quick_receive,
-                      style: CoconutTypography.body2_14.setColor(
-                          _viewModel.isSendType! ? CoconutColors.primary : CoconutColors.cyan),
+                      style: CoconutTypography.body2_14.setColor(_viewModel.isSendType!
+                          ? CoconutColors.primary.withOpacity(canBumpingTx ? 1.0 : 0.5)
+                          : CoconutColors.cyan.withOpacity(canBumpingTx ? 1.0 : 0.5)),
                     ),
                   ),
                 ),
