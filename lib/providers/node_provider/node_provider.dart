@@ -32,9 +32,7 @@ class NodeProvider extends ChangeNotifier {
   int get port => _port;
   bool get ssl => _ssl;
 
-  bool _needSubscribeWallets = false;
-
-  bool get needSubscribe => _needSubscribeWallets;
+  bool needSubscribeWallets = false;
 
   /// 정상적으로 연결된 후 다시 연결이 끊겼을 떄에만 이 함수가 동작하도록 설계되어 있음.
   /// 최초 [reconnect] 호출은 앱 실행 시 `_checkConnectivity` 에서 호출되어 state 처리 관련된 로직이 일부 비정상적으로 동작함.
@@ -96,7 +94,7 @@ class NodeProvider extends ChangeNotifier {
   Future<Result<bool>> subscribeWallets(
     List<WalletListItemBase> walletItems,
   ) async {
-    _needSubscribeWallets = false;
+    needSubscribeWallets = false;
     return _isolateManager.subscribeWallets(walletItems);
   }
 
@@ -140,7 +138,7 @@ class NodeProvider extends ChangeNotifier {
 
     try {
       SocketConnectionStatus socketConnectionStatus;
-      _needSubscribeWallets = true;
+      needSubscribeWallets = true;
       if (isInitialized && _isolateManager.isInitialized) {
         socketConnectionStatus = await _isolateManager.getSocketConnectionStatus();
         if (socketConnectionStatus != SocketConnectionStatus.terminated) {

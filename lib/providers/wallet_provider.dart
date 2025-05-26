@@ -129,7 +129,8 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // 화면 이탈 후 재연결 시 재구독이 필요한 상황
-    if (_nodeProvider.needSubscribe) {
+    if (_nodeProvider.needSubscribeWallets) {
+      _nodeProvider.needSubscribeWallets = false;
       _subscribeNodeProvider();
     }
 
