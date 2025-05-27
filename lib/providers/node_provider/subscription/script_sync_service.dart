@@ -43,6 +43,11 @@ class ScriptSyncService {
     try {
       final now = DateTime.now();
 
+      // TODO: 네트워크 혼잡한 상황 비동기 처리 필요
+      // 네트워크가 혼잡할 경우 일렉트럼 서버에서 이벤트 수신 시점에 데이터 정합성이 안맞는 상황이 있음.
+      // 일렉트럼 서버가 데이터 인덱싱을 완료하는 시점을 정확히 알 수 없어서 1초 대기
+      await Future.delayed(const Duration(seconds: 1));
+
       // 지갑 업데이트 상태 초기화
       _stateManager.initWalletUpdateStatus(dto.walletItem.id);
 
@@ -85,7 +90,7 @@ class ScriptSyncService {
         now: now,
       );
 
-      _scriptCallbackService.registerTransactionDependency(
+      await _scriptCallbackService.registerTransactionDependency(
         dto.walletItem,
         dto.scriptStatus,
         txHashes,

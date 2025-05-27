@@ -324,7 +324,7 @@ class TransactionRepository extends BaseRepository {
   }
 
   /// RBF 내역 삭제, 트랜잭션이 컨펌되면 RBF내역은 불필요하므로 연관된 내역도 함께 삭제함
-  void deleteRbfHistory(int walletId, lib.Transaction fetchedTx) {
+  Future<void> deleteRbfHistory(int walletId, lib.Transaction fetchedTx) async {
     final realmRbfHistory = realm.query<RealmRbfHistory>(
       r'walletId == $0 AND transactionHash == $1',
       [walletId, fetchedTx.transactionHash],
@@ -337,7 +337,7 @@ class TransactionRepository extends BaseRepository {
       );
 
       if (relatedRbfHistoryList.isNotEmpty) {
-        realm.write(() {
+        await realm.writeAsync(() {
           realm.deleteMany(relatedRbfHistoryList);
         });
       }
@@ -345,14 +345,14 @@ class TransactionRepository extends BaseRepository {
   }
 
   /// CPFP 내역 삭제, 트랜잭션이 컨펌되면 CPFP내역은 불필요하므로 연관된 내역도 함께 삭제하
-  void deleteCpfpHistory(int walletId, lib.Transaction fetchedTx) {
+  Future<void> deleteCpfpHistory(int walletId, lib.Transaction fetchedTx) async {
     final realmCpfpHistory = realm.query<RealmCpfpHistory>(
       r'walletId == $0 AND (parentTransactionHash == $1 OR childTransactionHash == $1)',
       [walletId, fetchedTx.transactionHash],
     ).firstOrNull;
 
     if (realmCpfpHistory != null) {
-      realm.write(() {
+      await realm.writeAsync(() {
         realm.delete(realmCpfpHistory);
       });
     }
@@ -360,7 +360,7 @@ class TransactionRepository extends BaseRepository {
 
   /// rbfInfoMap - {key(fetchedTxHash): value(RbfInfo)}
   /// 기존 트랜잭션을 찾아서 rbf로 대체되었다는 표시를 하기 위한 메서드
-  void markAsRbfReplaced(int walletId, Map<String, RbfInfo> rbfInfoMap) {
+  Future<void> markAsRbfReplaced(int walletId, Map<String, RbfInfo> rbfInfoMap) async {
     final txListToReplce = realm.query<RealmTransaction>(
       r'walletId == $0 AND transactionHash IN $1',
       [walletId, rbfInfoMap.values.map((rbf) => rbf.previousTransactionHash).toList()],
@@ -371,7 +371,7 @@ class TransactionRepository extends BaseRepository {
       prevToCurrentTxMap[rbfInfo.value.previousTransactionHash] = rbfInfo.key;
     }
 
-    realm.write(() {
+    await realm.writeAsync(() {
       for (final realmPrevTx in txListToReplce) {
         realmPrevTx.replaceByTransactionHash = prevToCurrentTxMap[realmPrevTx.transactionHash];
       }

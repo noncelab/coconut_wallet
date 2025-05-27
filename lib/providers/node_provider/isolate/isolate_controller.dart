@@ -62,7 +62,7 @@ class IsolateController {
           isolateToMainSendPort.send(await _networkManager.getRecommendedFees());
           break;
         case IsolateControllerCommand.getSocketConnectionStatus:
-          isolateToMainSendPort.send(_electrumService.connectionStatus);
+          isolateToMainSendPort.send(Result.success(_electrumService.connectionStatus));
           break;
       }
     } catch (e, stack) {

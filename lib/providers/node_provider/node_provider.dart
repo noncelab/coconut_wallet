@@ -140,8 +140,8 @@ class NodeProvider extends ChangeNotifier {
       SocketConnectionStatus socketConnectionStatus;
       needSubscribeWallets = true;
       if (isInitialized && _isolateManager.isInitialized) {
-        socketConnectionStatus = await _isolateManager.getSocketConnectionStatus();
-        if (socketConnectionStatus != SocketConnectionStatus.terminated) {
+        final result = await _isolateManager.getSocketConnectionStatus();
+        if (result.isSuccess && result.value != SocketConnectionStatus.terminated) {
           return;
         }
       }
@@ -149,8 +149,8 @@ class NodeProvider extends ChangeNotifier {
       _stateSubscription?.cancel();
       _stateSubscription = null;
 
-      socketConnectionStatus = await _isolateManager.getSocketConnectionStatus();
-      if (socketConnectionStatus != SocketConnectionStatus.connected) {
+      final result = await _isolateManager.getSocketConnectionStatus();
+      if (result.isSuccess && result.value != SocketConnectionStatus.connected) {
         await initialize();
       }
     } catch (e) {
