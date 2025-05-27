@@ -169,6 +169,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     final externalOutputs = _getExternalOutputs();
+
     switch (outputCount) {
       case 1:
         return PaymentType.sweep;
@@ -277,7 +278,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double outputSum = newOutputList.fold(0, (sum, utxo) => sum + utxo.amount);
 
     double requiredFee = estimatedVSize * newFeeRate;
-    debugPrint('RBF:: $inputSum $outputSum');
+    debugPrint(
+        'RBF:: inputSum ($inputSum) outputSum ($outputSum) requiredFee ($requiredFee) newFeeRate ($newFeeRate)');
     if (inputSum < outputSum + requiredFee) {
       debugPrint('RBF:: ❌ input이 부족함');
       // 1. 충분한 잔돈이 있음 - singlePayment or batchPayment
@@ -298,6 +300,12 @@ class FeeBumpingViewModel extends ChangeNotifier {
           }
 
           debugPrint('RBF:: 1.1.3. Change > newFee >>> 싱글 트잭');
+          if (makeDust(utxoList, outputSum, requiredFee)) {
+            _generateSweepTransaction(type, utxoList, externalOutputs, newFeeRate, newOutputList,
+                outputSum, estimatedVSize, changeAddress);
+            return;
+          }
+
           _generateSinglePayment(utxoList, externalOutputs[0].address, changeAddress, newFeeRate,
               externalSendingAmount);
           return;
@@ -343,6 +351,13 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     debugPrint('RBF:: [$inputSum 합계 > $outputSum 합계] 또는 [if (inputSum < outputSum) 문 빠져나옴!!]');
+
+    if (makeDust(utxoList, outputSum, requiredFee)) {
+      _generateSweepTransaction(type, utxoList, externalOutputs, newFeeRate, newOutputList,
+          outputSum, estimatedVSize, changeAddress);
+      return;
+    }
+
     if (type == PaymentType.sweep && changeAddress.isEmpty) {
       _generateSweepPayment(utxoList, externalOutputs[0].address, newFeeRate);
       return;
@@ -365,6 +380,34 @@ class FeeBumpingViewModel extends ChangeNotifier {
       default:
         break;
     }
+  }
+
+  void _generateSweepTransaction(
+      PaymentType type,
+      List<Utxo> utxoList,
+      List<TransactionAddress> externalOutputs,
+      double newFeeRate,
+      List<TransactionAddress> newOutputList,
+      double outputSum,
+      double estimatedVSize,
+      String changeAddress) {
+    switch (type) {
+      case PaymentType.sweep:
+      case PaymentType.singlePayment:
+        _generateSweepPayment(utxoList, externalOutputs[0].address, newFeeRate);
+        break;
+      case PaymentType.batchPayment:
+        Map<String, int> paymentMap = _createPaymentMapForRbfBatchTx(newOutputList);
+        final maxFee = utxoList.fold(0, (sum, utxo) => sum + utxo.amount) - outputSum;
+        final maxFeeRate = maxFee / estimatedVSize;
+        _generateBatchTransation(utxoList, paymentMap, changeAddress, maxFeeRate);
+        break;
+    }
+    return;
+  }
+
+  bool makeDust(List<Utxo> utxoList, double outputSum, double requiredFee) {
+    return utxoList.fold(0, (sum, utxo) => sum + utxo.amount) - outputSum - requiredFee < dustLimit;
   }
 
   bool _handleTransactionWithSelfOutputs(

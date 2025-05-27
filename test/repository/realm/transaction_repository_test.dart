@@ -446,7 +446,7 @@ void main() {
       };
 
       // markAsRbfReplaced 함수 호출
-      transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap);
+      await transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap);
 
       // 트랜잭션 조회 및 검증
       final updatedTx = realmManager.realm.query<RealmTransaction>(
@@ -488,7 +488,7 @@ void main() {
       };
 
       // markAsRbfReplaced 함수 호출
-      transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap);
+      await transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap);
 
       // 존재하는 트랜잭션 조회 및 검증
       final updatedTx = realmManager.realm.query<RealmTransaction>(
@@ -535,7 +535,7 @@ void main() {
       };
 
       // markAsRbfReplaced 함수 호출
-      transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap);
+      await transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap);
 
       // RBF 1회차 트랜잭션
       final rbfTx2 = TransactionMock.createMockTransactionRecord(
@@ -556,7 +556,7 @@ void main() {
       };
 
       // markAsRbfReplaced 함수 호출
-      transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap2);
+      await transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap2);
 
       // RBF 3회차 트랜잭션
       final rbfTx3 = TransactionMock.createMockTransactionRecord(
@@ -577,7 +577,7 @@ void main() {
       };
 
       // markAsRbfReplaced 함수 호출
-      transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap3);
+      await transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap3);
 
       // 원본 트랜잭션 조회 및 검증
       final realmOriginalTx = realmManager.realm.query<RealmTransaction>(

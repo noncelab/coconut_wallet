@@ -186,7 +186,7 @@ void main() {
         );
 
         await transactionRepository.addAllTransactions(walletId, [originalTxRecord]);
-        utxoRepository.addAllUtxos(walletId, [utxo]);
+        await utxoRepository.addAllUtxos(walletId, [utxo]);
 
         // When
         final result =
@@ -233,7 +233,7 @@ void main() {
           spentByTransactionHash: originalTx.transactionHash,
         );
 
-        utxoRepository.addAllUtxos(walletId, [utxo]);
+        await utxoRepository.addAllUtxos(walletId, [utxo]);
 
         final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
           transactionHash: originalTx.transactionHash,
@@ -266,7 +266,7 @@ void main() {
           spentByTransactionHash: originalTx.transactionHash,
         );
 
-        utxoRepository.addAllUtxos(walletId, [utxo]);
+        await utxoRepository.addAllUtxos(walletId, [utxo]);
 
         final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
           transactionHash: originalTx.transactionHash,
@@ -328,7 +328,7 @@ void main() {
           ),
         ];
 
-        utxoRepository.addAllUtxos(walletId, incomingUtxoList);
+        await utxoRepository.addAllUtxos(walletId, incomingUtxoList);
 
         // 트랜잭션 대체됨 (예외 발생)
         when(electrumService.getTransaction(originalTx.transactionHash, verbose: true))
@@ -350,7 +350,7 @@ void main() {
           ),
         ];
 
-        utxoRepository.addAllUtxos(walletId, incomingUtxoList);
+        await utxoRepository.addAllUtxos(walletId, incomingUtxoList);
 
         // 트랜잭션 유효함 (예외 발생하지 않음)
         when(electrumService.getTransaction(originalTx.transactionHash, verbose: true))

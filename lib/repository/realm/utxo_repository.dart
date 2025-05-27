@@ -157,8 +157,8 @@ class UtxoRepository extends BaseRepository {
   }
 
   /// 모든 UTXO 추가
-  Result<bool> addAllUtxos(int walletId, List<UtxoState> utxos) {
-    return handleRealm<bool>(() {
+  Future<Result<bool>> addAllUtxos(int walletId, List<UtxoState> utxos) async {
+    return handleAsyncRealm<bool>(() async {
       final existingUtxos = realm.query<RealmUtxo>(
         r'walletId == $0',
         [walletId],
@@ -167,7 +167,6 @@ class UtxoRepository extends BaseRepository {
       final existingUtxoMap = Map<String, RealmUtxo>.fromEntries(
         existingUtxos.map((realmUtxo) => MapEntry(realmUtxo.id, realmUtxo)),
       );
-
       final newUtxos = utxos
           .where((utxo) => !existingUtxoMap.containsKey(utxo.utxoId))
           .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
@@ -178,10 +177,10 @@ class UtxoRepository extends BaseRepository {
           .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
           .toList();
 
-      realm.write(() {
+      await realm.writeAsync(() {
         for (final toUpdateUtxo in toUpdateUtxos) {
           final existingUtxo = existingUtxoMap[toUpdateUtxo.id];
-          if (existingUtxo != null) {
+          if (existingUtxo != null && !existingUtxo.isDeleted) {
             existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
             existingUtxo.timestamp = toUpdateUtxo.timestamp;
             existingUtxo.status = toUpdateUtxo.status;
@@ -195,40 +194,21 @@ class UtxoRepository extends BaseRepository {
   }
 
   // UTXO 상태를 "출금 중(outgoing)"으로 표시
-  void _markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) {
+  Future<void> _markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) async {
     final utxoToMark = realm.find<RealmUtxo>(utxoId);
 
     if (utxoToMark == null) return;
+    if (utxoToMark.isDeleted) return;
 
-    realm.write(() {
+    await realm.writeAsync(() {
       utxoToMark.status = utxoStatusToString(UtxoStatus.outgoing);
       utxoToMark.spentByTransactionHash = pendingTxHash;
     });
   }
 
-  // RBF 가능한 UTXO 목록 조회
-  List<UtxoState> getRbfEligibleUtxos(int walletId) {
-    final rbfEligibleUtxos = realm.query<RealmUtxo>(
-      r'walletId == $0 AND status == $1',
-      [walletId, utxoStatusToString(UtxoStatus.outgoing)],
-    );
-
-    return rbfEligibleUtxos.map(mapRealmToUtxoState).toList();
-  }
-
-  // CPFP 가능한 UTXO 목록 조회 (확인되지 않은 트랜잭션의 출력)
-  List<UtxoState> getCpfpEligibleUtxos(int walletId) {
-    final cpfpEligibleUtxos = realm.query<RealmUtxo>(
-      r'walletId == $0 AND status == $1 AND blockHeight == 0',
-      [walletId, utxoStatusToString(UtxoStatus.incoming)],
-    );
-
-    return cpfpEligibleUtxos.map(mapRealmToUtxoState).toList();
-  }
-
   List<UtxoState> getUtxoStateList(int walletId) {
     final realmUtxos = realm.query<RealmUtxo>(
-      r'walletId == $0',
+      r'walletId == $0 AND isDeleted == false',
       [walletId],
     );
     return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
@@ -238,7 +218,7 @@ class UtxoRepository extends BaseRepository {
   List<UtxoState> getUtxosByStatus(int walletId, UtxoStatus status) {
     final statusStr = utxoStatusToString(status);
     final realmUtxos = realm.query<RealmUtxo>(
-      r'walletId == $0 AND status == $1',
+      r'walletId == $0 AND status == $1 AND isDeleted == false',
       [walletId, statusStr],
     );
     return realmUtxos.map((e) => mapRealmToUtxoState(e)).toList();
@@ -247,7 +227,7 @@ class UtxoRepository extends BaseRepository {
   /// 특정 UTXO 조회
   UtxoState? getUtxoState(int walletId, String utxoId) {
     final realmUtxo = realm.query<RealmUtxo>(
-      r'walletId == $0 AND id == $1',
+      r'walletId == $0 AND id == $1 AND isDeleted == false',
       [walletId, utxoId],
     ).firstOrNull;
 
@@ -258,46 +238,38 @@ class UtxoRepository extends BaseRepository {
     return mapRealmToUtxoState(realmUtxo);
   }
 
-  void deleteUtxo(int walletId, String utxoId) {
-    final utxoToDelete = realm.query<RealmUtxo>(
-      r'walletId == $0 AND id == $1',
-      [walletId, utxoId],
-    ).firstOrNull;
-
-    if (utxoToDelete == null) return;
-
-    realm.write(() {
-      realm.delete(utxoToDelete);
-    });
-  }
-
-  void deleteUtxoList(int walletId, List<String> utxoIds) {
+  Future<void> deleteUtxoList(int walletId, List<String> utxoIds) async {
     final utxosToDelete = realm.query<RealmUtxo>(
-      r'walletId == $0 AND id IN $1',
+      r'walletId == $0 AND id IN $1 AND isDeleted == false',
       [walletId, utxoIds],
     );
 
     if (utxosToDelete.isEmpty) return;
 
-    realm.write(() {
-      realm.deleteMany(utxosToDelete);
+    await realm.writeAsync(() {
+      for (var utxo in utxosToDelete) {
+        utxo.isDeleted = true;
+      }
     });
   }
 
-  void deleteUtxosByReplacedTransactionHashSet(int walletId, Set<String> replacedTxHashSet) {
+  Future<void> deleteUtxosByReplacedTransactionHashSet(
+      int walletId, Set<String> replacedTxHashSet) async {
     final utxosToDelete = realm.query<RealmUtxo>(
-      r'walletId == $0 AND transactionHash IN $1',
+      r'walletId == $0 AND transactionHash IN $1 AND isDeleted == false',
       [walletId, replacedTxHashSet],
     );
 
     if (utxosToDelete.isEmpty) return;
 
-    realm.write(() {
-      realm.deleteMany(utxosToDelete);
+    await realm.writeAsync(() {
+      for (var utxo in utxosToDelete) {
+        utxo.isDeleted = true;
+      }
     });
   }
 
-  void markUtxoAsOutgoing(int walletId, lib.Transaction transaction) {
+  Future<void> markUtxoAsOutgoing(int walletId, lib.Transaction transaction) async {
     /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.
     for (var input in transaction.inputs) {
       // UTXO 소유 지갑 ID 찾기
@@ -314,7 +286,7 @@ class UtxoRepository extends BaseRepository {
       }
 
       // UTXO를 outgoing 상태로 표시하고 RBF 관련 정보 저장
-      _markUtxoAsOutgoing(
+      await _markUtxoAsOutgoing(
         walletId,
         utxoId,
         transaction.transactionHash,
@@ -322,13 +294,13 @@ class UtxoRepository extends BaseRepository {
     }
   }
 
-  void deleteUtxosByTransaction(
+  Future<void> deleteUtxosByTransaction(
     int walletId,
     lib.Transaction transaction,
-  ) {
+  ) async {
     final utxoIds =
         transaction.inputs.map((input) => makeUtxoId(input.transactionHash, input.index)).toList();
 
-    deleteUtxoList(walletId, utxoIds);
+    await deleteUtxoList(walletId, utxoIds);
   }
 }

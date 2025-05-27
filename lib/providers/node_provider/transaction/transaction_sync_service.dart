@@ -66,7 +66,7 @@ class TransactionSyncService {
         walletItem.walletBase.addressType, scriptStatus, knownTransactionHashes);
 
     if (txFetchResults.isEmpty) {
-      _finalizeTransactionFetch(walletId, {}, inBatchProcess);
+      await _finalizeTransactionFetch(walletId, {}, inBatchProcess);
       if (!inBatchProcess) {
         _stateManager.addWalletCompletedState(walletId, UpdateElement.utxo);
       }
@@ -84,7 +84,7 @@ class TransactionSyncService {
         _registerProcessableTransactions(walletId, txFetchResults, _scriptCallbackService);
 
     if (newTxHashes.isEmpty) {
-      _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
+      await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
       return txFetchResults.map((tx) => tx.transactionHash).toList();
     }
 
@@ -92,14 +92,7 @@ class TransactionSyncService {
     final FetchedTransactionDetails fetchedTransactionDetails =
         await _fetchTransactionDetails(newTxHashes, txFetchResults, _electrumService);
 
-    // 4. UTXO 상태 업데이트 및 RBF/CPFP 처리
-    final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
-        walletId,
-        fetchedTransactionDetails.fetchedTransactions,
-        unconfirmedFetchedTxHashes,
-        confirmedFetchedTxHashes);
-
-    // 5. 트랜잭션 레코드 생성 및 저장
+    // 4. 트랜잭션 레코드 생성 및 저장
     final List<TransactionRecord> txRecords =
         await _transactionRecordService.createTransactionRecords(
       walletItem,
@@ -107,6 +100,13 @@ class TransactionSyncService {
       now: now,
     );
     await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
+
+    // 5. UTXO 상태 업데이트 및 RBF/CPFP 처리
+    final RbfCpfpDetectionResult rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
+        walletId,
+        fetchedTransactionDetails.fetchedTransactions,
+        unconfirmedFetchedTxHashes,
+        confirmedFetchedTxHashes);
 
     // 6. RBF/CPFP 히스토리 저장
     await _saveRbfAndCpfpHistory(
@@ -120,7 +120,7 @@ class TransactionSyncService {
         walletId, fetchedTransactionDetails.fetchedTransactions);
 
     // 8. 마무리 단계
-    _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
+    await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
 
     return txFetchResults.map((tx) => tx.transactionHash).toList();
   }
@@ -208,13 +208,13 @@ class TransactionSyncService {
         final cpfpInfo = await _cpfpService.detectCpfpTransaction(walletId, fetchedTx);
         if (cpfpInfo != null) cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
 
-        _utxoRepository.markUtxoAsOutgoing(walletId, fetchedTx);
+        await _utxoRepository.markUtxoAsOutgoing(walletId, fetchedTx);
       }
 
       if (confirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
-        _utxoRepository.deleteUtxosByTransaction(walletId, fetchedTx);
-        _transactionRepository.deleteRbfHistory(walletId, fetchedTx);
-        _transactionRepository.deleteCpfpHistory(walletId, fetchedTx);
+        await _utxoRepository.deleteUtxosByTransaction(walletId, fetchedTx);
+        await _transactionRepository.deleteRbfHistory(walletId, fetchedTx);
+        await _transactionRepository.deleteCpfpHistory(walletId, fetchedTx);
       }
     }
 
@@ -246,13 +246,13 @@ class TransactionSyncService {
         rbfInfoMap: rbfCpfpResult.sendingRbfInfoMap,
         txRecordMap: txRecordMap,
       );
-      _transactionRepository.markAsRbfReplaced(walletId, rbfCpfpResult.sendingRbfInfoMap);
-      _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
+      await _transactionRepository.markAsRbfReplaced(walletId, rbfCpfpResult.sendingRbfInfoMap);
+      await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
           walletId, rbfCpfpResult.sendingRbfInfoMap.keys.toSet());
     }
 
     if (rbfCpfpResult.receivingRbfTxHashSet.isNotEmpty) {
-      _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
+      await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
           walletId, rbfCpfpResult.receivingRbfTxHashSet);
     }
 
@@ -316,16 +316,16 @@ class TransactionSyncService {
   }
 
   /// 8. 마무리 단계: 상태 업데이트 및 완료 등록
-  void _finalizeTransactionFetch(
+  Future<void> _finalizeTransactionFetch(
     int walletId,
     Set<String> newTxHashes,
     bool inBatchProcess,
-  ) {
+  ) async {
     if (!inBatchProcess) {
       _stateManager.addWalletCompletedState(walletId, UpdateElement.transaction);
     }
     if (newTxHashes.isNotEmpty) {
-      _scriptCallbackService.registerTransactionCompletion(walletId, newTxHashes);
+      await _scriptCallbackService.registerTransactionCompletion(walletId, newTxHashes);
     }
   }
 

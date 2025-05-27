@@ -29,7 +29,7 @@ void main() {
     final testAddress = testWalletItem.walletBase.getAddress(0);
     final toAddress = testWalletItem.walletBase.getAddress(9999);
     group('updateUtxoStatusToOutgoingByTransaction 테스트', () {
-      test('기본 UTXO 상태 업데이트가 정상적으로 이루어지는지 확인', () {
+      test('기본 UTXO 상태 업데이트가 정상적으로 이루어지는지 확인', () async {
         // Given
         final mockTx = TransactionMock.createMockTransaction(
           toAddress: testAddress,
@@ -48,7 +48,7 @@ void main() {
         });
 
         // When
-        utxoRepository.markUtxoAsOutgoing(
+        await utxoRepository.markUtxoAsOutgoing(
           testWalletId,
           mockTx,
         );
@@ -65,7 +65,7 @@ void main() {
         expect(updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
       });
 
-      test('자기 참조 UTXO는 업데이트되지 않아야 함', () {
+      test('자기 참조 UTXO는 업데이트되지 않아야 함', () async {
         // Given
         final mockTx = TransactionMock.createMockTransaction(
           toAddress: testAddress,
@@ -86,7 +86,7 @@ void main() {
         });
 
         // When
-        utxoRepository.markUtxoAsOutgoing(
+        await utxoRepository.markUtxoAsOutgoing(
           testWalletId,
           mockTx,
         );
@@ -103,7 +103,7 @@ void main() {
         expect(updatedUtxo.spentByTransactionHash, equals(mockTx.transactionHash));
       });
 
-      test('이미 outgoing 상태인 UTXO의 기존 spentByTransactionHash가 유지되어야 함', () {
+      test('이미 outgoing 상태인 UTXO의 기존 spentByTransactionHash가 유지되어야 함', () async {
         // Given
         final mockTx = TransactionMock.createMockTransaction(
           toAddress: toAddress,
@@ -126,7 +126,7 @@ void main() {
         });
 
         // When
-        utxoRepository.markUtxoAsOutgoing(
+        await utxoRepository.markUtxoAsOutgoing(
           testWalletId,
           mockTx,
         );
