@@ -291,6 +291,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
     if (result.isSuccess) {
       _currentBlock = result.value;
+      notifyListeners();
     }
   }
 
