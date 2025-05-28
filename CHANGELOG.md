@@ -1,3 +1,8 @@
+## mainnet 0.0.2(beta) - 2025-05-28
+### Fixed
+* 트랜잭션 상세 - 승인 번호 누락
+* transaction_input_output_card overflow error
+  
 ## mainnet 0.0.1(beta) - 2025-05-27
 ### Fixed
 * utxo 동기화 버그 수정
