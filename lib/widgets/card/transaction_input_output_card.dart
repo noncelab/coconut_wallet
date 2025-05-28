@@ -52,6 +52,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
 
   final GlobalKey _balanceWidthKey = GlobalKey();
   Size _balanceWidthSize = Size.zero;
+  bool _isBalanceWidthCalculated = false;
 
   @override
   void initState() {
@@ -78,6 +79,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
       if (renderBox is RenderBox) {
         setState(() {
           _balanceWidthSize = renderBox.size;
+          _isBalanceWidthCalculated = true;
         });
       }
     });
@@ -150,7 +152,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
 
           /// balance 최대 너비 체크를 위함
           Visibility(
-            visible: false,
+            visible: !_isBalanceWidthCalculated,
             child: Text(
               key: _balanceWidthKey,
               '0.0000 0000',
