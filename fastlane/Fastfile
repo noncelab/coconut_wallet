@@ -1,0 +1,19 @@
+desc "배포 전에 실행하는 공통 함수"
+lane :pre_deploy do
+    # 현재 디렉토리 확인
+    sh "echo '=== Current Directory ==='; pwd"
+
+    # app_info.dart 파일의 RELEASE_DATE 변경
+    update_app_info()
+
+    Dir.chdir("..") do
+        sh "flutter pub run flutter_oss_licenses:generate"
+        sh "flutter pub run build_runner clean"
+        sh "flutter pub run build_runner build --delete-conflicting-outputs"
+        sh "echo '=== Before realm generate: Current Directory ==='"
+        sh "pwd"
+        sh "dart run realm generate"
+        sh "flutter pub run slang"
+        sh "dart format . --line-length=100"
+    end
+end
