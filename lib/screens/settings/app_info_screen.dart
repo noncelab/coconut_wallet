@@ -127,13 +127,13 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
             Navigator.pop(context);
           },
           icon: SvgPicture.asset(
-            'assets/svg/close-bold.svg',
+            'assets/svg/close.svg',
             colorFilter: ColorFilter.mode(
               CoconutColors.onPrimary(Brightness.dark),
               BlendMode.srcIn,
             ),
-            width: 16,
-            height: 16,
+            width: 24,
+            height: 24,
           ),
         ),
         flexibleSpace: _isScrollOverTitleHeight
