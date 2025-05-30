@@ -19,7 +19,8 @@ class SelectDonationAmountScreen extends StatefulWidget {
 }
 
 class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen> with RouteAware {
-  final GlobalKey _bottomButtonRowKey = GlobalKey();
+  final GlobalKey _bottomButtonKey = GlobalKey();
+  Size _bottomButtonSize = const Size(0, 0);
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -33,6 +34,17 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
   int? customDonateValue;
 
   bool isDustErrorTextVisible = false;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final bottomButtonRowRenderBox =
+          _bottomButtonKey.currentContext?.findRenderObject() as RenderBox;
+      setState(() {
+        _bottomButtonSize = bottomButtonRowRenderBox.size;
+      });
+    });
+  }
 
   @override
   void dispose() {
@@ -88,16 +100,25 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Container(
                     width: MediaQuery.sizeOf(context).width,
-                    height: MediaQuery.sizeOf(context).height -
-                        kToolbarHeight -
-                        MediaQuery.paddingOf(context).top,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    height: MediaQuery.of(context).viewInsets.bottom > 0
+                        ? MediaQuery.sizeOf(context).height -
+                            kToolbarHeight -
+                            MediaQuery.paddingOf(context).top +
+                            100
+                        : MediaQuery.sizeOf(context).height -
+                            kToolbarHeight -
+                            MediaQuery.paddingOf(context).top -
+                            30,
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      top: 30,
+                    ),
                     child: Column(
                       children: [
                         Expanded(
                             child: Column(
                           children: [
-                            CoconutLayout.spacing_800h,
                             Text(
                               t.donation.encourageSupportMessage,
                               style: CoconutTypography.body2_14_Bold,
@@ -142,11 +163,11 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                   ),
                 ),
                 Positioned(
+                  key: _bottomButtonKey,
                   left: CoconutLayout.defaultPadding,
                   right: CoconutLayout.defaultPadding,
                   bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size30,
                   child: Row(
-                    key: _bottomButtonRowKey,
                     children: [
                       donateBottomButtonWidget(isNetworkOn, true),
                       CoconutLayout.spacing_200w,
@@ -277,8 +298,10 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
         });
 
         if (isCustom && !hadFocus) {
-          scrollToBottom();
           _focusNode.requestFocus();
+          Future.delayed(const Duration(milliseconds: 200)).then((_) {
+            scrollToBottom();
+          });
         }
       },
       child: ConstrainedBox(
@@ -319,7 +342,6 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                                 controller: _controller,
                                 autofocus: false,
                                 onTap: () {
-                                  scrollToBottom();
                                   donationSelectedType = DonationSelectedType.custom;
                                   setState(() {
                                     isDustErrorTextVisible = false;
@@ -327,6 +349,10 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                                   _controller.selection = TextSelection.fromPosition(
                                     TextPosition(offset: _controller.text.length),
                                   );
+
+                                  Future.delayed(const Duration(milliseconds: 200)).then((_) {
+                                    scrollToBottom();
+                                  });
                                 },
                                 onChanged: (input) {
                                   if (isDustErrorTextVisible) {
