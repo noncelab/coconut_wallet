@@ -121,6 +121,13 @@ donation:
   lightning: "라이트닝 후원"
   under_dust_error: "${dust}(더스트) 보다 큰 금액을 입력해 주세요\n"
 
+  # 후원하기 - 라이트닝
+  donation_amount: "후원 금액"
+  ln_invoice: "라이트닝 인보이스"
+  ln_address: "라이트닝 주소"
+  ln_address_pow: "powbitcoiner@speed.app"
+  ln_invoice_api_error: "라이트닝 인보이스 생성에 실패했어요"
+
 # lib/enums
 transaction_enums:
   high_priority: "빠른 전송"
