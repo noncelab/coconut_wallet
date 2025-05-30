@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -17,7 +18,7 @@ class SelectDonationAmountScreen extends StatefulWidget {
   State<SelectDonationAmountScreen> createState() => _SelectDonationAmountScreenState();
 }
 
-class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen> {
+class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen> with RouteAware {
   final GlobalKey _bottomButtonRowKey = GlobalKey();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -38,7 +39,22 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
     _controller.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
+    routeObserver.unsubscribe(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // 다음화면에서 돌아왔을 때 textField에 autoFocusing 되는 현상 방지
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didPopNext() {
+    FocusScope.of(context).unfocus();
+    WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
   }
 
   @override
@@ -301,6 +317,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                               constraints: const BoxConstraints(minWidth: 80, maxWidth: 80),
                               child: TextField(
                                 controller: _controller,
+                                autofocus: false,
                                 onTap: () {
                                   scrollToBottom();
                                   donationSelectedType = DonationSelectedType.custom;
@@ -325,7 +342,9 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
 
                                   customDonateValue = int.parse(input);
                                 },
-                                focusNode: _focusNode,
+                                focusNode: donationSelectedType == DonationSelectedType.custom
+                                    ? _focusNode
+                                    : null,
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                 textInputAction: TextInputAction.done,
