@@ -12,9 +12,20 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 class CopyTextContainer extends StatefulWidget {
   final String text;
+  final String? copyText;
+  final String? middleText;
   final TextAlign? textAlign;
   final TextStyle? textStyle;
-  const CopyTextContainer({super.key, required this.text, this.textAlign, this.textStyle});
+  final bool showButton;
+
+  const CopyTextContainer(
+      {super.key,
+      required this.text,
+      this.copyText,
+      this.middleText,
+      this.textAlign,
+      this.textStyle,
+      this.showButton = true});
 
   static const MethodChannel _channel = MethodChannel(methodChannelOS);
 
@@ -42,7 +53,8 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
           _buttonColor = CoconutColors.gray800;
         });
 
-        Clipboard.setData(ClipboardData(text: widget.text)).then((value) => null);
+        Clipboard.setData(ClipboardData(text: widget.copyText ?? widget.text))
+            .then((value) => null);
         if (Platform.isAndroid) {
           try {
             final int version = await CopyTextContainer._channel.invokeMethod('getSdkVersion');
@@ -90,15 +102,25 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
               ),
             ),
             CoconutLayout.spacing_400w,
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(
-                  CoconutStyles.radius_100,
-                ),
-                color: _buttonColor,
+            if (widget.middleText != null) ...[
+              Text(
+                widget.middleText!,
+                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
               ),
-              child: SvgPicture.asset('assets/svg/copy.svg'),
+              CoconutLayout.spacing_200w,
+            ],
+            Opacity(
+              opacity: widget.showButton ? 1.0 : 0.0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(
+                    CoconutStyles.radius_100,
+                  ),
+                  color: _buttonColor,
+                ),
+                child: SvgPicture.asset('assets/svg/copy.svg'),
+              ),
             )
           ],
         ),
