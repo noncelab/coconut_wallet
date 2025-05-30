@@ -106,6 +106,7 @@ class _LightningDonationInfoScreenState extends State<LightningDonationInfoScree
                   text: t.donation.ln_address,
                   middleText: t.donation.ln_address_pow,
                   textStyle: CoconutTypography.body2_14_Bold,
+                  copyText: t.donation.ln_address_pow,
                 ),
                 const Spacer(),
                 if (canLaunchLnApp)
