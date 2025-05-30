@@ -215,11 +215,11 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
     return Expanded(
       child: CoconutButton(
         isActive: donationSelectedType != DonationSelectedType.none,
-        backgroundColor: CoconutColors.white,
         foregroundColor: CoconutColors.black,
-        pressedTextColor: CoconutColors.gray500,
-        pressedBackgroundColor: CoconutColors.gray300,
-        disabledBackgroundColor: CoconutColors.gray600,
+        pressedTextColor: CoconutColors.black,
+        pressedBackgroundColor: CoconutColors.gray500,
+        disabledBackgroundColor: CoconutColors.gray800,
+        disabledForegroundColor: CoconutColors.gray700,
         onPressed: () {
           FocusScope.of(context).unfocus();
 
