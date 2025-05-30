@@ -17,6 +17,9 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
+import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
+import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
@@ -95,6 +98,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
   @override
   Widget build(BuildContext context) {
+    CoconutTheme.setTheme(Brightness.dark);
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
@@ -324,6 +328,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/mnemonic-word-list': (context) => const Bip39ListScreen(),
           '/utxo-tag': (context) =>
               buildScreenWithArguments(context, (args) => UtxoTagCrudScreen(id: args['id'])),
+          '/select-donation-amount': (context) => const SelectDonationAmountScreen(),
+          '/onchain-donation-info': (context) => buildScreenWithArguments(
+              context, (args) => OnchainDonationInfoScreen(donationAmount: args['donation-amount'])),
+          '/lightning-donation-info': (context) => buildScreenWithArguments(
+              context, (args) => LightningDonationInfoScreen(donationAmount: args['donation-amount'])),
         },
       ),
     );
