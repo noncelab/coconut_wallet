@@ -19,8 +19,6 @@ class SelectDonationAmountScreen extends StatefulWidget {
 }
 
 class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen> with RouteAware {
-  final GlobalKey _bottomButtonKey = GlobalKey();
-  Size _bottomButtonSize = const Size(0, 0);
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -34,17 +32,6 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
   int? customDonateValue;
 
   bool isDustErrorTextVisible = false;
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final bottomButtonRowRenderBox =
-          _bottomButtonKey.currentContext?.findRenderObject() as RenderBox;
-      setState(() {
-        _bottomButtonSize = bottomButtonRowRenderBox.size;
-      });
-    });
-  }
 
   @override
   void dispose() {
@@ -163,7 +150,6 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                   ),
                 ),
                 Positioned(
-                  key: _bottomButtonKey,
                   left: CoconutLayout.defaultPadding,
                   right: CoconutLayout.defaultPadding,
                   bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size30,
