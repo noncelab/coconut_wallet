@@ -30,8 +30,7 @@ class _LightningDonationInfoScreenState extends State<LightningDonationInfoScree
   bool _hasLnApp = false;
   bool _isInitialized = false;
 
-  bool get canLaunchLnApp =>
-      Platform.isAndroid && _hasLnInvoice && _hasLnApp; // iOS의 경우 라이트닝앱 선택이 불가능하므로 제외
+  bool get canLaunchLnApp => Platform.isAndroid && _hasLnApp; // iOS의 경우 라이트닝앱 선택이 불가능하므로 제외
 
   @override
   void initState() {
@@ -115,6 +114,7 @@ class _LightningDonationInfoScreenState extends State<LightningDonationInfoScree
                       bottom: Sizes.size30,
                     ),
                     child: CoconutButton(
+                      isActive: _hasLnInvoice,
                       backgroundColor: CoconutColors.white,
                       foregroundColor: CoconutColors.black,
                       pressedTextColor: CoconutColors.gray500,
