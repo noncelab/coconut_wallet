@@ -245,7 +245,7 @@ class IsolateManager {
           timeLimit,
           onTimeout: () {
             if (isSocketConnectionStatusMessage) {
-              return SocketConnectionStatus.terminated;
+              return Result.success(SocketConnectionStatus.terminated);
             }
             throw TimeoutException('Isolate response timeout');
           },
