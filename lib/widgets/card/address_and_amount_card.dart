@@ -75,6 +75,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
       String? placeholderText,
       bool isError = false,
       String? errorText,
+      int? maxLines,
       EdgeInsets? padding,
       double? height = 52}) {
     focusNode.addListener(() {
@@ -91,6 +92,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
               left: CoconutLayout.defaultPadding,
               top: CoconutLayout.defaultPadding,
               bottom: CoconutLayout.defaultPadding),
+      maxLines: maxLines,
       textInputAction: TextInputAction.done,
       activeColor: CoconutColors.gray100,
       cursorColor: CoconutColors.gray100,
@@ -185,6 +187,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                               BlendMode.srcIn),
                         ),
                       ),
+                maxLines: 1,
                 placeholderText: widget.amountPlaceholder,
                 isError: widget.isAmountDust,
                 errorText: widget.isAmountDust
