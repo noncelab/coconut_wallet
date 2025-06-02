@@ -1,8 +1,17 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class OnchainDonationInfoScreen extends StatefulWidget {
@@ -17,7 +26,8 @@ class OnchainDonationInfoScreen extends StatefulWidget {
 }
 
 class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
-  get s => null;
+  int? totalDonationAmount;
+  int? feeValue;
 
   @override
   Widget build(BuildContext context) {
@@ -28,34 +38,85 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
         backgroundColor: CoconutColors.black,
       ),
       resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              child: Container(
-                width: MediaQuery.sizeOf(context).width,
-                padding: const EdgeInsets.only(left: 28, right: 28, top: 30, bottom: 60),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    _buildWalletSelectionWidget(),
-                    _divider(),
-                    _buildDonationAmountInfoWidget(),
-                    _divider(),
-                    _buildDonationAddressWidget(),
-                  ],
+      body: Consumer3<WalletProvider, NodeProvider, ConnectivityProvider>(
+        builder: (context, walletProvider, nodeProvider, connectivityProvider, _) {
+          // bool isSyncing = nodeProvider.state.connectionState != MainClientState.waiting;
+          bool isSyncing = walletProvider.isSyncing;
+          bool isNetworkConnected = connectivityProvider.isNetworkOn ?? false;
+          List<WalletListItemBase> singlesigWalletList = walletProvider.walletItemList
+              .where((wallet) => wallet.walletType == WalletType.singleSignature)
+              .toList();
+
+          var confirmedBalance = walletProvider.getUtxoList(1).fold<int>(0, (sum, utxo) {
+            if (utxo.status == UtxoStatus.unspent) {
+              return sum + utxo.amount;
+            }
+            return sum;
+          });
+          debugPrint('confirmedBalance: $confirmedBalance');
+          return SafeArea(
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  child: Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    padding: const EdgeInsets.only(left: 28, right: 28, top: 30, bottom: 60),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        if (walletProvider.walletItemList.isNotEmpty &&
+                            singlesigWalletList.isNotEmpty) ...[
+                          Stack(
+                            children: [
+                              Column(
+                                children: [
+                                  _buildWalletSelectionWidget(),
+                                  _divider(),
+                                  _buildDonationAmountInfoWidget(),
+                                  _divider(),
+                                ],
+                              ),
+                              if (isSyncing)
+                                // 동기화 중일 때
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: Container(
+                                      alignment: Alignment.topCenter,
+                                      color: CoconutColors.black.withOpacity(0.6),
+                                      child: const CoconutCircularIndicator(
+                                        size: 150,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                        _buildDonationAddressWidget(),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                if (walletProvider.walletItemList.isNotEmpty) ...[
+                  FixedBottomButton(
+                    onButtonClicked: () {
+                      if (!isNetworkConnected) {
+                        CoconutToast.showWarningToast(
+                            context: context, text: ErrorCodes.networkError.message);
+                        return;
+                      }
+                    },
+                    isActive: !isSyncing,
+                    text: t.next,
+                    backgroundColor: CoconutColors.gray100,
+                    pressedBackgroundColor: CoconutColors.gray500,
+                  ),
+                ],
+              ],
             ),
-            FixedBottomButton(
-              onButtonClicked: () {},
-              text: t.next,
-              backgroundColor: CoconutColors.gray100,
-              pressedBackgroundColor: CoconutColors.gray500,
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -86,7 +147,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
             ),
           ),
           Text(
-            '지갑',
+            '',
             style: CoconutTypography.body2_14_NumberBold.setColor(
               CoconutColors.gray400,
             ),
@@ -113,7 +174,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                 ),
               ),
               Text(
-                '4451 sats',
+                '${totalDonationAmount ?? '-'} sats',
                 style: CoconutTypography.body2_14_NumberBold.setColor(
                   CoconutColors.gray400,
                 ),
@@ -155,7 +216,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                 ),
                 Text(
                   // TODO 수수료
-                  '549 ${t.sats}',
+                  '${feeValue ?? '-'} ${t.sats}',
                   style: CoconutTypography.body2_14_NumberBold.setColor(
                     CoconutColors.gray400,
                   ),
@@ -206,4 +267,20 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
       ],
     );
   }
+
+  // 후원 잔액이 충분한 지갑 확인 함수
+  // bool isBalanceEnough(int? estimatedFee) {
+  //   if (estimatedFee == null || estimatedFee == 0) return false;
+  //   return (_confirmedBalance - estimatedFee) > dustLimit;
+  // }
+
+  // void saveFinalSendInfo(int estimatedFee, int satsPerVb) {
+  //   double finalAmount =
+  //       _isMaxMode ? UnitUtil.satoshiToBitcoin(_confirmedBalance - estimatedFee) : _amount;
+  //   _sendInfoProvider.setAmount(finalAmount);
+  //   _sendInfoProvider.setEstimatedFee(estimatedFee);
+  //   _sendInfoProvider.setTransaction(_createTransaction(satsPerVb));
+  //   _sendInfoProvider.setFeeBumpfingType(null);
+  //   _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
+  // }
 }

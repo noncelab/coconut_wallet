@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
 class DonationBannerCard extends StatefulWidget {
+  final int walletListLength;
   const DonationBannerCard({
     super.key,
+    required this.walletListLength,
   });
 
   @override
@@ -20,7 +22,8 @@ class _DonationBannerCardState extends State<DonationBannerCard>
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/select-donation-amount');
+        Navigator.pushNamed(context, '/select-donation-amount',
+            arguments: {'wallet-list-length': widget.walletListLength});
       },
       onTapDown: (_) {
         setState(() {

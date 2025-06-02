@@ -192,8 +192,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildDonationBanner() {
-    return const SliverToBoxAdapter(
-      child: DonationBannerCard(),
+    return SliverToBoxAdapter(
+      child: DonationBannerCard(
+        walletListLength: _viewModel.walletItemList.length,
+      ),
     );
   }
 

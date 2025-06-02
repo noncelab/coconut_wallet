@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -10,8 +11,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class SelectDonationAmountScreen extends StatefulWidget {
+  final int walletListLength;
   const SelectDonationAmountScreen({
     super.key,
+    required this.walletListLength,
   });
 
   @override
@@ -27,7 +30,6 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
   final donationCoffeeValue = 5000; // 커피 한잔 후원금
   final donationLateMealValue = 10000; // 야근 식대 후원금
   final donationMaintenanceValue = 50000; // 유지 보수비 후원금
-  final int dust = 546; // segwit dust
 
   int? customDonateValue;
 
@@ -137,7 +139,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                             if (isDustErrorTextVisible) ...[
                               CoconutLayout.spacing_200h,
                               Text(
-                                t.donation.under_dust_error(dust: dust),
+                                t.donation.under_dust_error(dust: dustLimit),
                                 style: CoconutTypography.body3_12.setColor(
                                   CoconutColors.warningText,
                                 ),
@@ -201,9 +203,14 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
         return;
     }
 
-    Navigator.pushNamed(
-        context, isOnchainDonation ? '/onchain-donation-info' : '/lightning-donation-info',
-        arguments: {'donation-amount': donateValue});
+    if (isOnchainDonation) {
+      Navigator.pushNamed(context, '/onchain-donation-info', arguments: {
+        'donation-amount': donateValue,
+      });
+    } else {
+      Navigator.pushNamed(context, '/lightning-donation-info',
+          arguments: {'donation-amount': donateValue});
+    }
   }
 
   void scrollToBottom() {
@@ -248,7 +255,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
   bool handleDustThreshold() {
     if (donationSelectedType == DonationSelectedType.custom &&
         customDonateValue != null &&
-        customDonateValue! <= dust) {
+        customDonateValue! <= dustLimit) {
       setState(() {
         isDustErrorTextVisible = true;
       });
