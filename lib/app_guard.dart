@@ -27,6 +27,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   late ConnectivityProvider _connectivityProvider;
   bool _isPause = false;
+  late final AppLifecycleListener _lifecycleListener;
 
   @override
   void initState() {
@@ -38,6 +39,9 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
     _connectivity.onConnectivityChanged.listen(_checkConnectivity);
+
+    _lifecycleListener = AppLifecycleListener(onStateChange: _handleAppLifecycleState);
+
     _screenListener.addScreenShotListener((_) {
       CoconutToast.showToast(
         context: context,
@@ -79,9 +83,36 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   //   }
   // }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
+  // TODO: AppLifecycleListener로 교체시 didChangeAppLifecycleState는 삭제
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   super.didChangeAppLifecycleState(state);
+  //   switch (state) {
+  //     case AppLifecycleState.resumed:
+  //       if (_isPause) {
+  //         _isPause = false;
+  //         _authProvider.checkDeviceBiometrics();
+  //         if (_upbitConnectModel.upbitWebSocketService == null) {
+  //           _upbitConnectModel.initUpbitWebSocketService();
+  //         }
+  //         _nodeProvider.initialize().then((_) => _nodeProvider.subscribeWallets(null));
+  //       }
+  //       break;
+  //     case AppLifecycleState.hidden:
+  //     case AppLifecycleState.detached:
+  //     case AppLifecycleState.paused:
+  //       if (_isPause) break;
+  //       _isPause = true;
+  //       _upbitConnectModel.disposeUpbitWebSocketService();
+  //       _nodeProvider.closeConnection();
+  //       break;
+  //     case AppLifecycleState.inactive:
+  //       break;
+  //   }
+  // }
+
+  void _handleAppLifecycleState(AppLifecycleState state) {
+    print('🔁 $state isPaused $_isPause');
     switch (state) {
       case AppLifecycleState.resumed:
         if (_isPause) {
@@ -114,6 +145,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _lifecycleListener.dispose();
     _screenListener.dispose();
     super.dispose();
   }
