@@ -148,33 +148,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           // 지갑 목록
                           _buildSliverAnimatedList(viewModel.walletItemList,
                               (id) => viewModel.getWalletBalance(id), viewModel.isBalanceHidden),
-                          // 테스트용 버튼
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      // 테스트 버튼 1 동작 - Close Connection
-                                      final nodeProvider = context.read<NodeProvider>();
-                                      await nodeProvider.closeConnection();
-                                    },
-                                    child: const Text('Close Connection'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      // 테스트 버튼 2 동작 - Reconnect
-                                      final nodeProvider = context.read<NodeProvider>();
-                                      await nodeProvider.reconnect();
-                                    },
-                                    child: const Text('Reconnect'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ]),
                     _buildOfflineWarningBar(context, isOffline),
                     _buildDropdownBackdrop(),
