@@ -33,6 +33,7 @@ class NodeProvider extends ChangeNotifier {
   bool get ssl => _ssl;
 
   bool needSubscribeWallets = false;
+  List<WalletListItemBase> _lastSubscribedWallets = [];
 
   /// 정상적으로 연결된 후 다시 연결이 끊겼을 떄에만 이 함수가 동작하도록 설계되어 있음.
   /// 최초 [reconnect] 호출은 앱 실행 시 `_checkConnectivity` 에서 호출되어 state 처리 관련된 로직이 일부 비정상적으로 동작함.
@@ -47,7 +48,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void _createStateManager() {
-    _stateManager ??= NodeStateManager(() => notifyListeners());
+    _stateManager = NodeStateManager(() => notifyListeners());
   }
 
   Future<void> initialize() async {
@@ -70,7 +71,11 @@ class NodeProvider extends ChangeNotifier {
       _stateSubscription = null;
       _stateSubscription = _isolateManager.stateStream.listen(
         (message) {
-          _handleStateMessage(message);
+          if (_stateManager == null) {
+            Logger.log('NodeProvider: StateManager가 초기화되지 않았습니다.');
+            return;
+          }
+          _stateManager!.handleIsolateStateMessage(message);
         },
         onError: (error) {
           Logger.log('NodeProvider: 상태 스트림 오류: $error');
@@ -81,21 +86,18 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  void _handleStateMessage(IsolateStateMessage message) {
-    try {
-      if (_stateManager != null) {
-        _stateManager!.handleIsolateStateMessage(message);
-      }
-    } catch (e) {
-      Logger.error('NodeProvider: Error processing state message: $e');
-    }
-  }
-
   Future<Result<bool>> subscribeWallets(
-    List<WalletListItemBase> walletItems,
+    List<WalletListItemBase>? walletItems,
   ) async {
     needSubscribeWallets = false;
-    return _isolateManager.subscribeWallets(walletItems);
+    if (walletItems != null) {
+      _lastSubscribedWallets = walletItems;
+    }
+    if (_lastSubscribedWallets.isEmpty) {
+      Logger.log('NodeProvider: 구독할 지갑이 없습니다.');
+      return Result.success(true);
+    }
+    return _isolateManager.subscribeWallets(_lastSubscribedWallets);
   }
 
   Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
