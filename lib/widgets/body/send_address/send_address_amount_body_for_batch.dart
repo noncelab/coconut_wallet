@@ -80,9 +80,12 @@ class _SendAddressAmountBodyForBatchState extends State<SendAddressAmountBodyFor
                           },
                           validateAddress: widget.validateAddress,
                           isRemovable: _recipients.length > 2,
-                          addressPlaceholder: t.send_address_screen.address_placeholder,
-                          amountPlaceholder:
-                              '${t.send_address_screen.amount_placeholder} (${t.btc})',
+                          addressPlaceholder: _recipients[index].address.isEmpty
+                              ? t.send_address_screen.address_placeholder
+                              : "",
+                          amountPlaceholder: _recipients[index].amount.isEmpty
+                              ? '${t.send_address_screen.amount_placeholder} (${t.btc})'
+                              : "",
                           isAddressInvalid: _recipients[index].isAddressValid == false ||
                               _recipients[index].isAddressDuplicated == true,
                           isAmountDust: _recipients[index].isAmountDust == true,

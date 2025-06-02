@@ -147,8 +147,14 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                   iconSize: 14,
                   padding: EdgeInsets.zero,
                   onPressed: _addressController.text.isEmpty
-                      ? _showAddressScanner
-                      : () => _onAddressChanged(''),
+                      ? () {
+                          _addressFocusNode.requestFocus();
+                          _showAddressScanner();
+                        }
+                      : () {
+                          _addressFocusNode.requestFocus();
+                          _onAddressChanged('');
+                        },
                   icon: _addressController.text.isEmpty
                       ? SvgPicture.asset('assets/svg/scan.svg')
                       : SvgPicture.asset(
@@ -177,7 +183,10 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                     : IconButton(
                         iconSize: 14,
                         padding: EdgeInsets.zero,
-                        onPressed: () => _onAmountChanged(''),
+                        onPressed: () {
+                          _quantityFocusNode.requestFocus();
+                          _onAmountChanged('');
+                        },
                         icon: SvgPicture.asset(
                           'assets/svg/text-field-clear.svg',
                           colorFilter: ColorFilter.mode(
@@ -277,7 +286,8 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
     if (scannedAddress != null) {
       _addressController.text = scannedAddress;
       _onAddressChanged(scannedAddress);
-      _quantityFocusNode.requestFocus();
+      await Future.delayed(
+          const Duration(milliseconds: 200), () => _quantityFocusNode.requestFocus());
 
       if (widget.isLastItem) {
         // 마지막 아이템만 화면 복귀 후 스크롤이 되지 않아 추가 처리합니다.
