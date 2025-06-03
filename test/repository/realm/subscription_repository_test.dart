@@ -330,4 +330,172 @@ void main() {
       expect(allStatuses.length, 3);
     });
   });
+
+  group('deleteScriptStatusIfWalletDeleted 테스트', () {
+    test('지갑이 존재하는 경우 스크립트 상태 유지 테스트', () async {
+      // Given
+      final mockScriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
+      final existingStatus = RealmScriptStatus(
+        mockScriptStatus.scriptPubKey,
+        mockScriptStatus.status!,
+        testWalletItem.id,
+        DateTime.now(),
+      );
+      realmManager.realm.write(() {
+        realmManager.realm.add(existingStatus);
+      });
+
+      // When
+      await subscriptionRepository.deleteScriptStatusIfWalletDeleted(testWalletItem.id);
+
+      // Then
+      final remainingStatuses = realmManager.realm.query<RealmScriptStatus>(
+        r'walletId == $0',
+        [testWalletItem.id],
+      ).toList();
+      expect(remainingStatuses.length, 1);
+      expect(remainingStatuses[0].scriptPubKey, mockScriptStatus.scriptPubKey);
+    });
+
+    test('지갑이 삭제된 경우 관련 스크립트 상태 삭제 테스트', () async {
+      // Given
+      final mockScriptStatus1 = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
+      final mockScriptStatus2 = ScriptStatusMock.createMockScriptStatus(testWalletItem, 1);
+
+      realmManager.realm.write(() {
+        realmManager.realm.addAll([
+          RealmScriptStatus(mockScriptStatus1.scriptPubKey, mockScriptStatus1.status!,
+              testWalletItem.id, DateTime.now()),
+          RealmScriptStatus(mockScriptStatus2.scriptPubKey, mockScriptStatus2.status!,
+              testWalletItem.id, DateTime.now()),
+        ]);
+      });
+
+      // 지갑 삭제
+      final wallet = realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
+      realmManager.realm.write(() {
+        realmManager.realm.delete(wallet!);
+      });
+
+      // When
+      await subscriptionRepository.deleteScriptStatusIfWalletDeleted(testWalletItem.id);
+
+      // Then
+      final deletedStatuses = realmManager.realm.query<RealmScriptStatus>(
+        r'walletId == $0',
+        [testWalletItem.id],
+      ).toList();
+      expect(deletedStatuses.length, 0);
+    });
+
+    test('여러 지갑 중 특정 지갑만 삭제된 경우 테스트', () async {
+      // Given
+      final secondWalletItem = WalletMock.createSingleSigWalletItem(randomDescriptor: true);
+
+      final secondWalletId = testWalletItem.id + 1;
+
+      realmManager.realm.write(() {
+        realmManager.realm.add(RealmWalletBase(
+          secondWalletId,
+          secondWalletItem.colorIndex,
+          secondWalletItem.iconIndex,
+          secondWalletItem.descriptor,
+          secondWalletItem.name,
+          WalletType.singleSignature.name,
+        ));
+      });
+
+      final firstWalletStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
+      final secondWalletStatus = ScriptStatusMock.createMockScriptStatus(secondWalletItem, 0);
+
+      realmManager.realm.write(() {
+        realmManager.realm.addAll([
+          RealmScriptStatus(firstWalletStatus.scriptPubKey, firstWalletStatus.status!,
+              testWalletItem.id, DateTime.now()),
+          RealmScriptStatus(secondWalletStatus.scriptPubKey, secondWalletStatus.status!,
+              secondWalletId, DateTime.now()),
+        ]);
+      });
+
+      final firstWallet = realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
+      realmManager.realm.write(() {
+        realmManager.realm.delete(firstWallet!);
+      });
+
+      // When
+      await subscriptionRepository.deleteScriptStatusIfWalletDeleted(testWalletItem.id);
+
+      // Then
+      final firstWalletStatuses = realmManager.realm.query<RealmScriptStatus>(
+        r'walletId == $0',
+        [testWalletItem.id],
+      ).toList();
+      expect(firstWalletStatuses.length, 0);
+
+      final secondWalletStatuses = realmManager.realm.query<RealmScriptStatus>(
+        r'walletId == $0',
+        [secondWalletId],
+      ).toList();
+      expect(secondWalletStatuses.length, 1);
+      expect(secondWalletStatuses[0].scriptPubKey, secondWalletStatus.scriptPubKey);
+    });
+
+    test('지갑은 삭제되었지만 스크립트 상태가 없는 경우 테스트', () async {
+      // Given
+      final wallet = realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
+      realmManager.realm.write(() {
+        realmManager.realm.delete(wallet!);
+      });
+
+      // When
+      await subscriptionRepository.deleteScriptStatusIfWalletDeleted(testWalletItem.id);
+
+      // Then: 오류 없이 완료되어야 함
+      final deletedStatuses = realmManager.realm.query<RealmScriptStatus>(
+        r'walletId == $0',
+        [testWalletItem.id],
+      ).toList();
+      expect(deletedStatuses.length, 0);
+    });
+
+    test('대량의 스크립트 상태 삭제 테스트', () async {
+      // Given: 대량의 스크립트 상태 생성
+      final largeScriptStatuses = <RealmScriptStatus>[];
+      for (int i = 0; i < 100; i++) {
+        final mockStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, i);
+        largeScriptStatuses.add(RealmScriptStatus(
+          "${mockStatus.scriptPubKey}_$i", // 유니크한 scriptPubKey
+          mockStatus.status!,
+          testWalletItem.id,
+          DateTime.now(),
+        ));
+      }
+
+      realmManager.realm.write(() {
+        realmManager.realm.addAll(largeScriptStatuses);
+      });
+
+      final beforeStatuses = realmManager.realm.query<RealmScriptStatus>(
+        r'walletId == $0',
+        [testWalletItem.id],
+      ).toList();
+      expect(beforeStatuses.length, 100);
+
+      // 지갑 삭제
+      final wallet = realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
+      realmManager.realm.write(() {
+        realmManager.realm.delete(wallet!);
+      });
+
+      // When
+      await subscriptionRepository.deleteScriptStatusIfWalletDeleted(testWalletItem.id);
+
+      // Then
+      final remainingStatuses = realmManager.realm.query<RealmScriptStatus>(
+        r'walletId == $0',
+        [testWalletItem.id],
+      ).toList();
+      expect(remainingStatuses.length, 0);
+    });
+  });
 }

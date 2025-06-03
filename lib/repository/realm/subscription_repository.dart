@@ -7,35 +7,6 @@ import 'package:coconut_wallet/utils/result.dart';
 class SubscriptionRepository extends BaseRepository {
   SubscriptionRepository(super._realmManager);
 
-  /// 스크립트 상태 업데이트 또는 생성
-  /// [scriptPubKey] 스크립트 공개키
-  /// [status] 새로운 상태 해시
-  /// [walletId] 지갑 ID
-  Result<RealmScriptStatus> updateScriptStatus(
-    String scriptPubKey,
-    String status,
-    int walletId,
-  ) {
-    return handleRealm(() {
-      final now = DateTime.now();
-      final existingStatus = realm.find<RealmScriptStatus>(scriptPubKey);
-
-      if (existingStatus != null) {
-        realm.write(() {
-          existingStatus.status = status;
-          existingStatus.timestamp = now;
-        });
-        return existingStatus;
-      } else {
-        final newStatus = RealmScriptStatus(scriptPubKey, status, walletId, now);
-        realm.write(() {
-          realm.add(newStatus);
-        });
-        return newStatus;
-      }
-    });
-  }
-
   /// 지갑의 모든 스크립트 상태 조회
   /// [walletId] 지갑 ID
   Result<List<RealmScriptStatus>> getAllScriptStatuses(int walletId) {
@@ -56,6 +27,7 @@ class SubscriptionRepository extends BaseRepository {
     List<ScriptStatus> fetchedStatuses,
   ) async {
     return handleAsyncRealm(() async {
+      await deleteScriptStatusIfWalletDeleted(walletId);
       final now = DateTime.now();
       final existingStatusMap = getExistingScriptStatusMap(fetchedStatuses);
       final (:toAddStatuses, :toUpdateStatuses) = _prepareScriptStatusList(
@@ -165,5 +137,34 @@ class SubscriptionRepository extends BaseRepository {
     return {
       for (final status in existingScriptStatuses) status.scriptPubKey: status,
     };
+  }
+
+  /// 지갑이 삭제된 경우 해당 지갑의 scriptStatus를 삭제합니다.
+  Future<void> deleteScriptStatusIfWalletDeleted(int walletId) async {
+    try {
+      // 지갑이 존재하는지 확인
+      final wallet = realm.query<RealmWalletBase>(
+        r'id == $0',
+        [walletId],
+      ).firstOrNull;
+
+      // 지갑이 삭제된 경우
+      if (wallet == null) {
+        // 해당 지갑의 모든 scriptStatus 삭제
+        final scriptStatuses = realm.query<RealmScriptStatus>(
+          r'walletId == $0',
+          [walletId],
+        );
+
+        await realm.writeAsync(() {
+          realm.deleteMany<RealmScriptStatus>(scriptStatuses);
+        });
+
+        Logger.log('Deleted scriptStatuses for deleted wallet: $walletId');
+      }
+    } catch (e, stackTrace) {
+      Logger.error('Failed to delete scriptStatuses for wallet $walletId: $e');
+      Logger.error('Stack trace: $stackTrace');
+    }
   }
 }
