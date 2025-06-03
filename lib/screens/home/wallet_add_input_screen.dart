@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -36,7 +35,9 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
   bool get isDescriptorAdding => _inputController.text.contains('['); // 대괄호 입력시 descriptor 입력을 가정
 
   Future<void> _addWallet(WalletAddInputViewModel viewModel) async {
+    _closeKeyboard();
     if (_isProcessing) return;
+
     _isProcessing = true;
     context.loaderOverlay.show();
     await Future.delayed(const Duration(seconds: 2));
@@ -215,7 +216,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                               CoconutLayout.spacing_100w,
                                               Text(
                                                   t.wallet_add_input_screen.wallet_description_text,
-                                                  style: CoconutTypography.body3_12)
+                                                  style: CoconutTypography.body2_14)
                                             ],
                                           ),
                                         ),
@@ -253,7 +254,6 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                         ),
                         FixedBottomButton(
                           onButtonClicked: () {
-                            _closeKeyboard();
                             if (isDescriptorAdding) {
                               _addWallet(viewModel);
                             } else {

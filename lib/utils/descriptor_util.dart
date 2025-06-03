@@ -25,21 +25,22 @@ class DescriptorUtil {
         ? descriptor.substring(descriptor.indexOf('(') + 1, descriptor.lastIndexOf(')'))
         : descriptor;
 
-    // 대괄호 [fingerprint/derivationPath] 추출
-    final regex = RegExp(r'\[([0-9a-fA-F]{8})/([0-9]+' r"')" r'(?:/[0-9]+' r"')*]");
+    // // 대괄호 [fingerprint/derivationPath] 추출
+    final squareBracket =
+        innerDescriptor.substring(innerDescriptor.indexOf('[') + 1, innerDescriptor.indexOf(']'));
 
-    final match = regex.firstMatch(innerDescriptor);
-    if (match == null || match.groupCount < 2) {
+    final path = squareBracket.split('/');
+
+    if (path.isEmpty || path.length < 2) {
       throw const FormatException('Invalid descriptor format');
     }
 
-    //final fingerprint = match.group(1)!;
-    final purposeWithHardenedMark = match.group(2)!;
+    final purposeWithHardenedMark = path[1];
     return purposeWithHardenedMark;
   }
 
   static void validatePurpose(String purpose) {
-    if (purpose != "84'") {
+    if (purpose != "84'" && purpose != '84h') {
       throw FormatException("purpose $purpose is not supported");
     }
   }
