@@ -51,11 +51,11 @@ class SubscriptionRepository extends BaseRepository {
   /// 여러 스크립트 상태 일괄 업데이트
   /// [subscribeResponse] 구독 응답
   /// [walletId] 지갑 ID
-  Result<void> updateScriptStatusList(
+  Future<Result<void>> updateScriptStatusList(
     int walletId,
     List<ScriptStatus> fetchedStatuses,
-  ) {
-    return handleRealm(() {
+  ) async {
+    return handleAsyncRealm(() async {
       final now = DateTime.now();
       final existingStatusMap = getExistingScriptStatusMap(fetchedStatuses);
       final (:toAddStatuses, :toUpdateStatuses) = _prepareScriptStatusList(
@@ -70,7 +70,18 @@ class SubscriptionRepository extends BaseRepository {
         return;
       }
 
-      realm.write(() {
+      await realm.writeAsync(() {
+        final wallet = realm.find<RealmWalletBase>(walletId);
+        if (wallet == null) {
+          realm.deleteMany<RealmScriptStatus>(
+            realm.query<RealmScriptStatus>(
+              r'walletId == $0',
+              [walletId],
+            ),
+          );
+          return;
+        }
+
         // 기존 상태 업데이트
         for (final update in toUpdateStatuses) {
           final existingStatus = existingStatusMap[update.scriptPubKey];
