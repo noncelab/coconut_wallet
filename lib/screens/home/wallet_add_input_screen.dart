@@ -278,6 +278,8 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
   }
 
   void showMfpInputBottomSheet(WalletAddInputViewModel viewModel) {
+    _closeKeyboard();
+
     showModalBottomSheet(
       context: context,
       builder: (context) {

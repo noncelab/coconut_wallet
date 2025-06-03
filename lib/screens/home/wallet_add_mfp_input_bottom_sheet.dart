@@ -23,7 +23,10 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
   @override
   void initState() {
     super.initState();
-    _mfpFocusNode.requestFocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 300));
+      _mfpFocusNode.requestFocus();
+    });
     _mfpController.addListener(() {
       if (_mfpController.text.length < 8) {
         setState(() {
@@ -189,7 +192,9 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                         flex: 4,
                         child: CoconutButton(
                           onPressed: () {
-                            FocusScope.of(context).unfocus();
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              FocusScope.of(context).unfocus();
+                            });
                             widget.onSkip();
                             Navigator.pop(context);
                           },
@@ -208,7 +213,9 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                         flex: 6,
                         child: CoconutButton(
                           onPressed: () {
-                            FocusScope.of(context).unfocus();
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              FocusScope.of(context).unfocus();
+                            });
                             widget.onComplete(_mfpController.text);
                             Navigator.pop(context);
                           },
