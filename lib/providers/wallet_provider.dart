@@ -444,19 +444,16 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
-    // TODO: 지갑 삭제 전 동기화중일 경우 동기화 작업을 중단시키는 로직 추가 필요
-    await _nodeProvider.unsubscribeWallet(getWalletById(walletId));
+    await _nodeProvider.closeConnection();
+    _nodeProvider.deleteWallet(walletId);
+    await _nodeProvider.initialize();
     await _walletRepository.deleteWallet(walletId);
     _walletItemList = await _fetchWalletListFromDB();
     _saveWalletCount(_walletItemList.length);
     _walletBalance.remove(walletId);
     notifyListeners();
 
-    // Isolate 에러 핸들링 로직에 의해 WalletUpdateState가 다시 대기상태로 초기화 되어 3초 지연 후 실행
-    // TODO: NodeProvider에서 지갑별 작업중인 것이 있는지 확인하고 작업이 종료되면 WalletUpdateState를 삭제
-    Future.delayed(const Duration(seconds: 3), () {
-      _nodeProvider.deleteWallet(walletId);
-    });
+    unawaited(_subscribeNodeProvider());
   }
 
   /// [싱글시그니처] 외부지갑 이름변경
