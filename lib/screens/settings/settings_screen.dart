@@ -4,7 +4,10 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/button_container.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -106,6 +109,27 @@ class _SettingsScreen extends State<SettingsScreen> {
                           viewModel.changeIsBalanceHidden(value);
                         }),
                   )),
+
+                  // 개발자 모드에서만 표시되는 디버그 섹션
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 16),
+                    _category('개발자 도구'),
+                    ButtonContainer(
+                      child: SingleButton(
+                        title: 'Realm 디버그용 뷰어',
+                        onPressed: () {
+                          final realmManager = Provider.of<RealmManager>(context, listen: false);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => RealmDebugScreen(
+                                realmManager: realmManager,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ]),
               )));
         }));
