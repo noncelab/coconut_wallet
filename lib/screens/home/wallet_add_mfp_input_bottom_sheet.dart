@@ -23,7 +23,10 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
   @override
   void initState() {
     super.initState();
-    _mfpFocusNode.requestFocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 300));
+      _mfpFocusNode.requestFocus();
+    });
     _mfpController.addListener(() {
       if (_mfpController.text.length < 8) {
         setState(() {
@@ -50,6 +53,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.translucent,
       onTap: () => FocusScope.of(context).unfocus(),
       child: SingleChildScrollView(
         child: Column(
@@ -111,7 +115,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                               ),
                               CoconutLayout.spacing_100w,
                               Text(t.wallet_add_input_screen.mfp_description_title,
-                                  style: CoconutTypography.body3_12)
+                                  style: CoconutTypography.body2_14_Bold)
                             ],
                           ),
                           CoconutLayout.spacing_200h,
@@ -188,6 +192,9 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                         flex: 4,
                         child: CoconutButton(
                           onPressed: () {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              FocusScope.of(context).unfocus();
+                            });
                             widget.onSkip();
                             Navigator.pop(context);
                           },
@@ -206,6 +213,9 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                         flex: 6,
                         child: CoconutButton(
                           onPressed: () {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              FocusScope.of(context).unfocus();
+                            });
                             widget.onComplete(_mfpController.text);
                             Navigator.pop(context);
                           },
