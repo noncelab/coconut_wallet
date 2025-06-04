@@ -174,73 +174,88 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       backgroundColor: MyColors.grey,
       context: context,
       child: details != null
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
+          ? LayoutBuilder(builder: (context, constraints) {
+              return ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                child: IntrinsicHeight(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        term,
-                        style: Styles.h3,
+                      // 제목
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              term,
+                              style: Styles.h3,
+                            ),
+                            Text(
+                              '${details['en']}',
+                              style: Styles.label,
+                            ),
+                          ],
+                        ),
                       ),
-                      Text(
-                        '${details['en']}',
-                        style: Styles.label,
+
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                          decoration: const BoxDecoration(
+                            color: CoconutColors.black,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(24),
+                              topRight: Radius.circular(24),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${details['content']}',
+                                style:
+                                    Styles.label.merge(const TextStyle(color: CoconutColors.white)),
+                              ),
+                              const SizedBox(height: 32),
+                              Text(
+                                t.glossary_bottom_sheet.synonym,
+                                style: Styles.body2Bold,
+                              ),
+                              const SizedBox(height: 8),
+                              if (details['synonym'] != null) ...[
+                                Wrap(
+                                    spacing: 8.0,
+                                    runSpacing: 8.0,
+                                    children: details['synonym']
+                                        .map<Widget>((text) => Keyword(keyword: text))
+                                        .toList()),
+                                const SizedBox(height: 32),
+                                Text(
+                                  t.glossary_bottom_sheet.related,
+                                  style: Styles.body2Bold,
+                                ),
+                                const SizedBox(height: 8),
+                                if (details['related'] != null) ...[
+                                  Wrap(
+                                      spacing: 8.0,
+                                      runSpacing: 8.0,
+                                      children: details['related']
+                                          .map<Widget>((text) => Keyword(keyword: text))
+                                          .toList())
+                                ],
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-                    color: CoconutColors.black,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${details['content']}',
-                          style: Styles.label.merge(const TextStyle(color: CoconutColors.white)),
-                        ),
-                        const SizedBox(height: 32),
-                        Text(
-                          t.glossary_bottom_sheet.synonym,
-                          style: Styles.body2Bold,
-                        ),
-                        const SizedBox(height: 8),
-                        if (details['synonym'] != null) ...[
-                          Wrap(
-                              spacing: 8.0,
-                              runSpacing: 8.0,
-                              children: details['synonym']
-                                  .map<Widget>((text) => Keyword(keyword: text))
-                                  .toList()),
-                          const SizedBox(height: 32),
-                          Text(
-                            t.glossary_bottom_sheet.related,
-                            style: Styles.body2Bold,
-                          ),
-                          const SizedBox(height: 8),
-                          if (details['related'] != null) ...[
-                            Wrap(
-                                spacing: 8.0,
-                                runSpacing: 8.0,
-                                children: details['related']
-                                    .map<Widget>((text) => Keyword(keyword: text))
-                                    .toList())
-                          ],
-                          const SizedBox(height: 100),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            )
+              );
+            })
           : Center(
               child: Text('No details available for $term'),
             ),
