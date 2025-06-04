@@ -45,10 +45,16 @@ void main() {
     });
 
     group('extractPurpose', () {
-      test('올바른 디스크립터에서 purpose를 추출', () {
+      test('올바른 디스크립터에서 purpose를 추출(hardened 기호: \')', () {
         const descriptor =
             "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
         expect(DescriptorUtil.extractPurpose(descriptor), "84'");
+      });
+
+      test('올바른 디스크립터에서 purpose를 추출(hardened 기호: h)', () {
+        const descriptor =
+            "wpkh([76223a6f/84h/0h/0h]tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
+        expect(DescriptorUtil.extractPurpose(descriptor), "84h");
       });
 
       test('purpose가 없는 디스크립터는 예외 발생', () {

@@ -25,9 +25,15 @@ class DescriptorUtil {
         ? descriptor.substring(descriptor.indexOf('(') + 1, descriptor.lastIndexOf(')'))
         : descriptor;
 
-    // // 대괄호 [fingerprint/derivationPath] 추출
-    final squareBracket =
-        innerDescriptor.substring(innerDescriptor.indexOf('[') + 1, innerDescriptor.indexOf(']'));
+    // 대괄호 [fingerprint/derivationPath] 추출
+    final startIndex = innerDescriptor.indexOf('[');
+    final endIndex = innerDescriptor.indexOf(']');
+
+    if (startIndex == -1 || endIndex == -1) {
+      throw const FormatException('Invalid descriptor format: missing square brackets');
+    }
+
+    final squareBracket = innerDescriptor.substring(startIndex + 1, endIndex);
 
     final path = squareBracket.split('/');
 
