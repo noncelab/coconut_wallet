@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
@@ -14,11 +15,13 @@ class TransactionInputOutputCard extends StatefulWidget {
   final TransactionRecord transaction;
   final bool Function(String address, int index) isSameAddress;
   final bool isForTransaction;
+  final Unit currentUnit;
 
   const TransactionInputOutputCard(
       {super.key,
       required this.transaction,
       required this.isSameAddress,
+      required this.currentUnit,
       this.isForTransaction = true});
 
   @override
@@ -51,7 +54,9 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   late final TransactionStatus _status;
 
   final GlobalKey _balanceWidthKey = GlobalKey();
+  final GlobalKey _balanceWidthKeySats = GlobalKey();
   Size _balanceWidthSize = Size.zero;
+  Size _balanceWidthSizeSats = Size.zero;
   bool _isBalanceWidthCalculated = false;
 
   @override
@@ -76,9 +81,11 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final renderBox = _balanceWidthKey.currentContext?.findRenderObject();
-      if (renderBox is RenderBox) {
+      final renderBoxSats = _balanceWidthKeySats.currentContext?.findRenderObject();
+      if (renderBox is RenderBox && renderBoxSats is RenderBox) {
         setState(() {
           _balanceWidthSize = renderBox.size;
+          _balanceWidthSizeSats = renderBoxSats.size;
           _isBalanceWidthCalculated = true;
         });
       }
@@ -161,9 +168,30 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
               ),
             ),
           ),
+
+          Visibility(
+            visible: !_isBalanceWidthCalculated,
+            child: Text(
+              key: _balanceWidthKeySats,
+              '0,000,000,000,000',
+              style: CoconutTypography.body2_14_Number.setColor(
+                Colors.transparent,
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  double getBalanceMaxWidth() {
+    return widget.currentUnit == Unit.btc
+        ? _balanceWidthSize.width > 0
+            ? _balanceWidthSize.width
+            : 100
+        : _balanceWidthSizeSats.width > 0
+            ? _balanceWidthSizeSats.width
+            : 120;
   }
 
   Widget _buildAddressList({
@@ -182,10 +210,11 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
             child: InputOutputDetailRow(
               address: item.address,
               balance: item.amount,
-              balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
+              balanceMaxWidth: getBalanceMaxWidth(),
               rowType: rowType,
               isCurrentAddress: widget.isSameAddress(item.address, index),
               transactionStatus: widget.isForTransaction ? _status : null,
+              currentUnit: widget.currentUnit,
             ),
           );
         }),
@@ -199,9 +228,10 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         child: InputOutputDetailRow(
           address: t.fee,
           balance: fee,
-          balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
+          balanceMaxWidth: getBalanceMaxWidth(),
           rowType: InputOutputRowType.fee,
           transactionStatus: widget.isForTransaction ? _status : null,
+          currentUnit: widget.currentUnit,
         ));
   }
 

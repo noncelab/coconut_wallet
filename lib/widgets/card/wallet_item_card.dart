@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
@@ -88,7 +89,7 @@ class WalletItemCard extends StatelessWidget {
                                   textStyle: CoconutTypography.heading3_21_NumberBold
                                       .setColor(CoconutColors.white)),
                               Text(
-                                " BTC",
+                                " ${t.btc}",
                                 style: CoconutTypography.body3_12_Number.copyWith(
                                     color: CoconutColors.gray500, fontWeight: FontWeight.w500),
                               ),

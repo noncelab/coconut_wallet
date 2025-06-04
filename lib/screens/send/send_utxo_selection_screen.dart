@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -60,6 +61,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   late Offset _orderDropdownButtonPosition;
   late Offset _scrolledOrderDropdownButtonPosition;
   Size _headerTopContainerSize = const Size(0, 0);
+  Unit _currentUnit = Unit.btc;
 
   @override
   Widget build(BuildContext context) {
@@ -188,6 +190,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
   }
 
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+    });
+  }
+
   void _deselectAll() {
     _removeUtxoOrderDropdown();
     _viewModel.deselectAllUtxo();
@@ -227,7 +235,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   void _moveToSendConfirm() {
     _viewModel.saveSendInfo();
-    Navigator.pushNamed(context, '/send-confirm');
+    Navigator.pushNamed(context, '/send-confirm', arguments: {'currentUnit': _currentUnit});
   }
 
   void _onTapFeeChangeButton() async {
@@ -246,7 +254,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           customFeeInfo: _viewModel.customFeeInfo,
           isRecommendedFeeFetchSuccess:
               _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed,
-          estimateFee: _viewModel.estimateFee),
+          estimateFee: _viewModel.estimateFee,
+          currentUnitParam: _currentUnit),
     );
     if (feeSelectionResult != null) {
       _viewModel.onFeeRateChanged(feeSelectionResult);
@@ -272,6 +281,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   Widget _buildTotalUtxoAmount(Widget textKeyWidget, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
+    String utxoSumText = selectedUtxoListLength > 0
+        ? _currentUnit == Unit.btc
+            ? satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()
+            : addCommasToIntegerPart(totalSelectedUtxoAmount.toDouble())
+        : '0';
+    String unitText = _currentUnit == Unit.btc ? t.btc : t.sats;
+
     return Column(
       children: [
         Container(
@@ -328,9 +344,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     children: [
                       Text(
                         // Transaction.estimatedFee,
-                        selectedUtxoListLength == 0
-                            ? '0 ${t.btc}'
-                            : '${satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()} ${t.btc}',
+                        "$utxoSumText $unitText",
                         style: Styles.body1Number.merge(TextStyle(
                             color: errorState == ErrorState.insufficientBalance ||
                                     errorState == ErrorState.insufficientUtxo
@@ -585,6 +599,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               margin: const EdgeInsets.only(bottom: 8),
               child: SelectableUtxoItemCard(
                 key: ValueKey(utxo.transactionHash),
+                currentUnit: _currentUnit,
                 utxo: utxo,
                 isSelected: viewModel.selectedUtxoList.contains(utxo),
                 utxoTags: viewModel.utxoTagMap[utxo.utxoId],
@@ -635,6 +650,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 estimatedFee: viewModel.estimatedFee,
                 satsPerVb: viewModel.satsPerVb,
                 change: viewModel.change,
+                onPressedUnitToggle: _toggleUnit,
+                currentUnit: _currentUnit,
               )),
           _buildTotalUtxoAmount(
             Text(

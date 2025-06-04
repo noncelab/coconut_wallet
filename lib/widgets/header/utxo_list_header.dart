@@ -3,6 +3,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
@@ -19,6 +20,8 @@ class UtxoListHeader extends StatefulWidget {
   final String selectedUtxoTagName;
   final Function(String) onTagSelected;
   final bool canShowDropdown;
+  final void Function() onPressedUnitToggle;
+  final Unit currentUnit;
 
   const UtxoListHeader(
       {super.key,
@@ -29,7 +32,9 @@ class UtxoListHeader extends StatefulWidget {
       required this.utxoTagList,
       required this.selectedUtxoTagName,
       required this.onTagSelected,
-      required this.canShowDropdown});
+      required this.canShowDropdown,
+      required this.currentUnit,
+      required this.onPressedUnitToggle});
 
   @override
   State<UtxoListHeader> createState() => _UtxoListHeaderState();
@@ -57,31 +62,39 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     style: CoconutTypography.body1_16_Bold,
                   ),
                   CoconutLayout.spacing_100h,
-                  IntrinsicWidth(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                  GestureDetector(
+                    onTap: widget.onPressedUnitToggle,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
+                        IntrinsicWidth(
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              AnimatedBalance(
-                                  prevValue: widget.animatedBalanceData.previous,
-                                  value: widget.animatedBalanceData.current,
-                                  isBtcUnit: true,
-                                  textStyle: CoconutTypography.heading1_32_NumberBold),
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    AnimatedBalance(
+                                        prevValue: widget.animatedBalanceData.previous,
+                                        value: widget.animatedBalanceData.current,
+                                        isBtcUnit: widget.currentUnit == Unit.btc,
+                                        textStyle: CoconutTypography.heading1_32_NumberBold),
+                                  ],
+                                ),
+                              ),
+                              CoconutLayout.spacing_100w,
+                              Text(
+                                widget.currentUnit == Unit.btc ? t.btc : t.sats,
+                                style: CoconutTypography.heading3_21_Number,
+                              ),
                             ],
                           ),
                         ),
-                        CoconutLayout.spacing_100w,
-                        Text(
-                          t.btc,
-                          style: CoconutTypography.heading3_21_Number,
-                        ),
+                        CoconutLayout.spacing_50h,
+                        FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
                       ],
                     ),
                   ),
-                  CoconutLayout.spacing_50h,
-                  FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
                   CoconutLayout.spacing_400h,
                   Row(
                     children: [

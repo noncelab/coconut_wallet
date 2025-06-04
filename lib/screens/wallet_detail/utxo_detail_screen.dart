@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -46,6 +47,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   final GlobalKey _balanceWidthKey = GlobalKey();
   bool _isUtxoTooltipVisible = false;
+  Unit _currentUnit = Unit.btc;
+
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +143,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                           return address == widget.utxo.to;
                         },
                         isForTransaction: false,
+                        currentUnit: _currentUnit,
                       ),
                       _buildAddress(),
                       _buildTxMemo(
@@ -242,18 +251,24 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   // TODO: 공통 위젯으로 빼서 여러 화면에서 재사용하기
   // wallet-detail, tx-detail, utxo-list, utxo-detail
   Widget _buildAmount() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2.0),
-      child: Center(
-          child: RichText(
-              text: TextSpan(
-                  text: satoshiToBitcoinString(widget.utxo.amount),
-                  style: CoconutTypography.heading2_28_NumberBold,
-                  children: <InlineSpan>[
-            WidgetSpan(
-                alignment: PlaceholderAlignment.middle,
-                child: Text(" ${t.btc}", style: CoconutTypography.heading3_21_Number))
-          ]))),
+    return GestureDetector(
+      onTap: _toggleUnit,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 2.0),
+        child: Center(
+            child: RichText(
+                text: TextSpan(
+                    text: _currentUnit == Unit.btc
+                        ? satoshiToBitcoinString(widget.utxo.amount)
+                        : addCommasToIntegerPart(widget.utxo.amount.toDouble()),
+                    style: CoconutTypography.heading2_28_NumberBold,
+                    children: <InlineSpan>[
+              WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: Text(" ${_currentUnit == Unit.btc ? t.btc : t.sats}",
+                      style: CoconutTypography.heading3_21_Number))
+            ]))),
+      ),
     );
   }
 
@@ -261,8 +276,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
       child: Center(
-          child: FiatPrice(
-        satoshiAmount: widget.utxo.amount,
+          child: GestureDetector(
+        onTap: _toggleUnit,
+        child: FiatPrice(
+          satoshiAmount: widget.utxo.amount,
+        ),
       )),
     );
   }

@@ -417,13 +417,13 @@ text_field:
 
 tooltip:
   recommended_fee1: "추천 수수료를 조회하지 못했어요. 수수료를 직접 입력해 주세요."
-  recommended_fee2: "설정하신 수수료가 $bitcoin BTC 이상이에요."
+  recommended_fee2: "설정하신 수수료가 $bitcoin $unit 이상이에요."
   wallet_add1: "새로운 지갑을 추가하거나 이미 추가한 지갑의 정보를 업데이트할 수 있어요. "
   wallet_add2: "볼트"
   wallet_add3: "에서 사용하시려는 지갑을 선택하고, "
   wallet_add4: "내보내기 "
   wallet_add5: "화면에 나타나는 QR 코드를 스캔해 주세요."
-  amount_to_be_sent: "받기 완료된 비트코인만 전송 가능해요.\n받는 중인 금액: $bitcoin BTC"
+  amount_to_be_sent: "받기 완료된 비트코인만 전송 가능해요.\n받는 중인 금액: $bitcoin $unit"
   scan_signed_psbt:
     guide: "${by_hardware_wallet} 서명을 완료하셨나요?\n이제, ${hardware_wallet} 화면에 보이는 QR 코드를 스캔해 주세요."
     by_seed_signer: "시드사이너로"
@@ -464,7 +464,7 @@ alert:
   error_send:
     broadcasting_failed: "[전송 실패]\n$error"
     insufficient_balance: "잔액이 부족해요"
-    minimum_amount: "$bitcoin BTC 부터 전송할 수 있어요"
+    minimum_amount: "$bitcoin $unit 부터 전송할 수 있어요"
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
   signed_psbt:
     invalid_qr: "잘못된 QR 코드예요.\n다시 확인해 주세요."

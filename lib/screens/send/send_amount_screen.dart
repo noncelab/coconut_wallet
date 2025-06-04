@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -24,11 +25,27 @@ class SendAmountScreen extends StatefulWidget {
 }
 
 class _SendAmountScreenState extends State<SendAmountScreen> {
-  final errorMessages = [
-    t.errors.insufficient_balance,
-    t.alert.error_send.minimum_amount(bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1))
-  ];
   late SendAmountViewModel _viewModel;
+
+  List<String> get errorMessages => [
+        t.errors.insufficient_balance,
+        t.alert.error_send.minimum_amount(
+            bitcoin: _viewModel.currentUnit == Unit.btc
+                ? UnitUtil.satoshiToBitcoin(dustLimit + 1)
+                : addCommasToIntegerPart(dustLimit + 1),
+            unit: unitText)
+      ];
+
+  String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
+      bitcoin: _viewModel.currentUnit == Unit.btc
+          ? satoshiToBitcoinString(_viewModel.incomingBalance)
+          : addCommasToIntegerPart(_viewModel.incomingBalance.toDouble()),
+      unit: unitText);
+
+  String get maxBalanceText =>
+      "${_viewModel.currentUnit == Unit.btc ? UnitUtil.satoshiToBitcoin(_viewModel.confirmedBalance) : addCommasToIntegerPart(_viewModel.confirmedBalance.toDouble())} $unitText";
+
+  String get unitText => _viewModel.currentUnit == Unit.btc ? t.btc : t.sats;
 
   @override
   Widget build(BuildContext context) {
@@ -72,9 +89,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                     baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
                                     richText: RichText(
                                         text: TextSpan(
-                                      text: t.tooltip.amount_to_be_sent(
-                                          bitcoin:
-                                              satoshiToBitcoinString(viewModel.incomingBalance)),
+                                      text: incomingBalanceTooltipText,
                                       style: const TextStyle(
                                         fontFamily: 'Pretendard',
                                         fontWeight: FontWeight.normal,
@@ -123,26 +138,28 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                                                         fontFamily:
                                                             CustomFonts.text.getFontFamily))),
                                                 TextSpan(
-                                                    text:
-                                                        '${UnitUtil.satoshiToBitcoin(viewModel.confirmedBalance)} ${t.btc}',
+                                                    text: maxBalanceText,
                                                     style: Styles.caption.merge(TextStyle(
                                                         color: viewModel.errorIndex == 0
                                                             ? MyColors.warningRed
                                                             : CoconutColors.white))),
                                               ])))),
-                                      // BTC
-                                      Text(
-                                        '${viewModel.input.isEmpty ? 0 : viewModel.input} ${t.btc}',
-                                        style: TextStyle(
-                                          fontFamily: CustomFonts.number.getFontFamily,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 38,
-                                          color: viewModel.input.isEmpty
-                                              ? MyColors.transparentWhite_20
-                                              : CoconutColors.white,
+                                      // BTC Input
+                                      GestureDetector(
+                                        onTap: viewModel.toggleUnit,
+                                        child: Text(
+                                          '${viewModel.input.isEmpty ? 0 : viewModel.input} $unitText',
+                                          style: TextStyle(
+                                            fontFamily: CustomFonts.number.getFontFamily,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 38,
+                                            color: viewModel.input.isEmpty
+                                                ? MyColors.transparentWhite_20
+                                                : CoconutColors.white,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 1,
                                       ),
                                       // Error
                                       Text(
@@ -174,8 +191,20 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                         childAspectRatio: 2,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        children:
-                            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '<'].map((key) {
+                        children: [
+                          '1',
+                          '2',
+                          '3',
+                          '4',
+                          '5',
+                          '6',
+                          '7',
+                          '8',
+                          '9',
+                          if (viewModel.currentUnit == Unit.btc) '.' else ' ',
+                          '0',
+                          '<',
+                        ].map((key) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: KeyButton(
@@ -200,7 +229,6 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   @override
   void initState() {
     super.initState();
-
     _viewModel = SendAmountViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
@@ -214,7 +242,8 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     }
 
     _viewModel.onBeforeGoNextScreen();
-    Navigator.pushNamed(context, routeName).then((_) {
+    Navigator.pushNamed(context, routeName, arguments: {"currentUnit": _viewModel.currentUnit})
+        .then((_) {
       _viewModel.onBackFromNextScreen();
     });
   }

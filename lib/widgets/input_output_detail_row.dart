@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class InputOutputDetailRow extends StatelessWidget {
   final bool? isCurrentAddress;
   final TransactionStatus? transactionStatus;
   final RowProperty rowProperty;
+  final Unit currentUnit;
 
   InputOutputDetailRow({
     super.key,
@@ -20,16 +22,23 @@ class InputOutputDetailRow extends StatelessWidget {
     required this.balance,
     required this.balanceMaxWidth,
     required this.rowType,
+    required this.currentUnit,
     this.isCurrentAddress,
     this.transactionStatus,
   }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
+
+  String get balanceText => currentUnit == Unit.btc
+      ? satoshiToBitcoinString(balance.abs()).normalizeTo11Characters()
+      : addCommasToIntegerPart(balance.abs().toDouble());
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Text(
-          TextUtils.truncate(address, 19, 11, 8),
+          currentUnit == Unit.btc
+              ? TextUtils.truncate(address, 19, 11, 8)
+              : TextUtils.truncate(address, 16, 9, 7),
           style: CoconutTypography.body2_14_Number.copyWith(
             color: rowProperty.leftItemColor,
             fontSize: 14,
@@ -55,7 +64,7 @@ class InputOutputDetailRow extends StatelessWidget {
                   width: balanceMaxWidth,
                   child: Text(
                     textAlign: TextAlign.end,
-                    satoshiToBitcoinString(balance.abs()).normalizeTo11Characters(),
+                    balanceText,
                     style: CoconutTypography.body2_14_Number.copyWith(
                       color: rowProperty.rightItemColor,
                       height: 16 / 14,
@@ -73,7 +82,7 @@ class InputOutputDetailRow extends StatelessWidget {
                 SizedBox(
                   width: balanceMaxWidth,
                   child: Text(
-                    satoshiToBitcoinString(balance.abs()).normalizeTo11Characters(),
+                    balanceText,
                     style: CoconutTypography.body2_14_Number.copyWith(
                       color: rowProperty.rightItemColor,
                       height: 16 / 14,

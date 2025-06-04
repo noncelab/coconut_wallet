@@ -60,6 +60,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kMempoolHost;
   static late String kFaucetHost;
   static late NetworkType kNetworkType;
+
   const CoconutWalletApp({super.key});
 
   @override
@@ -202,7 +203,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         theme: const CupertinoThemeData(
           // 테마 설정
           brightness: Brightness.dark,
-          primaryColor: CoconutColors.primary, // 기본 색상
+          primaryColor: CoconutColors.primary,
+          // 기본 색상
           scaffoldBackgroundColor: CoconutColors.black,
           textTheme: CupertinoTextThemeData(
             // 텍스트 테마 설정
@@ -299,11 +301,21 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
               ),
           '/send-amount': (context) => const SendAmountScreen(),
-          '/fee-selection': (context) => const SendFeeSelectionScreen(),
+          '/fee-selection': (context) => buildScreenWithArguments(
+                context,
+                (args) => SendFeeSelectionScreen(
+                  currentUnitParam: args['currentUnit'],
+                ),
+              ),
           '/utxo-selection': (context) => const CustomLoadingOverlay(
                 child: SendUtxoSelectionScreen(),
               ),
-          '/send-confirm': (context) => const CustomLoadingOverlay(child: SendConfirmScreen()),
+          '/send-confirm': (context) => buildScreenWithArguments(
+              context,
+              (args) => CustomLoadingOverlay(
+                      child: SendConfirmScreen(
+                    currentUnitParam: args['currentUnit'],
+                  ))),
           '/utxo-list': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(

@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_de
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -52,8 +53,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   late AnimationController _animationController;
   late Animation<Offset> _slideInAnimation;
   late Animation<Offset> _slideOutAnimation;
-
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
+  Unit _currentUnit = Unit.btc;
+
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,24 +118,32 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       ),
                     ),
                     CoconutLayout.spacing_500h,
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
+                    GestureDetector(
+                      onTap: _toggleUnit,
+                      child: Column(
                         children: [
-                          _amountText(tx),
-                          CoconutLayout.spacing_100w,
-                          Text(t.btc, style: CoconutTypography.body2_14_Number),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              _amountText(tx),
+                              CoconutLayout.spacing_100w,
+                              Text(
+                                _currentUnit == Unit.btc ? t.btc : t.sats,
+                                style: CoconutTypography.body2_14_Number
+                                    .setColor(CoconutColors.gray350),
+                              ),
+                            ],
+                          ),
+                          CoconutLayout.spacing_100h,
+                          FiatPrice(
+                              satoshiAmount: tx.amount.abs(),
+                              textStyle:
+                                  CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500))
                         ],
                       ),
                     ),
-                    CoconutLayout.spacing_100h,
-                    Center(
-                        child: FiatPrice(
-                            satoshiAmount: tx.amount.abs(),
-                            textStyle:
-                                CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500))),
                     CoconutLayout.spacing_400h,
                     if (_isTransactionStatusPending(txList.last) &&
                         viewModel.isSendType != null) ...{
@@ -162,12 +177,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                 );
                               },
                               child: TransactionInputOutputCard(
-                                  key: ValueKey(_viewModel
-                                      .transactionList![_viewModel.previousTransactionIndex]
-                                      .transactionHash),
-                                  transaction: _viewModel
-                                      .transactionList![_viewModel.previousTransactionIndex],
-                                  isSameAddress: _viewModel.isSameAddress)),
+                                key: ValueKey(_viewModel
+                                    .transactionList![_viewModel.previousTransactionIndex]
+                                    .transactionHash),
+                                transaction: _viewModel
+                                    .transactionList![_viewModel.previousTransactionIndex],
+                                isSameAddress: _viewModel.isSameAddress,
+                                currentUnit: _currentUnit,
+                              )),
                         AnimatedBuilder(
                             animation: _animationController,
                             builder: (context, child) {
@@ -180,12 +197,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                               );
                             },
                             child: TransactionInputOutputCard(
-                                key: ValueKey(_viewModel
-                                    .transactionList![_viewModel.selectedTransactionIndex]
-                                    .transactionHash),
-                                transaction: _viewModel
-                                    .transactionList![_viewModel.selectedTransactionIndex],
-                                isSameAddress: _viewModel.isSameAddress)),
+                              key: ValueKey(_viewModel
+                                  .transactionList![_viewModel.selectedTransactionIndex]
+                                  .transactionHash),
+                              transaction:
+                                  _viewModel.transactionList![_viewModel.selectedTransactionIndex],
+                              isSameAddress: _viewModel.isSameAddress,
+                              currentUnit: _currentUnit,
+                            )),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -644,7 +663,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     String prefix = _getPrefix(tx) == '-' ? '' : '+';
     Color color = prefix == '+' ? CoconutColors.cyan : CoconutColors.primary;
 
-    return Text('$prefix${satoshiToBitcoinString(tx.amount)}',
+    return Text(
+        '$prefix${_currentUnit == Unit.btc ? satoshiToBitcoinString(tx.amount) : addCommasToIntegerPart(tx.amount.toDouble())}',
         style: CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color));
   }
 

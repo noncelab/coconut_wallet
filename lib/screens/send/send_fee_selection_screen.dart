@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
@@ -22,15 +23,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SendFeeSelectionScreen extends StatefulWidget {
-  const SendFeeSelectionScreen({
-    super.key,
-  });
+  const SendFeeSelectionScreen({super.key, required this.currentUnitParam});
+  final Unit currentUnitParam;
 
   @override
   State<SendFeeSelectionScreen> createState() => _SendFeeSelectionScreenState();
 }
 
 class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
+  late SendFeeSelectionViewModel _viewModel;
+  late Unit _currentUnit = widget.currentUnitParam;
   static const maxFeeLimit = 1000000; // sats, 사용자가 실수로 너무 큰 금액을 수수료로 지불하지 않도록 지정했습니다.
   final TextEditingController _customFeeController = TextEditingController();
   List<FeeInfoWithLevel> feeInfos = [
@@ -46,7 +48,20 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   FeeInfo? _customFeeInfo;
   bool? _isRecommendedFeeFetchSuccess;
   bool _isLoading = false;
-  late SendFeeSelectionViewModel _viewModel;
+
+  String get feeText => _estimatedFee != null
+      ? _currentUnit == Unit.btc
+          ? satoshiToBitcoinString(_estimatedFee!)
+          : addCommasToIntegerPart(_estimatedFee!.toDouble())
+      : '';
+
+  String get unitText => _currentUnit == Unit.btc ? t.btc : t.sats;
+
+  String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
+      bitcoin: _currentUnit == Unit.btc
+          ? UnitUtil.satoshiToBitcoin(maxFeeLimit)
+          : addCommasToIntegerPart(maxFeeLimit.toDouble()),
+      unit: unitText);
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +103,8 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                           .satsPerVb!;
 
                   _viewModel.saveFinalSendInfo(_estimatedFee!, satsPerVb);
-                  Navigator.pushNamed(context, '/send-confirm');
+                  Navigator.pushNamed(context, '/send-confirm',
+                      arguments: {'currentUnit': _currentUnit});
                 }),
             body: SafeArea(
               child: Stack(
@@ -116,15 +132,18 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                       Border.all(color: MyColors.transparentWhite_12, width: 1)),
                               child: Text(_selectedFeeLevel ?? "", style: Styles.caption),
                             ),
-                            Text(
-                                _estimatedFee != null
-                                    ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
-                                    : '',
-                                style: Styles.fee),
-                            FiatPrice(
-                                satoshiAmount: _estimatedFee ?? 0,
-                                textStyle: CoconutTypography.body2_14_Number
-                                    .setColor(CoconutColors.gray400)),
+                            GestureDetector(
+                              onTap: _toggleUnit,
+                              child: Column(
+                                children: [
+                                  Text("$feeText $unitText", style: Styles.fee),
+                                  FiatPrice(
+                                      satoshiAmount: _estimatedFee ?? 0,
+                                      textStyle: CoconutTypography.body2_14_Number
+                                          .setColor(CoconutColors.gray400)),
+                                ],
+                              ),
+                            ),
                             const SizedBox(height: 32),
                           ])),
 
@@ -137,10 +156,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                           if (_estimatedFee != null && _estimatedFee! >= maxFeeLimit)
                             _buildFixedTooltip(
                               tooltipState: CoconutTooltipState.warning,
-                              richText: RichText(
-                                  text: TextSpan(
-                                      text: t.tooltip.recommended_fee2(
-                                          bitcoin: UnitUtil.satoshiToBitcoin(maxFeeLimit)))),
+                              richText: RichText(text: TextSpan(text: recommendedFeeTooltipText)),
                             ),
                           if (_estimatedFee != null &&
                               _estimatedFee! != 0 &&
@@ -158,6 +174,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                   ...List.generate(
                                       3,
                                       (index) => FeeSelectionItemCard(
+                                          currentUnit: _currentUnit,
                                           feeInfo: feeInfos[index],
                                           isSelected: _customSelected
                                               ? false
@@ -223,6 +240,12 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       if (_viewModel.isNetworkOn) {
         _startToSetRecommendedFee();
       }
+    });
+  }
+
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
     });
   }
 

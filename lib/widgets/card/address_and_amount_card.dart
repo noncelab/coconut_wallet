@@ -200,8 +200,8 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 placeholderText: widget.amountPlaceholder,
                 isError: widget.isAmountDust,
                 errorText: widget.isAmountDust
-                    ? t.alert.error_send
-                        .minimum_amount(bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1))
+                    ? t.alert.error_send.minimum_amount(
+                        bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1), unit: t.btc)
                     : null),
           ],
         ),

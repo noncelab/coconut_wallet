@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
@@ -53,6 +54,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Size _stickyHeaderDropdownSize = Size.zero;
 
   OverlayEntry? _statusBarTapOverlayEntry; // iOS 노치 터치 시 scrol to top
+  Unit _currentUnit = Unit.btc;
 
   @override
   void initState() {
@@ -111,6 +113,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     );
   }
 
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, UtxoTagProvider, UtxoListViewModel>(
@@ -163,6 +171,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                               SliverToBoxAdapter(child: _buildHeader(context)),
                               UtxoList(
                                 walletId: widget.id,
+                                currentUnit: _currentUnit,
                                 onRemoveDropdown: _hideDropdown,
                                 onFirstBuildCompleted: () {
                                   if (!mounted) return;
@@ -227,22 +236,25 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               selector: (_, viewModel) => viewModel.selectedUtxoOrder,
               builder: (context, selectedOrder, child) {
                 return UtxoListHeader(
-                    key: ValueKey(viewModel.utxoTagListKey),
-                    dropdownGlobalKey: _headerDropdownKey,
-                    canShowDropdown: canShowDropdown,
-                    animatedBalanceData:
-                        AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
-                    selectedOption: selectedOrder.text,
-                    utxoTagList: viewModel.utxoTagList,
-                    selectedUtxoTagName: viewModel.selectedUtxoTagName,
-                    onTapDropdown: () {
-                      if (!canShowDropdown) return;
-                      _dropdownVisibleNotifier.value = !_dropdownVisibleNotifier.value;
-                      _hideStickyHeaderAndUpdateDropdownPosition();
-                    },
-                    onTagSelected: (tagName) {
-                      viewModel.setSelectedUtxoTagName(tagName);
-                    });
+                  key: ValueKey(viewModel.utxoTagListKey),
+                  dropdownGlobalKey: _headerDropdownKey,
+                  canShowDropdown: canShowDropdown,
+                  animatedBalanceData:
+                      AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+                  selectedOption: selectedOrder.text,
+                  utxoTagList: viewModel.utxoTagList,
+                  selectedUtxoTagName: viewModel.selectedUtxoTagName,
+                  onTapDropdown: () {
+                    if (!canShowDropdown) return;
+                    _dropdownVisibleNotifier.value = !_dropdownVisibleNotifier.value;
+                    _hideStickyHeaderAndUpdateDropdownPosition();
+                  },
+                  onTagSelected: (tagName) {
+                    viewModel.setSelectedUtxoTagName(tagName);
+                  },
+                  onPressedUnitToggle: _toggleUnit,
+                  currentUnit: _currentUnit,
+                );
               });
         });
   }
@@ -349,11 +361,13 @@ class UtxoList extends StatefulWidget {
   const UtxoList({
     super.key,
     required this.walletId,
+    required this.currentUnit,
     this.onRemoveDropdown,
     this.onFirstBuildCompleted,
   });
 
   final int walletId;
+  final Unit currentUnit;
   final Function? onRemoveDropdown;
   final VoidCallback? onFirstBuildCompleted;
 
@@ -495,6 +509,7 @@ class _UtxoListState extends State<UtxoList> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: UtxoItemCard(
                   key: Key(utxo.utxoId),
+                  currentUnit: widget.currentUnit,
                   onPressed: () async {
                     if (widget.onRemoveDropdown != null) {
                       widget.onRemoveDropdown!();
@@ -522,22 +537,24 @@ class _UtxoListState extends State<UtxoList> {
           child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: UtxoItemCard(
-                  key: Key(utxo.utxoId),
-                  onPressed: () async {
-                    if (widget.onRemoveDropdown != null) {
-                      widget.onRemoveDropdown!();
-                    }
+                key: Key(utxo.utxoId),
+                currentUnit: widget.currentUnit,
+                onPressed: () async {
+                  if (widget.onRemoveDropdown != null) {
+                    widget.onRemoveDropdown!();
+                  }
 
-                    await Navigator.pushNamed(
-                      context,
-                      '/utxo-detail',
-                      arguments: {
-                        'utxo': utxo,
-                        'id': widget.walletId,
-                      },
-                    );
-                  },
-                  utxo: utxo)),
+                  await Navigator.pushNamed(
+                    context,
+                    '/utxo-detail',
+                    arguments: {
+                      'utxo': utxo,
+                      'id': widget.walletId,
+                    },
+                  );
+                },
+                utxo: utxo,
+              )),
         ),
         isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
       ],
