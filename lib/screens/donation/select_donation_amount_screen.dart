@@ -367,6 +367,15 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                 textInputAction: TextInputAction.done,
+                                onSubmitted: (value) {
+                                  if (donationSelectedType == DonationSelectedType.custom &&
+                                      customDonateValue != null &&
+                                      customDonateValue! <= dustLimit) {
+                                    setState(() {
+                                      isDustErrorTextVisible = true;
+                                    });
+                                  }
+                                },
                                 textAlign: TextAlign.center,
                                 style: CoconutTypography.body3_12.setColor(
                                   isDustErrorTextVisible

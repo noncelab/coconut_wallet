@@ -124,6 +124,7 @@ donation:
   total_donation_amount: "최종 후원 금액"
   donation_amount: "후원 금액"
   donation_address: "후원 주소"
+  empty_enough_balance_wallet: "잔액이 충분한 지갑이 없어요"
 
 # lib/enums
 transaction_enums:
