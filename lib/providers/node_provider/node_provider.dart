@@ -101,6 +101,10 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
+    final isAlreadySubscribed = _lastSubscribedWallets.any((wallet) => wallet.id == walletItem.id);
+    if (!isAlreadySubscribed) {
+      _lastSubscribedWallets.add(walletItem);
+    }
     return _isolateManager.subscribeWallet(walletItem);
   }
 
@@ -128,7 +132,8 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.getRecommendedFees();
   }
 
-  void unregisterWalletUpdateState(int walletId) {
+  void deleteWallet(int walletId) {
+    _lastSubscribedWallets.removeWhere((element) => element.id == walletId);
     _stateManager?.unregisterWalletUpdateState(walletId);
   }
 

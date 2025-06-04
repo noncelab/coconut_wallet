@@ -455,7 +455,7 @@ class WalletProvider extends ChangeNotifier {
     // Isolate 에러 핸들링 로직에 의해 WalletUpdateState가 다시 대기상태로 초기화 되어 3초 지연 후 실행
     // TODO: NodeProvider에서 지갑별 작업중인 것이 있는지 확인하고 작업이 종료되면 WalletUpdateState를 삭제
     Future.delayed(const Duration(seconds: 3), () {
-      _nodeProvider.unregisterWalletUpdateState(walletId);
+      _nodeProvider.deleteWallet(walletId);
     });
   }
 
