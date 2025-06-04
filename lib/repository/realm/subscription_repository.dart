@@ -45,12 +45,6 @@ class SubscriptionRepository extends BaseRepository {
       await realm.writeAsync(() {
         final wallet = realm.find<RealmWalletBase>(walletId);
         if (wallet == null) {
-          realm.deleteMany<RealmScriptStatus>(
-            realm.query<RealmScriptStatus>(
-              r'walletId == $0',
-              [walletId],
-            ),
-          );
           return;
         }
 
