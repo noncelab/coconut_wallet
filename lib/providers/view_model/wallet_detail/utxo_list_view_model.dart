@@ -23,14 +23,13 @@ class UtxoListViewModel extends ChangeNotifier {
   late final UpbitConnectModel _upbitConnectModel;
   late final WalletListItemBase _walletListBaseItem;
   late final int _walletId;
-  // WalletInitState _prevWalletInitState = WalletInitState.never;
   late UpdateStatus _prevUpdateStatus;
 
   // balance 애니메이션을 위한 이전 잔액을 담는 변수
   late int _prevBalance;
 
   List<UtxoState> _utxoList = [];
-  UtxoOrder _selectedUtxoOrder = UtxoOrder.byTimestampDesc;
+  UtxoOrder _selectedUtxoOrder = UtxoOrder.byAmountDesc;
   bool _isUtxoListLoadComplete = false;
   String _selectedUtxoTagName = t.all;
   List<UtxoTag> _utxoTagList = [];
