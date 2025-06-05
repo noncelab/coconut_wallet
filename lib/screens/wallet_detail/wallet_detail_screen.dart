@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -45,8 +46,7 @@ class WalletDetailScreen extends StatefulWidget {
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
   bool _isPullToRefreshing = false;
-  Unit _currentUnit = Unit.btc;
-
+  late Unit _currentUnit;
   late WalletDetailViewModel _viewModel;
 
   @override
@@ -254,7 +254,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   @override
   void initState() {
     super.initState();
-
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = WalletDetailViewModel(
         widget.id,
         Provider.of<WalletProvider>(context, listen: false),

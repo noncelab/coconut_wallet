@@ -5,6 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -61,7 +62,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   late Offset _orderDropdownButtonPosition;
   late Offset _scrolledOrderDropdownButtonPosition;
   Size _headerTopContainerSize = const Size(0, 0);
-  Unit _currentUnit = Unit.btc;
+  late Unit _currentUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +142,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   void initState() {
     try {
       super.initState();
+      _currentUnit = context.read<PreferenceProvider>().currentUnit;
       _selectedUtxoOrder = _utxoOrderOptions[0];
       _viewModel = SendUtxoSelectionViewModel(
           Provider.of<WalletProvider>(context, listen: false),
@@ -235,7 +237,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   void _moveToSendConfirm() {
     _viewModel.saveSendInfo();
-    Navigator.pushNamed(context, '/send-confirm', arguments: {'currentUnit': _currentUnit});
+    Navigator.pushNamed(context, '/send-confirm');
   }
 
   void _onTapFeeChangeButton() async {
@@ -254,8 +256,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           customFeeInfo: _viewModel.customFeeInfo,
           isRecommendedFeeFetchSuccess:
               _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed,
-          estimateFee: _viewModel.estimateFee,
-          currentUnitParam: _currentUnit),
+          estimateFee: _viewModel.estimateFee),
     );
     if (feeSelectionResult != null) {
       _viewModel.onFeeRateChanged(feeSelectionResult);

@@ -4,8 +4,10 @@ import 'dart:ui';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
@@ -53,6 +55,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   double topPadding = 0;
   final bool _isScrollOverTitleHeight = false;
   late ScrollController _controller;
+  late Unit _currentUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +151,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                           derivationPath: addressList[index].derivationPath,
                                           isUsed: addressList[index].isUsed,
                                           balanceInSats: addressList[index].total,
+                                          currentUnit: _currentUnit,
                                         ),
                                       ),
                                       if (_isLoadMoreRunning)
@@ -191,7 +195,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   @override
   void initState() {
     super.initState();
-
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _isFirstLoadRunning = false;
     _controller = ScrollController();
 

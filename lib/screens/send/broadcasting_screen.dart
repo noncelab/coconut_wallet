@@ -4,12 +4,14 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -33,6 +35,28 @@ class BroadcastingScreen extends StatefulWidget {
 
 class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BroadcastingViewModel _viewModel;
+  late Unit _currentUnit;
+
+  int get amount => (_viewModel.sendingAmountWhenAddressIsMyChange ?? _viewModel.amount!);
+  String get confirmText => _viewModel.amount != null
+      ? _currentUnit == Unit.btc
+          ? satoshiToBitcoinString(amount)
+          : addCommasToIntegerPart(amount.toDouble())
+      : "";
+
+  String get estimatedFeeText => _viewModel.fee != null
+      ? _currentUnit == Unit.btc
+          ? satoshiToBitcoinString(_viewModel.fee!)
+          : addCommasToIntegerPart(_viewModel.fee!.toDouble())
+      : t.calculation_failed;
+
+  String get totalCostText => _viewModel.totalAmount != null
+      ? _currentUnit == Unit.btc
+          ? satoshiToBitcoinString(_viewModel.totalAmount!)
+          : addCommasToIntegerPart(_viewModel.totalAmount!.toDouble())
+      : t.calculation_failed;
+
+  String get unitText => _currentUnit == Unit.btc ? t.btc : t.sats;
 
   void broadcast() async {
     if (context.loaderOverlay.visible) return;
@@ -144,25 +168,25 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                           style: Styles.h3,
                         ),
                         CoconutLayout.spacing_400h,
-                        Center(
-                          child: Text.rich(
-                            TextSpan(
-                                text: viewModel.amount != null
-                                    ? satoshiToBitcoinString(
-                                        viewModel.sendingAmountWhenAddressIsMyChange != null
-                                            ? viewModel.sendingAmountWhenAddressIsMyChange!
-                                            : viewModel.amount!)
-                                    : "",
-                                children: <TextSpan>[
-                                  TextSpan(text: ' ${t.btc}', style: Styles.unit)
-                                ]),
-                            style: Styles.balance1,
+                        GestureDetector(
+                          onTap: _toggleUnit,
+                          child: Column(
+                            children: [
+                              Center(
+                                child: Text.rich(
+                                  TextSpan(text: confirmText, children: <TextSpan>[
+                                    TextSpan(text: ' $unitText', style: Styles.unit)
+                                  ]),
+                                  style: Styles.balance1,
+                                ),
+                              ),
+                              FiatPrice(
+                                  satoshiAmount: viewModel.amount ?? 0,
+                                  textStyle: CoconutTypography.body2_14_Number
+                                      .setColor(CoconutColors.gray400)),
+                            ],
                           ),
                         ),
-                        FiatPrice(
-                            satoshiAmount: viewModel.amount ?? 0,
-                            textStyle:
-                                CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
                         CoconutLayout.spacing_1000h,
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -183,20 +207,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                                       const Divider(color: MyColors.transparentWhite_12, height: 1),
                                       InformationItemCard(
                                           label: t.estimated_fee,
-                                          value: [
-                                            viewModel.fee != null
-                                                ? "${satoshiToBitcoinString(viewModel.fee!)} ${t.btc}"
-                                                : ''
-                                          ],
+                                          value: ["$estimatedFeeText $unitText"],
                                           isNumber: true),
                                       const Divider(color: MyColors.transparentWhite_12, height: 1),
                                       InformationItemCard(
                                           label: t.total_cost,
-                                          value: [
-                                            viewModel.totalAmount != null
-                                                ? "${satoshiToBitcoinString(viewModel.totalAmount!)} ${t.btc}"
-                                                : ''
-                                          ],
+                                          value: ["$totalCostText $unitText"],
                                           isNumber: true),
                                     ],
                                   ))),
@@ -227,6 +243,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   @override
   void initState() {
     super.initState();
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = BroadcastingViewModel(
       Provider.of<SendInfoProvider>(context, listen: false),
       Provider.of<WalletProvider>(context, listen: false),
@@ -256,5 +273,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     } else {
       context.loaderOverlay.hide();
     }
+  }
+
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+    });
   }
 }

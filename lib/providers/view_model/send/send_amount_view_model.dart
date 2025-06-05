@@ -16,11 +16,12 @@ class SendAmountViewModel extends ChangeNotifier {
   late int _incomingBalance;
   late String _input;
   late bool _isNextButtonEnabled;
+  late Unit _currentUnit;
   int? _errorIndex;
   bool _isUtxoUpdating = false;
-  Unit _currentUnit = Unit.btc;
 
-  SendAmountViewModel(this._sendInfoProvider, this._walletProvider, this._isNetworkOn) {
+  SendAmountViewModel(
+      this._sendInfoProvider, this._walletProvider, this._isNetworkOn, this._currentUnit) {
     _initBalances(); // _confirmedBalance, _incomingBalance
     _input = '';
     _isNextButtonEnabled = false;

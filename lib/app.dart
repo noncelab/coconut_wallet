@@ -301,21 +301,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
               ),
           '/send-amount': (context) => const SendAmountScreen(),
-          '/fee-selection': (context) => buildScreenWithArguments(
-                context,
-                (args) => SendFeeSelectionScreen(
-                  currentUnitParam: args['currentUnit'],
-                ),
-              ),
+          '/fee-selection': (context) => const SendFeeSelectionScreen(),
           '/utxo-selection': (context) => const CustomLoadingOverlay(
                 child: SendUtxoSelectionScreen(),
               ),
-          '/send-confirm': (context) => buildScreenWithArguments(
-              context,
-              (args) => CustomLoadingOverlay(
-                      child: SendConfirmScreen(
-                    currentUnitParam: args['currentUnit'],
-                  ))),
+          '/send-confirm': (context) => const CustomLoadingOverlay(child: SendConfirmScreen()),
           '/utxo-list': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(

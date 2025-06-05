@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
@@ -54,7 +55,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   late Animation<Offset> _slideInAnimation;
   late Animation<Offset> _slideOutAnimation;
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
-  Unit _currentUnit = Unit.btc;
+  late Unit _currentUnit;
 
   void _toggleUnit() {
     setState(() {
@@ -301,6 +302,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   @override
   void initState() {
     super.initState();
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),

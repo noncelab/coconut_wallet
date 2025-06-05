@@ -89,23 +89,30 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   }
 
   Widget _buildPendingAmountStatus() {
+    String getUnitText() => widget.currentUnit == Unit.btc ? t.btc : t.sats;
+    String getSendingAmountText() {
+      if (widget.sendingAmount == 0) return '';
+      return '${widget.currentUnit == Unit.btc ? satoshiToBitcoinString(widget.sendingAmount) : addCommasToIntegerPart(widget.sendingAmount.toDouble())} ${getUnitText()} ${t.status_sending}';
+    }
+
+    String getReceivingAmountText() {
+      if (widget.receivingAmount == 0) return '';
+      return '${widget.currentUnit == Unit.btc ? satoshiToBitcoinString(widget.receivingAmount) : addCommasToIntegerPart(widget.receivingAmount.toDouble())} ${getUnitText()} ${t.status_receiving}';
+    }
+
     return Column(
       children: [
         _buildPendingAmountRow(
           widget.sendingAmount != 0,
           'assets/lottie/arrow-up.json',
-          widget.sendingAmount != 0
-              ? '${t.bitcoin_text(bitcoin: satoshiToBitcoinString(widget.sendingAmount))} ${t.status_sending}'
-              : '',
+          getSendingAmountText(),
           CoconutColors.primary.withOpacity(0.2),
         ),
         CoconutLayout.spacing_100h,
         _buildPendingAmountRow(
           widget.receivingAmount != 0,
           'assets/lottie/arrow-down.json',
-          widget.receivingAmount != 0
-              ? '${t.bitcoin_text(bitcoin: satoshiToBitcoinString(widget.receivingAmount))} ${t.status_receiving}'
-              : '',
+          getReceivingAmountText(),
           CoconutColors.cyan.withOpacity(0.2),
         ),
       ],

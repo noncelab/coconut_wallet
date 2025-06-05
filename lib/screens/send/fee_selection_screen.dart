@@ -4,6 +4,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -26,14 +27,12 @@ class FeeSelectionScreen extends StatefulWidget {
   final TransactionFeeLevel? selectedFeeLevel; // null인 경우 직접 입력한 경우
   final FeeInfo? customFeeInfo; // feeRate을 직접 입력한 경우
   final bool isRecommendedFeeFetchSuccess;
-  final Unit currentUnitParam;
 
   const FeeSelectionScreen(
       {super.key,
       required this.feeInfos,
       required this.estimateFee,
       required this.networkMinimumFeeRate,
-      required this.currentUnitParam,
       this.selectedFeeLevel,
       this.customFeeInfo,
       this.isRecommendedFeeFetchSuccess = true});
@@ -45,7 +44,7 @@ class FeeSelectionScreen extends StatefulWidget {
 class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   static const int kMaxFeeLimit = 1000000;
   late int? _estimatedFee;
-  late Unit _currentUnit = widget.currentUnitParam;
+  late Unit _currentUnit;
   bool? _isNetworkOn;
   int? _customSatsPerVb;
 
@@ -199,6 +198,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   @override
   void initState() {
     super.initState();
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _selectedFeeLevel = widget.selectedFeeLevel;
     if (_selectedFeeLevel == null && widget.customFeeInfo != null) {
       _estimatedFee = widget.customFeeInfo!.estimatedFee ?? 0;

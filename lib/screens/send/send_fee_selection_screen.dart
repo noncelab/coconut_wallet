@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
@@ -23,8 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SendFeeSelectionScreen extends StatefulWidget {
-  const SendFeeSelectionScreen({super.key, required this.currentUnitParam});
-  final Unit currentUnitParam;
+  const SendFeeSelectionScreen({super.key});
 
   @override
   State<SendFeeSelectionScreen> createState() => _SendFeeSelectionScreenState();
@@ -32,7 +32,7 @@ class SendFeeSelectionScreen extends StatefulWidget {
 
 class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   late SendFeeSelectionViewModel _viewModel;
-  late Unit _currentUnit = widget.currentUnitParam;
+  late Unit _currentUnit;
   static const maxFeeLimit = 1000000; // sats, 사용자가 실수로 너무 큰 금액을 수수료로 지불하지 않도록 지정했습니다.
   final TextEditingController _customFeeController = TextEditingController();
   List<FeeInfoWithLevel> feeInfos = [
@@ -103,8 +103,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                           .satsPerVb!;
 
                   _viewModel.saveFinalSendInfo(_estimatedFee!, satsPerVb);
-                  Navigator.pushNamed(context, '/send-confirm',
-                      arguments: {'currentUnit': _currentUnit});
+                  Navigator.pushNamed(context, '/send-confirm');
                 }),
             body: SafeArea(
               child: Stack(
@@ -229,6 +228,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   @override
   void initState() {
     super.initState();
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = SendFeeSelectionViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
