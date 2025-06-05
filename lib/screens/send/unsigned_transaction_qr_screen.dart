@@ -1,12 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/print_util.dart';
-import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/coconut_qr_view_handler.dart';
@@ -24,6 +20,7 @@ class UnsignedTransactionQrScreen extends StatefulWidget {
 }
 
 class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScreen> {
+  late final SendInfoProvider _sendInfoProvider;
   late final String _psbtBase64;
   late final bool _isMultisig;
   late final WalletImportSource _walletImportSource;
@@ -34,7 +31,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       backgroundColor: CoconutColors.black,
       appBar: CoconutAppBar.buildWithNext(
-          title: t.send,
+          title: (_sendInfoProvider.isDonation ?? false) ? t.donation.donate : t.send,
           context: context,
           usePrimaryActiveColor: true,
           onNextPressed: () {
@@ -78,10 +75,10 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   @override
   void initState() {
     super.initState();
-    final sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
-    _psbtBase64 = sendInfoProvider.txWaitingForSign!;
-    _isMultisig = sendInfoProvider.isMultisig!;
-    _walletImportSource = sendInfoProvider.walletImportSource!;
+    _sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
+    _psbtBase64 = _sendInfoProvider.txWaitingForSign!;
+    _isMultisig = _sendInfoProvider.isMultisig!;
+    _walletImportSource = _sendInfoProvider.walletImportSource!;
   }
 
   Widget _buildToolTip() {
@@ -125,6 +122,18 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ),
           ),
           showIcon: true);
+    } else if (_sendInfoProvider.isDonation == true) {
+      return Padding(
+        padding: const EdgeInsets.only(
+          top: 24,
+        ),
+        child: Center(
+          child: Text(
+            t.donation.unsigned_qr_tooltip,
+            style: CoconutTypography.body2_14_Bold,
+          ),
+        ),
+      );
     } else {
       return CoconutToolTip(
         backgroundColor: CoconutColors.gray900,

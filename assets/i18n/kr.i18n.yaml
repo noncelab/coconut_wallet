@@ -125,6 +125,20 @@ donation:
   donation_amount: "후원 금액"
   donation_address: "후원 주소"
   empty_enough_balance_wallet: "잔액이 충분한 지갑이 없어요"
+  unsigned_qr_tooltip: "QR 코드를 스캔하여 서명해 주세요"
+  signed_qr_tooltip: "서명된 트랜잭션을 스캔해 주세요"
+  user_messages: [
+    "사랑을 담아",
+    "응원의 마음을 담아",
+    "파이팅 하라고",
+    "소처럼 일하라고",
+    "힘내라고",
+    "고마운 마음으로",
+    "기특해서",
+  ]
+  user_messages_description_1: "코코넛 개발팀에게"
+  user_messages_description_2: "${amount} sats를"
+  donate_confirm: "후원합니다"
 
 # lib/enums
 transaction_enums:

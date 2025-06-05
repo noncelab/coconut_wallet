@@ -73,7 +73,7 @@ class _DonationBannerCardState extends State<DonationBannerCard>
             ),
             CoconutLayout.spacing_300w,
             Lottie.asset(
-              'assets/lottie/hand-with-floating-heart.json',
+              'assets/lottie/hand-with-floating-heart-delayed.json',
               width: 82,
               height: 82,
             ),

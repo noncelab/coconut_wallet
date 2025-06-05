@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +24,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   bool _isInitDone = false;
   bool _isSendingToMyAddress = false;
+  bool _isSendingDonation = false;
   final List<String> _recipientAddresses = [];
   int? _sendingAmount;
   int? _fee;
@@ -44,6 +44,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   ) {
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
+    _isSendingDonation = _sendInfoProvider.isDonation ?? false;
   }
 
   List<String> get recipientAddresses => UnmodifiableListView(_recipientAddresses);
@@ -61,6 +62,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool get isInitDone => _isInitDone;
   bool get isNetworkOn => _isNetworkOn == true;
   bool get isSendingToMyAddress => _isSendingToMyAddress;
+  bool get isSendingDonation => _isSendingDonation;
   int? get sendingAmountWhenAddressIsMyChange => _sendingAmountWhenAddressIsMyChange;
   String get signedTransaction => _sendInfoProvider.signedPsbt!;
   int? get totalAmount => _totalAmount;

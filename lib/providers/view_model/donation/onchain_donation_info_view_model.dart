@@ -48,6 +48,7 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
       .toList();
 
   initialize() async {
+    _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _bitcoinPriceKrw = _bitcoinPriceKrw;
     _isNetworkOn = isNetworkOn;
 
@@ -112,23 +113,35 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
 
   int estimateFee(int satsPerVb, int walletId, WalletBase walletBase) {
     final transaction = _createTransaction(satsPerVb, walletId, walletBase);
-
-    return transaction.estimateFee(satsPerVb.toDouble(), AddressType.p2wpkh); // singlesignature
+    return transaction.estimateFee(satsPerVb.toDouble(), walletBase.addressType); // singlesignature
   }
 
   Transaction _createTransaction(int satsPerVb, int walletId, WalletBase walletBase) {
     final utxoPool = _walletProvider.getUtxoListByStatus(walletId, UtxoStatus.unspent);
 
     final changeAddress = _walletProvider.getChangeAddress(walletId);
-    return Transaction.forSinglePayment(
-      TransactionUtil.selectOptimalUtxos(
-          utxoPool, _amount, satsPerVb, AddressType.p2wpkh), // singlesignature
-      CoconutWalletApp.kDonationAddress,
-      changeAddress.derivationPath,
-      _amount,
-      satsPerVb.toDouble(),
-      walletBase,
-    );
+    try {
+      Transaction tx = Transaction.forSinglePayment(
+        TransactionUtil.selectOptimalUtxos(
+            utxoPool, _amount, satsPerVb, walletBase.addressType), // singlesignature
+        _sendInfoProvider.recipientAddress!,
+        changeAddress.derivationPath,
+        _amount,
+        satsPerVb.toDouble(),
+        walletBase,
+      );
+
+      return tx;
+    } catch (e) {
+      debugPrint('utxoPool: ${utxoPool.map((utxo) => utxo.toString())}');
+      if (e.toString().contains('Not enough amount for sending. (Fee')) {
+        debugPrint('error: $e, receipientAddress: ${_sendInfoProvider.recipientAddress}');
+        final tx = Transaction.forSweep(
+            utxoPool, _sendInfoProvider.recipientAddress!, satsPerVb.toDouble(), walletBase);
+        return tx;
+      }
+      rethrow;
+    }
   }
 
   void setSelectedIndex(int index) {
@@ -180,10 +193,13 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     final walletBase = walletItem.wallet.walletBase;
     final walletImportSource = walletItem.wallet.walletImportSource;
     _sendInfoProvider.clear();
+    debugPrint(_amount.toString());
+    debugPrint(estimatedFee.toString());
 
     _sendInfoProvider.setWalletId(walletId);
+    _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _sendInfoProvider.setIsDonation(true);
-    _sendInfoProvider.setAmount(_amount.toDouble());
+    _sendInfoProvider.setAmount(_amount.toDouble() - estimatedFee.toDouble());
     _sendInfoProvider.setEstimatedFee(estimatedFee);
     _sendInfoProvider.setWalletImportSource(walletImportSource);
     _sendInfoProvider.setIsMultisig(false);
