@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -121,7 +123,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
           if (_upbitConnectModel.upbitWebSocketService == null) {
             _upbitConnectModel.initUpbitWebSocketService();
           }
-          _nodeProvider.initialize().then((_) => _nodeProvider.subscribeWallets(null));
+          _nodeProvider.reconnect();
         }
         break;
       case AppLifecycleState.hidden:
@@ -130,7 +132,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
         if (_isPause) break;
         _isPause = true;
         _upbitConnectModel.disposeUpbitWebSocketService();
-        _nodeProvider.closeConnection();
+        unawaited(_nodeProvider.closeConnection());
         break;
       case AppLifecycleState.inactive:
         break;

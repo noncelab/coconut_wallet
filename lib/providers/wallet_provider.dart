@@ -232,7 +232,7 @@ class WalletProvider extends ChangeNotifier {
     _walletSubscriptionState = WalletSubscriptionState.syncing;
     notifyListeners();
 
-    Result<bool> result = await _nodeProvider.subscribeWallets(_walletItemList);
+    Result<bool> result = await _nodeProvider.subscribeWallets(walletItems: _walletItemList);
     if (result.isSuccess) {
       _walletSubscriptionState = WalletSubscriptionState.completed;
     } else {

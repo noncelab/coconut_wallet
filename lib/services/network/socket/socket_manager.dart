@@ -56,20 +56,20 @@ class SocketManager {
     _scriptSubscribeCallbacks.remove(scriptReverseHash);
   }
 
-  Future<void> connect(String host, int port, {bool ssl = true}) async {
+  Future<bool> connect(String host, int port, {bool ssl = true}) async {
     _host = host;
     _port = port;
     _ssl = ssl;
 
     if (_connectionAttempts >= _maxConnectionAttempts) {
       _connectionStatus = SocketConnectionStatus.terminated;
-      return;
+      return false;
     }
 
     ++_connectionAttempts;
 
     if (_connectionStatus != SocketConnectionStatus.reconnecting) {
-      return;
+      return false;
     }
 
     _connectionStatus = SocketConnectionStatus.connecting;
@@ -85,6 +85,7 @@ class SocketManager {
     } catch (e) {
       _connectionStatus = SocketConnectionStatus.terminated;
     }
+    return true;
   }
 
   Future<void> disconnect() async {
