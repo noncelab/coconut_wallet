@@ -33,7 +33,7 @@ class SendAmountViewModel extends ChangeNotifier {
 
   int? get errorIndex => _errorIndex;
 
-  String get input => _input;
+  String get input => addThousandsSeparator(_input);
 
   bool get isNetworkOn => _isNetworkOn == true;
 

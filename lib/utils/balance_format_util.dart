@@ -1,4 +1,5 @@
 import 'package:decimal/decimal.dart';
+import 'package:intl/intl.dart';
 
 class UnitUtil {
   static double satoshiToBitcoin(int satoshi) {
@@ -138,4 +139,26 @@ String formatNumber(double number) {
   }
   // 그렇지 않으면 double형 그대로 출력
   return number.toString();
+}
+
+String addThousandsSeparator(String input) {
+  if (input.isEmpty) return '';
+
+  try {
+    // 소수점이 있는지 확인
+    if (input.contains('.')) {
+      List<String> parts = input.split('.');
+      String integerPart = parts[0];
+      String decimalPart = parts.length > 1 ? parts[1] : '';
+
+      final formatter = NumberFormat('#,###');
+      String formattedInt = formatter.format(int.parse(integerPart));
+      return '$formattedInt.$decimalPart';
+    } else {
+      final formatter = NumberFormat('#,###');
+      return formatter.format(int.parse(input));
+    }
+  } catch (e) {
+    return input;
+  }
 }
