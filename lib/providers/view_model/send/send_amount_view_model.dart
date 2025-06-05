@@ -55,6 +55,11 @@ class SendAmountViewModel extends ChangeNotifier {
               ? UnitUtil.satoshiToBitcoin(int.parse(_input))
               : UnitUtil.bitcoinToSatoshi(double.parse(_input)))
           .toString();
+
+      // sats to btc 변환에서 지수로 표현되는 경우에는 다시 변환한다.
+      if (_input.contains('e')) {
+        _input = double.parse(_input).toStringAsFixed(8);
+      }
     }
 
     notifyListeners();
