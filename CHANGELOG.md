@@ -1,3 +1,11 @@
+## regtest 3.1.2 - 2025-06-02
+### Fixed
+* 배치 트랜잭션 UI 버그 수정
+
+## mainnet 0.0.3(beta) - 2025-06-02
+### Fixed
+* 짧은 시간 내 앱 상태 resume 됐을 때 지갑 동기화 안되는 버그 수정 (isolate_manager _send 반환 타입 에러 수정)
+
 ## mainnet 0.0.2(beta) - 2025-05-28
 ### Fixed
 * 트랜잭션 상세 - 승인 번호 누락
