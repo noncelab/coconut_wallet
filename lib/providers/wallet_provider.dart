@@ -22,6 +22,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
@@ -271,19 +272,28 @@ class WalletProvider extends ChangeNotifier {
     return await _walletRepository.getWalletItemList();
   }
 
+  /// 원래 descriptor 또는 확장공개키를 비교하여 중복 지갑을 탐색했습니다.
+  /// 하지만 키스톤 지갑의 'Connect Software Wallet' 기능은 확장 공개키 생성 시
+  /// 비표준 depth를 사용하여, 표준을 따르는 지갑들과 다른 확장 공개키를 제공합니다.
+  /// 이로 인해 중복 탐색이 실패하여, 현재는 receive 주소의 index 0을 비교하는 방식으로 대체했습니다.
   int _findSameWalletIndex(String descriptorString, {required bool isMultisig}) {
+    // var address1 = descriptorString을 이용해서 WalletBase를 생성 > m/84'/0'/0'/0/0 주소를 구한다.
+    WalletBase walletBase;
+    if (isMultisig) {
+      walletBase = MultisignatureWallet.fromDescriptor(descriptorString);
+    } else {
+      walletBase = SingleSignatureWallet.fromDescriptor(descriptorString);
+    }
+    var newWalletAddress = walletBase.getAddress(0);
     for (var index = 0; index < _walletItemList.length; index++) {
       if (isMultisig) {
         if (_walletItemList[index] is MultisigWalletListItem &&
-            (_walletItemList[index] as MultisigWalletListItem).descriptor == descriptorString) {
+            _walletItemList[index].walletBase.getAddress(0) == newWalletAddress) {
           return index;
         }
       } else {
-        Descriptor descriptor = Descriptor.parse(descriptorString,
-            ignoreChecksum: !DescriptorUtil.hasDescriptorChecksum(descriptorString));
         if (_walletItemList[index] is SinglesigWalletListItem &&
-            (_walletItemList[index] as SinglesigWalletListItem).extendedPublicKey ==
-                descriptor.getPublicKey(0)) {
+            _walletItemList[index].walletBase.getAddress(0) == newWalletAddress) {
           return index;
         }
       }
@@ -343,6 +353,7 @@ class WalletProvider extends ChangeNotifier {
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
   }
 
+  /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
   Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
     final sameNameIndex =
         _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
@@ -350,19 +361,8 @@ class WalletProvider extends ChangeNotifier {
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
 
-    final index = _walletItemList.indexWhere((element) {
-      if (element.descriptor == watchOnlyWallet.descriptor) {
-        return true;
-      }
-      final elementParentFingerprint =
-          ExtendedPublicKey.parse(Descriptor.parse(element.descriptor).getPublicKey(0))
-              .parentFingerprint;
-      final watchOnlyParentFingerprint =
-          ExtendedPublicKey.parse(Descriptor.parse(watchOnlyWallet.descriptor).getPublicKey(0))
-              .parentFingerprint;
-
-      return elementParentFingerprint == watchOnlyParentFingerprint;
-    });
+    /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
+    final index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: false);
 
     if (index != -1) {
       return ResultOfSyncFromVault(
