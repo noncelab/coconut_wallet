@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
@@ -18,6 +19,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   final String selectedOption;
   final Function onTapDropdown;
   final Function removePopup;
+  final Unit currentUnit;
   const UtxoListStickyHeader({
     super.key,
     required this.dropdownGlobalKey,
@@ -29,6 +31,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.selectedOption,
     required this.onTapDropdown,
     required this.removePopup,
+    required this.currentUnit,
   });
 
   @override
@@ -80,7 +83,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                             AnimatedBalance(
                               prevValue: animatedBalanceData.previous,
                               value: animatedBalanceData.current,
-                              isBtcUnit: true,
+                              isBtcUnit: currentUnit == Unit.btc,
                               textStyle: CoconutTypography.heading4_18_NumberBold,
                             ),
                             CoconutLayout.spacing_100w,

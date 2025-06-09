@@ -372,7 +372,7 @@ user_experience_survey_bottom_sheet:
   text4: "그냥 그래요"
 unit_bottom_sheet:
   basic_unit: "기본 단위"
-  header_text: "1 BTC = 100 000 000 sats"
+  header_text: "1 BTC = 100,000,000 sats"
 
 errors:
   storage_read_error: "저장소에서 데이터를 불러오는데 실패했습니다."

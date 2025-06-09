@@ -312,6 +312,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                       key: ValueKey(viewModel.utxoTagListKey),
                       dropdownGlobalKey: _stickyHeaderDropdownKey,
                       height: _appBarSize.height,
+                      currentUnit: _currentUnit,
                       isVisible: isStickyHeaderVisible,
                       enableDropdown: enableDropdown,
                       animatedBalanceData: AnimatedBalanceData(currentBalane, prevBalance),

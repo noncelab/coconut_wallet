@@ -16,7 +16,9 @@ class PreferenceProvider extends ChangeNotifier {
 
   PreferenceProvider() {
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
-    _isBtcUnit = _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit);
+    _isBtcUnit = _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)
+        ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
+        : true;
   }
 
   /// 홈 화면 잔액 숨기기
