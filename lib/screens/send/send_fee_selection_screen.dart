@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -11,7 +12,6 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
@@ -32,7 +32,7 @@ class SendFeeSelectionScreen extends StatefulWidget {
 
 class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   late SendFeeSelectionViewModel _viewModel;
-  late Unit _currentUnit;
+  late BitcoinUnit _currentUnit;
   static const maxFeeLimit = 1000000; // sats, 사용자가 실수로 너무 큰 금액을 수수료로 지불하지 않도록 지정했습니다.
   final TextEditingController _customFeeController = TextEditingController();
   List<FeeInfoWithLevel> feeInfos = [
@@ -50,15 +50,15 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   bool _isLoading = false;
 
   String get feeText => _estimatedFee != null
-      ? _currentUnit == Unit.btc
+      ? _currentUnit == BitcoinUnit.btc
           ? satoshiToBitcoinString(_estimatedFee!)
           : addCommasToIntegerPart(_estimatedFee!.toDouble())
       : '';
 
-  String get unitText => _currentUnit == Unit.btc ? t.btc : t.sats;
+  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
-      bitcoin: _currentUnit == Unit.btc
+      bitcoin: _currentUnit == BitcoinUnit.btc
           ? UnitUtil.satoshiToBitcoin(maxFeeLimit)
           : addCommasToIntegerPart(maxFeeLimit.toDouble()),
       unit: unitText);
@@ -245,7 +245,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 

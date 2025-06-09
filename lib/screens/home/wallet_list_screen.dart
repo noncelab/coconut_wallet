@@ -4,13 +4,13 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -391,7 +391,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               isBalanceHidden: isBalanceHidden,
               signers: signers,
               walletImportSource: walletImportSource,
-              currentUnit: isBtcUnit ? Unit.btc : Unit.sats);
+              currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats);
         });
   }
 

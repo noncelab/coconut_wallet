@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -15,7 +16,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_de
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -55,11 +55,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   late Animation<Offset> _slideInAnimation;
   late Animation<Offset> _slideOutAnimation;
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
-  late Unit _currentUnit;
+  late BitcoinUnit _currentUnit;
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 
@@ -131,7 +131,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                               _amountText(tx),
                               CoconutLayout.spacing_100w,
                               Text(
-                                _currentUnit == Unit.btc ? t.btc : t.sats,
+                                _currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
                                 style: CoconutTypography.body2_14_Number
                                     .setColor(CoconutColors.gray350),
                               ),
@@ -666,7 +666,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     Color color = prefix == '+' ? CoconutColors.cyan : CoconutColors.primary;
 
     return Text(
-        '$prefix${_currentUnit == Unit.btc ? satoshiToBitcoinString(tx.amount) : addCommasToIntegerPart(tx.amount.toDouble())}',
+        '$prefix${_currentUnit == BitcoinUnit.btc ? satoshiToBitcoinString(tx.amount) : addCommasToIntegerPart(tx.amount.toDouble())}',
         style: CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color));
   }
 

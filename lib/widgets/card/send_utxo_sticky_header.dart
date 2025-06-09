@@ -1,9 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -15,7 +15,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
   final TransactionFeeLevel? selectedLevel;
   final VoidCallback onTapFeeButton;
   final VoidCallback onPressedUnitToggle;
-  final Unit currentUnit;
+  final BitcoinUnit currentUnit;
   final bool isMaxMode;
   final bool customFeeSelected;
   final int sendAmount;
@@ -93,7 +93,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-              currentUnit == Unit.btc
+              currentUnit == BitcoinUnit.btc
                   ? "${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} ${t.btc}"
                   : "${addCommasToIntegerPart(sendAmount.toDouble())} ${t.sats}",
               style: CoconutTypography.body2_14_Number),
@@ -143,14 +143,14 @@ class SendUtxoStickyHeader extends StatelessWidget {
     }
   }
 
-  String get unitText => currentUnit == Unit.btc ? t.btc : t.sats;
+  String get unitText => currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
   String get feeText => estimatedFee != null
-      ? currentUnit == Unit.btc
+      ? currentUnit == BitcoinUnit.btc
           ? satoshiToBitcoinString(estimatedFee!)
           : addCommasToIntegerPart(estimatedFee!.toDouble())
       : '0';
   String get changeText => change != null
-      ? currentUnit == Unit.btc
+      ? currentUnit == BitcoinUnit.btc
           ? satoshiToBitcoinString(change!)
           : addCommasToIntegerPart(change!.toDouble())
       : '-';

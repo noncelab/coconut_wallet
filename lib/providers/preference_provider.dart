@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
@@ -12,7 +12,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   late bool _isBtcUnit;
   bool get isBtcUnit => _isBtcUnit;
-  Unit get currentUnit => _isBtcUnit ? Unit.btc : Unit.sats;
+  BitcoinUnit get currentUnit => _isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats;
 
   PreferenceProvider() {
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);

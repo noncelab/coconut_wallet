@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -12,7 +13,6 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -62,7 +62,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   late Offset _orderDropdownButtonPosition;
   late Offset _scrolledOrderDropdownButtonPosition;
   Size _headerTopContainerSize = const Size(0, 0);
-  late Unit _currentUnit;
+  late BitcoinUnit _currentUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +194,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 
@@ -283,11 +283,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   Widget _buildTotalUtxoAmount(Widget textKeyWidget, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
     String utxoSumText = selectedUtxoListLength > 0
-        ? _currentUnit == Unit.btc
+        ? _currentUnit == BitcoinUnit.btc
             ? satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()
             : addCommasToIntegerPart(totalSelectedUtxoAmount.toDouble())
         : '0';
-    String unitText = _currentUnit == Unit.btc ? t.btc : t.sats;
+    String unitText = _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
     return Column(
       children: [

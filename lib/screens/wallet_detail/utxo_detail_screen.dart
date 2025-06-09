@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -8,7 +9,6 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -48,11 +48,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   final GlobalKey _balanceWidthKey = GlobalKey();
   bool _isUtxoTooltipVisible = false;
-  late Unit _currentUnit;
+  late BitcoinUnit _currentUnit;
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 
@@ -260,14 +260,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         child: Center(
             child: RichText(
                 text: TextSpan(
-                    text: _currentUnit == Unit.btc
+                    text: _currentUnit == BitcoinUnit.btc
                         ? satoshiToBitcoinString(widget.utxo.amount)
                         : addCommasToIntegerPart(widget.utxo.amount.toDouble()),
                     style: CoconutTypography.heading2_28_NumberBold,
                     children: <InlineSpan>[
               WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
-                  child: Text(" ${_currentUnit == Unit.btc ? t.btc : t.sats}",
+                  child: Text(" ${_currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
                       style: CoconutTypography.heading3_21_Number))
             ]))),
       ),

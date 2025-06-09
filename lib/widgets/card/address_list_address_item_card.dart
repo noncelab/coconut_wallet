@@ -1,6 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/cupertino.dart';
@@ -12,7 +12,7 @@ class AddressItemCard extends StatelessWidget {
   final String derivationPath;
   final bool isUsed;
   final int? balanceInSats;
-  final Unit currentUnit;
+  final BitcoinUnit currentUnit;
   const AddressItemCard(
       {super.key,
       required this.onPressed,
@@ -23,12 +23,12 @@ class AddressItemCard extends StatelessWidget {
       this.balanceInSats});
 
   String get balanceText => balanceInSats != null
-      ? currentUnit == Unit.btc
+      ? currentUnit == BitcoinUnit.btc
           ? satoshiToBitcoinString(balanceInSats!)
           : addCommasToIntegerPart(balanceInSats!.toDouble())
       : '';
 
-  String get unitText => currentUnit == Unit.btc ? t.btc : t.sats;
+  String get unitText => currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -13,7 +14,6 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
@@ -55,7 +55,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Size _stickyHeaderDropdownSize = Size.zero;
 
   OverlayEntry? _statusBarTapOverlayEntry; // iOS 노치 터치 시 scrol to top
-  late Unit _currentUnit;
+  late BitcoinUnit _currentUnit;
 
   @override
   void initState() {
@@ -117,7 +117,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 
@@ -370,7 +370,7 @@ class UtxoList extends StatefulWidget {
   });
 
   final int walletId;
-  final Unit currentUnit;
+  final BitcoinUnit currentUnit;
   final Function? onRemoveDropdown;
   final VoidCallback? onFirstBuildCompleted;
 

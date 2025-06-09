@@ -1,9 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
@@ -21,7 +21,7 @@ class UtxoListHeader extends StatefulWidget {
   final Function(String) onTagSelected;
   final bool canShowDropdown;
   final void Function() onPressedUnitToggle;
-  final Unit currentUnit;
+  final BitcoinUnit currentUnit;
 
   const UtxoListHeader(
       {super.key,
@@ -77,14 +77,14 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                                     AnimatedBalance(
                                         prevValue: widget.animatedBalanceData.previous,
                                         value: widget.animatedBalanceData.current,
-                                        isBtcUnit: widget.currentUnit == Unit.btc,
+                                        isBtcUnit: widget.currentUnit == BitcoinUnit.btc,
                                         textStyle: CoconutTypography.heading1_32_NumberBold),
                                   ],
                                 ),
                               ),
                               CoconutLayout.spacing_100w,
                               Text(
-                                widget.currentUnit == Unit.btc ? t.btc : t.sats,
+                                widget.currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
                                 style: CoconutTypography.heading3_21_Number,
                               ),
                             ],

@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -7,7 +8,6 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -31,22 +31,22 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   List<String> get errorMessages => [
         t.errors.insufficient_balance,
         t.alert.error_send.minimum_amount(
-            bitcoin: _viewModel.currentUnit == Unit.btc
+            bitcoin: _viewModel.currentUnit == BitcoinUnit.btc
                 ? UnitUtil.satoshiToBitcoin(dustLimit + 1)
                 : addCommasToIntegerPart(dustLimit + 1),
             unit: unitText)
       ];
 
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
-      bitcoin: _viewModel.currentUnit == Unit.btc
+      bitcoin: _viewModel.currentUnit == BitcoinUnit.btc
           ? satoshiToBitcoinString(_viewModel.incomingBalance)
           : addCommasToIntegerPart(_viewModel.incomingBalance.toDouble()),
       unit: unitText);
 
   String get maxBalanceText =>
-      "${_viewModel.currentUnit == Unit.btc ? UnitUtil.satoshiToBitcoin(_viewModel.confirmedBalance) : addCommasToIntegerPart(_viewModel.confirmedBalance.toDouble())} $unitText";
+      "${_viewModel.currentUnit == BitcoinUnit.btc ? UnitUtil.satoshiToBitcoin(_viewModel.confirmedBalance) : addCommasToIntegerPart(_viewModel.confirmedBalance.toDouble())} $unitText";
 
-  String get unitText => _viewModel.currentUnit == Unit.btc ? t.btc : t.sats;
+  String get unitText => _viewModel.currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +202,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                           '7',
                           '8',
                           '9',
-                          if (viewModel.currentUnit == Unit.btc) '.' else ' ',
+                          if (viewModel.currentUnit == BitcoinUnit.btc) '.' else ' ',
                           '0',
                           '<',
                         ].map((key) {

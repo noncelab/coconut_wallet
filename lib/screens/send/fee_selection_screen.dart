@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -6,7 +7,6 @@ import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
@@ -44,7 +44,7 @@ class FeeSelectionScreen extends StatefulWidget {
 class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   static const int kMaxFeeLimit = 1000000;
   late int? _estimatedFee;
-  late Unit _currentUnit;
+  late BitcoinUnit _currentUnit;
   bool? _isNetworkOn;
   int? _customSatsPerVb;
 
@@ -52,18 +52,18 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   final TextEditingController _customFeeController = TextEditingController();
 
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
-      bitcoin: _currentUnit == Unit.btc
+      bitcoin: _currentUnit == BitcoinUnit.btc
           ? UnitUtil.satoshiToBitcoin(kMaxFeeLimit)
           : addCommasToIntegerPart(kMaxFeeLimit.toDouble()),
       unit: unitText);
 
   String get feeText => _estimatedFee != null
-      ? _currentUnit == Unit.btc
+      ? _currentUnit == BitcoinUnit.btc
           ? satoshiToBitcoinString(_estimatedFee!)
           : addCommasToIntegerPart(_estimatedFee!.toDouble())
       : '';
 
-  String get unitText => _currentUnit == Unit.btc ? t.btc : t.sats;
+  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
   @override
   Widget build(BuildContext context) {
@@ -210,7 +210,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 

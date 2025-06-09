@@ -1,11 +1,11 @@
 import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
@@ -16,7 +16,7 @@ class TransactionInputOutputCard extends StatefulWidget {
   final TransactionRecord transaction;
   final bool Function(String address, int index) isSameAddress;
   final bool isForTransaction;
-  final Unit currentUnit;
+  final BitcoinUnit currentUnit;
 
   const TransactionInputOutputCard(
       {super.key,
@@ -202,7 +202,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   }
 
   double getBalanceMaxWidth() {
-    return widget.currentUnit == Unit.btc
+    return widget.currentUnit == BitcoinUnit.btc
         ? _balanceWidthSize.width > 0
             ? _balanceWidthSize.width
             : 100

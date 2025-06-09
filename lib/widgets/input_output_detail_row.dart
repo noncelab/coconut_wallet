@@ -1,6 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -15,7 +15,7 @@ class InputOutputDetailRow extends StatelessWidget {
   final bool? isCurrentAddress;
   final TransactionStatus? transactionStatus;
   final RowProperty rowProperty;
-  final Unit currentUnit;
+  final BitcoinUnit currentUnit;
 
   InputOutputDetailRow({
     super.key,
@@ -28,7 +28,7 @@ class InputOutputDetailRow extends StatelessWidget {
     this.transactionStatus,
   }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
 
-  String get balanceText => currentUnit == Unit.btc
+  String get balanceText => currentUnit == BitcoinUnit.btc
       ? satoshiToBitcoinString(balance.abs()).normalizeTo11Characters()
       : addCommasToIntegerPart(balance.abs().toDouble());
 

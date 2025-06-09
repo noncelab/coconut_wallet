@@ -1,10 +1,10 @@
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/material.dart';
 
@@ -16,7 +16,7 @@ class SendAmountViewModel extends ChangeNotifier {
   late int _incomingBalance;
   late String _input;
   late bool _isNextButtonEnabled;
-  late Unit _currentUnit;
+  late BitcoinUnit _currentUnit;
   int? _errorIndex;
   bool _isUtxoUpdating = false;
 
@@ -41,16 +41,16 @@ class SendAmountViewModel extends ChangeNotifier {
 
   int get incomingBalance => _incomingBalance;
 
-  Unit get currentUnit => _currentUnit;
+  BitcoinUnit get currentUnit => _currentUnit;
 
-  bool get isBtcUnit => _currentUnit == Unit.btc;
+  bool get isBtcUnit => _currentUnit == BitcoinUnit.btc;
 
   bool get isSatsUnit => !isBtcUnit;
 
   num get dustLimitDenominator => (isBtcUnit ? 1e8 : 1);
 
   void toggleUnit() {
-    _currentUnit = isBtcUnit ? Unit.sats : Unit.btc;
+    _currentUnit = isBtcUnit ? BitcoinUnit.sats : BitcoinUnit.btc;
     if (_input.isNotEmpty && _input != '0') {
       _input = (isBtcUnit
               ? UnitUtil.satoshiToBitcoin(int.parse(_input))

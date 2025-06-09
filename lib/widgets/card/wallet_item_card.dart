@@ -1,11 +1,9 @@
-import 'dart:ui';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
@@ -23,7 +21,7 @@ class WalletItemCard extends StatelessWidget {
   final bool isBalanceHidden;
   final List<MultisigSigner>? signers;
   final WalletImportSource walletImportSource;
-  final Unit currentUnit;
+  final BitcoinUnit currentUnit;
 
   const WalletItemCard({
     super.key,
@@ -88,11 +86,11 @@ class WalletItemCard extends StatelessWidget {
                               AnimatedBalance(
                                   prevValue: animatedBalanceData.previous,
                                   value: animatedBalanceData.current,
-                                  isBtcUnit: currentUnit == Unit.btc,
+                                  isBtcUnit: currentUnit == BitcoinUnit.btc,
                                   textStyle: CoconutTypography.heading3_21_NumberBold
                                       .setColor(CoconutColors.white)),
                               Text(
-                                " ${currentUnit == Unit.btc ? t.btc : t.sats}",
+                                " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
                                 style: CoconutTypography.body3_12_Number.copyWith(
                                     color: CoconutColors.gray500, fontWeight: FontWeight.w500),
                               ),

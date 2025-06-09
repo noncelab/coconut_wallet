@@ -1,7 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -9,7 +9,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
   final Key widgetKey;
   final double height;
   final bool isVisible;
-  final Unit currentUnit;
+  final BitcoinUnit currentUnit;
   final AnimatedBalanceData animatedBalanceData;
   final Function() onTapReceive;
   final Function() onTapSend;
@@ -57,7 +57,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                           AnimatedBalance(
                             prevValue: widget.animatedBalanceData.previous,
                             value: widget.animatedBalanceData.current,
-                            isBtcUnit: widget.currentUnit == Unit.btc,
+                            isBtcUnit: widget.currentUnit == BitcoinUnit.btc,
                             textStyle: CoconutTypography.body1_16_NumberBold.merge(
                               const TextStyle(
                                 fontSize: 18,
@@ -65,7 +65,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                             ),
                           ),
                           Text(
-                            widget.currentUnit == Unit.btc ? ' ${t.btc}' : ' ${t.sats}',
+                            widget.currentUnit == BitcoinUnit.btc ? ' ${t.btc}' : ' ${t.sats}',
                             style: CoconutTypography.body2_14_Number,
                           ),
                         ],

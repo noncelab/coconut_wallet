@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -11,7 +12,6 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -35,28 +35,28 @@ class BroadcastingScreen extends StatefulWidget {
 
 class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BroadcastingViewModel _viewModel;
-  late Unit _currentUnit;
+  late BitcoinUnit _currentUnit;
 
   int get amount => (_viewModel.sendingAmountWhenAddressIsMyChange ?? _viewModel.amount!);
   String get confirmText => _viewModel.amount != null
-      ? _currentUnit == Unit.btc
+      ? _currentUnit == BitcoinUnit.btc
           ? satoshiToBitcoinString(amount)
           : addCommasToIntegerPart(amount.toDouble())
       : "";
 
   String get estimatedFeeText => _viewModel.fee != null
-      ? _currentUnit == Unit.btc
+      ? _currentUnit == BitcoinUnit.btc
           ? satoshiToBitcoinString(_viewModel.fee!)
           : addCommasToIntegerPart(_viewModel.fee!.toDouble())
       : t.calculation_failed;
 
   String get totalCostText => _viewModel.totalAmount != null
-      ? _currentUnit == Unit.btc
+      ? _currentUnit == BitcoinUnit.btc
           ? satoshiToBitcoinString(_viewModel.totalAmount!)
           : addCommasToIntegerPart(_viewModel.totalAmount!.toDouble())
       : t.calculation_failed;
 
-  String get unitText => _currentUnit == Unit.btc ? t.btc : t.sats;
+  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
   void broadcast() async {
     if (context.loaderOverlay.visible) return;
@@ -277,7 +277,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 }

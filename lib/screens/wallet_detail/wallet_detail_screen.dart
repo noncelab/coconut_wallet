@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -33,8 +34,6 @@ import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:lottie/lottie.dart';
 
-enum Unit { btc, sats }
-
 class WalletDetailScreen extends StatefulWidget {
   final int id;
 
@@ -46,7 +45,7 @@ class WalletDetailScreen extends StatefulWidget {
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
   bool _isPullToRefreshing = false;
-  late Unit _currentUnit;
+  late BitcoinUnit _currentUnit;
   late WalletDetailViewModel _viewModel;
 
   @override
@@ -398,7 +397,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 
@@ -452,11 +451,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 class TransactionList extends StatefulWidget {
   const TransactionList({
     super.key,
-    required Unit currentUnit,
+    required BitcoinUnit currentUnit,
     required this.widget,
   }) : _currentUnit = currentUnit;
 
-  final Unit _currentUnit;
+  final BitcoinUnit _currentUnit;
   final WalletDetailScreen widget;
 
   @override

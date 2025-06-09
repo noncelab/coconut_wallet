@@ -15,3 +15,5 @@ enum CurrencyCode {
     return '$code: $fullName $symbol';
   }
 }
+
+enum BitcoinUnit { btc, sats }
