@@ -24,6 +24,8 @@ class NodeProvider extends ChangeNotifier {
   StreamSubscription<IsolateStateMessage>? _stateSubscription;
 
   Completer<void>? _initCompleter;
+  bool _isInitializing = false;
+  bool _isClosing = false;
 
   NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
 
@@ -33,6 +35,7 @@ class NodeProvider extends ChangeNotifier {
   bool get ssl => _ssl;
 
   bool needSubscribeWallets = false;
+  List<WalletListItemBase> _lastSubscribedWallets = [];
 
   /// 정상적으로 연결된 후 다시 연결이 끊겼을 떄에만 이 함수가 동작하도록 설계되어 있음.
   /// 최초 [reconnect] 호출은 앱 실행 시 `_checkConnectivity` 에서 호출되어 state 처리 관련된 로직이 일부 비정상적으로 동작함.
@@ -47,20 +50,64 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void _createStateManager() {
-    _stateManager ??= NodeStateManager(() => notifyListeners());
+    _stateManager = NodeStateManager(() => notifyListeners());
+  }
+
+  /// 안전한 Completer 생성
+  void _createNewCompleter() {
+    if (_initCompleter != null && !_initCompleter!.isCompleted) {
+      try {
+        _initCompleter!.completeError(Exception('Previous initialization was cancelled'));
+      } catch (e) {
+        // 이미 완료된 경우 무시
+      }
+    }
+    _initCompleter = Completer<void>();
   }
 
   Future<void> initialize() async {
+    // 이미 초기화 중인 경우 기존 작업 완료 대기
+    if (_isInitializing) {
+      Logger.log('NodeProvider: Already initializing, waiting for completion');
+      if (_initCompleter != null && !_initCompleter!.isCompleted) {
+        try {
+          await _initCompleter!.future;
+          return;
+        } catch (e) {
+          // 기존 초기화가 실패한 경우 새로 시도
+        }
+      } else {
+        return; // 이미 성공적으로 완료된 경우
+      }
+    }
+
+    _isInitializing = true;
+
     try {
-      _initCompleter = Completer<void>();
+      Logger.log('NodeProvider: Starting initialization');
+      _createNewCompleter();
       _createStateManager();
       await _isolateManager.initialize(host, port, ssl, _networkType);
-      _initCompleter?.complete();
+
+      if (_initCompleter != null && !_initCompleter!.isCompleted) {
+        _initCompleter!.complete();
+      }
+
       _subscribeToStateChanges();
       notifyListeners();
+      Logger.log('NodeProvider: Initialization completed successfully');
     } catch (e) {
-      _initCompleter?.completeError(e);
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
+      if (_initCompleter != null && !_initCompleter!.isCompleted) {
+        try {
+          _initCompleter!.completeError(e);
+        } catch (completerError) {
+          // 이미 완료된 경우 무시
+        }
+      }
+      rethrow;
+    } finally {
+      _isInitializing = false;
     }
   }
 
@@ -70,7 +117,11 @@ class NodeProvider extends ChangeNotifier {
       _stateSubscription = null;
       _stateSubscription = _isolateManager.stateStream.listen(
         (message) {
-          _handleStateMessage(message);
+          if (_stateManager == null) {
+            Logger.log('NodeProvider: StateManager가 초기화되지 않았습니다.');
+            return;
+          }
+          _stateManager!.handleIsolateStateMessage(message);
         },
         onError: (error) {
           Logger.log('NodeProvider: 상태 스트림 오류: $error');
@@ -81,24 +132,23 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  void _handleStateMessage(IsolateStateMessage message) {
-    try {
-      if (_stateManager != null) {
-        _stateManager!.handleIsolateStateMessage(message);
-      }
-    } catch (e) {
-      Logger.error('NodeProvider: Error processing state message: $e');
-    }
-  }
-
-  Future<Result<bool>> subscribeWallets(
-    List<WalletListItemBase> walletItems,
-  ) async {
+  Future<Result<bool>> subscribeWallets({List<WalletListItemBase>? walletItems}) async {
     needSubscribeWallets = false;
-    return _isolateManager.subscribeWallets(walletItems);
+    if (walletItems != null) {
+      _lastSubscribedWallets = walletItems;
+    }
+    if (_lastSubscribedWallets.isEmpty) {
+      Logger.log('NodeProvider: 구독할 지갑이 없습니다.');
+      return Result.success(true);
+    }
+    return _isolateManager.subscribeWallets(_lastSubscribedWallets);
   }
 
   Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
+    final isAlreadySubscribed = _lastSubscribedWallets.any((wallet) => wallet.id == walletItem.id);
+    if (!isAlreadySubscribed) {
+      _lastSubscribedWallets.add(walletItem);
+    }
     return _isolateManager.subscribeWallet(walletItem);
   }
 
@@ -126,7 +176,8 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.getRecommendedFees();
   }
 
-  void unregisterWalletUpdateState(int walletId) {
+  void deleteWallet(int walletId) {
+    _lastSubscribedWallets.removeWhere((element) => element.id == walletId);
     _stateManager?.unregisterWalletUpdateState(walletId);
   }
 
@@ -136,46 +187,63 @@ class NodeProvider extends ChangeNotifier {
       return;
     }
 
+    // 이미 초기화 중이거나 종료 중인 경우 대기
+    if (_isInitializing || _isClosing) {
+      Logger.log('NodeProvider: Reconnect skipped - operation in progress');
+      return;
+    }
+
     try {
-      SocketConnectionStatus socketConnectionStatus;
-      needSubscribeWallets = true;
-      if (isInitialized && _isolateManager.isInitialized) {
-        final result = await _isolateManager.getSocketConnectionStatus();
-        if (result.isSuccess && result.value != SocketConnectionStatus.terminated) {
-          return;
-        }
-      }
-
-      _stateSubscription?.cancel();
-      _stateSubscription = null;
-
-      final result = await _isolateManager.getSocketConnectionStatus();
-      if (result.isSuccess && result.value != SocketConnectionStatus.connected) {
-        await initialize();
-      }
+      Logger.log('NodeProvider: Starting reconnect');
+      await closeConnection();
+      await initialize();
+      await subscribeWallets();
+      notifyListeners();
+      Logger.log('NodeProvider: Reconnect completed successfully');
     } catch (e) {
-      Logger.log('NodeProvider: 재연결 중 오류 발생: $e');
-      _initCompleter = null;
+      Logger.error('NodeProvider: Reconnect failed: $e');
     }
   }
 
   /// 완전한 dispose 없이 연결만 중단하는 메서드
   Future<void> closeConnection() async {
+    // 이미 종료 중인 경우 중복 실행 방지
+    if (_isClosing) {
+      Logger.log('NodeProvider: Already closing connection');
+      return;
+    }
+
+    _isClosing = true;
+
     try {
+      Logger.log('NodeProvider: Closing connection');
+
       // 스트림 구독 취소
       _stateSubscription?.cancel();
       _stateSubscription = null;
 
       // Isolate 정리
       await _isolateManager.closeIsolate();
+
+      // Completer 안전하게 정리
+      if (_initCompleter != null && !_initCompleter!.isCompleted) {
+        try {
+          _initCompleter!.completeError(Exception('Connection was closed'));
+        } catch (e) {
+          // 이미 완료된 경우 무시
+        }
+      }
       _initCompleter = null;
 
       // StateManager 초기화
       _stateManager = null;
 
       notifyListeners();
+      Logger.log('NodeProvider: Connection closed successfully');
     } catch (e) {
-      Logger.log('NodeProvider: 연결 종료 중 오류 발생: $e');
+      Logger.error('NodeProvider: 연결 종료 중 오류 발생: $e');
+    } finally {
+      _isClosing = false;
     }
   }
 }
