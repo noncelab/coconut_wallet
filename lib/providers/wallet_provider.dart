@@ -20,9 +20,7 @@ import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
-import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
@@ -272,12 +270,7 @@ class WalletProvider extends ChangeNotifier {
     return await _walletRepository.getWalletItemList();
   }
 
-  /// 원래 descriptor 또는 확장공개키를 비교하여 중복 지갑을 탐색했습니다.
-  /// 하지만 키스톤 지갑의 'Connect Software Wallet' 기능은 확장 공개키 생성 시
-  /// 비표준 depth를 사용하여, 표준을 따르는 지갑들과 다른 확장 공개키를 제공합니다.
-  /// 이로 인해 중복 탐색이 실패하여, 현재는 receive 주소의 index 0을 비교하는 방식으로 대체했습니다.
   int _findSameWalletIndex(String descriptorString, {required bool isMultisig}) {
-    // var address1 = descriptorString을 이용해서 WalletBase를 생성 > m/84'/0'/0'/0/0 주소를 구한다.
     WalletBase walletBase;
     if (isMultisig) {
       walletBase = MultisignatureWallet.fromDescriptor(descriptorString);
@@ -361,7 +354,6 @@ class WalletProvider extends ChangeNotifier {
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
 
-    /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
     final index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: false);
 
     if (index != -1) {
