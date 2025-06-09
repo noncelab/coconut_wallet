@@ -35,6 +35,8 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
 
   bool isDustErrorTextVisible = false;
 
+  bool isLoading = false;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -71,7 +73,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: () {
-          FocusScope.of(context).unfocus();
+          _hideKeyboard();
           if (donationSelectedType == DonationSelectedType.custom && customDonateValue == null) {
             setState(() {
               donationSelectedType = DonationSelectedType.none;
@@ -163,6 +165,16 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                     ],
                   ),
                 ),
+                if (isLoading)
+                  Positioned(
+                    top: 0,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + kToolbarHeight,
+                    child: Container(
+                        width: MediaQuery.sizeOf(context).width,
+                        height: MediaQuery.sizeOf(context).height,
+                        color: CoconutColors.black.withOpacity(0.3),
+                        child: const Center(child: CoconutCircularIndicator())),
+                  ),
               ],
             );
           },
@@ -171,7 +183,23 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
     );
   }
 
-  void goNextScreen(bool isNetworkOn, bool isOnchainDonation) {
+  void _hideKeyboard() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
+      _focusNode.unfocus();
+      // Fallback for keyboard hide
+      Future.delayed(const Duration(milliseconds: 50), () {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      });
+    });
+  }
+
+  void goNextScreen(bool isNetworkOn, bool isOnchainDonation) async {
+    setState(() {
+      isLoading = true;
+    });
+    _hideKeyboard();
+
     if (isNetworkOn != true) {
       CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
       return;
@@ -202,14 +230,19 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
       default:
         return;
     }
-
-    if (isOnchainDonation) {
-      Navigator.pushNamed(context, '/onchain-donation-info', arguments: {
-        'donation-amount': donateValue,
+    if (mounted) {
+      setState(() {
+        isLoading = false;
       });
-    } else {
-      Navigator.pushNamed(context, '/lightning-donation-info',
-          arguments: {'donation-amount': donateValue});
+
+      if (isOnchainDonation) {
+        Navigator.pushNamed(context, '/onchain-donation-info', arguments: {
+          'donation-amount': donateValue,
+        });
+      } else {
+        Navigator.pushNamed(context, '/lightning-donation-info',
+            arguments: {'donation-amount': donateValue});
+      }
     }
   }
 
@@ -228,22 +261,23 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
   Widget donateBottomButtonWidget(bool isNetworkOn, bool isOnchain) {
     return Expanded(
       child: CoconutButton(
-        isActive: donationSelectedType != DonationSelectedType.none,
+        isActive: donationSelectedType != DonationSelectedType.none && !isLoading,
         foregroundColor: CoconutColors.black,
         pressedTextColor: CoconutColors.black,
         pressedBackgroundColor: CoconutColors.gray500,
         disabledBackgroundColor: CoconutColors.gray800,
         disabledForegroundColor: CoconutColors.gray700,
         onPressed: () {
-          FocusScope.of(context).unfocus();
-
           // 네트워크 체크
           if (!isNetworkOn) {
             CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
             return;
           }
 
-          if (handleDustThreshold()) return;
+          if (handleDustThreshold()) {
+            scrollToBottom();
+            return;
+          }
 
           goNextScreen(isNetworkOn, isOnchain);
         },
@@ -254,8 +288,8 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
 
   bool handleDustThreshold() {
     if (donationSelectedType == DonationSelectedType.custom &&
-        customDonateValue != null &&
-        customDonateValue! <= dustLimit) {
+        ((customDonateValue != null && customDonateValue! <= dustLimit) ||
+            customDonateValue == null)) {
       setState(() {
         isDustErrorTextVisible = true;
       });
@@ -277,9 +311,9 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
       onPressed: () {
         final hadFocus = _focusNode.hasFocus;
         final isCustom = donationType == DonationSelectedType.custom;
+        if (!isCustom && hadFocus) _hideKeyboard();
 
         if (hadFocus) {
-          FocusScope.of(context).unfocus();
           if (isCustom && handleDustThreshold()) return;
         }
 
@@ -361,9 +395,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
 
                                   customDonateValue = int.parse(input);
                                 },
-                                focusNode: donationSelectedType == DonationSelectedType.custom
-                                    ? _focusNode
-                                    : null,
+                                focusNode: _focusNode,
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                 textInputAction: TextInputAction.done,

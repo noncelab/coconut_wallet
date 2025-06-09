@@ -33,6 +33,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
   @override
   void initState() {
     super.initState();
+
     _viewModel = OnchainDonationInfoViewModel(
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
@@ -41,6 +42,10 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
       Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
       widget.donationAmount,
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
   }
 
   @override
@@ -166,7 +171,9 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                           return;
                         }
 
+                        viewModel.setIsLoading(true);
                         viewModel.saveFinalSendInfo();
+                        viewModel.setIsLoading(false);
 
                         final walletName = viewModel
                             .availableDonationWalletList[viewModel.selectedIndex!].wallet.name;
@@ -183,7 +190,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                       pressedBackgroundColor: CoconutColors.gray500,
                     ),
                   ],
-                  // if (isLoading) const CoconutCircularIndicator(),
+                  if (viewModel.isLoading) const CoconutCircularIndicator(),
                 ],
               ),
             );
