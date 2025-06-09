@@ -27,6 +27,26 @@ class AddressListScreen extends StatefulWidget {
 }
 
 class _AddressListScreenState extends State<AddressListScreen> {
+  bool _isTapOnTooltipButton(Offset globalPosition) {
+    final keys = [_depositTooltipKey, _changeTooltipKey];
+
+    for (final key in keys) {
+      final context = key.currentContext;
+      if (context == null) continue;
+
+      final box = context.findRenderObject() as RenderBox;
+      final position = box.localToGlobal(Offset.zero);
+      final size = box.size;
+      final rect = position & size;
+
+      if (rect.contains(globalPosition)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   /// 페이지네이션
   static const int kFirstCount = 20;
 
@@ -79,14 +99,15 @@ class _AddressListScreenState extends State<AddressListScreen> {
             onPopInvokedWithResult: (didPop, _) {
               _removeTooltip();
             },
-            child: GestureDetector(
-              onTapDown: (_) {
-                _removeTooltip();
-              },
-              behavior: HitTestBehavior.translucent,
-              child: Stack(
-                children: [
-                  Scaffold(
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTapDown: (details) {
+                    if (!_isTapOnTooltipButton(details.globalPosition)) {
+                      _removeTooltip();
+                    }
+                  },
+                  child: Scaffold(
                       extendBodyBehindAppBar: true,
                       backgroundColor: CoconutColors.black,
                       appBar: AppBar(
@@ -194,9 +215,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                 ),
                               ),
                       )),
-                  tooltipWidget(context),
-                ],
-              ),
+                ),
+                tooltipWidget(context),
+              ],
             ),
           );
         },
