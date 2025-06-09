@@ -137,7 +137,6 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                   iconKey: widget.tooltipKey,
                   containerMargin: EdgeInsets.zero,
                   containerPadding: EdgeInsets.zero,
-                  iconPadding: const EdgeInsets.only(left: 10),
                   onTap: () {},
                   onTapDown: (details) {
                     widget.onTooltipClicked();
