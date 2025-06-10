@@ -125,9 +125,10 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
                             alignment: Alignment.topCenter,
-                            child: (viewModel.isSyncing ||
-                                    viewModel.isRecommendedFeeFetchSuccess == null ||
-                                    viewModel.availableDonationWalletList.isNotEmpty)
+                            child: (viewModel.singlesigWalletList.isNotEmpty &&
+                                    (viewModel.isSyncing ||
+                                        viewModel.isRecommendedFeeFetchSuccess == null ||
+                                        viewModel.availableDonationWalletList.isNotEmpty))
                                 ? Stack(
                                     children: [
                                       Column(
