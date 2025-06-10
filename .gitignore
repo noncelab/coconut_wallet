@@ -159,6 +159,7 @@ default.realm.management
 *.mocks.dart
 *.realm.dart
 *.g.dart
+/fastlane/report.xml
 
 # Cursor IDE
 .cursor

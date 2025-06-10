@@ -244,10 +244,11 @@ class IsolateManager {
         result = await mainFromIsolateReceivePort.first.timeout(
           timeLimit,
           onTimeout: () {
+            Logger.error('IsolateManager command: $messageType, isolate response timeout');
             if (isSocketConnectionStatusMessage) {
-              return SocketConnectionStatus.terminated;
+              return Result.success(SocketConnectionStatus.terminated);
             }
-            throw TimeoutException('Isolate response timeout');
+            return Result.failure(ErrorCodes.nodeIsolateError);
           },
         );
       } finally {
