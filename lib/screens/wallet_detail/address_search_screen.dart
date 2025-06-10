@@ -30,6 +30,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   final _addressFocusNode = FocusNode();
   QRViewController? _qrViewController;
   bool _isQrDataHandling = false;
+  String _addressOldText = "";
   Timer? _debounce;
   bool isSearched = false;
 
@@ -46,6 +47,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
 
   @override
   void dispose() {
+    _addressController.removeListener(_onAddressChanged);
     _addressController.dispose();
     _addressFocusNode.dispose();
     _debounce?.cancel();
@@ -53,15 +55,19 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   }
 
   void _onAddressChanged() {
+    // 키워드가 동일한 상태에서 키보드가 내려가는 경우 _onAddressChanged 이벤트가 들어오는 현상이 있어서 무시
+    if (_addressOldText == _addressController.text) return;
     if (_debounce?.isActive ?? false) {
       _debounce!.cancel();
     }
+
     _debounce = Timer(const Duration(milliseconds: 300), () {
       viewModel.searchWalletAddressList(_addressController.text);
       isSearched = true;
       setState(() {});
     });
 
+    _addressOldText = _addressController.text;
     isSearched = false;
     setState(() {});
   }
