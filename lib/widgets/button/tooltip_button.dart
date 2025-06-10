@@ -52,9 +52,11 @@ class _TooltipButtonState extends State<TooltipButton> {
                     .copyWith(fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal),
               ),
               GestureDetector(
-                onTapDown: widget.onTapDown,
+                onTap: () {
+                  widget.onTap.call();
+                },
                 child: Container(
-                  padding: widget.iconPadding,
+                  margin: widget.iconPadding,
                   color: Colors.transparent,
                   child: Icon(
                     key: widget.iconKey,

@@ -69,20 +69,30 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               id: widget.id,
                               walletItem: viewModel.walletItemBase,
                               onTooltipClicked: () {
+                                // 이미 툴팁이 보이고 있는 상태라면 토글
+                                if (_tooltipRemainingTime > 0) {
+                                  _removeTooltip();
+
+                                  return;
+                                }
                                 _removeTooltip();
 
-                                setState(() {
-                                  _tooltipRemainingTime = kTooltipDuration;
-                                });
-
-                                _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                                Future.delayed(const Duration(milliseconds: 50), () {
                                   setState(() {
-                                    if (_tooltipRemainingTime > 0) {
-                                      _tooltipRemainingTime--;
-                                    } else {
-                                      _removeTooltip();
-                                      timer.cancel();
-                                    }
+                                    _tooltipRemainingTime = kTooltipDuration;
+                                  });
+
+                                  _tooltipTimer?.cancel();
+                                  _tooltipTimer =
+                                      Timer.periodic(const Duration(seconds: 1), (timer) {
+                                    setState(() {
+                                      if (_tooltipRemainingTime > 0) {
+                                        _tooltipRemainingTime--;
+                                      } else {
+                                        _removeTooltip();
+                                        timer.cancel();
+                                      }
+                                    });
                                   });
                                 });
                               },

@@ -444,6 +444,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   void _showTooltip(BuildContext context, bool isLeft) {
+    if (_depositTooltipVisible || _changeTooltipVisible) {
+      _removeTooltip();
+      return;
+    }
+    
     _removeTooltip();
     if (isLeft) {
       setState(() {
