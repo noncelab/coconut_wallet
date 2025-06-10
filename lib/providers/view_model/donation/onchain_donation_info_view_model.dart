@@ -246,7 +246,6 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     final walletBase = walletItem.wallet.walletBase;
     final walletImportSource = walletItem.wallet.walletImportSource;
     _sendInfoProvider.clear();
-    debugPrint(_amount.toString());
     debugPrint(estimatedFee.toString());
 
     _sendInfoProvider.setWalletId(walletId);
@@ -264,14 +263,11 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
 
     await generateUnsignedPsbt(walletBase).then((value) {
       _sendInfoProvider.setTxWaitingForSign(value);
-      debugPrint(
-          '_sendInfoProvider.txWaitingForSign ${Psbt.parse(_sendInfoProvider.txWaitingForSign!).sendingAmount}');
     });
   }
 
   Future<String> generateUnsignedPsbt(WalletBase walletBase) async {
     assert(_sendInfoProvider.transaction != null);
-    debugPrint('_sendInfoProvider.transaction ${_sendInfoProvider.amount}');
     var psbt = Psbt.fromTransaction(_sendInfoProvider.transaction!, walletBase);
     return psbt.serialize();
   }

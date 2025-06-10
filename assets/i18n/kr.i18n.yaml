@@ -110,6 +110,7 @@ faucet_failed: "요청에 실패했습니다. 잠시 후 다시 시도해 주세
 bio_auth_required: "생체 인증을 진행해 주세요"
 
 donation:
+  coconut: "코코넛 후원"
   donate: "후원하기"
   supportImpactMessage: "당신의 응원 덕분에, 우린 자유로운 돈을 더 많은 사람들에게 전할 수 있습니다"
   encourageSupportMessage: "코코넛을 지속할 수 있도록 응원해 주세요"
@@ -139,6 +140,9 @@ donation:
   user_messages_description_1: "코코넛 개발팀에게"
   user_messages_description_2: "${amount} sats를"
   donate_confirm: "후원합니다"
+  complete:
+    thank_you: "감사합니다!"
+    description: "당신의 후원은 단순한 비트코인이 아닙니다.\n더 나은 지갑, 더 가까운 대중화를 향한\n코코넛의 발걸음을 이어갈 수 있게 해줍니다."
 
 # lib/enums
 transaction_enums:
