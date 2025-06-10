@@ -28,19 +28,8 @@ class AddressSearchViewModel extends ChangeNotifier {
     _initialize(id);
   }
 
-  List<WalletAddress> get changeAddressList {
-    if (_preferenceProvider.showOnlyUnusedAddresses) {
-      return _changeAddressList.where((address) => !address.isUsed).toList();
-    }
-    return _changeAddressList;
-  }
-
-  List<WalletAddress> get receivingAddressList {
-    if (_preferenceProvider.showOnlyUnusedAddresses) {
-      return _receivingAddressList.where((address) => !address.isUsed).toList();
-    }
-    return _receivingAddressList;
-  }
+  List<WalletAddress> get changeAddressList => _changeAddressList;
+  List<WalletAddress> get receivingAddressList => _receivingAddressList;
 
   int get searchedAddressLength => changeAddressList.length + receivingAddressList.length;
 
@@ -63,8 +52,16 @@ class AddressSearchViewModel extends ChangeNotifier {
 
   void searchWalletAddressList(String keyword) {
     final addressList = _walletProvider.searchWalletAddressList(_walletBaseItem!, keyword);
-    _changeAddressList = addressList.where((address) => address.isChange).toList();
-    _receivingAddressList = addressList.where((address) => !address.isChange).toList();
+    _receivingAddressList = addressList
+        .where(_preferenceProvider.showOnlyUnusedAddresses
+            ? (address) => !address.isChange && !address.isUsed
+            : (address) => !address.isChange)
+        .toList();
+    _changeAddressList = addressList
+        .where(_preferenceProvider.showOnlyUnusedAddresses
+            ? (address) => address.isChange && !address.isUsed
+            : (address) => address.isChange)
+        .toList();
     notifyListeners();
   }
 

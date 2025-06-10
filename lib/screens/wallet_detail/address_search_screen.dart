@@ -54,7 +54,6 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
 
   void _onAddressChanged() {
     if (_debounce?.isActive ?? false) {
-      isSearched = false;
       _debounce!.cancel();
     }
     _debounce = Timer(const Duration(milliseconds: 300), () {
@@ -62,6 +61,8 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       isSearched = true;
       setState(() {});
     });
+
+    isSearched = false;
     setState(() {});
   }
 
