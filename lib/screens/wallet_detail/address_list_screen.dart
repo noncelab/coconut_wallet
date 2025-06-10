@@ -28,7 +28,7 @@ class AddressListScreen extends StatefulWidget {
 
 class _AddressListScreenState extends State<AddressListScreen> {
   bool _isTapOnTooltipButton(Offset globalPosition) {
-    final keys = [_depositTooltipKey, _changeTooltipKey];
+    final keys = [_receivingTooltipKey, _changeTooltipKey];
 
     for (final key in keys) {
       final context = key.currentContext;
@@ -59,19 +59,19 @@ class _AddressListScreenState extends State<AddressListScreen> {
   bool isReceivingSelected = true;
 
   /// 툴팁
-  final GlobalKey _depositTooltipKey = GlobalKey();
+  final GlobalKey _receivingTooltipKey = GlobalKey();
   final GlobalKey _changeTooltipKey = GlobalKey();
   final GlobalKey _toolbarWidgetKey = GlobalKey();
 
-  Offset _depositTooltipIconPosition = Offset.zero;
+  Offset _receivingTooltipIconPosition = Offset.zero;
   Offset _changeTooltipIconPosition = Offset.zero;
 
-  late RenderBox _depositTooltipIconRenderBox;
+  late RenderBox _receivingTooltipIconRenderBox;
   late RenderBox _changeTooltipIconRenderBox;
 
   Size _toolbarWidgetSize = const Size(0, 0);
 
-  bool _depositTooltipVisible = false;
+  bool _receivingTooltipVisible = false;
   bool _changeTooltipVisible = false;
   Timer? _tooltipTimer;
   int _tooltipRemainingTime = 5;
@@ -246,9 +246,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
       _controller.addListener(_nextLoad);
       RenderBox toolbarWidgetRenderBox;
 
-      _depositTooltipIconRenderBox =
-          _depositTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _depositTooltipIconPosition = _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
+      _receivingTooltipIconRenderBox =
+          _receivingTooltipKey.currentContext!.findRenderObject() as RenderBox;
+      _receivingTooltipIconPosition = _receivingTooltipIconRenderBox.localToGlobal(Offset.zero);
 
       _changeTooltipIconRenderBox =
           _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
@@ -284,7 +284,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
               isSelected: isReceivingSelected,
               text: t.address_list_screen.receiving,
               isLeft: true,
-              iconKey: _depositTooltipKey,
+              iconKey: _receivingTooltipKey,
               onTap: () {
                 setState(() {
                   isReceivingSelected = true;
@@ -326,21 +326,21 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   Widget tooltipWidget(BuildContext context) {
-    if (_depositTooltipVisible) {
-      _depositTooltipIconRenderBox =
-          _depositTooltipKey.currentContext!.findRenderObject() as RenderBox;
-      _depositTooltipIconPosition = _depositTooltipIconRenderBox.localToGlobal(Offset.zero);
+    if (_receivingTooltipVisible) {
+      _receivingTooltipIconRenderBox =
+          _receivingTooltipKey.currentContext!.findRenderObject() as RenderBox;
+      _receivingTooltipIconPosition = _receivingTooltipIconRenderBox.localToGlobal(Offset.zero);
 
       return Positioned(
         top: widget.isFullScreen
-            ? _depositTooltipIconPosition.dy + _depositTooltipIconRenderBox.size.height
-            : _depositTooltipIconPosition.dy - 70,
-        left: _depositTooltipIconPosition.dx - 30,
-        right: MediaQuery.of(context).size.width - _depositTooltipIconPosition.dx - 200,
+            ? _receivingTooltipIconPosition.dy + _receivingTooltipIconRenderBox.size.height
+            : _receivingTooltipIconPosition.dy - 70,
+        left: _receivingTooltipIconPosition.dx - 30,
+        right: MediaQuery.of(context).size.width - _receivingTooltipIconPosition.dx - 200,
         child: CoconutToolTip(
           onTapRemove: () => _removeTooltip(),
           width: MediaQuery.sizeOf(context).width,
-          isPlacementTooltipVisible: _depositTooltipVisible,
+          isPlacementTooltipVisible: _receivingTooltipVisible,
           isBubbleClipperSideLeft: true,
           backgroundColor: CoconutColors.white,
           tooltipType: CoconutTooltipType.placement,
@@ -395,8 +395,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   void _nextLoad() {
-    // if (_changeTooltipVisible || _depositTooltipVisible) _removeTooltip();
-
     if (!_isFirstLoadRunning && !_isLoadMoreRunning && _controller.position.extentAfter < 100) {
       setState(() {
         _isLoadMoreRunning = true;
@@ -432,10 +430,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   void _removeTooltip() {
-    if (!_depositTooltipVisible && !_changeTooltipVisible) return;
+    if (!_receivingTooltipVisible && !_changeTooltipVisible) return;
     setState(() {
       _tooltipRemainingTime = 0;
-      _depositTooltipVisible = false;
+      _receivingTooltipVisible = false;
       _changeTooltipVisible = false;
     });
     if (_tooltipTimer != null) {
@@ -444,20 +442,20 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   void _showTooltip(BuildContext context, bool isLeft) {
-    if (_depositTooltipVisible || _changeTooltipVisible) {
+    if (_receivingTooltipVisible || _changeTooltipVisible) {
       _removeTooltip();
       return;
     }
-    
+
     _removeTooltip();
     if (isLeft) {
       setState(() {
-        _depositTooltipVisible = true;
+        _receivingTooltipVisible = true;
         _changeTooltipVisible = false;
       });
     } else {
       setState(() {
-        _depositTooltipVisible = false;
+        _receivingTooltipVisible = false;
         _changeTooltipVisible = true;
       });
     }
