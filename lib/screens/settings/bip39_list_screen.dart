@@ -19,8 +19,6 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   List<Map<String, dynamic>> _filteredItems = [];
-  late bool _isTop;
-  bool _isFabShown = false;
 
   @override
   void initState() {
@@ -28,9 +26,6 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     _filteredItems =
         List.generate(wordList.length, (index) => {'index': index + 1, 'item': wordList[index]});
 
-    _isTop = true;
-
-    _scrollController.addListener(_scrollListener);
     _searchController.addListener(_filterItems);
   }
 
@@ -39,34 +34,6 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _scrollListener() {
-    final scrollPosition = _scrollController.position;
-
-    if (!_isFabShown) {
-      if (scrollPosition.pixels > 450) {
-        setState(() {
-          _isFabShown = true;
-        });
-      }
-    } else if (_isTop) {
-      setState(() {
-        _isFabShown = false;
-      });
-    }
-
-    // if (_scrollController.position.pixels ==
-    //     _scrollController.position.maxScrollExtent) {
-    // } else if (_scrollController.position.pixels ==
-    //     _scrollController.position.minScrollExtent) {
-    // }
-  }
-
-  void _scrollToTop() {
-    _scrollController.jumpTo(
-      0.0,
-    );
   }
 
   void _filterItems() {
@@ -117,17 +84,6 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           title: _titleText,
           context: context,
           isBottom: true,
-        ),
-        floatingActionButton: Visibility(
-          visible: _isFabShown,
-          child: FloatingActionButton(
-            onPressed: _scrollToTop,
-            backgroundColor: CoconutColors.black,
-            foregroundColor: MyColors.grey,
-            shape: const CircleBorder(),
-            mini: true,
-            child: const Icon(Icons.arrow_upward),
-          ),
         ),
         body: Column(
           children: [
