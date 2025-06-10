@@ -532,6 +532,14 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.getWalletAddressList(wallet, cursor, count, isChange);
   }
 
+  List<WalletAddress> searchWalletAddressList(WalletListItemBase wallet, String keyword) {
+    return _addressRepository.searchWalletAddressList(wallet, keyword);
+  }
+
+  (int, int) getGeneratedIndexes(WalletListItemBase wallet) {
+    return _addressRepository.getGeneratedAddressIndexes(wallet);
+  }
+
   Future encryptWalletSecureData(String hashedPin) async {
     await _realmManager.encrypt(hashedPin);
   }

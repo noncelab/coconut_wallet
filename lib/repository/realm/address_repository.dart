@@ -14,6 +14,13 @@ import 'package:coconut_wallet/utils/logger.dart';
 class AddressRepository extends BaseRepository {
   AddressRepository(super._realmManager);
 
+  /// 주소 목록 검색하기(입금, 잔돈 주소)
+  List<WalletAddress> searchWalletAddressList(WalletListItemBase walletItemBase, String keyword) {
+    final realmWalletAddress = realm.query<RealmWalletAddress>(
+        'walletId == ${walletItemBase.id} AND address CONTAINS "$keyword" SORT(index ASC)');
+    return realmWalletAddress.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
   /// 주소 목록 가져오기
   List<WalletAddress> getWalletAddressList(
     WalletListItemBase walletItemBase,
@@ -55,6 +62,14 @@ class AddressRepository extends BaseRepository {
     }
 
     return existingAddresses;
+  }
+
+  (int, int) getGeneratedAddressIndexes(WalletListItemBase walletItemBase) {
+    final realmWalletBase = realm.find<RealmWalletBase>(walletItemBase.id);
+    if (realmWalletBase == null) {
+      throw StateError('[getGeneratedAddressIndex] Wallet not found');
+    }
+    return (realmWalletBase.generatedReceiveIndex, realmWalletBase.generatedChangeIndex);
   }
 
   int getGeneratedAddressIndex(WalletListItemBase walletItemBase, bool isChange) {

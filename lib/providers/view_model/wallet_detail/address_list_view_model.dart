@@ -17,8 +17,8 @@ class AddressListViewModel extends ChangeNotifier {
   AddressListViewModel(this._walletProvider, int id, int firstCount) {
     _initialize(id, firstCount);
   }
-  List<WalletAddress>? get changeAddressList => _changeAddressList;
-  List<WalletAddress>? get receivingAddressList => _receivingAddressList;
+  List<WalletAddress> get changeAddressList => _changeAddressList;
+  List<WalletAddress> get receivingAddressList => _receivingAddressList;
   WalletBase? get walletBase => _walletBase;
 
   WalletListItemBase? get walletBaseItem => _walletBaseItem;

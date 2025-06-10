@@ -273,6 +273,17 @@ address_list_screen:
   address_index: "주소 - $index"
   receiving: "입금"
   change: "잔돈"
+  show_only_unused_address: "사용 전 주소만 보기"
+address_search_screen:
+  address_placeholder: "주소를 입력해 주세요"
+  address_not_found: "찾으시는 주소가 없어요"
+  search_result: "검색 결과"
+  address_n_found: "주소를 $n개를 찾았어요"
+  search_range: "검색 범위"
+  receiving_address_index: "입금 주소 인덱스: $start ~ $end"
+  change_address_index: "잔돈 주소 인덱스: $start ~ $end"
+  receiving_address: "입금 주소"
+  change_address: "잔돈 주소"
 utxo_list_screen:
   total_balance: "총 잔액"
 transaction_detail_screen:
