@@ -285,6 +285,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
               text: t.address_list_screen.receiving,
               isLeft: true,
               iconKey: _receivingTooltipKey,
+              iconPadding: const EdgeInsets.all(8.0),
               onTap: () {
                 setState(() {
                   isReceivingSelected = true;
@@ -305,6 +306,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
               text: t.address_list_screen.change,
               isLeft: false,
               iconKey: _changeTooltipKey,
+              iconPadding: const EdgeInsets.all(8.0),
               onTap: () {
                 setState(() {
                   isReceivingSelected = false;
@@ -442,7 +444,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   void _showTooltip(BuildContext context, bool isLeft) {
-    if (_receivingTooltipVisible || _changeTooltipVisible) {
+    if (isLeft && _receivingTooltipVisible || !isLeft && _changeTooltipVisible) {
+      debugPrint('Tooltip already visible');
       _removeTooltip();
       return;
     }
