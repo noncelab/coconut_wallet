@@ -69,6 +69,7 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
 
     satsPerVb = result.value.hourFee;
 
+    _availableDonationWalletList.clear(); // 지갑 동기화 완료 후 initialize 호출 시 기존 목록 초기화
     for (var wallet in singlesigWalletList) {
       debugPrint('wallet: $wallet');
       final confirmedBalance = _walletProvider.getWalletBalance(wallet.id).confirmed;
