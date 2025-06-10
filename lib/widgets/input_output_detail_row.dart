@@ -29,7 +29,7 @@ class InputOutputDetailRow extends StatelessWidget {
   }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
 
   String get balanceText => currentUnit == BitcoinUnit.btc
-      ? satoshiToBitcoinString(balance.abs()).normalizeTo11Characters()
+      ? satoshiToBitcoinString(balance.abs())
       : addCommasToIntegerPart(balance.abs().toDouble());
 
   @override
