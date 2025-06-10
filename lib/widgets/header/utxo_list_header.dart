@@ -11,6 +11,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class UtxoListHeader extends StatefulWidget {
+  final GlobalKey headerGlobalKey;
   final GlobalKey dropdownGlobalKey;
   final AnimatedBalanceData animatedBalanceData;
   final String selectedOption;
@@ -22,6 +23,7 @@ class UtxoListHeader extends StatefulWidget {
 
   const UtxoListHeader(
       {super.key,
+      required this.headerGlobalKey,
       required this.dropdownGlobalKey,
       required this.animatedBalanceData,
       required this.selectedOption,
@@ -39,6 +41,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      key: widget.headerGlobalKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(

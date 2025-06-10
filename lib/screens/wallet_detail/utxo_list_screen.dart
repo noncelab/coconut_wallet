@@ -37,6 +37,9 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   double _topPadding = 0;
   final GlobalKey _appBarKey = GlobalKey();
+  final GlobalKey _headerKey = GlobalKey();
+  final GlobalKey _stickyHeaderKey = GlobalKey();
+
   final GlobalKey _headerDropdownKey = GlobalKey();
   final GlobalKey _stickyHeaderDropdownKey = GlobalKey();
 
@@ -66,10 +69,15 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         _appBarSize = appBarWidgetRenderBox.size;
       }
 
-      if (_headerDropdownKey.currentContext != null) {
-        final topHeaderWidgetRenderBox =
-            _headerDropdownKey.currentContext?.findRenderObject() as RenderBox;
+      if (_headerKey.currentContext != null) {
+        final topHeaderWidgetRenderBox = _headerKey.currentContext?.findRenderObject() as RenderBox;
         topHeaderWidgetSize = topHeaderWidgetRenderBox.size;
+      }
+
+      if (_stickyHeaderKey.currentContext != null) {
+        final stickyHeaderWidgetRenderBox =
+            _stickyHeaderKey.currentContext?.findRenderObject() as RenderBox;
+        positionedTopWidgetSize = stickyHeaderWidgetRenderBox.size;
       }
 
       setState(() {
@@ -228,6 +236,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               builder: (context, selectedOrder, child) {
                 return UtxoListHeader(
                     key: ValueKey(viewModel.utxoTagListKey),
+                    headerGlobalKey: _headerKey,
                     dropdownGlobalKey: _headerDropdownKey,
                     canShowDropdown: canShowDropdown,
                     animatedBalanceData:
@@ -296,6 +305,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   builder: (context, order, child) {
                     return UtxoListStickyHeader(
                       key: ValueKey(viewModel.utxoTagListKey),
+                      stickyHeaderGlobalKey: _stickyHeaderKey,
                       dropdownGlobalKey: _stickyHeaderDropdownKey,
                       height: _appBarSize.height,
                       isVisible: isStickyHeaderVisible,

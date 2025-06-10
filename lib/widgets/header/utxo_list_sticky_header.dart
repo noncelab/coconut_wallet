@@ -9,6 +9,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class UtxoListStickyHeader extends StatelessWidget {
+  final GlobalKey stickyHeaderGlobalKey;
   final GlobalKey dropdownGlobalKey;
   final double height;
   final bool isVisible;
@@ -20,6 +21,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   final Function removePopup;
   const UtxoListStickyHeader({
     super.key,
+    required this.stickyHeaderGlobalKey,
     required this.dropdownGlobalKey,
     required this.height,
     required this.isVisible,
@@ -42,6 +44,7 @@ class UtxoListStickyHeader extends StatelessWidget {
         child: IgnorePointer(
           ignoring: !isVisible,
           child: AnimatedOpacity(
+            key: stickyHeaderGlobalKey,
             opacity: isVisible ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 200),
             child: Stack(
