@@ -14,6 +14,7 @@ class FixedBottomButton extends StatefulWidget {
     this.gradientPadding,
     this.subWidget,
     this.backgroundColor = CoconutColors.primary,
+    this.pressedBackgroundColor,
   });
 
   final Function onButtonClicked;
@@ -26,6 +27,7 @@ class FixedBottomButton extends StatefulWidget {
   final EdgeInsets? gradientPadding;
   final Widget? subWidget;
   final Color backgroundColor;
+  final Color? pressedBackgroundColor;
 
   @override
   State<FixedBottomButton> createState() => _FixedBottomButtonState();
@@ -82,6 +84,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                   backgroundColor: widget.backgroundColor,
                   foregroundColor: CoconutColors.black,
                   pressedTextColor: CoconutColors.black,
+                  pressedBackgroundColor: widget.pressedBackgroundColor,
                   text: widget.text,
                 ),
               ],

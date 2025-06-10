@@ -2,15 +2,19 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 
 class SignedPsbtScannerViewModel {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
 
-  SignedPsbtScannerViewModel(this._sendInfoProvider, this._walletProvider);
+  bool _isSendingDonation = false;
+
+  SignedPsbtScannerViewModel(this._sendInfoProvider, this._walletProvider) {
+    _isSendingDonation = _sendInfoProvider.isDonation ?? false;
+  }
 
   bool get isMultisig => _sendInfoProvider.isMultisig!;
+  bool get isSendingDonation => _isSendingDonation;
   WalletImportSource get walletImportSource => _sendInfoProvider.walletImportSource!;
 
   int getMissingSignaturesCount(Psbt psbt) {

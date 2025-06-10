@@ -45,7 +45,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       child: Scaffold(
         backgroundColor: CoconutColors.black,
         appBar: CoconutAppBar.build(
-          title: t.signed_psbt_scanner_screen.title,
+          title:
+              _viewModel.isSendingDonation ? t.donation.donate : t.signed_psbt_scanner_screen.title,
           context: context,
           backgroundColor: CoconutColors.black.withOpacity(0.95),
         ),
@@ -251,6 +252,19 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           ),
         ),
         showIcon: true,
+      );
+    } else if (_viewModel.isSendingDonation == true) {
+      return Padding(
+        padding: const EdgeInsets.only(
+          top: 30,
+        ),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Text(
+            t.donation.signed_qr_tooltip,
+            style: CoconutTypography.body2_14_Bold,
+          ),
+        ),
       );
     } else {
       return CoconutToolTip(

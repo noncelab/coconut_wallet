@@ -11,6 +11,7 @@ class SendInfoProvider {
   int? _estimatedFee;
   bool? _isMaxMode;
   bool? _isMultisig;
+  bool? _isDonation;
   Transaction? _transaction;
   String? _txWaitingForSign;
   String? _signedPsbtBase64Encoded;
@@ -26,6 +27,7 @@ class SendInfoProvider {
   int? get estimatedFee => _estimatedFee;
   bool? get isMaxMode => _isMaxMode;
   bool? get isMultisig => _isMultisig;
+  bool? get isDonation => _isDonation;
   Transaction? get transaction => _transaction;
   String? get txWaitingForSign => _txWaitingForSign;
   String? get signedPsbt => _signedPsbtBase64Encoded;
@@ -82,9 +84,13 @@ class SendInfoProvider {
     _walletImportSource = walletImportSource;
   }
 
+  void setIsDonation(bool isDonation) {
+    _isDonation = isDonation;
+  }
+
   void clear() {
     _walletId = _recipientAddress = _amount = _estimatedFee = _isMaxMode = _isMultisig =
         _transaction = _txWaitingForSign = _signedPsbtBase64Encoded =
-            _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
+            _isDonation = _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
   }
 }
