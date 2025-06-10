@@ -122,6 +122,11 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
       _longestSatoshiText = _minimumLongestText;
     }
 
+    // 사토시 크기와 btc 크기에 큰 차이가 없는 경우, 동일한 깂을 사용한다.
+    if (btcBalanceWidth < satoshiBalanceWidth && (satoshiBalanceWidth - btcBalanceWidth) < 20) {
+      _longestSatoshiText = _longestBtcText;
+    }
+
     Logger.log(
         "_longestSatoshiText = $_longestSatoshiText / _longestBtcText = $_longestBtcText / widthPerLetter = $widthPerLetter");
     Logger.log("satoshiBalanceWidth = $satoshiBalanceWidth / btcBalanceWidth = $btcBalanceWidth");

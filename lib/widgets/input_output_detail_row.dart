@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -35,13 +34,11 @@ class InputOutputDetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool shouldTrimText = balanceMaxWidth > MediaQuery.of(context).size.width * 0.3;
-    Logger.log(
-        "shouldTrimText = $shouldTrimText / balanceMaxWidth = $balanceMaxWidth / screen * 0.3 = ${MediaQuery.of(context).size.width * 0.3}");
     return Row(
       children: [
         Text(
           shouldTrimText
-              ? TextUtils.truncate(address, 16, 9, 7)
+              ? TextUtils.truncate(address, 14, 8, 6)
               : TextUtils.truncate(address, 19, 11, 8),
           style: CoconutTypography.body2_14_Number.copyWith(
             color: rowProperty.leftItemColor,
