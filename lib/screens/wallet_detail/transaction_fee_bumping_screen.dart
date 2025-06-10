@@ -149,9 +149,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                       _buildRecommendFeeWidget(),
                                       CoconutLayout.spacing_300h,
                                       _buildCurrentMempoolFeesWidget(
-                                        viewModel.feeInfos[0].satsPerVb ?? 0,
-                                        viewModel.feeInfos[1].satsPerVb ?? 0,
-                                        viewModel.feeInfos[2].satsPerVb ?? 0,
+                                        viewModel.feeInfos[0].satsPerVb?.toInt() ?? 0,
+                                        viewModel.feeInfos[1].satsPerVb?.toInt() ?? 0,
+                                        viewModel.feeInfos[2].satsPerVb?.toInt() ?? 0,
                                       ),
                                     ] else if (viewModel.didFetchRecommendedFeesSuccessfully ==
                                         false)

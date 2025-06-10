@@ -16,7 +16,7 @@ class FeeInfoWithLevel extends FeeInfo {
 class FeeInfo {
   int? estimatedFee;
   int? fiatValue;
-  int? satsPerVb;
+  double? satsPerVb;
   bool failedEstimation;
   bool isEstimating;
 

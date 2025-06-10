@@ -20,7 +20,7 @@ class FeeSelectionScreen extends StatefulWidget {
   static const String feeInfoField = 'feeInfo';
 
   final List<FeeInfoWithLevel> feeInfos;
-  final int Function(int satsPerVb) estimateFee;
+  final int Function(double satsPerVb) estimateFee;
   final int? networkMinimumFeeRate;
   final TransactionFeeLevel? selectedFeeLevel; // null인 경우 직접 입력한 경우
   final FeeInfo? customFeeInfo; // feeRate을 직접 입력한 경우
@@ -43,7 +43,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   static const int kMaxFeeLimit = 1000000;
   late int? _estimatedFee;
   bool? _isNetworkOn;
-  int? _customSatsPerVb;
+  double? _customSatsPerVb;
 
   TransactionFeeLevel? _selectedFeeLevel;
 
@@ -151,7 +151,8 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                         isScrollControlled: true,
                                         builder: (context) => TextFieldBottomSheet(
                                           title: t.input_directly,
-                                          placeholder: t.text_field.enter_fee_as_natural_number,
+                                          placeholder:
+                                              t.text_field.enter_fee_with_two_decimal_places,
                                           onComplete: (text) {
                                             _onCustomFeeRateInput(text);
                                           },
@@ -208,7 +209,14 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       return;
     }
 
-    int customSatsPerVb = int.parse(input);
+    double customSatsPerVb;
+    try {
+      customSatsPerVb = double.parse(input.trim());
+    } catch (_) {
+      _customFeeController.clear();
+      return null;
+    }
+
     if (widget.networkMinimumFeeRate != null && customSatsPerVb < widget.networkMinimumFeeRate!) {
       CoconutToast.showToast(
           isVisibleIcon: true,
