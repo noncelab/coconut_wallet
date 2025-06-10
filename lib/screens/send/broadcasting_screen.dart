@@ -114,20 +114,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
         if (!mounted) return;
 
-        debugPrint('태그 업데이트 전');
-        if (_viewModel.isSendingDonation) {
-          debugPrint('태그 업데이트 1');
-          final result =
-              _viewModel.updateTransactionMemo(signedTx.transactionHash, t.donation.coconut);
-          debugPrint('태그 업데이트 2');
-          if (result) {
-            debugPrint('태그 업데이트 성공');
-          } else {
-            debugPrint('태그 업데이트 실패');
-          }
-        }
-
-        debugPrint('태그 업데이트 후 : ${_viewModel.isSendingDonation}');
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/broadcasting-complete',
@@ -287,18 +273,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 return;
               }
               if (isInitDone) {
-                // CoconutToast.showToast(context: context, text: '브로드캐스트됨');
                 broadcast();
-
-                // Navigator.pushNamedAndRemoveUntil(
-                //   context,
-                //   '/broadcasting-complete',
-                //   ModalRoute.withName('/'),
-                //   arguments: {
-                //     'id': _viewModel.walletId,
-                //     'isDonation': true,
-                //   },
-                // );
               }
             },
             // 버튼 보이지 않을 때: 수수료 조회에 실패, 잔액이 충분한 지갑이 없음
