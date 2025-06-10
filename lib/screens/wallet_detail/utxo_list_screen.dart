@@ -190,10 +190,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       final position = renderBox.localToGlobal(Offset.zero);
       final size = renderBox.size;
 
-      setState(() {
-        _headerDropdownPosition = position;
-        _headerDropdownSize = size;
-      });
+      if (_headerDropdownPosition != position || _headerDropdownSize != size) {
+        setState(() {
+          _headerDropdownPosition = position;
+          _headerDropdownSize = size;
+        });
+      }
     }
   }
 
@@ -205,10 +207,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       final position = renderBox.localToGlobal(Offset.zero);
       final size = renderBox.size;
 
-      setState(() {
-        _stickyHeaderDropdownPosition = position;
-        _stickyHeaderDropdownSize = size;
-      });
+      if (_stickyHeaderDropdownPosition != position || _stickyHeaderDropdownSize != size) {
+        setState(() {
+          _stickyHeaderDropdownPosition = position;
+          _stickyHeaderDropdownSize = size;
+        });
+      }
     }
   }
 
