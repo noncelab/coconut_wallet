@@ -20,10 +20,10 @@ import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 class IsolateInitializer {
-  static Future<IsolateController> entryInitialize(
+  static IsolateController entryInitialize(
     SendPort sendPort,
     ElectrumService electrumService,
-  ) async {
+  ) {
     // TODO: isSetPin, 핀 설정/해제할 때 isolate에서도 인지할 수 있는 로직 추가
     final realmManager = RealmManager()..init(false);
     final addressRepository = AddressRepository(realmManager);

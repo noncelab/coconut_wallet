@@ -184,6 +184,6 @@ class CommonBottomSheets {
         isScrollControlled: isScrollControlled,
         enableDrag: enableDrag,
         useSafeArea: useSafeArea,
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5));
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8));
   }
 }

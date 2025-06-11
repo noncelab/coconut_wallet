@@ -95,7 +95,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       ),
                       _buildLoadingWidget(),
                       _buildTxListLabel(),
-                      TransactionList(currentUnit: _currentUnit, widget: widget),
+                      TransactionList(currentUnit: _currentUnit, walletId: widget.id),
                     ],
                   ),
                 ),
@@ -300,10 +300,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         if (_scrollController.offset > _topPadding) {
           if (!_isPullToRefreshing) {
             _stickyHeaderVisibleNotifier.value = true;
-            setState(() {
-              _stickyHeaderRenderBox ??=
-                  _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
-            });
+            _stickyHeaderRenderBox ??=
+                _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
           }
         } else {
           if (!_isPullToRefreshing) {
@@ -562,13 +560,13 @@ class _TransactionListState extends State<TransactionList> {
               key: Key(tx.transactionHash),
               tx: tx,
               currentUnit: widget._currentUnit,
-              id: widget.widget.id,
+              id: widget.walletId,
               onPressed: () {
                 Navigator.pushNamed(
                   context,
                   '/transaction-detail',
                   arguments: {
-                    'id': widget.widget.id,
+                    'id': widget.walletId,
                     'txHash': tx.transactionHash,
                   },
                 );
@@ -594,10 +592,10 @@ class _TransactionListState extends State<TransactionList> {
             key: Key(tx.transactionHash),
             tx: tx,
             currentUnit: widget._currentUnit,
-            id: widget.widget.id,
+            id: widget.walletId,
             onPressed: () {
               Navigator.pushNamed(context, '/transaction-detail',
-                  arguments: {'id': widget.widget.id, 'txHash': tx.transactionHash});
+                  arguments: {'id': widget.walletId, 'txHash': tx.transactionHash});
             },
           ),
         ),

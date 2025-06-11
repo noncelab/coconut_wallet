@@ -157,8 +157,6 @@ class AddressRepository extends BaseRepository {
       }
     }
 
-    await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
-
     // 이미 존재하는 주소들의 ID를 미리 확인
     final existingIds = realm
         .query<RealmWalletAddress>('walletId == ${realmWalletBase.id}')
@@ -184,10 +182,12 @@ class AddressRepository extends BaseRepository {
 
     // 추가할 주소가 없으면 종료
     if (addressesToAdd.isEmpty) {
+      await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
       return;
     }
 
     await _safelyAddAddresses(addressesToAdd);
+    await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
   }
 
   /// 안전하게 주소를 추가하는 헬퍼 메서드

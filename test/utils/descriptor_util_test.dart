@@ -45,10 +45,16 @@ void main() {
     });
 
     group('extractPurpose', () {
-      test('올바른 디스크립터에서 purpose를 추출', () {
+      test('올바른 디스크립터에서 purpose를 추출(hardened 기호: \')', () {
         const descriptor =
             "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
         expect(DescriptorUtil.extractPurpose(descriptor), "84'");
+      });
+
+      test('올바른 디스크립터에서 purpose를 추출(hardened 기호: h)', () {
+        const descriptor =
+            "wpkh([76223a6f/84h/0h/0h]tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/0/*)#n9g32cn0";
+        expect(DescriptorUtil.extractPurpose(descriptor), "84h");
       });
 
       test('purpose가 없는 디스크립터는 예외 발생', () {
@@ -70,6 +76,53 @@ void main() {
 
       test('잘못된 purpose는 예외 발생', () {
         expect(() => DescriptorUtil.validatePurpose("44'"), throwsException);
+      });
+    });
+
+    group('validateNativeSegwitDescriptor', () {
+      test('account 0인 올바른 네이티브 세그윗 디스크립터 검증', () {
+        // 체크섬이 없는 기본 형식
+        const descriptor =
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF)";
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptor), returnsNormally);
+
+        // 체크섬 경로가 있는 형식
+        const descriptorWithPath =
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/<0;1>/*)";
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptorWithPath),
+            returnsNormally);
+
+        // 체크섬이 있는 형식
+        const descriptorWithChecksum =
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/<0;1>/*)#n9g32cn0";
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptorWithChecksum),
+            returnsNormally);
+      });
+
+      test('account가 1인 올바른 네이티브 세그윗 디스크립터 검증', () {
+        const descriptorAccount1 =
+            "wpkh([C49BB3CF/84'/0'/1']zpub6qdvhrsV9g78eZtKZxKu2faGwtVj3fpxeM7VM585upfiDK88Upf2KRiJ29VXWpFt7dMxiBkRhqVwB4RP1LwcnzBv1pRGwKVj36wgwF6U4Bw/<0;1>/*)#r293md9j";
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptorAccount1),
+            returnsNormally);
+      });
+
+      test('잘못된 네이티브 세그윗 디스크립터 검증', () {
+        // 잘못된 함수 (sh 대신 wpkh)
+        const invalidFunction =
+            "sh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF)";
+        expect(
+            () => DescriptorUtil.validateNativeSegwitDescriptor(invalidFunction), throwsException);
+
+        // 잘못된 경로 형식
+        const invalidPath =
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/<invalid>/*)";
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(invalidPath), throwsException);
+
+        // 8글자가 아닌 체크섬
+        const invalidChecksum =
+            "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/<0;1>/*)#not8words";
+        expect(
+            () => DescriptorUtil.validateNativeSegwitDescriptor(invalidChecksum), throwsException);
       });
     });
 

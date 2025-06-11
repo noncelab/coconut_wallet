@@ -3,6 +3,13 @@ import 'package:coconut_wallet/utils/logger.dart';
 
 class DescriptorUtil {
   static const String allowedDescriptorFunction = 'wpkh';
+  static const _fingerprint = r"[0-9a-fA-F]{8}";
+  static const _purposeCoin = r"/84(?:'|h)/(?:1|0)(?:'|h)";
+  static const _account = r"/\d+(?:'|h)";
+  static const _xpubPrefix = r"(tpub|vpub|xpub|zpub)";
+  static const _base58 = r"[1-9A-HJ-NP-Za-km-z]{107,108}";
+
+  static const _basePath = "$_fingerprint$_purposeCoin$_account";
 
   static String? getDescriptorFunction(String descriptor) {
     final match = RegExp(r'^(wpkh|wsh|sh|pkh|multi|sortedmulti|tr)\(').firstMatch(descriptor);
@@ -26,20 +33,27 @@ class DescriptorUtil {
         : descriptor;
 
     // 대괄호 [fingerprint/derivationPath] 추출
-    final regex = RegExp(r'\[([0-9a-fA-F]{8})/([0-9]+' r"')" r'(?:/[0-9]+' r"')*]");
+    final startIndex = innerDescriptor.indexOf('[');
+    final endIndex = innerDescriptor.indexOf(']');
 
-    final match = regex.firstMatch(innerDescriptor);
-    if (match == null || match.groupCount < 2) {
+    if (startIndex == -1 || endIndex == -1) {
+      throw const FormatException('Invalid descriptor format: missing square brackets');
+    }
+
+    final squareBracket = innerDescriptor.substring(startIndex + 1, endIndex);
+
+    final path = squareBracket.split('/');
+
+    if (path.isEmpty || path.length < 2) {
       throw const FormatException('Invalid descriptor format');
     }
 
-    //final fingerprint = match.group(1)!;
-    final purposeWithHardenedMark = match.group(2)!;
+    final purposeWithHardenedMark = path[1];
     return purposeWithHardenedMark;
   }
 
   static void validatePurpose(String purpose) {
-    if (purpose != "84'") {
+    if (purpose != "84'" && purpose != '84h') {
       throw FormatException("purpose $purpose is not supported");
     }
   }
@@ -65,13 +79,20 @@ class DescriptorUtil {
 
   static void validateNativeSegwitDescriptor(String descriptor) {
     final regexWpkhFormatWithoutChecksum = RegExp(
-      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](tpub|vpub|xpub|zpub)[1-9A-HJ-NP-Za-km-z]{107,108}\)$",
+      r"^wpkh\(\[" + _basePath + r"\]" + _xpubPrefix + _base58 + r"\)$",
     );
+
     final regexWpkhFormatWithChecksumPath = RegExp(
-      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](tpub|vpub|xpub|zpub)[1-9A-HJ-NP-Za-km-z]{107,108}/<\d+;\d+>\/\*\)$",
+      r"^wpkh\(\[" + _basePath + r"\]" + _xpubPrefix + _base58 + r"/<\d+;\d+>/\*\)$",
     );
+
     final regexWpkhFormatWithChecksum = RegExp(
-      r"^wpkh\(\[[0-9a-fA-F]{8}/84(?:'|h)/(?:1|0)(?:'|h)/0(?:'|h)\](tpub|vpub|xpub|zpub)[1-9A-HJ-NP-Za-km-z]{107,108}/<\d+;\d+>\/\*\)#([A-Za-z0-9]{8})$",
+      r"^wpkh\(\[" +
+          _basePath +
+          r"\]" +
+          _xpubPrefix +
+          _base58 +
+          r"/<\d+;\d+>/\*\)#([A-Za-z0-9]{8})$",
     );
 
     if (!(regexWpkhFormatWithoutChecksum.hasMatch(descriptor) ||

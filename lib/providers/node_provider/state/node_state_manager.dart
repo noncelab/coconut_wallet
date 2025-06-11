@@ -103,7 +103,6 @@ class NodeStateManager implements StateManagerInterface {
       walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
     }
 
-    // 카운터 증가 및 상태 업데이트
     switch (updateType) {
       case UpdateElement.balance:
         walletUpdateInfo.balance = UpdateStatus.syncing;
@@ -131,7 +130,6 @@ class NodeStateManager implements StateManagerInterface {
   void addWalletCompletedState(int walletId, UpdateElement updateType) {
     final existingInfo = _state.registeredWallets[walletId];
 
-    // 기존 정보가 없으면 아무 작업도 수행하지 않음
     if (existingInfo == null) {
       Logger.error('지갑 ID $walletId에 대한 정보가 없어 완료 상태로 변경할 수 없습니다.');
       return;
@@ -140,7 +138,6 @@ class NodeStateManager implements StateManagerInterface {
     WalletUpdateInfo walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
     MainClientState? newConnectionState;
 
-    // 카운터 감소 및 상태 업데이트
     switch (updateType) {
       case UpdateElement.balance:
         walletUpdateInfo.balance = UpdateStatus.completed;

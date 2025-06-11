@@ -25,32 +25,32 @@ class UtxoOrderDropdown extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               child: CoconutPulldownMenu(
                 entries: [
-                  CoconutPulldownMenuItem(title: UtxoOrder.byTimestampDesc.text),
-                  CoconutPulldownMenuItem(title: UtxoOrder.byTimestampAsc.text),
                   CoconutPulldownMenuItem(title: UtxoOrder.byAmountDesc.text),
                   CoconutPulldownMenuItem(title: UtxoOrder.byAmountAsc.text),
+                  CoconutPulldownMenuItem(title: UtxoOrder.byTimestampDesc.text),
+                  CoconutPulldownMenuItem(title: UtxoOrder.byTimestampAsc.text),
                 ],
-                dividerColor: Colors.black,
+                dividerColor: CoconutColors.black,
                 onSelected: (index, filterName) {
                   switch (index) {
-                    case 0: // 최신순
-                      if (selectedOption != UtxoOrder.byTimestampDesc) {
-                        onOptionSelected(UtxoOrder.byTimestampDesc);
-                      }
-                      break;
-                    case 1: // 오래된 순
-                      if (selectedOption != UtxoOrder.byTimestampAsc) {
-                        onOptionSelected(UtxoOrder.byTimestampAsc);
-                      }
-                      break;
-                    case 2: // 큰 금액순
+                    case 0: // 큰 금액순
                       if (selectedOption != UtxoOrder.byAmountDesc) {
                         onOptionSelected(UtxoOrder.byAmountDesc);
                       }
                       break;
-                    case 3: // 작은 금액순
+                    case 1: // 작은 금액순
                       if (selectedOption != UtxoOrder.byAmountAsc) {
                         onOptionSelected(UtxoOrder.byAmountAsc);
+                      }
+                      break;
+                    case 2: // 최신순
+                      if (selectedOption != UtxoOrder.byTimestampDesc) {
+                        onOptionSelected(UtxoOrder.byTimestampDesc);
+                      }
+                      break;
+                    case 3: // 오래된 순
+                      if (selectedOption != UtxoOrder.byTimestampAsc) {
+                        onOptionSelected(UtxoOrder.byTimestampAsc);
                       }
                       break;
                   }
@@ -64,13 +64,13 @@ class UtxoOrderDropdown extends StatelessWidget {
 
   int _getIndexBySelectedFilter() {
     switch (selectedOption) {
-      case UtxoOrder.byTimestampDesc:
-        return 0;
-      case UtxoOrder.byTimestampAsc:
-        return 1;
       case UtxoOrder.byAmountDesc:
-        return 2;
+        return 0;
       case UtxoOrder.byAmountAsc:
+        return 1;
+      case UtxoOrder.byTimestampDesc:
+        return 2;
+      case UtxoOrder.byTimestampAsc:
         return 3;
     }
   }

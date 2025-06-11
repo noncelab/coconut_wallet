@@ -110,7 +110,13 @@ class TransactionRecordService {
     List<TransactionAddress> outputAddressList = [];
     for (int i = 0; i < tx.outputs.length; i++) {
       final output = tx.outputs[i];
-      final outputAddress = TransactionAddress(output.scriptPubKey.getAddress(), output.amount);
+      final outputAddressString = output.scriptPubKey.getAddress();
+
+      if (outputAddressString.startsWith('Script')) {
+        continue;
+      }
+
+      final outputAddress = TransactionAddress(outputAddressString, output.amount);
       outputAddressList.add(outputAddress);
 
       fee -= outputAddress.amount;

@@ -327,12 +327,19 @@ void main() {
             id: makeUtxoId(originalTx.transactionHash, 0),
           ),
         ];
-
+        final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
+          transactionHash: originalTx.transactionHash,
+        );
+        final firstRbfTxRecord = TransactionMock.createRbfTransactionRecord(
+          transactionHash: firstRbfTx.transactionHash,
+        );
+        await transactionRepository
+            .addAllTransactions(walletId, [originalTxRecord, firstRbfTxRecord]);
         await utxoRepository.addAllUtxos(walletId, incomingUtxoList);
 
-        // 트랜잭션 대체됨 (예외 발생)
-        when(electrumService.getTransaction(originalTx.transactionHash, verbose: true))
-            .thenThrow(Exception('Transaction not found'));
+        // 트랜잭션 대체됨
+        when(electrumService.getTransaction(originalTx.transactionHash))
+            .thenAnswer((_) async => originalTx.serialize());
 
         // When
         final result = await rbfService.detectReceivingRbfTransaction(walletId, firstRbfTx);
