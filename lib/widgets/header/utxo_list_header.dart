@@ -121,13 +121,10 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
               ),
             ),
             Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
-              return Visibility(
-                visible: viewModel.utxoTagList.isNotEmpty,
-                child: CustomTagHorizontalSelector(
-                  tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                  selectedName: viewModel.selectedUtxoTagName,
-                  onSelectedTag: widget.onTagSelected,
-                ),
+              return CustomTagHorizontalSelector(
+                tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+                selectedName: viewModel.selectedUtxoTagName,
+                onSelectedTag: widget.onTagSelected,
               );
             }),
             CoconutLayout.spacing_300h,

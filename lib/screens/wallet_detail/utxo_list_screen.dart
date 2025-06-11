@@ -383,28 +383,50 @@ class _UtxoListState extends State<UtxoList> {
   Widget build(BuildContext context) {
     return Selector<UtxoListViewModel, Tuple2<List<UtxoState>, String>>(
         selector: (_, viewModel) => Tuple2(viewModel.utxoList, viewModel.selectedUtxoTagName),
+        shouldRebuild: (prev, next) => prev.item1 != next.item1 || prev.item2 != next.item2,
         builder: (_, data, __) {
           final utxoList = data.item1;
           final selectedUtxoTagName = data.item2;
+
+          bool isChangeTagSelected = selectedUtxoTagName == t.change;
+          bool isUsageLockTagSelected = selectedUtxoTagName == t.utxo_list_screen.usage_lock;
+
+          List<UtxoState> changeUtxos = [];
+          List<UtxoState> lockedUtxos = [];
+          if (isChangeTagSelected) {
+            changeUtxos = _displayedUtxoList.where((utxo) => utxo.isChange == true).toList();
+          } else if (isUsageLockTagSelected) {
+            lockedUtxos = []; // TODO: 사용 잠금 realm 분석
+          }
 
           if (_isListChanged(_displayedUtxoList, utxoList)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _handleUtxoListChange(utxoList);
             });
           }
+          if (utxoList.isEmpty ||
+              (isChangeTagSelected && changeUtxos.isEmpty) ||
+              (isUsageLockTagSelected && lockedUtxos.isEmpty)) {
+            return _buildEmptyState();
+          }
 
-          return utxoList.isNotEmpty
-              ? _buildSliverAnimatedList(_displayedUtxoList, selectedUtxoTagName)
-              : _buildEmptyState();
+          return _buildSliverAnimatedList(
+              isChangeTagSelected
+                  ? changeUtxos
+                  : isUsageLockTagSelected
+                      ? lockedUtxos
+                      : _displayedUtxoList,
+              selectedUtxoTagName);
         });
   }
 
   Widget _buildSliverAnimatedList(List<UtxoState> utxoList, String selectedUtxoTagName) {
+    final defaultTagNameList = [t.all, t.utxo_list_screen.usage_lock, t.change];
     return SliverAnimatedList(
       key: _utxoListKey,
       initialItemCount: utxoList.length,
       itemBuilder: (context, index, animation) {
-        final isSelected = selectedUtxoTagName == t.all ||
+        final isSelected = defaultTagNameList.contains(selectedUtxoTagName) ||
             (utxoList[index].tags != null &&
                 utxoList[index].tags!.any((e) => e.name == selectedUtxoTagName));
 
