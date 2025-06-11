@@ -649,7 +649,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 customFeeSelected: viewModel.customFeeSelected,
                 sendAmount: viewModel.sendAmount,
                 estimatedFee: viewModel.estimatedFee,
-                satsPerVb: viewModel.satsPerVb,
+                satsPerVb: viewModel.satsPerVb?.toInt(),
                 change: viewModel.change,
                 onPressedUnitToggle: _toggleUnit,
                 currentUnit: _currentUnit,

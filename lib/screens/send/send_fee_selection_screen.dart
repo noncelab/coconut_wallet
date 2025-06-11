@@ -12,9 +12,11 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
+import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -96,13 +98,13 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                 usePrimaryActiveColor: true,
                 nextButtonTitle: t.complete,
                 onNextPressed: () {
-                  int satsPerVb = _customSelected
+                  double finalFeeRate = _customSelected
                       ? _customFeeInfo!.satsPerVb!
                       : feeInfos
                           .firstWhere((element) => element.level == _selectedLevel)
                           .satsPerVb!;
 
-                  _viewModel.saveFinalSendInfo(_estimatedFee!, satsPerVb);
+                  _viewModel.saveFinalSendInfo(_estimatedFee!, finalFeeRate);
                   Navigator.pushNamed(context, '/send-confirm');
                 }),
             body: SafeArea(
@@ -194,12 +196,19 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                         isScrollControlled: true,
                                         builder: (context) => TextFieldBottomSheet(
                                           title: t.input_directly,
-                                          placeholder: t.text_field.enter_fee_as_natural_number,
+                                          placeholder:
+                                              t.text_field.enter_fee_with_two_decimal_places,
                                           onComplete: (text) {
                                             _handleCustomFeeInput(text);
                                           },
-                                          keyboardType: TextInputType.number,
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(decimal: true),
                                           visibleTextLimit: false,
+                                          formatInput: (text) {
+                                            String finalText = filterDecimalInput(text, 2);
+                                            return finalText;
+                                          },
+                                          maxLength: 10,
                                         ),
                                       );
                                     },
@@ -250,12 +259,12 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   bool _canGoNext() {
-    int? satsPerVb = _customSelected
+    double? finalFeeRate = _customSelected
         ? _customFeeInfo?.satsPerVb
         : feeInfos.firstWhere((element) => element.level == _selectedLevel).satsPerVb;
 
     return _viewModel.isNetworkOn &&
-        (satsPerVb != null && satsPerVb > 0) &&
+        (finalFeeRate != null && finalFeeRate > 0) &&
         _viewModel.isBalanceEnough(_estimatedFee) &&
         _estimatedFee != null &&
         _estimatedFee! < maxFeeLimit &&
@@ -267,21 +276,20 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
       return;
     }
 
-    int customSatsPerVb;
+    double customSatsPerVb;
     try {
-      customSatsPerVb = int.parse(input.trim());
-      if (_minimumSatsPerVb != null && customSatsPerVb < _minimumSatsPerVb!) {
-        CoconutToast.showToast(
-          isVisibleIcon: true,
-          context: context,
-          text: t.toast.min_fee(
-            minimum: _minimumSatsPerVb!,
-          ),
-        );
-        _customFeeController.clear();
-        return;
-      }
+      customSatsPerVb = double.parse(input.trim());
     } catch (_) {
+      _customFeeController.clear();
+      return;
+    }
+
+    if (_minimumSatsPerVb != null && customSatsPerVb < _minimumSatsPerVb!) {
+      CoconutToast.showToast(
+        isVisibleIcon: true,
+        context: context,
+        text: t.toast.min_fee(minimum: _minimumSatsPerVb!),
+      );
       _customFeeController.clear();
       return;
     }
@@ -371,19 +379,19 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Future<void> _setRecommendedFees() async {
-    var result = await _viewModel.nodeprovider.getRecommendedFees();
-    if (result.isFailure) {
+    final recommendedFeesResult = await _viewModel.nodeprovider.getRecommendedFees();
+    if (recommendedFeesResult.isFailure) {
       setState(() {
         _isRecommendedFeeFetchSuccess = false;
       });
       return;
     }
 
-    final recommendedFees = result.value;
+    final RecommendedFee recommendedFees = recommendedFeesResult.value;
 
-    feeInfos[0].satsPerVb = recommendedFees.fastestFee;
-    feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
-    feeInfos[2].satsPerVb = recommendedFees.hourFee;
+    feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
+    feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
+    feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
 
     setState(() => _minimumSatsPerVb = recommendedFees.minimumFee);
 

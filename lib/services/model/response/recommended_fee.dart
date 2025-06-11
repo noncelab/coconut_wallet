@@ -8,23 +8,40 @@ class RecommendedFee {
   RecommendedFee(
       this._fastestFee, this._halfHourFee, this._hourFee, this._economyFee, this._minimumFee);
 
-  get fastestFee => _fastestFee;
+  int get fastestFee => _fastestFee;
 
-  get halfHourFee => _halfHourFee;
+  int get halfHourFee => _halfHourFee;
 
-  get hourFee => _hourFee;
+  int get hourFee => _hourFee;
 
-  get economyFee => _economyFee;
+  int get economyFee => _economyFee;
 
-  get minimumFee => _minimumFee;
+  int get minimumFee => _minimumFee;
 
   factory RecommendedFee.fromJson(Map<String, dynamic> json) {
-    return RecommendedFee(
-      json['fastestFee'] as int,
-      json['halfHourFee'] as int,
-      json['hourFee'] as int,
-      json['economyFee'] as int,
-      json['minimumFee'] as int,
-    );
+    int _parseIntSafely(dynamic value, String fieldName) {
+      if (value == null) {
+        throw FormatException('$fieldName is null');
+      }
+      if (value is int) {
+        return value;
+      }
+      if (value is String) {
+        return int.parse(value);
+      }
+      throw FormatException('$fieldName has invalid type: ${value.runtimeType}');
+    }
+
+    try {
+      return RecommendedFee(
+        _parseIntSafely(json['fastestFee'], 'fastestFee'),
+        _parseIntSafely(json['halfHourFee'], 'halfHourFee'),
+        _parseIntSafely(json['hourFee'], 'hourFee'),
+        _parseIntSafely(json['economyFee'], 'economyFee'),
+        _parseIntSafely(json['minimumFee'], 'minimumFee'),
+      );
+    } catch (e) {
+      throw FormatException('Failed to parse RecommendedFee: $e');
+    }
   }
 }

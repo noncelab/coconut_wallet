@@ -63,7 +63,7 @@ class FeeSelectionItemCard extends StatelessWidget {
                           if (feeInfo.satsPerVb != null)
                             TextSpan(
                               text:
-                                  " (${feeInfo.satsPerVb} ${feeInfo.satsPerVb == 1 ? 'sat' : 'sats'}/vb)",
+                                  " (${feeInfo.satsPerVb?.toInt()} ${feeInfo.satsPerVb == 1 ? 'sat' : 'sats'}/vb)",
                             ),
                         ],
                       ),

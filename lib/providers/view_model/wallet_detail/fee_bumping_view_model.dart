@@ -712,9 +712,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
     // TODO: 테스트 코드 - 추천수수료 mock
     // final recommendedFees = await DioClient().getRecommendedFee();
 
-    _feeInfos[0].satsPerVb = recommendedFees.fastestFee;
-    _feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
-    _feeInfos[2].satsPerVb = recommendedFees.hourFee;
+    _feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
+    _feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
+    _feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
     _isFeeFetchSuccess = true;
   }
 

@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -22,7 +23,7 @@ class FeeSelectionScreen extends StatefulWidget {
   static const String feeInfoField = 'feeInfo';
 
   final List<FeeInfoWithLevel> feeInfos;
-  final int Function(int satsPerVb) estimateFee;
+  final int Function(double satsPerVb) estimateFee;
   final int? networkMinimumFeeRate;
   final TransactionFeeLevel? selectedFeeLevel; // null인 경우 직접 입력한 경우
   final FeeInfo? customFeeInfo; // feeRate을 직접 입력한 경우
@@ -46,7 +47,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   late int? _estimatedFee;
   late BitcoinUnit _currentUnit;
   bool? _isNetworkOn;
-  int? _customSatsPerVb;
+  double? _customSatsPerVb;
 
   TransactionFeeLevel? _selectedFeeLevel;
   final TextEditingController _customFeeController = TextEditingController();
@@ -169,12 +170,19 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                         isScrollControlled: true,
                                         builder: (context) => TextFieldBottomSheet(
                                           title: t.input_directly,
-                                          placeholder: t.text_field.enter_fee_as_natural_number,
+                                          placeholder:
+                                              t.text_field.enter_fee_with_two_decimal_places,
                                           onComplete: (text) {
                                             _onCustomFeeRateInput(text);
                                           },
-                                          keyboardType: TextInputType.number,
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(decimal: true),
                                           visibleTextLimit: false,
+                                          formatInput: (text) {
+                                            String finalText = filterDecimalInput(text, 2);
+                                            return finalText;
+                                          },
+                                          maxLength: 10,
                                         ),
                                       );
                                     },
@@ -233,7 +241,14 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       return;
     }
 
-    int customSatsPerVb = int.parse(input);
+    double customSatsPerVb;
+    try {
+      customSatsPerVb = double.parse(input.trim());
+    } catch (_) {
+      _customFeeController.clear();
+      return null;
+    }
+
     if (widget.networkMinimumFeeRate != null && customSatsPerVb < widget.networkMinimumFeeRate!) {
       CoconutToast.showToast(
           isVisibleIcon: true,

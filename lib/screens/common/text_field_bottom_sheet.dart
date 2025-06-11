@@ -15,6 +15,8 @@ class TextFieldBottomSheet extends StatefulWidget {
   final String? completeButtonText;
   final TextInputType keyboardType;
   final bool visibleTextLimit;
+  final String Function(String)? formatInput;
+  final int? maxLength;
 
   const TextFieldBottomSheet(
       {super.key,
@@ -24,7 +26,9 @@ class TextFieldBottomSheet extends StatefulWidget {
       this.placeholder = '',
       this.completeButtonText,
       this.keyboardType = TextInputType.text,
-      this.visibleTextLimit = true});
+      this.visibleTextLimit = true,
+      this.formatInput,
+      this.maxLength});
 
   @override
   State<TextFieldBottomSheet> createState() => _TextFieldBottomSheetState();
@@ -124,6 +128,7 @@ class _TextFieldBottomSheetState extends State<TextFieldBottomSheet> {
                       setState(() {
                         _updateText = text;
                       });
+                      _controller.text = text;
                     },
                     onClear: () {
                       setState(() {
@@ -133,6 +138,8 @@ class _TextFieldBottomSheetState extends State<TextFieldBottomSheet> {
                     },
                     placeholder: widget.placeholder,
                     visibleTextLimit: widget.visibleTextLimit,
+                    formatInput: widget.formatInput,
+                    maxLength: widget.maxLength ?? 30,
                   ),
                 ],
               ),
