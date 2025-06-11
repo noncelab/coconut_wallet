@@ -284,8 +284,8 @@ utxo_detail_screen:
   pending: "승인 대기중"
   address: "보유 주소"
 utxo_tag_screen:
-  no_such_tag: "태그가 없어요"
-  add_tag: "+ 버튼을 눌러 태그를 추가해 보세요"
+  onboarding_title: "UTXO 태그를 관리할 수 있어요"
+  add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
 wallet_info_screen:
   title: "$name 정보"
   view_xpub: "확장 공개키 보기"
