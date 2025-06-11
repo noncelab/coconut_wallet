@@ -60,6 +60,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kMempoolHost;
   static late String kFaucetHost;
   static late NetworkType kNetworkType;
+
   const CoconutWalletApp({super.key});
 
   @override
@@ -202,7 +203,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         theme: const CupertinoThemeData(
           // 테마 설정
           brightness: Brightness.dark,
-          primaryColor: CoconutColors.primary, // 기본 색상
+          primaryColor: CoconutColors.primary,
+          // 기본 색상
           scaffoldBackgroundColor: CoconutColors.black,
           textTheme: CupertinoTextThemeData(
             // 텍스트 테마 설정

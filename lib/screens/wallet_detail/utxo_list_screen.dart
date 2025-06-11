@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -53,10 +55,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Size _stickyHeaderDropdownSize = Size.zero;
 
   OverlayEntry? _statusBarTapOverlayEntry; // iOS 노치 터치 시 scrol to top
+  late BitcoinUnit _currentUnit;
 
   @override
   void initState() {
     super.initState();
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topHeaderWidgetSize = const Size(0, 0);
       Size positionedTopWidgetSize = const Size(0, 0);
@@ -111,6 +115,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     );
   }
 
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<WalletProvider, UtxoTagProvider, UtxoListViewModel>(
@@ -163,6 +173,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                               SliverToBoxAdapter(child: _buildHeader(context)),
                               UtxoList(
                                 walletId: widget.id,
+                                currentUnit: _currentUnit,
                                 onRemoveDropdown: _hideDropdown,
                                 onFirstBuildCompleted: () {
                                   if (!mounted) return;
@@ -231,22 +242,25 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               selector: (_, viewModel) => viewModel.selectedUtxoOrder,
               builder: (context, selectedOrder, child) {
                 return UtxoListHeader(
-                    key: ValueKey(viewModel.utxoTagListKey),
-                    dropdownGlobalKey: _headerDropdownKey,
-                    canShowDropdown: canShowDropdown,
-                    animatedBalanceData:
-                        AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
-                    selectedOption: selectedOrder.text,
-                    utxoTagList: viewModel.utxoTagList,
-                    selectedUtxoTagName: viewModel.selectedUtxoTagName,
-                    onTapDropdown: () {
-                      if (!canShowDropdown) return;
-                      _dropdownVisibleNotifier.value = !_dropdownVisibleNotifier.value;
-                      _hideStickyHeaderAndUpdateDropdownPosition();
-                    },
-                    onTagSelected: (tagName) {
-                      viewModel.setSelectedUtxoTagName(tagName);
-                    });
+                  key: ValueKey(viewModel.utxoTagListKey),
+                  dropdownGlobalKey: _headerDropdownKey,
+                  canShowDropdown: canShowDropdown,
+                  animatedBalanceData:
+                      AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+                  selectedOption: selectedOrder.text,
+                  utxoTagList: viewModel.utxoTagList,
+                  selectedUtxoTagName: viewModel.selectedUtxoTagName,
+                  onTapDropdown: () {
+                    if (!canShowDropdown) return;
+                    _dropdownVisibleNotifier.value = !_dropdownVisibleNotifier.value;
+                    _hideStickyHeaderAndUpdateDropdownPosition();
+                  },
+                  onTagSelected: (tagName) {
+                    viewModel.setSelectedUtxoTagName(tagName);
+                  },
+                  onPressedUnitToggle: _toggleUnit,
+                  currentUnit: _currentUnit,
+                );
               });
         });
   }
@@ -307,6 +321,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                       key: ValueKey(viewModel.utxoTagListKey),
                       dropdownGlobalKey: _stickyHeaderDropdownKey,
                       height: _appBarSize.height,
+                      currentUnit: _currentUnit,
                       isVisible: isStickyHeaderVisible,
                       enableDropdown: enableDropdown,
                       animatedBalanceData: AnimatedBalanceData(currentBalane, prevBalance),
@@ -358,11 +373,13 @@ class UtxoList extends StatefulWidget {
   const UtxoList({
     super.key,
     required this.walletId,
+    required this.currentUnit,
     this.onRemoveDropdown,
     this.onFirstBuildCompleted,
   });
 
   final int walletId;
+  final BitcoinUnit currentUnit;
   final Function? onRemoveDropdown;
   final VoidCallback? onFirstBuildCompleted;
 
@@ -505,6 +522,7 @@ class _UtxoListState extends State<UtxoList> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: UtxoItemCard(
                   key: Key(utxo.utxoId),
+                  currentUnit: widget.currentUnit,
                   onPressed: () async {
                     if (widget.onRemoveDropdown != null) {
                       widget.onRemoveDropdown!();
@@ -532,22 +550,24 @@ class _UtxoListState extends State<UtxoList> {
           child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: UtxoItemCard(
-                  key: Key(utxo.utxoId),
-                  onPressed: () async {
-                    if (widget.onRemoveDropdown != null) {
-                      widget.onRemoveDropdown!();
-                    }
+                key: Key(utxo.utxoId),
+                currentUnit: widget.currentUnit,
+                onPressed: () async {
+                  if (widget.onRemoveDropdown != null) {
+                    widget.onRemoveDropdown!();
+                  }
 
-                    await Navigator.pushNamed(
-                      context,
-                      '/utxo-detail',
-                      arguments: {
-                        'utxo': utxo,
-                        'id': widget.walletId,
-                      },
-                    );
-                  },
-                  utxo: utxo)),
+                  await Navigator.pushNamed(
+                    context,
+                    '/utxo-detail',
+                    arguments: {
+                      'utxo': utxo,
+                      'id': widget.walletId,
+                    },
+                  );
+                },
+                utxo: utxo,
+              )),
         ),
         isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
       ],

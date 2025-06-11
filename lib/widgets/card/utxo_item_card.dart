@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -11,11 +12,13 @@ import 'package:lottie/lottie.dart';
 class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
   final Function onPressed;
+  final BitcoinUnit currentUnit;
 
   const UtxoItemCard({
     super.key,
     required this.utxo,
     required this.onPressed,
+    required this.currentUnit,
   });
 
   @override
@@ -69,7 +72,9 @@ class UtxoItemCard extends StatelessWidget {
                         CoconutLayout.spacing_100w,
                         if (utxo.isPending) _buildPendingStatus(utxo.status),
                         Text(
-                          satoshiToBitcoinString(utxo.amount),
+                          currentUnit == BitcoinUnit.btc
+                              ? satoshiToBitcoinString(utxo.amount)
+                              : addCommasToIntegerPart(utxo.amount.toDouble()),
                           style: CoconutTypography.heading4_18_NumberBold
                               .setColor(CoconutColors.gray200),
                         ),

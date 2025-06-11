@@ -1,7 +1,7 @@
-import 'dart:ui';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
@@ -21,12 +21,14 @@ class WalletItemCard extends StatelessWidget {
   final bool isBalanceHidden;
   final List<MultisigSigner>? signers;
   final WalletImportSource walletImportSource;
+  final BitcoinUnit currentUnit;
 
   const WalletItemCard({
     super.key,
     required this.id,
     required this.animatedBalanceData,
     required this.name,
+    required this.currentUnit,
     this.iconIndex = 0,
     this.colorIndex = 0,
     required this.isLastItem,
@@ -37,11 +39,11 @@ class WalletItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isExternalWawllet = walletImportSource != WalletImportSource.coconutVault;
+    final isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
     final row = Padding(
       padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
       child: ShrinkAnimationButton(
-          defaultColor: isExternalWawllet ? CoconutColors.gray900 : CoconutColors.gray800,
+          defaultColor: isExternalWallet ? CoconutColors.gray900 : CoconutColors.gray800,
           onPressed: () {
             Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id});
           },
@@ -51,7 +53,7 @@ class WalletItemCard extends StatelessWidget {
           borderGradientColors: signers?.isNotEmpty == true
               ? ColorUtil.getGradientColors(signers!)
               : [CoconutColors.gray800, CoconutColors.gray800],
-          pressedColor: isExternalWawllet ? CoconutColors.black : CoconutColors.gray900,
+          pressedColor: isExternalWallet ? CoconutColors.black : CoconutColors.gray900,
           child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
               child: Row(children: [
@@ -84,11 +86,11 @@ class WalletItemCard extends StatelessWidget {
                               AnimatedBalance(
                                   prevValue: animatedBalanceData.previous,
                                   value: animatedBalanceData.current,
-                                  isBtcUnit: true,
+                                  isBtcUnit: currentUnit == BitcoinUnit.btc,
                                   textStyle: CoconutTypography.heading3_21_NumberBold
                                       .setColor(CoconutColors.white)),
                               Text(
-                                " BTC",
+                                " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
                                 style: CoconutTypography.body3_12_Number.copyWith(
                                     color: CoconutColors.gray500, fontWeight: FontWeight.w500),
                               ),

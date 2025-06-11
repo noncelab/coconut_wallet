@@ -1,10 +1,12 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -60,6 +62,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   late Offset _orderDropdownButtonPosition;
   late Offset _scrolledOrderDropdownButtonPosition;
   Size _headerTopContainerSize = const Size(0, 0);
+  late BitcoinUnit _currentUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +142,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   void initState() {
     try {
       super.initState();
+      _currentUnit = context.read<PreferenceProvider>().currentUnit;
       _selectedUtxoOrder = _utxoOrderOptions[0];
       _viewModel = SendUtxoSelectionViewModel(
           Provider.of<WalletProvider>(context, listen: false),
@@ -186,6 +190,12 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         );
       });
     }
+  }
+
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+    });
   }
 
   void _deselectAll() {
@@ -272,6 +282,13 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   Widget _buildTotalUtxoAmount(Widget textKeyWidget, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
+    String utxoSumText = selectedUtxoListLength > 0
+        ? _currentUnit == BitcoinUnit.btc
+            ? satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()
+            : addCommasToIntegerPart(totalSelectedUtxoAmount.toDouble())
+        : '0';
+    String unitText = _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+
     return Column(
       children: [
         Container(
@@ -328,9 +345,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                     children: [
                       Text(
                         // Transaction.estimatedFee,
-                        selectedUtxoListLength == 0
-                            ? '0 ${t.btc}'
-                            : '${satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()} ${t.btc}',
+                        "$utxoSumText $unitText",
                         style: Styles.body1Number.merge(TextStyle(
                             color: errorState == ErrorState.insufficientBalance ||
                                     errorState == ErrorState.insufficientUtxo
@@ -585,6 +600,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               margin: const EdgeInsets.only(bottom: 8),
               child: SelectableUtxoItemCard(
                 key: ValueKey(utxo.transactionHash),
+                currentUnit: _currentUnit,
                 utxo: utxo,
                 isSelected: viewModel.selectedUtxoList.contains(utxo),
                 utxoTags: viewModel.utxoTagMap[utxo.utxoId],
@@ -635,6 +651,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 estimatedFee: viewModel.estimatedFee,
                 satsPerVb: viewModel.satsPerVb,
                 change: viewModel.change,
+                onPressedUnitToggle: _toggleUnit,
+                currentUnit: _currentUnit,
               )),
           _buildTotalUtxoAmount(
             Text(

@@ -1,10 +1,13 @@
 import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
@@ -14,11 +17,13 @@ class TransactionInputOutputCard extends StatefulWidget {
   final TransactionRecord transaction;
   final bool Function(String address, int index) isSameAddress;
   final bool isForTransaction;
+  final BitcoinUnit currentUnit;
 
   const TransactionInputOutputCard(
       {super.key,
       required this.transaction,
       required this.isSameAddress,
+      required this.currentUnit,
       this.isForTransaction = true});
 
   @override
@@ -54,10 +59,22 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   Size _balanceWidthSize = Size.zero;
   bool _isBalanceWidthCalculated = false;
 
+  final String _minimumLongestText = "0.0000 0000";
+  String _longestBtcText = "";
+  String _longestSatoshiText = "";
+
+  double get widthPerLetter => _balanceWidthSize.width / _minimumLongestText.length;
+  double get satoshiBalanceWidth => _longestSatoshiText.length * widthPerLetter;
+  double get btcBalanceWidth => _longestBtcText.length * widthPerLetter;
+  double get balanceMaxWidth => _isBalanceWidthCalculated
+      ? widget.currentUnit == BitcoinUnit.btc
+          ? btcBalanceWidth
+          : satoshiBalanceWidth
+      : 100;
+
   @override
   void initState() {
     super.initState();
-
     _inputCountToShow = _transaction.inputAddressList.length;
     _outputCountToShow = _transaction.outputAddressList.length;
     _inputAddressList = _transaction.inputAddressList;
@@ -77,12 +94,43 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
       if (!mounted) return;
       final renderBox = _balanceWidthKey.currentContext?.findRenderObject();
       if (renderBox is RenderBox) {
-        setState(() {
-          _balanceWidthSize = renderBox.size;
-          _isBalanceWidthCalculated = true;
-        });
+        _balanceWidthSize = renderBox.size;
+        _isBalanceWidthCalculated = true;
+        updateBalanceMaxWidth();
       }
     });
+  }
+
+  void updateBalanceMaxWidth() {
+    /// 사토시 단위의 경우, 최대 텍스트 길이에 맞게 영역을 지정한다.
+    final inputList =
+        _canShowMoreInputs ? _inputAddressList.sublist(0, _inputCountToShow) : _inputAddressList;
+    final outputList = _canShowMoreOutputs
+        ? _outputAddressList.sublist(0, _outputCountToShow)
+        : _outputAddressList;
+
+    int maxAmount = max(inputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b),
+        outputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b));
+    _longestSatoshiText = addCommasToIntegerPart(maxAmount.toDouble());
+    _longestBtcText = satoshiToBitcoinString(maxAmount);
+
+    /// 최소값
+    if (_longestBtcText.length < _minimumLongestText.length) {
+      _longestBtcText = _minimumLongestText;
+    }
+    if (_longestSatoshiText.length < _minimumLongestText.length) {
+      _longestSatoshiText = _minimumLongestText;
+    }
+
+    // 사토시 크기와 btc 크기에 큰 차이가 없는 경우, 동일한 깂을 사용한다.
+    if (btcBalanceWidth < satoshiBalanceWidth && (satoshiBalanceWidth - btcBalanceWidth) < 20) {
+      _longestSatoshiText = _longestBtcText;
+    }
+
+    Logger.log(
+        "_longestSatoshiText = $_longestSatoshiText / _longestBtcText = $_longestBtcText / widthPerLetter = $widthPerLetter");
+    Logger.log("satoshiBalanceWidth = $satoshiBalanceWidth / btcBalanceWidth = $btcBalanceWidth");
+    setState(() {});
   }
 
   @override
@@ -155,7 +203,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
             visible: !_isBalanceWidthCalculated,
             child: Text(
               key: _balanceWidthKey,
-              '0.0000 0000',
+              _minimumLongestText,
               style: CoconutTypography.body2_14_Number.setColor(
                 Colors.transparent,
               ),
@@ -182,10 +230,11 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
             child: InputOutputDetailRow(
               address: item.address,
               balance: item.amount,
-              balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
+              balanceMaxWidth: balanceMaxWidth,
               rowType: rowType,
               isCurrentAddress: widget.isSameAddress(item.address, index),
               transactionStatus: widget.isForTransaction ? _status : null,
+              currentUnit: widget.currentUnit,
             ),
           );
         }),
@@ -199,9 +248,10 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         child: InputOutputDetailRow(
           address: t.fee,
           balance: fee,
-          balanceMaxWidth: _balanceWidthSize.width > 0 ? _balanceWidthSize.width : 100,
+          balanceMaxWidth: balanceMaxWidth,
           rowType: InputOutputRowType.fee,
           transactionStatus: widget.isForTransaction ? _status : null,
+          currentUnit: widget.currentUnit,
         ));
   }
 
@@ -240,6 +290,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         _canShowMoreInputs = false;
         _canShowLessInputs = true;
       }
+      updateBalanceMaxWidth();
     });
   }
 
@@ -249,6 +300,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
       _canShowMoreInputs = true;
       _canShowLessInputs = false;
     });
+    updateBalanceMaxWidth();
   }
 
   void _onTapViewMoreOutputs() {
@@ -260,6 +312,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         _canShowMoreOutputs = false;
         _canShowLessOutputs = true;
       }
+      updateBalanceMaxWidth();
     });
   }
 
@@ -268,6 +321,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
     setState(() {
       _canShowMoreOutputs = true;
       _canShowLessOutputs = false;
+      updateBalanceMaxWidth();
     });
   }
 }

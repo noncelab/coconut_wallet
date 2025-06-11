@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -32,8 +34,6 @@ import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:lottie/lottie.dart';
 
-enum Unit { btc, sats }
-
 class WalletDetailScreen extends StatefulWidget {
   final int id;
 
@@ -45,8 +45,7 @@ class WalletDetailScreen extends StatefulWidget {
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
   bool _isPullToRefreshing = false;
-  Unit _currentUnit = Unit.btc;
-
+  late BitcoinUnit _currentUnit;
   late WalletDetailViewModel _viewModel;
 
   @override
@@ -254,7 +253,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   @override
   void initState() {
     super.initState();
-
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = WalletDetailViewModel(
         widget.id,
         Provider.of<WalletProvider>(context, listen: false),
@@ -396,7 +395,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 
@@ -450,12 +449,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 class TransactionList extends StatefulWidget {
   const TransactionList({
     super.key,
-    required Unit currentUnit,
-    required this.walletId,
+    required BitcoinUnit currentUnit,
+    required this.widget,
   }) : _currentUnit = currentUnit;
 
-  final Unit _currentUnit;
-  final int walletId;
+  final BitcoinUnit _currentUnit;
+  final WalletDetailScreen widget;
 
   @override
   State<TransactionList> createState() => _TransactionListState();
