@@ -71,57 +71,11 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                         ],
                       ),
                     ),
-                    CupertinoButton(
-                      onPressed: widget.onTapReceive,
-                      borderRadius: BorderRadius.circular(8.0),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      minSize: 0,
-                      color: CoconutColors.white,
-                      child: SizedBox(
-                        width: 35,
-                        child: Center(
-                          child: Text(
-                            t.receive,
-                            style: CoconutTypography.body3_12.merge(
-                              const TextStyle(
-                                color: CoconutColors.black,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                      width: 8,
-                    ),
-                    CupertinoButton(
-                      onPressed: widget.onTapSend,
-                      borderRadius: BorderRadius.circular(8.0),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      minSize: 0,
-                      color: CoconutColors.primary,
-                      child: SizedBox(
-                        width: 35,
-                        child: Center(
-                          child: Text(
-                            '보내기',
-                            style: CoconutTypography.body3_12.merge(
-                              const TextStyle(
-                                color: CoconutColors.black,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    Align(
+                        alignment: Alignment.centerRight,
+                        child: SizedBox(
+                            width: MediaQuery.of(context).size.width / 3,
+                            child: _buildButtonRow())),
                   ],
                 ),
               ),
@@ -144,15 +98,59 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                           ],
                         ),
                       ),
-                      SizedBox(
-                        height: 16,
-                        child: Container(),
-                      ),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButtonRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionButton(
+            label: t.receive,
+            onPressed: widget.onTapReceive,
+            backgroundColor: CoconutColors.white,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildActionButton(
+            label: t.send,
+            onPressed: widget.onTapSend,
+            backgroundColor: CoconutColors.primary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    required VoidCallback onPressed,
+    required Color backgroundColor,
+  }) {
+    return CupertinoButton(
+      minSize: 32,
+      onPressed: onPressed,
+      color: backgroundColor,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        label,
+        overflow: TextOverflow.fade,
+        softWrap: false,
+        maxLines: 1,
+        style: CoconutTypography.body3_12.merge(
+          const TextStyle(
+            color: CoconutColors.black,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
