@@ -43,7 +43,6 @@ class UtxoListViewModel extends ChangeNotifier {
     this._upbitConnectModel,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
-    // _prevWalletInitState = _walletProvider.walletInitState;
     _initUtxoAndTags();
     _prevUpdateStatus = _walletProvider.getWalletUpdateInfo(_walletId).utxo;
     _addChangeListener();
@@ -153,6 +152,12 @@ class UtxoListViewModel extends ChangeNotifier {
     }
     _isUtxoListLoadComplete = true;
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
+  }
+
+  void toggleUtxoLockStatus(UtxoState utxo) {
+    _walletProvider.toggleUtxoLockStatus(_walletId, utxo.transactionHash);
+    _getUtxoAndTagList();
+    notifyListeners();
   }
 
   List<String> getTimeString(int utxoIndex) {

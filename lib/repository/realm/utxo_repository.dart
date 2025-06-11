@@ -238,6 +238,37 @@ class UtxoRepository extends BaseRepository {
     return mapRealmToUtxoState(realmUtxo);
   }
 
+  /// 미사용된 UTXO의 잠금 상태 업데이트
+  Future<Result<void>> toggleUtxoLockStatus(int walletId, String txHash) async {
+    return handleAsyncRealm(
+      () async {
+        final utxo = realm.query<RealmUtxo>(
+          r'walletId == $0 AND transactionHash == $1 AND isDeleted == false',
+          [walletId, txHash],
+        ).firstOrNull;
+
+        if (utxo == null) return;
+
+        await realm.writeAsync(() {
+          if (utxo.status == utxoStatusToString(UtxoStatus.locked)) {
+            utxo.status = utxoStatusToString(UtxoStatus.unspent);
+          } else if (utxo.status == utxoStatusToString(UtxoStatus.unspent)) {
+            utxo.status = utxoStatusToString(UtxoStatus.locked);
+          }
+        });
+
+        ///////////////////////////
+        final utxoafter = realm.query<RealmUtxo>(
+          r'walletId == $0 AND transactionHash == $1 AND isDeleted == false',
+          [walletId, txHash],
+        ).firstOrNull;
+
+        print('utxo:: ${utxoafter!.status}');
+        //////////////////////////
+      },
+    );
+  }
+
   Future<void> deleteUtxoList(int walletId, List<String> utxoIds) async {
     final utxosToDelete = realm.query<RealmUtxo>(
       r'walletId == $0 AND id IN $1 AND isDeleted == false',

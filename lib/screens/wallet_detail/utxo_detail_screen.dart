@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
@@ -22,17 +23,21 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 
 const _divider = Divider(color: CoconutColors.gray800);
 
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
   final UtxoState utxo;
+  final VoidCallback? onUtxoLockToggleButtonTap;
 
   const UtxoDetailScreen({
     super.key,
     required this.id,
     required this.utxo,
+    this.onUtxoLockToggleButtonTap,
   });
 
   @override
@@ -46,27 +51,71 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   final GlobalKey _balanceWidthKey = GlobalKey();
   bool _isUtxoTooltipVisible = false;
+  late UtxoState _utxoState;
+  late WalletProvider _walletProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _utxoState = widget.utxo;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    _walletProvider.addWalletUpdateListener(widget.id, _onWalletUpdate);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final utxoTooltipIconRenderBox =
+          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
+
+      if (utxoTooltipIconRenderBox != null) {
+        setState(() {
+          _utxoTooltipIconPosition = utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
+          _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _walletProvider.removeWalletUpdateListener(widget.id, _onWalletUpdate);
+    super.dispose();
+  }
+
+  void _onWalletUpdate(WalletUpdateInfo info) {
+    final updatedUtxo = _walletProvider.getUtxoState(widget.id, widget.utxo.utxoId);
+    if (updatedUtxo != null) {
+      setState(() {
+        _utxoState = updatedUtxo;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoDetailViewModel>(
-        create: (_) => UtxoDetailViewModel(
-              widget.id,
-              widget.utxo,
-              Provider.of<UtxoTagProvider>(_, listen: false),
-              Provider.of<TransactionProvider>(_, listen: false),
-            ),
-        child: Builder(builder: (context) {
-          return GestureDetector(
-            onTap: _removeUtxoTooltip,
-            child: Stack(
-              children: [
-                _buildScaffold(context),
-                if (_isUtxoTooltipVisible) _buildTooltip(context),
-              ],
-            ),
-          );
-        }));
+      create: (_) => UtxoDetailViewModel(
+        widget.id,
+        _utxoState,
+        Provider.of<UtxoTagProvider>(_, listen: false),
+        Provider.of<TransactionProvider>(_, listen: false),
+        Provider.of<WalletProvider>(_, listen: false),
+      ),
+      child: Builder(builder: (context) {
+        return GestureDetector(
+          onTap: _removeUtxoTooltip,
+          child: Stack(
+            children: [
+              _buildScaffold(context),
+              if (_isUtxoTooltipVisible) _buildTooltip(context),
+            ],
+          ),
+        );
+      }),
+    );
   }
 
   void _showTagBottomSheet(
@@ -126,9 +175,17 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     else ...{
                       _buildDateTime(dateString),
                       _buildAmount(),
-                      if (utxoStatus == UtxoStatus.unspent)
+                      if (utxoStatus == UtxoStatus.unspent || utxoStatus == UtxoStatus.locked)
                         _buildPrice()
                       else ...{_buildPendingStatus(utxoStatus)},
+                      UtxoLockToggleButton(
+                        isLocked: utxoStatus == UtxoStatus.locked,
+                        onPressed: () {
+                          final viewModel = context.read<UtxoDetailViewModel>();
+                          viewModel.toggleUtxoLockStatus();
+                          vibrateLight();
+                        },
+                      ),
                       TransactionInputOutputCard(
                         transaction: tx,
                         isSameAddress: (address, _) {
@@ -195,22 +252,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final utxoTooltipIconRenderBox =
-          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
-
-      if (utxoTooltipIconRenderBox != null) {
-        setState(() {
-          _utxoTooltipIconPosition = utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
-          _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
-        });
-      }
-    });
   }
 
   void _removeUtxoTooltip() {
@@ -450,6 +491,60 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           ),
         ),
         _divider,
+      ],
+    );
+  }
+}
+
+class UtxoLockToggleButton extends StatefulWidget {
+  final bool isLocked;
+  final VoidCallback onPressed;
+  const UtxoLockToggleButton({super.key, required this.isLocked, required this.onPressed});
+
+  @override
+  State<UtxoLockToggleButton> createState() => _UtxoLockToggleButton();
+}
+
+class _UtxoLockToggleButton extends State<UtxoLockToggleButton> {
+  bool isPressing = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTapDown: (details) => setState(() {
+            isPressing = true;
+          }),
+          onTapCancel: () => setState(() {
+            isPressing = false;
+          }),
+          onTap: () {
+            setState(() {
+              isPressing = false;
+            });
+            widget.onPressed();
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/svg/${widget.isLocked ? 'lock' : 'unlock'}.svg',
+                  colorFilter: ColorFilter.mode(
+                      isPressing ? CoconutColors.gray800 : CoconutColors.white, BlendMode.srcIn),
+                ),
+                Text(
+                  widget.isLocked ? t.utxo_list_screen.usage_lock : t.utxo_list_screen.usage_unlock,
+                  style: CoconutTypography.body3_12
+                      .setColor(isPressing ? CoconutColors.gray800 : CoconutColors.white),
+                )
+              ],
+            ),
+          ),
+        )
       ],
     );
   }

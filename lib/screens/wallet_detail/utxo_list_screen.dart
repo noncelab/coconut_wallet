@@ -396,7 +396,8 @@ class _UtxoListState extends State<UtxoList> {
           if (isChangeTagSelected) {
             changeUtxos = _displayedUtxoList.where((utxo) => utxo.isChange == true).toList();
           } else if (isUsageLockTagSelected) {
-            lockedUtxos = []; // TODO: 사용 잠금 realm 분석
+            lockedUtxos =
+                _displayedUtxoList.where((utxo) => utxo.status == UtxoStatus.locked).toList();
           }
 
           if (_isListChanged(_displayedUtxoList, utxoList)) {
@@ -547,6 +548,7 @@ class _UtxoListState extends State<UtxoList> {
 
   Widget _buildUtxoItem(UtxoState utxo, Animation<double> animation, bool isLastItem) {
     var offsetAnimation = _buildSlideAnimation(animation);
+    final viewModel = context.read<UtxoListViewModel>();
     return Column(
       children: [
         SlideTransition(
@@ -566,8 +568,13 @@ class _UtxoListState extends State<UtxoList> {
                       arguments: {
                         'utxo': utxo,
                         'id': widget.walletId,
+                        'lockStateChangeCallback': () {
+                          viewModel.toggleUtxoLockStatus(utxo);
+                        },
                       },
                     );
+                    // UTXO 상세 화면에서 돌아왔을 때 데이터 갱신
+                    viewModel.refetchFromDB();
                   },
                   utxo: utxo)),
         ),

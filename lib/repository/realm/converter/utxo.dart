@@ -53,6 +53,8 @@ String utxoStatusToString(UtxoStatus status) {
       return 'outgoing';
     case UtxoStatus.incoming:
       return 'incoming';
+    case UtxoStatus.locked:
+      return 'locked';
   }
 }
 
@@ -64,6 +66,8 @@ UtxoStatus stringToUtxoStatus(String status) {
       return UtxoStatus.outgoing;
     case 'incoming':
       return UtxoStatus.incoming;
+    case 'locked':
+      return UtxoStatus.locked;
     default:
       return UtxoStatus.unspent; // 기본값
   }

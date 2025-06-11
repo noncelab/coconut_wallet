@@ -276,6 +276,7 @@ address_list_screen:
 utxo_list_screen:
   total_balance: "총 잔액"
   usage_lock: "사용 잠금"
+  usage_unlock: "사용 가능"
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"

@@ -3,6 +3,8 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
@@ -13,9 +15,10 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
   late final int _walletId;
   late final String _utxoId;
-  late final UtxoState _utxo;
+  late UtxoState _utxo;
   late final UtxoTagProvider _tagProvider;
   late final TransactionProvider _txProvider;
+  late final WalletProvider _walletProvider;
 
   List<UtxoTag> _utxoTagList = [];
   List<UtxoTag> _selectedUtxoTagList = [];
@@ -25,7 +28,13 @@ class UtxoDetailViewModel extends ChangeNotifier {
   int _utxoInputMaxCount = 0;
   int _utxoOutputMaxCount = 0;
 
-  UtxoDetailViewModel(this._walletId, this._utxo, this._tagProvider, this._txProvider) {
+  UtxoDetailViewModel(
+    this._walletId,
+    this._utxo,
+    this._tagProvider,
+    this._txProvider,
+    this._walletProvider,
+  ) {
     _utxoId = _utxo.utxoId;
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
     _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
@@ -34,6 +43,45 @@ class UtxoDetailViewModel extends ChangeNotifier {
     _dateString = DateTimeUtil.formatTimestamp(_transaction!.timestamp);
 
     _initUtxoInOutputList();
+    _walletProvider.addWalletUpdateListener(_walletId, _onWalletUpdate);
+  }
+
+  void _onWalletUpdate(WalletUpdateInfo info) {
+    final updatedUtxo = _walletProvider.getUtxoState(_walletId, _utxoId);
+    if (updatedUtxo != null) {
+      _utxo = updatedUtxo;
+      notifyListeners();
+    }
+  }
+
+  void toggleUtxoLockStatus() {
+    if (_utxo.status == UtxoStatus.locked) {
+      _utxo = UtxoState(
+        transactionHash: _utxo.transactionHash,
+        index: _utxo.index,
+        amount: _utxo.amount,
+        derivationPath: _utxo.derivationPath,
+        blockHeight: _utxo.blockHeight,
+        to: _utxo.to,
+        timestamp: _utxo.timestamp,
+        status: UtxoStatus.unspent,
+        spentByTransactionHash: _utxo.spentByTransactionHash,
+      );
+    } else if (_utxo.status == UtxoStatus.unspent) {
+      _utxo = UtxoState(
+        transactionHash: _utxo.transactionHash,
+        index: _utxo.index,
+        amount: _utxo.amount,
+        derivationPath: _utxo.derivationPath,
+        blockHeight: _utxo.blockHeight,
+        to: _utxo.to,
+        timestamp: _utxo.timestamp,
+        status: UtxoStatus.locked,
+        spentByTransactionHash: _utxo.spentByTransactionHash,
+      );
+    }
+    notifyListeners();
+    _walletProvider.toggleUtxoLockStatus(_walletId, _utxo.transactionHash);
   }
 
   List<String> get dateString => _dateString;
@@ -75,5 +123,11 @@ class UtxoDetailViewModel extends ChangeNotifier {
     if (_transaction.outputAddressList.length <= utxoOutputMaxCount) {
       _utxoOutputMaxCount = _transaction.outputAddressList.length;
     }
+  }
+
+  @override
+  void dispose() {
+    _walletProvider.removeWalletUpdateListener(_walletId, _onWalletUpdate);
+    super.dispose();
   }
 }

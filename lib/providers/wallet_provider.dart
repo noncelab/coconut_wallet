@@ -578,6 +578,19 @@ class WalletProvider extends ChangeNotifier {
     return result;
   }
 
+  Future toggleUtxoLockStatus(int walletId, String txHash) async {
+    final result = await _utxoRepository.toggleUtxoLockStatus(walletId, txHash);
+    if (result.isFailure) {
+      Logger.error(result.error);
+    } else {
+      // UTXO 상태가 변경되었으므로 리스너들에게 알림
+      final utxoState = _utxoRepository.getUtxoState(walletId, txHash);
+      if (utxoState != null) {
+        _notifyWalletUpdateListeners(WalletUpdateInfo(walletId));
+      }
+    }
+  }
+
   @override
   void dispose() {
     _nodeProvider.removeListener(_onNodeProviderStateUpdated);

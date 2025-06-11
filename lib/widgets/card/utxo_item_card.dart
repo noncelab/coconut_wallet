@@ -6,6 +6,7 @@ import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
 
 class UtxoItemCard extends StatelessWidget {
@@ -61,7 +62,11 @@ class UtxoItemCard extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (utxo.isPending) _buildPendingStatus(utxo.status),
+                        if (utxo.isPending) ...[
+                          _buildPendingStatus(utxo.status),
+                        ] else if (utxo.status == UtxoStatus.locked) ...[
+                          SvgPicture.asset('assets/svg/lock.svg'),
+                        ],
                         Text(
                           satoshiToBitcoinString(utxo.amount),
                           style: CoconutTypography.heading4_18_NumberBold
