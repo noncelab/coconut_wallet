@@ -278,7 +278,7 @@ address_search_screen:
   address_placeholder: "주소를 입력해 주세요"
   address_not_found: "찾으시는 주소가 없어요"
   search_result: "검색 결과"
-  address_n_found: "주소를 $n개를 찾았어요"
+  address_n_found: "주소 $n개를 찾았어요"
   search_range: "검색 범위"
   receiving_address_index: "입금 주소 인덱스: $start ~ $end"
   change_address_index: "잔돈 주소 인덱스: $start ~ $end"

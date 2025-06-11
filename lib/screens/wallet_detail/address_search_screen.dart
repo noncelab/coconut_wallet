@@ -266,7 +266,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     return Container(
         decoration: const BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(Sizes.size12)),
-          color: CoconutColors.gray900,
+          color: CoconutColors.gray800,
         ),
         padding: const EdgeInsets.only(top: Sizes.size20, bottom: Sizes.size28),
         child: Column(

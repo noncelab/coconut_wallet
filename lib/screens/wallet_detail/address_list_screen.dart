@@ -120,9 +120,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       ),
                     ),
                     body: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                       child: _isFirstLoadRunning
                           ? const Center(child: CircularProgressIndicator())
                           : Column(
