@@ -7,7 +7,6 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_search_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -34,7 +33,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   Timer? _debounce;
   bool isSearched = false;
 
-  bool get canShowAddress => isSearched && _addressController.text.isNotEmpty;
+  bool get canShowResult => isSearched && _addressController.text.isNotEmpty;
 
   @override
   void initState() {
@@ -155,16 +154,8 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                     appBar: AppBar(
                       scrolledUnderElevation: 0,
                       backgroundColor: CoconutColors.black,
-                      leading: IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: SvgPicture.asset('assets/svg/back.svg',
-                              width: 24,
-                              colorFilter:
-                                  const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn))),
                       title: Padding(
-                        padding: const EdgeInsets.only(right: 16),
+                        padding: const EdgeInsets.only(right: Sizes.size16, top: Sizes.size4),
                         child: CoconutTextField(
                           controller: _addressController,
                           focusNode: _addressFocusNode,
@@ -175,6 +166,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                           prefix: IconButton(
                             onPressed: () {},
                             icon: const Icon(Icons.search_rounded, color: CoconutColors.gray600),
+                            iconSize: Sizes.size22,
                           ),
                           suffix: IconButton(
                             iconSize: 14,
@@ -205,57 +197,44 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                       ),
                       titleSpacing: 0,
                     ),
-                    body: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
-                      child: SingleChildScrollView(
-                        child:
-                            Consumer<AddressSearchViewModel>(builder: (context, viewModel, child) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CoconutLayout.spacing_100h,
-                              if (canShowAddress) ...[
-                                Row(
+                    body: canShowResult
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                            child: SingleChildScrollView(
+                              child: Consumer<AddressSearchViewModel>(
+                                  builder: (context, viewModel, child) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    CoconutLayout.spacing_100h,
                                     Text(
-                                      "'${TextUtils.ellipsisIfLonger(_addressController.text, maxLength: 30)}' ${t.address_search_screen.search_result}",
+                                      "'${_addressController.text}' ${t.address_search_screen.search_result} ${viewModel.searchedAddressLength > 0 ? t.address_search_screen.address_n_found(n: viewModel.searchedAddressLength) : ""}",
                                       style:
                                           CoconutTypography.body3_12.setColor(CoconutColors.white),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
                                     ),
-                                    CoconutLayout.spacing_100w,
-                                    if (viewModel.searchedAddressLength > 0)
-                                      Text(
-                                          t.address_search_screen
-                                              .address_n_found(n: viewModel.searchedAddressLength),
-                                          style: CoconutTypography.body3_12
+                                    CoconutLayout.spacing_1000h,
+                                    if (viewModel.receivingAddressList.isNotEmpty) ...[
+                                      Text(t.address_search_screen.receiving_address,
+                                          style: CoconutTypography.body2_14_Bold
                                               .setColor(CoconutColors.white)),
+                                      CoconutLayout.spacing_300h,
+                                      _buildWalletAddressList(viewModel.receivingAddressList),
+                                      CoconutLayout.spacing_1000h,
+                                    ],
+                                    if (viewModel.changeAddressList.isNotEmpty) ...[
+                                      Text(t.address_search_screen.change_address,
+                                          style: CoconutTypography.body2_14_Bold
+                                              .setColor(CoconutColors.white)),
+                                      CoconutLayout.spacing_300h,
+                                      _buildWalletAddressList(viewModel.changeAddressList),
+                                    ],
+                                    if (viewModel.searchedAddressLength == 0) _buildNotFoundView(),
                                   ],
-                                ),
-                                CoconutLayout.spacing_1000h,
-                                if (viewModel.receivingAddressList.isNotEmpty) ...[
-                                  Text(t.address_search_screen.receiving_address,
-                                      style: CoconutTypography.body2_14_Bold
-                                          .setColor(CoconutColors.white)),
-                                  CoconutLayout.spacing_300h,
-                                  _buildWalletAddressList(viewModel.receivingAddressList),
-                                  CoconutLayout.spacing_1000h,
-                                ],
-                                if (viewModel.changeAddressList.isNotEmpty) ...[
-                                  Text(t.address_search_screen.change_address,
-                                      style: CoconutTypography.body2_14_Bold
-                                          .setColor(CoconutColors.white)),
-                                  CoconutLayout.spacing_300h,
-                                  _buildWalletAddressList(viewModel.changeAddressList),
-                                ],
-                                if (viewModel.searchedAddressLength == 0) _buildNotFoundView(),
-                              ],
-                            ],
-                          );
-                        }),
-                      ),
-                    )),
+                                );
+                              }),
+                            ),
+                          )
+                        : Container()),
               ],
             ),
           ),

@@ -91,14 +91,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           icon: const Icon(Icons.search_rounded, color: CoconutColors.white),
                         )
                       ],
-                      leading: IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: SvgPicture.asset('assets/svg/back.svg',
-                              width: 24,
-                              colorFilter:
-                                  const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn))),
                       flexibleSpace: _isScrollOverTitleHeight
                           ? ClipRect(
                               child: BackdropFilter(
@@ -292,36 +284,43 @@ class _AddressListScreenState extends State<AddressListScreen> {
         Selector<PreferenceProvider, bool>(
             selector: (_, viewModel) => viewModel.showOnlyUnusedAddresses,
             builder: (context, showOnlyUnusedAddresses, child) {
-              return GestureDetector(
-                onTap: () {
-                  context
-                      .read<PreferenceProvider>()
-                      .changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Sizes.size16,
-                    vertical: Sizes.size6,
-                  ),
-                  child: Row(
-                    children: [
-                      const Spacer(),
-                      SvgPicture.asset(
-                        'assets/svg/check.svg',
-                        colorFilter: ColorFilter.mode(
-                            showOnlyUnusedAddresses ? CoconutColors.white : CoconutColors.gray700,
-                            BlendMode.srcIn),
-                        width: 10,
-                        height: 10,
+              return Row(
+                children: [
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      context
+                          .read<PreferenceProvider>()
+                          .changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Sizes.size16,
+                        vertical: Sizes.size6,
                       ),
-                      CoconutLayout.spacing_100w,
-                      Text(
-                        t.address_list_screen.show_only_unused_address,
-                        style: CoconutTypography.body3_12,
+                      child: Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/svg/check.svg',
+                            colorFilter: ColorFilter.mode(
+                                showOnlyUnusedAddresses
+                                    ? CoconutColors.white
+                                    : CoconutColors.gray700,
+                                BlendMode.srcIn),
+                            width: 10,
+                            height: 10,
+                          ),
+                          CoconutLayout.spacing_100w,
+                          Text(
+                            t.address_list_screen.show_only_unused_address,
+                            style: CoconutTypography.body3_12,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  )
+                ],
               );
             }),
       ],
