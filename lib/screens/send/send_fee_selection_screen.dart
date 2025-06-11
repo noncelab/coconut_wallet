@@ -14,7 +14,7 @@ import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -185,8 +185,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                                           onComplete: (text) {
                                             _handleCustomFeeInput(text);
                                           },
-                                          keyboardType: TextInputType.number,
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(decimal: true),
                                           visibleTextLimit: false,
+                                          formatInput: (text) {
+                                            String finalText = filterDecimalInput(text, 2);
+                                            return finalText;
+                                          },
+                                          maxLength: 10,
                                         ),
                                       );
                                     },

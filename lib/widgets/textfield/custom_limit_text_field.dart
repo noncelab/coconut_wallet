@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+/// TODO: CoconutTextField를 사용하는 방식으로 변경 검토
 /// [CustomLimitTextField] : 최대입력 글자를 입력하고 TextFiled 아래에 표기하는 위젯
 /// (controller.text.length/maxLength) = (1/30)
 class CustomLimitTextField extends StatelessWidget {
@@ -17,6 +18,7 @@ class CustomLimitTextField extends StatelessWidget {
   final TextInputType keyboardType;
   final String placeholder;
   final bool visibleTextLimit;
+  final String Function(String)? formatInput;
 
   const CustomLimitTextField(
       {super.key,
@@ -29,7 +31,8 @@ class CustomLimitTextField extends StatelessWidget {
       this.prefix,
       this.keyboardType = TextInputType.text,
       this.placeholder = '',
-      this.visibleTextLimit = true});
+      this.visibleTextLimit = true,
+      this.formatInput});
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +65,7 @@ class CustomLimitTextField extends StatelessWidget {
                 onClear();
               },
               child: Container(
-                margin: const EdgeInsets.only(right: 13),
+                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
                 child: SvgPicture.asset(
                   'assets/svg/text-field-clear.svg',
                   colorFilter: const ColorFilter.mode(
@@ -75,15 +78,15 @@ class CustomLimitTextField extends StatelessWidget {
               ),
             ),
             onChanged: (text) {
-              if (text.runes.length > maxLength) {
-                text = String.fromCharCodes(text.runes.take(maxLength));
-                controller.text = text;
+              String formattedText = formatInput?.call(text) ?? text;
+              if (formattedText.runes.length > maxLength) {
+                formattedText = String.fromCharCodes(formattedText.runes.take(maxLength));
+                controller.text = formattedText;
               }
-              onChanged(text);
+              onChanged(formattedText);
             },
           ),
         ),
-
         // 글자 수 표시
         Visibility(
           visible: visibleTextLimit,

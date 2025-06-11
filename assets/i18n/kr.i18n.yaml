@@ -411,7 +411,7 @@ errors:
   data_not_found: "데이터가 없습니다."
 
 text_field:
-  enter_fee_with_two_decimal_places: "수수료율은 소수점 두자리까지 입력 가능해요."
+  enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vb)"
   enter_fee_directly: "직접 입력하기"
   search_mnemonic_word: "영문으로 검색해 보세요"
 

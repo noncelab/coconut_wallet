@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -156,8 +157,14 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                           onComplete: (text) {
                                             _onCustomFeeRateInput(text);
                                           },
-                                          keyboardType: TextInputType.number,
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(decimal: true),
                                           visibleTextLimit: false,
+                                          formatInput: (text) {
+                                            String finalText = filterDecimalInput(text, 2);
+                                            return finalText;
+                                          },
+                                          maxLength: 10,
                                         ),
                                       );
                                     },
