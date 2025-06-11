@@ -336,11 +336,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
       _receivingTooltipIconRenderBox =
           _receivingTooltipKey.currentContext!.findRenderObject() as RenderBox;
       _receivingTooltipIconPosition = _receivingTooltipIconRenderBox.localToGlobal(Offset.zero);
-
+      final receivingTooltipIconPositionTop =
+          _receivingTooltipIconPosition.dy + _receivingTooltipIconRenderBox.size.height;
       return Positioned(
         top: widget.isFullScreen
-            ? _receivingTooltipIconPosition.dy + _receivingTooltipIconRenderBox.size.height
-            : _receivingTooltipIconPosition.dy - 70,
+            ? receivingTooltipIconPositionTop
+            : receivingTooltipIconPositionTop -
+                MediaQuery.of(context).size.height *
+                    0.1, // 0.1 : bottomSheet가 height * 0.9  만큼 차지하기 때문
         left: _receivingTooltipIconPosition.dx - 30,
         right: MediaQuery.of(context).size.width - _receivingTooltipIconPosition.dx - 200,
         child: CoconutToolTip(
@@ -367,10 +370,13 @@ class _AddressListScreenState extends State<AddressListScreen> {
       _changeTooltipIconRenderBox =
           _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
       _changeTooltipIconPosition = _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
+
+      final changeTooltipIconPositionTop =
+          _changeTooltipIconPosition.dy + _changeTooltipIconRenderBox.size.height;
       return Positioned(
         top: widget.isFullScreen
-            ? _changeTooltipIconPosition.dy + _changeTooltipIconRenderBox.size.height
-            : _changeTooltipIconPosition.dy - 70,
+            ? changeTooltipIconPositionTop
+            : changeTooltipIconPositionTop - MediaQuery.of(context).size.height * 0.1,
         left: _changeTooltipIconPosition.dx - 200,
         right: MediaQuery.of(context).size.width -
             _changeTooltipIconPosition.dx +
