@@ -180,6 +180,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   label: t.tag_manage_label,
                                   showIcon: true,
                                   onPressed: () {
+                                    _removeTooltip();
                                     Navigator.pushNamed(context, '/utxo-tag',
                                         arguments: {'id': widget.id});
                                   },
