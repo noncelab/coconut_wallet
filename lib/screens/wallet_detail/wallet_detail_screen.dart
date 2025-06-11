@@ -95,7 +95,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       ),
                       _buildLoadingWidget(),
                       _buildTxListLabel(),
-                      TransactionList(currentUnit: _currentUnit, walletId: widget.id),
+                      TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
                     ],
                   ),
                 ),
@@ -450,11 +450,11 @@ class TransactionList extends StatefulWidget {
   const TransactionList({
     super.key,
     required BitcoinUnit currentUnit,
-    required this.widget,
+    required this.walldtId,
   }) : _currentUnit = currentUnit;
 
   final BitcoinUnit _currentUnit;
-  final WalletDetailScreen widget;
+  final int walldtId;
 
   @override
   State<TransactionList> createState() => _TransactionListState();
@@ -560,13 +560,13 @@ class _TransactionListState extends State<TransactionList> {
               key: Key(tx.transactionHash),
               tx: tx,
               currentUnit: widget._currentUnit,
-              id: widget.walletId,
+              id: widget.walldtId,
               onPressed: () {
                 Navigator.pushNamed(
                   context,
                   '/transaction-detail',
                   arguments: {
-                    'id': widget.walletId,
+                    'id': widget.walldtId,
                     'txHash': tx.transactionHash,
                   },
                 );
@@ -592,10 +592,10 @@ class _TransactionListState extends State<TransactionList> {
             key: Key(tx.transactionHash),
             tx: tx,
             currentUnit: widget._currentUnit,
-            id: widget.walletId,
+            id: widget.walldtId,
             onPressed: () {
               Navigator.pushNamed(context, '/transaction-detail',
-                  arguments: {'id': widget.walletId, 'txHash': tx.transactionHash});
+                  arguments: {'id': widget.walldtId, 'txHash': tx.transactionHash});
             },
           ),
         ),
