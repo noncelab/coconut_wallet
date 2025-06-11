@@ -24,7 +24,8 @@ class CommonBottomSheets {
       builder: (context) {
         return Padding(
             padding: const EdgeInsets.only(bottom: 20),
-            child: Wrap(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Padding(
                   padding: titlePadding,
@@ -171,10 +172,12 @@ class CommonBottomSheets {
             maxChildSize: maxChildSize,
             minChildSize: minChildSize,
             builder: (_, controller) {
-              return SingleChildScrollView(
-                // physics: const ClampingScrollPhysics(),
-                controller: controller,
-                child: child,
+              return Flexible(
+                child: SingleChildScrollView(
+                  // physics: const ClampingScrollPhysics(),
+                  controller: controller,
+                  child: child,
+                ),
               );
             },
           );
