@@ -154,6 +154,17 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                     appBar: AppBar(
                       scrolledUnderElevation: 0,
                       backgroundColor: CoconutColors.black,
+                      leading: IconButton(
+                        icon: SvgPicture.asset(
+                          'assets/svg/arrow-back.svg',
+                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          width: 24,
+                          height: 24,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
                       title: Padding(
                         padding: const EdgeInsets.only(right: Sizes.size16, top: Sizes.size4),
                         child: CoconutTextField(

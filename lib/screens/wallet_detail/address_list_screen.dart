@@ -80,6 +80,17 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           ? CoconutColors.black.withOpacity(0.5)
                           : CoconutColors.black,
                       toolbarHeight: kToolbarHeight + 30,
+                      leading: IconButton(
+                        icon: SvgPicture.asset(
+                          'assets/svg/arrow-back.svg',
+                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          width: 24,
+                          height: 24,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
                       actions: [
                         IconButton(
                           onPressed: () {
@@ -288,6 +299,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           .read<PreferenceProvider>()
                           .changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
                       _initializeAddressList();
+                      scrollToTop();
                     },
                     child: Container(
                       color: Colors.transparent,
