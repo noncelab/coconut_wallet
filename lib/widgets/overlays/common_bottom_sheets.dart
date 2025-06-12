@@ -158,9 +158,11 @@ class CommonBottomSheets {
     bool snap = true,
     double initialChildSize = 1,
     double maxChildSize = 1,
-    double minChildSize = 0.9,
+    double minChildSize = 0.9001,
     double maxHeight = 0.9,
   }) async {
+    var adjustedMinChildSize = minChildSize;
+    if (maxHeight >= adjustedMinChildSize) adjustedMinChildSize = maxHeight + 0.0001;
     return showModalBottomSheet<T>(
         context: context,
         builder: (context) {
@@ -169,7 +171,7 @@ class CommonBottomSheets {
             snap: snap,
             initialChildSize: initialChildSize,
             maxChildSize: maxChildSize,
-            minChildSize: minChildSize,
+            minChildSize: adjustedMinChildSize,
             builder: (_, controller) {
               return SingleChildScrollView(
                 // physics: const ClampingScrollPhysics(),
