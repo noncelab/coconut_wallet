@@ -54,34 +54,30 @@ class UtxoDetailViewModel extends ChangeNotifier {
     }
   }
 
-  void toggleUtxoLockStatus() {
+  UtxoStatus _setUtxoStateToggled() {
     if (_utxo.status == UtxoStatus.locked) {
-      _utxo = UtxoState(
-        transactionHash: _utxo.transactionHash,
-        index: _utxo.index,
-        amount: _utxo.amount,
-        derivationPath: _utxo.derivationPath,
-        blockHeight: _utxo.blockHeight,
-        to: _utxo.to,
-        timestamp: _utxo.timestamp,
-        status: UtxoStatus.unspent,
-        spentByTransactionHash: _utxo.spentByTransactionHash,
-      );
+      return UtxoStatus.unspent;
     } else if (_utxo.status == UtxoStatus.unspent) {
-      _utxo = UtxoState(
-        transactionHash: _utxo.transactionHash,
-        index: _utxo.index,
-        amount: _utxo.amount,
-        derivationPath: _utxo.derivationPath,
-        blockHeight: _utxo.blockHeight,
-        to: _utxo.to,
-        timestamp: _utxo.timestamp,
-        status: UtxoStatus.locked,
-        spentByTransactionHash: _utxo.spentByTransactionHash,
-      );
+      return UtxoStatus.locked;
     }
+    return _utxo.status;
+  }
+
+  void toggleUtxoLockStatus() async {
+    _utxo = UtxoState(
+      transactionHash: _utxo.transactionHash,
+      index: _utxo.index,
+      amount: _utxo.amount,
+      derivationPath: _utxo.derivationPath,
+      blockHeight: _utxo.blockHeight,
+      to: _utxo.to,
+      timestamp: _utxo.timestamp,
+      status: _setUtxoStateToggled(),
+      spentByTransactionHash: _utxo.spentByTransactionHash,
+    );
+
     notifyListeners();
-    _walletProvider.toggleUtxoLockStatus(_walletId, _utxo.transactionHash);
+    await _walletProvider.toggleUtxoLockStatus(_walletId, _utxo.transactionHash);
   }
 
   List<String> get dateString => _dateString;

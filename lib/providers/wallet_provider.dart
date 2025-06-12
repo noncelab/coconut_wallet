@@ -578,7 +578,7 @@ class WalletProvider extends ChangeNotifier {
     return result;
   }
 
-  Future toggleUtxoLockStatus(int walletId, String txHash) async {
+  Future<void> toggleUtxoLockStatus(int walletId, String txHash) async {
     final result = await _utxoRepository.toggleUtxoLockStatus(walletId, txHash);
     if (result.isFailure) {
       Logger.error(result.error);
