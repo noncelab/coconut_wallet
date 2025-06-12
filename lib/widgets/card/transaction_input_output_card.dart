@@ -261,8 +261,8 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
       _inputCountToShow = direction == TransactionDirection.outgoing
           ? min(kOutgoingTxInputCount, _inputAddressList.length)
           : min(kIncomingTxInputCount, _inputAddressList.length);
-      if (_inputAddressList.length < kOutgoingTxInputCount ||
-          _inputAddressList.length < kIncomingTxInputCount) {
+      if (_inputAddressList.length <= kOutgoingTxInputCount ||
+          _inputAddressList.length <= kIncomingTxInputCount) {
         _canShowMoreInputs = false;
       }
     });
@@ -274,8 +274,8 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
       _outputCountToShow = direction == TransactionDirection.outgoing
           ? min(kOutgoingTxOutputCount, _outputAddressList.length)
           : min(kIncomingTxOutputCount, _outputAddressList.length);
-      if (_outputAddressList.length < kOutgoingTxOutputCount ||
-          _outputAddressList.length < kIncomingTxOutputCount) {
+      if (_outputAddressList.length <= kOutgoingTxOutputCount ||
+          _outputAddressList.length <= kIncomingTxOutputCount) {
         _canShowMoreOutputs = false;
       }
     });
