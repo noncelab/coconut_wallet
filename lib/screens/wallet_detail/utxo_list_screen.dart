@@ -389,13 +389,13 @@ class _UtxoListState extends State<UtxoList> {
           final selectedUtxoTagName = data.item2;
 
           bool isChangeTagSelected = selectedUtxoTagName == t.change;
-          bool isUsageLockTagSelected = selectedUtxoTagName == t.utxo_detail_screen.usage_lock;
+          bool isLockedUtxoTagSelected = selectedUtxoTagName == t.utxo_detail_screen.utxo_locked;
 
           List<UtxoState> changeUtxos = [];
           List<UtxoState> lockedUtxos = [];
           if (isChangeTagSelected) {
             changeUtxos = _displayedUtxoList.where((utxo) => utxo.isChange == true).toList();
-          } else if (isUsageLockTagSelected) {
+          } else if (isLockedUtxoTagSelected) {
             lockedUtxos =
                 _displayedUtxoList.where((utxo) => utxo.status == UtxoStatus.locked).toList();
           }
@@ -407,14 +407,14 @@ class _UtxoListState extends State<UtxoList> {
           }
           if (utxoList.isEmpty ||
               (isChangeTagSelected && changeUtxos.isEmpty) ||
-              (isUsageLockTagSelected && lockedUtxos.isEmpty)) {
+              (isLockedUtxoTagSelected && lockedUtxos.isEmpty)) {
             return _buildEmptyState();
           }
 
           return _buildSliverAnimatedList(
               isChangeTagSelected
                   ? changeUtxos
-                  : isUsageLockTagSelected
+                  : isLockedUtxoTagSelected
                       ? lockedUtxos
                       : _displayedUtxoList,
               selectedUtxoTagName);
@@ -422,7 +422,7 @@ class _UtxoListState extends State<UtxoList> {
   }
 
   Widget _buildSliverAnimatedList(List<UtxoState> utxoList, String selectedUtxoTagName) {
-    final defaultTagNameList = [t.all, t.utxo_detail_screen.usage_lock, t.change];
+    final defaultTagNameList = [t.all, t.utxo_detail_screen.utxo_locked, t.change];
     return SliverAnimatedList(
       key: _utxoListKey,
       initialItemCount: utxoList.length,

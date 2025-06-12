@@ -188,8 +188,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                                 context: context,
                                 isVisibleIcon: true,
                                 text: utxoStatus != UtxoStatus.locked
-                                    ? t.utxo_detail_screen.usage_lock_toast_msg
-                                    : t.utxo_detail_screen.usage_unlock_toast_msg);
+                                    ? t.utxo_detail_screen.utxo_locked_toast_msg
+                                    : t.utxo_detail_screen.utxo_unlocked_toast_msg);
                           },
                         ),
                       TransactionInputOutputCard(
@@ -544,8 +544,8 @@ class _UtxoLockToggleButton extends State<UtxoLockToggleButton> {
                 ),
                 Text(
                   widget.isLocked
-                      ? t.utxo_detail_screen.usage_lock
-                      : t.utxo_detail_screen.usage_unlock,
+                      ? t.utxo_detail_screen.utxo_locked
+                      : t.utxo_detail_screen.utxo_unlocked,
                   style: CoconutTypography.body3_12
                       .setColor(isPressing ? CoconutColors.gray800 : CoconutColors.white),
                 )

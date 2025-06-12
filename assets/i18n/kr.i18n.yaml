@@ -282,10 +282,10 @@ transaction_detail_screen:
 utxo_detail_screen:
   pending: "승인 대기중"
   address: "보유 주소"
-  usage_lock: "사용 잠금"
-  usage_unlock: "사용 가능"
-  usage_lock_toast_msg: "UTXO 잠금 완료! 이 코인은 더 이상 자동으로 사용되지 않아요."
-  usage_unlock_toast_msg: "UTXO 잠금 해체 완료! 코인이 사용 가능한 상태로 전환됐어요."
+  utxo_locked: "사용 잠금"
+  utxo_unlocked: "사용 가능"
+  utxo_locked_toast_msg: "UTXO 잠금 완료! 이 코인은 더 이상 자동으로 사용되지 않아요."
+  utxo_unlocked_toast_msg: "UTXO 잠금 해체 완료! 코인이 사용 가능한 상태로 전환됐어요."
   
 utxo_tag_screen:
   no_such_tag: "태그가 없어요"

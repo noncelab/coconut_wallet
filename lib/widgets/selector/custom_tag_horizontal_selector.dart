@@ -31,7 +31,7 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
   void initState() {
     super.initState();
     if (widget.showDefaultTags) {
-      _tags = [t.all, t.utxo_detail_screen.usage_lock, t.change];
+      _tags = [t.all, t.utxo_detail_screen.utxo_locked, t.change];
     } else {
       _tags = [t.all];
     }
