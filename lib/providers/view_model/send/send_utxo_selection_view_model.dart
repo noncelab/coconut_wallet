@@ -102,11 +102,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
     _confirmedBalance =
         _walletProvider.getUtxoList(_sendInfoProvider.walletId!).fold<int>(0, (sum, utxo) {
-      if (utxo.status == UtxoStatus.unspent) {
+      if (utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.locked) {
         _availableUtxoList.add(utxo);
-        return sum + utxo.amount;
       }
-      return sum;
+      return utxo.status == UtxoStatus.unspent ? sum + utxo.amount : sum;
     });
     _sortAvailableUtxoList(initialUtxoOrder);
     _initUtxoTagMap();
@@ -117,7 +116,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
 
-    _transaction = _createTransaction(_availableUtxoList, _isMaxMode, 1, _walletBaseItem);
+    // Transaction 생성에 쓰이는 utxoList (UtxoStatus.locked상태는 제외합니다.)
+    final utxoListForCreateTx =
+        _availableUtxoList.where((utxo) => utxo.status != UtxoStatus.locked).toList();
+
+    _transaction = _createTransaction(utxoListForCreateTx, _isMaxMode, 1, _walletBaseItem);
     _syncSelectedUtxosWithTransaction();
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
@@ -291,7 +294,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void selectAllUtxo() {
-    setSelectedUtxoList(List.from(availableUtxoList));
+    setSelectedUtxoList(availableUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
 
     if (!isMaxMode) {
       _transaction = Transaction.forSinglePayment(_selectedUtxoList, _recipientAddress,
@@ -458,8 +461,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     var inputs = _transaction.inputs;
     List<UtxoState> result = [];
     for (int i = 0; i < inputs.length; i++) {
-      result.add(_availableUtxoList.firstWhere((utxo) =>
-          utxo.transactionHash == inputs[i].transactionHash && utxo.index == inputs[i].index));
+      result.add(_availableUtxoList.firstWhere(
+        (utxo) =>
+            utxo.transactionHash == inputs[i].transactionHash &&
+            utxo.index == inputs[i].index &&
+            utxo.status != UtxoStatus.locked,
+      ));
     }
     _selectedUtxoList = result;
     notifyListeners();

@@ -178,21 +178,22 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                       if (utxoStatus == UtxoStatus.unspent || utxoStatus == UtxoStatus.locked)
                         _buildPrice()
                       else ...{_buildPendingStatus(utxoStatus)},
-                      UtxoLockToggleButton(
-                        isLocked: utxoStatus == UtxoStatus.locked,
-                        onPressed: () {
-                          final viewModel = context.read<UtxoDetailViewModel>();
-                          viewModel.toggleUtxoLockStatus();
-                          _removeUtxoTooltip();
-                          vibrateLight();
-                          CoconutToast.showToast(
-                              context: context,
-                              isVisibleIcon: true,
-                              text: utxoStatus != UtxoStatus.locked
-                                  ? t.utxo_detail_screen.usage_lock_toast_msg
-                                  : t.utxo_detail_screen.usage_unlock_toast_msg);
-                        },
-                      ),
+                      if (utxoStatus == UtxoStatus.unspent || utxoStatus == UtxoStatus.locked)
+                        UtxoLockToggleButton(
+                          isLocked: utxoStatus == UtxoStatus.locked,
+                          onPressed: () {
+                            final viewModel = context.read<UtxoDetailViewModel>();
+                            viewModel.toggleUtxoLockStatus();
+                            _removeUtxoTooltip();
+                            vibrateLight();
+                            CoconutToast.showToast(
+                                context: context,
+                                isVisibleIcon: true,
+                                text: utxoStatus != UtxoStatus.locked
+                                    ? t.utxo_detail_screen.usage_lock_toast_msg
+                                    : t.utxo_detail_screen.usage_unlock_toast_msg);
+                          },
+                        ),
                       TransactionInputOutputCard(
                         transaction: tx,
                         isSameAddress: (address, _) {

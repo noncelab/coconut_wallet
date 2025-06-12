@@ -15,6 +15,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/send_utxo_sticky_header.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -582,6 +583,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               return const SizedBox();
             }
 
+            if (utxo.isLocked) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: LockedUtxoItemCard(
+                  key: ValueKey(utxo.transactionHash),
+                  utxo: utxo,
+                  utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+                ),
+              );
+            }
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               child: SelectableUtxoItemCard(
