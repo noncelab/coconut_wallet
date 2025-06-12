@@ -527,8 +527,8 @@ class WalletProvider extends ChangeNotifier {
     );
   }
 
-  List<WalletAddress> getWalletAddressList(
-      WalletListItemBase wallet, int cursor, int count, bool isChange) {
+  Future<List<WalletAddress>> getWalletAddressList(
+      WalletListItemBase wallet, int cursor, int count, bool isChange) async {
     return _addressRepository.getWalletAddressList(wallet, cursor, count, isChange);
   }
 

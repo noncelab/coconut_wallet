@@ -22,12 +22,12 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 주소 목록 가져오기
-  List<WalletAddress> getWalletAddressList(
+  Future<List<WalletAddress>> getWalletAddressList(
     WalletListItemBase walletItemBase,
     int cursor,
     int count,
     bool isChange,
-  ) {
+  ) async {
     final generatedAddressIndex = getGeneratedAddressIndex(walletItemBase, isChange);
 
     if (generatedAddressIndex > cursor + count) {
@@ -49,9 +49,9 @@ class AddressRepository extends BaseRepository {
           )
         : [];
 
-    // 필요한 경우 새 주소 생성하고 저장하지 않고 반환
+    // 필요한 경우 새 주소 생성하고 저장하지 않고 반환 (비동기 처리)
     if (existingAddresses.length < count) {
-      final newAddresses = _generateAddresses(
+      final newAddresses = await _generateAddressesAsync(
         wallet: walletItemBase.walletBase,
         startIndex: existingAddresses.isEmpty ? cursor : existingAddresses.last.index + 1,
         count: count - existingAddresses.length,
@@ -146,11 +146,12 @@ class AddressRepository extends BaseRepository {
     required int count,
     required bool isChange,
   }) {
-    final query = realm.query<RealmWalletAddress>(
-        'walletId == $walletId AND isChange == $isChange SORT(index ASC)');
-    final paginatedResults = query.skip(cursor).take(count);
-
-    return paginatedResults.map((e) => mapRealmToWalletAddress(e)).toList();
+    return realm
+        .query<RealmWalletAddress>(
+            'walletId == $walletId AND isChange == $isChange AND index >= $cursor SORT(index ASC)')
+        .take(count)
+        .map((e) => mapRealmToWalletAddress(e))
+        .toList();
   }
 
   /// 주소를 DB에 저장
@@ -261,6 +262,23 @@ class AddressRepository extends BaseRepository {
       required int count,
       required bool isChange}) {
     return List.generate(count, (index) => _generateAddress(wallet, startIndex + index, isChange));
+  }
+
+  /// 여러 주소 생성 (비동기 - UI 렉 방지)
+  Future<List<WalletAddress>> _generateAddressesAsync(
+      {required WalletBase wallet,
+      required int startIndex,
+      required int count,
+      required bool isChange}) async {
+    final List<WalletAddress> addresses = [];
+
+    for (int i = 0; i < count; i++) {
+      await Future.delayed(Duration.zero);
+      final address = _generateAddress(wallet, startIndex + i, isChange);
+      addresses.add(address);
+    }
+
+    return addresses;
   }
 
   /// 주소가 이미 존재하는지 확인

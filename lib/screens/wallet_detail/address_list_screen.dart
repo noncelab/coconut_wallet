@@ -397,28 +397,26 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Container();
   }
 
-  bool _needLoadMore() {
-    return (!_isFirstLoadRunning && !_isLoadMoreRunning && _controller.position.extentAfter < 500);
-  }
-
   void _nextLoad() async {
-    if (!_needLoadMore()) {
+    if (!_isFirstLoadRunning && !_isLoadMoreRunning && _controller.position.extentAfter < 500) {
       return;
     }
-
-    final currentPage = isReceivingSelected ? _receivingAddressPage : _changeAddressPage;
-    final offset = kFirstCount + currentPage * _limit;
 
     setState(() {
       _isLoadMoreRunning = true;
     });
 
+    final currentPage = isReceivingSelected ? _receivingAddressPage : _changeAddressPage;
+    final offset = kFirstCount + currentPage * _limit;
+
     List<WalletAddress>? newAddresses = [];
 
     try {
-      newAddresses = viewModel?.walletProvider
+      // 백그라운드에서 주소 리스트 로드 (주요 병목 지점)
+      newAddresses = await viewModel?.walletProvider
           .getWalletAddressList(viewModel!.walletBaseItem!, offset, _limit, !isReceivingSelected);
 
+      // UI 업데이트
       if (mounted) {
         setState(() {
           if (isReceivingSelected) {
@@ -433,11 +431,12 @@ class _AddressListScreenState extends State<AddressListScreen> {
     } catch (e) {
       Logger.log(e.toString());
     } finally {
-      setState(() {
-        _isLoadMoreRunning = false;
-      });
-
-      // TODO: 주소 저장 로직 추가
+      // 로딩 상태 해제
+      if (mounted) {
+        setState(() {
+          _isLoadMoreRunning = false;
+        });
+      }
     }
   }
 
