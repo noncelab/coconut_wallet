@@ -2,7 +2,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +13,6 @@ class AddressSearchViewModel extends ChangeNotifier {
 
   /// Common variables ---------------------------------------------------------
   final WalletProvider _walletProvider;
-  final PreferenceProvider _preferenceProvider;
 
   /// Wallet variables ---------------------------------------------------------
   List<WalletAddress> _receivingAddressList = [];
@@ -24,7 +22,7 @@ class AddressSearchViewModel extends ChangeNotifier {
   int _generatedReceiveIndex = 0;
   int _generatedChangeIndex = 0;
 
-  AddressSearchViewModel(this._walletProvider, this._preferenceProvider, int id) {
+  AddressSearchViewModel(this._walletProvider, int id) {
     _initialize(id);
   }
 
@@ -52,16 +50,8 @@ class AddressSearchViewModel extends ChangeNotifier {
 
   void searchWalletAddressList(String keyword) {
     final addressList = _walletProvider.searchWalletAddressList(_walletBaseItem!, keyword);
-    _receivingAddressList = addressList
-        .where(_preferenceProvider.showOnlyUnusedAddresses
-            ? (address) => !address.isChange && !address.isUsed
-            : (address) => !address.isChange)
-        .toList();
-    _changeAddressList = addressList
-        .where(_preferenceProvider.showOnlyUnusedAddresses
-            ? (address) => address.isChange && !address.isUsed
-            : (address) => address.isChange)
-        .toList();
+    _receivingAddressList = addressList.where((address) => !address.isChange).toList();
+    _changeAddressList = addressList.where((address) => address.isChange).toList();
     notifyListeners();
   }
 

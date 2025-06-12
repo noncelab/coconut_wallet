@@ -148,8 +148,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                                       ),
                                                     ),
                                                     qrData: addressList[index].address,
-                                                    title: t.address_list_screen
-                                                        .address_index(index: index)));
+                                                    title: t.address_list_screen.address_index(
+                                                        index: addressList[index].index)));
                                           },
                                           address: addressList[index].address,
                                           derivationPath: addressList[index].derivationPath,

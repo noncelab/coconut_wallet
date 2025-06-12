@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_search_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
@@ -40,8 +39,8 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     super.initState();
     _addressController.addListener(_onAddressChanged);
     _addressFocusNode.requestFocus();
-    viewModel = AddressSearchViewModel(Provider.of<WalletProvider>(context, listen: false),
-        context.read<PreferenceProvider>(), widget.id);
+    viewModel =
+        AddressSearchViewModel(Provider.of<WalletProvider>(context, listen: false), widget.id);
   }
 
   @override
