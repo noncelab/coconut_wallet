@@ -528,8 +528,16 @@ class WalletProvider extends ChangeNotifier {
   }
 
   List<WalletAddress> getWalletAddressList(
-      WalletListItemBase wallet, int cursor, int count, bool isChange) {
-    return _addressRepository.getWalletAddressList(wallet, cursor, count, isChange);
+    WalletListItemBase wallet,
+    int cursor,
+    int count,
+    bool isChange,
+    bool showOnlyUnusedAddresses,
+    void Function(bool, int) onCursorUpdate,
+  ) {
+    return _addressRepository.getWalletAddressList(
+        wallet, cursor, count, isChange, showOnlyUnusedAddresses,
+        onCursorUpdate: onCursorUpdate);
   }
 
   List<WalletAddress> searchWalletAddressList(WalletListItemBase wallet, String keyword) {

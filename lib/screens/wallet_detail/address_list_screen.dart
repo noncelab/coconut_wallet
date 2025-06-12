@@ -29,11 +29,12 @@ class AddressListScreen extends StatefulWidget {
 class _AddressListScreenState extends State<AddressListScreen> {
   /// 페이지네이션
   static const int kFirstCount = 20;
-
-  AddressListViewModel? viewModel;
+  late final AddressListViewModel viewModel;
   final int _limit = 5;
   int _receivingAddressPage = 0;
   int _changeAddressPage = 0;
+  int _receivingInitialCursor = kFirstCount;
+  int _changeInitialCursor = kFirstCount;
   bool _isFirstLoadRunning = true;
   bool _isLoadMoreRunning = false;
   bool isReceivingSelected = true;
@@ -58,14 +59,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AddressListViewModel(
-          Provider.of<WalletProvider>(context, listen: false), widget.id, kFirstCount),
+      create: (_) => viewModel,
       child: Consumer<AddressListViewModel>(
         builder: (context, viewModel, child) {
-          if (this.viewModel == null) {
-            this.viewModel = viewModel;
-          }
-
+          List<WalletAddress> addressList =
+              isReceivingSelected ? viewModel.receivingAddressList : viewModel.changeAddressList;
           return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, _) {
@@ -89,7 +87,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                 arguments: {'id': widget.id});
                           },
                           icon: const Icon(Icons.search_rounded, color: CoconutColors.white),
-                        )
+                        ),
                       ],
                       flexibleSpace: _isScrollOverTitleHeight
                           ? ClipRect(
@@ -120,48 +118,34 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                 Expanded(
                                   child: Stack(
                                     children: [
-                                      Selector<PreferenceProvider, bool>(
-                                          selector: (_, viewModel) =>
-                                              viewModel.showOnlyUnusedAddresses,
-                                          builder: (context, showOnlyUnusedAddresses, child) {
-                                            List<WalletAddress> addressList = isReceivingSelected
-                                                ? viewModel.receivingAddressList
-                                                : viewModel.changeAddressList;
-                                            if (showOnlyUnusedAddresses) {
-                                              addressList = addressList
-                                                  .where((address) => !address.isUsed)
-                                                  .toList();
-                                            }
-
-                                            return ListView.builder(
-                                              controller: _controller,
-                                              itemCount: addressList.length,
-                                              itemBuilder: (context, index) => AddressItemCard(
-                                                onPressed: () {
-                                                  _removeTooltip();
-                                                  CommonBottomSheets.showBottomSheet_90(
-                                                      context: context,
-                                                      child: QrcodeBottomSheet(
-                                                          qrcodeTopWidget: Text(
-                                                            addressList[index].derivationPath,
-                                                            style: CoconutTypography.body2_14.merge(
-                                                              TextStyle(
-                                                                color: CoconutColors.white
-                                                                    .withOpacity(0.7),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          qrData: addressList[index].address,
-                                                          title: t.address_list_screen
-                                                              .address_index(index: index)));
-                                                },
-                                                address: addressList[index].address,
-                                                derivationPath: addressList[index].derivationPath,
-                                                isUsed: addressList[index].isUsed,
-                                                balanceInSats: addressList[index].total,
-                                              ),
-                                            );
-                                          }),
+                                      ListView.builder(
+                                        controller: _controller,
+                                        itemCount: addressList.length,
+                                        itemBuilder: (context, index) => AddressItemCard(
+                                          onPressed: () {
+                                            _removeTooltip();
+                                            CommonBottomSheets.showBottomSheet_90(
+                                                context: context,
+                                                child: QrcodeBottomSheet(
+                                                    qrcodeTopWidget: Text(
+                                                      addressList[index].derivationPath,
+                                                      style: CoconutTypography.body2_14.merge(
+                                                        TextStyle(
+                                                          color:
+                                                              CoconutColors.white.withOpacity(0.7),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    qrData: addressList[index].address,
+                                                    title: t.address_list_screen
+                                                        .address_index(index: index)));
+                                          },
+                                          address: addressList[index].address,
+                                          derivationPath: addressList[index].derivationPath,
+                                          isUsed: addressList[index].isUsed,
+                                          balanceInSats: addressList[index].total,
+                                        ),
+                                      ),
                                       if (_isLoadMoreRunning)
                                         Positioned(
                                           left: 0,
@@ -203,9 +187,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
   @override
   void initState() {
     super.initState();
-
-    _isFirstLoadRunning = false;
+    viewModel = AddressListViewModel(context.read<WalletProvider>(), _onCursorUpdate, widget.id);
     _controller = ScrollController();
+    _initializeAddressList();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.addListener(_nextLoad);
@@ -217,6 +201,17 @@ class _AddressListScreenState extends State<AddressListScreen> {
           _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
       _changeTooltipIconPosition = _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
     });
+  }
+
+  void _initializeAddressList() {
+    final showOnlyUnusedAddresses = context.read<PreferenceProvider>().showOnlyUnusedAddresses;
+    _receivingAddressPage = 0;
+    _changeAddressPage = 0;
+    _receivingInitialCursor = kFirstCount;
+    _changeInitialCursor = kFirstCount;
+    _isFirstLoadRunning = true;
+    viewModel.initializeAddressList(kFirstCount, showOnlyUnusedAddresses);
+    _isFirstLoadRunning = false;
   }
 
   void scrollToTop() {
@@ -292,6 +287,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       context
                           .read<PreferenceProvider>()
                           .changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
+                      _initializeAddressList();
                     },
                     child: Container(
                       color: Colors.transparent,
@@ -396,6 +392,23 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Container();
   }
 
+  /// '사용 전 주소만 보기' 옵션 사용시, 저장된 WalletAddress 상태에 따라 cursor 값이 변경되어야 한다.
+  /// 기존에 있는 AddressList는 그대로 두고 페이지네이션 정보만 초기 상태처럼 관리한다.
+  void _onCursorUpdate(bool isChange, int cursor) {
+    Logger.log("[onCursorUpdate] isChange = $isChange, cursor = $cursor");
+    if (isChange) {
+      _changeInitialCursor = cursor;
+      _changeAddressPage = _isFirstLoadRunning ? 0 : -1;
+      Logger.log(
+          "_changeInitialCursor = $_changeInitialCursor, _changeAddressPage = $_changeAddressPage");
+    } else {
+      _receivingInitialCursor = cursor;
+      _receivingAddressPage = _isFirstLoadRunning ? 0 : -1;
+      Logger.log(
+          "_receivingInitialCursor = $_receivingInitialCursor, _receivingAddressPage = $_receivingAddressPage");
+    }
+  }
+
   void _nextLoad() {
     if (!_isFirstLoadRunning && !_isLoadMoreRunning && _controller.position.extentAfter < 100) {
       setState(() {
@@ -403,19 +416,22 @@ class _AddressListScreenState extends State<AddressListScreen> {
       });
 
       try {
-        final newAddresses = viewModel?.walletProvider.getWalletAddressList(
-            viewModel!.walletBaseItem!,
-            kFirstCount +
-                (isReceivingSelected ? _receivingAddressPage : _changeAddressPage) * _limit,
+        final initialCursor = !isReceivingSelected ? _changeInitialCursor : _receivingInitialCursor;
+        final pageIndex = !isReceivingSelected ? _changeAddressPage : _receivingAddressPage;
+        final newAddresses = viewModel.walletProvider.getWalletAddressList(
+            viewModel.walletBaseItem!,
+            initialCursor + pageIndex * _limit,
             _limit,
-            !isReceivingSelected);
+            !isReceivingSelected,
+            context.read<PreferenceProvider>().showOnlyUnusedAddresses,
+            _onCursorUpdate);
 
         setState(() {
           if (isReceivingSelected) {
-            viewModel?.receivingAddressList.addAll(newAddresses!);
+            viewModel.receivingAddressList.addAll(newAddresses);
             _receivingAddressPage += 1;
           } else {
-            viewModel?.changeAddressList.addAll(newAddresses!);
+            viewModel.changeAddressList.addAll(newAddresses);
             _changeAddressPage += 1;
           }
         });

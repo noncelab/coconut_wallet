@@ -103,7 +103,8 @@ void main() {
       expect(beforeWallet.usedChangeIndex, -1,
           reason: '사용한 지갑이 없는 경우 usedChangeIndex 값은 -1이어야 합니다.');
 
-      final beforeAddressList = addressRepository.getWalletAddressList(walletItem, 0, 1, false);
+      final beforeAddressList =
+          addressRepository.getWalletAddressList(walletItem, 0, 1, false, false);
       expect(beforeAddressList.length, 1, reason: '지갑 추가 시 초기 1개의 주소가 생성되어야 한다.');
       expect(beforeAddressList[0].isUsed, false, reason: '주소가 생성되었지만 사용되지 않은 상태여야 한다.');
 
@@ -128,7 +129,7 @@ void main() {
       expect(isCompleted, true, reason: '트랜잭션 처리가 완료되어야 한다.');
 
       // 검증 - 2. Address
-      final addressList = addressRepository.getWalletAddressList(walletItem, 0, 1, false);
+      final addressList = addressRepository.getWalletAddressList(walletItem, 0, 1, false, false);
       expect(addressList.length, 1, reason: '주소 정보가 정확해야 한다.');
       expect(addressList[0].isUsed, true, reason: '주소가 사용되어야 한다.');
 
@@ -253,7 +254,7 @@ void main() {
       expect(isCompleted, true, reason: '트랜잭션 처리가 완료되어야 한다.');
 
       // 검증 - 2. Address
-      final addressList = addressRepository.getWalletAddressList(walletItem, 0, 1, false);
+      final addressList = addressRepository.getWalletAddressList(walletItem, 0, 1, false, false);
       expect(addressList.length, 1, reason: '주소 정보가 정확해야 한다.');
       expect(addressList[0].isUsed, true, reason: '주소가 사용되어야 한다.');
 
