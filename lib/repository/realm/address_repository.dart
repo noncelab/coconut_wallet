@@ -185,7 +185,8 @@ class AddressRepository extends BaseRepository {
     final addressesToAdd = <RealmWalletAddress>[];
 
     for (final address in addresses) {
-      final addressId = Object.hash(realmWalletBase.id, address.index, address.address);
+      final addressId = getWalletAddressId(
+          walletId: realmWalletBase.id, index: address.index, address: address.address);
 
       // 이미 존재하는 주소는 건너뛰기
       if (existingIds.contains(addressId)) {
@@ -563,5 +564,55 @@ class AddressRepository extends BaseRepository {
       walletItem,
       scriptStatuses,
     );
+  }
+
+  /// usedIndex와 generatedIndex의 차이가 200 이상이면 저장하지 않습니다.
+  Future<void> addAddressesWithGapLimit({
+    required WalletListItemBase walletItemBase,
+    required List<WalletAddress> newAddresses,
+    required bool isChange,
+  }) async {
+    try {
+      if (newAddresses.isEmpty) {
+        return;
+      }
+
+      final realmWalletBase = getWalletBase(walletItemBase.id);
+      final currentUsedIndex =
+          isChange ? realmWalletBase.usedChangeIndex : realmWalletBase.usedReceiveIndex;
+      final currentGeneratedIndex =
+          isChange ? realmWalletBase.generatedChangeIndex : realmWalletBase.generatedReceiveIndex;
+
+      // generatedIndex - usedIndex >= 200이면 저장하지 않음
+      final indexDifference = currentGeneratedIndex - currentUsedIndex;
+      if (indexDifference >= 200) {
+        return;
+      }
+
+      // 추가하려는 주소가 연속되지 않은 경우 저장하지 않음
+      if (currentGeneratedIndex + 1 != newAddresses.first.index) {
+        return;
+      }
+
+      // 저장할 주소 필터링 (해당 타입의 주소만)
+      final addressesToSave =
+          newAddresses.where((address) => address.isChange == isChange).toList();
+
+      if (addressesToSave.isEmpty) {
+        return;
+      }
+
+      // 백그라운드에서 비동기적으로 주소 저장
+      await Future.microtask(() async {
+        try {
+          // DB에 저장
+          await _addAllAddressList(realmWalletBase, addressesToSave);
+        } catch (e) {
+          Logger.error('[addAddressesWithGapLimit] Failed to save addresses: $e');
+        }
+      });
+    } catch (e) {
+      Logger.error('[addAddressesWithGapLimit] Error: $e');
+    }
   }
 }

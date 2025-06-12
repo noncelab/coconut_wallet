@@ -597,6 +597,19 @@ class WalletProvider extends ChangeNotifier {
     return result;
   }
 
+  /// 백그라운드에서 미리 주소를 저장합니다.
+  Future<void> addAddressesWithGapLimit({
+    required WalletListItemBase walletItemBase,
+    required List<WalletAddress> newAddresses,
+    required bool isChange,
+  }) async {
+    return _addressRepository.addAddressesWithGapLimit(
+      walletItemBase: walletItemBase,
+      newAddresses: newAddresses,
+      isChange: isChange,
+    );
+  }
+
   @override
   void dispose() {
     _nodeProvider.removeListener(_onNodeProviderStateUpdated);

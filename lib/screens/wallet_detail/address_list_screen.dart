@@ -398,7 +398,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   void _nextLoad() async {
-    if (!_isFirstLoadRunning && !_isLoadMoreRunning && _controller.position.extentAfter < 500) {
+    if (_isFirstLoadRunning || _isLoadMoreRunning || _controller.position.extentAfter > 500) {
       return;
     }
 
@@ -428,6 +428,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
           }
         });
       }
+
+      _addAddressesWithGapLimit(newAddresses!, !isReceivingSelected);
     } catch (e) {
       Logger.log(e.toString());
     } finally {
@@ -438,6 +440,25 @@ class _AddressListScreenState extends State<AddressListScreen> {
         });
       }
     }
+  }
+
+  /// 추후 다시 조회할 경우 조회 속도 향상을 위해 백그라운드에서 주소를 저장
+  void _addAddressesWithGapLimit(List<WalletAddress> newAddresses, bool isChange) {
+    if (viewModel?.walletBaseItem == null) {
+      return;
+    }
+    // 백그라운드에서 비동기적으로 실행하여 UI 블로킹 방지
+    Future.microtask(() async {
+      try {
+        await viewModel!.walletProvider.addAddressesWithGapLimit(
+          walletItemBase: viewModel!.walletBaseItem!,
+          newAddresses: newAddresses,
+          isChange: isChange,
+        );
+      } catch (e) {
+        Logger.error('[_preloadAddressesInBackground] Failed to preload addresses: $e');
+      }
+    });
   }
 
   void _removeTooltip() {
