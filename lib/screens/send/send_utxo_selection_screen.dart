@@ -550,6 +550,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         margin: const EdgeInsets.only(left: 4, bottom: 12),
         child: CustomTagHorizontalSelector(
           tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+          showDefaultTags: false,
           selectedName: viewModel.selectedUtxoTagName,
           onSelectedTag: (tagName) {
             viewModel.setSelectedUtxoTagName(tagName);

@@ -183,7 +183,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         onPressed: () {
                           final viewModel = context.read<UtxoDetailViewModel>();
                           viewModel.toggleUtxoLockStatus();
+                          _removeUtxoTooltip();
                           vibrateLight();
+                          CoconutToast.showToast(
+                              context: context,
+                              isVisibleIcon: true,
+                              text: utxoStatus != UtxoStatus.locked
+                                  ? t.utxo_detail_screen.usage_lock_toast_msg
+                                  : t.utxo_detail_screen.usage_unlock_toast_msg);
                         },
                       ),
                       TransactionInputOutputCard(
@@ -537,7 +544,9 @@ class _UtxoLockToggleButton extends State<UtxoLockToggleButton> {
                       isPressing ? CoconutColors.gray800 : CoconutColors.white, BlendMode.srcIn),
                 ),
                 Text(
-                  widget.isLocked ? t.utxo_list_screen.usage_lock : t.utxo_list_screen.usage_unlock,
+                  widget.isLocked
+                      ? t.utxo_detail_screen.usage_lock
+                      : t.utxo_detail_screen.usage_unlock,
                   style: CoconutTypography.body3_12
                       .setColor(isPressing ? CoconutColors.gray800 : CoconutColors.white),
                 )

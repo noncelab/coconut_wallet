@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 class CustomTagHorizontalSelector extends StatefulWidget {
   final List<String> tags;
   final String selectedName;
+  final bool showDefaultTags;
   final Function(String) onSelectedTag;
   final ScrollPhysics? scrollPhysics;
   const CustomTagHorizontalSelector({
@@ -15,6 +16,7 @@ class CustomTagHorizontalSelector extends StatefulWidget {
     required this.tags,
     required this.selectedName,
     required this.onSelectedTag,
+    this.showDefaultTags = true,
     this.scrollPhysics = const AlwaysScrollableScrollPhysics(),
   });
 
@@ -23,11 +25,16 @@ class CustomTagHorizontalSelector extends StatefulWidget {
 }
 
 class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelector> {
-  final List<String> _tags = [t.all, t.utxo_list_screen.usage_lock, t.change];
+  late final List<String> _tags;
 
   @override
   void initState() {
     super.initState();
+    if (widget.showDefaultTags) {
+      _tags = [t.all, t.utxo_detail_screen.usage_lock, t.change];
+    } else {
+      _tags = [t.all];
+    }
     _tags.addAll(widget.tags);
   }
 
