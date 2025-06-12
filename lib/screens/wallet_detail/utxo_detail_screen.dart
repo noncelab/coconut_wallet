@@ -31,13 +31,11 @@ const _divider = Divider(color: CoconutColors.gray800);
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
   final UtxoState utxo;
-  final VoidCallback? onUtxoLockToggleButtonTap;
 
   const UtxoDetailScreen({
     super.key,
     required this.id,
     required this.utxo,
-    this.onUtxoLockToggleButtonTap,
   });
 
   @override

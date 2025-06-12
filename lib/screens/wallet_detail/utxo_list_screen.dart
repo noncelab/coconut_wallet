@@ -568,9 +568,6 @@ class _UtxoListState extends State<UtxoList> {
                       arguments: {
                         'utxo': utxo,
                         'id': widget.walletId,
-                        'lockStateChangeCallback': () {
-                          viewModel.toggleUtxoLockStatus(utxo);
-                        },
                       },
                     );
                     // UTXO 상세 화면에서 돌아왔을 때 데이터 갱신
