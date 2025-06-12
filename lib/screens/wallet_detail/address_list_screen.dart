@@ -31,7 +31,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   static const int kFirstCount = 20;
 
   AddressListViewModel? viewModel;
-  final int _limit = 5;
+  final int _limit = 20;
   int _receivingAddressPage = 0;
   int _changeAddressPage = 0;
   bool _isFirstLoadRunning = true;
@@ -397,20 +397,29 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Container();
   }
 
-  void _nextLoad() {
-    if (!_isFirstLoadRunning && !_isLoadMoreRunning && _controller.position.extentAfter < 100) {
-      setState(() {
-        _isLoadMoreRunning = true;
-      });
+  bool _needLoadMore() {
+    return (!_isFirstLoadRunning && !_isLoadMoreRunning && _controller.position.extentAfter < 500);
+  }
 
-      try {
-        final newAddresses = viewModel?.walletProvider.getWalletAddressList(
-            viewModel!.walletBaseItem!,
-            kFirstCount +
-                (isReceivingSelected ? _receivingAddressPage : _changeAddressPage) * _limit,
-            _limit,
-            !isReceivingSelected);
+  void _nextLoad() async {
+    if (!_needLoadMore()) {
+      return;
+    }
 
+    final currentPage = isReceivingSelected ? _receivingAddressPage : _changeAddressPage;
+    final offset = kFirstCount + currentPage * _limit;
+
+    setState(() {
+      _isLoadMoreRunning = true;
+    });
+
+    List<WalletAddress>? newAddresses = [];
+
+    try {
+      newAddresses = viewModel?.walletProvider
+          .getWalletAddressList(viewModel!.walletBaseItem!, offset, _limit, !isReceivingSelected);
+
+      if (mounted) {
         setState(() {
           if (isReceivingSelected) {
             viewModel?.receivingAddressList.addAll(newAddresses!);
@@ -420,15 +429,15 @@ class _AddressListScreenState extends State<AddressListScreen> {
             _changeAddressPage += 1;
           }
         });
-      } catch (e) {
-        Logger.log(e.toString());
-      } finally {
-        Timer(const Duration(seconds: 1), () {
-          setState(() {
-            _isLoadMoreRunning = false;
-          });
-        });
       }
+    } catch (e) {
+      Logger.log(e.toString());
+    } finally {
+      setState(() {
+        _isLoadMoreRunning = false;
+      });
+
+      // TODO: 주소 저장 로직 추가
     }
   }
 
