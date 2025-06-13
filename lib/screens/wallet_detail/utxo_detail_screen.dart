@@ -187,6 +187,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             CoconutToast.showToast(
                                 context: context,
                                 isVisibleIcon: true,
+                                iconPath: 'assets/svg/circle-info.svg',
                                 text: utxoStatus != UtxoStatus.locked
                                     ? t.utxo_detail_screen.utxo_locked_toast_msg
                                     : t.utxo_detail_screen.utxo_unlocked_toast_msg);
