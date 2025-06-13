@@ -109,8 +109,14 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         ? _outputAddressList.sublist(0, _outputCountToShow)
         : _outputAddressList;
 
-    int maxAmount = max(inputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b),
-        outputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b));
+    int maxInputAmount = inputList.isNotEmpty
+        ? inputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b)
+        : 0;
+    int maxOutputAmount = outputList.isNotEmpty
+        ? outputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b)
+        : 0;
+
+    int maxAmount = max(maxInputAmount, maxOutputAmount);
     _longestSatoshiText = addCommasToIntegerPart(maxAmount.toDouble());
     _longestBtcText = satoshiToBitcoinString(maxAmount);
 
