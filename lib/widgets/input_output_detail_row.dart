@@ -28,12 +28,13 @@ class InputOutputDetailRow extends StatelessWidget {
   }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
 
   String get balanceText => currentUnit == BitcoinUnit.btc
-      ? satoshiToBitcoinString(balance.abs())
+      ? satoshiToBitcoinString(balance.abs(), showDecimals: true)
       : addCommasToIntegerPart(balance.abs().toDouble());
 
   @override
   Widget build(BuildContext context) {
-    bool shouldTrimText = balanceMaxWidth > MediaQuery.of(context).size.width * 0.3;
+    bool shouldTrimText = (balanceMaxWidth != 0.0 ? balanceMaxWidth : 100.0) >
+        MediaQuery.of(context).size.width * 0.3;
     return Row(
       children: [
         Text(
