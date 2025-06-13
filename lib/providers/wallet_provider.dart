@@ -533,11 +533,9 @@ class WalletProvider extends ChangeNotifier {
     int count,
     bool isChange,
     bool showOnlyUnusedAddresses,
-    void Function(bool, int) onCursorUpdate,
   ) async {
     return _addressRepository.getWalletAddressList(
-        wallet, cursor, count, isChange, showOnlyUnusedAddresses,
-        onCursorUpdate: onCursorUpdate);
+        wallet, cursor, count, isChange, showOnlyUnusedAddresses);
   }
 
   List<WalletAddress> searchWalletAddressList(WalletListItemBase wallet, String keyword) {

@@ -30,11 +30,6 @@ class AddressListScreen extends StatefulWidget {
 class _AddressListScreenState extends State<AddressListScreen> {
   /// 페이지네이션
   late final AddressListViewModel viewModel;
-  final int _limit = kAddressPaginationLimit;
-  int _receivingAddressPage = 0;
-  int _changeAddressPage = 0;
-  int _receivingInitialCursor = kInitialAddressCount;
-  int _changeInitialCursor = kInitialAddressCount;
   bool _isFirstLoadRunning = true;
   bool _isLoadMoreRunning = false;
   bool isReceivingSelected = true;
@@ -198,7 +193,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   @override
   void initState() {
     super.initState();
-    viewModel = AddressListViewModel(context.read<WalletProvider>(), _onCursorUpdate, widget.id);
+    viewModel = AddressListViewModel(context.read<WalletProvider>(), widget.id);
     _controller = ScrollController();
     _initializeAddressList();
 
@@ -216,10 +211,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   Future<void> _initializeAddressList() async {
     final showOnlyUnusedAddresses = context.read<PreferenceProvider>().showOnlyUnusedAddresses;
-    _receivingAddressPage = 0;
-    _changeAddressPage = 0;
-    _receivingInitialCursor = kInitialAddressCount;
-    _changeInitialCursor = kInitialAddressCount;
     _isFirstLoadRunning = true;
     await viewModel.initializeAddressList(kInitialAddressCount, showOnlyUnusedAddresses);
     _isFirstLoadRunning = false;
@@ -404,23 +395,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Container();
   }
 
-  /// '사용 전 주소만 보기' 옵션 사용시, 저장된 WalletAddress 상태에 따라 cursor 값이 변경되어야 한다.
-  /// 기존에 있는 AddressList는 그대로 두고 페이지네이션 정보만 초기 상태처럼 관리한다.
-  void _onCursorUpdate(bool isChange, int cursor) {
-    Logger.log("[onCursorUpdate] isChange = $isChange, cursor = $cursor");
-    if (isChange) {
-      _changeInitialCursor = cursor;
-      _changeAddressPage = _isFirstLoadRunning ? 0 : -1;
-      Logger.log(
-          "_changeInitialCursor = $_changeInitialCursor, _changeAddressPage = $_changeAddressPage");
-    } else {
-      _receivingInitialCursor = cursor;
-      _receivingAddressPage = _isFirstLoadRunning ? 0 : -1;
-      Logger.log(
-          "_receivingInitialCursor = $_receivingInitialCursor, _receivingAddressPage = $_receivingAddressPage");
-    }
-  }
-
   Future<void> _nextLoad() async {
     if (_isFirstLoadRunning || _isLoadMoreRunning || _controller.position.extentAfter > 500) {
       return;
@@ -432,25 +406,23 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
     List<WalletAddress> newAddresses = [];
     try {
-      final initialCursor = !isReceivingSelected ? _changeInitialCursor : _receivingInitialCursor;
-      final pageIndex = !isReceivingSelected ? _changeAddressPage : _receivingAddressPage;
-      newAddresses = await viewModel.walletProvider.getWalletAddressList(
-          viewModel.walletBaseItem!,
-          initialCursor + pageIndex * _limit,
-          _limit,
-          !isReceivingSelected,
-          context.read<PreferenceProvider>().showOnlyUnusedAddresses,
-          _onCursorUpdate);
+      final cursor =
+          !isReceivingSelected ? viewModel.changeInitialCursor : viewModel.receivingInitialCursor;
+      newAddresses = await viewModel.getWalletAddressList(
+        viewModel.walletBaseItem!,
+        cursor,
+        kAddressLoadCount,
+        !isReceivingSelected,
+        context.read<PreferenceProvider>().showOnlyUnusedAddresses,
+      );
 
       // UI 업데이트
       if (mounted) {
         setState(() {
           if (isReceivingSelected) {
             viewModel.receivingAddressList.addAll(newAddresses);
-            _receivingAddressPage += 1;
           } else {
             viewModel.changeAddressList.addAll(newAddresses);
-            _changeAddressPage += 1;
           }
         });
       }

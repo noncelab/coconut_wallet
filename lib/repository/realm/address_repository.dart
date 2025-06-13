@@ -31,9 +31,8 @@ class AddressRepository extends BaseRepository {
     int cursor,
     int count,
     bool isChange,
-    bool showOnlyUnusedAddresses, {
-    void Function(bool, int)? onCursorUpdate,
-  }) async {
+    bool showOnlyUnusedAddresses,
+  ) async {
     final generatedAddressIndex = getGeneratedAddressIndex(walletItemBase, isChange);
     final shouldGenerateNewAddresses = generatedAddressIndex > cursor + count;
 
@@ -67,10 +66,6 @@ class AddressRepository extends BaseRepository {
       count: remainingCount,
       isChange: isChange,
     );
-
-    if (shouldGenerateNewAddresses && onCursorUpdate != null) {
-      onCursorUpdate(isChange, startIndex + remainingCount);
-    }
 
     return List<WalletAddress>.from([...existingAddresses, ...newAddresses]);
   }
