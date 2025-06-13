@@ -10,19 +10,22 @@ class TooltipButton extends StatefulWidget {
   final GlobalKey iconKey;
   final EdgeInsets containerMargin;
   final EdgeInsets containerPadding;
-  final EdgeInsets iconPadding;
+  final EdgeInsets? iconPadding;
+  final EdgeInsets? iconMargin;
 
-  const TooltipButton(
-      {super.key,
-      required this.isSelected,
-      required this.text,
-      required this.isLeft,
-      required this.onTap,
-      required this.onTapDown,
-      required this.iconKey,
-      this.containerMargin = const EdgeInsets.all(4),
-      this.containerPadding = const EdgeInsets.symmetric(vertical: 8.0),
-      this.iconPadding = const EdgeInsets.all(8.0)});
+  const TooltipButton({
+    super.key,
+    required this.isSelected,
+    required this.text,
+    required this.isLeft,
+    required this.onTap,
+    required this.onTapDown,
+    required this.iconKey,
+    this.containerMargin = const EdgeInsets.all(4),
+    this.containerPadding = const EdgeInsets.symmetric(vertical: 8.0),
+    this.iconPadding,
+    this.iconMargin,
+  });
 
   @override
   State<TooltipButton> createState() => _TooltipButtonState();
@@ -52,8 +55,11 @@ class _TooltipButtonState extends State<TooltipButton> {
                     .copyWith(fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.normal),
               ),
               GestureDetector(
-                onTapDown: widget.onTapDown,
+                onTap: () {
+                  widget.onTapDown(TapDownDetails());
+                },
                 child: Container(
+                  margin: widget.iconMargin,
                   padding: widget.iconPadding,
                   color: Colors.transparent,
                   child: Icon(

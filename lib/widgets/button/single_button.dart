@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 class SingleButton extends StatelessWidget {
   final String title;
+  final String? subtitle;
   final String? description;
   final VoidCallback? onPressed;
   final Widget? rightElement;
@@ -11,6 +12,7 @@ class SingleButton extends StatelessWidget {
   const SingleButton({
     super.key,
     required this.title,
+    this.subtitle,
     this.description,
     this.onPressed,
     this.rightElement,
@@ -21,17 +23,27 @@ class SingleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
         onTap: onPressed,
-        child: Row(
-          children: [
-            if (leftElement != null) ...{
-              Container(child: leftElement),
-              CoconutLayout.spacing_400w,
-            },
-            Expanded(
-                child: Text(title,
-                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white))),
-            rightElement ?? _rightArrow(),
-          ],
+        child: Container(
+          color: Colors.transparent,
+          child: Row(
+            children: [
+              if (leftElement != null) ...{
+                Container(child: leftElement),
+                CoconutLayout.spacing_400w,
+              },
+              Expanded(
+                  child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                  if (subtitle != null)
+                    Text(subtitle!,
+                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                ],
+              )),
+              rightElement ?? _rightArrow(),
+            ],
+          ),
         ));
   }
 

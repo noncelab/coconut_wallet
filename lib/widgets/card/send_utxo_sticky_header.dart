@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
@@ -13,6 +14,8 @@ class SendUtxoStickyHeader extends StatelessWidget {
   final RecommendedFeeFetchStatus recommendedFeeFetchStatus;
   final TransactionFeeLevel? selectedLevel;
   final VoidCallback onTapFeeButton;
+  final VoidCallback onPressedUnitToggle;
+  final BitcoinUnit currentUnit;
   final bool isMaxMode;
   final bool customFeeSelected;
   final int sendAmount;
@@ -32,6 +35,8 @@ class SendUtxoStickyHeader extends StatelessWidget {
     required this.estimatedFee,
     required this.satsPerVb,
     required this.change,
+    required this.currentUnit,
+    required this.onPressedUnitToggle,
   });
 
   @override
@@ -82,17 +87,23 @@ class SendUtxoStickyHeader extends StatelessWidget {
   }
 
   Widget _buildAmountText(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text('${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} BTC',
-            style: CoconutTypography.body2_14_Number),
-        FiatPrice(
-          satoshiAmount: sendAmount,
-          textStyle: CoconutTypography.body3_12_Number,
-          textColor: CoconutColors.gray500,
-        ),
-      ],
+    return GestureDetector(
+      onTap: onPressedUnitToggle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+              currentUnit == BitcoinUnit.btc
+                  ? "${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} ${t.btc}"
+                  : "${addCommasToIntegerPart(sendAmount.toDouble())} ${t.sats}",
+              style: CoconutTypography.body2_14_Number),
+          FiatPrice(
+            satoshiAmount: sendAmount,
+            textStyle: CoconutTypography.body3_12_Number,
+            textColor: CoconutColors.gray500,
+          ),
+        ],
+      ),
     );
   }
 
@@ -132,12 +143,24 @@ class SendUtxoStickyHeader extends StatelessWidget {
     }
   }
 
+  String get unitText => currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get feeText => estimatedFee != null
+      ? currentUnit == BitcoinUnit.btc
+          ? satoshiToBitcoinString(estimatedFee!)
+          : addCommasToIntegerPart(estimatedFee!.toDouble())
+      : '0';
+  String get changeText => change != null
+      ? currentUnit == BitcoinUnit.btc
+          ? satoshiToBitcoinString(change!)
+          : addCommasToIntegerPart(change!.toDouble())
+      : '-';
+
   Widget _buildEstimatedFee() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          estimatedFee != null ? '${satoshiToBitcoinString(estimatedFee!)} BTC' : '0 BTC',
+          "$feeText $unitText",
           style: CoconutTypography.body2_14_Number,
         ),
         if (satsPerVb != null)
@@ -168,7 +191,8 @@ class SendUtxoStickyHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text('- BTC', style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
+        Text('- $unitText',
+            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
       ],
     );
   }
@@ -187,7 +211,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
         ),
         Expanded(
           child: Text(
-            change != null ? '${satoshiToBitcoinString(change!)} BTC' : '- BTC',
+            "$changeText $unitText",
             textAlign: TextAlign.end,
             style: CoconutTypography.body2_14_Number.setColor(
               change != null

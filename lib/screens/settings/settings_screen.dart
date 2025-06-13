@@ -6,6 +6,8 @@ import 'package:coconut_wallet/providers/view_model/settings/settings_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
+import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -109,6 +111,21 @@ class _SettingsScreen extends State<SettingsScreen> {
                           viewModel.changeIsBalanceHidden(value);
                         }),
                   )),
+
+                  _category(t.unit),
+                  ButtonContainer(
+                      child: Selector<PreferenceProvider, bool>(
+                          selector: (_, viewModel) => viewModel.isBtcUnit,
+                          builder: (context, isBtcUnit, child) {
+                            return SingleButton(
+                              title: t.bitcoin_kr,
+                              subtitle: isBtcUnit ? t.btc : t.sats,
+                              onPressed: () async {
+                                CommonBottomSheets.showBottomSheet_50(
+                                    context: context, child: const UnitBottomSheet());
+                              },
+                            );
+                          })),
 
                   // 개발자 모드에서만 표시되는 디버그 섹션
                   if (kDebugMode) ...[

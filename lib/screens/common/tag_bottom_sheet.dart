@@ -99,7 +99,10 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     _controller.selection = TextSelection.fromPosition(
       TextPosition(offset: _controller.text.length),
     );
-    _focusNode.requestFocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 300));
+      _focusNode.requestFocus();
+    });
   }
 
   void _resetTagCreation() {

@@ -20,7 +20,6 @@ import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
-import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
@@ -232,7 +231,7 @@ class WalletProvider extends ChangeNotifier {
     _walletSubscriptionState = WalletSubscriptionState.syncing;
     notifyListeners();
 
-    Result<bool> result = await _nodeProvider.subscribeWallets(_walletItemList);
+    Result<bool> result = await _nodeProvider.subscribeWallets(walletItems: _walletItemList);
     if (result.isSuccess) {
       _walletSubscriptionState = WalletSubscriptionState.completed;
     } else {
@@ -272,18 +271,22 @@ class WalletProvider extends ChangeNotifier {
   }
 
   int _findSameWalletIndex(String descriptorString, {required bool isMultisig}) {
+    WalletBase walletBase;
+    if (isMultisig) {
+      walletBase = MultisignatureWallet.fromDescriptor(descriptorString);
+    } else {
+      walletBase = SingleSignatureWallet.fromDescriptor(descriptorString);
+    }
+    var newWalletAddress = walletBase.getAddress(0);
     for (var index = 0; index < _walletItemList.length; index++) {
       if (isMultisig) {
         if (_walletItemList[index] is MultisigWalletListItem &&
-            (_walletItemList[index] as MultisigWalletListItem).descriptor == descriptorString) {
+            _walletItemList[index].walletBase.getAddress(0) == newWalletAddress) {
           return index;
         }
       } else {
-        Descriptor descriptor = Descriptor.parse(descriptorString,
-            ignoreChecksum: !DescriptorUtil.hasDescriptorChecksum(descriptorString));
         if (_walletItemList[index] is SinglesigWalletListItem &&
-            (_walletItemList[index] as SinglesigWalletListItem).extendedPublicKey ==
-                descriptor.getPublicKey(0)) {
+            _walletItemList[index].walletBase.getAddress(0) == newWalletAddress) {
           return index;
         }
       }
@@ -343,6 +346,7 @@ class WalletProvider extends ChangeNotifier {
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
   }
 
+  /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
   Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
     final sameNameIndex =
         _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
@@ -350,19 +354,7 @@ class WalletProvider extends ChangeNotifier {
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
 
-    final index = _walletItemList.indexWhere((element) {
-      if (element.descriptor == watchOnlyWallet.descriptor) {
-        return true;
-      }
-      final elementParentFingerprint =
-          ExtendedPublicKey.parse(Descriptor.parse(element.descriptor).getPublicKey(0))
-              .parentFingerprint;
-      final watchOnlyParentFingerprint =
-          ExtendedPublicKey.parse(Descriptor.parse(watchOnlyWallet.descriptor).getPublicKey(0))
-              .parentFingerprint;
-
-      return elementParentFingerprint == watchOnlyParentFingerprint;
-    });
+    final index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: false);
 
     if (index != -1) {
       return ResultOfSyncFromVault(
@@ -444,19 +436,16 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWallet(int walletId) async {
-    // TODO: 지갑 삭제 전 동기화중일 경우 동기화 작업을 중단시키는 로직 추가 필요
-    await _nodeProvider.unsubscribeWallet(getWalletById(walletId));
+    await _nodeProvider.closeConnection();
+    _nodeProvider.deleteWallet(walletId);
+    await _nodeProvider.initialize();
     await _walletRepository.deleteWallet(walletId);
     _walletItemList = await _fetchWalletListFromDB();
     _saveWalletCount(_walletItemList.length);
     _walletBalance.remove(walletId);
     notifyListeners();
 
-    // Isolate 에러 핸들링 로직에 의해 WalletUpdateState가 다시 대기상태로 초기화 되어 3초 지연 후 실행
-    // TODO: NodeProvider에서 지갑별 작업중인 것이 있는지 확인하고 작업이 종료되면 WalletUpdateState를 삭제
-    Future.delayed(const Duration(seconds: 3), () {
-      _nodeProvider.unregisterWalletUpdateState(walletId);
-    });
+    unawaited(_subscribeNodeProvider());
   }
 
   /// [싱글시그니처] 외부지갑 이름변경

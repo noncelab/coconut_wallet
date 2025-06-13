@@ -60,20 +60,20 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   WalletProvider get walletProvider => _walletProvider;
   NodeProvider get nodeprovider => _nodeProvider;
 
-  int estimateFee(int satsPerVb) {
+  int estimateFee(double satsPerVb) {
     final transaction = _createTransaction(satsPerVb);
 
     if (_isMultisigWallet) {
       final multisigWallet = _walletListItemBase.walletBase as MultisignatureWallet;
-      return transaction.estimateFee(satsPerVb.toDouble(), _walletAddressType,
+      return transaction.estimateFee(satsPerVb, _walletAddressType,
           requiredSignature: multisigWallet.requiredSignature,
           totalSigner: multisigWallet.totalSigner);
     }
 
-    return transaction.estimateFee(satsPerVb.toDouble(), _walletAddressType);
+    return transaction.estimateFee(satsPerVb, _walletAddressType);
   }
 
-  Transaction _createTransaction(int satsPerVb) {
+  Transaction _createTransaction(double satsPerVb) {
     final utxoPool = _walletProvider.getUtxoListByStatus(_walletId, UtxoStatus.unspent);
     final wallet = _walletProvider.getWalletById(_walletId);
     final changeAddress = _walletProvider.getChangeAddress(_walletId);
@@ -131,7 +131,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void saveFinalSendInfo(int estimatedFee, int satsPerVb) {
+  void saveFinalSendInfo(int estimatedFee, double satsPerVb) {
     double finalAmount =
         _isMaxMode ? UnitUtil.satoshiToBitcoin(_confirmedBalance - estimatedFee) : _amount;
     _sendInfoProvider.setAmount(finalAmount);

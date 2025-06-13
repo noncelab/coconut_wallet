@@ -20,7 +20,9 @@ void main() {
     mockSocketManager = MockSocketManager();
     electrumClient = ElectrumService(socketManager: mockSocketManager);
 
-    when(mockSocketManager.connect(any, any, ssl: anyNamed('ssl'))).thenAnswer((_) async {});
+    when(mockSocketManager.connect(any, any, ssl: anyNamed('ssl'))).thenAnswer((_) async {
+      return true;
+    });
   });
 
   test('connect should call socketManager.connect', () async {

@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
@@ -377,19 +377,22 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       signers = (walletItem as MultisigWalletListItem).signers;
     }
 
-    final walletItemCard = WalletItemCard(
-      key: key,
-      id: id,
-      name: name,
-      animatedBalanceData: animatedBalanceData,
-      iconIndex: iconIndex,
-      colorIndex: colorIndex,
-      isLastItem: isLastItem,
-      isBalanceHidden: isBalanceHidden,
-      signers: signers,
-      walletImportSource: walletImportSource,
-    );
-    return walletItemCard;
+    return Selector<PreferenceProvider, bool>(
+        selector: (_, viewModel) => viewModel.isBtcUnit,
+        builder: (context, isBtcUnit, child) {
+          return WalletItemCard(
+              key: key,
+              id: id,
+              name: name,
+              animatedBalanceData: animatedBalanceData,
+              iconIndex: iconIndex,
+              colorIndex: colorIndex,
+              isLastItem: isLastItem,
+              isBalanceHidden: isBalanceHidden,
+              signers: signers,
+              walletImportSource: walletImportSource,
+              currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats);
+        });
   }
 
   void _goToScannerScreen(WalletImportSource walletImportSource) async {

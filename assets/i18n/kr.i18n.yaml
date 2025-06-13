@@ -10,7 +10,10 @@ coconut_lib: "coconut_lib"
 
 wallet: "Wallet"
 btc: "BTC"
+bitcoin_en: "Bitcoin"
+bitcoin_kr: "비트코인"
 sats: "sats"
+satoshi: "Satoshi"
 testnet: "테스트넷"
 address: "주소"
 fee: "수수료"
@@ -31,6 +34,7 @@ next: "다음"
 modify: "변경"
 confirm: "확인"
 security: "보안"
+unit: "단위"
 utxo: "UTXO"
 tag: "태그"
 change: "잔돈"
@@ -82,11 +86,10 @@ selection: "선택"
 hardware_wallet: "하드웨어 월렛"
 vault_app: "볼트 앱"
 
-bitcoin_text: "$bitcoin BTC"
 apply_item: "$count개에 적용"
 fee_sats: " ($value sats/vb)"
 utxo_count: "($count개)"
-total_utxo_count: "(총 $count개)"
+total_item_count: "(총 $count개)"
 
 view_app_info: "앱 정보 보기"
 view_tx_details: "거래 자세히 보기"
@@ -292,8 +295,8 @@ utxo_detail_screen:
   pending: "승인 대기중"
   address: "보유 주소"
 utxo_tag_screen:
-  no_such_tag: "태그가 없어요"
-  add_tag: "+ 버튼을 눌러 태그를 추가해 보세요"
+  onboarding_title: "UTXO 태그를 관리할 수 있어요"
+  add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
 wallet_info_screen:
   title: "$name 정보"
   view_xpub: "확장 공개키 보기"
@@ -378,6 +381,9 @@ user_experience_survey_bottom_sheet:
   text2: "코코넛 월렛이 도움이 되었나요?"
   text3: "네, 좋아요!"
   text4: "그냥 그래요"
+unit_bottom_sheet:
+  basic_unit: "기본 단위"
+  header_text: "1 BTC = 100,000,000 sats"
 
 errors:
   storage_read_error: "저장소에서 데이터를 불러오는데 실패했습니다."
@@ -422,19 +428,19 @@ errors:
   data_not_found: "데이터가 없습니다."
 
 text_field:
-  enter_fee_as_natural_number: "수수료를 자연수로 입력해 주세요."
+  enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vb)"
   enter_fee_directly: "직접 입력하기"
   search_mnemonic_word: "영문으로 검색해 보세요"
 
 tooltip:
   recommended_fee1: "추천 수수료를 조회하지 못했어요. 수수료를 직접 입력해 주세요."
-  recommended_fee2: "설정하신 수수료가 $bitcoin BTC 이상이에요."
+  recommended_fee2: "설정하신 수수료가 $bitcoin $unit 이상이에요."
   wallet_add1: "새로운 지갑을 추가하거나 이미 추가한 지갑의 정보를 업데이트할 수 있어요. "
   wallet_add2: "볼트"
   wallet_add3: "에서 사용하시려는 지갑을 선택하고, "
   wallet_add4: "내보내기 "
   wallet_add5: "화면에 나타나는 QR 코드를 스캔해 주세요."
-  amount_to_be_sent: "받기 완료된 비트코인만 전송 가능해요.\n받는 중인 금액: $bitcoin BTC"
+  amount_to_be_sent: "받기 완료된 비트코인만 전송 가능해요.\n받는 중인 금액: $bitcoin $unit"
   scan_signed_psbt:
     guide: "${by_hardware_wallet} 서명을 완료하셨나요?\n이제, ${hardware_wallet} 화면에 보이는 QR 코드를 스캔해 주세요."
     by_seed_signer: "시드사이너로"
@@ -475,7 +481,7 @@ alert:
   error_send:
     broadcasting_failed: "[전송 실패]\n$error"
     insufficient_balance: "잔액이 부족해요"
-    minimum_amount: "$bitcoin BTC 부터 전송할 수 있어요"
+    minimum_amount: "$bitcoin $unit 부터 전송할 수 있어요"
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
   signed_psbt:
     invalid_qr: "잘못된 QR 코드예요.\n다시 확인해 주세요."

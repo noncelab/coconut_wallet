@@ -1,11 +1,14 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -20,7 +23,7 @@ class FeeSelectionScreen extends StatefulWidget {
   static const String feeInfoField = 'feeInfo';
 
   final List<FeeInfoWithLevel> feeInfos;
-  final int Function(int satsPerVb) estimateFee;
+  final int Function(double satsPerVb) estimateFee;
   final int? networkMinimumFeeRate;
   final TransactionFeeLevel? selectedFeeLevel; // null인 경우 직접 입력한 경우
   final FeeInfo? customFeeInfo; // feeRate을 직접 입력한 경우
@@ -42,12 +45,26 @@ class FeeSelectionScreen extends StatefulWidget {
 class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   static const int kMaxFeeLimit = 1000000;
   late int? _estimatedFee;
+  late BitcoinUnit _currentUnit;
   bool? _isNetworkOn;
-  int? _customSatsPerVb;
+  double? _customSatsPerVb;
 
   TransactionFeeLevel? _selectedFeeLevel;
-
   final TextEditingController _customFeeController = TextEditingController();
+
+  String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
+      bitcoin: _currentUnit == BitcoinUnit.btc
+          ? UnitUtil.satoshiToBitcoin(kMaxFeeLimit)
+          : addCommasToIntegerPart(kMaxFeeLimit.toDouble()),
+      unit: unitText);
+
+  String get feeText => _estimatedFee != null
+      ? _currentUnit == BitcoinUnit.btc
+          ? satoshiToBitcoinString(_estimatedFee!)
+          : addCommasToIntegerPart(_estimatedFee!.toDouble())
+      : '';
+
+  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
   @override
   Widget build(BuildContext context) {
@@ -97,13 +114,17 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                     : _selectedFeeLevel!.text,
                                 style: CoconutTypography.caption_10),
                           ),
-                          Text(
-                              _estimatedFee != null
-                                  ? '${(satoshiToBitcoinString(_estimatedFee!))} ${t.btc}'
-                                  : '',
-                              style: CoconutTypography.heading3_21_NumberBold),
-                          FiatPrice(
-                            satoshiAmount: _estimatedFee ?? 0,
+                          GestureDetector(
+                            onTap: _toggleUnit,
+                            child: Column(
+                              children: [
+                                Text("$feeText $unitText",
+                                    style: CoconutTypography.heading3_21_NumberBold),
+                                FiatPrice(
+                                  satoshiAmount: _estimatedFee ?? 0,
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 32),
                         ])),
@@ -117,10 +138,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                               tooltipState: CoconutTooltipState.error),
                         if (_estimatedFee != null && _estimatedFee! >= kMaxFeeLimit)
                           _buildFixedTooltip(
-                              richText: RichText(
-                                  text: TextSpan(
-                                      text: t.tooltip.recommended_fee2(
-                                          bitcoin: UnitUtil.satoshiToBitcoin(kMaxFeeLimit)))),
+                              richText: RichText(text: TextSpan(text: recommendedFeeTooltipText)),
                               tooltipState: CoconutTooltipState.warning),
                         Padding(
                             padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
@@ -129,6 +147,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                 ...List.generate(
                                     3,
                                     (index) => FeeSelectionItemCard(
+                                        currentUnit: _currentUnit,
                                         feeInfo: widget.feeInfos[index],
                                         isSelected:
                                             _selectedFeeLevel == widget.feeInfos[index].level,
@@ -151,12 +170,19 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                         isScrollControlled: true,
                                         builder: (context) => TextFieldBottomSheet(
                                           title: t.input_directly,
-                                          placeholder: t.text_field.enter_fee_as_natural_number,
+                                          placeholder:
+                                              t.text_field.enter_fee_with_two_decimal_places,
                                           onComplete: (text) {
                                             _onCustomFeeRateInput(text);
                                           },
-                                          keyboardType: TextInputType.number,
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(decimal: true),
                                           visibleTextLimit: false,
+                                          formatInput: (text) {
+                                            String finalText = filterDecimalInput(text, 2);
+                                            return finalText;
+                                          },
+                                          maxLength: 10,
                                         ),
                                       );
                                     },
@@ -180,6 +206,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   @override
   void initState() {
     super.initState();
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _selectedFeeLevel = widget.selectedFeeLevel;
     if (_selectedFeeLevel == null && widget.customFeeInfo != null) {
       _estimatedFee = widget.customFeeInfo!.estimatedFee ?? 0;
@@ -187,6 +214,12 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
     } else if (_selectedFeeLevel != null && widget.customFeeInfo == null) {
       _estimatedFee = _findFeeInfoWithLevel(_selectedFeeLevel!).estimatedFee ?? 0;
     }
+  }
+
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+    });
   }
 
   FeeInfoWithLevel _findFeeInfoWithLevel(TransactionFeeLevel transactionFeeLevel) {
@@ -208,7 +241,14 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       return;
     }
 
-    int customSatsPerVb = int.parse(input);
+    double customSatsPerVb;
+    try {
+      customSatsPerVb = double.parse(input.trim());
+    } catch (_) {
+      _customFeeController.clear();
+      return null;
+    }
+
     if (widget.networkMinimumFeeRate != null && customSatsPerVb < widget.networkMinimumFeeRate!) {
       CoconutToast.showToast(
           isVisibleIcon: true,

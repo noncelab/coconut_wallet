@@ -57,7 +57,7 @@ class AddressRepository extends BaseRepository {
     final startIndex = shouldGenerateNewAddresses
         ? generatedAddressIndex + 1
         : existingAddresses.isEmpty
-            ? cursor
+            ? cursor + 1
             : existingAddresses.last.index + 1;
 
     final newAddresses = await _generateAddressesAsync(
@@ -153,7 +153,7 @@ class AddressRepository extends BaseRepository {
     required bool isChange,
     required bool showOnlyUnusedAddresses,
   }) {
-    String query = r'walletId == $0 AND isChange == $1 AND index >= $2';
+    String query = r'walletId == $0 AND isChange == $1 AND index > $2';
     if (showOnlyUnusedAddresses) {
       query += ' AND isUsed == false';
     }
@@ -188,8 +188,6 @@ class AddressRepository extends BaseRepository {
       }
     }
 
-    await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
-
     // 이미 존재하는 주소들의 ID를 미리 확인
     final existingIds = realm
         .query<RealmWalletAddress>('walletId == ${realmWalletBase.id}')
@@ -216,10 +214,12 @@ class AddressRepository extends BaseRepository {
 
     // 추가할 주소가 없으면 종료
     if (addressesToAdd.isEmpty) {
+      await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
       return;
     }
 
     await _safelyAddAddresses(addressesToAdd);
+    await _updateWalletIndices(realmWalletBase, maxReceiveIndex, maxChangeIndex);
   }
 
   /// 안전하게 주소를 추가하는 헬퍼 메서드

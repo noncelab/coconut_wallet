@@ -79,7 +79,7 @@ class TransactionUtil {
 
   /// confirmed uxto만 사용 가능
   static List<UtxoState> selectOptimalUtxos(
-      List<UtxoState> utxoList, int amount, int feeRate, AddressType addressType) {
+      List<UtxoState> utxoList, int amount, double feeRate, AddressType addressType) {
     int baseVbyte = 72; // 0 input, 2 output
     int vBytePerInput = 0;
     int dust = _getDustThreshold(addressType);
@@ -105,7 +105,7 @@ class TransactionUtil {
         totalAmount += utxo.amount;
         selectedUtxos.add(utxo);
         totalVbyte += vBytePerInput;
-        finalFee = totalVbyte * feeRate;
+        finalFee = (totalVbyte * feeRate).ceil();
         if (totalAmount >= amount + finalFee + dust) {
           return;
         }

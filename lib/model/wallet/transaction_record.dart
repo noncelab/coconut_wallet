@@ -106,4 +106,15 @@ class TransactionRecord {
   DateTime? getDateTimeToDisplay() {
     return timestamp;
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (other is TransactionRecord) {
+      return transactionHash == other.transactionHash && blockHeight == other.blockHeight;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => transactionHash.hashCode ^ blockHeight.hashCode;
 }

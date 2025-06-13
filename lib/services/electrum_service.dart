@@ -32,12 +32,16 @@ class ElectrumService {
     return instance;
   }
 
-  Future<void> connect(String host, int port, {bool ssl = true}) async {
-    await _socketManager.connect(host, port, ssl: ssl);
+  Future<bool> connect(String host, int port, {bool ssl = true}) async {
+    final isConnected = await _socketManager.connect(host, port, ssl: ssl);
 
-    _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
-      ping();
-    });
+    if (isConnected) {
+      _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
+        ping();
+      });
+    }
+
+    return isConnected;
   }
 
   Future<ElectrumResponse<T>> _call<T>(_ElectrumRequest request,

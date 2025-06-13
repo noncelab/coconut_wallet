@@ -1,4 +1,5 @@
 import 'package:decimal/decimal.dart';
+import 'package:intl/intl.dart';
 
 class UnitUtil {
   static double satoshiToBitcoin(int satoshi) {
@@ -19,13 +20,12 @@ class UnitUtil {
 ///
 /// @param satoshi 사토시 단위 잔액
 /// @returns String 비트코인 단위 잔액 문자열 예) 00,000,000.0000 0000
-String satoshiToBitcoinString(int satoshi) {
+String satoshiToBitcoinString(int satoshi, {bool showDecimals = false}) {
   double toBitcoin = UnitUtil.satoshiToBitcoin(satoshi);
 
   String bitcoinString;
   if (toBitcoin % 1 == 0) {
-    // 소숫점만 있을 때
-    bitcoinString = toBitcoin.toInt().toString();
+    bitcoinString = showDecimals ? toBitcoin.toStringAsFixed(8) : toBitcoin.toInt().toString();
   } else {
     bitcoinString = toBitcoin.toStringAsFixed(8); // Ensure it has 8 decimal places
   }
@@ -54,34 +54,6 @@ String satoshiToBitcoinString(int satoshi) {
   }
 
   return result;
-}
-
-extension NormalizeTo11Characters on String {
-  /// 문자열을 11자로 포맷하는 확장 메서드
-  String normalizeTo11Characters() {
-    // Step 1: 쉼표 제거
-    String noCommas = replaceAll(',', '');
-
-    // Step 2: 정수인지 확인
-    if (!noCommas.contains('.')) {
-      // 정수라면 ".0000 0000" 추가
-      return "$noCommas.0000 0000".substring(0, 11);
-    }
-
-    // Step 3: 정수부와 소수부로 분리
-    List<String> parts = noCommas.split('.');
-    String integerPart = parts[0];
-    String decimalPart = parts.length > 1 ? parts[1] : '';
-
-    String decimalGrouped = decimalPart;
-
-    // Step 4: 정수부와 소수부 결합
-    String formatted = '$integerPart.$decimalGrouped';
-    // print(
-    //     'for ${formatted.substring(0, 11)}    ${formatted.padRight(11, ' ')}');
-    // Step 5: 결과 문자열을 정확히 11자리로 조정
-    return formatted.length > 11 ? formatted.substring(0, 11) : formatted.padRight(11, ' ');
-  }
 }
 
 extension NormalizeToFullCharacters on String {
@@ -138,4 +110,26 @@ String formatNumber(double number) {
   }
   // 그렇지 않으면 double형 그대로 출력
   return number.toString();
+}
+
+String addThousandsSeparator(String input) {
+  if (input.isEmpty) return '';
+
+  try {
+    // 소수점이 있는지 확인
+    if (input.contains('.')) {
+      List<String> parts = input.split('.');
+      String integerPart = parts[0];
+      String decimalPart = parts.length > 1 ? parts[1] : '';
+
+      final formatter = NumberFormat('#,###');
+      String formattedInt = formatter.format(int.parse(integerPart));
+      return '$formattedInt.$decimalPart';
+    } else {
+      final formatter = NumberFormat('#,###');
+      return formatter.format(int.parse(input));
+    }
+  } catch (e) {
+    return input;
+  }
 }
