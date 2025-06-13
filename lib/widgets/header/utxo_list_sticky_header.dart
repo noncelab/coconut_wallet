@@ -140,16 +140,14 @@ class UtxoListStickyHeader extends StatelessWidget {
                       CoconutLayout.spacing_50h,
                       Stack(
                         children: [
-                          Expanded(
-                            child: CustomTagHorizontalSelector(
-                              tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                              selectedName: viewModel.selectedUtxoTagName,
-                              onSelectedTag: (tagName) {
-                                viewModel.setSelectedUtxoTagName(tagName);
-                              },
-                              scrollPhysics: const AlwaysScrollableScrollPhysics(),
-                              isLoadComplete: isLoadComplete,
-                            ),
+                          CustomTagHorizontalSelector(
+                            tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+                            selectedName: viewModel.selectedUtxoTagName,
+                            onSelectedTag: (tagName) {
+                              viewModel.setSelectedUtxoTagName(tagName);
+                            },
+                            scrollPhysics: const AlwaysScrollableScrollPhysics(),
+                            isLoadComplete: isLoadComplete,
                           ),
                           Positioned(
                             top: 0,
