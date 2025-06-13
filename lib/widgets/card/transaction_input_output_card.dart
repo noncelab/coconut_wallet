@@ -260,12 +260,16 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   void _setInitialInputCountToShow() {
     final direction = TransactionUtil.getDirection(_transaction);
     setState(() {
-      _inputCountToShow = direction == TransactionDirection.outgoing
-          ? min(kOutgoingTxInputCount, _inputAddressList.length)
-          : min(kIncomingTxInputCount, _inputAddressList.length);
-      if (_inputAddressList.length < kOutgoingTxInputCount ||
-          _inputAddressList.length < kIncomingTxInputCount) {
-        _canShowMoreInputs = false;
+      if (direction == TransactionDirection.outgoing) {
+        _inputCountToShow = min(kOutgoingTxInputCount, _inputAddressList.length);
+        if (_inputAddressList.length <= kOutgoingTxInputCount) {
+          _canShowMoreInputs = false;
+        }
+      } else {
+        _inputCountToShow = min(kIncomingTxInputCount, _inputAddressList.length);
+        if (_inputAddressList.length <= kIncomingTxInputCount) {
+          _canShowMoreInputs = false;
+        }
       }
     });
   }
@@ -273,12 +277,16 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   void _setInitialOutputCountToShow() {
     final direction = TransactionUtil.getDirection(_transaction);
     setState(() {
-      _outputCountToShow = direction == TransactionDirection.outgoing
-          ? min(kOutgoingTxOutputCount, _outputAddressList.length)
-          : min(kIncomingTxOutputCount, _outputAddressList.length);
-      if (_outputAddressList.length < kOutgoingTxOutputCount ||
-          _outputAddressList.length < kIncomingTxOutputCount) {
-        _canShowMoreOutputs = false;
+      if (direction == TransactionDirection.outgoing) {
+        _outputCountToShow = min(kOutgoingTxOutputCount, _outputAddressList.length);
+        if (_outputAddressList.length <= kOutgoingTxOutputCount) {
+          _canShowMoreOutputs = false;
+        }
+      } else {
+        _outputCountToShow = min(kIncomingTxOutputCount, _outputAddressList.length);
+        if (_outputAddressList.length <= kIncomingTxOutputCount) {
+          _canShowMoreOutputs = false;
+        }
       }
     });
   }
