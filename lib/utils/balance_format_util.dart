@@ -23,18 +23,12 @@ class UnitUtil {
 String satoshiToBitcoinString(int satoshi) {
   double toBitcoin = UnitUtil.satoshiToBitcoin(satoshi);
 
-  String bitcoinString;
-  if (toBitcoin % 1 == 0) {
-    // 소숫점만 있을 때
-    bitcoinString = toBitcoin.toInt().toString();
-  } else {
-    bitcoinString = toBitcoin.toStringAsFixed(8); // Ensure it has 8 decimal places
-  }
+  String bitcoinString = toBitcoin.toStringAsFixed(8);
 
   // Split the integer and decimal parts
   List<String> parts = bitcoinString.split('.');
   String integerPart = parts[0];
-  String decimalPart = parts.length > 1 ? parts[1] : '';
+  String decimalPart = parts.length > 1 ? parts[1] : '00000000';
 
   final integerPartFormatted =
       integerPart == '-0' ? '-0' : addCommasToIntegerPart(double.parse(integerPart));
