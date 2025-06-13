@@ -27,16 +27,44 @@ class AddressRepository extends BaseRepository {
     int cursor,
     int count,
     bool isChange,
-  ) async {
+    bool showOnlyUnusedAddresses, {
+    void Function(bool, int)? onCursorUpdate,
+  }) async {
     final generatedAddressIndex = getGeneratedAddressIndex(walletItemBase, isChange);
 
     if (generatedAddressIndex > cursor + count) {
-      return _getAddressListFromDb(
+      final addressList = _getAddressListFromDb(
         walletId: walletItemBase.id,
         cursor: cursor,
         count: count,
         isChange: isChange,
+        showOnlyUnusedAddresses: showOnlyUnusedAddresses,
       );
+
+      // 1. 조건에 맞는 주소가 충분한 경우에는 반환한다.
+      if (addressList.length >= count) {
+        Logger.log(
+            "getWalletAddressList first: ${addressList.first.index}, last: ${addressList.last.index}");
+        return addressList;
+      }
+
+      // 2. 조건에 맞는 주소가 충분하지 않은 경우에는 추가적으로 생성해서 반환하고 cursor를 업데이트한다.
+      cursor = generatedAddressIndex + 1;
+      count = count - addressList.length;
+      addressList.addAll(await _generateAddressesAsync(
+        wallet: walletItemBase.walletBase,
+        startIndex: cursor,
+        count: count,
+        isChange: isChange,
+      ));
+
+      if (onCursorUpdate != null) {
+        onCursorUpdate(isChange, cursor + count);
+      }
+
+      Logger.log(
+          "getWalletAddressList first: ${addressList.first.index}, last: ${addressList.last.index}");
+      return addressList;
     }
 
     // 기존 DB에 있는 주소 가져오기
@@ -46,6 +74,7 @@ class AddressRepository extends BaseRepository {
             cursor: cursor,
             count: count,
             isChange: isChange,
+            showOnlyUnusedAddresses: showOnlyUnusedAddresses,
           )
         : [];
 
@@ -61,6 +90,8 @@ class AddressRepository extends BaseRepository {
       existingAddresses.addAll(newAddresses);
     }
 
+    Logger.log(
+        "getWalletAddressList first: ${existingAddresses.first.index}, last: ${existingAddresses.last.index}");
     return existingAddresses;
   }
 
@@ -145,10 +176,11 @@ class AddressRepository extends BaseRepository {
     required int cursor,
     required int count,
     required bool isChange,
+    required bool showOnlyUnusedAddresses,
   }) {
     return realm
         .query<RealmWalletAddress>(
-            'walletId == $walletId AND isChange == $isChange AND index >= $cursor SORT(index ASC)')
+            'walletId == $walletId AND isChange == $isChange ${showOnlyUnusedAddresses ? "AND isUsed == false" : ""} AND index >= $cursor SORT(index ASC)')
         .take(count)
         .map((e) => mapRealmToWalletAddress(e))
         .toList();
