@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/update_address_balance_dto.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -14,47 +15,67 @@ import 'package:coconut_wallet/utils/logger.dart';
 class AddressRepository extends BaseRepository {
   AddressRepository(super._realmManager);
 
+  /// 주소 목록 검색하기(입금, 잔돈 주소)
+  List<WalletAddress> searchWalletAddressList(WalletListItemBase walletItemBase, String keyword) {
+    final realmWalletAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address CONTAINS $1 SORT(index ASC)', [
+      walletItemBase.id,
+      keyword,
+    ]);
+    return realmWalletAddress.map((e) => mapRealmToWalletAddress(e)).toList();
+  }
+
   /// 주소 목록 가져오기
-  List<WalletAddress> getWalletAddressList(
+  Future<List<WalletAddress>> getWalletAddressList(
     WalletListItemBase walletItemBase,
     int cursor,
     int count,
     bool isChange,
-  ) {
+    bool showOnlyUnusedAddresses,
+  ) async {
     final generatedAddressIndex = getGeneratedAddressIndex(walletItemBase, isChange);
+    final shouldGenerateNewAddresses = generatedAddressIndex > cursor + count;
 
-    if (generatedAddressIndex > cursor + count) {
-      return _getAddressListFromDb(
-        walletId: walletItemBase.id,
-        cursor: cursor,
-        count: count,
-        isChange: isChange,
-      );
-    }
-
-    // 기존 DB에 있는 주소 가져오기
-    List<WalletAddress> existingAddresses = generatedAddressIndex > cursor
+    // 기존 주소 조회
+    final existingAddresses = shouldGenerateNewAddresses || generatedAddressIndex > cursor
         ? _getAddressListFromDb(
             walletId: walletItemBase.id,
             cursor: cursor,
             count: count,
             isChange: isChange,
+            showOnlyUnusedAddresses: showOnlyUnusedAddresses,
           )
-        : [];
+        : <WalletAddress>[];
 
-    // 필요한 경우 새 주소 생성하고 저장하지 않고 반환
-    if (existingAddresses.length < count) {
-      final newAddresses = _generateAddresses(
-        wallet: walletItemBase.walletBase,
-        startIndex: existingAddresses.isEmpty ? cursor : existingAddresses.last.index + 1,
-        count: count - existingAddresses.length,
-        isChange: isChange,
-      );
-
-      existingAddresses.addAll(newAddresses);
+    // 충분한 주소가 있으면 바로 반환
+    if (existingAddresses.length >= count) {
+      return existingAddresses;
     }
 
-    return existingAddresses;
+    // 부족한 주소만큼 새로 생성
+    final remainingCount = count - existingAddresses.length;
+    final startIndex = shouldGenerateNewAddresses
+        ? generatedAddressIndex + 1
+        : existingAddresses.isEmpty
+            ? cursor + 1
+            : existingAddresses.last.index + 1;
+
+    final newAddresses = await _generateAddressesAsync(
+      wallet: walletItemBase.walletBase,
+      startIndex: startIndex,
+      count: remainingCount,
+      isChange: isChange,
+    );
+
+    return List<WalletAddress>.from([...existingAddresses, ...newAddresses]);
+  }
+
+  (int, int) getGeneratedAddressIndexes(WalletListItemBase walletItemBase) {
+    final realmWalletBase = realm.find<RealmWalletBase>(walletItemBase.id);
+    if (realmWalletBase == null) {
+      throw StateError('[getGeneratedAddressIndex] Wallet not found');
+    }
+    return (realmWalletBase.generatedReceiveIndex, realmWalletBase.generatedChangeIndex);
   }
 
   int getGeneratedAddressIndex(WalletListItemBase walletItemBase, bool isChange) {
@@ -130,12 +151,22 @@ class AddressRepository extends BaseRepository {
     required int cursor,
     required int count,
     required bool isChange,
+    required bool showOnlyUnusedAddresses,
   }) {
-    final query = realm.query<RealmWalletAddress>(
-        'walletId == $walletId AND isChange == $isChange SORT(index ASC)');
-    final paginatedResults = query.skip(cursor).take(count);
+    String query = r'walletId == $0 AND isChange == $1 AND index > $2';
+    if (showOnlyUnusedAddresses) {
+      query += ' AND isUsed == false';
+    }
+    query += ' SORT(index ASC)';
 
-    return paginatedResults.map((e) => mapRealmToWalletAddress(e)).toList();
+    return realm
+        .query<RealmWalletAddress>(
+          query,
+          [walletId, isChange, cursor],
+        )
+        .take(count)
+        .map((e) => mapRealmToWalletAddress(e))
+        .toList();
   }
 
   /// 주소를 DB에 저장
@@ -167,7 +198,8 @@ class AddressRepository extends BaseRepository {
     final addressesToAdd = <RealmWalletAddress>[];
 
     for (final address in addresses) {
-      final addressId = Object.hash(realmWalletBase.id, address.index, address.address);
+      final addressId = getWalletAddressId(
+          walletId: realmWalletBase.id, index: address.index, address: address.address);
 
       // 이미 존재하는 주소는 건너뛰기
       if (existingIds.contains(addressId)) {
@@ -246,6 +278,23 @@ class AddressRepository extends BaseRepository {
       required int count,
       required bool isChange}) {
     return List.generate(count, (index) => _generateAddress(wallet, startIndex + index, isChange));
+  }
+
+  /// 여러 주소 생성 (비동기 - UI 렉 방지)
+  Future<List<WalletAddress>> _generateAddressesAsync(
+      {required WalletBase wallet,
+      required int startIndex,
+      required int count,
+      required bool isChange}) async {
+    final List<WalletAddress> addresses = [];
+
+    for (int i = 0; i < count; i++) {
+      await Future.delayed(Duration.zero);
+      final address = _generateAddress(wallet, startIndex + i, isChange);
+      addresses.add(address);
+    }
+
+    return addresses;
   }
 
   /// 주소가 이미 존재하는지 확인
@@ -385,7 +434,7 @@ class AddressRepository extends BaseRepository {
     await ensureAddressesExist(
       walletItemBase: walletItem,
       cursor: cursor,
-      count: 1,
+      count: 20,
       isChange: isChange,
     );
 
@@ -530,5 +579,75 @@ class AddressRepository extends BaseRepository {
       walletItem,
       scriptStatuses,
     );
+  }
+
+  /// usedIndex와 generatedIndex의 차이가 200 이상이면 저장하지 않습니다.
+  Future<void> addAddressesWithGapLimit({
+    required WalletListItemBase walletItemBase,
+    required List<WalletAddress> newAddresses,
+    required bool isChange,
+  }) async {
+    try {
+      if (newAddresses.isEmpty) {
+        return;
+      }
+
+      final realmWalletBase = getWalletBase(walletItemBase.id);
+      final currentUsedIndex =
+          isChange ? realmWalletBase.usedChangeIndex : realmWalletBase.usedReceiveIndex;
+      final currentGeneratedIndex =
+          isChange ? realmWalletBase.generatedChangeIndex : realmWalletBase.generatedReceiveIndex;
+
+      // Gap limit 체크
+      if (currentGeneratedIndex - currentUsedIndex >= kMaxAddressLimitGap) {
+        return;
+      }
+
+      // 저장할 주소 필터링
+      final addressesToSave = newAddresses.where((address) {
+        // 주소 타입이 일치하지 않으면 제외
+        if (address.isChange != isChange) {
+          return false;
+        }
+
+        // 인덱스가 현재 생성된 인덱스보다 작거나 같으면 제외
+        if (address.index <= currentGeneratedIndex) {
+          return false;
+        }
+
+        // 인덱스가 gap limit을 초과하면 제외
+        if (address.index > currentUsedIndex + kMaxAddressLimitGap) {
+          return false;
+        }
+
+        return true;
+      }).toList();
+
+      if (addressesToSave.isEmpty) {
+        return;
+      }
+
+      // 연속성 체크 - 첫 번째 주소가 currentGeneratedIndex + 1이 아니면 저장하지 않음
+      // 단, 첫 번째 주소가 currentGeneratedIndex보다 작은 경우는 제외
+      if (addressesToSave.first.index != currentGeneratedIndex + 1 &&
+          addressesToSave.first.index > currentGeneratedIndex) {
+        return;
+      }
+
+      await _saveAddressesAsync(realmWalletBase, addressesToSave);
+    } catch (e) {
+      Logger.error('[addAddressesWithGapLimit] Error: $e');
+    }
+  }
+
+  Future<void> _saveAddressesAsync(
+      RealmWalletBase realmWalletBase, List<WalletAddress> addresses) async {
+    await Future.microtask(() async {
+      try {
+        await _addAllAddressList(realmWalletBase, addresses);
+      } catch (e) {
+        Logger.error('[_saveAddressesAsync] Failed to save addresses: $e');
+      }
+    });
   }
 }

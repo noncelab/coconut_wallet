@@ -14,11 +14,16 @@ class PreferenceProvider extends ChangeNotifier {
   bool get isBtcUnit => _isBtcUnit;
   BitcoinUnit get currentUnit => _isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats;
 
+  /// 전체 주소 보기 화면 '사용 전 주소만 보기' 여부
+  late bool _showOnlyUnusedAddresses;
+  bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
+
   PreferenceProvider() {
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
     _isBtcUnit = _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
+    _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
   }
 
   /// 홈 화면 잔액 숨기기
@@ -32,6 +37,13 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeIsBtcUnit(bool isBtcUnit) async {
     _isBtcUnit = isBtcUnit;
     await _sharedPrefs.setBool(SharedPrefKeys.kIsBtcUnit, isBtcUnit);
+    notifyListeners();
+  }
+
+  /// 주소 리스트 화면 '사용 전 주소만 보기' 옵션
+  Future<void> changeShowOnlyUnusedAddresses(bool show) async {
+    _showOnlyUnusedAddresses = show;
+    await _sharedPrefs.setBool(SharedPrefKeys.kShowOnlyUnusedAddresses, show);
     notifyListeners();
   }
 }

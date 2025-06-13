@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -50,12 +51,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   /// 페이지네이션
-  static const int kFirstCount = 20;
-
-  AddressListViewModel? viewModel;
-  final int _limit = 5;
-  int _receivingAddressPage = 0;
-  int _changeAddressPage = 0;
+  late final AddressListViewModel viewModel;
   bool _isFirstLoadRunning = true;
   bool _isLoadMoreRunning = false;
   bool isReceivingSelected = true;
@@ -87,16 +83,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AddressListViewModel(
-          Provider.of<WalletProvider>(context, listen: false), widget.id, kFirstCount),
+      create: (_) => viewModel,
       child: Consumer<AddressListViewModel>(
         builder: (context, viewModel, child) {
-          if (this.viewModel == null) {
-            this.viewModel = viewModel;
-          }
-          List<WalletAddress>? addressList =
+          List<WalletAddress> addressList =
               isReceivingSelected ? viewModel.receivingAddressList : viewModel.changeAddressList;
-
           return PopScope(
             canPop: true,
             onPopInvokedWithResult: (didPop, _) {
@@ -120,13 +111,26 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             : CoconutColors.black,
                         toolbarHeight: kToolbarHeight + 30,
                         leading: IconButton(
+                          icon: SvgPicture.asset(
+                            'assets/svg/arrow-back.svg',
+                            colorFilter:
+                                const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                            width: 24,
+                            height: 24,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                        actions: [
+                          IconButton(
                             onPressed: () {
-                              Navigator.pop(context);
+                              Navigator.pushNamed(context, '/address-search',
+                                  arguments: {'id': widget.id});
                             },
-                            icon: SvgPicture.asset('assets/svg/back.svg',
-                                width: 24,
-                                colorFilter:
-                                    const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn))),
+                            icon: const Icon(Icons.search_rounded, color: CoconutColors.white),
+                          ),
+                        ],
                         flexibleSpace: _isScrollOverTitleHeight
                             ? ClipRect(
                                 child: BackdropFilter(
@@ -174,7 +178,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                       child: ListView.builder(
                                         padding: EdgeInsets.zero,
                                         controller: _controller,
-                                        itemCount: addressList!.length,
+                                        itemCount: addressList.length,
                                         itemBuilder: (context, index) => AddressItemCard(
                                           onPressed: () {
                                             _removeTooltip();
@@ -191,8 +195,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                                       ),
                                                     ),
                                                     qrData: addressList[index].address,
-                                                    title: t.address_list_screen
-                                                        .address_index(index: index)));
+                                                    title: t.address_list_screen.address_index(
+                                                        index: addressList[index].index)));
                                           },
                                           address: addressList[index].address,
                                           derivationPath: addressList[index].derivationPath,
@@ -242,9 +246,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
   @override
   void initState() {
     super.initState();
+    viewModel = AddressListViewModel(context.read<WalletProvider>(), widget.id);
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
-    _isFirstLoadRunning = false;
     _controller = ScrollController();
+    _initializeAddressList();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.addListener(_nextLoad);
@@ -265,69 +270,124 @@ class _AddressListScreenState extends State<AddressListScreen> {
     });
   }
 
+  Future<void> _initializeAddressList() async {
+    final showOnlyUnusedAddresses = context.read<PreferenceProvider>().showOnlyUnusedAddresses;
+    _isFirstLoadRunning = true;
+    await viewModel.initializeAddressList(kInitialAddressCount, showOnlyUnusedAddresses);
+    _isFirstLoadRunning = false;
+  }
+
   void scrollToTop() {
     _controller.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.decelerate);
   }
 
   Widget toolbarWidget() {
-    return Container(
+    return Column(
       key: _toolbarWidgetKey,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 10,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: CoconutColors.white.withOpacity(0.15),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 10,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: CoconutColors.white.withOpacity(0.15),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                    child: TooltipButton(
+                  isSelected: isReceivingSelected,
+                  text: t.address_list_screen.receiving,
+                  isLeft: true,
+                  iconKey: _receivingTooltipKey,
+                  iconPadding: const EdgeInsets.all(8.0),
+                  onTap: () {
+                    setState(() {
+                      isReceivingSelected = true;
+                    });
+                    scrollToTop();
+                    _removeTooltip();
+                  },
+                  onTapDown: (_) {
+                    _showTooltip(
+                      context,
+                      true,
+                    );
+                  },
+                )),
+                Expanded(
+                    child: TooltipButton(
+                  isSelected: !isReceivingSelected,
+                  text: t.address_list_screen.change,
+                  isLeft: false,
+                  iconKey: _changeTooltipKey,
+                  iconPadding: const EdgeInsets.all(8.0),
+                  onTap: () {
+                    setState(() {
+                      isReceivingSelected = false;
+                    });
+                    scrollToTop();
+                    _removeTooltip();
+                  },
+                  onTapDown: (_) {
+                    _showTooltip(
+                      context,
+                      false,
+                    );
+                  },
+                )),
+              ],
+            ),
+          ),
         ),
-        child: Row(
-          children: [
-            Expanded(
-                child: TooltipButton(
-              isSelected: isReceivingSelected,
-              text: t.address_list_screen.receiving,
-              isLeft: true,
-              iconKey: _receivingTooltipKey,
-              iconPadding: const EdgeInsets.all(8.0),
-              onTap: () {
-                setState(() {
-                  isReceivingSelected = true;
-                });
-                scrollToTop();
-                _removeTooltip();
-              },
-              onTapDown: (_) {
-                _showTooltip(
-                  context,
-                  true,
-                );
-              },
-            )),
-            Expanded(
-                child: TooltipButton(
-              isSelected: !isReceivingSelected,
-              text: t.address_list_screen.change,
-              isLeft: false,
-              iconKey: _changeTooltipKey,
-              iconPadding: const EdgeInsets.all(8.0),
-              onTap: () {
-                setState(() {
-                  isReceivingSelected = false;
-                });
-                scrollToTop();
-                _removeTooltip();
-              },
-              onTapDown: (_) {
-                _showTooltip(
-                  context,
-                  false,
-                );
-              },
-            )),
-          ],
-        ),
-      ),
+        Selector<PreferenceProvider, bool>(
+            selector: (_, viewModel) => viewModel.showOnlyUnusedAddresses,
+            builder: (context, showOnlyUnusedAddresses, child) {
+              return Row(
+                children: [
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      context
+                          .read<PreferenceProvider>()
+                          .changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
+                      _initializeAddressList();
+                      scrollToTop();
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Sizes.size16,
+                        vertical: Sizes.size6,
+                      ),
+                      child: Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/svg/check.svg',
+                            colorFilter: ColorFilter.mode(
+                                showOnlyUnusedAddresses
+                                    ? CoconutColors.white
+                                    : CoconutColors.gray700,
+                                BlendMode.srcIn),
+                            width: 10,
+                            height: 10,
+                          ),
+                          CoconutLayout.spacing_100w,
+                          Text(
+                            t.address_list_screen.show_only_unused_address,
+                            style: CoconutTypography.body3_12,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              );
+            }),
+      ],
     );
   }
 
@@ -403,39 +463,67 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Container();
   }
 
-  void _nextLoad() {
-    if (!_isFirstLoadRunning && !_isLoadMoreRunning && _controller.position.extentAfter < 100) {
-      setState(() {
-        _isLoadMoreRunning = true;
-      });
+  Future<void> _nextLoad() async {
+    if (_isFirstLoadRunning || _isLoadMoreRunning || _controller.position.extentAfter > 500) {
+      return;
+    }
 
-      try {
-        final newAddresses = viewModel?.walletProvider.getWalletAddressList(
-            viewModel!.walletBaseItem!,
-            kFirstCount +
-                (isReceivingSelected ? _receivingAddressPage : _changeAddressPage) * _limit,
-            _limit,
-            !isReceivingSelected);
+    setState(() {
+      _isLoadMoreRunning = true;
+    });
 
+    List<WalletAddress> newAddresses = [];
+    try {
+      final cursor =
+          !isReceivingSelected ? viewModel.changeInitialCursor : viewModel.receivingInitialCursor;
+      newAddresses = await viewModel.getWalletAddressList(
+        viewModel.walletBaseItem!,
+        cursor,
+        kAddressLoadCount,
+        !isReceivingSelected,
+        context.read<PreferenceProvider>().showOnlyUnusedAddresses,
+      );
+
+      // UI 업데이트
+      if (mounted) {
         setState(() {
           if (isReceivingSelected) {
-            viewModel?.receivingAddressList?.addAll(newAddresses!);
-            _receivingAddressPage += 1;
+            viewModel.receivingAddressList.addAll(newAddresses);
           } else {
-            viewModel?.changeAddressList?.addAll(newAddresses!);
-            _changeAddressPage += 1;
+            viewModel.changeAddressList.addAll(newAddresses);
           }
         });
-      } catch (e) {
-        Logger.log(e.toString());
-      } finally {
-        Timer(const Duration(seconds: 1), () {
-          setState(() {
-            _isLoadMoreRunning = false;
-          });
+      }
+    } catch (e) {
+      Logger.log(e.toString());
+    } finally {
+      // 로딩 상태 해제
+      if (mounted) {
+        setState(() {
+          _isLoadMoreRunning = false;
         });
+        _addAddressesWithGapLimit(newAddresses, !isReceivingSelected);
       }
     }
+  }
+
+  /// 추후 다시 조회할 경우 조회 속도 향상을 위해 백그라운드에서 주소를 저장
+  void _addAddressesWithGapLimit(List<WalletAddress> newAddresses, bool isChange) {
+    if (viewModel.walletBaseItem == null) {
+      return;
+    }
+    // 백그라운드에서 비동기적으로 실행하여 UI 블로킹 방지
+    Future.microtask(() async {
+      try {
+        await viewModel.walletProvider.addAddressesWithGapLimit(
+          walletItemBase: viewModel.walletBaseItem!,
+          newAddresses: newAddresses,
+          isChange: isChange,
+        );
+      } catch (e) {
+        Logger.error('[_preloadAddressesInBackground] Failed to preload addresses: $e');
+      }
+    });
   }
 
   void _removeTooltip() {
