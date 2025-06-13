@@ -20,15 +20,20 @@ class UnitUtil {
 ///
 /// @param satoshi 사토시 단위 잔액
 /// @returns String 비트코인 단위 잔액 문자열 예) 00,000,000.0000 0000
-String satoshiToBitcoinString(int satoshi) {
+String satoshiToBitcoinString(int satoshi, {bool showDecimals = false}) {
   double toBitcoin = UnitUtil.satoshiToBitcoin(satoshi);
 
-  String bitcoinString = toBitcoin.toStringAsFixed(8);
+  String bitcoinString;
+  if (toBitcoin % 1 == 0) {
+    bitcoinString = showDecimals ? toBitcoin.toStringAsFixed(8) : toBitcoin.toInt().toString();
+  } else {
+    bitcoinString = toBitcoin.toStringAsFixed(8); // Ensure it has 8 decimal places
+  }
 
   // Split the integer and decimal parts
   List<String> parts = bitcoinString.split('.');
   String integerPart = parts[0];
-  String decimalPart = parts.length > 1 ? parts[1] : '00000000';
+  String decimalPart = parts.length > 1 ? parts[1] : '';
 
   final integerPartFormatted =
       integerPart == '-0' ? '-0' : addCommasToIntegerPart(double.parse(integerPart));
