@@ -228,7 +228,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       ),
                     ),
                     TransactionDetailScreen._divider,
-                    const SizedBox(height: 12),
                     UnderlineButtonItemCard(
                       label: t.fee_rate,
                       underlineButtonLabel: '',
