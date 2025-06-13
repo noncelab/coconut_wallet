@@ -44,7 +44,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   final GlobalKey _stickyHeaderDropdownKey = GlobalKey();
 
   final ValueNotifier<bool> _stickyHeaderVisibleNotifier = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _dropdownEnabledNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _firstLoadedNotifier = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _dropdownVisibleNotifier = ValueNotifier<bool>(false);
 
   Size _appBarSize = const Size(0, 0);
@@ -174,7 +174,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                                 onRemoveDropdown: _hideDropdown,
                                 onFirstBuildCompleted: () {
                                   if (!mounted) return;
-                                  _dropdownEnabledNotifier.value = true;
+                                  _firstLoadedNotifier.value = true;
                                 },
                               ),
                             ],
@@ -229,7 +229,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Widget _buildHeader(BuildContext context) {
     final viewModel = context.read<UtxoListViewModel>();
     return ValueListenableBuilder<bool>(
-        valueListenable: _dropdownEnabledNotifier,
+        valueListenable: _firstLoadedNotifier,
         builder: (context, canShowDropdown, child) {
           return Selector<UtxoListViewModel, UtxoOrder>(
               selector: (_, viewModel) => viewModel.selectedUtxoOrder,
@@ -238,7 +238,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                     key: ValueKey(viewModel.utxoTagListKey),
                     headerGlobalKey: _headerKey,
                     dropdownGlobalKey: _headerDropdownKey,
-                    canShowDropdown: canShowDropdown,
+                    isLoadComplete: canShowDropdown,
                     animatedBalanceData:
                         AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
                     selectedOption: selectedOrder.text,
@@ -260,7 +260,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     final viewModel = context.read<UtxoListViewModel>();
     final selectedOrder = viewModel.selectedUtxoOrder;
     return ValueListenableBuilder<bool>(
-        valueListenable: _dropdownEnabledNotifier,
+        valueListenable: _firstLoadedNotifier,
         builder: (context, canShowDropdown, child) {
           return ValueListenableBuilder<bool>(
               valueListenable: _stickyHeaderVisibleNotifier,
@@ -295,7 +295,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     final prevBalance = viewModel.prevBalance;
     final totalCount = viewModel.utxoList.length;
     return ValueListenableBuilder<bool>(
-        valueListenable: _dropdownEnabledNotifier,
+        valueListenable: _firstLoadedNotifier,
         builder: (context, enableDropdown, _) {
           return ValueListenableBuilder<bool>(
               valueListenable: _stickyHeaderVisibleNotifier,
@@ -309,6 +309,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                       dropdownGlobalKey: _stickyHeaderDropdownKey,
                       height: _appBarSize.height,
                       isVisible: isStickyHeaderVisible,
+                      isLoadComplete: _firstLoadedNotifier.value,
                       enableDropdown: enableDropdown,
                       animatedBalanceData: AnimatedBalanceData(currentBalane, prevBalance),
                       totalCount: totalCount,

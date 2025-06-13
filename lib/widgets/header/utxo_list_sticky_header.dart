@@ -3,8 +3,10 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
@@ -13,6 +15,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   final GlobalKey dropdownGlobalKey;
   final double height;
   final bool isVisible;
+  final bool isLoadComplete;
   final bool enableDropdown;
   final AnimatedBalanceData animatedBalanceData;
   final int? totalCount;
@@ -25,6 +28,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.dropdownGlobalKey,
     required this.height,
     required this.isVisible,
+    required this.isLoadComplete,
     required this.enableDropdown,
     required this.animatedBalanceData,
     required this.totalCount,
@@ -134,16 +138,34 @@ class UtxoListStickyHeader extends StatelessWidget {
                         ],
                       ),
                       CoconutLayout.spacing_50h,
-                      Visibility(
-                        visible: !viewModel.isUtxoTagListEmpty,
-                        child: CustomTagHorizontalSelector(
-                          tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                          selectedName: viewModel.selectedUtxoTagName,
-                          onSelectedTag: (tagName) {
-                            viewModel.setSelectedUtxoTagName(tagName);
-                          },
-                          scrollPhysics: const AlwaysScrollableScrollPhysics(),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTagHorizontalSelector(
+                              tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+                              selectedName: viewModel.selectedUtxoTagName,
+                              onSelectedTag: (tagName) {
+                                viewModel.setSelectedUtxoTagName(tagName);
+                              },
+                              scrollPhysics: const AlwaysScrollableScrollPhysics(),
+                              isLoadComplete: isLoadComplete,
+                            ),
+                          ),
+                          Visibility(
+                            visible: !isLoadComplete,
+                            child: Container(
+                              margin: const EdgeInsets.only(
+                                right: 26,
+                              ),
+                              width: 15,
+                              height: 15,
+                              child: const CircularProgressIndicator(
+                                color: CoconutColors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       CoconutLayout.spacing_300h,
                     ],

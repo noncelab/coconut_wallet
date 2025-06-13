@@ -5,8 +5,10 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +21,7 @@ class UtxoListHeader extends StatefulWidget {
   final List<UtxoTag> utxoTagList;
   final String selectedUtxoTagName;
   final Function(String) onTagSelected;
-  final bool canShowDropdown;
+  final bool isLoadComplete;
 
   const UtxoListHeader(
       {super.key,
@@ -31,7 +33,7 @@ class UtxoListHeader extends StatefulWidget {
       required this.utxoTagList,
       required this.selectedUtxoTagName,
       required this.onTagSelected,
-      required this.canShowDropdown});
+      required this.isLoadComplete});
 
   @override
   State<UtxoListHeader> createState() => _UtxoListHeaderState();
@@ -96,19 +98,19 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                         padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
                         minSize: 0,
                         onPressed: () {
-                          if (!widget.canShowDropdown) return;
+                          if (!widget.isLoadComplete) return;
                           widget.onTapDropdown();
                         },
                         child: Row(
                           children: [
                             Text(widget.selectedOption,
-                                style: CoconutTypography.body3_12.setColor(widget.canShowDropdown
+                                style: CoconutTypography.body3_12.setColor(widget.isLoadComplete
                                     ? CoconutColors.white
                                     : CoconutColors.gray700)),
                             CoconutLayout.spacing_200w,
                             SvgPicture.asset(
                               'assets/svg/arrow-down.svg',
-                              colorFilter: widget.canShowDropdown
+                              colorFilter: widget.isLoadComplete
                                   ? null
                                   : const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn),
                             ),
@@ -120,13 +122,34 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                 ],
               ),
             ),
-            Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
-              return CustomTagHorizontalSelector(
-                tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                selectedName: viewModel.selectedUtxoTagName,
-                onSelectedTag: widget.onTagSelected,
-              );
-            }),
+            Row(
+              children: [
+                Expanded(
+                  child: Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
+                    return CustomTagHorizontalSelector(
+                      tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+                      selectedName: viewModel.selectedUtxoTagName,
+                      onSelectedTag: widget.onTagSelected,
+                      isLoadComplete: widget.isLoadComplete,
+                    );
+                  }),
+                ),
+                Visibility(
+                  visible: !widget.isLoadComplete,
+                  child: Container(
+                    margin: const EdgeInsets.only(
+                      right: 26,
+                    ),
+                    width: 15,
+                    height: 15,
+                    child: const CircularProgressIndicator(
+                      color: CoconutColors.white,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             CoconutLayout.spacing_300h,
           ],
         )
