@@ -89,7 +89,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           context,
           '/broadcasting-complete', // 이동할 경로
           ModalRoute.withName('/wallet-detail'), // '/wallet-detail' 경로를 남기고 그 외의 경로 제거
-          arguments: {'id': _viewModel.walletId},
+          arguments: {'id': _viewModel.walletId, 'txHash': signedTx.transactionHash},
         );
       }
     } catch (_) {

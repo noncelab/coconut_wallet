@@ -54,6 +54,15 @@ class TransactionProvider extends ChangeNotifier {
     final result = _transactionRepository.updateTransactionMemo(walletId, txHash, memo);
     if (result.isSuccess) {
       _transaction = _transactionRepository.getTransactionRecord(walletId, txHash);
+      if (_transaction != null) {
+        List<TransactionRecord> newTxList = _txList.map((tx) {
+          if (tx.transactionHash == _transaction!.transactionHash) {
+            return _transaction!;
+          }
+          return tx;
+        }).toList();
+        _txList = newTxList;
+      }
       notifyListeners();
       return true;
     } else {
