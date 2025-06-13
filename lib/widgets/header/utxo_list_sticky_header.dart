@@ -93,7 +93,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                             ),
                             CoconutLayout.spacing_100w,
                             Text(
-                              t.total_utxo_count(count: totalCount),
+                              t.total_item_count(count: totalCount),
                               style: CoconutTypography.body3_12.setColor(
                                 CoconutColors.gray400,
                               ),

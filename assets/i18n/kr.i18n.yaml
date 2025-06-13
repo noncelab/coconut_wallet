@@ -89,7 +89,7 @@ vault_app: "볼트 앱"
 apply_item: "$count개에 적용"
 fee_sats: " ($value sats/vb)"
 utxo_count: "($count개)"
-total_utxo_count: "(총 $count개)"
+total_item_count: "(총 $count개)"
 
 view_app_info: "앱 정보 보기"
 view_tx_details: "거래 자세히 보기"

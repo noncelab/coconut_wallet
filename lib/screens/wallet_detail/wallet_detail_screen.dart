@@ -219,15 +219,28 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   Widget _buildTxListLabel() {
     return SliverToBoxAdapter(
-        child: Padding(
+        child: Selector<WalletDetailViewModel, int>(
+      selector: (_, viewModel) => viewModel.txList.length,
+      builder: (_, txCount, __) {
+        return Padding(
             key: _txListLabelWidgetKey,
             padding: const EdgeInsets.only(
               left: 16.0,
               right: 16.0,
               bottom: 12.0,
             ),
-            child: Text(t.tx_list,
-                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white))));
+            child: Row(
+              children: [
+                Text(t.tx_list,
+                    style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+                CoconutLayout.spacing_100w,
+                if (txCount > 0)
+                  Text(t.total_item_count(count: txCount),
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+              ],
+            ));
+      },
+    ));
   }
 
   // 스크롤 시 sticky header 렌더링을 위한 상태 변수들
