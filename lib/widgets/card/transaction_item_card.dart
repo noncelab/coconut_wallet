@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -99,11 +100,32 @@ class TransactionItemCard extends StatelessWidget {
     );
   }
 
+  Widget _buildMemo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        SvgPicture.asset('assets/svg/pen.svg',
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+            width: Sizes.size12),
+        CoconutLayout.spacing_100w,
+        Padding(
+          padding: const EdgeInsets.only(bottom: Sizes.size2),
+          child: Text(
+            TextUtils.ellipsisIfLonger(
+              tx.memo!,
+              maxLength: 13,
+            ),
+            style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     List<String>? transactionTimeStamp =
         DateTimeUtil.formatTimestamp(tx.getDateTimeToDisplay()!.toLocal());
-
     return ShrinkAnimationButton(
         onPressed: () {
           onPressed();
@@ -121,7 +143,11 @@ class TransactionItemCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [_buildStatus(), _buildAmount()],
-              )
+              ),
+              if (tx.memo != null) ...[
+                CoconutLayout.spacing_200h,
+                _buildMemo(),
+              ],
             ],
           ),
         ));

@@ -246,6 +246,7 @@ flutter:
     - assets/svg/keystone.svg
     - assets/svg/zpub.svg
     - assets/svg/copy.svg
+    - assets/svg/pen.svg
 
 
   fonts:

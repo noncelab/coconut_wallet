@@ -1,15 +1,18 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
+  final String txHash;
 
-  const BroadcastingCompleteScreen({super.key, required this.id});
+  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash});
 
   @override
   State<BroadcastingCompleteScreen> createState() => _BroadcastingCompleteScreenState();
@@ -18,39 +21,57 @@ class BroadcastingCompleteScreen extends StatefulWidget {
 class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
+  final TextEditingController _memoController = TextEditingController();
+  final FocusNode _memoFocusNode = FocusNode();
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      child: Scaffold(
-        backgroundColor: CoconutColors.black,
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          backgroundColor: CoconutColors.black,
+          body: SafeArea(
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                SvgPicture.asset('assets/svg/completion-check.svg'),
-                const SizedBox(height: 8),
-                Text(
-                  t.broadcasting_complete_screen.complete,
-                  style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                Positioned(
+                  top: 130,
+                  child: Column(
+                    children: [
+                      SvgPicture.asset('assets/svg/completion-check.svg'),
+                      CoconutLayout.spacing_400h,
+                      Text(
+                        t.broadcasting_complete_screen.complete,
+                        style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                      ),
+                      CoconutLayout.spacing_400h,
+                      _buildMemoInputField(),
+                      if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
+                        _buildMemoReadOnlyText(),
+                    ],
+                  ),
                 ),
-                const SizedBox(
-                  height: 40,
-                ),
-                GestureDetector(
-                    onTap: () => onTap(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
-                      child: Text(t.confirm,
-                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray800)),
-                    )),
-                const SizedBox(
-                  height: 40,
+                if (_memoFocusNode.hasFocus)
+                  Positioned(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
+                      child: _buildMemoTags()),
+                Positioned(
+                  bottom: Sizes.size24,
+                  left: Sizes.size16,
+                  right: Sizes.size16,
+                  child: CoconutButton(
+                    onPressed: () => onTapConfirmButton(context),
+                    textStyle: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray800),
+                    disabledBackgroundColor: CoconutColors.gray800,
+                    disabledForegroundColor: CoconutColors.gray700,
+                    backgroundColor: CoconutColors.primary,
+                    foregroundColor: CoconutColors.black,
+                    pressedTextColor: CoconutColors.black,
+                    text: t.confirm,
+                  ),
                 ),
               ],
             ),
@@ -63,6 +84,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _memoFocusNode.dispose();
     super.dispose();
   }
 
@@ -72,9 +94,24 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
     _animationController = BottomSheet.createAnimationController(this);
     _animationController.duration = const Duration(seconds: 2);
     Provider.of<SendInfoProvider>(context, listen: false).clear();
+    _memoFocusNode.addListener(() {
+      setState(() {});
+    });
   }
 
-  void onTap(BuildContext context) {
+  void onTapConfirmButton(BuildContext context) {
+    // 메모가 있는 경우 업데이트 시도
+    if (_memoController.text.isNotEmpty &&
+        !context
+            .read<TransactionProvider>()
+            .updateTransactionMemo(widget.id, widget.txHash, _memoController.text)) {
+      CoconutToast.showWarningToast(
+        context: context,
+        text: t.toast.memo_update_failed,
+      );
+      return;
+    }
+
     Future<dynamic>? showReviewScreenFuture = AppReviewService.showReviewScreenIfFirstSending(
         context,
         animationController: _animationController);
@@ -87,5 +124,184 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
         }
       });
     }
+  }
+
+  Widget _buildMemoTags() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[0]),
+            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[1]),
+            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[2]),
+          ],
+        ),
+        Row(
+          children: [
+            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[3]),
+            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[4]),
+            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[5]),
+            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[6]),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMemoReadOnlyText() {
+    return GestureDetector(
+      onTap: () {
+        _memoController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _memoController.text.length),
+        );
+        _memoFocusNode.requestFocus();
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(top: Sizes.size4),
+        child: Container(
+            height: Sizes.size24,
+            padding: const EdgeInsets.only(left: Sizes.size12, right: Sizes.size12),
+            decoration: BoxDecoration(
+              color: CoconutColors.gray800,
+              borderRadius: BorderRadius.circular(Sizes.size12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset('assets/svg/pen.svg',
+                    colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    width: Sizes.size12),
+                CoconutLayout.spacing_100w,
+                Text(
+                  TextUtils.ellipsisIfLonger(_memoController.text, maxLength: 8),
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                ),
+              ],
+            )),
+      ),
+    );
+  }
+
+  Widget _buildMemoInputField() {
+    double? memoInputFieldSize =
+        _memoFocusNode.hasFocus || _memoController.text.isEmpty ? null : 0.0;
+    return SizedBox(
+      width: memoInputFieldSize,
+      height: memoInputFieldSize,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // background
+          Container(
+            width: Sizes.size84,
+            height: Sizes.size24,
+            padding: const EdgeInsets.only(left: Sizes.size12, right: Sizes.size12),
+            decoration: BoxDecoration(
+              color: CoconutColors.gray800,
+              borderRadius: BorderRadius.circular(Sizes.size12),
+            ),
+          ),
+          Row(
+            children: [
+              SvgPicture.asset('assets/svg/pen.svg',
+                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  width: Sizes.size12),
+              CoconutLayout.spacing_100w,
+              // text field
+              SizedBox(
+                  width: Sizes.size48,
+                  height: Sizes.size32,
+                  child: TextField(
+                    controller: _memoController,
+                    focusNode: _memoFocusNode,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: t.broadcasting_complete_screen.memo_placeholder,
+                      contentPadding: const EdgeInsets.only(
+                        bottom: 15.5,
+                      ),
+                    ),
+                  )),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMemoTag(String text) {
+    return Padding(
+      padding: const EdgeInsets.all(Sizes.size4),
+      child: _MemoTagItem(
+          text: text,
+          onTap: () {
+            _memoController.text = text;
+          }),
+    );
+  }
+}
+
+class _MemoTagItem extends StatefulWidget {
+  final String text;
+  final VoidCallback? onTap;
+
+  const _MemoTagItem({required this.text, this.onTap});
+
+  @override
+  State<_MemoTagItem> createState() => _MemoTagItemState();
+}
+
+class _MemoTagItemState extends State<_MemoTagItem> {
+  double _opacity = 1.0;
+
+  void _handleTapDown(TapDownDetails details) {
+    setState(() {
+      _opacity = 0.5;
+    });
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    setState(() {
+      _opacity = 1.0;
+    });
+  }
+
+  void _handleTapCancel() {
+    setState(() {
+      _opacity = 1.0;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(Sizes.size14),
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 100),
+          opacity: _opacity,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Sizes.size8,
+              vertical: Sizes.size4,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(Sizes.size14),
+              border: Border.all(width: 1, color: CoconutColors.gray700),
+            ),
+            child: Text(
+              widget.text,
+              style: CoconutTypography.caption_10.setColor(CoconutColors.white),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

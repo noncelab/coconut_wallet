@@ -202,7 +202,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         theme: const CupertinoThemeData(
           // 테마 설정
           brightness: Brightness.dark,
-          primaryColor: CoconutColors.primary, // 기본 색상
+          primaryColor: CoconutColors.primary,
+          // 기본 색상
           scaffoldBackgroundColor: CoconutColors.black,
           textTheme: CupertinoTextThemeData(
             // 텍스트 테마 설정
@@ -292,7 +293,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
           '/broadcasting-complete': (context) => buildScreenWithArguments(
                 context,
-                (args) => CustomLoadingOverlay(child: BroadcastingCompleteScreen(id: args['id'])),
+                (args) => CustomLoadingOverlay(
+                    child: BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash'])),
               ),
           '/send-address': (context) => buildScreenWithArguments(
                 context,

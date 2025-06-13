@@ -477,7 +477,7 @@ class _TransactionListState extends State<TransactionList> {
     return Selector<WalletDetailViewModel, List<TransactionRecord>>(
         selector: (_, viewModel) => viewModel.txList,
         builder: (_, txList, __) {
-          if (!listEquals(_displayedTxList, txList)) {
+          if (!listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _handleTransactionListUpdate(txList);
             });
@@ -486,6 +486,15 @@ class _TransactionListState extends State<TransactionList> {
               ? _buildSliverAnimatedList(_displayedTxList)
               : _buildEmptyState();
         });
+  }
+
+  // 내부 필드가 변경된 경우 감지(memo)
+  bool _deepEquals(List<TransactionRecord> a, List<TransactionRecord> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].memo != b[i].memo) return false;
+    }
+    return true;
   }
 
   Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {
