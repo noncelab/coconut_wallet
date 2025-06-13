@@ -29,17 +29,25 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
       ? satoshiToBitcoinString(UnitUtil.bitcoinToSatoshi(_viewModel.amount))
       : addCommasToIntegerPart(UnitUtil.bitcoinToSatoshi(_viewModel.amount).toDouble());
 
-  String get estimatedFeeText => _viewModel.estimatedFee != 0
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_viewModel.estimatedFee)
-          : addCommasToIntegerPart(_viewModel.estimatedFee.toDouble())
-      : t.calculation_failed;
+  String get estimatedFeeText {
+    if (_viewModel.estimatedFee == null) return '';
 
-  String get totalCostText => _viewModel.estimatedFee != 0
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_viewModel.totalUsedAmount)
-          : addCommasToIntegerPart(_viewModel.totalUsedAmount.toDouble())
-      : t.calculation_failed;
+    return _viewModel.estimatedFee != 0
+        ? _currentUnit == BitcoinUnit.btc
+            ? satoshiToBitcoinString(_viewModel.estimatedFee!)
+            : addCommasToIntegerPart(_viewModel.estimatedFee!.toDouble())
+        : t.calculation_failed;
+  }
+
+  String get totalCostText {
+    if (_viewModel.estimatedFee == null) return '';
+
+    return _viewModel.estimatedFee != 0
+        ? _currentUnit == BitcoinUnit.btc
+            ? satoshiToBitcoinString(_viewModel.totalUsedAmount!)
+            : addCommasToIntegerPart(_viewModel.totalUsedAmount!.toDouble())
+        : t.calculation_failed;
+  }
 
   String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
@@ -58,24 +66,12 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                   usePrimaryActiveColor: true,
                   onNextPressed: () {
                     context.loaderOverlay.show();
-                    viewModel.generateUnsignedPsbt().then((value) {
-                      viewModel.setTxWaitingForSign(value);
-                      if (context.mounted) {
-                        context.loaderOverlay.hide();
-                        Navigator.pushNamed(context, '/unsigned-transaction-qr',
-                            arguments: {'walletName': viewModel.walletName});
-                      }
-                    }).catchError((error) async {
-                      if (context.mounted) {
-                        context.loaderOverlay.hide();
-                        CustomDialogs.showCustomAlertDialog(context,
-                            title: t.alert.error_tx.created_failed,
-                            message: t.alert.error_tx.not_created(error: error.toString()),
-                            onConfirm: () {
-                          Navigator.pop(context);
-                        });
-                      }
-                    });
+                    viewModel.setTxWaitingForSign();
+                    if (context.mounted) {
+                      context.loaderOverlay.hide();
+                      Navigator.pushNamed(context, '/unsigned-transaction-qr',
+                          arguments: {'walletName': viewModel.walletName});
+                    }
                   }),
               body: SafeArea(
                 child: SingleChildScrollView(
@@ -142,9 +138,24 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   @override
   void initState() {
     super.initState();
+    context.loaderOverlay.show();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = SendConfirmViewModel(Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false));
+    _viewModel.setEstimatedFeeAndTotalUsedAmount().then((_) {
+      if (mounted) {
+        context.loaderOverlay.hide();
+      }
+    }).catchError((error) async {
+      if (mounted) {
+        context.loaderOverlay.hide();
+        CustomDialogs.showCustomAlertDialog(context,
+            title: t.alert.error_tx.created_failed,
+            message: t.alert.error_tx.not_created(error: error.toString()), onConfirm: () {
+          Navigator.pop(context);
+        });
+      }
+    });
   }
 
   void _toggleUnit() {

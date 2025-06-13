@@ -12,8 +12,8 @@ class SendConfirmViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
   late WalletListItemBase _walletListItemBase;
-  late int _estimatedFee;
-  late int _totalUsedAmount;
+  int? _totalUsedAmount;
+  Psbt? _unsignedPsbt;
 
   late double _amount;
   late List<String> _addresses;
@@ -21,7 +21,6 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   SendConfirmViewModel(this._sendInfoProvider, this._walletProvider) {
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
-    _estimatedFee = _sendInfoProvider.estimatedFee!;
     if (_sendInfoProvider.recipientsForBatch != null) {
       _setBatchTxParams();
     } else {
@@ -34,14 +33,13 @@ class SendConfirmViewModel extends ChangeNotifier {
   Map<String, double>? get recipientsForBatch =>
       _recipientsForBatch == null ? null : UnmodifiableMapView(_recipientsForBatch!);
 
-  int get estimatedFee => _estimatedFee;
+  int? get estimatedFee => _unsignedPsbt?.fee;
   String get walletName => _walletListItemBase.name;
-  int get totalUsedAmount => _totalUsedAmount;
+  int? get totalUsedAmount => _totalUsedAmount;
 
   void _setSingleTxParams() {
     _amount = _sendInfoProvider.amount!;
     _addresses = [_sendInfoProvider.recipientAddress!];
-    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + _estimatedFee;
   }
 
   void _setBatchTxParams() {
@@ -54,16 +52,21 @@ class SendConfirmViewModel extends ChangeNotifier {
     });
     _amount = totalSendAmount;
     _addresses = addresses;
-    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + _estimatedFee;
   }
 
-  Future<String> generateUnsignedPsbt() async {
+  Future<void> setEstimatedFeeAndTotalUsedAmount() async {
+    _unsignedPsbt = await _generateUnsignedPsbt();
+    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + _unsignedPsbt!.fee;
+    notifyListeners();
+  }
+
+  Future<Psbt> _generateUnsignedPsbt() async {
     assert(_sendInfoProvider.transaction != null);
-    var psbt = Psbt.fromTransaction(_sendInfoProvider.transaction!, _walletListItemBase.walletBase);
-    return psbt.serialize();
+    return Psbt.fromTransaction(_sendInfoProvider.transaction!, _walletListItemBase.walletBase);
   }
 
-  void setTxWaitingForSign(String transaction) {
-    _sendInfoProvider.setTxWaitingForSign(transaction);
+  void setTxWaitingForSign() {
+    assert(_unsignedPsbt != null);
+    _sendInfoProvider.setTxWaitingForSign(_unsignedPsbt!.serialize());
   }
 }
