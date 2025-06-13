@@ -316,12 +316,13 @@ class AskCard extends StatelessWidget {
                   height: 28,
                 ),
               ),
-              Text(
-                title,
-                style: Styles.body2
-                    .merge(const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
-                maxLines: 1,
-                overflow: TextOverflow.fade,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  title,
+                  style: Styles.body2.merge(
+                      const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
+                ),
               ),
             ],
           ),
