@@ -35,42 +35,10 @@ class AddressRepository extends BaseRepository {
     void Function(bool, int)? onCursorUpdate,
   }) async {
     final generatedAddressIndex = getGeneratedAddressIndex(walletItemBase, isChange);
+    final shouldGenerateNewAddresses = generatedAddressIndex > cursor + count;
 
-    if (generatedAddressIndex > cursor + count) {
-      final addressList = _getAddressListFromDb(
-        walletId: walletItemBase.id,
-        cursor: cursor,
-        count: count,
-        isChange: isChange,
-        showOnlyUnusedAddresses: showOnlyUnusedAddresses,
-      );
-
-      // 1. 조건에 맞는 주소가 충분한 경우에는 반환한다.
-      if (addressList.length >= count) {
-        return addressList;
-      }
-
-      // 2. 조건에 맞는 주소가 충분하지 않은 경우에는 추가적으로 생성해서 반환하고 cursor를 업데이트한다.
-      cursor = generatedAddressIndex + 1;
-      count = count - addressList.length;
-      addressList.addAll(await _generateAddressesAsync(
-        wallet: walletItemBase.walletBase,
-        startIndex: cursor,
-        count: count,
-        isChange: isChange,
-      ));
-
-      if (onCursorUpdate != null) {
-        onCursorUpdate(isChange, cursor + count);
-      }
-
-      Logger.log(
-          "➕ getWalletAddressList first: ${addressList.first.index}, last: ${addressList.last.index}");
-      return addressList;
-    }
-
-    // 기존 DB에 있는 주소 가져오기
-    List<WalletAddress> existingAddresses = generatedAddressIndex > cursor
+    // 기존 주소 조회
+    final existingAddresses = shouldGenerateNewAddresses || generatedAddressIndex > cursor
         ? _getAddressListFromDb(
             walletId: walletItemBase.id,
             cursor: cursor,
@@ -78,23 +46,33 @@ class AddressRepository extends BaseRepository {
             isChange: isChange,
             showOnlyUnusedAddresses: showOnlyUnusedAddresses,
           )
-        : [];
+        : <WalletAddress>[];
 
-    // 필요한 경우 새 주소 생성하고 저장하지 않고 반환 (비동기 처리)
-    if (existingAddresses.length < count) {
-      final newAddresses = await _generateAddressesAsync(
-        wallet: walletItemBase.walletBase,
-        startIndex: existingAddresses.isEmpty ? cursor : existingAddresses.last.index + 1,
-        count: count - existingAddresses.length,
-        isChange: isChange,
-      );
-
-      existingAddresses.addAll(newAddresses);
+    // 충분한 주소가 있으면 바로 반환
+    if (existingAddresses.length >= count) {
+      return existingAddresses;
     }
 
-    Logger.log(
-        "➕ getWalletAddressList first: ${existingAddresses.first.index}, last: ${existingAddresses.last.index}");
-    return existingAddresses;
+    // 부족한 주소만큼 새로 생성
+    final remainingCount = count - existingAddresses.length;
+    final startIndex = shouldGenerateNewAddresses
+        ? generatedAddressIndex + 1
+        : existingAddresses.isEmpty
+            ? cursor
+            : existingAddresses.last.index + 1;
+
+    final newAddresses = await _generateAddressesAsync(
+      wallet: walletItemBase.walletBase,
+      startIndex: startIndex,
+      count: remainingCount,
+      isChange: isChange,
+    );
+
+    if (shouldGenerateNewAddresses && onCursorUpdate != null) {
+      onCursorUpdate(isChange, startIndex + remainingCount);
+    }
+
+    return List<WalletAddress>.from([...existingAddresses, ...newAddresses]);
   }
 
   (int, int) getGeneratedAddressIndexes(WalletListItemBase walletItemBase) {
@@ -180,10 +158,17 @@ class AddressRepository extends BaseRepository {
     required bool isChange,
     required bool showOnlyUnusedAddresses,
   }) {
+    String query = r'walletId == $0 AND isChange == $1 AND index >= $2';
+    if (showOnlyUnusedAddresses) {
+      query += ' AND isUsed == false';
+    }
+    query += ' SORT(index ASC)';
+
     return realm
         .query<RealmWalletAddress>(
-            r'walletId == $0 AND isChange == $1 ${showOnlyUnusedAddresses ? "AND isUsed == false" : ""} AND index >= $2 SORT(index ASC)',
-            [walletId, isChange, cursor])
+          query,
+          [walletId, isChange, cursor],
+        )
         .take(count)
         .map((e) => mapRealmToWalletAddress(e))
         .toList();
@@ -454,7 +439,7 @@ class AddressRepository extends BaseRepository {
     await ensureAddressesExist(
       walletItemBase: walletItem,
       cursor: cursor,
-      count: 1,
+      count: 20,
       isChange: isChange,
     );
 
