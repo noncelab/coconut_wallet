@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/update_address_balance_dto.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -16,8 +17,11 @@ class AddressRepository extends BaseRepository {
 
   /// 주소 목록 검색하기(입금, 잔돈 주소)
   List<WalletAddress> searchWalletAddressList(WalletListItemBase walletItemBase, String keyword) {
-    final realmWalletAddress = realm.query<RealmWalletAddress>(
-        'walletId == ${walletItemBase.id} AND address CONTAINS "$keyword" SORT(index ASC)');
+    final realmWalletAddress =
+        realm.query<RealmWalletAddress>(r'walletId == $0 AND address CONTAINS $1 SORT(index ASC)', [
+      walletItemBase.id,
+      keyword,
+    ]);
     return realmWalletAddress.map((e) => mapRealmToWalletAddress(e)).toList();
   }
 
@@ -43,8 +47,6 @@ class AddressRepository extends BaseRepository {
 
       // 1. 조건에 맞는 주소가 충분한 경우에는 반환한다.
       if (addressList.length >= count) {
-        Logger.log(
-            "getWalletAddressList first: ${addressList.first.index}, last: ${addressList.last.index}");
         return addressList;
       }
 
@@ -63,7 +65,7 @@ class AddressRepository extends BaseRepository {
       }
 
       Logger.log(
-          "getWalletAddressList first: ${addressList.first.index}, last: ${addressList.last.index}");
+          "➕ getWalletAddressList first: ${addressList.first.index}, last: ${addressList.last.index}");
       return addressList;
     }
 
@@ -91,7 +93,7 @@ class AddressRepository extends BaseRepository {
     }
 
     Logger.log(
-        "getWalletAddressList first: ${existingAddresses.first.index}, last: ${existingAddresses.last.index}");
+        "➕ getWalletAddressList first: ${existingAddresses.first.index}, last: ${existingAddresses.last.index}");
     return existingAddresses;
   }
 
@@ -180,7 +182,8 @@ class AddressRepository extends BaseRepository {
   }) {
     return realm
         .query<RealmWalletAddress>(
-            'walletId == $walletId AND isChange == $isChange ${showOnlyUnusedAddresses ? "AND isUsed == false" : ""} AND index >= $cursor SORT(index ASC)')
+            r'walletId == $0 AND isChange == $1 ${showOnlyUnusedAddresses ? "AND isUsed == false" : ""} AND index >= $2 SORT(index ASC)',
+            [walletId, isChange, cursor])
         .take(count)
         .map((e) => mapRealmToWalletAddress(e))
         .toList();
@@ -615,36 +618,56 @@ class AddressRepository extends BaseRepository {
       final currentGeneratedIndex =
           isChange ? realmWalletBase.generatedChangeIndex : realmWalletBase.generatedReceiveIndex;
 
-      // generatedIndex - usedIndex >= 200이면 저장하지 않음
-      final indexDifference = currentGeneratedIndex - currentUsedIndex;
-      if (indexDifference >= 200) {
+      // Gap limit 체크
+      if (currentGeneratedIndex - currentUsedIndex >= kMaxAddressLimitGap) {
         return;
       }
 
-      // 추가하려는 주소가 연속되지 않은 경우 저장하지 않음
-      if (currentGeneratedIndex + 1 != newAddresses.first.index) {
-        return;
-      }
+      // 저장할 주소 필터링
+      final addressesToSave = newAddresses.where((address) {
+        // 주소 타입이 일치하지 않으면 제외
+        if (address.isChange != isChange) {
+          return false;
+        }
 
-      // 저장할 주소 필터링 (해당 타입의 주소만)
-      final addressesToSave =
-          newAddresses.where((address) => address.isChange == isChange).toList();
+        // 인덱스가 현재 생성된 인덱스보다 작거나 같으면 제외
+        if (address.index <= currentGeneratedIndex) {
+          return false;
+        }
+
+        // 인덱스가 gap limit을 초과하면 제외
+        if (address.index > currentUsedIndex + kMaxAddressLimitGap) {
+          return false;
+        }
+
+        return true;
+      }).toList();
 
       if (addressesToSave.isEmpty) {
         return;
       }
 
-      // 백그라운드에서 비동기적으로 주소 저장
-      await Future.microtask(() async {
-        try {
-          // DB에 저장
-          await _addAllAddressList(realmWalletBase, addressesToSave);
-        } catch (e) {
-          Logger.error('[addAddressesWithGapLimit] Failed to save addresses: $e');
-        }
-      });
+      // 연속성 체크 - 첫 번째 주소가 currentGeneratedIndex + 1이 아니면 저장하지 않음
+      // 단, 첫 번째 주소가 currentGeneratedIndex보다 작은 경우는 제외
+      if (addressesToSave.first.index != currentGeneratedIndex + 1 &&
+          addressesToSave.first.index > currentGeneratedIndex) {
+        return;
+      }
+
+      await _saveAddressesAsync(realmWalletBase, addressesToSave);
     } catch (e) {
       Logger.error('[addAddressesWithGapLimit] Error: $e');
     }
+  }
+
+  Future<void> _saveAddressesAsync(
+      RealmWalletBase realmWalletBase, List<WalletAddress> addresses) async {
+    await Future.microtask(() async {
+      try {
+        await _addAllAddressList(realmWalletBase, addresses);
+      } catch (e) {
+        Logger.error('[_saveAddressesAsync] Failed to save addresses: $e');
+      }
+    });
   }
 }

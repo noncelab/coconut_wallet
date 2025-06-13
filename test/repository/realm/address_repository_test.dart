@@ -174,7 +174,7 @@ void main() {
       expect(savedAddresses.length, equals(40));
     });
 
-    test('연속되지 않은 인덱스의 주소는 저장하지 않는다 (추가하려는 인덱스가 작은 경우)', () async {
+    test('연속되지 않은 인덱스지만 저장된 인덱스보다 작은 인덱스의 주소를 포함할 때는 저장되지 않은 주소를 저장한다', () async {
       // Given
       realmManager.realm.write(() {
         realmWalletBase.usedReceiveIndex = -1;
@@ -197,9 +197,9 @@ void main() {
 
       // Then
       final savedAddresses = realmManager.realm.query<RealmWalletAddress>(
-        'walletId == $testWalletId',
+        'walletId == $testWalletId AND isChange == false',
       );
-      expect(savedAddresses.length, equals(40));
+      expect(savedAddresses.length, equals(38));
     });
 
     test('연속된 인덱스의 주소는 정상적으로 저장된다', () async {
@@ -224,7 +224,8 @@ void main() {
 
       // Then
       final savedAddresses = realmManager.realm.query<RealmWalletAddress>(
-        'walletId == $testWalletId AND isChange == false',
+        r'walletId == $0 AND isChange == $1',
+        [testWalletId, false],
       );
 
       expect(savedAddresses.length, equals(40));
@@ -384,7 +385,7 @@ void main() {
       expect(updatedWalletBase!.generatedReceiveIndex, equals(39));
     });
 
-    test('indexDifference가 199일 때는 주소가 저장된다', () async {
+    test('indexDifference가 199일 때는 limit 값을 초과하지 않는 주소가 저장된다', () async {
       // Given
       realmManager.realm.write(() {
         realmWalletBase.usedReceiveIndex = -1;
@@ -410,7 +411,8 @@ void main() {
         'walletId == $testWalletId AND isChange == false',
       );
 
-      expect(savedAddresses.length, equals(40));
+      expect(savedAddresses.length, equals(21),
+          reason: '198 보다 크면서 인덱스가 200 미만인 주소 1개만 추가로 저장되어야 함');
     });
 
     test('change 주소에 대해서도 indexDifference 체크가 올바르게 동작한다', () async {

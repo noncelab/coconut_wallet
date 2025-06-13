@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -28,13 +29,12 @@ class AddressListScreen extends StatefulWidget {
 
 class _AddressListScreenState extends State<AddressListScreen> {
   /// 페이지네이션
-  static const int kFirstCount = 20;
   late final AddressListViewModel viewModel;
-  final int _limit = 20;
+  final int _limit = kAddressPaginationLimit;
   int _receivingAddressPage = 0;
   int _changeAddressPage = 0;
-  int _receivingInitialCursor = kFirstCount;
-  int _changeInitialCursor = kFirstCount;
+  int _receivingInitialCursor = kInitialAddressCount;
+  int _changeInitialCursor = kInitialAddressCount;
   bool _isFirstLoadRunning = true;
   bool _isLoadMoreRunning = false;
   bool isReceivingSelected = true;
@@ -218,10 +218,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
     final showOnlyUnusedAddresses = context.read<PreferenceProvider>().showOnlyUnusedAddresses;
     _receivingAddressPage = 0;
     _changeAddressPage = 0;
-    _receivingInitialCursor = kFirstCount;
-    _changeInitialCursor = kFirstCount;
+    _receivingInitialCursor = kInitialAddressCount;
+    _changeInitialCursor = kInitialAddressCount;
     _isFirstLoadRunning = true;
-    await viewModel.initializeAddressList(kFirstCount, showOnlyUnusedAddresses);
+    await viewModel.initializeAddressList(kInitialAddressCount, showOnlyUnusedAddresses);
     _isFirstLoadRunning = false;
   }
 
@@ -430,11 +430,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
       _isLoadMoreRunning = true;
     });
 
-    List<WalletAddress>? newAddresses = [];
+    List<WalletAddress> newAddresses = [];
     try {
       final initialCursor = !isReceivingSelected ? _changeInitialCursor : _receivingInitialCursor;
       final pageIndex = !isReceivingSelected ? _changeAddressPage : _receivingAddressPage;
-      final newAddresses = await viewModel.walletProvider.getWalletAddressList(
+      newAddresses = await viewModel.walletProvider.getWalletAddressList(
           viewModel.walletBaseItem!,
           initialCursor + pageIndex * _limit,
           _limit,
@@ -462,7 +462,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
         setState(() {
           _isLoadMoreRunning = false;
         });
-
         _addAddressesWithGapLimit(newAddresses, !isReceivingSelected);
       }
     }
@@ -470,14 +469,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   /// 추후 다시 조회할 경우 조회 속도 향상을 위해 백그라운드에서 주소를 저장
   void _addAddressesWithGapLimit(List<WalletAddress> newAddresses, bool isChange) {
-    if (viewModel?.walletBaseItem == null) {
+    if (viewModel.walletBaseItem == null) {
       return;
     }
     // 백그라운드에서 비동기적으로 실행하여 UI 블로킹 방지
     Future.microtask(() async {
       try {
-        await viewModel!.walletProvider.addAddressesWithGapLimit(
-          walletItemBase: viewModel!.walletBaseItem!,
+        await viewModel.walletProvider.addAddressesWithGapLimit(
+          walletItemBase: viewModel.walletBaseItem!,
           newAddresses: newAddresses,
           isChange: isChange,
         );
