@@ -138,7 +138,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                         ],
                       ),
                       CoconutLayout.spacing_50h,
-                      Row(
+                      Stack(
                         children: [
                           Expanded(
                             child: CustomTagHorizontalSelector(
@@ -151,17 +151,25 @@ class UtxoListStickyHeader extends StatelessWidget {
                               isLoadComplete: isLoadComplete,
                             ),
                           ),
-                          Visibility(
-                            visible: !isLoadComplete,
-                            child: Container(
-                              margin: const EdgeInsets.only(
-                                right: 26,
-                              ),
-                              width: 15,
-                              height: 15,
-                              child: const CircularProgressIndicator(
-                                color: CoconutColors.white,
-                                strokeWidth: 2,
+                          Positioned(
+                            top: 0,
+                            bottom: 0,
+                            right: 0,
+                            child: Visibility(
+                              visible: !isLoadComplete,
+                              child: Align(
+                                child: Container(
+                                  margin: const EdgeInsets.only(
+                                    left: 8,
+                                    right: 26,
+                                  ),
+                                  width: 15,
+                                  height: 15,
+                                  child: const CircularProgressIndicator(
+                                    color: CoconutColors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
                               ),
                             ),
                           ),

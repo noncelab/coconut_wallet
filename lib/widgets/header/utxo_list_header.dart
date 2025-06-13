@@ -122,29 +122,35 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                 ],
               ),
             ),
-            Row(
+            Stack(
               children: [
-                Expanded(
-                  child: Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
-                    return CustomTagHorizontalSelector(
-                      tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                      selectedName: viewModel.selectedUtxoTagName,
-                      onSelectedTag: widget.onTagSelected,
-                      isLoadComplete: widget.isLoadComplete,
-                    );
-                  }),
-                ),
-                Visibility(
-                  visible: !widget.isLoadComplete,
-                  child: Container(
-                    margin: const EdgeInsets.only(
-                      right: 26,
-                    ),
-                    width: 15,
-                    height: 15,
-                    child: const CircularProgressIndicator(
-                      color: CoconutColors.white,
-                      strokeWidth: 2,
+                Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
+                  return CustomTagHorizontalSelector(
+                    tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+                    selectedName: viewModel.selectedUtxoTagName,
+                    onSelectedTag: widget.onTagSelected,
+                    isLoadComplete: widget.isLoadComplete,
+                  );
+                }),
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
+                  child: Visibility(
+                    visible: !widget.isLoadComplete,
+                    child: Align(
+                      child: Container(
+                        margin: const EdgeInsets.only(
+                          left: 8,
+                          right: 26,
+                        ),
+                        width: 15,
+                        height: 15,
+                        child: const CircularProgressIndicator(
+                          color: CoconutColors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
                     ),
                   ),
                 ),
