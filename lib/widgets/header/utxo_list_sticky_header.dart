@@ -110,6 +110,22 @@ class UtxoListStickyHeader extends StatelessWidget {
                           Expanded(
                             child: Container(),
                           ),
+                          Visibility(
+                            visible: !isLoadComplete,
+                            child: Align(
+                              child: Container(
+                                margin: const EdgeInsets.only(
+                                  right: 4,
+                                ),
+                                width: 12,
+                                height: 12,
+                                child: const CircularProgressIndicator(
+                                  color: CoconutColors.gray400,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          ),
                           CupertinoButton(
                             key: dropdownGlobalKey,
                             padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
@@ -138,40 +154,13 @@ class UtxoListStickyHeader extends StatelessWidget {
                         ],
                       ),
                       CoconutLayout.spacing_50h,
-                      Stack(
-                        children: [
-                          CustomTagHorizontalSelector(
-                            tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                            selectedName: viewModel.selectedUtxoTagName,
-                            onSelectedTag: (tagName) {
-                              viewModel.setSelectedUtxoTagName(tagName);
-                            },
-                            scrollPhysics: const AlwaysScrollableScrollPhysics(),
-                            isLoadComplete: isLoadComplete,
-                          ),
-                          Positioned(
-                            top: 0,
-                            bottom: 0,
-                            right: 0,
-                            child: Visibility(
-                              visible: !isLoadComplete,
-                              child: Align(
-                                child: Container(
-                                  margin: const EdgeInsets.only(
-                                    left: 8,
-                                    right: 26,
-                                  ),
-                                  width: 15,
-                                  height: 15,
-                                  child: const CircularProgressIndicator(
-                                    color: CoconutColors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      CustomTagHorizontalSelector(
+                        tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+                        selectedName: viewModel.selectedUtxoTagName,
+                        onSelectedTag: (tagName) {
+                          viewModel.setSelectedUtxoTagName(tagName);
+                        },
+                        scrollPhysics: const AlwaysScrollableScrollPhysics(),
                       ),
                       CoconutLayout.spacing_300h,
                     ],

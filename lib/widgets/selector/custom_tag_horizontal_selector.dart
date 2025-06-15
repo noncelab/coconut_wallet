@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 class CustomTagHorizontalSelector extends StatefulWidget {
   final List<String> tags;
   final String selectedName;
-  final bool isLoadComplete;
   final bool showDefaultTags;
   final Function(String) onSelectedTag;
   final ScrollPhysics? scrollPhysics;
@@ -17,7 +16,6 @@ class CustomTagHorizontalSelector extends StatefulWidget {
     required this.tags,
     required this.selectedName,
     required this.onSelectedTag,
-    this.isLoadComplete = false,
     this.showDefaultTags = true,
     this.scrollPhysics = const AlwaysScrollableScrollPhysics(),
   });
@@ -55,14 +53,12 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
               if (index == 0) CoconutLayout.spacing_400w,
               GestureDetector(
                 onTap: () {
-                  if (!widget.isLoadComplete) return;
                   widget.onSelectedTag.call(name);
                 },
                 child: _tagSelectorChip(
                   index <= 2 ? _tags[index] : '#$name',
                   widget.selectedName == name,
                   index <= 2,
-                  widget.isLoadComplete,
                 ),
               ),
               if (index == _tags.length) CoconutLayout.spacing_400w,
@@ -73,27 +69,19 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
     );
   }
 
-  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag, bool isLoadComplete) {
+  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       margin: const EdgeInsets.only(right: 4),
       height: 32,
       decoration: BoxDecoration(
-        color: isSelected
-            ? CoconutColors.white
-            : isLoadComplete
-                ? CoconutColors.gray800
-                : CoconutColors.gray900,
+        color: isSelected ? CoconutColors.white : CoconutColors.gray800,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
         name,
         style: CoconutTypography.body3_12_Number.copyWith(
-          color: isSelected
-              ? CoconutColors.gray800
-              : isLoadComplete
-                  ? CoconutColors.white
-                  : CoconutColors.gray800,
+          color: isSelected ? CoconutColors.gray800 : CoconutColors.white,
           height: 1.3,
           fontWeight: isFixedTag
               ? FontWeight.w400

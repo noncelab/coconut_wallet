@@ -5,7 +5,6 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -93,6 +92,22 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                       Expanded(
                         child: Container(),
                       ),
+                      Visibility(
+                        visible: !widget.isLoadComplete,
+                        child: Align(
+                          child: Container(
+                            margin: const EdgeInsets.only(
+                              right: 4,
+                            ),
+                            width: 12,
+                            height: 12,
+                            child: const CircularProgressIndicator(
+                              color: CoconutColors.gray400,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
+                      ),
                       CupertinoButton(
                         key: widget.dropdownGlobalKey,
                         padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
@@ -122,40 +137,13 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                 ],
               ),
             ),
-            Stack(
-              children: [
-                Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
-                  return CustomTagHorizontalSelector(
-                    tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                    selectedName: viewModel.selectedUtxoTagName,
-                    onSelectedTag: widget.onTagSelected,
-                    isLoadComplete: widget.isLoadComplete,
-                  );
-                }),
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  right: 0,
-                  child: Visibility(
-                    visible: !widget.isLoadComplete,
-                    child: Align(
-                      child: Container(
-                        margin: const EdgeInsets.only(
-                          left: 8,
-                          right: 26,
-                        ),
-                        width: 15,
-                        height: 15,
-                        child: const CircularProgressIndicator(
-                          color: CoconutColors.white,
-                          strokeWidth: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
+              return CustomTagHorizontalSelector(
+                tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+                selectedName: viewModel.selectedUtxoTagName,
+                onSelectedTag: widget.onTagSelected,
+              );
+            }),
             CoconutLayout.spacing_300h,
           ],
         )
