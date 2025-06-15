@@ -375,6 +375,10 @@ class UtxoList extends StatefulWidget {
 class _UtxoListState extends State<UtxoList> {
   late List<UtxoState> _displayedUtxoList = [];
   final GlobalKey<SliverAnimatedListState> _utxoListKey = GlobalKey<SliverAnimatedListState>();
+  final GlobalKey<SliverAnimatedListState> _lockedUtxoListKey =
+      GlobalKey<SliverAnimatedListState>();
+  final GlobalKey<SliverAnimatedListState> _changeUtxoListKey =
+      GlobalKey<SliverAnimatedListState>();
 
   final Duration _duration = const Duration(milliseconds: 1200);
   final Duration _animationDuration = const Duration(milliseconds: 100);
@@ -425,11 +429,16 @@ class _UtxoListState extends State<UtxoList> {
   Widget _buildSliverAnimatedList(List<UtxoState> utxoList, String selectedUtxoTagName) {
     final defaultTagNameList = [t.all, t.utxo_detail_screen.utxo_locked, t.change];
     return SliverAnimatedList(
-      key: _utxoListKey,
+      key: selectedUtxoTagName == t.utxo_detail_screen.utxo_locked
+          ? _lockedUtxoListKey
+          : selectedUtxoTagName == t.change
+              ? _changeUtxoListKey
+              : _utxoListKey,
       initialItemCount: utxoList.length,
       itemBuilder: (context, index, animation) {
         final isSelected = defaultTagNameList.contains(selectedUtxoTagName) ||
-            (utxoList[index].tags != null &&
+            (index < utxoList.length &&
+                utxoList[index].tags != null &&
                 utxoList[index].tags!.any((e) => e.name == selectedUtxoTagName));
 
         return isSelected && index < utxoList.length
