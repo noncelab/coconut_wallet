@@ -578,13 +578,13 @@ class WalletProvider extends ChangeNotifier {
     return result;
   }
 
-  Future<void> toggleUtxoLockStatus(int walletId, int utxoIndex, String txHash) async {
-    final result = await _utxoRepository.toggleUtxoLockStatus(walletId, utxoIndex, txHash);
+  Future<void> toggleUtxoLockStatus(int walletId, String utxoId) async {
+    final result = await _utxoRepository.toggleUtxoLockStatus(walletId, utxoId);
     if (result.isFailure) {
       Logger.error(result.error);
     } else {
       // UTXO 상태가 변경되었으므로 리스너들에게 알림
-      final utxoState = _utxoRepository.getUtxoState(walletId, txHash);
+      final utxoState = _utxoRepository.getUtxoState(walletId, utxoId);
       if (utxoState != null) {
         _notifyWalletUpdateListeners(WalletUpdateInfo(walletId));
       }

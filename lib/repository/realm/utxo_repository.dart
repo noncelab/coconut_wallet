@@ -239,10 +239,9 @@ class UtxoRepository extends BaseRepository {
   }
 
   /// 미사용된 UTXO의 잠금 상태 업데이트
-  Future<Result<void>> toggleUtxoLockStatus(int walletId, int utxoIndex, String txHash) async {
+  Future<Result<void>> toggleUtxoLockStatus(int walletId, String utxoId) async {
     return handleAsyncRealm(
       () async {
-        final utxoId = makeUtxoId(txHash, utxoIndex);
         final utxo = realm.query<RealmUtxo>(
           r'walletId == $0 AND id == $1 AND isDeleted == false',
           [walletId, utxoId],

@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
@@ -155,7 +156,9 @@ class UtxoListViewModel extends ChangeNotifier {
   }
 
   void toggleUtxoLockStatus(UtxoState utxo) {
-    _walletProvider.toggleUtxoLockStatus(_walletId, utxo.index, utxo.transactionHash);
+    final utxoId = makeUtxoId(utxo.transactionHash, utxo.index);
+
+    _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
     _getUtxoAndTagList();
     notifyListeners();
   }

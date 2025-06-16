@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 class UtxoDetailViewModel extends ChangeNotifier {
@@ -77,7 +78,8 @@ class UtxoDetailViewModel extends ChangeNotifier {
     );
 
     notifyListeners();
-    await _walletProvider.toggleUtxoLockStatus(_walletId, _utxo.index, _utxo.transactionHash);
+    final utxoId = makeUtxoId(_utxo.transactionHash, _utxo.index);
+    await _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
   }
 
   List<String> get dateString => _dateString;
