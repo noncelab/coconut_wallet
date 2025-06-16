@@ -155,7 +155,7 @@ class UtxoListViewModel extends ChangeNotifier {
   }
 
   void toggleUtxoLockStatus(UtxoState utxo) {
-    _walletProvider.toggleUtxoLockStatus(_walletId, utxo.transactionHash);
+    _walletProvider.toggleUtxoLockStatus(_walletId, utxo.index, utxo.transactionHash);
     _getUtxoAndTagList();
     notifyListeners();
   }

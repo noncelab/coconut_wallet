@@ -77,7 +77,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     );
 
     notifyListeners();
-    await _walletProvider.toggleUtxoLockStatus(_walletId, _utxo.transactionHash);
+    await _walletProvider.toggleUtxoLockStatus(_walletId, _utxo.index, _utxo.transactionHash);
   }
 
   List<String> get dateString => _dateString;
