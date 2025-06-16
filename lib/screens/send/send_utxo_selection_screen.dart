@@ -538,7 +538,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   Widget _buildUtxoOrderDropdown(SendUtxoSelectionViewModel viewModel) {
-    if (_isOrderDropdownVisible && viewModel.availableUtxoList.isNotEmpty) {
+    if (_isOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
       return Positioned(
         top: _orderDropdownButtonPosition.dy -
             _scrollController.offset -
@@ -548,7 +548,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       );
     }
 
-    if (_isScrolledOrderDropdownVisible && viewModel.availableUtxoList.isNotEmpty) {
+    if (_isScrolledOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
       return Positioned(
         top: _scrolledOrderDropdownButtonPosition.dy - MediaQuery.of(context).padding.top - 55,
         left: 16,
@@ -583,10 +583,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
         padding: const EdgeInsets.only(top: 0, bottom: 30, left: 16, right: 16),
-        itemCount: viewModel.availableUtxoList.length,
+        itemCount: viewModel.confirmedUtxoList.length,
         separatorBuilder: (context, index) => const SizedBox(height: 0),
         itemBuilder: (context, index) {
-          final utxo = viewModel.availableUtxoList[index];
+          final utxo = viewModel.confirmedUtxoList[index];
           final utxoHasSelectedTag = viewModel.selectedUtxoTagName == allLabelName ||
               viewModel.utxoTagMap[utxo.utxoId]
                       ?.any((e) => e.name == viewModel.selectedUtxoTagName) ==
