@@ -491,6 +491,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void saveSendInfo() {
+    double finalAmount = _isMaxMode
+        ? UnitUtil.satoshiToBitcoin(_confirmedBalance - _estimatedFee!)
+        : _sendInfoProvider.amount!;
+    _sendInfoProvider.setAmount(finalAmount);
     _sendInfoProvider.setEstimatedFee(_estimatedFee!);
     _sendInfoProvider.setIsMaxMode(isMaxMode);
     _sendInfoProvider.setIsMultisig(_requiredSignature != null);
