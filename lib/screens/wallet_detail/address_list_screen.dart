@@ -51,8 +51,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   /// 페이지네이션
   late final AddressListViewModel viewModel;
-  bool _isFirstLoadRunning = true;
+  bool _isInitializing = false;
   bool _isLoadMoreRunning = false;
+  bool _isScrollingToTop = false;
   bool isReceivingSelected = true;
 
   /// 툴팁
@@ -68,7 +69,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   final GlobalKey _appBarKey = GlobalKey();
   Size _appBarSize = const Size(0, 0);
-  Size _toolbarWidgetSize = const Size(0, 0); // fixme - unused
 
   bool _receivingTooltipVisible = false;
   bool _changeTooltipVisible = false;
@@ -76,15 +76,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
   int _tooltipRemainingTime = 5;
 
   /// 스크롤
-  double topPadding = 0;
   final bool _isScrollOverTitleHeight = false;
   late ScrollController _controller;
   late BitcoinUnit _currentUnit;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => viewModel,
+    return ChangeNotifierProvider.value(
+      value: viewModel,
       child: Consumer<AddressListViewModel>(
         builder: (context, viewModel, child) {
           List<WalletAddress> addressList =
@@ -112,7 +111,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 10),
-                              child: _isFirstLoadRunning
+                              child: _isInitializing
                                   ? const Center(child: CircularProgressIndicator())
                                   : GestureDetector(
                                       onTapDown: (_) {
@@ -212,7 +211,6 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.addListener(_nextLoad);
-      RenderBox toolbarWidgetRenderBox;
 
       if (_appBarKey.currentContext != null) {
         final appBarRenderBox = _appBarKey.currentContext?.findRenderObject() as RenderBox;
@@ -226,23 +224,38 @@ class _AddressListScreenState extends State<AddressListScreen> {
       _changeTooltipIconRenderBox =
           _changeTooltipKey.currentContext!.findRenderObject() as RenderBox;
       _changeTooltipIconPosition = _changeTooltipIconRenderBox.localToGlobal(Offset.zero);
-
-      toolbarWidgetRenderBox = _toolbarWidgetKey.currentContext!.findRenderObject() as RenderBox;
-      setState(() {
-        _toolbarWidgetSize = toolbarWidgetRenderBox.size;
-      });
     });
   }
 
   Future<void> _initializeAddressList() async {
+    if (_isInitializing) return;
+
+    setState(() {
+      _isInitializing = true;
+    });
+
     final showOnlyUnusedAddresses = context.read<PreferenceProvider>().showOnlyUnusedAddresses;
-    _isFirstLoadRunning = true;
+
+    if (isReceivingSelected) {
+      viewModel.receivingAddressList.clear();
+    } else {
+      viewModel.changeAddressList.clear();
+    }
+
     await viewModel.initializeAddressList(kInitialAddressCount, showOnlyUnusedAddresses);
-    _isFirstLoadRunning = false;
+
+    setState(() {
+      _isInitializing = false;
+    });
   }
 
   Future<void> scrollToTop() async {
-    _controller.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.decelerate);
+    _isScrollingToTop = true;
+
+    await _controller.animateTo(0,
+        duration: const Duration(milliseconds: 500), curve: Curves.decelerate);
+
+    _isScrollingToTop = false;
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
@@ -292,11 +305,17 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       isLeft: true,
                       iconKey: _receivingTooltipKey,
                       iconPadding: const EdgeInsets.all(8.0),
-                      onTap: () {
-                        setState(() {
-                          isReceivingSelected = true;
-                        });
-                        scrollToTop();
+                      onTap: () async {
+                        if (isReceivingSelected) {
+                          await scrollToTop();
+                          await _initializeAddressList();
+                        } else {
+                          setState(() {
+                            isReceivingSelected = true;
+                          });
+                          await scrollToTop();
+                          await _initializeAddressList();
+                        }
                         _removeTooltip();
                       },
                       onTapDown: (_) {
@@ -314,11 +333,17 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       isLeft: false,
                       iconKey: _changeTooltipKey,
                       iconPadding: const EdgeInsets.all(8.0),
-                      onTap: () {
-                        setState(() {
-                          isReceivingSelected = false;
-                        });
-                        scrollToTop();
+                      onTap: () async {
+                        if (!isReceivingSelected) {
+                          await scrollToTop();
+                          await _initializeAddressList();
+                        } else {
+                          setState(() {
+                            isReceivingSelected = false;
+                          });
+                          await scrollToTop();
+                          await _initializeAddressList();
+                        }
                         _removeTooltip();
                       },
                       onTapDown: (_) {
@@ -454,7 +479,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   Future<void> _nextLoad() async {
-    if (_isFirstLoadRunning || _isLoadMoreRunning || _controller.position.extentAfter > 500) {
+    if (_isInitializing || _isLoadMoreRunning || _controller.position.extentAfter > 500) {
       return;
     }
 
@@ -478,7 +503,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
       );
 
       // UI 업데이트 - 탭 상태가 변경되지 않았을 때만 데이터 추가
-      if (mounted && wasReceivingSelected == isReceivingSelected) {
+      if (mounted && wasReceivingSelected == isReceivingSelected && !_isScrollingToTop) {
         setState(() {
           if (isReceivingSelected) {
             viewModel.receivingAddressList.addAll(newAddresses);
