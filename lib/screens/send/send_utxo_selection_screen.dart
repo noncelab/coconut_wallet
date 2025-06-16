@@ -381,6 +381,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           child: Row(children: [
             CupertinoButton(
               onPressed: () {
+                if (_viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) {
+                  return;
+                }
                 setState(
                   () {
                     if (_isStickyHeaderVisible
@@ -410,6 +413,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   ),
                   SvgPicture.asset(
                     'assets/svg/arrow-down.svg',
+                    colorFilter: ColorFilter.mode(
+                        _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching
+                            ? CoconutColors.white.withOpacity(0.2)
+                            : CoconutColors.white,
+                        BlendMode.srcIn),
                   ),
                 ],
               ),
@@ -424,6 +432,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   CustomUnderlinedButton(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: t.unselect_all,
+                    isEnable:
+                        _viewModel.recommendedFeeFetchStatus != RecommendedFeeFetchStatus.fetching,
                     onTap: () {
                       _removeUtxoOrderDropdown();
                       _deselectAll();
@@ -433,6 +443,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   CustomUnderlinedButton(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: t.select_all,
+                    isEnable:
+                        _viewModel.recommendedFeeFetchStatus != RecommendedFeeFetchStatus.fetching,
                     onTap: () async {
                       _removeUtxoOrderDropdown();
                       _selectAll();
@@ -507,8 +519,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 key: _scrolledOrderDropdownButtonKey,
                 _selectedUtxoOrder.text,
                 style: Styles.caption2.merge(
-                  const TextStyle(
-                    color: CoconutColors.white,
+                  TextStyle(
+                    color: viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching
+                        ? CoconutColors.white.withOpacity(0.2)
+                        : CoconutColors.white,
                     fontSize: 12,
                   ),
                 ),
@@ -653,8 +667,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               key: _orderDropdownButtonKey,
               _selectedUtxoOrder.text,
               style: Styles.caption2.merge(
-                const TextStyle(
-                  color: CoconutColors.white,
+                TextStyle(
+                  color: viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching
+                      ? CoconutColors.white.withOpacity(0.2)
+                      : CoconutColors.white,
                   fontSize: 12,
                 ),
               ),
