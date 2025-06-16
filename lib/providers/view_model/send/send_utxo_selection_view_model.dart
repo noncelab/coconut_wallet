@@ -120,7 +120,15 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     final availableUtxoList =
         _confirmedUtxoList.where((utxo) => utxo.status != UtxoStatus.locked).toList();
 
-    _transaction = _createTransaction(availableUtxoList, _isMaxMode, 1, _walletBaseItem);
+    final sufficientUtxo = availableUtxoList.firstWhere(
+      (utxo) => utxo.amount >= UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+      orElse: () => availableUtxoList.first,
+    );
+
+    // 초기 수수료 계산을 위해 입력 1개 출력 2개 구조의 트랜잭션을 구성
+    _transaction = _createTransaction(
+        _isMaxMode ? availableUtxoList : [sufficientUtxo], _isMaxMode, 1, _walletBaseItem);
+
     _syncSelectedUtxosWithTransaction();
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
@@ -130,6 +138,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         _updateFeeRateOfTransaction(satsPerVb!);
         _setAmount();
       }
+      deselectAllUtxo();
       notifyListeners();
     });
 
@@ -331,7 +340,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       }
 
       selectedUtxoList.remove(utxo);
-      if (estimatedFee != null && _isSelectedUtxoEnough()) {
+
+      // UTXO 2개 선택(충분) -> 1개 제거(부족) 상태 일 때도 수수료를 갱신 하기 위해서
+      // _isSelectedUtxoEnough() 조건을 selectedUtxoList.isNotEmpty로 변경
+      if (estimatedFee != null && selectedUtxoList.isNotEmpty) {
         setEstimatedFee(estimateFee(satsPerVb ?? 1));
       }
     } else {
@@ -370,7 +382,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     try {
       final optimalUtxos =
           TransactionUtil.selectOptimalUtxos(utxos, _sendAmount, feeRate, _walletBase.addressType);
-      _selectedUtxoList = optimalUtxos;
       return Transaction.forSinglePayment(
           optimalUtxos,
           _sendInfoProvider.recipientAddress!,
@@ -468,7 +479,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
             utxo.status != UtxoStatus.locked,
       ));
     }
-    _selectedUtxoList = result;
+    // _selectedUtxoList = result;
     notifyListeners();
   }
 
