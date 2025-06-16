@@ -277,7 +277,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
     _isFirstLoadRunning = false;
   }
 
-  void scrollToTop() {
+  Future<void> scrollToTop() async {
     _controller.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.decelerate);
   }
 
@@ -354,8 +354,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                       context
                           .read<PreferenceProvider>()
                           .changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
-                      _initializeAddressList();
-                      scrollToTop();
+                      scrollToTop().then((_) => _initializeAddressList());
                     },
                     child: Container(
                       color: Colors.transparent,
