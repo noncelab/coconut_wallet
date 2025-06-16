@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
@@ -67,7 +66,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
   late RenderBox _receivingTooltipIconRenderBox;
   late RenderBox _changeTooltipIconRenderBox;
 
-  Size _toolbarWidgetSize = const Size(0, 0);
+  final GlobalKey _appBarKey = GlobalKey();
+  Size _appBarSize = const Size(0, 0);
+  Size _toolbarWidgetSize = const Size(0, 0); // fixme - unused
 
   bool _receivingTooltipVisible = false;
   bool _changeTooltipVisible = false;
@@ -213,6 +214,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
       _controller.addListener(_nextLoad);
       RenderBox toolbarWidgetRenderBox;
 
+      if (_appBarKey.currentContext != null) {
+        final appBarRenderBox = _appBarKey.currentContext?.findRenderObject() as RenderBox;
+        _appBarSize = appBarRenderBox.size;
+      }
+
       _receivingTooltipIconRenderBox =
           _receivingTooltipKey.currentContext!.findRenderObject() as RenderBox;
       _receivingTooltipIconPosition = _receivingTooltipIconRenderBox.localToGlobal(Offset.zero);
@@ -242,6 +248,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
         context: context,
+        entireWidgetKey: _appBarKey,
         backgroundColor:
             _isScrollOverTitleHeight ? CoconutColors.black.withOpacity(0.5) : CoconutColors.black,
         title: t.address_list_screen.wallet_name(name: viewModel.walletBaseItem!.name),
@@ -257,7 +264,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
   Widget _buildSegmentedControl() {
     return Container(
-      padding: const EdgeInsets.only(top: 50),
+      padding: EdgeInsets.only(top: _appBarSize.height),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -270,7 +277,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
         key: _toolbarWidgetKey,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
