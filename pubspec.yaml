@@ -131,6 +131,7 @@ flutter:
     - assets/svg/bell.svg
     - assets/svg/add-circle.svg
     - assets/svg/arrow-right.svg
+    - assets/svg/arrow-back.svg
     - assets/svg/send.svg
     - assets/svg/settings.svg
     - assets/svg/receive.svg
