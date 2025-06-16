@@ -230,9 +230,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
   Future<void> _initializeAddressList() async {
     if (_isInitializing) return;
 
-    setState(() {
-      _isInitializing = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isInitializing = true;
+      });
+    }
 
     final showOnlyUnusedAddresses = context.read<PreferenceProvider>().showOnlyUnusedAddresses;
 
@@ -244,17 +246,19 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
     await viewModel.initializeAddressList(kInitialAddressCount, showOnlyUnusedAddresses);
 
-    setState(() {
-      _isInitializing = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isInitializing = false;
+      });
+    }
   }
 
   Future<void> scrollToTop() async {
     _isScrollingToTop = true;
-
-    await _controller.animateTo(0,
-        duration: const Duration(milliseconds: 500), curve: Curves.decelerate);
-
+    if (_controller.hasClients) {
+      await _controller.animateTo(0,
+          duration: const Duration(milliseconds: 500), curve: Curves.decelerate);
+    }
     _isScrollingToTop = false;
   }
 
