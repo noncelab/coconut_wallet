@@ -458,6 +458,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
       return;
     }
 
+    // 현재 탭 상태 저장 (로딩 중 탭 변경 시 데이터 추가 방지)
+    final wasReceivingSelected = isReceivingSelected;
+
     setState(() {
       _isLoadMoreRunning = true;
     });
@@ -474,8 +477,8 @@ class _AddressListScreenState extends State<AddressListScreen> {
         context.read<PreferenceProvider>().showOnlyUnusedAddresses,
       );
 
-      // UI 업데이트
-      if (mounted) {
+      // UI 업데이트 - 탭 상태가 변경되지 않았을 때만 데이터 추가
+      if (mounted && wasReceivingSelected == isReceivingSelected) {
         setState(() {
           if (isReceivingSelected) {
             viewModel.receivingAddressList.addAll(newAddresses);
@@ -492,7 +495,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
         setState(() {
           _isLoadMoreRunning = false;
         });
-        _addAddressesWithGapLimit(newAddresses, !isReceivingSelected);
+        // 탭 상태가 변경되지 않았을 때만 백그라운드 저장
+        if (wasReceivingSelected == isReceivingSelected) {
+          _addAddressesWithGapLimit(newAddresses, !isReceivingSelected);
+        }
       }
     }
   }
