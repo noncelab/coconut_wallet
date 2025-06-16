@@ -612,6 +612,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               child: SelectableUtxoItemCard(
                 key: ValueKey(utxo.transactionHash),
                 utxo: utxo,
+                isSelectable:
+                    viewModel.recommendedFeeFetchStatus != RecommendedFeeFetchStatus.fetching,
                 isSelected: viewModel.selectedUtxoList.contains(utxo),
                 utxoTags: viewModel.utxoTagMap[utxo.utxoId],
                 onSelected: _toggleSelection,

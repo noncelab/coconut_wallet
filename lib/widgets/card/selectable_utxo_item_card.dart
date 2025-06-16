@@ -11,12 +11,14 @@ import 'package:flutter_svg/svg.dart';
 
 class SelectableUtxoItemCard extends StatefulWidget {
   final UtxoState utxo;
+  final bool isSelectable;
   final bool isSelected;
   final List<UtxoTag>? utxoTags;
   final Function(UtxoState) onSelected;
 
   const SelectableUtxoItemCard({
     super.key,
+    required this.isSelectable,
     required this.utxo,
     required this.isSelected,
     required this.onSelected,
@@ -42,16 +44,19 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (details) {
+        if (!widget.isSelectable) return;
         setState(() {
           _isPressing = true;
         });
       },
       onTapCancel: () {
+        if (!widget.isSelectable) return;
         setState(() {
           _isPressing = false;
         });
       },
       onTap: () {
+        if (!widget.isSelectable) return;
         setState(() {
           _isPressing = false;
         });
