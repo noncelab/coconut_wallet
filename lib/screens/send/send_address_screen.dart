@@ -121,14 +121,14 @@ class _SendAddressScreenState extends State<SendAddressScreen> with WidgetsBindi
     _viewModel.clearSendInfoProvider();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _viewModel.loadDataFromClipboardIfValid();
+      _viewModel.loadDataFromClipboard();
     });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _viewModel.loadDataFromClipboardIfValid();
+      _viewModel.loadDataFromClipboard();
     }
   }
 

@@ -25,7 +25,7 @@ class SendAddressViewModel extends ChangeNotifier {
     _sendInfoProvider.clear();
   }
 
-  void loadDataFromClipboardIfValid() async {
+  void loadDataFromClipboard() async {
     ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final clipboardText = data?.text ?? '';
     if (clipboardText.isNotEmpty) {
