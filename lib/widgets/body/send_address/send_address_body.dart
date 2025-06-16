@@ -83,7 +83,7 @@ class SendAddressBody extends StatelessWidget {
                             children: [
                                 TextSpan(
                                     text:
-                                        '${address?.substring(0, 10)}...${address?.substring(35)}',
+                                        '${address!.substring(0, 10)}...${address!.substring(address!.length - 10)}',
                                     style: TextStyle(
                                         fontFamily: CustomFonts.number.getFontFamily,
                                         fontWeight: FontWeight.bold)),
