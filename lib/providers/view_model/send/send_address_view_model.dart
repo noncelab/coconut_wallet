@@ -32,10 +32,10 @@ class SendAddressViewModel extends ChangeNotifier {
       try {
         await validateAddress(clipboardText);
         _address = clipboardText;
-        notifyListeners();
       } catch (_) {
-        // ignore
+        _address = null;
       }
+      notifyListeners();
     }
   }
 
