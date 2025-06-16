@@ -74,7 +74,10 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  coconut_design_system: ^0.8.0
+  coconut_design_system: # ^0.8.0
+      git:
+        url: https://github.com/noncelab/coconut_design_system.git
+        ref: fix/coconut-text-field-placeholder
   coconut_lib: ^0.10.3
   realm: ^20.0.0
   cryptography: ^2.7.0

@@ -39,7 +39,6 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   void initState() {
     super.initState();
     _addressController.addListener(_onAddressChanged);
-    _addressFocusNode.requestFocus();
     viewModel =
         AddressSearchViewModel(Provider.of<WalletProvider>(context, listen: false), widget.id);
   }
