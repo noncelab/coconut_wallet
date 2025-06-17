@@ -295,11 +295,11 @@ class _MemoTagItemState extends State<_MemoTagItem> {
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(Sizes.size14),
-              border: Border.all(width: 1, color: CoconutColors.gray700),
+              border: Border.all(width: 1, color: CoconutColors.gray600),
             ),
             child: Text(
               widget.text,
-              style: CoconutTypography.caption_10.setColor(CoconutColors.white),
+              style: CoconutTypography.caption_10.setColor(CoconutColors.gray300),
             ),
           ),
         ),
