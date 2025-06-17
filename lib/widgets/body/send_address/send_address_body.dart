@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
@@ -83,9 +84,7 @@ class SendAddressBody extends StatelessWidget {
                             style: Styles.label.merge(const TextStyle(color: MyColors.darkgrey)),
                             children: [
                                 TextSpan(
-                                    text: address!.length > 16
-                                        ? '${address!.substring(0, 8)}...${address!.substring(address!.length - 8)}'
-                                        : address!,
+                                    text: shortenAddress(address!),
                                     style: TextStyle(
                                         fontFamily: CustomFonts.number.getFontFamily,
                                         fontWeight: FontWeight.bold)),
