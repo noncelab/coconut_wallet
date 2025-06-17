@@ -42,7 +42,8 @@ class SendAddressBody extends StatelessWidget {
       Positioned(
           left: 0,
           right: 0,
-          top: -110, // Adjust this value to move the QRView up or down
+          top: -110,
+          // Adjust this value to move the QRView up or down
           height: MediaQuery.of(context).size.height +
               MediaQuery.of(context).padding.top +
               MediaQuery.of(context).padding.bottom,
@@ -82,8 +83,9 @@ class SendAddressBody extends StatelessWidget {
                             style: Styles.label.merge(const TextStyle(color: MyColors.darkgrey)),
                             children: [
                                 TextSpan(
-                                    text:
-                                        '${address!.substring(0, 10)}...${address!.substring(address!.length - 10)}',
+                                    text: address!.length > 20
+                                        ? '${address!.substring(0, 10)}...${address!.substring(address!.length - 10)}'
+                                        : address!,
                                     style: TextStyle(
                                         fontFamily: CustomFonts.number.getFontFamily,
                                         fontWeight: FontWeight.bold)),
