@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
@@ -32,8 +34,6 @@ import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:lottie/lottie.dart';
 
-enum Unit { btc, sats }
-
 class WalletDetailScreen extends StatefulWidget {
   final int id;
 
@@ -45,8 +45,7 @@ class WalletDetailScreen extends StatefulWidget {
 
 class _WalletDetailScreenState extends State<WalletDetailScreen> {
   bool _isPullToRefreshing = false;
-  Unit _currentUnit = Unit.btc;
-
+  late BitcoinUnit _currentUnit;
   late WalletDetailViewModel _viewModel;
 
   @override
@@ -96,7 +95,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       ),
                       _buildLoadingWidget(),
                       _buildTxListLabel(),
-                      TransactionList(currentUnit: _currentUnit, widget: widget),
+                      TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
                     ],
                   ),
                 ),
@@ -220,15 +219,28 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   Widget _buildTxListLabel() {
     return SliverToBoxAdapter(
-        child: Padding(
+        child: Selector<WalletDetailViewModel, int>(
+      selector: (_, viewModel) => viewModel.txList.length,
+      builder: (_, txCount, __) {
+        return Padding(
             key: _txListLabelWidgetKey,
             padding: const EdgeInsets.only(
               left: 16.0,
               right: 16.0,
               bottom: 12.0,
             ),
-            child: Text(t.tx_list,
-                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white))));
+            child: Row(
+              children: [
+                Text(t.tx_list,
+                    style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+                CoconutLayout.spacing_100w,
+                if (txCount > 0)
+                  Text(t.total_item_count(count: txCount),
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+              ],
+            ));
+      },
+    ));
   }
 
   // 스크롤 시 sticky header 렌더링을 위한 상태 변수들
@@ -254,7 +266,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   @override
   void initState() {
     super.initState();
-
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = WalletDetailViewModel(
         widget.id,
         Provider.of<WalletProvider>(context, listen: false),
@@ -301,10 +313,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         if (_scrollController.offset > _topPadding) {
           if (!_isPullToRefreshing) {
             _stickyHeaderVisibleNotifier.value = true;
-            setState(() {
-              _stickyHeaderRenderBox ??=
-                  _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
-            });
+            _stickyHeaderRenderBox ??=
+                _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
           }
         } else {
           if (!_isPullToRefreshing) {
@@ -398,7 +408,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == Unit.btc ? Unit.sats : Unit.btc;
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
   }
 
@@ -452,12 +462,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 class TransactionList extends StatefulWidget {
   const TransactionList({
     super.key,
-    required Unit currentUnit,
-    required this.widget,
+    required BitcoinUnit currentUnit,
+    required this.walldtId,
   }) : _currentUnit = currentUnit;
 
-  final Unit _currentUnit;
-  final WalletDetailScreen widget;
+  final BitcoinUnit _currentUnit;
+  final int walldtId;
 
   @override
   State<TransactionList> createState() => _TransactionListState();
@@ -563,13 +573,13 @@ class _TransactionListState extends State<TransactionList> {
               key: Key(tx.transactionHash),
               tx: tx,
               currentUnit: widget._currentUnit,
-              id: widget.widget.id,
+              id: widget.walldtId,
               onPressed: () {
                 Navigator.pushNamed(
                   context,
                   '/transaction-detail',
                   arguments: {
-                    'id': widget.widget.id,
+                    'id': widget.walldtId,
                     'txHash': tx.transactionHash,
                   },
                 );
@@ -595,10 +605,10 @@ class _TransactionListState extends State<TransactionList> {
             key: Key(tx.transactionHash),
             tx: tx,
             currentUnit: widget._currentUnit,
-            id: widget.widget.id,
+            id: widget.walldtId,
             onPressed: () {
               Navigator.pushNamed(context, '/transaction-detail',
-                  arguments: {'id': widget.widget.id, 'txHash': tx.transactionHash});
+                  arguments: {'id': widget.walldtId, 'txHash': tx.transactionHash});
             },
           ),
         ),

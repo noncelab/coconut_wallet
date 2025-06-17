@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
@@ -22,6 +23,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   final String selectedOption;
   final Function onTapDropdown;
   final Function removePopup;
+  final BitcoinUnit currentUnit;
   const UtxoListStickyHeader({
     super.key,
     required this.stickyHeaderGlobalKey,
@@ -35,6 +37,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.selectedOption,
     required this.onTapDropdown,
     required this.removePopup,
+    required this.currentUnit,
   });
 
   @override
@@ -87,17 +90,17 @@ class UtxoListStickyHeader extends StatelessWidget {
                             AnimatedBalance(
                               prevValue: animatedBalanceData.previous,
                               value: animatedBalanceData.current,
-                              isBtcUnit: true,
+                              isBtcUnit: currentUnit == BitcoinUnit.btc,
                               textStyle: CoconutTypography.heading4_18_NumberBold,
                             ),
                             CoconutLayout.spacing_100w,
                             Text(
-                              t.btc,
+                              currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
                               style: CoconutTypography.body2_14_Number,
                             ),
                             CoconutLayout.spacing_100w,
                             Text(
-                              t.total_utxo_count(count: totalCount),
+                              t.total_item_count(count: totalCount),
                               style: CoconutTypography.body3_12.setColor(
                                 CoconutColors.gray400,
                               ),

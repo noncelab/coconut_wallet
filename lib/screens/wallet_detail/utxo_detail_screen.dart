@@ -1,9 +1,11 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
@@ -51,11 +53,24 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   bool _isUtxoTooltipVisible = false;
   late UtxoState _utxoState;
   late WalletProvider _walletProvider;
+  late BitcoinUnit _currentUnit;
 
   @override
   void initState() {
     super.initState();
     _utxoState = widget.utxo;
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final utxoTooltipIconRenderBox =
+          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
+
+      if (utxoTooltipIconRenderBox != null) {
+        setState(() {
+          _utxoTooltipIconPosition = utxoTooltipIconRenderBox.localToGlobal(Offset.zero);
+          _utxoTooltipIconSize = utxoTooltipIconRenderBox.size;
+        });
+      }
+    });
   }
 
   @override
@@ -90,6 +105,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         _utxoState = updatedUtxo;
       });
     }
+  }
+
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+    });
   }
 
   @override
@@ -199,6 +220,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                           return address == widget.utxo.to;
                         },
                         isForTransaction: false,
+                        currentUnit: _currentUnit,
                       ),
                       _buildAddress(),
                       _buildTxMemo(
@@ -290,18 +312,24 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   // TODO: 공통 위젯으로 빼서 여러 화면에서 재사용하기
   // wallet-detail, tx-detail, utxo-list, utxo-detail
   Widget _buildAmount() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2.0),
-      child: Center(
-          child: RichText(
-              text: TextSpan(
-                  text: satoshiToBitcoinString(widget.utxo.amount),
-                  style: CoconutTypography.heading2_28_NumberBold,
-                  children: <InlineSpan>[
-            WidgetSpan(
-                alignment: PlaceholderAlignment.middle,
-                child: Text(" ${t.btc}", style: CoconutTypography.heading3_21_Number))
-          ]))),
+    return GestureDetector(
+      onTap: _toggleUnit,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 2.0),
+        child: Center(
+            child: RichText(
+                text: TextSpan(
+                    text: _currentUnit == BitcoinUnit.btc
+                        ? satoshiToBitcoinString(widget.utxo.amount)
+                        : addCommasToIntegerPart(widget.utxo.amount.toDouble()),
+                    style: CoconutTypography.heading2_28_NumberBold,
+                    children: <InlineSpan>[
+              WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: Text(" ${_currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                      style: CoconutTypography.heading3_21_Number))
+            ]))),
+      ),
     );
   }
 
@@ -309,8 +337,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
       child: Center(
-          child: FiatPrice(
-        satoshiAmount: widget.utxo.amount,
+          child: GestureDetector(
+        onTap: _toggleUnit,
+        child: FiatPrice(
+          satoshiAmount: widget.utxo.amount,
+        ),
       )),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -15,6 +16,7 @@ class SelectableUtxoItemCard extends StatefulWidget {
   final bool isSelected;
   final List<UtxoTag>? utxoTags;
   final Function(UtxoState) onSelected;
+  final BitcoinUnit currentUnit;
 
   const SelectableUtxoItemCard({
     super.key,
@@ -22,6 +24,7 @@ class SelectableUtxoItemCard extends StatefulWidget {
     required this.utxo,
     required this.isSelected,
     required this.onSelected,
+    required this.currentUnit,
     this.utxoTags,
   });
 
@@ -90,7 +93,9 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        satoshiToBitcoinString(widget.utxo.amount),
+                        widget.currentUnit == BitcoinUnit.btc
+                            ? satoshiToBitcoinString(widget.utxo.amount)
+                            : addCommasToIntegerPart(widget.utxo.amount.toDouble()),
                         style: Styles.h2Number,
                       ),
                       CoconutLayout.spacing_100w,

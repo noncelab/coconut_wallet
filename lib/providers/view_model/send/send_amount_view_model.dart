@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -15,10 +16,12 @@ class SendAmountViewModel extends ChangeNotifier {
   late int _incomingBalance;
   late String _input;
   late bool _isNextButtonEnabled;
+  late BitcoinUnit _currentUnit;
   int? _errorIndex;
   bool _isUtxoUpdating = false;
 
-  SendAmountViewModel(this._sendInfoProvider, this._walletProvider, this._isNetworkOn) {
+  SendAmountViewModel(
+      this._sendInfoProvider, this._walletProvider, this._isNetworkOn, this._currentUnit) {
     _initBalances(); // _confirmedBalance, _incomingBalance
     _input = '';
     _isNextButtonEnabled = false;
@@ -27,11 +30,41 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   int get confirmedBalance => _confirmedBalance;
+
   int? get errorIndex => _errorIndex;
-  String get input => _input;
+
+  String get input => addThousandsSeparator(_input);
+
   bool get isNetworkOn => _isNetworkOn == true;
+
   bool get isNextButtonEnabled => _isNextButtonEnabled;
+
   int get incomingBalance => _incomingBalance;
+
+  BitcoinUnit get currentUnit => _currentUnit;
+
+  bool get isBtcUnit => _currentUnit == BitcoinUnit.btc;
+
+  bool get isSatsUnit => !isBtcUnit;
+
+  num get dustLimitDenominator => (isBtcUnit ? 1e8 : 1);
+
+  void toggleUnit() {
+    _currentUnit = isBtcUnit ? BitcoinUnit.sats : BitcoinUnit.btc;
+    if (_input.isNotEmpty && _input != '0') {
+      _input = (isBtcUnit
+              ? UnitUtil.satoshiToBitcoin(int.parse(_input))
+              : UnitUtil.bitcoinToSatoshi(double.parse(_input)))
+          .toString();
+
+      // sats to btc 변환에서 지수로 표현되는 경우에는 다시 변환한다.
+      if (_input.contains('e')) {
+        _input = double.parse(_input).toStringAsFixed(8);
+      }
+    }
+
+    notifyListeners();
+  }
 
   void onBeforeGoNextScreen() {
     _setAmountWithInput();
@@ -43,6 +76,7 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   void onKeyTap(String newInput) {
+    if (newInput == ' ') return;
     if (newInput == '<') {
       if (_input.isNotEmpty) {
         _input = _input.substring(0, _input.length - 1);
@@ -79,10 +113,10 @@ class SendAmountViewModel extends ChangeNotifier {
     }
 
     if (_input.isNotEmpty && double.parse(_input) > 0) {
-      if (double.parse(_input) > confirmedBalance / 1e8) {
+      if (double.parse(_input) > confirmedBalance / dustLimitDenominator) {
         _errorIndex = 0;
         _isNextButtonEnabled = false;
-      } else if (double.parse(_input) <= dustLimit / 1e8) {
+      } else if (double.parse(_input) <= dustLimit / dustLimitDenominator) {
         _errorIndex = 1;
         _isNextButtonEnabled = false;
       } else {
@@ -98,7 +132,9 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   void _setAmountWithInput() {
-    _sendInfoProvider.setAmount(double.parse(_input));
+    double bitcoin =
+        isBtcUnit ? double.parse(_input) : UnitUtil.satoshiToBitcoin(int.parse(_input));
+    _sendInfoProvider.setAmount(bitcoin);
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
@@ -107,9 +143,9 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   void setMaxAmount() {
-    _input = UnitUtil.satoshiToBitcoinString(_confirmedBalance);
-
-    if (double.parse(_input) <= dustLimit / 1e8) {
+    _input =
+        (isBtcUnit ? UnitUtil.satoshiToBitcoin(_confirmedBalance) : _confirmedBalance).toString();
+    if (double.parse(_input) <= dustLimit / dustLimitDenominator) {
       _errorIndex = 1;
       _isNextButtonEnabled = false;
       return;

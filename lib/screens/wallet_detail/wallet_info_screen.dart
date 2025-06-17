@@ -51,197 +51,213 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         builder: (_, viewModel, child) {
           return Stack(
             children: [
-              Scaffold(
-                backgroundColor: CoconutColors.black,
-                appBar: CoconutAppBar.build(
-                    title: t.wallet_info_screen.title(name: viewModel.walletName),
-                    context: context),
-                body: SafeArea(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
-                          child: WalletInfoItemCard(
-                            id: widget.id,
-                            walletItem: viewModel.walletItemBase,
-                            onTooltipClicked: () {
-                              _removeTooltip();
+              GestureDetector(
+                onTapDown: (details) => _removeTooltip(),
+                child: Scaffold(
+                  backgroundColor: CoconutColors.black,
+                  appBar: CoconutAppBar.build(
+                      title: t.wallet_info_screen.title(name: viewModel.walletName),
+                      context: context),
+                  body: SafeArea(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Padding(
+                            padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
+                            child: WalletInfoItemCard(
+                              id: widget.id,
+                              walletItem: viewModel.walletItemBase,
+                              onTooltipClicked: () {
+                                // 이미 툴팁이 보이고 있는 상태라면 토글
+                                if (_tooltipRemainingTime > 0) {
+                                  _removeTooltip();
 
-                              setState(() {
-                                _tooltipRemainingTime = kTooltipDuration;
-                              });
+                                  return;
+                                }
+                                _removeTooltip();
 
-                              _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-                                setState(() {
-                                  if (_tooltipRemainingTime > 0) {
-                                    _tooltipRemainingTime--;
-                                  } else {
-                                    _removeTooltip();
-                                    timer.cancel();
-                                  }
+                                Future.delayed(const Duration(milliseconds: 50), () {
+                                  setState(() {
+                                    _tooltipRemainingTime = kTooltipDuration;
+                                  });
+
+                                  _tooltipTimer?.cancel();
+                                  _tooltipTimer =
+                                      Timer.periodic(const Duration(seconds: 1), (timer) {
+                                    setState(() {
+                                      if (_tooltipRemainingTime > 0) {
+                                        _tooltipRemainingTime--;
+                                      } else {
+                                        _removeTooltip();
+                                        timer.cancel();
+                                      }
+                                    });
+                                  });
                                 });
-                              });
-                            },
-                            tooltipKey: _walletTooltipKey,
-                            onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
-                          ),
-                        ),
-                        if (widget.isMultisig) ...{
-                          Container(
-                            margin: const EdgeInsets.only(top: 8, bottom: 32),
-                            child: ListView.separated(
-                              physics: const NeverScrollableScrollPhysics(),
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: viewModel.multisigTotalSignerCount,
-                              separatorBuilder: (context, index) => const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                return MultisigSignerCard(
-                                    index: index,
-                                    signer: viewModel.getSigner(index),
-                                    masterFingerprint: viewModel.getSignerMasterFingerprint(index));
                               },
+                              tooltipKey: _walletTooltipKey,
+                              onNameChanged: (updatedName) =>
+                                  viewModel.updateWalletName(updatedName),
                             ),
                           ),
-                        } else ...{
-                          CoconutLayout.spacing_800h
-                        },
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
-                            color: CoconutColors.gray800,
-                          ),
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Column(
-                            children: [
-                              InformationItemCard(
-                                label: t.view_all_addresses,
-                                showIcon: true,
-                                onPressed: () {
-                                  _removeTooltip();
-                                  Navigator.pushNamed(context, '/address-list',
-                                      arguments: {'id': widget.id});
+                          if (widget.isMultisig) ...{
+                            Container(
+                              margin: const EdgeInsets.only(top: 8, bottom: 32),
+                              child: ListView.separated(
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: viewModel.multisigTotalSignerCount,
+                                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                                itemBuilder: (context, index) {
+                                  return MultisigSignerCard(
+                                      index: index,
+                                      signer: viewModel.getSigner(index),
+                                      masterFingerprint:
+                                          viewModel.getSignerMasterFingerprint(index));
                                 },
                               ),
-                              Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
-                              if (!widget.isMultisig) ...{
+                            ),
+                          } else ...{
+                            CoconutLayout.spacing_800h
+                          },
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
+                              color: CoconutColors.gray800,
+                            ),
+                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Column(
+                              children: [
                                 InformationItemCard(
-                                  label: t.wallet_info_screen.view_xpub,
+                                  label: t.view_all_addresses,
                                   showIcon: true,
-                                  onPressed: () async {
+                                  onPressed: () {
                                     _removeTooltip();
-                                    if (viewModel.isSetPin) {
-                                      await CommonBottomSheets.showBottomSheet_90(
-                                        context: context,
-                                        child: CustomLoadingOverlay(
-                                          child: PinCheckScreen(
-                                            onComplete: () {
-                                              CommonBottomSheets.showBottomSheet_90(
-                                                context: context,
-                                                child: QrcodeBottomSheet(
-                                                    qrData: viewModel.extendedPublicKey,
-                                                    title: t.extended_public_key),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      );
-                                    } else {
-                                      CommonBottomSheets.showBottomSheet_90(
-                                        context: context,
-                                        child: QrcodeBottomSheet(
-                                          qrData: viewModel.extendedPublicKey,
-                                          title: t.extended_public_key,
-                                        ),
-                                      );
-                                    }
+                                    Navigator.pushNamed(context, '/address-list',
+                                        arguments: {'id': widget.id});
                                   },
                                 ),
                                 Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
-                              },
-                              InformationItemCard(
-                                label: t.tag_manage_label,
-                                showIcon: true,
-                                onPressed: () {
-                                  Navigator.pushNamed(context, '/utxo-tag',
-                                      arguments: {'id': widget.id});
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        Center(
-                          child: Container(
-                            width: 65,
-                            height: 1,
-                            margin: const EdgeInsets.symmetric(vertical: 20),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(1),
-                              color: CoconutColors.white,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          decoration: defaultBoxDecoration,
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          margin: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children: [
-                              InformationItemCard(
-                                showIcon: true,
-                                label: t.delete_label,
-                                rightIcon: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                      color: CoconutColors.white.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(10)),
-                                  child: SvgPicture.asset(
-                                    'assets/svg/trash.svg',
-                                    width: 16,
-                                    colorFilter: const ColorFilter.mode(
-                                      CoconutColors.hotPink,
-                                      BlendMode.srcIn,
-                                    ),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  _removeTooltip();
-                                  CustomDialogs.showCustomAlertDialog(
-                                    context,
-                                    title: t.alert.wallet_delete.confirm_delete,
-                                    message: t.alert.wallet_delete.confirm_delete_description,
-                                    onConfirm: () async {
+                                if (!widget.isMultisig) ...{
+                                  InformationItemCard(
+                                    label: t.wallet_info_screen.view_xpub,
+                                    showIcon: true,
+                                    onPressed: () async {
+                                      _removeTooltip();
                                       if (viewModel.isSetPin) {
                                         await CommonBottomSheets.showBottomSheet_90(
                                           context: context,
                                           child: CustomLoadingOverlay(
                                             child: PinCheckScreen(
-                                              onComplete: () async {
-                                                await _deleteWalletAndGoToWalletList(
-                                                    context, viewModel);
+                                              onComplete: () {
+                                                CommonBottomSheets.showBottomSheet_90(
+                                                  context: context,
+                                                  child: QrcodeBottomSheet(
+                                                      qrData: viewModel.extendedPublicKey,
+                                                      title: t.extended_public_key),
+                                                );
                                               },
                                             ),
                                           ),
                                         );
                                       } else {
-                                        await _deleteWalletAndGoToWalletList(context, viewModel);
+                                        CommonBottomSheets.showBottomSheet_90(
+                                          context: context,
+                                          child: QrcodeBottomSheet(
+                                            qrData: viewModel.extendedPublicKey,
+                                            title: t.extended_public_key,
+                                          ),
+                                        );
                                       }
                                     },
-                                    onCancel: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    confirmButtonText: t.delete,
-                                    confirmButtonColor: CoconutColors.hotPink,
-                                  );
+                                  ),
+                                  Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
                                 },
-                              ),
-                            ],
+                                InformationItemCard(
+                                  label: t.tag_manage_label,
+                                  showIcon: true,
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    Navigator.pushNamed(context, '/utxo-tag',
+                                        arguments: {'id': widget.id});
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                          Center(
+                            child: Container(
+                              width: 65,
+                              height: 1,
+                              margin: const EdgeInsets.symmetric(vertical: 20),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(1),
+                                color: CoconutColors.white,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            decoration: defaultBoxDecoration,
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              children: [
+                                InformationItemCard(
+                                  showIcon: true,
+                                  label: t.delete_label,
+                                  rightIcon: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                        color: CoconutColors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(10)),
+                                    child: SvgPicture.asset(
+                                      'assets/svg/trash.svg',
+                                      width: 16,
+                                      colorFilter: const ColorFilter.mode(
+                                        CoconutColors.hotPink,
+                                        BlendMode.srcIn,
+                                      ),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    CustomDialogs.showCustomAlertDialog(
+                                      context,
+                                      title: t.alert.wallet_delete.confirm_delete,
+                                      message: t.alert.wallet_delete.confirm_delete_description,
+                                      onConfirm: () async {
+                                        if (viewModel.isSetPin) {
+                                          await CommonBottomSheets.showBottomSheet_90(
+                                            context: context,
+                                            child: CustomLoadingOverlay(
+                                              child: PinCheckScreen(
+                                                onComplete: () async {
+                                                  await _deleteWalletAndGoToWalletList(
+                                                      context, viewModel);
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                        } else {
+                                          await _deleteWalletAndGoToWalletList(context, viewModel);
+                                        }
+                                      },
+                                      onCancel: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      confirmButtonText: t.delete,
+                                      confirmButtonColor: CoconutColors.hotPink,
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -323,6 +339,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   _removeTooltip() {
+    if (_tooltipRemainingTime == 0) return;
     setState(() {
       _tooltipRemainingTime = 0;
     });

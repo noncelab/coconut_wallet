@@ -55,7 +55,7 @@ class UtxoRepository extends BaseRepository {
   /// walletId 로 조회된 태그 목록에서 utxoId($txHash$Index)를 포함하고 있는 태그 목록 조회
   Result<List<UtxoTag>> getUtxoTagsByTxHash(int walletId, String utxoId) {
     return handleRealm<List<UtxoTag>>(() {
-      final tags = realm.all<RealmUtxoTag>().query("walletId == '$walletId' SORT(createAt DESC)");
+      final tags = realm.query<RealmUtxoTag>("walletId == '$walletId' SORT(createAt DESC)");
 
       return tags
           .where((tag) => tag.utxoIdList.contains(utxoId))

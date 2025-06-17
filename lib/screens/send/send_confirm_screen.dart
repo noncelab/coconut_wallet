@@ -1,10 +1,11 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -22,6 +23,25 @@ class SendConfirmScreen extends StatefulWidget {
 
 class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late SendConfirmViewModel _viewModel;
+  late BitcoinUnit _currentUnit;
+
+  String get confirmText => _currentUnit == BitcoinUnit.btc
+      ? satoshiToBitcoinString(UnitUtil.bitcoinToSatoshi(_viewModel.amount))
+      : addCommasToIntegerPart(UnitUtil.bitcoinToSatoshi(_viewModel.amount).toDouble());
+
+  String get estimatedFeeText => _viewModel.estimatedFee != 0
+      ? _currentUnit == BitcoinUnit.btc
+          ? satoshiToBitcoinString(_viewModel.estimatedFee)
+          : addCommasToIntegerPart(_viewModel.estimatedFee.toDouble())
+      : t.calculation_failed;
+
+  String get totalCostText => _viewModel.estimatedFee != 0
+      ? _currentUnit == BitcoinUnit.btc
+          ? satoshiToBitcoinString(_viewModel.totalUsedAmount)
+          : addCommasToIntegerPart(_viewModel.totalUsedAmount.toDouble())
+      : t.calculation_failed;
+
+  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
   @override
   Widget build(BuildContext context) {
@@ -60,21 +80,25 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
               body: SafeArea(
                 child: SingleChildScrollView(
                   child: Column(children: [
-                    Container(
-                        margin: const EdgeInsets.only(top: 40),
-                        child: Center(
-                          child: Text.rich(
-                            TextSpan(
-                                text: satoshiToBitcoinString(
-                                    UnitUtil.bitcoinToSatoshi(viewModel.amount)),
-                                children: <TextSpan>[
-                                  TextSpan(text: ' ${t.btc}', style: Styles.unit)
-                                ]),
-                            style: Styles.balance1,
+                    GestureDetector(
+                      onTap: _toggleUnit,
+                      child: Column(
+                        children: [
+                          Container(
+                              margin: const EdgeInsets.only(top: 40),
+                              child: Center(
+                                child: Text.rich(
+                                  TextSpan(text: confirmText, children: <TextSpan>[
+                                    TextSpan(text: ' $unitText', style: Styles.unit)
+                                  ]),
+                                  style: Styles.balance1,
+                                ),
+                              )),
+                          FiatPrice(
+                            satoshiAmount: UnitUtil.bitcoinToSatoshi(viewModel.amount),
                           ),
-                        )),
-                    FiatPrice(
-                      satoshiAmount: UnitUtil.bitcoinToSatoshi(viewModel.amount),
+                        ],
+                      ),
                     ),
                     CoconutLayout.spacing_1000h,
                     Padding(
@@ -97,20 +121,12 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                   const Divider(color: MyColors.transparentWhite_12, height: 1),
                                   InformationItemCard(
                                       label: t.estimated_fee,
-                                      value: [
-                                        viewModel.estimatedFee != 0
-                                            ? '${satoshiToBitcoinString(viewModel.estimatedFee)} ${t.btc}'
-                                            : t.calculation_failed
-                                      ],
+                                      value: ["$estimatedFeeText $unitText"],
                                       isNumber: true),
                                   const Divider(color: MyColors.transparentWhite_12, height: 1),
                                   InformationItemCard(
                                       label: t.total_cost,
-                                      value: [
-                                        viewModel.estimatedFee != 0
-                                            ? '${satoshiToBitcoinString(viewModel.totalUsedAmount)} BTC'
-                                            : t.calculation_failed
-                                      ],
+                                      value: ["$totalCostText $unitText"],
                                       isNumber: true),
                                 ],
                               ))),
@@ -126,8 +142,14 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   @override
   void initState() {
     super.initState();
-
+    _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = SendConfirmViewModel(Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false));
+  }
+
+  void _toggleUnit() {
+    setState(() {
+      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+    });
   }
 }

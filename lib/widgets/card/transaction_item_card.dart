@@ -1,8 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -12,7 +12,7 @@ import 'package:flutter_svg/svg.dart';
 
 class TransactionItemCard extends StatelessWidget {
   final TransactionRecord tx;
-  final Unit currentUnit;
+  final BitcoinUnit currentUnit;
   final int id;
   final Function onPressed;
 
@@ -66,7 +66,7 @@ class TransactionItemCard extends StatelessWidget {
   }
 
   Widget _buildAmount() {
-    final String amountString = currentUnit == Unit.btc
+    final String amountString = currentUnit == BitcoinUnit.btc
         ? satoshiToBitcoinString(tx.amount)
         : addCommasToIntegerPart(tx.amount.toDouble());
     final bool isReceived =

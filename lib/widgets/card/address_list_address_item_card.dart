@@ -1,4 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,13 +12,23 @@ class AddressItemCard extends StatelessWidget {
   final String derivationPath;
   final bool isUsed;
   final int? balanceInSats;
+  final BitcoinUnit currentUnit;
   const AddressItemCard(
       {super.key,
       required this.onPressed,
       required this.address,
       required this.derivationPath,
       required this.isUsed,
+      required this.currentUnit,
       this.balanceInSats});
+
+  String get balanceText => balanceInSats != null
+      ? currentUnit == BitcoinUnit.btc
+          ? satoshiToBitcoinString(balanceInSats!)
+          : addCommasToIntegerPart(balanceInSats!.toDouble())
+      : '';
+
+  String get unitText => currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +62,7 @@ class AddressItemCard extends StatelessWidget {
                   style: Styles.body1Number,
                 ),
                 const SizedBox(height: 4),
-                Text(balanceInSats == null ? '' : '${satoshiToBitcoinString(balanceInSats!)} BTC',
+                Text("$balanceText $unitText",
                     style: Styles.label.merge(TextStyle(
                         fontFamily: CustomFonts.number.getFontFamily,
                         fontWeight: FontWeight.normal,
@@ -62,7 +74,7 @@ class AddressItemCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12), color: MyColors.transparentWhite_15),
-                child: Text(isUsed ? '사용됨' : '사용 전',
+                child: Text(isUsed ? t.status_used : t.status_unused,
                     style: TextStyle(
                         color: isUsed ? CoconutColors.primary : MyColors.transparentWhite_70,
                         fontSize: 10,

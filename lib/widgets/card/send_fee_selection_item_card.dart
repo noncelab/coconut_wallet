@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
@@ -11,6 +12,7 @@ class FeeSelectionItemCard extends StatelessWidget {
   final bool isSelected;
   final bool isLoading;
   final FeeInfoWithLevel feeInfo;
+  final BitcoinUnit currentUnit;
 
   const FeeSelectionItemCard({
     super.key,
@@ -18,6 +20,7 @@ class FeeSelectionItemCard extends StatelessWidget {
     this.isLoading = false,
     this.isSelected = false,
     required this.feeInfo,
+    required this.currentUnit,
   });
 
   @override
@@ -60,7 +63,7 @@ class FeeSelectionItemCard extends StatelessWidget {
                           if (feeInfo.satsPerVb != null)
                             TextSpan(
                               text:
-                                  " (${feeInfo.satsPerVb} ${feeInfo.satsPerVb == 1 ? 'sat' : 'sats'}/vb)",
+                                  " (${feeInfo.satsPerVb?.toInt()} ${feeInfo.satsPerVb == 1 ? 'sat' : 'sats'}/vb)",
                             ),
                         ],
                       ),
@@ -80,10 +83,12 @@ class FeeSelectionItemCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          satoshiToBitcoinString(feeInfo.estimatedFee!),
+                          currentUnit == BitcoinUnit.btc
+                              ? satoshiToBitcoinString(feeInfo.estimatedFee!)
+                              : addCommasToIntegerPart(feeInfo.estimatedFee!.toDouble()),
                           style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                         ),
-                        Text(' BTC',
+                        Text(" ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
                             style:
                                 CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
                       ],

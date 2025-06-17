@@ -70,7 +70,7 @@ class UtxoTagCrudScreen extends StatelessWidget {
         CoconutLayout.spacing_900h,
         const SizedBox(height: 56),
         Text(
-          t.utxo_tag_screen.no_such_tag,
+          t.utxo_tag_screen.onboarding_title,
           style: CoconutTypography.body1_16_Bold,
         ),
         CoconutLayout.spacing_200h,
@@ -83,32 +83,35 @@ class UtxoTagCrudScreen extends StatelessWidget {
   }
 
   Widget _buildEditButtons(BuildContext context, UtxoTagCrudViewModel model) {
-    debugPrint('${model.selectedUtxoTag == null}');
-    if (model.selectedUtxoTag == null) return CoconutLayout.spacing_600h;
-    return Column(children: [
-      CoconutLayout.spacing_300h,
-      Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          CustomUnderlinedButton(
-            text: t.edit,
-            onTap: () {
-              _handleEditTagPressed(context, model);
-            },
-            padding: const EdgeInsets.all(0),
-          ),
-          CoconutLayout.spacing_300w,
-          CustomUnderlinedButton(
-            text: t.delete,
-            onTap: () {
-              _handeDeleteTagPressed(context, model);
-            },
-            padding: const EdgeInsets.all(0),
-          ),
-        ],
-      ),
-      CoconutLayout.spacing_300h,
-    ]);
+    return Visibility(
+      visible: model.selectedUtxoTag != null,
+      maintainSize: true,
+      maintainAnimation: true,
+      maintainState: true,
+      child: Column(children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            CustomUnderlinedButton(
+              text: t.edit,
+              onTap: () {
+                _handleEditTagPressed(context, model);
+              },
+              padding: const EdgeInsets.all(0),
+            ),
+            CoconutLayout.spacing_300w,
+            CustomUnderlinedButton(
+              text: t.delete,
+              onTap: () {
+                _handeDeleteTagPressed(context, model);
+              },
+              padding: const EdgeInsets.all(0),
+            ),
+          ],
+        ),
+        CoconutLayout.spacing_300h,
+      ]),
+    );
   }
 
   void _handeDeleteTagPressed(BuildContext context, UtxoTagCrudViewModel model) {

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -21,6 +22,8 @@ class UtxoListHeader extends StatefulWidget {
   final String selectedUtxoTagName;
   final Function(String) onTagSelected;
   final bool isLoadComplete;
+  final void Function() onPressedUnitToggle;
+  final BitcoinUnit currentUnit;
 
   const UtxoListHeader(
       {super.key,
@@ -32,7 +35,9 @@ class UtxoListHeader extends StatefulWidget {
       required this.utxoTagList,
       required this.selectedUtxoTagName,
       required this.onTagSelected,
-      required this.isLoadComplete});
+      required this.isLoadComplete,
+      required this.currentUnit,
+      required this.onPressedUnitToggle});
 
   @override
   State<UtxoListHeader> createState() => _UtxoListHeaderState();
@@ -61,31 +66,39 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     style: CoconutTypography.body1_16_Bold,
                   ),
                   CoconutLayout.spacing_100h,
-                  IntrinsicWidth(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                  GestureDetector(
+                    onTap: widget.onPressedUnitToggle,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
+                        IntrinsicWidth(
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              AnimatedBalance(
-                                  prevValue: widget.animatedBalanceData.previous,
-                                  value: widget.animatedBalanceData.current,
-                                  isBtcUnit: true,
-                                  textStyle: CoconutTypography.heading1_32_NumberBold),
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    AnimatedBalance(
+                                        prevValue: widget.animatedBalanceData.previous,
+                                        value: widget.animatedBalanceData.current,
+                                        isBtcUnit: widget.currentUnit == BitcoinUnit.btc,
+                                        textStyle: CoconutTypography.heading1_32_NumberBold),
+                                  ],
+                                ),
+                              ),
+                              CoconutLayout.spacing_100w,
+                              Text(
+                                widget.currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
+                                style: CoconutTypography.heading3_21_Number,
+                              ),
                             ],
                           ),
                         ),
-                        CoconutLayout.spacing_100w,
-                        Text(
-                          t.btc,
-                          style: CoconutTypography.heading3_21_Number,
-                        ),
+                        CoconutLayout.spacing_50h,
+                        FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
                       ],
                     ),
                   ),
-                  CoconutLayout.spacing_50h,
-                  FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
                   CoconutLayout.spacing_400h,
                   Row(
                     children: [
