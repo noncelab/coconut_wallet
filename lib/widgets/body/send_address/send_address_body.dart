@@ -83,8 +83,8 @@ class SendAddressBody extends StatelessWidget {
                             style: Styles.label.merge(const TextStyle(color: MyColors.darkgrey)),
                             children: [
                                 TextSpan(
-                                    text: address!.length > 20
-                                        ? '${address!.substring(0, 10)}...${address!.substring(address!.length - 10)}'
+                                    text: address!.length > 16
+                                        ? '${address!.substring(0, 8)}...${address!.substring(address!.length - 8)}'
                                         : address!,
                                     style: TextStyle(
                                         fontFamily: CustomFonts.number.getFontFamily,
