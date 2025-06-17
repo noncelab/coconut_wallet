@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -15,6 +16,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 
 class NodeProvider extends ChangeNotifier {
   final IsolateManager _isolateManager;
+  final ConnectivityProvider _connectivityProvider;
   final String _host;
   final int _port;
   final bool _ssl;
@@ -22,10 +24,12 @@ class NodeProvider extends ChangeNotifier {
 
   NodeStateManager? _stateManager;
   StreamSubscription<IsolateStateMessage>? _stateSubscription;
+  late final VoidCallback _connectivityListener;
 
   Completer<void>? _initCompleter;
   bool _isInitializing = false;
   bool _isClosing = false;
+  bool _pendingInitialization = false;
 
   NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
 
@@ -42,11 +46,40 @@ class NodeProvider extends ChangeNotifier {
   /// 따라서 최초 호출 1번만 동작을 하지 않도록 함
   bool _isFirstReconnect = true;
 
-  NodeProvider(this._host, this._port, this._ssl, this._networkType,
+  NodeProvider(this._host, this._port, this._ssl, this._networkType, this._connectivityProvider,
       {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
     Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
-    initialize();
+
+    _connectivityListener = _onConnectivityChanged;
+    _connectivityProvider.addListener(_connectivityListener);
+
+    _checkInitialNetworkState();
+  }
+
+  void _checkInitialNetworkState() {
+    if (_connectivityProvider.isNetworkOn == true) {
+      initialize();
+    } else {
+      _pendingInitialization = true;
+      Logger.log('NodeProvider: 네트워크 연결 대기 중 - 초기화 보류');
+    }
+  }
+
+  void _onConnectivityChanged() {
+    final isNetworkOn = _connectivityProvider.isNetworkOn;
+
+    if (isNetworkOn == true) {
+      if (_pendingInitialization || !isInitialized) {
+        Logger.log('NodeProvider: 네트워크 연결됨 - 초기화 시작');
+        _pendingInitialization = false;
+        initialize();
+      }
+    } else if (isNetworkOn == false) {
+      Logger.log('NodeProvider: 네트워크 연결 끊어짐 - 연결 종료');
+      _pendingInitialization = true;
+      closeConnection();
+    }
   }
 
   void _createStateManager() {
@@ -57,7 +90,8 @@ class NodeProvider extends ChangeNotifier {
   void _createNewCompleter() {
     if (_initCompleter != null && !_initCompleter!.isCompleted) {
       try {
-        _initCompleter!.completeError(Exception('Previous initialization was cancelled'));
+        _initCompleter!
+            .completeError(Exception('NodeProvider: Previous initialization was cancelled'));
       } catch (e) {
         // 이미 완료된 경우 무시
       }
@@ -66,6 +100,12 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
+    if (_connectivityProvider.isNetworkOn != true) {
+      Logger.log('NodeProvider: 네트워크가 연결되지 않아 초기화를 보류합니다.');
+      _pendingInitialization = true;
+      return;
+    }
+
     // 이미 초기화 중인 경우 기존 작업 완료 대기
     if (_isInitializing) {
       Logger.log('NodeProvider: Already initializing, waiting for completion');
@@ -82,6 +122,7 @@ class NodeProvider extends ChangeNotifier {
     }
 
     _isInitializing = true;
+    _pendingInitialization = false;
 
     try {
       Logger.log('NodeProvider: Starting initialization');
@@ -176,6 +217,10 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.getRecommendedFees();
   }
 
+  Future<Result<SocketConnectionStatus>> getSocketConnectionStatus() async {
+    return _isolateManager.getSocketConnectionStatus();
+  }
+
   void deleteWallet(int walletId) {
     _lastSubscribedWallets.removeWhere((element) => element.id == walletId);
     _stateManager?.unregisterWalletUpdateState(walletId);
@@ -184,6 +229,13 @@ class NodeProvider extends ChangeNotifier {
   Future<void> reconnect() async {
     if (_isFirstReconnect) {
       _isFirstReconnect = false;
+      return;
+    }
+
+    // 네트워크 연결 상태 확인
+    if (_connectivityProvider.isNetworkOn != true) {
+      Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
+      _pendingInitialization = true;
       return;
     }
 
@@ -245,5 +297,15 @@ class NodeProvider extends ChangeNotifier {
     } finally {
       _isClosing = false;
     }
+  }
+
+  @override
+  void dispose() {
+    // ConnectivityProvider 리스너 해제
+    _connectivityProvider.removeListener(_connectivityListener);
+
+    // 기존 정리 로직
+    closeConnection();
+    super.dispose();
   }
 }

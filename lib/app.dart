@@ -139,21 +139,23 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 )),
 
         // NodeProvider
-        ProxyProvider5<AddressRepository, TransactionRepository, UtxoRepository,
-            SubscriptionRepository, WalletRepository, NodeProvider>(
+        ProxyProvider6<AddressRepository, TransactionRepository, UtxoRepository,
+            SubscriptionRepository, WalletRepository, ConnectivityProvider, NodeProvider>(
           create: (context) => NodeProvider(
               CoconutWalletApp.kElectrumHost,
               CoconutWalletApp.kElectrumPort,
               CoconutWalletApp.kElectrumIsSSL,
-              CoconutWalletApp.kNetworkType),
+              CoconutWalletApp.kNetworkType,
+              context.read<ConnectivityProvider>()),
           update: (context, addressRepository, transactionRepository, utxoRepository,
-                  subscribeRepository, walletRepository, previous) =>
+                  subscribeRepository, walletRepository, connectivityProvider, previous) =>
               previous ??
               NodeProvider(
                 CoconutWalletApp.kElectrumHost,
                 CoconutWalletApp.kElectrumPort,
                 CoconutWalletApp.kElectrumIsSSL,
                 CoconutWalletApp.kNetworkType,
+                connectivityProvider,
               ),
         ),
 
