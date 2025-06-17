@@ -105,7 +105,7 @@ class TransactionItemCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         SvgPicture.asset('assets/svg/pen.svg',
-            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+            colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
             width: Sizes.size12),
         CoconutLayout.spacing_100w,
         Padding(
@@ -115,7 +115,7 @@ class TransactionItemCard extends StatelessWidget {
               tx.memo!,
               maxLength: 13,
             ),
-            style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
+            style: CoconutTypography.body3_12.setColor(CoconutColors.white),
           ),
         ),
       ],
@@ -144,10 +144,7 @@ class TransactionItemCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [_buildStatus(), _buildAmount()],
               ),
-              if (tx.memo != null) ...[
-                CoconutLayout.spacing_200h,
-                _buildMemo(),
-              ],
+              if (tx.memo != null) _buildMemo(),
             ],
           ),
         ));

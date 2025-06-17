@@ -38,7 +38,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
               alignment: Alignment.center,
               children: [
                 Positioned(
-                  top: 130,
+                  top: MediaQuery.of(context).size.height * 0.15,
                   child: Column(
                     children: [
                       SvgPicture.asset('assets/svg/completion-check.svg'),
@@ -169,12 +169,12 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SvgPicture.asset('assets/svg/pen.svg',
-                    colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                    colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
                     width: Sizes.size12),
                 CoconutLayout.spacing_100w,
                 Text(
                   TextUtils.ellipsisIfLonger(_memoController.text, maxLength: 8),
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray100),
                 ),
               ],
             )),
@@ -204,7 +204,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           Row(
             children: [
               SvgPicture.asset('assets/svg/pen.svg',
-                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
                   width: Sizes.size12),
               CoconutLayout.spacing_100w,
               // text field
@@ -214,10 +214,12 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                   child: TextField(
                     controller: _memoController,
                     focusNode: _memoFocusNode,
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray100),
+                    cursorColor: CoconutColors.white,
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: t.broadcasting_complete_screen.memo_placeholder,
+                      hintStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray350),
                       contentPadding: const EdgeInsets.only(
                         bottom: 15.5,
                       ),
