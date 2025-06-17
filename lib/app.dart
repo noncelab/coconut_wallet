@@ -31,6 +31,7 @@ import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 import 'package:coconut_wallet/screens/send/signed_psbt_scanner_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/address_search_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
@@ -96,6 +97,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
   @override
   Widget build(BuildContext context) {
+    CoconutTheme.setTheme(Brightness.dark);
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
@@ -272,6 +274,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/address-list': (context) => buildScreenWithArguments(
                 context,
                 (args) => AddressListScreen(id: args['id']),
+              ),
+          '/address-search': (context) => buildScreenWithArguments(
+                context,
+                (args) => AddressSearchScreen(id: args['id']),
               ),
           '/transaction-detail': (context) => buildScreenWithArguments(
                 context,
