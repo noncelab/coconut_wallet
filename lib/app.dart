@@ -97,6 +97,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
   @override
   Widget build(BuildContext context) {
+    CoconutTheme.setTheme(Brightness.dark);
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
