@@ -246,6 +246,8 @@ flutter:
     - assets/svg/keystone.svg
     - assets/svg/zpub.svg
     - assets/svg/copy.svg
+    - assets/svg/lock.svg
+    - assets/svg/unlock.svg
 
 
   fonts:

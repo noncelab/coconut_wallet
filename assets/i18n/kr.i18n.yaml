@@ -278,11 +278,18 @@ address_list_screen:
   change: "잔돈"
 utxo_list_screen:
   total_balance: "총 잔액"
+  
 transaction_detail_screen:
   confirmation: "$height ($count승인)"
+  
 utxo_detail_screen:
   pending: "승인 대기중"
   address: "보유 주소"
+  utxo_locked: "사용 잠금"
+  utxo_unlocked: "사용 가능"
+  utxo_locked_toast_msg: "UTXO 잠금 완료! 이 코인은 더 이상 자동으로 사용되지 않아요."
+  utxo_unlocked_toast_msg: "UTXO 잠금 해체 완료! 코인이 사용 가능한 상태로 전환됐어요."
+  
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"
   add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
@@ -415,6 +422,8 @@ errors:
     incorrect: "비밀번호가 일치하지 않아요"
   data_loading_failed: "데이터를 불러오는 중 오류가 발생했습니다."
   data_not_found: "데이터가 없습니다."
+  utxo_lock_error: "일시적인 오류로 인해 UTXO 잠금 설정에 실패했어요"
+  utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
 
 text_field:
   enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vb)"

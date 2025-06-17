@@ -7,6 +7,7 @@ import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
 
 class UtxoItemCard extends StatelessWidget {
@@ -26,6 +27,9 @@ class UtxoItemCard extends StatelessWidget {
     final dateString = DateTimeUtil.formatTimestamp(utxo.timestamp);
 
     return ShrinkAnimationButton(
+      defaultColor: CoconutColors.gray900,
+      pressedColor: CoconutColors.gray800,
+      borderRadius: CoconutStyles.radius_300,
       borderWidth: 0,
       onPressed: () {
         onPressed();
@@ -42,17 +46,17 @@ class UtxoItemCard extends StatelessWidget {
                     children: [
                       Text(
                         dateString[0],
-                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray300),
+                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350),
                       ),
                       CoconutLayout.spacing_200w,
                       Text(
                         '|',
-                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray350),
                       ),
                       CoconutLayout.spacing_200w,
                       Text(
                         dateString[1],
-                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray300),
+                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350),
                       ),
                     ],
                   ),
@@ -61,22 +65,17 @@ class UtxoItemCard extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (utxo.isChange)
-                          CoconutChip(
-                            color: CoconutColors.gray400,
-                            label: t.change,
-                            labelColor: CoconutColors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            isSelected: true, // label bold 스타일로 보이기 위해 지정
-                          ),
-                        CoconutLayout.spacing_100w,
-                        if (utxo.isPending) _buildPendingStatus(utxo.status),
+                        if (utxo.isPending) ...[
+                          _buildPendingStatus(utxo.status),
+                        ] else if (utxo.status == UtxoStatus.locked) ...[
+                          SvgPicture.asset('assets/svg/lock.svg'),
+                        ],
                         Text(
                           currentUnit == BitcoinUnit.btc
                               ? satoshiToBitcoinString(utxo.amount)
                               : addCommasToIntegerPart(utxo.amount.toDouble()),
                           style: CoconutTypography.heading4_18_NumberBold
-                              .setColor(CoconutColors.gray200),
+                              .setColor(CoconutColors.white),
                         ),
                       ],
                     ),
@@ -86,25 +85,42 @@ class UtxoItemCard extends StatelessWidget {
               CoconutLayout.spacing_100h,
               // address
               Text(utxo.to,
-                  style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
+                  style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray350)),
               Column(
                 children: [
-                  if ((utxo.tags?.isNotEmpty ?? false))
-                    CoconutLayout.spacing_100h, // utxo.tags가 있을 때만 마진 추가
+                  if ((utxo.tags?.isNotEmpty ?? false) || utxo.isChange)
+                    CoconutLayout.spacing_100h, // utxo.tags가 있거나 잔돈일때만 마진 추가
                   Wrap(
                     spacing: 4,
                     runSpacing: 4,
                     children: List.generate(
-                      utxo.tags?.length ?? 0,
+                      (utxo.tags?.length ?? 0) + 1,
                       (index) {
-                        Color foregroundColor = tagColorPalette[utxo.tags?[index].colorIndex ?? 0];
+                        if (index == 0) {
+                          if (utxo.isChange) {
+                            return IntrinsicWidth(
+                              child: CoconutChip(
+                                minWidth: 40,
+                                color: CoconutColors.gray800,
+                                borderColor: CoconutColors.gray800,
+                                label: t.change,
+                                labelSize: 12,
+                                labelColor: CoconutColors.white,
+                              ),
+                            );
+                          } else {
+                            return Container();
+                          }
+                        }
+                        Color foregroundColor =
+                            tagColorPalette[utxo.tags?[index - 1].colorIndex ?? 0];
                         return IntrinsicWidth(
                           child: CoconutChip(
                             minWidth: 40,
                             color: CoconutColors
-                                .backgroundColorPaletteDark[utxo.tags?[index].colorIndex ?? 0],
+                                .backgroundColorPaletteDark[utxo.tags?[index - 1].colorIndex ?? 0],
                             borderColor: foregroundColor,
-                            label: '#${utxo.tags?[index].name ?? ''}',
+                            label: '#${utxo.tags?[index - 1].name ?? ''}',
                             labelSize: 12,
                             labelColor: foregroundColor,
                           ),
