@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
@@ -200,9 +201,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                       if (utxoStatus == UtxoStatus.unspent || utxoStatus == UtxoStatus.locked)
                         UtxoLockToggleButton(
                           isLocked: utxoStatus == UtxoStatus.locked,
-                          onPressed: () {
+                          onPressed: () async {
+                            Logger.log('>> toggleUtxoLockStatus');
                             final viewModel = context.read<UtxoDetailViewModel>();
-                            viewModel.toggleUtxoLockStatus();
+                            final result = await viewModel.toggleUtxoLockStatus();
+                            if (!result) {
+                              // TODO: showToast "일시적인 오류로 UTXO 잠금 설정/해제를 실패했어요"
+                              return;
+                            }
                             _removeUtxoTooltip();
                             vibrateLight();
                             CoconutToast.showToast(

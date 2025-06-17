@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
@@ -64,22 +65,17 @@ class UtxoDetailViewModel extends ChangeNotifier {
     return _utxo.status;
   }
 
-  void toggleUtxoLockStatus() async {
-    _utxo = UtxoState(
-      transactionHash: _utxo.transactionHash,
-      index: _utxo.index,
-      amount: _utxo.amount,
-      derivationPath: _utxo.derivationPath,
-      blockHeight: _utxo.blockHeight,
-      to: _utxo.to,
-      timestamp: _utxo.timestamp,
-      status: _setUtxoStateToggled(),
-      spentByTransactionHash: _utxo.spentByTransactionHash,
-    );
+  Future<bool> toggleUtxoLockStatus() async {
+    try {
+      await _walletProvider.toggleUtxoLockStatus(_walletId, _utxo.utxoId);
+    } catch (e) {
+      Logger.error('❌ toggleUtxoLockStatus error: $e');
+      return false;
+    }
 
+    _utxo.status = _setUtxoStateToggled();
     notifyListeners();
-    final utxoId = makeUtxoId(_utxo.transactionHash, _utxo.index);
-    await _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
+    return true;
   }
 
   List<String> get dateString => _dateString;

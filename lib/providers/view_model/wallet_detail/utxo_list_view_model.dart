@@ -155,14 +155,6 @@ class UtxoListViewModel extends ChangeNotifier {
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
   }
 
-  void toggleUtxoLockStatus(UtxoState utxo) {
-    final utxoId = makeUtxoId(utxo.transactionHash, utxo.index);
-
-    _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
-    _getUtxoAndTagList();
-    notifyListeners();
-  }
-
   List<String> getTimeString(int utxoIndex) {
     if (_utxoList.isEmpty) return [];
     final utxo = _utxoList[utxoIndex];
