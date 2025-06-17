@@ -58,7 +58,7 @@ class UtxoSyncService {
       final transactionMap = {
         for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx
       };
-      final realmLockedUtxos = _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.locked );
+      final realmLockedUtxos = _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.locked);
       final lockedUtxoMap = {
         for (final utxo in realmLockedUtxos) utxo.transactionHash: utxo,
       };
