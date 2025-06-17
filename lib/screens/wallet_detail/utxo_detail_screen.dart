@@ -205,8 +205,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                             Logger.log('>> toggleUtxoLockStatus');
                             final viewModel = context.read<UtxoDetailViewModel>();
                             final result = await viewModel.toggleUtxoLockStatus();
-                            if (!result) {
-                              // TODO: showToast "일시적인 오류로 UTXO 잠금 설정/해제를 실패했어요"
+                            if (mounted && !result) {
+                              debugPrint('utxoStatue : $utxoStatus');
+                              CoconutToast.showWarningToast(
+                                context: context,
+                                text: utxoStatus == UtxoStatus.locked
+                                    ? t.errors.utxo_unlock_error
+                                    : t.errors.utxo_lock_error,
+                              );
                               return;
                             }
                             _removeUtxoTooltip();

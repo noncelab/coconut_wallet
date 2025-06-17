@@ -422,6 +422,8 @@ errors:
     incorrect: "비밀번호가 일치하지 않아요"
   data_loading_failed: "데이터를 불러오는 중 오류가 발생했습니다."
   data_not_found: "데이터가 없습니다."
+  utxo_lock_error: "일시적인 오류로 인해 UTXO 잠금 설정에 실패했어요"
+  utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
 
 text_field:
   enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vb)"
