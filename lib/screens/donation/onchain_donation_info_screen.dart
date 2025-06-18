@@ -117,7 +117,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                   SingleChildScrollView(
                     child: Container(
                       width: MediaQuery.sizeOf(context).width,
-                      padding: const EdgeInsets.only(left: 28, right: 28, top: 30, bottom: 60),
+                      padding: const EdgeInsets.only(left: 28, right: 28, top: 20, bottom: 60),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         mainAxisSize: MainAxisSize.max,
@@ -167,6 +167,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                       ((viewModel.isRecommendedFeeFetchSuccess == null ||
                           viewModel.isRecommendedFeeFetchSuccess! == true))) ...[
                     FixedBottomButton(
+                      showGradient: false,
                       onButtonClicked: () {
                         if (!viewModel.isNetworkOn) {
                           CoconutToast.showWarningToast(
