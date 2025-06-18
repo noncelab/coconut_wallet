@@ -98,10 +98,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProxyProvider<ConnectivityProvider, UpbitConnectModel>(
+          create: (context) => UpbitConnectModel(context.read<ConnectivityProvider>()),
+          update: (context, connectivityProvider, previous) =>
+              previous ?? UpbitConnectModel(connectivityProvider),
+        ),
 
         Provider.value(value: _realmManager),
 

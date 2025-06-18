@@ -20,7 +20,7 @@ class AppGuard extends StatefulWidget {
   State<AppGuard> createState() => _AppGuardState();
 }
 
-class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
+class _AppGuardState extends State<AppGuard> {
   final Connectivity _connectivity = Connectivity();
   bool? _isNetworkOn;
   late UpbitConnectModel _upbitConnectModel;
@@ -34,7 +34,6 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
 
     _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
     _nodeProvider = Provider.of<NodeProvider>(context, listen: false);
@@ -67,12 +66,6 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
 
       if (isNetworkOn) {
         _nodeProvider.reconnect();
-
-        /// 네트워크가 꺼졌다가 다시 켜지면 시세를 위한 소켓을 연결함.
-        _upbitConnectModel.initUpbitWebSocketService();
-      } else {
-        /// 네트워크 켜져있는 상태에서 꺼질 때 upbit provider dispose
-        _upbitConnectModel.disposeUpbitWebSocketService();
       }
     }
   }
@@ -82,34 +75,6 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   //   if (!isNetworkOn) {
   //     CustomToast.showToast(
   //         context: context, text: "네트워크 연결이 없습니다.", seconds: 7);
-  //   }
-  // }
-
-  // TODO: AppLifecycleListener로 교체시 didChangeAppLifecycleState는 삭제
-  // @override
-  // void didChangeAppLifecycleState(AppLifecycleState state) {
-  //   super.didChangeAppLifecycleState(state);
-  //   switch (state) {
-  //     case AppLifecycleState.resumed:
-  //       if (_isPause) {
-  //         _isPause = false;
-  //         _authProvider.checkDeviceBiometrics();
-  //         if (_upbitConnectModel.upbitWebSocketService == null) {
-  //           _upbitConnectModel.initUpbitWebSocketService();
-  //         }
-  //         _nodeProvider.initialize().then((_) => _nodeProvider.subscribeWallets(null));
-  //       }
-  //       break;
-  //     case AppLifecycleState.hidden:
-  //     case AppLifecycleState.detached:
-  //     case AppLifecycleState.paused:
-  //       if (_isPause) break;
-  //       _isPause = true;
-  //       _upbitConnectModel.disposeUpbitWebSocketService();
-  //       _nodeProvider.closeConnection();
-  //       break;
-  //     case AppLifecycleState.inactive:
-  //       break;
   //   }
   // }
 
@@ -146,7 +111,6 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _lifecycleListener.dispose();
     _screenListener.dispose();
     super.dispose();
