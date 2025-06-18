@@ -173,10 +173,13 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                           maxLines: 1,
                           padding: const EdgeInsets.only(),
                           height: Sizes.size40,
-                          prefix: IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.search_rounded, color: CoconutColors.gray600),
-                            iconSize: Sizes.size22,
+                          prefix: const IgnorePointer(
+                            ignoring: true,
+                            child: IconButton(
+                              onPressed: null,
+                              icon: Icon(Icons.search_rounded, color: CoconutColors.gray600),
+                              iconSize: Sizes.size22,
+                            ),
                           ),
                           suffix: IconButton(
                             iconSize: 14,
@@ -210,38 +213,46 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                     body: canShowResult
                         ? Padding(
                             padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
-                            child: SingleChildScrollView(
-                              child: Consumer<AddressSearchViewModel>(
-                                  builder: (context, viewModel, child) {
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CoconutLayout.spacing_100h,
-                                    Text(
-                                      "'${_addressController.text}' ${t.address_search_screen.search_result} ${viewModel.searchedAddressLength > 0 ? t.address_search_screen.address_n_found(n: viewModel.searchedAddressLength) : ""}",
-                                      style:
-                                          CoconutTypography.body3_12.setColor(CoconutColors.white),
-                                    ),
-                                    CoconutLayout.spacing_1000h,
-                                    if (viewModel.receivingAddressList.isNotEmpty) ...[
-                                      Text(t.address_search_screen.receiving_address,
-                                          style: CoconutTypography.body2_14_Bold
-                                              .setColor(CoconutColors.white)),
-                                      CoconutLayout.spacing_300h,
-                                      _buildWalletAddressList(viewModel.receivingAddressList),
-                                      CoconutLayout.spacing_1000h,
-                                    ],
-                                    if (viewModel.changeAddressList.isNotEmpty) ...[
-                                      Text(t.address_search_screen.change_address,
-                                          style: CoconutTypography.body2_14_Bold
-                                              .setColor(CoconutColors.white)),
-                                      CoconutLayout.spacing_300h,
-                                      _buildWalletAddressList(viewModel.changeAddressList),
-                                    ],
-                                    if (viewModel.searchedAddressLength == 0) _buildNotFoundView(),
-                                  ],
-                                );
-                              }),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CoconutLayout.spacing_200h,
+                                Text(
+                                  "'${_addressController.text}' ${t.address_search_screen.search_result} ${viewModel.searchedAddressLength > 0 ? t.address_search_screen.address_n_found(n: viewModel.searchedAddressLength) : ""}",
+                                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                                ),
+                                CoconutLayout.spacing_400h,
+                                Expanded(
+                                  child: SingleChildScrollView(
+                                    child: Consumer<AddressSearchViewModel>(
+                                        builder: (context, viewModel, child) {
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          CoconutLayout.spacing_500h,
+                                          if (viewModel.receivingAddressList.isNotEmpty) ...[
+                                            Text(t.address_search_screen.receiving_address,
+                                                style: CoconutTypography.body2_14_Bold
+                                                    .setColor(CoconutColors.white)),
+                                            CoconutLayout.spacing_300h,
+                                            _buildWalletAddressList(viewModel.receivingAddressList),
+                                            CoconutLayout.spacing_1000h,
+                                          ],
+                                          if (viewModel.changeAddressList.isNotEmpty) ...[
+                                            Text(t.address_search_screen.change_address,
+                                                style: CoconutTypography.body2_14_Bold
+                                                    .setColor(CoconutColors.white)),
+                                            CoconutLayout.spacing_300h,
+                                            _buildWalletAddressList(viewModel.changeAddressList),
+                                          ],
+                                          if (viewModel.searchedAddressLength == 0)
+                                            _buildNotFoundView(),
+                                        ],
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              ],
                             ),
                           )
                         : Container()),
