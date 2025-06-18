@@ -25,7 +25,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
       ),
       resizeToAvoidBottomInset: false,
       body: Container(
-        child:  Text('온체인 donationAmount${widget.donationAmount}'),
+        child: Text('온체인 donationAmount${widget.donationAmount}'),
       ),
     );
   }
