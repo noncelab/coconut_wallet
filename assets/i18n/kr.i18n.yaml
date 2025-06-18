@@ -121,6 +121,7 @@ donation:
   onchain: "온체인 후원"
   lightning: "라이트닝 후원"
   under_dust_error: "${dust}(더스트) 보다 큰 금액을 입력해 주세요\n"
+  over_donation_max_value_error: "최대 $value sats까지 후원하실 수 있어요\n"
   donation_wallet: "후원 지갑"
   total_donation_amount: "최종 후원 금액"
   donation_amount: "후원 금액"

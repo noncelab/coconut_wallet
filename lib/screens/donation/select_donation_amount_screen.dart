@@ -31,9 +31,12 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
   final donationLateMealValue = 10000; // 야근 식대 후원금
   final donationMaintenanceValue = 50000; // 유지 보수비 후원금
 
+  static const kDonationLightningMaxValue = 500000000;
+
   int? customDonateValue;
 
   bool isDustErrorTextVisible = false;
+  bool isOverDonationMaxValue = false;
 
   bool isLoading = false;
 
@@ -142,6 +145,16 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                               CoconutLayout.spacing_200h,
                               Text(
                                 t.donation.under_dust_error(dust: dustLimit),
+                                style: CoconutTypography.body3_12.setColor(
+                                  CoconutColors.warningText,
+                                ),
+                              ),
+                            ],
+                            if (isOverDonationMaxValue) ...[
+                              CoconutLayout.spacing_200h,
+                              Text(
+                                t.donation.over_donation_max_value_error(
+                                    value: kDonationLightningMaxValue),
                                 style: CoconutTypography.body3_12.setColor(
                                   CoconutColors.warningText,
                                 ),
@@ -279,6 +292,16 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
             return;
           }
 
+          if (!isOnchain &&
+              donationSelectedType == DonationSelectedType.custom &&
+              ((customDonateValue != null && customDonateValue! > kDonationLightningMaxValue) ||
+                  customDonateValue == null)) {
+            setState(() {
+              isOverDonationMaxValue = true;
+            });
+            return;
+          }
+
           goNextScreen(isNetworkOn, isOnchain);
         },
         text: isOnchain ? t.donation.onchain : t.donation.lightning,
@@ -321,6 +344,8 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
           donationSelectedType = donationType;
           if (isDustErrorTextVisible) {
             isDustErrorTextVisible = false;
+          } else if (isOverDonationMaxValue) {
+            isOverDonationMaxValue = false;
           }
         });
 
@@ -372,6 +397,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                                   donationSelectedType = DonationSelectedType.custom;
                                   setState(() {
                                     isDustErrorTextVisible = false;
+                                    isOverDonationMaxValue = false;
                                   });
                                   _controller.selection = TextSelection.fromPosition(
                                     TextPosition(offset: _controller.text.length),
@@ -385,6 +411,12 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                                   if (isDustErrorTextVisible) {
                                     setState(() {
                                       isDustErrorTextVisible = false;
+                                    });
+                                  }
+
+                                  if (isOverDonationMaxValue) {
+                                    setState(() {
+                                      isOverDonationMaxValue = false;
                                     });
                                   }
 
@@ -410,7 +442,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                                 },
                                 textAlign: TextAlign.center,
                                 style: CoconutTypography.body3_12.setColor(
-                                  isDustErrorTextVisible
+                                  isDustErrorTextVisible || isOverDonationMaxValue
                                       ? CoconutColors.warningText
                                       : CoconutColors.gray100,
                                 ),
@@ -421,7 +453,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                                   ),
                                   enabledBorder: UnderlineInputBorder(
                                     borderSide: BorderSide(
-                                      color: isDustErrorTextVisible
+                                      color: isDustErrorTextVisible || isOverDonationMaxValue
                                           ? CoconutColors.warningText
                                           : CoconutColors.gray600,
                                       width: 1,
