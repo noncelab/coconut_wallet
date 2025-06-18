@@ -50,6 +50,9 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
       .toList();
 
   initialize() async {
+    if (singlesigWalletList.isEmpty) {
+      return;
+    }
     _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _bitcoinPriceKrw = _bitcoinPriceKrw;
     _isNetworkOn = isNetworkOn;

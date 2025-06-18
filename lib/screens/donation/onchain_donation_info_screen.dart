@@ -77,7 +77,6 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
               viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
             });
           }
-
           // 지갑 동기화가 끝났을 때 initialize를 호출하여 지갑 목록 업데이트
           if (viewModel.prevIsSyncing && !walletProvider.isSyncing) {
             viewModel.initialize();
@@ -99,10 +98,12 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                 viewModel.setHasShownFeeErrorToast(true);
               }
 
-              if (!viewModel.isSyncing &&
-                  viewModel.isRecommendedFeeFetchSuccess == true &&
-                  viewModel.availableDonationWalletList.isEmpty &&
-                  !viewModel.hasShownNotEnoughBalanceToast) {
+              if ((viewModel.singlesigWalletList.isEmpty &&
+                      !viewModel.hasShownNotEnoughBalanceToast) ||
+                  (!viewModel.isSyncing &&
+                      viewModel.isRecommendedFeeFetchSuccess == true &&
+                      viewModel.availableDonationWalletList.isEmpty &&
+                      !viewModel.hasShownNotEnoughBalanceToast)) {
                 CoconutToast.showWarningToast(
                   context: context,
                   text: t.donation.empty_enough_balance_wallet,
@@ -162,8 +163,9 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                       ),
                     ),
                   ),
-                  if (viewModel.availableDonationWalletList.isNotEmpty ||
-                      viewModel.isRecommendedFeeFetchSuccess == null) ...[
+                  if (viewModel.availableDonationWalletList.isNotEmpty &&
+                      ((viewModel.isRecommendedFeeFetchSuccess == null ||
+                          viewModel.isRecommendedFeeFetchSuccess! == true))) ...[
                     FixedBottomButton(
                       onButtonClicked: () {
                         if (!viewModel.isNetworkOn) {
