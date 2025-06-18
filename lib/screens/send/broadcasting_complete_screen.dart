@@ -47,17 +47,19 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                         t.broadcasting_complete_screen.complete,
                         style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
                       ),
-                      CoconutLayout.spacing_400h,
-                      _buildMemoInputField(),
-                      if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
-                        _buildMemoReadOnlyText(),
+                      // #300
+                      // CoconutLayout.spacing_400h,
+                      // _buildMemoInputField(),
+                      // if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
+                      //   _buildMemoReadOnlyText(),
                     ],
                   ),
                 ),
-                if (_memoFocusNode.hasFocus)
-                  Positioned(
-                      bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
-                      child: _buildMemoTags()),
+                // #300
+                // if (_memoFocusNode.hasFocus)
+                //   Positioned(
+                //       bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
+                //       child: _buildMemoTags()),
                 Positioned(
                   bottom: Sizes.size24,
                   left: Sizes.size16,
