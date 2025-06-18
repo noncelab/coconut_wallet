@@ -73,8 +73,6 @@ class IsolateManager {
     _isInitializing = true;
 
     try {
-      Logger.log('IsolateManager: Starting initialization for $host:$port');
-
       await _forceCleanup();
 
       _createReceivePort();
@@ -208,7 +206,6 @@ class IsolateManager {
           if (_isolateReady != null && !_isolateReady!.isCompleted) {
             try {
               _isolateReady!.complete();
-              Logger.log('IsolateManager: Initialization completed via isolate message');
             } catch (e) {
               Logger.error('IsolateManager: Error completing initialization: $e');
             }
