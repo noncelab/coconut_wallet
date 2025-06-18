@@ -221,7 +221,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                                   "'${_addressController.text}' ${t.address_search_screen.search_result} ${viewModel.searchedAddressLength > 0 ? t.address_search_screen.address_n_found(n: viewModel.searchedAddressLength) : ""}",
                                   style: CoconutTypography.body3_12.setColor(CoconutColors.white),
                                 ),
-                                CoconutLayout.spacing_400h,
+                                CoconutLayout.spacing_200h,
                                 Expanded(
                                   child: SingleChildScrollView(
                                     child: Consumer<AddressSearchViewModel>(
@@ -229,7 +229,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                                       return Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          CoconutLayout.spacing_500h,
+                                          CoconutLayout.spacing_700h,
                                           if (viewModel.receivingAddressList.isNotEmpty) ...[
                                             Text(t.address_search_screen.receiving_address,
                                                 style: CoconutTypography.body2_14_Bold
