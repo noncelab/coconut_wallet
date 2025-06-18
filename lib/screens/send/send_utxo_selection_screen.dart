@@ -12,7 +12,7 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
+import 'package:coconut_wallet/screens/send/fee_selection_screen_t.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -249,14 +249,15 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
     Map<String, dynamic>? feeSelectionResult = await CommonBottomSheets.showBottomSheet_90(
       context: context,
-      child: FeeSelectionScreen(
-          feeInfos: _viewModel.feeInfos,
-          selectedFeeLevel: _viewModel.selectedLevel,
-          networkMinimumFeeRate: minimumFeeRate?.value,
-          customFeeInfo: _viewModel.customFeeInfo,
-          isRecommendedFeeFetchSuccess:
-              _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed,
-          estimateFee: _viewModel.estimateFee),
+      child: Container(),
+      // child: FeeSelectionScreen(
+      //     feeInfos: _viewModel.feeInfos,
+      //     selectedFeeLevel: _viewModel.selectedLevel,
+      //     networkMinimumFeeRate: minimumFeeRate?.value,
+      //     customFeeInfo: _viewModel.customFeeInfo,
+      //     isRecommendedFeeFetchSuccess:
+      //         _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed,
+      //     estimateFee: _viewModel.estimateFee),
     );
     if (feeSelectionResult != null) {
       _viewModel.onFeeRateChanged(feeSelectionResult);

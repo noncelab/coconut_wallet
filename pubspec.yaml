@@ -84,6 +84,7 @@ dependencies:
   decimal: ^3.0.2
   tuple: ^2.0.2
   cbor: ^6.3.5
+  shimmer: ^3.0.0
   ur:
     path: lib/packages/bc-ur-dart
 
@@ -246,6 +247,9 @@ flutter:
     - assets/svg/keystone.svg
     - assets/svg/zpub.svg
     - assets/svg/copy.svg
+    - assets/svg/rocket.svg
+    - assets/svg/car.svg
+    - assets/svg/foot.svg
 
 
   fonts:

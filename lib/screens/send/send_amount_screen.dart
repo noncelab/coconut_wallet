@@ -13,6 +13,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
+import 'package:coconut_wallet/widgets/overlays/number_key_pad.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -181,33 +182,9 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                 bottom: 20,
                 left: 0,
                 right: 0,
-                child: GridView.count(
-                  crossAxisCount: 3,
-                  childAspectRatio: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    '1',
-                    '2',
-                    '3',
-                    '4',
-                    '5',
-                    '6',
-                    '7',
-                    '8',
-                    '9',
-                    if (viewModel.currentUnit == BitcoinUnit.btc) '.' else ' ',
-                    '0',
-                    '<',
-                  ].map((key) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: KeyButton(
-                        keyValue: key,
-                        onKeyTap: viewModel.onKeyTap,
-                      ),
-                    );
-                  }).toList(),
+                child: NumberKeyPad(
+                  currentUnit: _viewModel.currentUnit,
+                  onKeyTap: _viewModel.onKeyTap,
                 ),
               ),
               NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),

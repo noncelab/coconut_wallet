@@ -89,6 +89,9 @@ vault_app: "볼트 앱"
 apply_item: "$count개에 적용"
 fee_sats: " ($value sats/vB)"
 sats_vb: "sats/vB"
+sat_vb: "sat/vB"
+total_sats: "총 $value sats"
+minimum_fee_rate_message: "현재 최소 수수료 $minimum sat/vB 보다 낮아요"
 utxo_count: "($count개)"
 total_utxo_count: "(총 $count개)"
 
@@ -455,7 +458,6 @@ tooltip:
 
 toast:
   back_exit: "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다."
-  min_fee: "현재 최소 수수료는 $minimum sats/vB 입니다."
   fetching_onchain_data: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요."
   screen_capture: "스크린 캡처가 감지되었습니다."
   no_balance: "잔액이 없습니다."

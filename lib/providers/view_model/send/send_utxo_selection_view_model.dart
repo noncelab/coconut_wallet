@@ -13,7 +13,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
+import 'package:coconut_wallet/screens/send/fee_selection_screen_t.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -64,7 +64,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   final List<UtxoState> _availableUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
-  TransactionFeeLevel? _selectedLevel = TransactionFeeLevel.halfhour;
+  final TransactionFeeLevel _selectedLevel = TransactionFeeLevel.halfhour;
 
   RecommendedFee? _recommendedFees;
 
@@ -210,10 +210,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus => _recommendedFeeFetchStatus;
   RecommendedFee? get recommendedFees => _recommendedFees;
   double? get satsPerVb {
-    if (_selectedLevel == null) {
-      return _customFeeInfo?.satsPerVb;
-    }
-
     return feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel).satsPerVb;
   }
 
@@ -271,14 +267,14 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   bool isSelectedUtxoEnough() => _isSelectedUtxoEnough();
 
   void onFeeRateChanged(Map<String, dynamic> feeSelectionResult) {
-    _estimatedFee = (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo).estimatedFee;
-    _selectedLevel = feeSelectionResult[FeeSelectionScreen.selectedOptionField];
-    _setAmount();
-    notifyListeners();
+    // _estimatedFee = (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo).estimatedFee;
+    // _selectedLevel = feeSelectionResult[FeeSelectionScreen.selectedOptionField];
+    // _setAmount();
+    // notifyListeners();
 
-    _customFeeInfo = feeSelectionResult[FeeSelectionScreen.selectedOptionField] == null
-        ? (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
-        : null;
+    // _customFeeInfo = feeSelectionResult[FeeSelectionScreen.selectedOptionField] == null
+    //     ? (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
+    //     : null;
 
     var satsPerVb = _customFeeInfo?.satsPerVb! ??
         feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel).satsPerVb!;

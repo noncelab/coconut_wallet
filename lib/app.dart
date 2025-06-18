@@ -26,7 +26,7 @@ import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
 import 'package:coconut_wallet/screens/send/send_address_screen.dart';
 import 'package:coconut_wallet/screens/send/send_confirm_screen.dart';
-import 'package:coconut_wallet/screens/send/send_fee_selection_screen.dart';
+import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
@@ -301,7 +301,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
               ),
           '/send-amount': (context) => const SendAmountScreen(),
-          '/fee-selection': (context) => const SendFeeSelectionScreen(),
+          '/fee-selection': (context) => const FeeSelectionScreen(),
           '/utxo-selection': (context) => const CustomLoadingOverlay(
                 child: SendUtxoSelectionScreen(),
               ),
