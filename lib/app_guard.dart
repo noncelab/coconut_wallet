@@ -146,6 +146,7 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    print('❌ ============ dispose app guard');
     WidgetsBinding.instance.removeObserver(this);
     _lifecycleListener.dispose();
     _screenListener.dispose();
