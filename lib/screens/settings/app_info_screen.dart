@@ -261,6 +261,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           _category(t.app_info_screen.category1_ask),
           ButtonGroup(buttons: [
             SingleButton(
+              buttonPosition: SingleButtonPosition.top,
               title: t.app_info_screen.go_to_pow,
               leftElement: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
@@ -276,6 +277,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              buttonPosition: SingleButtonPosition.middle,
               title: t.app_info_screen.ask_to_discord,
               leftElement: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
@@ -291,6 +293,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              buttonPosition: SingleButtonPosition.middle,
               title: t.app_info_screen.ask_to_x,
               leftElement: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
@@ -306,6 +309,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+                buttonPosition: SingleButtonPosition.bottom,
                 title: t.app_info_screen.ask_to_email,
                 leftElement: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0),
@@ -351,6 +355,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           _category(t.app_info_screen.category2_opensource),
           ButtonGroup(buttons: [
             SingleButton(
+              buttonPosition: SingleButtonPosition.top,
               title: t.coconut_lib,
               leftElement: githubLogo,
               onPressed: () {
@@ -358,6 +363,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              buttonPosition: SingleButtonPosition.middle,
               title: t.coconut_wallet,
               leftElement: githubLogo,
               onPressed: () {
@@ -365,6 +371,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              buttonPosition: SingleButtonPosition.middle,
               title: t.coconut_vault,
               leftElement: githubLogo,
               onPressed: () {
@@ -372,6 +379,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              buttonPosition: SingleButtonPosition.bottom,
               title: t.app_info_screen.contribution,
               onPressed: () {
                 launchURL(CONTRIBUTING_URL);
@@ -397,18 +405,21 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           _category(t.app_info_screen.tos_and_policy),
           ButtonGroup(buttons: [
             SingleButton(
+              buttonPosition: SingleButtonPosition.top,
               title: t.app_info_screen.terms_of_service,
               onPressed: () {
                 launchURL(TERMS_OF_SERVICE_URL);
               },
             ),
             SingleButton(
+              buttonPosition: SingleButtonPosition.middle,
               title: t.app_info_screen.privacy_policy,
               onPressed: () {
                 launchURL(PRIVACY_POLICY_URL);
               },
             ),
             SingleButton(
+              buttonPosition: SingleButtonPosition.bottom,
               title: t.app_info_screen.license,
               onPressed: () {
                 CommonBottomSheets.showBottomSheet_95(

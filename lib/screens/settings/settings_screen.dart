@@ -11,7 +11,6 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/widgets/button/button_container.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:provider/provider.dart';
 
@@ -99,8 +98,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                   //         }),
                   // ]),
                   // const SizedBox(height: 16),
-                  ButtonContainer(
-                      child: SingleButton(
+                  SingleButton(
                     title: t.settings_screen.hide_balance,
                     rightElement: CupertinoSwitch(
                         value: viewModel.isBalanceHidden,
@@ -110,41 +108,38 @@ class _SettingsScreen extends State<SettingsScreen> {
                         onChanged: (value) {
                           viewModel.changeIsBalanceHidden(value);
                         }),
-                  )),
+                  ),
 
                   _category(t.unit),
-                  ButtonContainer(
-                      child: Selector<PreferenceProvider, bool>(
-                          selector: (_, viewModel) => viewModel.isBtcUnit,
-                          builder: (context, isBtcUnit, child) {
-                            return SingleButton(
-                              title: t.bitcoin_kr,
-                              subtitle: isBtcUnit ? t.btc : t.sats,
-                              onPressed: () async {
-                                CommonBottomSheets.showBottomSheet_50(
-                                    context: context, child: const UnitBottomSheet());
-                              },
-                            );
-                          })),
+                  Selector<PreferenceProvider, bool>(
+                      selector: (_, viewModel) => viewModel.isBtcUnit,
+                      builder: (context, isBtcUnit, child) {
+                        return SingleButton(
+                          title: t.bitcoin_kr,
+                          subtitle: isBtcUnit ? t.btc : t.sats,
+                          onPressed: () async {
+                            CommonBottomSheets.showBottomSheet_50(
+                                context: context, child: const UnitBottomSheet());
+                          },
+                        );
+                      }),
 
                   // 개발자 모드에서만 표시되는 디버그 섹션
                   if (kDebugMode) ...[
                     const SizedBox(height: 16),
                     _category('개발자 도구'),
-                    ButtonContainer(
-                      child: SingleButton(
-                        title: 'Realm 디버그용 뷰어',
-                        onPressed: () {
-                          final realmManager = Provider.of<RealmManager>(context, listen: false);
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => RealmDebugScreen(
-                                realmManager: realmManager,
-                              ),
+                    SingleButton(
+                      title: 'Realm 디버그용 뷰어',
+                      onPressed: () {
+                        final realmManager = Provider.of<RealmManager>(context, listen: false);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => RealmDebugScreen(
+                              realmManager: realmManager,
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ]),
