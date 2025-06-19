@@ -114,7 +114,6 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
   // }
 
   void _handleAppLifecycleState(AppLifecycleState state) {
-    print('🔁 $state isPaused $_isPause');
     switch (state) {
       case AppLifecycleState.resumed:
         if (_isPause) {
@@ -146,7 +145,6 @@ class _AppGuardState extends State<AppGuard> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    print('❌ ============ dispose app guard');
     WidgetsBinding.instance.removeObserver(this);
     _lifecycleListener.dispose();
     _screenListener.dispose();
