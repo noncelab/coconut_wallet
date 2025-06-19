@@ -41,6 +41,15 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool? _canBumpingTx;
   bool get canBumpingTx => _canBumpingTx == true;
 
+  bool _disposed = false;
+  bool get isDisposed => _disposed;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
   TransactionDetailViewModel(
       this._walletId,
       this._txHash,
@@ -87,6 +96,10 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   TransactionStatus? get transactionStatus => _transactionStatus;
 
+  void safeNotifyListeners() {
+    if (!_disposed) notifyListeners();
+  }
+
   void clearSendInfo() {
     _sendInfoProvider.clear();
   }
@@ -128,13 +141,13 @@ class TransactionDetailViewModel extends ChangeNotifier {
   void updateTransactionIndex(int newIndex) {
     _previousTransactionIndex = _selectedTransactionIndex;
     _selectedTransactionIndex = newIndex;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void setTransactionStatus(TransactionStatus? status) {
     _transactionStatus = status;
     _setSendType(status);
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void _setPreviousTransactionIndex(int newIndex) {
@@ -166,7 +179,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       // _previousCanSeeMoreInputs ??= _transactionList![selectedTransactionIndex].canSeeMoreInputs;
       // _previousCanSeeMoreOutputs ??= _transactionList![selectedTransactionIndex].canSeeMoreOutputs;
     }
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   bool updateTransactionMemo(String memo) {
@@ -175,7 +188,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       final updatedTx = _txProvider.getTransactionRecord(_walletId, _txHash);
       if (updatedTx == null) return false;
       _transactionList![0] = updatedTx;
-      notifyListeners();
+      safeNotifyListeners();
     }
     return result;
   }
@@ -270,8 +283,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('✅ Transaction Initialization Complete');
     debugPrint('====================================================================');
     _syncFeeHistoryList();
-
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void _syncFeeHistoryList() {
@@ -288,10 +300,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   void _setCurrentBlockHeight() async {
     final result = await _nodeProvider.getLatestBlock();
-
     if (result.isSuccess) {
       _currentBlock = result.value;
-      notifyListeners();
+      safeNotifyListeners();
     }
   }
 

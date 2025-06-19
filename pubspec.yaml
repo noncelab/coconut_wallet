@@ -249,6 +249,7 @@ flutter:
     - assets/svg/copy.svg
     - assets/svg/lock.svg
     - assets/svg/unlock.svg
+    - assets/svg/pen.svg
 
 
   fonts:

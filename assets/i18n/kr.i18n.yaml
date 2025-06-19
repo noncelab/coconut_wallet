@@ -207,6 +207,16 @@ positive_feedback_screen:
 # lib/screens/send
 broadcasting_complete_screen:
   complete: "전송 요청 완료"
+  memo_placeholder: "메모 입력"
+  memo_tags:
+    - "거래"
+    - "구입"
+    - "후원"
+    - "생활비"
+    - "저축"
+    - "용돈"
+    - "생일 선물"
+
 broadcasting_screen:
   title: "최종 확인"
   description: "아래 정보로 송금할게요"
