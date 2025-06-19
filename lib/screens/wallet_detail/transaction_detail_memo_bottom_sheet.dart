@@ -115,7 +115,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
                     focusNode: _focusNode,
                     onChanged: (text) {
                       setState(() {
-                        _updateMemo = text;
+                        _updateMemo = text.trim();
                       });
                     },
                     onClear: () {
