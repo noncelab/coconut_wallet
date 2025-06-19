@@ -163,22 +163,23 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         if (_appEntryFlow == AppEntryFlow.main) ...{
           ChangeNotifierProvider(create: (_) => PreferenceProvider()),
           Provider(create: (_) => SendInfoProvider()),
-          ChangeNotifierProxyProvider3<ConnectivityProvider, VisibilityProvider, AuthProvider,
-              WalletProvider>(
-            create: (_) {
+          ChangeNotifierProxyProvider2<ConnectivityProvider, AuthProvider, WalletProvider>(
+            create: (context) {
               return WalletProvider(
-                  Provider.of<RealmManager>(_, listen: false),
-                  Provider.of<AddressRepository>(_, listen: false),
-                  Provider.of<TransactionRepository>(_, listen: false),
-                  Provider.of<UtxoRepository>(_, listen: false),
-                  Provider.of<WalletRepository>(_, listen: false),
-                  Provider.of<ConnectivityProvider>(_, listen: false).isNetworkOn,
-                  Provider.of<VisibilityProvider>(_, listen: false).setWalletCount,
-                  Provider.of<AuthProvider>(_, listen: false).isSetPin,
-                  Provider.of<NodeProvider>(_, listen: false));
+                Provider.of<RealmManager>(context, listen: false),
+                Provider.of<AddressRepository>(context, listen: false),
+                Provider.of<TransactionRepository>(context, listen: false),
+                Provider.of<UtxoRepository>(context, listen: false),
+                Provider.of<WalletRepository>(context, listen: false),
+                Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+                (count) async {
+                  await context.read<VisibilityProvider>().setWalletCount(count);
+                },
+                Provider.of<AuthProvider>(context, listen: false).isSetPin,
+                Provider.of<NodeProvider>(context, listen: false),
+              );
             },
-            update:
-                (context, connectivityProvider, visiblityProvider, authProvider, walletProvider) {
+            update: (context, connectivityProvider, authProvider, walletProvider) {
               try {
                 // TODO: 바뀌었을 때만 호출되도록. walletProvider 내부에서 addLitsener()
                 walletProvider!.setIsNetworkOn(connectivityProvider.isNetworkOn);
