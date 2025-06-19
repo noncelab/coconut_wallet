@@ -166,7 +166,7 @@ class _RealmUtxo {
 
   /// [UtxoStatus] 참고
   @Indexed()
-  late String status; // unspent, outgoing, incoming
+  late String status; // unspent, outgoing, incoming, locked
   String? spentByTransactionHash; // 이 UTXO를 사용한 트랜잭션 해시 (RBF/CPFP에 필요)
 
   @Indexed()

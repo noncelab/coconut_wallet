@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
@@ -355,7 +356,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     if (context.mounted) {
       Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (BuildContext context) => const WalletListScreen()),
+          MaterialPageRoute(
+              builder: (BuildContext context) => const AppGuard(child: WalletListScreen())),
           (route) => false);
     }
   }

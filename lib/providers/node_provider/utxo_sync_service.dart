@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -57,7 +58,10 @@ class UtxoSyncService {
       final transactionMap = {
         for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx
       };
-
+      final realmLockedUtxos = _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.locked);
+      final lockedUtxoMap = {
+        for (final utxo in realmLockedUtxos) utxo.transactionHash: utxo,
+      };
       return unspentResList
           // 이미 사용된 UTXO는 필터링하여 제외
           .map((e) => UtxoState(
@@ -67,7 +71,16 @@ class UtxoSyncService {
                 derivationPath: scriptStatus.derivationPath,
                 blockHeight: e.height,
                 to: scriptStatus.address,
-                status: e.height > 0 ? UtxoStatus.unspent : UtxoStatus.incoming,
+                status: () {
+                  if (e.height <= 0) return UtxoStatus.incoming;
+
+                  final lockedUtxo = lockedUtxoMap[e.txHash];
+                  if (lockedUtxo == null || lockedUtxo.status == UtxoStatus.unspent) {
+                    return UtxoStatus.unspent;
+                  } else {
+                    return UtxoStatus.locked;
+                  }
+                }(),
                 timestamp: transactionMap[e.txHash]!.timestamp,
               ))
           .toList();

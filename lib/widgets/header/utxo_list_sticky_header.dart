@@ -4,15 +4,19 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class UtxoListStickyHeader extends StatelessWidget {
+  final GlobalKey stickyHeaderGlobalKey;
   final GlobalKey dropdownGlobalKey;
   final double height;
   final bool isVisible;
+  final bool isLoadComplete;
   final bool enableDropdown;
   final AnimatedBalanceData animatedBalanceData;
   final int? totalCount;
@@ -22,9 +26,11 @@ class UtxoListStickyHeader extends StatelessWidget {
   final BitcoinUnit currentUnit;
   const UtxoListStickyHeader({
     super.key,
+    required this.stickyHeaderGlobalKey,
     required this.dropdownGlobalKey,
     required this.height,
     required this.isVisible,
+    required this.isLoadComplete,
     required this.enableDropdown,
     required this.animatedBalanceData,
     required this.totalCount,
@@ -45,6 +51,7 @@ class UtxoListStickyHeader extends StatelessWidget {
         child: IgnorePointer(
           ignoring: !isVisible,
           child: AnimatedOpacity(
+            key: stickyHeaderGlobalKey,
             opacity: isVisible ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 200),
             child: Stack(
@@ -106,6 +113,22 @@ class UtxoListStickyHeader extends StatelessWidget {
                           Expanded(
                             child: Container(),
                           ),
+                          Visibility(
+                            visible: !isLoadComplete,
+                            child: Align(
+                              child: Container(
+                                margin: const EdgeInsets.only(
+                                  right: 4,
+                                ),
+                                width: 12,
+                                height: 12,
+                                child: const CircularProgressIndicator(
+                                  color: CoconutColors.gray400,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          ),
                           CupertinoButton(
                             key: dropdownGlobalKey,
                             padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
@@ -134,16 +157,13 @@ class UtxoListStickyHeader extends StatelessWidget {
                         ],
                       ),
                       CoconutLayout.spacing_50h,
-                      Visibility(
-                        visible: !viewModel.isUtxoTagListEmpty,
-                        child: CustomTagHorizontalSelector(
-                          tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                          selectedName: viewModel.selectedUtxoTagName,
-                          onSelectedTag: (tagName) {
-                            viewModel.setSelectedUtxoTagName(tagName);
-                          },
-                          scrollPhysics: const AlwaysScrollableScrollPhysics(),
-                        ),
+                      CustomTagHorizontalSelector(
+                        tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+                        selectedName: viewModel.selectedUtxoTagName,
+                        onSelectedTag: (tagName) {
+                          viewModel.setSelectedUtxoTagName(tagName);
+                        },
+                        scrollPhysics: const AlwaysScrollableScrollPhysics(),
                       ),
                       CoconutLayout.spacing_300h,
                     ],

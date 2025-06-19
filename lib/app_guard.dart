@@ -79,7 +79,6 @@ class _AppGuardState extends State<AppGuard> {
   // }
 
   void _handleAppLifecycleState(AppLifecycleState state) {
-    print('🔁 $state isPaused $_isPause');
     switch (state) {
       case AppLifecycleState.resumed:
         if (_isPause) {
