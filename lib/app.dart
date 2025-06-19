@@ -65,6 +65,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late bool kElectrumIsSSL;
   static late String kMempoolHost;
   static late String kFaucetHost;
+  static late String kDonationAddress;
   static late NetworkType kNetworkType;
   const CoconutWalletApp({super.key});
 
@@ -300,7 +301,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
           '/broadcasting-complete': (context) => buildScreenWithArguments(
                 context,
-                (args) => CustomLoadingOverlay(child: BroadcastingCompleteScreen(id: args['id'])),
+                (args) => CustomLoadingOverlay(child: BroadcastingCompleteScreen(id: args['id'], isDonation: args['isDonation'])),
               ),
           '/send-address': (context) => buildScreenWithArguments(
                 context,
@@ -332,9 +333,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/mnemonic-word-list': (context) => const Bip39ListScreen(),
           '/utxo-tag': (context) =>
               buildScreenWithArguments(context, (args) => UtxoTagCrudScreen(id: args['id'])),
-          '/select-donation-amount': (context) => const SelectDonationAmountScreen(),
-          '/onchain-donation-info': (context) => buildScreenWithArguments(context,
-              (args) => OnchainDonationInfoScreen(donationAmount: args['donation-amount'])),
+          '/select-donation-amount': (context) => buildScreenWithArguments(context,
+              (args) => SelectDonationAmountScreen(walletListLength: args['wallet-list-length'])),
+          '/onchain-donation-info': (context) => buildScreenWithArguments(
+              context,
+              (args) => OnchainDonationInfoScreen(
+                    donationAmount: args['donation-amount'],
+                  )),
           '/lightning-donation-info': (context) => buildScreenWithArguments(context,
               (args) => LightningDonationInfoScreen(donationAmount: args['donation-amount'])),
         },

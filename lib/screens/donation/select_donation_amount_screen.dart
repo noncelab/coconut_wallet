@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
+import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -10,8 +11,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class SelectDonationAmountScreen extends StatefulWidget {
+  final int walletListLength;
   const SelectDonationAmountScreen({
     super.key,
+    required this.walletListLength,
   });
 
   @override
@@ -19,7 +22,6 @@ class SelectDonationAmountScreen extends StatefulWidget {
 }
 
 class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen> with RouteAware {
-  final GlobalKey _bottomButtonRowKey = GlobalKey();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -28,11 +30,15 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
   final donationCoffeeValue = 5000; // 커피 한잔 후원금
   final donationLateMealValue = 10000; // 야근 식대 후원금
   final donationMaintenanceValue = 50000; // 유지 보수비 후원금
-  final int dust = 546; // segwit dust
+
+  static const kDonationLightningMaxValue = 500000000;
 
   int? customDonateValue;
 
   bool isDustErrorTextVisible = false;
+  bool isOverDonationMaxValue = false;
+
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -70,7 +76,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: () {
-          FocusScope.of(context).unfocus();
+          _hideKeyboard();
           if (donationSelectedType == DonationSelectedType.custom && customDonateValue == null) {
             setState(() {
               donationSelectedType = DonationSelectedType.none;
@@ -88,16 +94,25 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Container(
                     width: MediaQuery.sizeOf(context).width,
-                    height: MediaQuery.sizeOf(context).height -
-                        kToolbarHeight -
-                        MediaQuery.paddingOf(context).top,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    height: MediaQuery.of(context).viewInsets.bottom > 0
+                        ? MediaQuery.sizeOf(context).height -
+                            kToolbarHeight -
+                            MediaQuery.paddingOf(context).top +
+                            100
+                        : MediaQuery.sizeOf(context).height -
+                            kToolbarHeight -
+                            MediaQuery.paddingOf(context).top -
+                            30,
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      top: 30,
+                    ),
                     child: Column(
                       children: [
                         Expanded(
                             child: Column(
                           children: [
-                            CoconutLayout.spacing_800h,
                             Text(
                               t.donation.encourageSupportMessage,
                               style: CoconutTypography.body2_14_Bold,
@@ -129,7 +144,17 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                             if (isDustErrorTextVisible) ...[
                               CoconutLayout.spacing_200h,
                               Text(
-                                t.donation.under_dust_error(dust: dust),
+                                t.donation.under_dust_error(dust: dustLimit),
+                                style: CoconutTypography.body3_12.setColor(
+                                  CoconutColors.warningText,
+                                ),
+                              ),
+                            ],
+                            if (isOverDonationMaxValue) ...[
+                              CoconutLayout.spacing_200h,
+                              Text(
+                                t.donation.over_donation_max_value_error(
+                                    value: kDonationLightningMaxValue),
                                 style: CoconutTypography.body3_12.setColor(
                                   CoconutColors.warningText,
                                 ),
@@ -146,7 +171,6 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                   right: CoconutLayout.defaultPadding,
                   bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size30,
                   child: Row(
-                    key: _bottomButtonRowKey,
                     children: [
                       donateBottomButtonWidget(isNetworkOn, true),
                       CoconutLayout.spacing_200w,
@@ -154,6 +178,16 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                     ],
                   ),
                 ),
+                if (isLoading)
+                  Positioned(
+                    top: 0,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + kToolbarHeight,
+                    child: Container(
+                        width: MediaQuery.sizeOf(context).width,
+                        height: MediaQuery.sizeOf(context).height,
+                        color: CoconutColors.black.withOpacity(0.3),
+                        child: const Center(child: CoconutCircularIndicator())),
+                  ),
               ],
             );
           },
@@ -162,7 +196,23 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
     );
   }
 
-  void goNextScreen(bool isNetworkOn, bool isOnchainDonation) {
+  void _hideKeyboard() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
+      _focusNode.unfocus();
+      // Fallback for keyboard hide
+      Future.delayed(const Duration(milliseconds: 50), () {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      });
+    });
+  }
+
+  void goNextScreen(bool isNetworkOn, bool isOnchainDonation) async {
+    setState(() {
+      isLoading = true;
+    });
+    _hideKeyboard();
+
     if (isNetworkOn != true) {
       CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
       return;
@@ -193,10 +243,20 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
       default:
         return;
     }
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
 
-    Navigator.pushNamed(
-        context, isOnchainDonation ? '/onchain-donation-info' : '/lightning-donation-info',
-        arguments: {'donation-amount': donateValue});
+      if (isOnchainDonation) {
+        Navigator.pushNamed(context, '/onchain-donation-info', arguments: {
+          'donation-amount': donateValue,
+        });
+      } else {
+        Navigator.pushNamed(context, '/lightning-donation-info',
+            arguments: {'donation-amount': donateValue});
+      }
+    }
   }
 
   void scrollToBottom() {
@@ -214,22 +274,33 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
   Widget donateBottomButtonWidget(bool isNetworkOn, bool isOnchain) {
     return Expanded(
       child: CoconutButton(
-        isActive: donationSelectedType != DonationSelectedType.none,
-        backgroundColor: CoconutColors.white,
+        isActive: donationSelectedType != DonationSelectedType.none && !isLoading,
         foregroundColor: CoconutColors.black,
-        pressedTextColor: CoconutColors.gray500,
-        pressedBackgroundColor: CoconutColors.gray300,
-        disabledBackgroundColor: CoconutColors.gray600,
+        pressedTextColor: CoconutColors.black,
+        pressedBackgroundColor: CoconutColors.gray500,
+        disabledBackgroundColor: CoconutColors.gray800,
+        disabledForegroundColor: CoconutColors.gray700,
         onPressed: () {
-          FocusScope.of(context).unfocus();
-
           // 네트워크 체크
           if (!isNetworkOn) {
             CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
             return;
           }
 
-          if (handleDustThreshold()) return;
+          if (handleDustThreshold()) {
+            scrollToBottom();
+            return;
+          }
+
+          if (!isOnchain &&
+              donationSelectedType == DonationSelectedType.custom &&
+              ((customDonateValue != null && customDonateValue! > kDonationLightningMaxValue) ||
+                  customDonateValue == null)) {
+            setState(() {
+              isOverDonationMaxValue = true;
+            });
+            return;
+          }
 
           goNextScreen(isNetworkOn, isOnchain);
         },
@@ -240,8 +311,8 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
 
   bool handleDustThreshold() {
     if (donationSelectedType == DonationSelectedType.custom &&
-        customDonateValue != null &&
-        customDonateValue! <= dust) {
+        ((customDonateValue != null && customDonateValue! <= dustLimit) ||
+            customDonateValue == null)) {
       setState(() {
         isDustErrorTextVisible = true;
       });
@@ -263,9 +334,9 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
       onPressed: () {
         final hadFocus = _focusNode.hasFocus;
         final isCustom = donationType == DonationSelectedType.custom;
+        if (!isCustom && hadFocus) _hideKeyboard();
 
         if (hadFocus) {
-          FocusScope.of(context).unfocus();
           if (isCustom && handleDustThreshold()) return;
         }
 
@@ -273,12 +344,16 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
           donationSelectedType = donationType;
           if (isDustErrorTextVisible) {
             isDustErrorTextVisible = false;
+          } else if (isOverDonationMaxValue) {
+            isOverDonationMaxValue = false;
           }
         });
 
         if (isCustom && !hadFocus) {
-          scrollToBottom();
           _focusNode.requestFocus();
+          Future.delayed(const Duration(milliseconds: 200)).then((_) {
+            scrollToBottom();
+          });
         }
       },
       child: ConstrainedBox(
@@ -319,19 +394,29 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                                 controller: _controller,
                                 autofocus: false,
                                 onTap: () {
-                                  scrollToBottom();
                                   donationSelectedType = DonationSelectedType.custom;
                                   setState(() {
                                     isDustErrorTextVisible = false;
+                                    isOverDonationMaxValue = false;
                                   });
                                   _controller.selection = TextSelection.fromPosition(
                                     TextPosition(offset: _controller.text.length),
                                   );
+
+                                  Future.delayed(const Duration(milliseconds: 200)).then((_) {
+                                    scrollToBottom();
+                                  });
                                 },
                                 onChanged: (input) {
                                   if (isDustErrorTextVisible) {
                                     setState(() {
                                       isDustErrorTextVisible = false;
+                                    });
+                                  }
+
+                                  if (isOverDonationMaxValue) {
+                                    setState(() {
+                                      isOverDonationMaxValue = false;
                                     });
                                   }
 
@@ -342,15 +427,22 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
 
                                   customDonateValue = int.parse(input);
                                 },
-                                focusNode: donationSelectedType == DonationSelectedType.custom
-                                    ? _focusNode
-                                    : null,
+                                focusNode: _focusNode,
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                 textInputAction: TextInputAction.done,
+                                onSubmitted: (value) {
+                                  if (donationSelectedType == DonationSelectedType.custom &&
+                                      customDonateValue != null &&
+                                      customDonateValue! <= dustLimit) {
+                                    setState(() {
+                                      isDustErrorTextVisible = true;
+                                    });
+                                  }
+                                },
                                 textAlign: TextAlign.center,
                                 style: CoconutTypography.body3_12.setColor(
-                                  isDustErrorTextVisible
+                                  isDustErrorTextVisible || isOverDonationMaxValue
                                       ? CoconutColors.warningText
                                       : CoconutColors.gray100,
                                 ),
@@ -361,7 +453,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                                   ),
                                   enabledBorder: UnderlineInputBorder(
                                     borderSide: BorderSide(
-                                      color: isDustErrorTextVisible
+                                      color: isDustErrorTextVisible || isOverDonationMaxValue
                                           ? CoconutColors.warningText
                                           : CoconutColors.gray600,
                                       width: 1,
