@@ -180,7 +180,6 @@ class FeeSelectionViewModel extends ChangeNotifier {
     }
 
     final RecommendedFee recommendedFees = recommendedFeesResult.value;
-
     feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
     feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
@@ -271,6 +270,7 @@ class FeeSelectionViewModel extends ChangeNotifier {
 
   void _handleCustomFeeInput(String input) async {
     if (input.isEmpty) {
+      setEstimatedFee(0);
       return;
     }
 
@@ -279,20 +279,10 @@ class FeeSelectionViewModel extends ChangeNotifier {
     if (_minimumSatsPerVb != null && customSatsPerVb < _minimumSatsPerVb! && customSatsPerVb != 0) {
       if (!_isCustomFeeTooLow) {
         _isCustomFeeTooLow = true;
-        notifyListeners();
       }
       return;
     } else if (_isCustomFeeTooLow) {
       _isCustomFeeTooLow = false;
-      notifyListeners();
-    }
-
-    // 이미 입력했던 값이랑 동일한 값인 경우 재계산 하지 않음
-    if (_isCustomSelected == true &&
-        _customFeeInfo != null &&
-        _customFeeInfo?.satsPerVb != null &&
-        _customFeeInfo?.satsPerVb! == customSatsPerVb) {
-      return;
     }
 
     setLoading(true);
@@ -386,8 +376,13 @@ class FeeSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSelectedLevel(TransactionFeeLevel value) {
-    _selectedLevel = value;
+  void setSelectedLevel(FeeInfoWithLevel value) {
+    _selectedLevel = value.level;
+    _input = value.satsPerVb.toString();
+    if (isCustomFeeTooLow && value.satsPerVb! >= _minimumSatsPerVb!.toDouble()) {
+      _isCustomFeeTooLow = false;
+    }
+
     notifyListeners();
   }
 

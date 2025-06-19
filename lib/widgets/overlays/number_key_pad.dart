@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 class NumberKeyPad extends StatelessWidget {
   final BitcoinUnit currentUnit;
   final ValueChanged<String> onKeyTap;
+  final bool isEnabled;
+
   const NumberKeyPad({
     super.key,
     required this.currentUnit,
     required this.onKeyTap,
+    this.isEnabled = true,
   });
 
   @override
@@ -37,6 +40,7 @@ class NumberKeyPad extends StatelessWidget {
           child: KeyButton(
             keyValue: key,
             onKeyTap: onKeyTap,
+            isEnabled: isEnabled,
           ),
         );
       }).toList(),

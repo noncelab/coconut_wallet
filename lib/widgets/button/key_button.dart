@@ -10,11 +10,13 @@ import 'package:coconut_wallet/styles.dart';
 class KeyButton extends StatefulWidget {
   final String keyValue;
   final ValueChanged<String> onKeyTap;
+  final bool isEnabled;
 
   const KeyButton({
     super.key,
     required this.keyValue,
     required this.onKeyTap,
+    this.isEnabled = true,
   });
 
   @override
@@ -66,19 +68,23 @@ class _KeyButtonState extends State<KeyButton> {
   Widget build(BuildContext context) {
     return GestureDetector(
         onTap: () {
+          if (!widget.isEnabled) return;
           widget.onKeyTap(widget.keyValue);
         },
         onTapDown: (_) {
+          if (!widget.isEnabled) return;
           setState(() {
             _isPressed = true;
           });
         },
         onTapCancel: () {
+          if (!widget.isEnabled) return;
           setState(() {
             _isPressed = false;
           });
         },
         onTapUp: (_) {
+          if (!widget.isEnabled) return;
           setState(() {
             _isPressed = false;
           });
@@ -94,21 +100,27 @@ class _KeyButtonState extends State<KeyButton> {
               ),
           child: Center(
               child: widget.keyValue == '<'
-                  ? const Icon(Icons.backspace, color: CoconutColors.white, size: 20)
+                  ? Icon(Icons.backspace,
+                      color: widget.isEnabled ? CoconutColors.white : CoconutColors.gray700,
+                      size: 20)
                   : widget.keyValue == 'bio'
                       ? _isFaceRecognition
                           ? SvgPicture.asset('assets/svg/face-id.svg',
                               width: 20,
-                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn))
+                              colorFilter: ColorFilter.mode(
+                                  widget.isEnabled ? CoconutColors.white : CoconutColors.gray700,
+                                  BlendMode.srcIn))
                           : SvgPicture.asset('assets/svg/fingerprint.svg',
                               width: 20,
-                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn))
+                              colorFilter: ColorFilter.mode(
+                                  widget.isEnabled ? CoconutColors.white : CoconutColors.gray700,
+                                  BlendMode.srcIn))
                       : Text(
                           widget.keyValue,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
-                              color: CoconutColors.white,
+                              color: widget.isEnabled ? CoconutColors.white : CoconutColors.gray700,
                               fontFamily: 'SpaceGrotesk'),
                         )),
         ));

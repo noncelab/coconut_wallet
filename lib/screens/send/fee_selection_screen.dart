@@ -97,15 +97,28 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                         height: 80,
                       ),
                       // Fee 선택 현황
-                      if (viewModel.selectedLevel != null)
-                        Container(
+
+                      Visibility(
+                        visible: viewModel.input.isNotEmpty &&
+                            (viewModel.selectedLevel != null || viewModel.isCustomSelected),
+                        maintainSize: true,
+                        maintainAnimation: true,
+                        maintainState: true,
+                        maintainSemantics: true,
+                        maintainInteractivity: true,
+                        child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(CoconutStyles.radius_150),
                             color: CoconutColors.white.withOpacity(0.2),
                           ),
-                          child: Text(viewModel.selectedLevel!.text, style: Styles.caption),
+                          child: Text(
+                              viewModel.isCustomSelected
+                                  ? t.input_directly
+                                  : viewModel.selectedLevel?.text ?? '',
+                              style: Styles.caption),
                         ),
+                      ),
                       CoconutLayout.spacing_300h,
                       // sat/vB
                       Text(
@@ -167,12 +180,13 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                       NumberKeyPad(
                         currentUnit: _currentUnit,
                         onKeyTap: _viewModel.onKeyTap,
+                        isEnabled: !isLoading,
                       ),
                     ],
                   ),
                 ),
                 NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
-                if (isLoading) const CoconutLoadingOverlay(),
+                // if (isLoading) const CoconutLoadingOverlay(),
               ],
             ),
           );
@@ -208,82 +222,85 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
   Widget _buildRecommendedFeeButtons() {
     bool? isRecommendedFeeFetchSuccess = _viewModel.isRecommendedFeeFetchSuccess;
-    bool isFeeFetchedSuccess = isRecommendedFeeFetchSuccess != null && isRecommendedFeeFetchSuccess;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         Flexible(
           child: _recommendedFeeButtonWidget(
-            isFeeFetchedSuccess,
+            isRecommendedFeeFetchSuccess,
             'assets/svg/rocket.svg',
-            t.transaction_enums.high,
+            _viewModel.feeInfos[0],
           ),
         ),
         Flexible(
           child: _recommendedFeeButtonWidget(
-            isFeeFetchedSuccess,
+            isRecommendedFeeFetchSuccess,
             'assets/svg/car.svg',
-            t.transaction_enums.medium,
+            _viewModel.feeInfos[1],
           ),
         ),
         Flexible(
           child: _recommendedFeeButtonWidget(
-            isFeeFetchedSuccess,
+            isRecommendedFeeFetchSuccess,
             'assets/svg/foot.svg',
-            t.transaction_enums.low,
+            _viewModel.feeInfos[2],
           ),
         ),
       ],
     );
   }
 
-  Widget _recommendedFeeButtonWidget(bool isFeeFetchedSuccess, String iconPath, String text) {
-    FeeInfoWithLevel selectedFeeInfo = text == t.transaction_enums.high
-        ? _viewModel.feeInfos[0]
-        : text == t.transaction_enums.medium
-            ? _viewModel.feeInfos[1]
-            : _viewModel.feeInfos[2];
+  Widget _recommendedFeeButtonWidget(
+      bool? isFeeFetchedSuccess, String iconPath, FeeInfoWithLevel feeInfoWithLevel) {
+    if (isFeeFetchedSuccess == false) return Container();
     return Stack(
       children: [
-        ShrinkAnimationButton(
-          onPressed: () {
-            _viewModel.setSelectedLevel(selectedFeeInfo.level);
-            _viewModel.setSelectedFeeLevelText(selectedFeeInfo.level.text);
-            _viewModel.setEstimatedFee(selectedFeeInfo.estimatedFee!);
-            _viewModel.setCustomSelected(false);
-            debugPrint('selectedFeeLevel : ${selectedFeeInfo.level} ${_viewModel.estimatedFee}');
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              color: CoconutColors.black,
-              borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
-              border: Border.all(
-                color: isFeeFetchedSuccess ? CoconutColors.gray700 : CoconutColors.gray800,
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          child: ShrinkAnimationButton(
+            onPressed: () {
+              _viewModel.setSelectedLevel(feeInfoWithLevel);
+              _viewModel.setEstimatedFee(feeInfoWithLevel.estimatedFee!);
+              _viewModel.setCustomSelected(false);
+            },
+            pressedColor: CoconutColors.gray700,
+            borderRadius: CoconutStyles.radius_100 - 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: CoconutColors.black,
+                borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                border: Border.all(
+                  color: isFeeFetchedSuccess == true
+                      ? !_viewModel.isCustomSelected &&
+                              _viewModel.selectedLevel == feeInfoWithLevel.level
+                          ? CoconutColors.white
+                          : CoconutColors.gray700
+                      : CoconutColors.gray800,
+                ),
               ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SvgPicture.asset(
-                  iconPath,
-                  colorFilter: isFeeFetchedSuccess
-                      ? null
-                      : const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn),
-                ),
-                CoconutLayout.spacing_200w,
-                Text(
-                  text,
-                  style: CoconutTypography.body3_12.setColor(
-                    isFeeFetchedSuccess ? CoconutColors.white : CoconutColors.gray700,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SvgPicture.asset(
+                    iconPath,
+                    colorFilter: isFeeFetchedSuccess == true
+                        ? null
+                        : const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn),
                   ),
-                ),
-              ],
+                  CoconutLayout.spacing_200w,
+                  Text(
+                    feeInfoWithLevel.level.text,
+                    style: CoconutTypography.body3_12.setColor(
+                      isFeeFetchedSuccess == true ? CoconutColors.white : CoconutColors.gray700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        if (!isFeeFetchedSuccess)
+        if (isFeeFetchedSuccess == null)
           Shimmer.fromColors(
             baseColor: CoconutColors.white.withOpacity(0.2),
             highlightColor: CoconutColors.white.withOpacity(0.6),
