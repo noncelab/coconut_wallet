@@ -1,9 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -12,10 +12,9 @@ import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/send/fee_selection_screen_t.dart';
+import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/send_utxo_sticky_header.dart';
@@ -241,23 +240,19 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _onTapFeeChangeButton() async {
-    Result<int>? minimumFeeRate = await _viewModel.getMinimumFeeRateFromNetwork();
-
-    if (!mounted) {
-      return;
-    }
-
     Map<String, dynamic>? feeSelectionResult = await CommonBottomSheets.showBottomSheet_90(
       context: context,
-      child: Container(),
-      // child: FeeSelectionScreen(
-      //     feeInfos: _viewModel.feeInfos,
-      //     selectedFeeLevel: _viewModel.selectedLevel,
-      //     networkMinimumFeeRate: minimumFeeRate?.value,
-      //     customFeeInfo: _viewModel.customFeeInfo,
-      //     isRecommendedFeeFetchSuccess:
-      //         _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed,
-      //     estimateFee: _viewModel.estimateFee),
+      child: FeeSelectionScreen(
+        isBottom: true,
+        feeInfos: _viewModel.feeInfos,
+        selectedUtxo: _viewModel.selectedUtxoList,
+        selectedFeeLevel: _viewModel.selectedLevel,
+        minimumSatsPerVb: _viewModel.minimumSatsPerVb,
+        customFeeInfo: _viewModel.customFeeInfo,
+        isRecommendedFeeFetchSuccess:
+            _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed,
+        estimateFee: _viewModel.estimateFee,
+      ),
     );
     if (feeSelectionResult != null) {
       _viewModel.onFeeRateChanged(feeSelectionResult);
@@ -276,7 +271,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _viewModel.selectAllUtxo();
   }
 
-  void _toggleSelection(Utxo utxo) {
+  void _toggleSelection(UtxoState utxo) {
     _removeUtxoOrderDropdown();
     _viewModel.toggleUtxoSelection(utxo);
   }
@@ -650,7 +645,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 customFeeSelected: viewModel.customFeeSelected,
                 sendAmount: viewModel.sendAmount,
                 estimatedFee: viewModel.estimatedFee,
-                satsPerVb: viewModel.satsPerVb?.toInt(),
+                satsPerVb: viewModel.customFeeSelected
+                    ? _viewModel.customFeeInfo?.satsPerVb?.toInt()
+                    : viewModel.satsPerVb?.toInt(),
                 change: viewModel.change,
                 onPressedUnitToggle: _toggleUnit,
                 currentUnit: _currentUnit,

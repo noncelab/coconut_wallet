@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -13,7 +14,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:coconut_wallet/widgets/overlays/number_key_pad.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +22,29 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 
 class FeeSelectionScreen extends StatefulWidget {
-  const FeeSelectionScreen({super.key});
+  static const String customInputField = 'customInputField';
+  static const String selectedOptionField = 'selectedOption';
+  static const String feeInfoField = 'feeInfo';
+  final bool isBottom;
+  final List<FeeInfoWithLevel>? feeInfos;
+  final List<UtxoState>? selectedUtxo;
+  final TransactionFeeLevel? selectedFeeLevel;
+  final FeeInfo? customFeeInfo;
+  final int? minimumSatsPerVb;
+  final bool? isRecommendedFeeFetchSuccess;
+  final int Function(double)? estimateFee;
+
+  const FeeSelectionScreen({
+    super.key,
+    this.isBottom = false,
+    this.feeInfos,
+    this.selectedUtxo,
+    this.selectedFeeLevel,
+    this.customFeeInfo,
+    this.minimumSatsPerVb,
+    this.isRecommendedFeeFetchSuccess,
+    this.estimateFee,
+  });
 
   @override
   State<FeeSelectionScreen> createState() => _FeeSelectionScreenState();
@@ -67,12 +89,17 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                 title: t.fee,
                 context: context,
                 isActive: canGoNext,
+                isBottom: widget.isBottom,
                 onBackPressed: () {
                   Navigator.pop(context);
                 },
                 usePrimaryActiveColor: true,
                 nextButtonTitle: t.complete,
                 onNextPressed: () {
+                  if (widget.isBottom) {
+                    _onBottomSheetCompleteTap();
+                    return;
+                  }
                   double finalFeeRate = isCustomSelected
                       ? customFeeInfo!.satsPerVb!
                       : viewModel.feeInfos
@@ -198,13 +225,21 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   @override
   void initState() {
     super.initState();
+
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
     _viewModel = FeeSelectionViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<NodeProvider>(context, listen: false),
-        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
-        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
+      Provider.of<SendInfoProvider>(context, listen: false),
+      Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<NodeProvider>(context, listen: false),
+      Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
+      Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+      feeInfos: widget.feeInfos,
+      selectedUtxo: widget.selectedUtxo,
+      customFeeInfo: widget.customFeeInfo,
+      minimumSatsPerVb: widget.minimumSatsPerVb,
+      isRecommendedFeeFetchSuccess: widget.isRecommendedFeeFetchSuccess,
+      estimateFee: widget.estimateFee,
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_viewModel.isNetworkOn) {
@@ -261,7 +296,6 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
             onPressed: () {
               _viewModel.setSelectedLevel(feeInfoWithLevel);
               _viewModel.setEstimatedFee(feeInfoWithLevel.estimatedFee!);
-              _viewModel.setCustomSelected(false);
             },
             pressedColor: CoconutColors.gray700,
             borderRadius: CoconutStyles.radius_100 - 2,
@@ -340,5 +374,18 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
         tooltipState: tooltipState,
       ),
     );
+  }
+
+  void _onBottomSheetCompleteTap() {
+    Map<String, dynamic> returnData = {
+      FeeSelectionScreen.customInputField: _viewModel.isCustomSelected,
+      FeeSelectionScreen.selectedOptionField: _viewModel.selectedLevel,
+      FeeSelectionScreen.feeInfoField: (_viewModel.customFeeInfo?.satsPerVb != null)
+          ? FeeInfo(
+              estimatedFee: _viewModel.estimatedFee, satsPerVb: _viewModel.customFeeInfo?.satsPerVb)
+          : _viewModel.findFeeInfoWithLevel(),
+    };
+
+    Navigator.pop(context, returnData);
   }
 }

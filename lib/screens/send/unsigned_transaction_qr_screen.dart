@@ -1,12 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/print_util.dart';
-import 'package:coconut_wallet/widgets/animated_qr/animated_qr_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/coconut_qr_view_handler.dart';

@@ -11,7 +11,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:coconut_wallet/widgets/overlays/number_key_pad.dart';
 import 'package:flutter/material.dart';

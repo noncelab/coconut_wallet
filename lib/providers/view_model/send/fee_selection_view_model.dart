@@ -20,6 +20,7 @@ class FeeSelectionViewModel extends ChangeNotifier {
   final SendInfoProvider _sendInfoProvider;
   final WalletProvider _walletProvider;
   final NodeProvider _nodeProvider;
+  final int Function(double)? _externalEstimateFee;
 
   late final WalletListItemBase _walletListItemBase;
   late AddressType _walletAddressType;
@@ -33,25 +34,22 @@ class FeeSelectionViewModel extends ChangeNotifier {
   late String _input;
   late bool? _isNetworkOn;
   bool _isBatchTx = false;
+  bool _disposed = false;
 
   static const int _maxFeeLimit = 1000000; // sats, 사용자가 실수로 너무 큰 금액을 수수료로 지불하지 않도록 지정했습니다.
 
   int _estimatedFee = 0;
-  int? _minimumSatsPerVb;
   bool _isCustomFeeTooLow = false;
   bool _isLoading = false;
   bool _isCustomSelected = false;
-  bool? _isRecommendedFeeFetchSuccess;
   String? _selectedFeeLevelText;
 
-  FeeInfo? _customFeeInfo;
   TransactionFeeLevel? _selectedLevel;
 
-  final List<FeeInfoWithLevel> _feeInfos = [
-    FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
-    FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
-    FeeInfoWithLevel(level: TransactionFeeLevel.hour),
-  ];
+  late List<FeeInfoWithLevel> _feeInfos;
+  late FeeInfo? _customFeeInfo;
+  late int? _minimumSatsPerVb;
+  late bool? _isRecommendedFeeFetchSuccess;
 
   int get maxFeeLimit => _maxFeeLimit;
   int? get estimatedFee => _estimatedFee;
@@ -66,8 +64,29 @@ class FeeSelectionViewModel extends ChangeNotifier {
   TransactionFeeLevel? get selectedLevel => _selectedLevel;
   FeeInfo? get customFeeInfo => _customFeeInfo;
 
-  FeeSelectionViewModel(this._sendInfoProvider, this._walletProvider, this._nodeProvider,
-      this._bitcoinPriceKrw, this._isNetworkOn) {
+  FeeSelectionViewModel(
+    this._sendInfoProvider,
+    this._walletProvider,
+    this._nodeProvider,
+    this._bitcoinPriceKrw,
+    this._isNetworkOn, {
+    List<FeeInfoWithLevel>? feeInfos,
+    FeeInfo? customFeeInfo,
+    int? minimumSatsPerVb,
+    bool? isRecommendedFeeFetchSuccess,
+    List<UtxoState>? selectedUtxo,
+    int Function(double)? estimateFee,
+  }) : _externalEstimateFee = estimateFee {
+    _feeInfos = feeInfos ??
+        [
+          FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
+          FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
+          FeeInfoWithLevel(level: TransactionFeeLevel.hour),
+        ];
+    _customFeeInfo = customFeeInfo;
+    _minimumSatsPerVb = minimumSatsPerVb;
+    _isRecommendedFeeFetchSuccess = isRecommendedFeeFetchSuccess;
+
     _input = '';
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _walletAddressType = _walletListItemBase.walletType == WalletType.singleSignature
@@ -93,6 +112,19 @@ class FeeSelectionViewModel extends ChangeNotifier {
     _updateSendInfoProvider();
   }
 
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) {
+      super.notifyListeners();
+    }
+  }
+
   double get amount => _amount;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   bool get isNetworkOn => _isNetworkOn == true;
@@ -100,8 +132,16 @@ class FeeSelectionViewModel extends ChangeNotifier {
   NodeProvider get nodeprovider => _nodeProvider;
   String get input => addThousandsSeparator(_input);
 
-  int estimateFee(double satsPerVb) {
-    final transaction = _createTransaction(satsPerVb);
+  int estimateFee(
+    double satsPerVb,
+  ) {
+    if (_externalEstimateFee != null) {
+      return _externalEstimateFee(satsPerVb);
+    }
+
+    final transaction = _createTransaction(
+      satsPerVb,
+    );
 
     if (_isMultisigWallet) {
       final multisigWallet = _walletListItemBase.walletBase as MultisignatureWallet;
@@ -307,10 +347,14 @@ class FeeSelectionViewModel extends ChangeNotifier {
   }
 
   bool canGoNext() {
-    if (_selectedLevel == null) return false;
+    if (_selectedLevel == null && !isCustomSelected) return false;
 
-    double? recommendedSatsPerVb =
-        _feeInfos.firstWhere((element) => element.level == _selectedLevel).satsPerVb;
+    double? recommendedSatsPerVb = _minimumSatsPerVb!.toDouble();
+    if (!isCustomSelected) {
+      recommendedSatsPerVb =
+          _feeInfos.firstWhere((element) => element.level == _selectedLevel).satsPerVb;
+    }
+
     double? finalFeeRate = _isCustomSelected ? _customFeeInfo?.satsPerVb : recommendedSatsPerVb;
 
     return isNetworkOn &&
@@ -319,6 +363,10 @@ class FeeSelectionViewModel extends ChangeNotifier {
         _estimatedFee < maxFeeLimit &&
         isBalanceEnough(estimatedFee) &&
         !isLoading;
+  }
+
+  FeeInfoWithLevel findFeeInfoWithLevel() {
+    return feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel);
   }
 
   void setBitcoinPriceKrw(int price) {
