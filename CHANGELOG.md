@@ -1,3 +1,26 @@
+## mainnet 0.0.9(beta)
+### Fixed
+* [입력 정보 확인] 화면 - 예상 수수료 항목에 dust 잔돈 포함되어 보내지는 경우에도 예상 수수료에 포함이 안되어 있음
+* 보내기 - QR 스캔 화면에서 다른 앱에서 주고 복사 후 돌아왔을 때 '붙여넣기' 버튼 활성화가 안됨
+* 보내기 - 클립보드에 legacy 주소 복사 후 QR 스캔 화면에 진입 시 화면 에러
+### Added
+* 사용 전 주소만 보기 
+* 주소 검색 기능 추가
+* UTXO 잠금
+
+## mainnet 0.0.8(beta) 
+### Fixed
+* 용어집 바텀싯 닫힘 중단 현상
+* 용어집에 디스코드에 물어보기 글가 줄바뀜되는 것 방지
+* tx-input-output-card input 없을 때 ui 버그 수정
+* tx-input-output-card 더보기 버튼 노출 버그 수정
+### Added
+* 거래 내역 총 개수 표시
+
+## mainnet 0.0.7(beta)
+### Fixed
+* coconut_lib ^0.10.3 버전 업그레이드
+
 ## mainnet 0.0.6(beta), regtest 3.1.4 - 2025-06-11
 ### Fixed
 * 툴팁 동작 버그 개선
