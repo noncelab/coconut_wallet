@@ -182,7 +182,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                 // 추천 수수료 조회 실패 툴팁
                 _buildFixedTooltip(
                   opacity: viewModel.isNetworkOn == true &&
-                          viewModel.isRecommendedFeeFetchSuccess != false &&
+                          viewModel.isRecommendedFeeFetchSuccess == false &&
                           viewModel.input.isEmpty
                       ? 1.0
                       : 0.0,
