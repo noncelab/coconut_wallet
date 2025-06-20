@@ -42,6 +42,11 @@ class AuthProvider extends ChangeNotifier {
     checkDeviceBiometrics();
   }
 
+  /// 생체인증 성공했는지 여부 반환
+  Future<bool> isBiometricsAuthValid() async {
+    return isBiometricsAuthEnabled && await authenticateWithBiometrics();
+  }
+
   /// 기기의 생체인증 가능 여부 업데이트
   Future<void> checkDeviceBiometrics() async {
     List<BiometricType> availableBiometrics = [];

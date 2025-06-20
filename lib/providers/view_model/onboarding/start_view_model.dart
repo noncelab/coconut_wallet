@@ -50,7 +50,7 @@ class StartViewModel extends ChangeNotifier {
       return AppEntryFlow.main;
     }
 
-    if (_authProvider.isBiometricsAuthEnabled && await _authProvider.authenticateWithBiometrics()) {
+    if (await _authProvider.isBiometricsAuthValid()) {
       return AppEntryFlow.main;
     }
     return AppEntryFlow.pinCheck;

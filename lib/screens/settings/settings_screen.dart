@@ -55,15 +55,19 @@ class _SettingsScreen extends State<SettingsScreen> {
                             activeColor: CoconutColors.gray100,
                             trackColor: CoconutColors.gray600,
                             thumbColor: CoconutColors.gray800,
-                            onChanged: (isOn) {
+                            onChanged: (isOn) async {
                               if (isOn) {
-                                CommonBottomSheets.showBottomSheet_90<bool>(
-                                  context: context,
-                                  child: const CustomLoadingOverlay(
-                                    child: PinSettingScreen(useBiometrics: true),
-                                  ),
-                                );
-                              } else {
+                                _showPinSettingScreen(useBiometrics: true);
+                                return;
+                              }
+
+                              final authProvider = viewModel.authProvider;
+                              if (await authProvider.isBiometricsAuthValid()) {
+                                viewModel.deletePin();
+                                return;
+                              }
+
+                              if (await _isPinCheckValid()) {
                                 viewModel.deletePin();
                               }
                             })),
@@ -87,13 +91,14 @@ class _SettingsScreen extends State<SettingsScreen> {
                       SingleButton(
                           title: t.settings_screen.change_password,
                           onPressed: () async {
-                            final bool? result = await CommonBottomSheets.showBottomSheet_90(
-                                context: context,
-                                child: const CustomLoadingOverlay(child: PinCheckScreen()));
-                            if (result == true) {
-                              await CommonBottomSheets.showBottomSheet_90(
-                                  context: context,
-                                  child: const CustomLoadingOverlay(child: PinSettingScreen()));
+                            final authProvider = viewModel.authProvider;
+                            if (await authProvider.isBiometricsAuthValid()) {
+                              _showPinSettingScreen(useBiometrics: false);
+                              return;
+                            }
+
+                            if (await _isPinCheckValid()) {
+                              _showPinSettingScreen(useBiometrics: false);
                             }
                           }),
                   ]),
@@ -108,25 +113,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                           trackColor: CoconutColors.gray600,
                           thumbColor: CoconutColors.gray800,
                           onChanged: (isOn) async {
-                            final authProvider = viewModel.authProvider;
-                            if (!isOn || !authProvider.isAuthEnabled) {
-                              viewModel.changeIsBalanceHidden(isOn);
-                              return;
-                            }
-
-                            // 인증이 활성화 되어있고 스위치를 키는 경우, 생체 인증 - 핀코드 순으로 시도
-                            if (authProvider.isBiometricsAuthEnabled &&
-                                await authProvider.authenticateWithBiometrics()) {
-                              viewModel.changeIsBalanceHidden(true);
-                              return;
-                            }
-
-                            if (await CommonBottomSheets.showBottomSheet_90(
-                                    context: context,
-                                    child: const CustomLoadingOverlay(child: PinCheckScreen())) ==
-                                true) {
-                              viewModel.changeIsBalanceHidden(true);
-                            }
+                            viewModel.changeIsBalanceHidden(isOn);
                           }),
                     ),
                   ],
@@ -171,4 +158,19 @@ class _SettingsScreen extends State<SettingsScreen> {
   Widget _category(String label) => Container(
       padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
       child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)));
+
+  void _showPinSettingScreen({required bool useBiometrics}) {
+    CommonBottomSheets.showBottomSheet_90(
+      context: context,
+      child: CustomLoadingOverlay(
+        child: PinSettingScreen(useBiometrics: useBiometrics),
+      ),
+    );
+  }
+
+  Future<bool> _isPinCheckValid() async {
+    return (await CommonBottomSheets.showBottomSheet_90(
+            context: context, child: const CustomLoadingOverlay(child: PinCheckScreen())) ==
+        true);
+  }
 }

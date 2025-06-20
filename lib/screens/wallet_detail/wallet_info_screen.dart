@@ -343,7 +343,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       return;
     }
 
-    if (authProvider.isBiometricsAuthEnabled && await authProvider.authenticateWithBiometrics()) {
+    if (await authProvider.isBiometricsAuthValid()) {
       onComplete();
       return;
     }
