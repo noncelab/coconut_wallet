@@ -70,6 +70,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   FeeInfo? _customFeeInfo;
   int? _estimatedFee = 0;
+  int? _minimumSatsPerVb;
+  bool _customFeeSelected = false;
 
   List<FeeInfoWithLevel> feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
@@ -116,20 +118,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
 
-    // Transaction 생성에 쓰이는 utxoList (UtxoStatus.locked상태는 제외합니다.)
-    final availableUtxoList =
-        _confirmedUtxoList.where((utxo) => utxo.status != UtxoStatus.locked).toList();
+    _createTransactionWithSimpleUtxo();
 
-    final sufficientUtxo = availableUtxoList.firstWhere(
-      (utxo) => utxo.amount >= UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
-      orElse: () => availableUtxoList.first,
-    );
-
-    // 초기 수수료 계산을 위해 입력 1개 출력 2개 구조의 트랜잭션을 구성
-    _transaction = _createTransaction(
-        _isMaxMode ? availableUtxoList : [sufficientUtxo], _isMaxMode, 1, _walletBaseItem);
-
-    _syncSelectedUtxosWithTransaction();
+    // _syncSelectedUtxosWithTransaction();
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
@@ -141,7 +132,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       deselectAllUtxo();
       notifyListeners();
     });
-
     _bitcoinPriceKrw = _upbitConnectProvider.bitcoinPriceKrw;
     _upbitConnectProvider.addListener(_updateBitcoinPriceKrw);
   }
@@ -191,7 +181,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;
-  bool get customFeeSelected => _selectedLevel == null;
+  bool get customFeeSelected => _customFeeSelected;
   ErrorState? get errorState {
     if (_estimatedFee == null) {
       return null;
@@ -213,6 +203,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   int? get estimatedFee => _estimatedFee;
+  int? get minimumSatsPerVb => _minimumSatsPerVb;
 
   bool get isMaxMode => _isMaxMode;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
@@ -222,10 +213,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus => _recommendedFeeFetchStatus;
   RecommendedFee? get recommendedFees => _recommendedFees;
   double? get satsPerVb {
-    if (_selectedLevel == null) {
-      return _customFeeInfo?.satsPerVb;
+    if (customFeeSelected && customFeeInfo != null) {
+      return customFeeInfo!.satsPerVb;
     }
-
     return feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel).satsPerVb;
   }
 
@@ -236,12 +226,27 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     return _cachedSelectedUtxoAmountSum!;
   }
 
-  List<Utxo> get selectedUtxoList => _selectedUtxoList;
+  List<UtxoState> get selectedUtxoList => _selectedUtxoList;
 
   int get sendAmount => _sendAmount;
 
   List<UtxoTag> get utxoTagList => _utxoTagList;
   Map<String, List<UtxoTag>> get utxoTagMap => _utxoTagMap;
+
+  void _createTransactionWithSimpleUtxo() {
+    // Transaction 생성에 쓰이는 utxoList (UtxoStatus.locked상태는 제외합니다.)
+    final availableUtxoList =
+        _confirmedUtxoList.where((utxo) => utxo.status != UtxoStatus.locked).toList();
+
+    final sufficientUtxo = availableUtxoList.firstWhere(
+      (utxo) => utxo.amount >= UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+      orElse: () => availableUtxoList.first,
+    );
+
+    // 초기 수수료 계산을 위해 입력 1개 출력 2개 구조의 트랜잭션을 구성
+    _transaction = _createTransaction(
+        _isMaxMode ? availableUtxoList : [sufficientUtxo], _isMaxMode, 1, _walletBaseItem);
+  }
 
   void addSelectedUtxoList(UtxoState utxo) {
     _selectedUtxoList.add(utxo);
@@ -268,6 +273,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   int estimateFee(double feeRate) {
+    if (_selectedUtxoList.isEmpty) {
+      _createTransactionWithSimpleUtxo();
+    }
     return _transaction.estimateFee(feeRate, _walletBase.addressType,
         requiredSignature: _requiredSignature, totalSigner: _totalSigner);
   }
@@ -283,18 +291,21 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   bool isSelectedUtxoEnough() => _isSelectedUtxoEnough();
 
   void onFeeRateChanged(Map<String, dynamic> feeSelectionResult) {
-    _estimatedFee = (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo).estimatedFee;
-    _selectedLevel = feeSelectionResult[FeeSelectionScreen.selectedOptionField];
-    _setAmount();
-    notifyListeners();
-
-    _customFeeInfo = feeSelectionResult[FeeSelectionScreen.selectedOptionField] == null
+    _customFeeSelected = feeSelectionResult[FeeSelectionScreen.customInputField];
+    _customFeeInfo = _customFeeSelected
         ? (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo)
         : null;
+    _estimatedFee = _customFeeSelected
+        ? _customFeeInfo!.estimatedFee
+        : (feeSelectionResult[FeeSelectionScreen.feeInfoField] as FeeInfo).estimatedFee;
+    _selectedLevel = feeSelectionResult[FeeSelectionScreen.selectedOptionField];
+
+    _setAmount(estimatedFee: _estimatedFee);
 
     var satsPerVb = _customFeeInfo?.satsPerVb! ??
         feeInfos.firstWhere((feeInfo) => feeInfo.level == _selectedLevel).satsPerVb!;
     _updateFeeRateOfTransaction(satsPerVb);
+    notifyListeners();
   }
 
   void cacheSpentUtxoIdsWithTag({required bool isTagsMoveAllowed}) {
@@ -331,15 +342,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleUtxoSelection(Utxo utxo) {
+  void toggleUtxoSelection(UtxoState utxo) {
     _cachedSelectedUtxoAmountSum = null;
-    if (selectedUtxoList.contains(utxo)) {
-      if (!_isMaxMode) {
-        _transaction.removeInputWithUtxo(utxo, (satsPerVb ?? 1).toDouble(), _walletBase,
-            requiredSignature: _requiredSignature, totalSigner: _totalSigner);
-      }
 
-      selectedUtxoList.remove(utxo);
+    if (_selectedUtxoList.contains(utxo)) {
+      _selectedUtxoList.remove(utxo);
 
       // UTXO 2개 선택(충분) -> 1개 제거(부족) 상태 일 때도 수수료를 갱신 하기 위해서
       // _isSelectedUtxoEnough() 조건을 selectedUtxoList.isNotEmpty로 변경
@@ -347,13 +354,24 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         setEstimatedFee(estimateFee(satsPerVb ?? 1));
       }
     } else {
-      if (!_isMaxMode) {
-        _transaction.addInputWithUtxo(utxo, (satsPerVb ?? 1).toDouble(), _walletBase,
-            requiredSignature: _requiredSignature, totalSigner: _totalSigner);
+      _selectedUtxoList.add(utxo);
+    }
+
+    if (!_isMaxMode) {
+      _transaction = Transaction.forSinglePayment(
+        _selectedUtxoList,
+        _recipientAddress,
+        _changeAddressDerivationPath,
+        _sendAmount,
+        (satsPerVb ?? 1).toDouble(),
+        _walletBase,
+      );
+
+      if (estimatedFee != null && selectedUtxoList.isNotEmpty) {
         setEstimatedFee(estimateFee(satsPerVb ?? 1));
       }
-      selectedUtxoList.add(utxo);
     }
+
     notifyListeners();
   }
 
@@ -430,12 +448,12 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     return selectedUtxoAmountSum >= needAmount;
   }
 
-  void _setAmount() {
+  void _setAmount({int? estimatedFee}) {
     _sendAmount = _isMaxMode
         ? UnitUtil.bitcoinToSatoshi(
               _sendInfoProvider.amount!,
             ) -
-            (_estimatedFee ?? 0)
+            (estimatedFee ?? _estimatedFee ?? 0)
         : UnitUtil.bitcoinToSatoshi(
             _sendInfoProvider.amount!,
           );
@@ -454,6 +472,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
     feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
+    _setMinimumSatsPerVb(recommendedFees.minimumFee);
 
     final updateFeeInfoResult = _updateFeeInfoEstimateFee();
     if (updateFeeInfoResult) {
@@ -462,6 +481,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
     }
     return updateFeeInfoResult;
+  }
+
+  void _setMinimumSatsPerVb(int value) {
+    _minimumSatsPerVb = value;
+    notifyListeners();
   }
 
   void _sortConfirmedUtxoList(UtxoOrder basis) {
@@ -497,6 +521,10 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void _updateFeeRateOfTransaction(double satsPerVb) {
+    if (_selectedUtxoList.isEmpty) {
+      _createTransactionWithSimpleUtxo();
+    }
+
     _transaction.updateFeeRate(satsPerVb, _walletBase,
         requiredSignature: _requiredSignature, totalSigner: _totalSigner);
   }
