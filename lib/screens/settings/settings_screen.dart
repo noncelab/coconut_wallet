@@ -52,7 +52,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                         title: t.settings_screen.set_password,
                         rightElement: CupertinoSwitch(
                             value: viewModel.isSetPin,
-                            activeColor: CoconutColors.primary,
+                            activeColor: CoconutColors.gray100,
+                            trackColor: CoconutColors.gray600,
+                            thumbColor: CoconutColors.gray800,
                             onChanged: (isOn) {
                               if (isOn) {
                                 CommonBottomSheets.showBottomSheet_90<bool>(
@@ -70,7 +72,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                         title: t.settings_screen.use_biometric,
                         rightElement: CupertinoSwitch(
                             value: viewModel.isSetBiometrics,
-                            activeColor: CoconutColors.primary,
+                            activeColor: CoconutColors.gray100,
+                            trackColor: CoconutColors.gray600,
+                            thumbColor: CoconutColors.gray800,
                             onChanged: (isOn) async {
                               if (isOn) {
                                 viewModel.authenticateWithBiometrics(isSave: true);
