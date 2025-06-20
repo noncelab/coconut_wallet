@@ -27,4 +27,4 @@ enum UpdateElement { balance, utxo, transaction }
 enum WalletSyncState { waiting, syncing, completed }
 
 /// 지갑 중 어느 하나라도 동기화 중이면 syncing, 모두 동기화 완료면 waiting로 변경
-enum NodeSyncState { syncing, completed, failed }
+enum NodeSyncState { init, syncing, completed, failed }

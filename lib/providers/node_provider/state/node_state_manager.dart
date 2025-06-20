@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -9,14 +11,20 @@ import 'package:coconut_wallet/utils/logger.dart';
 /// NodeProvider의 상태 관리를 담당하는 매니저 클래스
 class NodeStateManager implements StateManagerInterface {
   final void Function() _notifyListeners;
+  final StreamController<NodeSyncState> _syncStateController;
+  final StreamController<Map<int, WalletUpdateInfo>> _walletStateController;
 
   NodeProviderState _state = const NodeProviderState(
-    nodeSyncState: NodeSyncState.syncing,
+    nodeSyncState: NodeSyncState.init,
     registeredWallets: {},
   );
   NodeProviderState get state => _state;
 
-  NodeStateManager(this._notifyListeners);
+  NodeStateManager(
+    this._notifyListeners,
+    this._syncStateController,
+    this._walletStateController,
+  );
 
   /// 노드 상태 업데이트
   /// [newConnectionState] 노드 상태
@@ -40,6 +48,17 @@ class NodeStateManager implements StateManagerInterface {
 
     // notify가 true이고 상태가 변경된 경우에만 리스너에게 알림
     if (notify && _isStateChanged(prevState, newState)) {
+      newState.printStatus();
+
+      // Stream을 통해 상태 변경 알림
+      if (prevState.nodeSyncState != newState.nodeSyncState) {
+        _syncStateController.add(newState.nodeSyncState);
+      }
+
+      if (newUpdatedWallets != null) {
+        _walletStateController.add(newState.registeredWallets);
+      }
+
       _notifyListeners();
     }
   }

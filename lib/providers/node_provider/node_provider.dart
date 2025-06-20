@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
@@ -27,27 +28,34 @@ class NodeProvider extends ChangeNotifier {
 
   NodeStateManager? _stateManager;
   StreamSubscription<IsolateStateMessage>? _stateSubscription;
-
+  bool _isFirstInitialization = true;
+  bool _isWalletLoaded = false;
+  bool _isNetworkInitialized = false;
   Completer<void>? _initCompleter;
   bool _isInitializing = false;
   bool _isClosing = false;
   bool _pendingInitialization = false;
 
-  NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
+  // Stream Controllers
+  final _syncStateController = StreamController<NodeSyncState>.broadcast();
+  final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
 
+  /// 전체 동기화 상태를 구독할 수 있는 스트림
+  Stream<NodeSyncState> get syncStateStream => _syncStateController.stream;
+
+  /// 전체 지갑 상태를 구독할 수 있는 스트림
+  Stream<Map<int, WalletUpdateInfo>> get walletStateStream => _walletStateController.stream;
+
+  /// 특정 지갑의 상태만 구독할 수 있는 스트림
+  Stream<WalletUpdateInfo> getWalletStateStream(int walletId) {
+    return _walletStateController.stream.map((wallets) => wallets[walletId]!);
+  }
+
+  NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
   String get host => _host;
   int get port => _port;
   bool get ssl => _ssl;
-
-  bool _isFirstInitialization = true;
-  bool _isWalletLoaded = false;
-  bool _isNetworkInitialized = false;
-
-  /// 정상적으로 연결된 후 다시 연결이 끊겼을 떄에만 이 함수가 동작하도록 설계되어 있음.
-  /// 최초 [reconnect] 호출은 앱 실행 시 `_checkConnectivity` 에서 호출되어 state 처리 관련된 로직이 일부 비정상적으로 동작함.
-  /// 따라서 최초 호출 1번만 동작을 하지 않도록 함
-  bool _isFirstReconnect = true;
 
   NodeProvider(this._host, this._port, this._ssl, this._networkType, this._connectivityProvider,
       this._walletLoadStateNotifier, this._walletItemListNotifier,
@@ -135,79 +143,13 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void _createStateManager() {
-    _stateManager = NodeStateManager(() {
-      _printWalletStatus();
-      return notifyListeners();
-    });
-  }
-
-  void _printWalletStatus() {
-    // UpdateStatus를 심볼로 변환하는 함수
-    String statusToSymbol(WalletSyncState status) {
-      switch (status) {
-        case WalletSyncState.waiting:
-          return '⏳'; // 대기 중
-        case WalletSyncState.syncing:
-          return '🔄'; // 동기화 중
-        case WalletSyncState.completed:
-          return '✅'; // 완료됨
-      }
-    }
-
-    // ConnectionState를 심볼로 변환하는 함수
-    String connectionStateToSymbol(NodeSyncState state) {
-      switch (state) {
-        case NodeSyncState.syncing:
-          return '🔄 동기화 중';
-        case NodeSyncState.completed:
-          return '🟢 대기 중ㅤ';
-        case NodeSyncState.failed:
-          return '🔴 실패';
-      }
-    }
-
-    final connectionState = state.nodeSyncState;
-    final connectionStateSymbol = connectionStateToSymbol(connectionState);
-    final buffer = StringBuffer();
-
-    if (state.registeredWallets.isEmpty) {
-      buffer.writeln('--> 등록된 지갑이 없습니다.');
-      buffer.writeln('--> connectionState: $connectionState');
-      Logger.log(buffer.toString());
-      return;
-    }
-
-    // 등록된 지갑의 키 목록 얻기
-    final walletKeys = state.registeredWallets.keys.toList();
-
-    // 테이블 헤더 출력 (connectionState 포함)
-    buffer.writeln('\n');
-    buffer.writeln('┌───────────────────────────────────────┐');
-    buffer.writeln('│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
-    buffer.writeln('├─────────┬─────────┬─────────┬─────────┤');
-    buffer.writeln('│ 지갑 ID │  잔액   │  거래   │  UTXO   │');
-    buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
-
-    // 각 지갑 상태 출력
-    for (int i = 0; i < walletKeys.length; i++) {
-      final key = walletKeys[i];
-      final value = state.registeredWallets[key]!;
-
-      final balanceSymbol = statusToSymbol(value.balance);
-      final transactionSymbol = statusToSymbol(value.transaction);
-      final utxoSymbol = statusToSymbol(value.utxo);
-
-      buffer.writeln(
-          '│ ${key.toString().padRight(7)} │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
-
-      // 마지막 행이 아니면 행 구분선 추가
-      if (i < walletKeys.length - 1) {
-        buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
-      }
-    }
-
-    buffer.writeln('└─────────┴─────────┴─────────┴─────────┘');
-    Logger.log(buffer.toString());
+    _stateManager = NodeStateManager(
+      () {
+        return notifyListeners();
+      },
+      _syncStateController,
+      _walletStateController,
+    );
   }
 
   /// 안전한 Completer 생성
@@ -349,11 +291,6 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> reconnect() async {
-    if (_isFirstReconnect) {
-      _isFirstReconnect = false;
-      return;
-    }
-
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isNetworkOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
@@ -371,9 +308,13 @@ class NodeProvider extends ChangeNotifier {
       Logger.log('NodeProvider: Starting reconnect');
       await closeConnection();
       await initialize();
-      await subscribeWallets();
+      final result = await subscribeWallets();
       notifyListeners();
-      Logger.log('NodeProvider: Reconnect completed successfully');
+      if (result.isSuccess) {
+        Logger.log('NodeProvider: Reconnect completed successfully');
+      } else {
+        Logger.error(result.error.toString());
+      }
     } catch (e) {
       Logger.error('NodeProvider: Reconnect failed: $e');
     }
@@ -426,6 +367,11 @@ class NodeProvider extends ChangeNotifier {
     _walletItemListNotifier.removeListener(_onWalletItemListChanged);
 
     closeConnection();
+
+    // Stream Controllers 정리
+    _syncStateController.close();
+    _walletStateController.close();
+
     super.dispose();
   }
 }

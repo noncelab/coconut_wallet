@@ -276,7 +276,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false).isBalanceHidden,
       Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<NodeProvider>(context, listen: false),
+      Provider.of<NodeProvider>(context, listen: false).syncStateStream,
     );
     return _viewModel;
   }

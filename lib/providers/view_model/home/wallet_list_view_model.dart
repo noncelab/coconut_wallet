@@ -4,7 +4,6 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -17,7 +16,7 @@ typedef BalanceGetter = int Function(int id);
 class WalletListViewModel extends ChangeNotifier {
   final VisibilityProvider _visibilityProvider;
   WalletProvider _walletProvider;
-  final NodeProvider _nodeProvider;
+  final Stream<NodeSyncState> _syncStateStream;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
@@ -27,25 +26,53 @@ class WalletListViewModel extends ChangeNotifier {
   bool _isFirstLoaded = false;
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
 
+  // Stream subscription for NodeSyncState
+  StreamSubscription<NodeSyncState>? _syncStateSubscription;
+
   WalletListViewModel(
     this._walletProvider,
     this._visibilityProvider,
     this._isBalanceHidden,
     this._connectivityProvider,
-    this._nodeProvider,
+    this._syncStateStream,
   ) {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _isNetworkOn = _connectivityProvider.isNetworkOn;
+
+    // Stream 구독 시작
+    _subscribeToSyncStateStream();
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
-  bool get shouldShowLoadingIndicator =>
-      !_isFirstLoaded && _nodeProvider.state.nodeSyncState == NodeSyncState.syncing;
+  bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
+
+  /// NodeSyncState Stream 구독
+  void _subscribeToSyncStateStream() {
+    _syncStateSubscription = _syncStateStream.listen((syncState) {
+      if (_nodeSyncState != syncState) {
+        if (syncState == NodeSyncState.completed) {
+          if (!_isFirstLoaded) {
+            _isFirstLoaded = true;
+            vibrateLight();
+          }
+        } else if (syncState == NodeSyncState.failed) {
+          vibrateLightDouble();
+        }
+        _nodeSyncState = syncState;
+        notifyListeners();
+      } else if (_nodeSyncState == NodeSyncState.completed &&
+          syncState == NodeSyncState.completed &&
+          _isFirstLoaded == false) {
+        _isFirstLoaded = true;
+        _nodeSyncState = syncState;
+      }
+    });
+  }
 
   void hideTermsShortcut() {
     _isTermsShortcutVisible = false;
@@ -77,23 +104,6 @@ class WalletListViewModel extends ChangeNotifier {
     _walletProvider = walletProvider;
     _updateBalance(walletProvider.walletBalance);
     notifyListeners();
-
-    if (_nodeSyncState != _nodeProvider.state.nodeSyncState) {
-      if (_nodeProvider.state.nodeSyncState == NodeSyncState.syncing) {
-        vibrateLight();
-        if (_isFirstLoaded == false) {
-          _isFirstLoaded = true;
-        }
-      } else if (_nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
-        vibrateLightDouble();
-      }
-      _nodeSyncState = _nodeProvider.state.nodeSyncState;
-    } else if (_nodeSyncState == NodeSyncState.completed &&
-        _nodeProvider.state.nodeSyncState == NodeSyncState.completed &&
-        _isFirstLoaded == false) {
-      _isFirstLoaded = true;
-      _nodeSyncState = _nodeProvider.state.nodeSyncState;
-    }
   }
 
   void setIsBalanceHidden(bool value) {
@@ -130,5 +140,11 @@ class WalletListViewModel extends ChangeNotifier {
           int id = entry.key;
           return entry.value != getUpdatedBalance(id);
         });
+  }
+
+  @override
+  void dispose() {
+    _syncStateSubscription?.cancel();
+    super.dispose();
   }
 }
