@@ -166,7 +166,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                   onKeyTap: _viewModel.onKeyTap,
                 ),
               ),
-              if (viewModel.incomingBalance > 0)
+              if (viewModel.incomingBalance > 0 && viewModel.isNetworkOn)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
                   child: CoconutToolTip(

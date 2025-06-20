@@ -179,23 +179,34 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                     ],
                   ),
                 ),
-                if (viewModel.isNetworkOn == true &&
-                    viewModel.isRecommendedFeeFetchSuccess == false)
-                  _buildFixedTooltip(
-                      tooltipState: CoconutTooltipState.error,
-                      richText: RichText(text: TextSpan(text: t.tooltip.recommended_fee1))),
-                if (estimatedFee >= _viewModel.maxFeeLimit)
-                  _buildFixedTooltip(
-                    tooltipState: CoconutTooltipState.warning,
-                    richText: RichText(text: TextSpan(text: recommendedFeeTooltipText)),
+                // 추천 수수료 조회 실패 툴팁
+                _buildFixedTooltip(
+                  opacity: viewModel.isNetworkOn == true &&
+                          viewModel.isRecommendedFeeFetchSuccess != false &&
+                          viewModel.input.isEmpty
+                      ? 1.0
+                      : 0.0,
+                  tooltipState: CoconutTooltipState.error,
+                  richText: RichText(
+                    text: TextSpan(text: t.tooltip.recommended_fee1),
                   ),
-                if (estimatedFee != 0 &&
-                    !_viewModel.isBalanceEnough(estimatedFee) &&
-                    estimatedFee < _viewModel.maxFeeLimit)
-                  _buildFixedTooltip(
-                    tooltipState: CoconutTooltipState.warning,
-                    richText: RichText(text: TextSpan(text: t.errors.insufficient_balance)),
-                  ),
+                ),
+                // 최대 수수료 초과 툴팁
+                _buildFixedTooltip(
+                  opacity: estimatedFee >= _viewModel.maxFeeLimit ? 1.0 : 0.0,
+                  tooltipState: CoconutTooltipState.warning,
+                  richText: RichText(text: TextSpan(text: recommendedFeeTooltipText)),
+                ),
+                // 잔액 부족 툴팁
+                _buildFixedTooltip(
+                  opacity: estimatedFee != 0 &&
+                          !_viewModel.isBalanceEnough(estimatedFee) &&
+                          estimatedFee < _viewModel.maxFeeLimit
+                      ? 1.0
+                      : 0.0,
+                  tooltipState: CoconutTooltipState.warning,
+                  richText: RichText(text: TextSpan(text: t.errors.insufficient_balance)),
+                ),
                 Positioned(
                   bottom: 20,
                   left: 0,
@@ -212,6 +223,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                     ],
                   ),
                 ),
+                // 네트워크 연결 실패 툴팁
                 NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
                 // if (isLoading) const CoconutLoadingOverlay(),
               ],
@@ -364,14 +376,20 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   }
 
   Widget _buildFixedTooltip(
-      {required RichText richText, CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: CoconutLayout.defaultPadding),
-      child: CoconutToolTip(
-        richText: richText,
-        showIcon: true,
-        tooltipType: CoconutTooltipType.fixed,
-        tooltipState: tooltipState,
+      {required RichText richText,
+      double opacity = 1,
+      CoconutTooltipState tooltipState = CoconutTooltipState.info}) {
+    return AnimatedOpacity(
+      opacity: opacity,
+      duration: const Duration(milliseconds: 200),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: CoconutLayout.defaultPadding),
+        child: CoconutToolTip(
+          richText: richText,
+          showIcon: true,
+          tooltipType: CoconutTooltipType.fixed,
+          tooltipState: tooltipState,
+        ),
       ),
     );
   }
