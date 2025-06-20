@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
@@ -12,80 +15,10 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 import '../providers/node_provider/transaction/rbf_service_test.mocks.dart';
 import '../repository/realm/test_realm_manager.dart';
-
-void printState(NodeProviderState state) {
-  // UpdateStatus를 심볼로 변환하는 함수
-  String statusToSymbol(WalletSyncState status) {
-    switch (status) {
-      case WalletSyncState.waiting:
-        return '⏳'; // 대기 중
-      case WalletSyncState.syncing:
-        return '🔄'; // 동기화 중
-      case WalletSyncState.completed:
-        return '✅'; // 완료됨
-    }
-  }
-
-  // ConnectionState를 심볼로 변환하는 함수
-  String connectionStateToSymbol(NodeSyncState state) {
-    switch (state) {
-      case NodeSyncState.syncing:
-        return '🔄 동기화 중';
-      case NodeSyncState.completed:
-        return '🟢 대기 중ㅤ';
-      case NodeSyncState.failed:
-        return '🔴 실패';
-    }
-  }
-
-  final connectionState = state.nodeSyncState;
-  final connectionStateSymbol = connectionStateToSymbol(connectionState);
-  final buffer = StringBuffer();
-
-  if (state.registeredWallets.isEmpty) {
-    buffer.writeln('--> 등록된 지갑이 없습니다.');
-    buffer.writeln('--> connectionState: $connectionState');
-    Logger.log(buffer.toString());
-    return;
-  }
-
-  // 등록된 지갑의 키 목록 얻기
-  final walletKeys = state.registeredWallets.keys.toList();
-
-  // 테이블 헤더 출력 (connectionState 포함)
-  buffer.writeln('\n');
-  buffer.writeln('┌───────────────────────────────────────┐');
-  buffer.writeln('│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
-  buffer.writeln('├─────────┬─────────┬─────────┬─────────┤');
-  buffer.writeln('│ 지갑 ID │  잔액   │  거래   │  UTXO   │');
-  buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
-
-  // 각 지갑 상태 출력
-  for (int i = 0; i < walletKeys.length; i++) {
-    final key = walletKeys[i];
-    final value = state.registeredWallets[key]!;
-
-    final balanceSymbol = statusToSymbol(value.balance);
-    final transactionSymbol = statusToSymbol(value.transaction);
-    final utxoSymbol = statusToSymbol(value.utxo);
-
-    buffer.writeln(
-        '│ ${key.toString().padRight(7)} │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
-
-    // 마지막 행이 아니면 행 구분선 추가
-    if (i < walletKeys.length - 1) {
-      buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
-    }
-  }
-
-  buffer.writeln('└─────────┴─────────┴─────────┴─────────┘');
-  // Logger.log(buffer.toString());
-}
 
 class ScriptSyncServiceMock {
   static int callSubscribeWalletCount = 0;
@@ -121,9 +54,11 @@ class ScriptSyncServiceMock {
   static void init() {
     callSubscribeWalletCount = 0;
     electrumService = MockElectrumService();
-    stateManager = NodeStateManager(() {
-      printState(stateManager.state);
-    });
+    stateManager = NodeStateManager(
+      () {},
+      StreamController<NodeSyncState>.broadcast(),
+      StreamController<Map<int, WalletUpdateInfo>>.broadcast(),
+    );
     if (realmManager == null) {
       realmManager = TestRealmManager()..init(false);
     } else {
