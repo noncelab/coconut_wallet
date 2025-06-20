@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
-class ConnectivityProvider extends ChangeNotifier {
-  bool? _isNetworkOn;
-  bool? get isNetworkOn => _isNetworkOn;
+class ConnectivityProvider extends ValueNotifier<bool> {
+  ConnectivityProvider() : super(true);
+
+  bool get isNetworkOff => !value;
+  bool get isNetworkOn => value;
 
   void setIsNetworkOn(bool isNetworkOn) {
-    if (_isNetworkOn != isNetworkOn) {
-      _isNetworkOn = isNetworkOn;
-      notifyListeners();
-    }
+    value = isNetworkOn;
   }
 }

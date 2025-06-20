@@ -58,7 +58,6 @@ class WalletInfoViewModel extends ChangeNotifier {
     await _sharedPrefs.removeFaucetHistory(_walletId);
     await _walletProvider.deleteWallet(_walletId);
     await _nodeProvider.closeConnection();
-    _nodeProvider.deleteWallet(_walletId);
     await _nodeProvider.initialize();
     _walletProvider.notifyListeners();
   }

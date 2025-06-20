@@ -39,26 +39,18 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   IQrScanDataHandler get qrDataHandler => _qrDataHandler;
 
   Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
-    ResultOfSyncFromVault result;
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
-        result = await addCoconutVaultWallet(additionInfo as WatchOnlyWallet);
+        return addCoconutVaultWallet(additionInfo as WatchOnlyWallet);
       case WalletImportSource.keystone:
-        result = await addKeystoneWallet(additionInfo as UR);
+        return addKeystoneWallet(additionInfo as UR);
       case WalletImportSource.seedSigner:
-        result = await addSeedSignerWallet(additionInfo as String);
+        return addSeedSignerWallet(additionInfo as String);
       case WalletImportSource.extendedPublicKey:
         throw 'No Support extendedPublicKey';
       default:
         throw 'wrong wallet import source: $_walletImportSource';
     }
-
-    if (result.result == WalletSyncResult.newWalletAdded) {
-      final wallet =
-          _walletProvider.walletItemList.firstWhere((element) => element.id == result.walletId);
-      _nodeProvider.subscribeWallet(wallet);
-    }
-    return result;
   }
 
   Future<ResultOfSyncFromVault> addCoconutVaultWallet(WatchOnlyWallet watchOnlyWallet) async {

@@ -40,8 +40,9 @@ class NodeProvider extends ChangeNotifier {
   int get port => _port;
   bool get ssl => _ssl;
 
-  bool needSubscribeWallets = false;
-  List<WalletListItemBase> _lastSubscribedWallets = [];
+  bool _isFirstInitialization = true;
+  bool _isWalletLoaded = false;
+  bool _isNetworkInitialized = false;
 
   /// 정상적으로 연결된 후 다시 연결이 끊겼을 떄에만 이 함수가 동작하도록 설계되어 있음.
   /// 최초 [reconnect] 호출은 앱 실행 시 `_checkConnectivity` 에서 호출되어 state 처리 관련된 로직이 일부 비정상적으로 동작함.
@@ -62,7 +63,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void _checkInitialNetworkState() {
-    if (_connectivityProvider.isNetworkOn == true) {
+    if (_connectivityProvider.isNetworkOn) {
       initialize();
     } else {
       _pendingInitialization = true;
@@ -71,9 +72,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void _onConnectivityChanged() {
-    final isNetworkOn = _connectivityProvider.isNetworkOn;
-
-    if (isNetworkOn == true) {
+    if (_connectivityProvider.isNetworkOn) {
       if (_pendingInitialization || !isInitialized) {
         Logger.log('NodeProvider: 네트워크 연결됨 - 초기화 시작');
         _pendingInitialization = false;
@@ -95,16 +94,44 @@ class NodeProvider extends ChangeNotifier {
     Logger.log('NodeProvider: WalletLoadState 변경 감지: $walletLoadState');
 
     if (walletLoadState == WalletLoadState.loadCompleted) {
-      subscribeWallets(walletItems: _walletItemListNotifier.value);
+      _isWalletLoaded = true;
+
+      // 네트워크가 이미 초기화되어 있고 최초 실행인 경우 구독 시작
+      if (_isNetworkInitialized && _isFirstInitialization) {
+        _subscribeInitialWallets();
+      }
     }
+  }
+
+  void _subscribeInitialWallets() {
+    _isFirstInitialization = false;
+    subscribeWallets();
   }
 
   /// WalletItemList 변경 감지 및 처리
   void _onWalletItemListChanged() {
-    final walletItemList = _walletItemListNotifier.value;
-    Logger.log('NodeProvider: WalletItemList 변경 감지: ${walletItemList.length}개 지갑');
+    if (_isFirstInitialization) {
+      // 최초 실행 시에는 _subscribeInitialWallets에서 처리
+      return;
+    }
 
-    // 필요한 경우 여기에 추가 로직 구현
+    final currentWallets = _walletItemListNotifier.value;
+    final registeredWallets = state.registeredWallets.keys.toList();
+
+    // 삭제된 지갑 찾기
+    for (final walletId in registeredWallets) {
+      if (!currentWallets.any((wallet) => wallet.id == walletId)) {
+        _stateManager?.unregisterWalletUpdateState(walletId);
+      }
+    }
+
+    // 새로 추가된 지갑 찾기
+    for (final wallet in currentWallets) {
+      if (!registeredWallets.contains(wallet.id)) {
+        // 새로운 지갑 발견
+        subscribeWallet(wallet);
+      }
+    }
   }
 
   void _createStateManager() {
@@ -197,7 +224,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    if (_connectivityProvider.isNetworkOn != true) {
+    if (_connectivityProvider.isNetworkOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 초기화를 보류합니다.');
       _pendingInitialization = true;
       return;
@@ -222,7 +249,6 @@ class NodeProvider extends ChangeNotifier {
     _pendingInitialization = false;
 
     try {
-      Logger.log('NodeProvider: Starting initialization');
       _createNewCompleter();
       _createStateManager();
       await _isolateManager.initialize(host, port, ssl, _networkType);
@@ -232,15 +258,13 @@ class NodeProvider extends ChangeNotifier {
       }
 
       _subscribeToStateChanges();
+      _isNetworkInitialized = true;
 
-      // 초기화 완료 후 대기 중인 지갑 구독 처리
-      if (needSubscribeWallets && _lastSubscribedWallets.isNotEmpty) {
-        Logger.log('NodeProvider: 초기화 완료 - 대기 중인 지갑 구독 시작');
-        await subscribeWallets();
-      }
-
-      notifyListeners();
       Logger.log('NodeProvider: Initialization completed successfully');
+
+      if (_isWalletLoaded && _isFirstInitialization) {
+        _subscribeInitialWallets();
+      }
     } catch (e) {
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
@@ -277,28 +301,22 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<Result<bool>> subscribeWallets({List<WalletListItemBase>? walletItems}) async {
-    if (walletItems != null) {
-      _lastSubscribedWallets = walletItems;
-    }
+  Future<Result<bool>> subscribeWallets() async {
     if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted ||
-        _connectivityProvider.isNetworkOn != true) {
+        _connectivityProvider.isNetworkOff) {
       return Result.success(false);
     }
+    final walletItems = _walletItemListNotifier.value;
 
-    needSubscribeWallets = false;
-    if (_lastSubscribedWallets.isEmpty) {
+    if (walletItems.isEmpty) {
       Logger.log('NodeProvider: 구독할 지갑이 없습니다.');
       return Result.success(true);
     }
-    return _isolateManager.subscribeWallets(_lastSubscribedWallets);
+
+    return _isolateManager.subscribeWallets(walletItems);
   }
 
   Future<Result<bool>> subscribeWallet(WalletListItemBase walletItem) async {
-    final isAlreadySubscribed = _lastSubscribedWallets.any((wallet) => wallet.id == walletItem.id);
-    if (!isAlreadySubscribed) {
-      _lastSubscribedWallets.add(walletItem);
-    }
     return _isolateManager.subscribeWallet(walletItem);
   }
 
@@ -330,11 +348,6 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.getSocketConnectionStatus();
   }
 
-  void deleteWallet(int walletId) {
-    _lastSubscribedWallets.removeWhere((element) => element.id == walletId);
-    _stateManager?.unregisterWalletUpdateState(walletId);
-  }
-
   Future<void> reconnect() async {
     if (_isFirstReconnect) {
       _isFirstReconnect = false;
@@ -342,7 +355,7 @@ class NodeProvider extends ChangeNotifier {
     }
 
     // 네트워크 연결 상태 확인
-    if (_connectivityProvider.isNetworkOn != true) {
+    if (_connectivityProvider.isNetworkOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
       _pendingInitialization = true;
       return;
@@ -395,8 +408,6 @@ class NodeProvider extends ChangeNotifier {
         }
       }
       _initCompleter = null;
-
-      // StateManager 초기화
       _stateManager = null;
 
       notifyListeners();
@@ -414,7 +425,6 @@ class NodeProvider extends ChangeNotifier {
     _walletLoadStateNotifier.removeListener(_onWalletLoadStateChanged);
     _walletItemListNotifier.removeListener(_onWalletItemListChanged);
 
-    // 기존 정리 로직
     closeConnection();
     super.dispose();
   }

@@ -62,21 +62,8 @@ class _AppGuardState extends State<AppGuard> {
     if (_isNetworkOn != isNetworkOn) {
       _connectivityProvider.setIsNetworkOn(isNetworkOn);
       _isNetworkOn = isNetworkOn;
-      // _showToastAboutNetwork(isNetworkOn);
-
-      if (isNetworkOn) {
-        _nodeProvider.reconnect();
-      }
     }
   }
-
-  // TODO: 아래를 주석처리 했기 때문에 네트워크 연결이 필요한 화면에서 별도 처리가 필요합니다.
-  // void _showToastAboutNetwork(bool isNetworkOn) {
-  //   if (!isNetworkOn) {
-  //     CustomToast.showToast(
-  //         context: context, text: "네트워크 연결이 없습니다.", seconds: 7);
-  //   }
-  // }
 
   void _handleAppLifecycleState(AppLifecycleState state) {
     switch (state) {
