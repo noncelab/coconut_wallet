@@ -5,7 +5,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -40,9 +39,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   void initState() {
     super.initState();
     _viewModel = WalletAddScannerViewModel(
-        widget.importSource,
-        Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<NodeProvider>(context, listen: false));
+      widget.importSource,
+      Provider.of<WalletProvider>(context, listen: false),
+    );
   }
 
   // In order to get hot reload to work we need to pause the camera if the platform

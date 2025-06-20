@@ -1,6 +1,5 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
@@ -15,10 +14,9 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   final WalletImportSource _walletImportSource;
   final WalletProvider _walletProvider;
   final WalletAddService _walletAddService = WalletAddService();
-  final NodeProvider _nodeProvider;
   late final IQrScanDataHandler _qrDataHandler;
 
-  WalletAddScannerViewModel(this._walletImportSource, this._walletProvider, this._nodeProvider) {
+  WalletAddScannerViewModel(this._walletImportSource, this._walletProvider) {
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         _qrDataHandler = CoconutQrScanDataHandler();
