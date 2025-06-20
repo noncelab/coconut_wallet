@@ -29,10 +29,17 @@ class AuthProvider extends ChangeNotifier {
   late bool _isSetPin;
   bool get isSetPin => _isSetPin;
 
+  /// 인증 활성화 여부
+  bool get isAuthEnabled => isBiometricsAuthEnabled || _isSetPin;
+
+  /// 생체인식 인증 활성화 여부
+  bool get isBiometricsAuthEnabled => _canCheckBiometrics && _isSetBiometrics;
+
   AuthProvider() {
     _isSetBiometrics = _sharedPrefs.getBool(SharedPrefKeys.kIsSetBiometrics);
     _canCheckBiometrics = _sharedPrefs.getBool(SharedPrefKeys.kCanCheckBiometrics);
     _isSetPin = _sharedPrefs.getBool(SharedPrefKeys.kIsSetPin);
+    checkDeviceBiometrics();
   }
 
   /// 기기의 생체인증 가능 여부 업데이트
@@ -130,7 +137,8 @@ class AuthProvider extends ChangeNotifier {
     final random = Random();
     var randomNumberPad = List<String>.generate(10, (index) => index.toString());
     randomNumberPad.shuffle(random);
-    randomNumberPad.insert(randomNumberPad.length - 1, !isSettings && isSetBiometrics ? 'bio' : '');
+    randomNumberPad.insert(
+        randomNumberPad.length - 1, !isSettings && _isSetBiometrics ? 'bio' : '');
     randomNumberPad.add('<');
     return randomNumberPad;
   }

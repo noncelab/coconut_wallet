@@ -5,8 +5,12 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/button/button_group.dart';
+import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -24,14 +28,11 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreen extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<AuthProvider, PreferenceProvider, WalletProvider,
-            SettingsViewModel>(
-        create: (_) => SettingsViewModel(
-            Provider.of<AuthProvider>(_, listen: false),
-            Provider.of<PreferenceProvider>(_, listen: false),
-            Provider.of<WalletProvider>(_, listen: false)),
-        update: (_, authProvider, preferenceProvider, walletProvider, settingsViewModel) {
-          return SettingsViewModel(authProvider, preferenceProvider, walletProvider);
+    return ChangeNotifierProxyProvider2<AuthProvider, PreferenceProvider, SettingsViewModel>(
+        create: (_) => SettingsViewModel(Provider.of<AuthProvider>(_, listen: false),
+            Provider.of<PreferenceProvider>(_, listen: false)),
+        update: (_, authProvider, preferenceProvider, settingsViewModel) {
+          return SettingsViewModel(authProvider, preferenceProvider);
         },
         child: Consumer<SettingsViewModel>(builder: (context, viewModel, child) {
           return Scaffold(
@@ -46,69 +47,85 @@ class _SettingsScreen extends State<SettingsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   _category(t.security),
-                  // ButtonGroup(buttons: [
-                  //   SingleButton(
-                  //       title: t.settings_screen.set_password,
-                  //       rightElement: CupertinoSwitch(
-                  //           value: viewModel.isSetPin,
-                  //           activeColor: CoconutColors.primary,
-                  //           onChanged: (isOn) {
-                  //             if (isOn) {
-                  //               CommonBottomSheets.showBottomSheet_90<bool>(
-                  //                 context: context,
-                  //                 child: const CustomLoadingOverlay(
-                  //                   child: PinSettingScreen(
-                  //                       useBiometrics: true),
-                  //                 ),
-                  //               );
-                  //             } else {
-                  //               viewModel.deletePin();
-                  //             }
-                  //           })),
-                  //   if (viewModel.canCheckBiometrics && viewModel.isSetPin)
-                  //     SingleButton(
-                  //       title: t.settings_screen.use_biometric,
-                  //       rightElement: CupertinoSwitch(
-                  //           value: viewModel.isSetBiometrics,
-                  //           activeColor: CoconutColors.primary,
-                  //           onChanged: (isOn) async {
-                  //             if (isOn) {
-                  //               viewModel.authenticateWithBiometrics(
-                  //                   isSave: true);
-                  //             } else {
-                  //               viewModel.saveIsSetBiometrics(false);
-                  //             }
-                  //           }),
-                  //     ),
-                  //   if (viewModel.isSetPin)
-                  //     SingleButton(
-                  //         title: t.settings_screen.change_password,
-                  //         onPressed: () async {
-                  //           final bool? result =
-                  //               await CommonBottomSheets.showBottomSheet_90(
-                  //                   context: context,
-                  //                   child: const CustomLoadingOverlay(
-                  //                       child: PinCheckScreen()));
-                  //           if (result == true) {
-                  //             await CommonBottomSheets.showBottomSheet_90(
-                  //                 context: context,
-                  //                 child: const CustomLoadingOverlay(
-                  //                     child: PinSettingScreen()));
-                  //           }
-                  //         }),
-                  // ]),
-                  // const SizedBox(height: 16),
-                  SingleButton(
-                    title: t.settings_screen.hide_balance,
-                    rightElement: CupertinoSwitch(
-                        value: viewModel.isBalanceHidden,
-                        activeColor: CoconutColors.gray100,
-                        trackColor: CoconutColors.gray600,
-                        thumbColor: CoconutColors.gray800,
-                        onChanged: (value) {
-                          viewModel.changeIsBalanceHidden(value);
-                        }),
-                  ),
+                  ButtonGroup(buttons: [
+                    SingleButton(
+                        title: t.settings_screen.set_password,
+                        rightElement: CupertinoSwitch(
+                            value: viewModel.isSetPin,
+                            activeColor: CoconutColors.primary,
+                            onChanged: (isOn) {
+                              if (isOn) {
+                                CommonBottomSheets.showBottomSheet_90<bool>(
+                                  context: context,
+                                  child: const CustomLoadingOverlay(
+                                    child: PinSettingScreen(useBiometrics: true),
+                                  ),
+                                );
+                              } else {
+                                viewModel.deletePin();
+                              }
+                            })),
+                    if (viewModel.canCheckBiometrics && viewModel.isSetPin)
+                      SingleButton(
+                        title: t.settings_screen.use_biometric,
+                        rightElement: CupertinoSwitch(
+                            value: viewModel.isSetBiometrics,
+                            activeColor: CoconutColors.primary,
+                            onChanged: (isOn) async {
+                              if (isOn) {
+                                viewModel.authenticateWithBiometrics(isSave: true);
+                              } else {
+                                viewModel.saveIsSetBiometrics(false);
+                              }
+                            }),
+                      ),
+                    if (viewModel.isSetPin)
+                      SingleButton(
+                          title: t.settings_screen.change_password,
+                          onPressed: () async {
+                            final bool? result = await CommonBottomSheets.showBottomSheet_90(
+                                context: context,
+                                child: const CustomLoadingOverlay(child: PinCheckScreen()));
+                            if (result == true) {
+                              await CommonBottomSheets.showBottomSheet_90(
+                                  context: context,
+                                  child: const CustomLoadingOverlay(child: PinSettingScreen()));
+                            }
+                          }),
+                  ]),
+
+                  if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
+                    CoconutLayout.spacing_400h,
+                    SingleButton(
+                      title: t.settings_screen.hide_balance,
+                      rightElement: CupertinoSwitch(
+                          value: viewModel.isBalanceHidden,
+                          activeColor: CoconutColors.gray100,
+                          trackColor: CoconutColors.gray600,
+                          thumbColor: CoconutColors.gray800,
+                          onChanged: (isOn) async {
+                            final authProvider = viewModel.authProvider;
+                            if (!isOn || !authProvider.isAuthEnabled) {
+                              viewModel.changeIsBalanceHidden(isOn);
+                              return;
+                            }
+
+                            // 인증이 활성화 되어있고 스위치를 키는 경우, 생체 인증 - 핀코드 순으로 시도
+                            if (authProvider.isBiometricsAuthEnabled &&
+                                await authProvider.authenticateWithBiometrics()) {
+                              viewModel.changeIsBalanceHidden(true);
+                              return;
+                            }
+
+                            if (await CommonBottomSheets.showBottomSheet_90(
+                                    context: context,
+                                    child: const CustomLoadingOverlay(child: PinCheckScreen())) ==
+                                true) {
+                              viewModel.changeIsBalanceHidden(true);
+                            }
+                          }),
+                    ),
+                  ],
 
                   _category(t.unit),
                   Selector<PreferenceProvider, bool>(
@@ -126,7 +143,7 @@ class _SettingsScreen extends State<SettingsScreen> {
 
                   // 개발자 모드에서만 표시되는 디버그 섹션
                   if (kDebugMode) ...[
-                    const SizedBox(height: 16),
+                    CoconutLayout.spacing_400h,
                     _category('개발자 도구'),
                     SingleButton(
                       title: 'Realm 디버그용 뷰어',

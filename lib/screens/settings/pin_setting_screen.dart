@@ -1,6 +1,5 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -144,7 +143,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         }
 
         vibrateLight();
-
         if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
           await _authProvider.authenticateWithBiometrics(isSave: true);
           await _authProvider.checkDeviceBiometrics();
@@ -152,12 +150,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
         var hashedPin = hashString(pin);
         if (!mounted) return;
-        await Provider.of<WalletProvider>(context, listen: false)
-            .encryptWalletSecureData(hashedPin)
-            .catchError((e) {
-          returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true);
-        });
-
         _authProvider.savePinSet(hashedPin).then((_) async {
           _showPinSetSuccessLottie();
 

@@ -148,31 +148,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     showIcon: true,
                                     onPressed: () async {
                                       _removeTooltip();
-                                      if (viewModel.isSetPin) {
-                                        await CommonBottomSheets.showBottomSheet_90(
-                                          context: context,
-                                          child: CustomLoadingOverlay(
-                                            child: PinCheckScreen(
-                                              onComplete: () {
-                                                CommonBottomSheets.showBottomSheet_90(
-                                                  context: context,
-                                                  child: QrcodeBottomSheet(
-                                                      qrData: viewModel.extendedPublicKey,
-                                                      title: t.extended_public_key),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        CommonBottomSheets.showBottomSheet_90(
-                                          context: context,
-                                          child: QrcodeBottomSheet(
-                                            qrData: viewModel.extendedPublicKey,
-                                            title: t.extended_public_key,
-                                          ),
-                                        );
-                                      }
+                                      _handleAuthFlow(onComplete: () {
+                                        _showExtendedBottomSheet(viewModel.extendedPublicKey);
+                                      });
                                     },
                                   ),
                                   Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
@@ -229,22 +207,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       context,
                                       title: t.alert.wallet_delete.confirm_delete,
                                       message: t.alert.wallet_delete.confirm_delete_description,
-                                      onConfirm: () async {
-                                        if (viewModel.isSetPin) {
-                                          await CommonBottomSheets.showBottomSheet_90(
-                                            context: context,
-                                            child: CustomLoadingOverlay(
-                                              child: PinCheckScreen(
-                                                onComplete: () async {
-                                                  await _deleteWalletAndGoToWalletList(
-                                                      context, viewModel);
-                                                },
-                                              ),
-                                            ),
-                                          );
-                                        } else {
+                                      onConfirm: () {
+                                        _handleAuthFlow(onComplete: () async {
                                           await _deleteWalletAndGoToWalletList(context, viewModel);
-                                        }
+                                        });
                                       },
                                       onCancel: () {
                                         Navigator.of(context).pop();
@@ -368,5 +334,37 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     } else {
       context.loaderOverlay.hide();
     }
+  }
+
+  Future<void> _handleAuthFlow({required VoidCallback onComplete}) async {
+    final authProvider = context.read<AuthProvider>();
+    if (!authProvider.isAuthEnabled) {
+      onComplete();
+      return;
+    }
+
+    if (authProvider.isBiometricsAuthEnabled && await authProvider.authenticateWithBiometrics()) {
+      onComplete();
+      return;
+    }
+
+    await CommonBottomSheets.showBottomSheet_90(
+      context: context,
+      child: CustomLoadingOverlay(
+        child: PinCheckScreen(
+          onComplete: onComplete,
+        ),
+      ),
+    );
+  }
+
+  void _showExtendedBottomSheet(String extendedPublicKey) {
+    CommonBottomSheets.showBottomSheet_90(
+      context: context,
+      child: QrcodeBottomSheet(
+        qrData: extendedPublicKey,
+        title: t.extended_public_key,
+      ),
+    );
   }
 }

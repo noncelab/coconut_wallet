@@ -43,13 +43,17 @@ class StartViewModel extends ChangeNotifier {
     if (!hasLaunchedBefore) {
       await _visibilityProvider.setHasLaunchedBefore();
     }
+
     debugPrint(
-        'walletCount --> ${_visibilityProvider.walletCount}\nisSetPin --> ${_authProvider.isSetPin}');
-    if (_visibilityProvider.walletCount == 0 || !_authProvider.isSetPin) {
+        'walletCount = ${_visibilityProvider.walletCount} isAuthEnabled = ${_authProvider.isAuthEnabled} isBiometricsAuthEnabled = ${_authProvider.isBiometricsAuthEnabled}');
+    if (_visibilityProvider.walletCount == 0 || !_authProvider.isAuthEnabled) {
       return AppEntryFlow.main;
-    } else {
-      return AppEntryFlow.pinCheck;
     }
+
+    if (_authProvider.isBiometricsAuthEnabled && await _authProvider.authenticateWithBiometrics()) {
+      return AppEntryFlow.main;
+    }
+    return AppEntryFlow.pinCheck;
   }
 
   /// 업데이트 실행
