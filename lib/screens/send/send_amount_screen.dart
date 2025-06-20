@@ -80,26 +80,6 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                   Container(
                     height: 115,
                   ),
-                  if (viewModel.incomingBalance > 0)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
-                      child: CoconutToolTip(
-                        baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
-                        richText: RichText(
-                            text: TextSpan(
-                          text: incomingBalanceTooltipText,
-                          style: const TextStyle(
-                            fontFamily: 'Pretendard',
-                            fontWeight: FontWeight.normal,
-                            fontSize: 15,
-                            height: 1.4,
-                            letterSpacing: 0.5,
-                            color: CoconutColors.black,
-                          ),
-                        )),
-                        tooltipType: CoconutTooltipType.fixed,
-                      ),
-                    ),
                   Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -186,6 +166,26 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
                   onKeyTap: _viewModel.onKeyTap,
                 ),
               ),
+              if (viewModel.incomingBalance > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+                  child: CoconutToolTip(
+                    baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
+                    richText: RichText(
+                        text: TextSpan(
+                      text: incomingBalanceTooltipText,
+                      style: const TextStyle(
+                        fontFamily: 'Pretendard',
+                        fontWeight: FontWeight.normal,
+                        fontSize: 15,
+                        height: 1.4,
+                        letterSpacing: 0.5,
+                        color: CoconutColors.black,
+                      ),
+                    )),
+                    tooltipType: CoconutTooltipType.fixed,
+                  ),
+                ),
               NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
             ],
           ),
