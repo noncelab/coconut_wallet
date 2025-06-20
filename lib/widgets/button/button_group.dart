@@ -1,6 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/widgets/button/button_container.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 
 class ButtonGroup extends StatelessWidget {
@@ -17,7 +17,7 @@ class ButtonGroup extends StatelessWidget {
       if (i < buttons.length - 1) {
         buttonListWithDividers.add(
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: Sizes.size20),
+            padding: const EdgeInsets.symmetric(horizontal: Sizes.size20),
             child: Divider(
               color: CoconutColors.white.withOpacity(0.12),
               height: 1,
@@ -27,9 +27,11 @@ class ButtonGroup extends StatelessWidget {
       }
     }
 
-    return ButtonContainer(
-        child: Column(
-      children: buttonListWithDividers,
-    ));
+    return Container(
+      decoration: defaultBoxDecoration,
+      child: Column(
+        children: buttonListWithDividers,
+      ),
+    );
   }
 }

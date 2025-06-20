@@ -1,6 +1,10 @@
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
+int getWalletAddressId({required int walletId, required int index, required String address}) {
+  return Object.hash(walletId, index, address);
+}
+
 WalletAddress mapRealmToWalletAddress(RealmWalletAddress realmAddress) {
   return WalletAddress(
       realmAddress.address,
@@ -15,7 +19,8 @@ WalletAddress mapRealmToWalletAddress(RealmWalletAddress realmAddress) {
 
 RealmWalletAddress mapWalletAddressToRealm(int walletId, WalletAddress walletAddress) {
   return RealmWalletAddress(
-    Object.hash(walletId, walletAddress.index, walletAddress.address),
+    getWalletAddressId(
+        walletId: walletId, index: walletAddress.index, address: walletAddress.address),
     walletId,
     walletAddress.address,
     walletAddress.index,

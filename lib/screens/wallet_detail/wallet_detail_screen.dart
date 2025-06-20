@@ -219,15 +219,28 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   Widget _buildTxListLabel() {
     return SliverToBoxAdapter(
-        child: Padding(
+        child: Selector<WalletDetailViewModel, int>(
+      selector: (_, viewModel) => viewModel.txList.length,
+      builder: (_, txCount, __) {
+        return Padding(
             key: _txListLabelWidgetKey,
             padding: const EdgeInsets.only(
               left: 16.0,
               right: 16.0,
               bottom: 12.0,
             ),
-            child: Text(t.tx_list,
-                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white))));
+            child: Row(
+              children: [
+                Text(t.tx_list,
+                    style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+                CoconutLayout.spacing_100w,
+                if (txCount > 0)
+                  Text(t.total_item_count(count: txCount),
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+              ],
+            ));
+      },
+    ));
   }
 
   // 스크롤 시 sticky header 렌더링을 위한 상태 변수들
@@ -476,7 +489,7 @@ class _TransactionListState extends State<TransactionList> {
     return Selector<WalletDetailViewModel, List<TransactionRecord>>(
         selector: (_, viewModel) => viewModel.txList,
         builder: (_, txList, __) {
-          if (!listEquals(_displayedTxList, txList)) {
+          if (!listEquals(_displayedTxList, txList) || !_deepEquals(_displayedTxList, txList)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _handleTransactionListUpdate(txList);
             });
@@ -485,6 +498,15 @@ class _TransactionListState extends State<TransactionList> {
               ? _buildSliverAnimatedList(_displayedTxList)
               : _buildEmptyState();
         });
+  }
+
+  // 내부 필드가 변경된 경우 감지(memo)
+  bool _deepEquals(List<TransactionRecord> a, List<TransactionRecord> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].memo != b[i].memo) return false;
+    }
+    return true;
   }
 
   Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {

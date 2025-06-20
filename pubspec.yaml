@@ -21,9 +21,9 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # AOS
 #version: 3.1.4+40
 # iOS Mainnet
-version: 0.0.7+1
+version: 0.0.9+2
 # AOS Mainnet
-#version: 0.0.7+8
+#version: 0.0.9+11
 
 environment:
   sdk: ">=3.3.1 <4.0.0"
@@ -74,7 +74,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  coconut_design_system: ^0.8.0
+  coconut_design_system: ^0.9.0
   coconut_lib: ^0.10.3
   realm: ^20.0.0
   cryptography: ^2.7.0
@@ -132,6 +132,7 @@ flutter:
     - assets/svg/bell.svg
     - assets/svg/add-circle.svg
     - assets/svg/arrow-right.svg
+    - assets/svg/arrow-back.svg
     - assets/svg/send.svg
     - assets/svg/settings.svg
     - assets/svg/receive.svg
@@ -250,6 +251,9 @@ flutter:
     - assets/svg/rocket.svg
     - assets/svg/car.svg
     - assets/svg/foot.svg
+    - assets/svg/lock.svg
+    - assets/svg/unlock.svg
+    - assets/svg/pen.svg
 
 
   fonts:

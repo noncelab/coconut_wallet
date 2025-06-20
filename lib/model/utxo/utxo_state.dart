@@ -6,6 +6,7 @@ enum UtxoStatus {
   unspent, // 사용되지 않은 상태, confirmed
   outgoing, // 출금 중인 상태, unconfirmed
   incoming, // 입금 중인 상태, unconfirmed
+  locked, // 사용 불가 상태, confirmed
 }
 
 class UtxoState extends Utxo {
@@ -21,6 +22,8 @@ class UtxoState extends Utxo {
   bool get isCpfpable => status == UtxoStatus.incoming && blockHeight == 0;
 
   bool get isPending => status == UtxoStatus.outgoing || status == UtxoStatus.incoming;
+
+  bool get isLocked => status == UtxoStatus.locked && blockHeight != 0;
 
   UtxoState({
     required String transactionHash,

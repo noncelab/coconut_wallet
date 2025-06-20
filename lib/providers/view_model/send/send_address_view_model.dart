@@ -25,23 +25,23 @@ class SendAddressViewModel extends ChangeNotifier {
     _sendInfoProvider.clear();
   }
 
-  void loadDataFromClipboardIfValid() async {
+  void loadDataFromClipboard() async {
     ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
     final clipboardText = data?.text ?? '';
     if (clipboardText.isNotEmpty) {
       try {
         await validateAddress(clipboardText);
-        _address = clipboardText;
-        notifyListeners();
+        _address = _isBech32(clipboardText) ? clipboardText.toLowerCase() : clipboardText;
       } catch (_) {
-        // ignore
+        _address = null;
       }
+      notifyListeners();
     }
   }
 
   void saveWalletIdAndRecipientAddress(int id, String address) {
     _sendInfoProvider.setWalletId(id);
-    _sendInfoProvider.setRecipientAddress(address);
+    _sendInfoProvider.setRecipientAddress(_isBech32(address) ? address.toLowerCase() : address);
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
@@ -49,30 +49,40 @@ class SendAddressViewModel extends ChangeNotifier {
   }
 
   Future<void> validateAddress(String recipient) async {
-    if (recipient.isEmpty || recipient.length < 26) {
+    if (recipient.isEmpty) {
+      throw invalidAddressMessage;
+    }
+
+    final normalized = recipient.toLowerCase();
+
+    // Bech32m(T2R) 주소 최대 62자
+    if (normalized.length < 26 || normalized.length > 62) {
       throw invalidAddressMessage;
     }
 
     if (NetworkType.currentNetworkType == NetworkType.testnet) {
-      if (recipient.startsWith('1') || recipient.startsWith('3') || recipient.startsWith('bc1')) {
+      if (normalized.startsWith('1') ||
+          normalized.startsWith('3') ||
+          normalized.startsWith('bc1')) {
         throw noTestnetAddressMessage;
       }
     } else if (NetworkType.currentNetworkType == NetworkType.mainnet) {
-      if (recipient.startsWith('m') ||
-          recipient.startsWith('n') ||
-          recipient.startsWith('2') ||
-          recipient.startsWith('tb1')) {
+      if (normalized.startsWith('m') ||
+          normalized.startsWith('n') ||
+          normalized.startsWith('2') ||
+          normalized.startsWith('tb1')) {
         throw noMainnetAddressMessage;
       }
     } else if (NetworkType.currentNetworkType == NetworkType.regtest) {
-      if (!recipient.startsWith('bcrt1')) {
+      if (!normalized.startsWith('bcrt1')) {
         throw noRegtestnetAddressMessage;
       }
     }
 
     bool result = false;
     try {
-      result = WalletUtility.validateAddress(recipient);
+      final addressForValidation = _isBech32(normalized) ? normalized : recipient;
+      result = WalletUtility.validateAddress(addressForValidation);
     } catch (e) {
       throw invalidAddressMessage;
     }
@@ -82,6 +92,13 @@ class SendAddressViewModel extends ChangeNotifier {
     }
   }
 
+  bool _isBech32(String address) {
+    final normalizedAddress = address.toLowerCase();
+    return normalizedAddress.startsWith('bc1') ||
+        normalizedAddress.startsWith('tb1') ||
+        normalizedAddress.startsWith('bcrt1');
+  }
+
   /// --- batch transaction
   bool isSendAmountValid(int walletId, int totalSendAmount) {
     return _walletProvider.getWalletBalance(walletId).confirmed > totalSendAmount;
@@ -89,6 +106,12 @@ class SendAddressViewModel extends ChangeNotifier {
 
   void saveWalletIdAndBatchRecipients(int id, Map<String, double> recipients) {
     _sendInfoProvider.setWalletId(id);
-    _sendInfoProvider.setRecipientsForBatch(recipients);
+
+    final normalizedRecipients = <String, double>{};
+    for (final entry in recipients.entries) {
+      final address = _isBech32(entry.key) ? entry.key.toLowerCase() : entry.key;
+      normalizedRecipients[address] = entry.value;
+    }
+    _sendInfoProvider.setRecipientsForBatch(normalizedRecipients);
   }
 }

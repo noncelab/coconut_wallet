@@ -38,6 +38,7 @@ class _StartScreenState extends State<StartScreen> {
       child: Center(
         child: Image.asset(
           'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
+          width: Sizes.size60,
         ),
       ),
     );

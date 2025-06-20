@@ -86,17 +86,21 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   void _setAvailabilityAndAmount() async {
     await Faucet().getStatus().then((FaucetStatusResponse response) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _requestAmount = (_todayRequestCount == 0) ? response.maxLimit : response.minLimit;
-          _state = (_requestAmount != 0) ? _AvailabilityState.good : _AvailabilityState.bad;
-        });
+        if (mounted) {
+          setState(() {
+            _requestAmount = (_todayRequestCount == 0) ? response.maxLimit : response.minLimit;
+            _state = (_requestAmount != 0) ? _AvailabilityState.good : _AvailabilityState.bad;
+          });
+        }
       });
     }).catchError((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _requestAmount = 0;
-          _state = _AvailabilityState.bad;
-        });
+        if (mounted) {
+          setState(() {
+            _requestAmount = 0;
+            _state = _AvailabilityState.bad;
+          });
+        }
       });
     });
   }

@@ -24,7 +24,7 @@ class SendAddressScreen extends StatefulWidget {
   State<SendAddressScreen> createState() => _SendAddressScreenState();
 }
 
-class _SendAddressScreenState extends State<SendAddressScreen> {
+class _SendAddressScreenState extends State<SendAddressScreen> with WidgetsBindingObserver {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   Barcode? result;
   QRViewController? controller;
@@ -105,6 +105,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controller?.dispose();
     super.dispose();
   }
@@ -112,6 +113,7 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _viewModel = SendAddressViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
@@ -119,8 +121,15 @@ class _SendAddressScreenState extends State<SendAddressScreen> {
     _viewModel.clearSendInfoProvider();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _viewModel.loadDataFromClipboardIfValid();
+      _viewModel.loadDataFromClipboard();
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _viewModel.loadDataFromClipboard();
+    }
   }
 
   // In order to get hot reload to work we need to pause the camera if the platform

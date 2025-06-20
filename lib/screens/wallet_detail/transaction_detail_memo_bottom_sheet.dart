@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_appbar_button.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
@@ -85,7 +86,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
                     ),
                   ),
                   Text(
-                    '거래 메모',
+                    t.tx_memo,
                     style: Styles.body2Bold.copyWith(
                       fontSize: 16,
                     ),
@@ -93,7 +94,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
                   CustomAppbarButton(
                     isActive: _isCompleteButtonEnabled,
                     isActivePrimaryColor: false,
-                    text: '완료',
+                    text: t.complete,
                     onPressed: () {
                       widget.onComplete(_updateMemo);
                       Navigator.pop(context);
@@ -114,7 +115,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
                     focusNode: _focusNode,
                     onChanged: (text) {
                       setState(() {
-                        _updateMemo = text;
+                        _updateMemo = text.trim();
                       });
                     },
                     onClear: () {

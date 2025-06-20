@@ -16,6 +16,7 @@ import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
+import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/send_utxo_sticky_header.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -391,6 +392,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
           child: Row(children: [
             CupertinoButton(
               onPressed: () {
+                if (_viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) {
+                  return;
+                }
                 setState(
                   () {
                     if (_isStickyHeaderVisible
@@ -420,6 +424,11 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   ),
                   SvgPicture.asset(
                     'assets/svg/arrow-down.svg',
+                    colorFilter: ColorFilter.mode(
+                        _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching
+                            ? CoconutColors.white.withOpacity(0.2)
+                            : CoconutColors.white,
+                        BlendMode.srcIn),
                   ),
                 ],
               ),
@@ -434,6 +443,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   CustomUnderlinedButton(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: t.unselect_all,
+                    isEnable:
+                        _viewModel.recommendedFeeFetchStatus != RecommendedFeeFetchStatus.fetching,
                     onTap: () {
                       _removeUtxoOrderDropdown();
                       _deselectAll();
@@ -443,6 +454,8 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                   CustomUnderlinedButton(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     text: t.select_all,
+                    isEnable:
+                        _viewModel.recommendedFeeFetchStatus != RecommendedFeeFetchStatus.fetching,
                     onTap: () async {
                       _removeUtxoOrderDropdown();
                       _selectAll();
@@ -517,8 +530,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 key: _scrolledOrderDropdownButtonKey,
                 _selectedUtxoOrder.text,
                 style: Styles.caption2.merge(
-                  const TextStyle(
-                    color: CoconutColors.white,
+                  TextStyle(
+                    color: viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching
+                        ? CoconutColors.white.withOpacity(0.2)
+                        : CoconutColors.white,
                     fontSize: 12,
                   ),
                 ),
@@ -534,7 +549,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   Widget _buildUtxoOrderDropdown(SendUtxoSelectionViewModel viewModel) {
-    if (_isOrderDropdownVisible && viewModel.availableUtxoList.isNotEmpty) {
+    if (_isOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
       return Positioned(
         top: _orderDropdownButtonPosition.dy -
             _scrollController.offset -
@@ -544,7 +559,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
       );
     }
 
-    if (_isScrolledOrderDropdownVisible && viewModel.availableUtxoList.isNotEmpty) {
+    if (_isScrolledOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
       return Positioned(
         top: _scrolledOrderDropdownButtonPosition.dy - MediaQuery.of(context).padding.top - 55,
         left: 16,
@@ -561,6 +576,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         margin: const EdgeInsets.only(left: 4, bottom: 12),
         child: CustomTagHorizontalSelector(
           tags: viewModel.utxoTagList.map((e) => e.name).toList(),
+          showDefaultTags: false,
           selectedName: viewModel.selectedUtxoTagName,
           onSelectedTag: (tagName) {
             viewModel.setSelectedUtxoTagName(tagName);
@@ -578,10 +594,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
         padding: const EdgeInsets.only(top: 0, bottom: 30, left: 16, right: 16),
-        itemCount: viewModel.availableUtxoList.length,
+        itemCount: viewModel.confirmedUtxoList.length,
         separatorBuilder: (context, index) => const SizedBox(height: 0),
         itemBuilder: (context, index) {
-          final utxo = viewModel.availableUtxoList[index];
+          final utxo = viewModel.confirmedUtxoList[index];
           final utxoHasSelectedTag = viewModel.selectedUtxoTagName == allLabelName ||
               viewModel.utxoTagMap[utxo.utxoId]
                       ?.any((e) => e.name == viewModel.selectedUtxoTagName) ==
@@ -592,12 +608,24 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               return const SizedBox();
             }
 
+            if (utxo.isLocked) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: LockedUtxoItemCard(
+                  key: ValueKey(utxo.transactionHash),
+                  utxo: utxo,
+                  utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+                ),
+              );
+            }
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               child: SelectableUtxoItemCard(
                 key: ValueKey(utxo.transactionHash),
                 currentUnit: _currentUnit,
                 utxo: utxo,
+                isSelectable:
+                    viewModel.recommendedFeeFetchStatus != RecommendedFeeFetchStatus.fetching,
                 isSelected: viewModel.selectedUtxoList.contains(utxo),
                 utxoTags: viewModel.utxoTagMap[utxo.utxoId],
                 onSelected: _toggleSelection,
@@ -657,8 +685,10 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               key: _orderDropdownButtonKey,
               _selectedUtxoOrder.text,
               style: Styles.caption2.merge(
-                const TextStyle(
-                  color: CoconutColors.white,
+                TextStyle(
+                  color: viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching
+                      ? CoconutColors.white.withOpacity(0.2)
+                      : CoconutColors.white,
                   fontSize: 12,
                 ),
               ),

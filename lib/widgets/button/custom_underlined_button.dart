@@ -39,6 +39,7 @@ class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.translucent,
       onTap: () {
         if (!widget.isEnable) return;
         widget.onTap();
@@ -58,7 +59,7 @@ class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
           _isPressing = false;
         });
       },
-      child: Container(
+      child: Padding(
         padding: widget.padding ?? const EdgeInsets.all(8),
         child: Container(
           decoration: BoxDecoration(

@@ -93,7 +93,7 @@ sat_vb: "sat/vB"
 total_sats: "총 $value sats"
 minimum_fee_rate_message: "현재 최소 수수료 $minimum sat/vB 보다 낮아요"
 utxo_count: "($count개)"
-total_utxo_count: "(총 $count개)"
+total_item_count: "(총 $count개)"
 
 view_app_info: "앱 정보 보기"
 view_tx_details: "거래 자세히 보기"
@@ -214,6 +214,16 @@ positive_feedback_screen:
 # lib/screens/send
 broadcasting_complete_screen:
   complete: "전송 요청 완료"
+  memo_placeholder: "메모 입력"
+  memo_tags:
+    - "거래"
+    - "구입"
+    - "후원"
+    - "생활비"
+    - "저축"
+    - "용돈"
+    - "생일 선물"
+
 broadcasting_screen:
   title: "최종 확인"
   description: "아래 정보로 송금할게요"
@@ -283,13 +293,31 @@ address_list_screen:
   address_index: "주소 - $index"
   receiving: "입금"
   change: "잔돈"
+  show_only_unused_address: "사용 전 주소만 보기"
+address_search_screen:
+  address_placeholder: "주소를 입력해 주세요"
+  address_not_found: "찾으시는 주소가 없어요"
+  search_result: "검색 결과"
+  address_n_found: "주소 $n개를 찾았어요"
+  search_range: "검색 범위"
+  receiving_address_index: "입금 주소 인덱스: $start ~ $end"
+  change_address_index: "잔돈 주소 인덱스: $start ~ $end"
+  receiving_address: "입금 주소"
+  change_address: "잔돈 주소"
 utxo_list_screen:
   total_balance: "총 잔액"
+  
 transaction_detail_screen:
   confirmation: "$height ($count승인)"
+  
 utxo_detail_screen:
   pending: "승인 대기중"
   address: "보유 주소"
+  utxo_locked: "사용 잠금"
+  utxo_unlocked: "사용 가능"
+  utxo_locked_toast_msg: "UTXO 잠금 완료! 이 코인은 더 이상 자동으로 사용되지 않아요."
+  utxo_unlocked_toast_msg: "UTXO 잠금 해체 완료! 코인이 사용 가능한 상태로 전환됐어요."
+  
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"
   add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
@@ -421,6 +449,8 @@ errors:
     incorrect: "비밀번호가 일치하지 않아요"
   data_loading_failed: "데이터를 불러오는 중 오류가 발생했습니다."
   data_not_found: "데이터가 없습니다."
+  utxo_lock_error: "일시적인 오류로 인해 UTXO 잠금 설정에 실패했어요"
+  utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
 
 text_field:
   enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vB)"

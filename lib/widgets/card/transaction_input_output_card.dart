@@ -109,8 +109,14 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         ? _outputAddressList.sublist(0, _outputCountToShow)
         : _outputAddressList;
 
-    int maxAmount = max(inputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b),
-        outputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b));
+    int maxInputAmount = inputList.isNotEmpty
+        ? inputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b)
+        : 0;
+    int maxOutputAmount = outputList.isNotEmpty
+        ? outputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b)
+        : 0;
+
+    int maxAmount = max(maxInputAmount, maxOutputAmount);
     _longestSatoshiText = addCommasToIntegerPart(maxAmount.toDouble());
     _longestBtcText = satoshiToBitcoinString(maxAmount);
 
@@ -136,7 +142,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       decoration:
           BoxDecoration(borderRadius: BorderRadius.circular(20), color: CoconutColors.gray800),
       child: Column(
@@ -199,15 +205,11 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
           ),
 
           /// balance 최대 너비 체크를 위함
-          Visibility(
-            visible: !_isBalanceWidthCalculated,
+          Offstage(
             child: Text(
-              key: _balanceWidthKey,
-              _minimumLongestText,
-              style: CoconutTypography.body2_14_Number.setColor(
-                Colors.transparent,
-              ),
-            ),
+                key: _balanceWidthKey,
+                _minimumLongestText,
+                style: CoconutTypography.body2_14_Number),
           ),
         ],
       ),
@@ -258,12 +260,16 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   void _setInitialInputCountToShow() {
     final direction = TransactionUtil.getDirection(_transaction);
     setState(() {
-      _inputCountToShow = direction == TransactionDirection.outgoing
-          ? min(kOutgoingTxInputCount, _inputAddressList.length)
-          : min(kIncomingTxInputCount, _inputAddressList.length);
-      if (_inputAddressList.length < kOutgoingTxInputCount ||
-          _inputAddressList.length < kIncomingTxInputCount) {
-        _canShowMoreInputs = false;
+      if (direction == TransactionDirection.outgoing) {
+        _inputCountToShow = min(kOutgoingTxInputCount, _inputAddressList.length);
+        if (_inputAddressList.length <= kOutgoingTxInputCount) {
+          _canShowMoreInputs = false;
+        }
+      } else {
+        _inputCountToShow = min(kIncomingTxInputCount, _inputAddressList.length);
+        if (_inputAddressList.length <= kIncomingTxInputCount) {
+          _canShowMoreInputs = false;
+        }
       }
     });
   }
@@ -271,12 +277,16 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   void _setInitialOutputCountToShow() {
     final direction = TransactionUtil.getDirection(_transaction);
     setState(() {
-      _outputCountToShow = direction == TransactionDirection.outgoing
-          ? min(kOutgoingTxOutputCount, _outputAddressList.length)
-          : min(kIncomingTxOutputCount, _outputAddressList.length);
-      if (_outputAddressList.length < kOutgoingTxOutputCount ||
-          _outputAddressList.length < kIncomingTxOutputCount) {
-        _canShowMoreOutputs = false;
+      if (direction == TransactionDirection.outgoing) {
+        _outputCountToShow = min(kOutgoingTxOutputCount, _outputAddressList.length);
+        if (_outputAddressList.length <= kOutgoingTxOutputCount) {
+          _canShowMoreOutputs = false;
+        }
+      } else {
+        _outputCountToShow = min(kIncomingTxOutputCount, _outputAddressList.length);
+        if (_outputAddressList.length <= kIncomingTxOutputCount) {
+          _canShowMoreOutputs = false;
+        }
       }
     });
   }
