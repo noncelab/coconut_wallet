@@ -144,32 +144,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   context.read<TransactionRepository>(),
                 )),
 
-        // NodeProvider
-        ProxyProvider6<AddressRepository, TransactionRepository, UtxoRepository,
-            SubscriptionRepository, WalletRepository, ConnectivityProvider, NodeProvider>(
-          create: (context) => NodeProvider(
-              CoconutWalletApp.kElectrumHost,
-              CoconutWalletApp.kElectrumPort,
-              CoconutWalletApp.kElectrumIsSSL,
-              CoconutWalletApp.kNetworkType,
-              context.read<ConnectivityProvider>()),
-          update: (context, addressRepository, transactionRepository, utxoRepository,
-                  subscribeRepository, walletRepository, connectivityProvider, previous) =>
-              previous ??
-              NodeProvider(
-                CoconutWalletApp.kElectrumHost,
-                CoconutWalletApp.kElectrumPort,
-                CoconutWalletApp.kElectrumIsSSL,
-                CoconutWalletApp.kNetworkType,
-                connectivityProvider,
-              ),
-        ),
-
         /// main 에서만 사용하는 모델
         if (_appEntryFlow == AppEntryFlow.main) ...{
           ChangeNotifierProvider(create: (_) => PreferenceProvider()),
           Provider(create: (_) => SendInfoProvider()),
-          ChangeNotifierProxyProvider2<ConnectivityProvider, AuthProvider, WalletProvider>(
+          ChangeNotifierProxyProvider<AuthProvider, WalletProvider>(
             create: (context) {
               return WalletProvider(
                 Provider.of<RealmManager>(context, listen: false),
@@ -177,28 +156,40 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 Provider.of<TransactionRepository>(context, listen: false),
                 Provider.of<UtxoRepository>(context, listen: false),
                 Provider.of<WalletRepository>(context, listen: false),
-                Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
                 (count) async {
                   await context.read<VisibilityProvider>().setWalletCount(count);
                 },
                 Provider.of<AuthProvider>(context, listen: false).isSetPin,
-                Provider.of<NodeProvider>(context, listen: false),
               );
             },
-            update: (context, connectivityProvider, authProvider, walletProvider) {
-              try {
-                // TODO: 바뀌었을 때만 호출되도록. walletProvider 내부에서 addLitsener()
-                walletProvider!.setIsNetworkOn(connectivityProvider.isNetworkOn);
+            update: (context, authProvider, walletProvider) => walletProvider!,
+          ),
 
-                return walletProvider;
-              } catch (e) {
-                if (walletProvider == null) {
-                  rethrow;
-                }
-
-                return walletProvider;
-              }
+          // NodeProvider - WalletProvider의 ValueNotifier들을 사용하여 느슨한 결합
+          ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, NodeProvider>(
+            create: (context) {
+              final walletProvider = context.read<WalletProvider>();
+              return NodeProvider(
+                CoconutWalletApp.kElectrumHost,
+                CoconutWalletApp.kElectrumPort,
+                CoconutWalletApp.kElectrumIsSSL,
+                CoconutWalletApp.kNetworkType,
+                context.read<ConnectivityProvider>(),
+                walletProvider.walletLoadStateNotifier,
+                walletProvider.walletItemListNotifier,
+              );
             },
+            update: (context, connectivityProvider, walletProvider, previous) =>
+                previous ??
+                NodeProvider(
+                  CoconutWalletApp.kElectrumHost,
+                  CoconutWalletApp.kElectrumPort,
+                  CoconutWalletApp.kElectrumIsSSL,
+                  CoconutWalletApp.kNetworkType,
+                  connectivityProvider,
+                  walletProvider.walletLoadStateNotifier,
+                  walletProvider.walletItemListNotifier,
+                ),
           ),
         },
       ],

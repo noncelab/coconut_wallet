@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
@@ -29,6 +30,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectProvider;
   final UpbitConnectModel _upbitConnectModel;
   final SendInfoProvider _sendInfoProvider;
+  final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   late WalletListItemBase _walletListBaseItem;
@@ -63,7 +65,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   int get sendingAmount => _sendingAmount;
 
   WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
-      this._connectProvider, this._upbitConnectModel, this._sendInfoProvider) {
+      this._connectProvider, this._upbitConnectModel, this._sendInfoProvider, this._nodeProvider) {
     // 지갑 상세 초기화
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
@@ -71,7 +73,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     _txProvider.initTxList(_walletId);
 
     // 지갑 업데이트
-    _prevWalletUpdateInfo = _walletProvider.getWalletUpdateInfo(_walletId);
+    _prevWalletUpdateInfo =
+        _nodeProvider.state.registeredWallets[_walletId] ?? WalletUpdateInfo(_walletId);
     _addChangeListener();
     _isWalletSyncing = !_allElementUpdateCompleted(_prevWalletUpdateInfo);
     _balance = _getBalance();
@@ -158,16 +161,16 @@ class WalletDetailViewModel extends ChangeNotifier {
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
     Logger.log('--> 지갑$_walletId 업데이트 체크');
     // balance
-    if (_prevWalletUpdateInfo.balance != UpdateStatus.completed &&
-        updateInfo.balance == UpdateStatus.completed) {
+    if (_prevWalletUpdateInfo.balance != WalletSyncState.completed &&
+        updateInfo.balance == WalletSyncState.completed) {
       _balance = _getBalance();
       _setReceiveAddress();
       notifyListeners();
       Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.');
     }
     // transaction
-    if (_prevWalletUpdateInfo.transaction != UpdateStatus.completed &&
-        updateInfo.transaction == UpdateStatus.completed) {
+    if (_prevWalletUpdateInfo.transaction != WalletSyncState.completed &&
+        updateInfo.transaction == WalletSyncState.completed) {
       _txProvider.initTxList(_walletId);
       _setReceiveAddress();
       notifyListeners();
@@ -186,8 +189,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   bool _allElementUpdateCompleted(WalletUpdateInfo updateInfo) {
-    return updateInfo.balance == UpdateStatus.completed &&
-        updateInfo.transaction == UpdateStatus.completed;
+    return updateInfo.balance == WalletSyncState.completed &&
+        updateInfo.transaction == WalletSyncState.completed;
   }
 
   void _setPendingAmount() {

@@ -84,9 +84,7 @@ class _AppGuardState extends State<AppGuard> {
         if (_isPause) {
           _isPause = false;
           _authProvider.checkDeviceBiometrics();
-          if (_upbitConnectModel.upbitWebSocketService == null) {
-            _upbitConnectModel.initUpbitWebSocketService();
-          }
+          _upbitConnectModel.initUpbitWebSocketService();
           _nodeProvider.reconnect();
         }
         break;

@@ -4,6 +4,7 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -13,6 +14,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   final int _walletId;
   final AuthProvider _authProvider;
   final WalletProvider _walletProvider;
+  final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   late String _walletName;
@@ -21,7 +23,8 @@ class WalletInfoViewModel extends ChangeNotifier {
   late int _multisigRequiredSignerCount;
   late WalletListItemBase _walletItemBase;
 
-  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, bool _isMultisig) {
+  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, this._nodeProvider,
+      bool _isMultisig) {
     final walletItemBase = _walletProvider.getWalletById(_walletId);
     _walletItemBase = walletItemBase;
     _walletName = walletItemBase.name;
@@ -39,7 +42,6 @@ class WalletInfoViewModel extends ChangeNotifier {
     }
   }
 
-  bool get isDbSyncing => _walletProvider.isSyncing;
   bool get isSetPin => _authProvider.isSetPin;
 
   String get walletName => _walletName;
@@ -55,6 +57,9 @@ class WalletInfoViewModel extends ChangeNotifier {
   Future<void> deleteWallet() async {
     await _sharedPrefs.removeFaucetHistory(_walletId);
     await _walletProvider.deleteWallet(_walletId);
+    await _nodeProvider.closeConnection();
+    _nodeProvider.deleteWallet(_walletId);
+    await _nodeProvider.initialize();
     _walletProvider.notifyListeners();
   }
 

@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -13,26 +15,27 @@ typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
 typedef BalanceGetter = int Function(int id);
 
 class WalletListViewModel extends ChangeNotifier {
-  late final VisibilityProvider _visibilityProvider;
-  late WalletProvider _walletProvider;
+  final VisibilityProvider _visibilityProvider;
+  WalletProvider _walletProvider;
+  final NodeProvider _nodeProvider;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
-  late WalletSubscriptionState _walletSyncingState;
   late final ConnectivityProvider _connectivityProvider;
   late bool? _isNetworkOn;
   Map<int, AnimatedBalanceData> _walletBalance = {};
   bool _isFirstLoaded = false;
+  NodeSyncState _nodeSyncState = NodeSyncState.syncing;
 
   WalletListViewModel(
     this._walletProvider,
     this._visibilityProvider,
     this._isBalanceHidden,
     this._connectivityProvider,
+    this._nodeProvider,
   ) {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
-    _walletSyncingState = _walletProvider.walletSubscriptionState;
     _isNetworkOn = _connectivityProvider.isNetworkOn;
   }
 
@@ -40,9 +43,7 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
   bool get shouldShowLoadingIndicator =>
-      !_isFirstLoaded &&
-      _walletProvider.isAnyBalanceUpdating &&
-      _walletProvider.walletSubscriptionState != WalletSubscriptionState.failed;
+      !_isFirstLoaded && _nodeProvider.state.nodeSyncState == NodeSyncState.syncing;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
 
@@ -77,20 +78,21 @@ class WalletListViewModel extends ChangeNotifier {
     _updateBalance(walletProvider.walletBalance);
     notifyListeners();
 
-    if (_walletSyncingState != walletProvider.walletSubscriptionState) {
-      if (walletProvider.walletSubscriptionState == WalletSubscriptionState.completed) {
+    if (_nodeSyncState != _nodeProvider.state.nodeSyncState) {
+      if (_nodeProvider.state.nodeSyncState == NodeSyncState.syncing) {
         vibrateLight();
         if (_isFirstLoaded == false) {
           _isFirstLoaded = true;
         }
-      } else if (walletProvider.walletSubscriptionState == WalletSubscriptionState.failed) {
+      } else if (_nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
         vibrateLightDouble();
       }
-      _walletSyncingState = walletProvider.walletSubscriptionState;
-    } else if (_walletSyncingState == WalletSubscriptionState.completed &&
-        walletProvider.walletSubscriptionState == WalletSubscriptionState.completed &&
+      _nodeSyncState = _nodeProvider.state.nodeSyncState;
+    } else if (_nodeSyncState == NodeSyncState.completed &&
+        _nodeProvider.state.nodeSyncState == NodeSyncState.completed &&
         _isFirstLoaded == false) {
       _isFirstLoaded = true;
+      _nodeSyncState = _nodeProvider.state.nodeSyncState;
     }
   }
 

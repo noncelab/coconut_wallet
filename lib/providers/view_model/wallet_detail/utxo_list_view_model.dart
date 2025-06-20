@@ -7,13 +7,13 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
@@ -23,8 +23,9 @@ class UtxoListViewModel extends ChangeNotifier {
   late final ConnectivityProvider _connectProvider;
   late final UpbitConnectModel _upbitConnectModel;
   late final WalletListItemBase _walletListBaseItem;
+  final NodeProvider _nodeProvider;
   late final int _walletId;
-  late UpdateStatus _prevUpdateStatus;
+  late WalletSyncState _prevUpdateStatus;
 
   // balance 애니메이션을 위한 이전 잔액을 담는 변수
   late int _prevBalance;
@@ -42,10 +43,12 @@ class UtxoListViewModel extends ChangeNotifier {
     this._tagProvider,
     this._connectProvider,
     this._upbitConnectModel,
+    this._nodeProvider,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     _initUtxoAndTags();
-    _prevUpdateStatus = _walletProvider.getWalletUpdateInfo(_walletId).utxo;
+    _prevUpdateStatus =
+        _nodeProvider.state.registeredWallets[_walletId]?.utxo ?? WalletSyncState.waiting;
     _addChangeListener();
     _prevBalance = balance;
   }
@@ -72,7 +75,7 @@ class UtxoListViewModel extends ChangeNotifier {
   WalletType get walletType => _walletListBaseItem.walletType;
 
   bool get isSyncing =>
-      _prevUpdateStatus == UpdateStatus.waiting || _prevUpdateStatus == UpdateStatus.syncing;
+      _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
 
   void _addChangeListener() {
     _walletProvider.addWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
@@ -80,7 +83,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
     Logger.log('${DateTime.now()}--> 지갑$_walletId 업데이트 체크 (UTXO)');
-    if (_prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == UpdateStatus.completed) {
+    if (_prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == WalletSyncState.completed) {
       _getUtxoAndTagList();
       notifyListeners();
     }

@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
@@ -14,9 +15,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   final WalletImportSource _walletImportSource;
   final WalletProvider _walletProvider;
   final WalletAddService _walletAddService = WalletAddService();
+  final NodeProvider _nodeProvider;
   late final IQrScanDataHandler _qrDataHandler;
 
-  WalletAddScannerViewModel(this._walletImportSource, this._walletProvider) {
+  WalletAddScannerViewModel(this._walletImportSource, this._walletProvider, this._nodeProvider) {
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         _qrDataHandler = CoconutQrScanDataHandler();
@@ -37,18 +39,26 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   IQrScanDataHandler get qrDataHandler => _qrDataHandler;
 
   Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
+    ResultOfSyncFromVault result;
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
-        return addCoconutVaultWallet(additionInfo as WatchOnlyWallet);
+        result = await addCoconutVaultWallet(additionInfo as WatchOnlyWallet);
       case WalletImportSource.keystone:
-        return addKeystoneWallet(additionInfo as UR);
+        result = await addKeystoneWallet(additionInfo as UR);
       case WalletImportSource.seedSigner:
-        return addSeedSignerWallet(additionInfo as String);
+        result = await addSeedSignerWallet(additionInfo as String);
       case WalletImportSource.extendedPublicKey:
         throw 'No Support extendedPublicKey';
       default:
         throw 'wrong wallet import source: $_walletImportSource';
     }
+
+    if (result.result == WalletSyncResult.newWalletAdded) {
+      final wallet =
+          _walletProvider.walletItemList.firstWhere((element) => element.id == result.walletId);
+      _nodeProvider.subscribeWallet(wallet);
+    }
+    return result;
   }
 
   Future<ResultOfSyncFromVault> addCoconutVaultWallet(WatchOnlyWallet watchOnlyWallet) async {

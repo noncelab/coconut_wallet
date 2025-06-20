@@ -20,30 +20,30 @@ import '../repository/realm/test_realm_manager.dart';
 
 void printState(NodeProviderState state) {
   // UpdateStatus를 심볼로 변환하는 함수
-  String statusToSymbol(UpdateStatus status) {
+  String statusToSymbol(WalletSyncState status) {
     switch (status) {
-      case UpdateStatus.waiting:
+      case WalletSyncState.waiting:
         return '⏳'; // 대기 중
-      case UpdateStatus.syncing:
+      case WalletSyncState.syncing:
         return '🔄'; // 동기화 중
-      case UpdateStatus.completed:
+      case WalletSyncState.completed:
         return '✅'; // 완료됨
     }
   }
 
   // ConnectionState를 심볼로 변환하는 함수
-  String connectionStateToSymbol(MainClientState state) {
+  String connectionStateToSymbol(NodeSyncState state) {
     switch (state) {
-      case MainClientState.syncing:
+      case NodeSyncState.syncing:
         return '🔄 동기화 중';
-      case MainClientState.waiting:
+      case NodeSyncState.completed:
         return '🟢 대기 중ㅤ';
-      case MainClientState.disconnected:
-        return '🔴 연결 끊김';
+      case NodeSyncState.failed:
+        return '🔴 실패';
     }
   }
 
-  final connectionState = state.connectionState;
+  final connectionState = state.nodeSyncState;
   final connectionStateSymbol = connectionStateToSymbol(connectionState);
   final buffer = StringBuffer();
 

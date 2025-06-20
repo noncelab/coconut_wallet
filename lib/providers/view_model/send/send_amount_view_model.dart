@@ -174,9 +174,9 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   void _onWalletUpdated(WalletUpdateInfo walletUpdateInfo) {
-    if (walletUpdateInfo.utxo == UpdateStatus.syncing) {
+    if (walletUpdateInfo.utxo == WalletSyncState.syncing) {
       _isUtxoUpdating = true;
-    } else if (walletUpdateInfo.utxo == UpdateStatus.completed && _isUtxoUpdating) {
+    } else if (walletUpdateInfo.utxo == WalletSyncState.completed && _isUtxoUpdating) {
       _isUtxoUpdating = false;
       _initBalances();
       notifyListeners();

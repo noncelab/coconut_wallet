@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -273,7 +274,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Provider.of<TransactionProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false),
         Provider.of<UpbitConnectModel>(context, listen: false),
-        Provider.of<SendInfoProvider>(context, listen: false));
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<NodeProvider>(context, listen: false));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topSelectorWidgetSize = const Size(0, 0);

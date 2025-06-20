@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
@@ -17,6 +18,8 @@ import 'package:coconut_wallet/utils/logger.dart';
 class NodeProvider extends ChangeNotifier {
   final IsolateManager _isolateManager;
   final ConnectivityProvider _connectivityProvider;
+  final ValueNotifier<WalletLoadState> _walletLoadStateNotifier;
+  final ValueNotifier<List<WalletListItemBase>> _walletItemListNotifier;
   final String _host;
   final int _port;
   final bool _ssl;
@@ -24,7 +27,6 @@ class NodeProvider extends ChangeNotifier {
 
   NodeStateManager? _stateManager;
   StreamSubscription<IsolateStateMessage>? _stateSubscription;
-  late final VoidCallback _connectivityListener;
 
   Completer<void>? _initCompleter;
   bool _isInitializing = false;
@@ -47,12 +49,14 @@ class NodeProvider extends ChangeNotifier {
   bool _isFirstReconnect = true;
 
   NodeProvider(this._host, this._port, this._ssl, this._networkType, this._connectivityProvider,
+      this._walletLoadStateNotifier, this._walletItemListNotifier,
       {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
     Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
 
-    _connectivityListener = _onConnectivityChanged;
-    _connectivityProvider.addListener(_connectivityListener);
+    _connectivityProvider.addListener(_onConnectivityChanged);
+    _walletLoadStateNotifier.addListener(_onWalletLoadStateChanged);
+    _walletItemListNotifier.addListener(_onWalletItemListChanged);
 
     _checkInitialNetworkState();
   }
@@ -73,17 +77,110 @@ class NodeProvider extends ChangeNotifier {
       if (_pendingInitialization || !isInitialized) {
         Logger.log('NodeProvider: 네트워크 연결됨 - 초기화 시작');
         _pendingInitialization = false;
-        initialize();
+        initialize().then((_) {
+          reconnect();
+        });
       }
-    } else if (isNetworkOn == false) {
+    } else {
       Logger.log('NodeProvider: 네트워크 연결 끊어짐 - 연결 종료');
       _pendingInitialization = true;
       closeConnection();
     }
   }
 
+  /// WalletLoadState 변경 감지 및 처리
+  void _onWalletLoadStateChanged() {
+    final walletLoadState = _walletLoadStateNotifier.value;
+
+    Logger.log('NodeProvider: WalletLoadState 변경 감지: $walletLoadState');
+
+    if (walletLoadState == WalletLoadState.loadCompleted) {
+      subscribeWallets(walletItems: _walletItemListNotifier.value);
+    }
+  }
+
+  /// WalletItemList 변경 감지 및 처리
+  void _onWalletItemListChanged() {
+    final walletItemList = _walletItemListNotifier.value;
+    Logger.log('NodeProvider: WalletItemList 변경 감지: ${walletItemList.length}개 지갑');
+
+    // 필요한 경우 여기에 추가 로직 구현
+  }
+
   void _createStateManager() {
-    _stateManager = NodeStateManager(() => notifyListeners());
+    _stateManager = NodeStateManager(() {
+      _printWalletStatus();
+      return notifyListeners();
+    });
+  }
+
+  void _printWalletStatus() {
+    // UpdateStatus를 심볼로 변환하는 함수
+    String statusToSymbol(WalletSyncState status) {
+      switch (status) {
+        case WalletSyncState.waiting:
+          return '⏳'; // 대기 중
+        case WalletSyncState.syncing:
+          return '🔄'; // 동기화 중
+        case WalletSyncState.completed:
+          return '✅'; // 완료됨
+      }
+    }
+
+    // ConnectionState를 심볼로 변환하는 함수
+    String connectionStateToSymbol(NodeSyncState state) {
+      switch (state) {
+        case NodeSyncState.syncing:
+          return '🔄 동기화 중';
+        case NodeSyncState.completed:
+          return '🟢 대기 중ㅤ';
+        case NodeSyncState.failed:
+          return '🔴 실패';
+      }
+    }
+
+    final connectionState = state.nodeSyncState;
+    final connectionStateSymbol = connectionStateToSymbol(connectionState);
+    final buffer = StringBuffer();
+
+    if (state.registeredWallets.isEmpty) {
+      buffer.writeln('--> 등록된 지갑이 없습니다.');
+      buffer.writeln('--> connectionState: $connectionState');
+      Logger.log(buffer.toString());
+      return;
+    }
+
+    // 등록된 지갑의 키 목록 얻기
+    final walletKeys = state.registeredWallets.keys.toList();
+
+    // 테이블 헤더 출력 (connectionState 포함)
+    buffer.writeln('\n');
+    buffer.writeln('┌───────────────────────────────────────┐');
+    buffer.writeln('│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
+    buffer.writeln('├─────────┬─────────┬─────────┬─────────┤');
+    buffer.writeln('│ 지갑 ID │  잔액   │  거래   │  UTXO   │');
+    buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
+
+    // 각 지갑 상태 출력
+    for (int i = 0; i < walletKeys.length; i++) {
+      final key = walletKeys[i];
+      final value = state.registeredWallets[key]!;
+
+      final balanceSymbol = statusToSymbol(value.balance);
+      final transactionSymbol = statusToSymbol(value.transaction);
+      final utxoSymbol = statusToSymbol(value.utxo);
+
+      buffer.writeln(
+          '│ ${key.toString().padRight(7)} │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
+
+      // 마지막 행이 아니면 행 구분선 추가
+      if (i < walletKeys.length - 1) {
+        buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
+      }
+    }
+
+    buffer.writeln('└─────────┴─────────┴─────────┴─────────┘');
+    Logger.log(buffer.toString());
   }
 
   /// 안전한 Completer 생성
@@ -135,6 +232,13 @@ class NodeProvider extends ChangeNotifier {
       }
 
       _subscribeToStateChanges();
+
+      // 초기화 완료 후 대기 중인 지갑 구독 처리
+      if (needSubscribeWallets && _lastSubscribedWallets.isNotEmpty) {
+        Logger.log('NodeProvider: 초기화 완료 - 대기 중인 지갑 구독 시작');
+        await subscribeWallets();
+      }
+
       notifyListeners();
       Logger.log('NodeProvider: Initialization completed successfully');
     } catch (e) {
@@ -174,10 +278,15 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> subscribeWallets({List<WalletListItemBase>? walletItems}) async {
-    needSubscribeWallets = false;
     if (walletItems != null) {
       _lastSubscribedWallets = walletItems;
     }
+    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted ||
+        _connectivityProvider.isNetworkOn != true) {
+      return Result.success(false);
+    }
+
+    needSubscribeWallets = false;
     if (_lastSubscribedWallets.isEmpty) {
       Logger.log('NodeProvider: 구독할 지갑이 없습니다.');
       return Result.success(true);
@@ -301,8 +410,9 @@ class NodeProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    // ConnectivityProvider 리스너 해제
-    _connectivityProvider.removeListener(_connectivityListener);
+    _connectivityProvider.removeListener(_onConnectivityChanged);
+    _walletLoadStateNotifier.removeListener(_onWalletLoadStateChanged);
+    _walletItemListNotifier.removeListener(_onWalletItemListChanged);
 
     // 기존 정리 로직
     closeConnection();
