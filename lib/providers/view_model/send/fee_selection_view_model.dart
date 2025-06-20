@@ -431,6 +431,7 @@ class FeeSelectionViewModel extends ChangeNotifier {
       _isCustomFeeTooLow = false;
     }
 
+    setCustomSelected(false);
     notifyListeners();
   }
 
