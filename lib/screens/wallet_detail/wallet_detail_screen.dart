@@ -275,7 +275,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Provider.of<ConnectivityProvider>(context, listen: false),
         Provider.of<UpbitConnectModel>(context, listen: false),
         Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<NodeProvider>(context, listen: false));
+        Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topSelectorWidgetSize = const Size(0, 0);

@@ -36,19 +36,35 @@ class NodeProvider extends ChangeNotifier {
   bool _isClosing = false;
   bool _pendingInitialization = false;
 
-  // Stream Controllers
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
 
   /// 전체 동기화 상태를 구독할 수 있는 스트림
-  Stream<NodeSyncState> get syncStateStream => _syncStateController.stream;
+  Stream<NodeSyncState> get syncStateStream {
+    return Stream.multi((controller) {
+      // 현재 상태를 먼저 전송
+      controller.add(state.nodeSyncState);
 
-  /// 전체 지갑 상태를 구독할 수 있는 스트림
-  Stream<Map<int, WalletUpdateInfo>> get walletStateStream => _walletStateController.stream;
+      final subscription = _syncStateController.stream.listen(controller.add);
+      controller.onCancel = () => subscription.cancel();
+    });
+  }
 
   /// 특정 지갑의 상태만 구독할 수 있는 스트림
   Stream<WalletUpdateInfo> getWalletStateStream(int walletId) {
-    return _walletStateController.stream.map((wallets) => wallets[walletId]!);
+    return Stream.multi((controller) {
+      final initialState = state.registeredWallets[walletId];
+      if (initialState != null) {
+        controller.add(initialState);
+      }
+
+      final subscription = _walletStateController.stream
+          .map((wallets) => wallets[walletId])
+          .where((state) => state != null)
+          .cast<WalletUpdateInfo>()
+          .listen(controller.add);
+      controller.onCancel = () => subscription.cancel();
+    });
   }
 
   NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();

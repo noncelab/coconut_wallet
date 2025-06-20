@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -7,7 +9,6 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/upbit_connect_model.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
@@ -30,8 +31,9 @@ class WalletDetailViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectProvider;
   final UpbitConnectModel _upbitConnectModel;
   final SendInfoProvider _sendInfoProvider;
-  final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final Stream<WalletUpdateInfo> _syncWalletStateStream;
+  StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
 
   late WalletListItemBase _walletListBaseItem;
   late WalletType _walletType;
@@ -64,8 +66,14 @@ class WalletDetailViewModel extends ChangeNotifier {
   int get receivingAmount => _receivingAmount;
   int get sendingAmount => _sendingAmount;
 
-  WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
-      this._connectProvider, this._upbitConnectModel, this._sendInfoProvider, this._nodeProvider) {
+  WalletDetailViewModel(
+      this._walletId,
+      this._walletProvider,
+      this._txProvider,
+      this._connectProvider,
+      this._upbitConnectModel,
+      this._sendInfoProvider,
+      this._syncWalletStateStream) {
     // 지갑 상세 초기화
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
@@ -73,9 +81,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     _txProvider.initTxList(_walletId);
 
     // 지갑 업데이트
-    _prevWalletUpdateInfo =
-        _nodeProvider.state.registeredWallets[_walletId] ?? WalletUpdateInfo(_walletId);
-    _addChangeListener();
+    _prevWalletUpdateInfo = WalletUpdateInfo(_walletId);
+    _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdateInfoChanged);
     _isWalletSyncing = !_allElementUpdateCompleted(_prevWalletUpdateInfo);
     _balance = _getBalance();
 
@@ -137,10 +144,6 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _addChangeListener() {
-    _walletProvider.addWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
-  }
-
   void _updateBitcoinPrice() {
     _bitcoinPriceKrw = _upbitConnectModel.bitcoinPriceKrw ?? 0;
     _bitcoinPriceKrwInString = _upbitConnectModel.getFiatPrice(_balance, CurrencyCode.KRW);
@@ -158,11 +161,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   // balance, transaction만 고려
-  void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
-    Logger.log('--> 지갑$_walletId 업데이트 체크');
+  void _onWalletUpdateInfoChanged(WalletUpdateInfo newInfo) {
     // balance
     if (_prevWalletUpdateInfo.balance != WalletSyncState.completed &&
-        updateInfo.balance == WalletSyncState.completed) {
+        newInfo.balance == WalletSyncState.completed) {
       _balance = _getBalance();
       _setReceiveAddress();
       notifyListeners();
@@ -170,14 +172,14 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
     // transaction
     if (_prevWalletUpdateInfo.transaction != WalletSyncState.completed &&
-        updateInfo.transaction == WalletSyncState.completed) {
+        newInfo.transaction == WalletSyncState.completed) {
       _txProvider.initTxList(_walletId);
       _setReceiveAddress();
       notifyListeners();
       Logger.log('--> 지갑$_walletId의 TX를 업데이트했습니다.');
     }
 
-    bool isSyncing = !_allElementUpdateCompleted(updateInfo);
+    bool isSyncing = !_allElementUpdateCompleted(newInfo);
     if (_isWalletSyncing != isSyncing) {
       _isWalletSyncing = isSyncing;
       Logger.log('--> 지갑$_walletId loading ui: $_isWalletSyncing으로 변경');
@@ -185,7 +187,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
 
     _setPendingAmount();
-    _prevWalletUpdateInfo = updateInfo;
+    _prevWalletUpdateInfo = newInfo;
   }
 
   bool _allElementUpdateCompleted(WalletUpdateInfo updateInfo) {
@@ -220,7 +222,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _walletProvider.removeWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
+    _syncWalletStateSubscription?.cancel();
     _upbitConnectModel.removeListener(_updateBitcoinPrice);
     super.dispose();
   }

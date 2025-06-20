@@ -16,7 +16,7 @@ typedef BalanceGetter = int Function(int id);
 class WalletListViewModel extends ChangeNotifier {
   final VisibilityProvider _visibilityProvider;
   WalletProvider _walletProvider;
-  final Stream<NodeSyncState> _syncStateStream;
+  final Stream<NodeSyncState> _syncNodeStateStream;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
   late final bool _isReviewScreenVisible;
@@ -25,53 +25,47 @@ class WalletListViewModel extends ChangeNotifier {
   Map<int, AnimatedBalanceData> _walletBalance = {};
   bool _isFirstLoaded = false;
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
-
-  // Stream subscription for NodeSyncState
-  StreamSubscription<NodeSyncState>? _syncStateSubscription;
+  StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
 
   WalletListViewModel(
     this._walletProvider,
     this._visibilityProvider,
     this._isBalanceHidden,
     this._connectivityProvider,
-    this._syncStateStream,
+    this._syncNodeStateStream,
   ) {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _isNetworkOn = _connectivityProvider.isNetworkOn;
-
-    // Stream 구독 시작
-    _subscribeToSyncStateStream();
+    _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
-  List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
+  List<WalletListItemBase> get walletItemList => _walletProvider.walletItemListNotifier.value;
   bool? get isNetworkOn => _isNetworkOn;
 
-  /// NodeSyncState Stream 구독
-  void _subscribeToSyncStateStream() {
-    _syncStateSubscription = _syncStateStream.listen((syncState) {
-      if (_nodeSyncState != syncState) {
-        if (syncState == NodeSyncState.completed) {
-          if (!_isFirstLoaded) {
-            _isFirstLoaded = true;
-            vibrateLight();
-          }
-        } else if (syncState == NodeSyncState.failed) {
-          vibrateLightDouble();
+  void _handleNodeSyncState(NodeSyncState syncState) {
+    if (_nodeSyncState != syncState) {
+      if (syncState == NodeSyncState.completed) {
+        if (!_isFirstLoaded) {
+          _isFirstLoaded = true;
+          vibrateLight();
         }
-        _nodeSyncState = syncState;
-        notifyListeners();
-      } else if (_nodeSyncState == NodeSyncState.completed &&
-          syncState == NodeSyncState.completed &&
-          _isFirstLoaded == false) {
-        _isFirstLoaded = true;
-        _nodeSyncState = syncState;
+        refreshWallets();
+      } else if (syncState == NodeSyncState.failed) {
+        vibrateLightDouble();
       }
-    });
+      _nodeSyncState = syncState;
+      notifyListeners();
+    } else if (_nodeSyncState == NodeSyncState.completed &&
+        syncState == NodeSyncState.completed &&
+        _isFirstLoaded == false) {
+      _isFirstLoaded = true;
+      _nodeSyncState = syncState;
+    }
   }
 
   void hideTermsShortcut() {
@@ -144,7 +138,7 @@ class WalletListViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _syncStateSubscription?.cancel();
+    _syncNodeStateSubscription?.cancel();
     super.dispose();
   }
 }
