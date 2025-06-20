@@ -486,7 +486,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     UtxoState.sortUtxo(_confirmedUtxoList, basis);
   }
 
-  void syncSelectedUtxosWithTransaction() {
+  void _syncSelectedUtxosWithTransaction() {
     var inputs = _transaction.inputs;
     List<UtxoState> result = [];
     for (int i = 0; i < inputs.length; i++) {
@@ -501,7 +501,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool updateFeeInfoEstimateFee() {
+  bool _updateFeeInfoEstimateFee() {
     for (var feeInfo in feeInfos) {
       try {
         int estimatedFee = estimateFee(feeInfo.satsPerVb!);
@@ -514,7 +514,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     return true;
   }
 
-  void updateFeeRateOfTransaction(double satsPerVb) {
+  void _updateFeeRateOfTransaction(double satsPerVb) {
     _transaction.updateFeeRate(satsPerVb, _walletBase,
         requiredSignature: _requiredSignature, totalSigner: _totalSigner);
   }
