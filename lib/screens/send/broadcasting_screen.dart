@@ -217,6 +217,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 ),
                 NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
                 FixedBottomButton(
+                    isActive: viewModel.isNetworkOn && viewModel.isInitDone,
                     onButtonClicked: () async {
                       if (viewModel.isNetworkOn == false) {
                         CoconutToast.showWarningToast(
