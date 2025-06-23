@@ -29,9 +29,6 @@ class WalletProvider extends ChangeNotifier {
   List<WalletListItemBase> _walletItemList = [];
   List<WalletListItemBase> get walletItemList => _walletItemList;
 
-  Map<int, Balance> _walletBalance = {};
-  Map<int, Balance> get walletBalance => UnmodifiableMapView(_walletBalance);
-
   int gapLimit = 20;
 
   final RealmManager _realmManager;
@@ -45,7 +42,6 @@ class WalletProvider extends ChangeNotifier {
 
   final Map<int, List<WalletUpdateListener>> _walletUpdateListeners = {};
 
-  // ValueNotifier들을 추가하여 특정 값들을 노출
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletListItemBase>> walletItemListNotifier;
 
@@ -95,7 +91,6 @@ class WalletProvider extends ChangeNotifier {
         await _realmManager.init(_isSetPin);
       }
       _walletItemList = await _fetchWalletListFromDB();
-      _walletBalance = fetchWalletBalanceMap();
       _walletLoadState = WalletLoadState.loadCompleted;
 
       // ValueNotifier들 업데이트
@@ -243,12 +238,6 @@ class WalletProvider extends ChangeNotifier {
     return newItem;
   }
 
-  Future<void> fetchWalletBalance(int walletId) async {
-    final Balance balance = getWalletBalance(walletId);
-    _walletBalance[walletId] = balance;
-    notifyListeners();
-  }
-
   /// 변동 사항이 있었으면 true, 없었으면 false를 반환합니다.
   bool _hasChangedOfUI(WalletListItemBase existingWallet, WatchOnlyWallet watchOnlyWallet) {
     bool hasChanged = false;
@@ -281,9 +270,6 @@ class WalletProvider extends ChangeNotifier {
     await _walletRepository.deleteWallet(walletId);
     _walletItemList = await _fetchWalletListFromDB();
     _saveWalletCount(_walletItemList.length);
-    _walletBalance.remove(walletId);
-
-    // ValueNotifier 업데이트
     walletItemListNotifier.value = _walletItemList;
 
     notifyListeners();

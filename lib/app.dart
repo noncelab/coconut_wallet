@@ -164,8 +164,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             },
             update: (context, authProvider, walletProvider) => walletProvider!,
           ),
-
-          // NodeProvider - WalletProvider의 ValueNotifier들을 사용하여 느슨한 결합
           ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, NodeProvider>(
             create: (context) {
               final walletProvider = context.read<WalletProvider>();

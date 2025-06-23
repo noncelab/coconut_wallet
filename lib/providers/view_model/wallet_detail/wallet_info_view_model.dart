@@ -59,6 +59,7 @@ class WalletInfoViewModel extends ChangeNotifier {
     await _walletProvider.deleteWallet(_walletId);
     await _nodeProvider.closeConnection();
     await _nodeProvider.initialize();
+    await _nodeProvider.subscribeWallets();
     _walletProvider.notifyListeners();
   }
 

@@ -38,6 +38,9 @@ class WalletListViewModel extends ChangeNotifier {
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _isNetworkOn = _connectivityProvider.isNetworkOn;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
+    _walletBalance = _walletProvider
+        .fetchWalletBalanceMap()
+        .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
@@ -96,7 +99,6 @@ class WalletListViewModel extends ChangeNotifier {
 
   void onWalletProviderUpdated(WalletProvider walletProvider) {
     _walletProvider = walletProvider;
-    _updateBalance(walletProvider.walletBalance);
     notifyListeners();
   }
 
