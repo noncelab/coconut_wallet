@@ -5,7 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +23,7 @@ class AppGuard extends StatefulWidget {
 class _AppGuardState extends State<AppGuard> {
   final Connectivity _connectivity = Connectivity();
   bool? _isNetworkOn;
-  late UpbitConnectModel _upbitConnectModel;
+  late PriceProvider _upbitConnectModel;
   late AuthProvider _authProvider;
   late NodeProvider _nodeProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
@@ -35,7 +35,7 @@ class _AppGuardState extends State<AppGuard> {
   void initState() {
     super.initState();
 
-    _upbitConnectModel = Provider.of<UpbitConnectModel>(context, listen: false);
+    _upbitConnectModel = Provider.of<PriceProvider>(context, listen: false);
     _nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);

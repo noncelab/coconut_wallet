@@ -10,7 +10,7 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
@@ -45,7 +45,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   final UtxoTagProvider _tagProvider;
   final SendInfoProvider _sendInfoProvider;
   final NodeProvider _nodeProvider;
-  final UpbitConnectModel _upbitConnectProvider;
+  final PriceProvider _upbitConnectProvider;
   late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;

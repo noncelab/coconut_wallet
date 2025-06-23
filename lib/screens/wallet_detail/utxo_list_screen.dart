@@ -11,7 +11,7 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -120,7 +120,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       Provider.of<TransactionProvider>(context, listen: false),
       Provider.of<UtxoTagProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<UpbitConnectModel>(context, listen: false),
+      Provider.of<PriceProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id),
     );

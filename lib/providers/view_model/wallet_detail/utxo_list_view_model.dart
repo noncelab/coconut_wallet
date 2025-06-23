@@ -11,7 +11,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -23,7 +23,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late final TransactionProvider _txProvider;
   late final UtxoTagProvider _tagProvider;
   late final ConnectivityProvider _connectProvider;
-  late final UpbitConnectModel _upbitConnectModel;
+  late final PriceProvider _upbitConnectModel;
   late final WalletListItemBase _walletListBaseItem;
   final NodeProvider _nodeProvider;
   final Stream<WalletUpdateInfo> _syncWalletStateStream;

@@ -6,7 +6,7 @@ import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
-class UpbitConnectModel extends ChangeNotifier {
+class PriceProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
 
   /// Upbit 시세 조회용 웹소켓
@@ -19,7 +19,7 @@ class UpbitConnectModel extends ChangeNotifier {
   int? _bitcoinPriceKrw;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
 
-  UpbitConnectModel(this._connectivityProvider) {
+  PriceProvider(this._connectivityProvider) {
     Logger.log('UpbitConnectModel: Initialized with connectivity provider');
 
     _connectivityListener = _onConnectivityChanged;

@@ -8,7 +8,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -107,7 +107,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, UpbitConnectModel,
+    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, PriceProvider,
         BroadcastingViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, walletProvider, upbitConnectModel, viewModel) {
@@ -249,7 +249,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<UtxoTagProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
-      Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
+      Provider.of<PriceProvider>(context, listen: false).bitcoinPriceKrw,
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
     );

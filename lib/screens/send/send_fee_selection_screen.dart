@@ -8,7 +8,7 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
@@ -67,7 +67,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, UpbitConnectModel,
+    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, PriceProvider,
         SendFeeSelectionViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, walletProvider, upbitConnectModel, viewModel) {
@@ -242,7 +242,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
         Provider.of<NodeProvider>(context, listen: false),
-        Provider.of<UpbitConnectModel>(context, listen: false).bitcoinPriceKrw,
+        Provider.of<PriceProvider>(context, listen: false).bitcoinPriceKrw,
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {

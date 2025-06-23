@@ -15,7 +15,7 @@ import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
@@ -103,10 +103,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProxyProvider<ConnectivityProvider, UpbitConnectModel>(
-          create: (context) => UpbitConnectModel(context.read<ConnectivityProvider>()),
+        ChangeNotifierProxyProvider<ConnectivityProvider, PriceProvider>(
+          create: (context) => PriceProvider(context.read<ConnectivityProvider>()),
           update: (context, connectivityProvider, previous) =>
-              previous ?? UpbitConnectModel(connectivityProvider),
+              previous ?? PriceProvider(connectivityProvider),
         ),
 
         Provider.value(value: _realmManager),

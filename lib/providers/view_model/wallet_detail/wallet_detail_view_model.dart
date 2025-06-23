@@ -10,7 +10,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
 import 'package:coconut_wallet/services/model/response/faucet_response.dart';
@@ -29,7 +29,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final TransactionProvider _txProvider;
   final ConnectivityProvider _connectProvider;
-  final UpbitConnectModel _upbitConnectModel;
+  final PriceProvider _upbitConnectModel;
   final SendInfoProvider _sendInfoProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
