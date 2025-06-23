@@ -14,7 +14,7 @@ class UpbitConnectModel extends ChangeNotifier {
   WebSocketService? get upbitWebSocketService => _upbitWebSocketService;
 
   late final VoidCallback _connectivityListener;
-  bool _pendingConnection = false;
+  bool _isPendingConnection = false;
 
   int? _bitcoinPriceKrw;
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
@@ -32,7 +32,7 @@ class UpbitConnectModel extends ChangeNotifier {
     if (_connectivityProvider.isNetworkOn == true) {
       initUpbitWebSocketService();
     } else {
-      _pendingConnection = true;
+      _isPendingConnection = true;
       Logger.log('UpbitConnectModel: Waiting for network connection');
     }
   }
@@ -41,14 +41,14 @@ class UpbitConnectModel extends ChangeNotifier {
     final isNetworkOn = _connectivityProvider.isNetworkOn;
 
     if (isNetworkOn == true) {
-      if (_pendingConnection || _upbitWebSocketService == null) {
+      if (_isPendingConnection || _upbitWebSocketService == null) {
         Logger.log('UpbitConnectModel: Network connected');
-        _pendingConnection = false;
+        _isPendingConnection = false;
         initUpbitWebSocketService();
       }
     } else if (isNetworkOn == false) {
       Logger.log('UpbitConnectModel: Network disconnected');
-      _pendingConnection = true;
+      _isPendingConnection = true;
       disposeUpbitWebSocketService();
     }
   }
@@ -57,7 +57,7 @@ class UpbitConnectModel extends ChangeNotifier {
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isNetworkOn != true) {
       Logger.log('UpbitConnectModel: Network not connected');
-      _pendingConnection = true;
+      _isPendingConnection = true;
       return;
     }
 
@@ -71,7 +71,7 @@ class UpbitConnectModel extends ChangeNotifier {
     }
 
     Logger.log('[Upbit Web Socket] Initialized');
-    _pendingConnection = false;
+    _isPendingConnection = false;
 
     _upbitWebSocketService = WebSocketService();
     _upbitWebSocketService?.tickerStream.listen((ticker) {

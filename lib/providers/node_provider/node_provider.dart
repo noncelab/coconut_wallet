@@ -34,7 +34,7 @@ class NodeProvider extends ChangeNotifier {
   Completer<void>? _initCompleter;
   bool _isInitializing = false;
   bool _isClosing = false;
-  bool _pendingInitialization = false;
+  bool _isPendingInitialization = false;
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
@@ -90,23 +90,23 @@ class NodeProvider extends ChangeNotifier {
     if (_connectivityProvider.isNetworkOn) {
       initialize();
     } else {
-      _pendingInitialization = true;
+      _isPendingInitialization = true;
       Logger.log('NodeProvider: 네트워크 연결 대기 중 - 초기화 보류');
     }
   }
 
   void _onConnectivityChanged() {
     if (_connectivityProvider.isNetworkOn) {
-      if (_pendingInitialization || !isInitialized) {
+      if (_isPendingInitialization || !isInitialized) {
         Logger.log('NodeProvider: 네트워크 연결됨 - 초기화 시작');
-        _pendingInitialization = false;
+        _isPendingInitialization = false;
         initialize().then((_) {
           reconnect();
         });
       }
     } else {
       Logger.log('NodeProvider: 네트워크 연결 끊어짐 - 연결 종료');
-      _pendingInitialization = true;
+      _isPendingInitialization = true;
       closeConnection();
     }
   }
@@ -184,7 +184,7 @@ class NodeProvider extends ChangeNotifier {
   Future<void> initialize() async {
     if (_connectivityProvider.isNetworkOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 초기화를 보류합니다.');
-      _pendingInitialization = true;
+      _isPendingInitialization = true;
       return;
     }
 
@@ -204,7 +204,7 @@ class NodeProvider extends ChangeNotifier {
     }
 
     _isInitializing = true;
-    _pendingInitialization = false;
+    _isPendingInitialization = false;
 
     try {
       _createNewCompleter();
@@ -310,7 +310,7 @@ class NodeProvider extends ChangeNotifier {
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isNetworkOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
-      _pendingInitialization = true;
+      _isPendingInitialization = true;
       return;
     }
 
