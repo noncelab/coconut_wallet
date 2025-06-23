@@ -104,7 +104,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                   ]),
 
                   if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
-                    CoconutLayout.spacing_400h,
+                    CoconutLayout.spacing_200h,
                     SingleButton(
                       title: t.settings_screen.hide_balance,
                       rightElement: CupertinoSwitch(
