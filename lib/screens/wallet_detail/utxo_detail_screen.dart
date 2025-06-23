@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -27,7 +31,6 @@ import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 
 const _divider = Divider(color: CoconutColors.gray800);
 
@@ -55,6 +58,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late UtxoState _utxoState;
   late WalletProvider _walletProvider;
   late BitcoinUnit _currentUnit;
+  late Stream<WalletUpdateInfo> _walletSyncStateStream;
+  late StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
 
   @override
   void initState() {
@@ -78,7 +83,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
-    _walletProvider.addWalletUpdateListener(widget.id, _onWalletUpdate);
+    _walletSyncStateStream =
+        Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id);
+    _walletSyncStateSubscription = _walletSyncStateStream.listen(_onWalletUpdate);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final utxoTooltipIconRenderBox =
@@ -95,7 +102,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   @override
   void dispose() {
-    _walletProvider.removeWalletUpdateListener(widget.id, _onWalletUpdate);
+    _walletSyncStateSubscription?.cancel();
     super.dispose();
   }
 
@@ -123,6 +130,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         Provider.of<UtxoTagProvider>(_, listen: false),
         Provider.of<TransactionProvider>(_, listen: false),
         Provider.of<WalletProvider>(_, listen: false),
+        Provider.of<NodeProvider>(_, listen: false).getWalletStateStream(widget.id),
       ),
       child: Builder(builder: (context) {
         return GestureDetector(

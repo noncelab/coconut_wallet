@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -8,7 +10,6 @@ import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 class UtxoDetailViewModel extends ChangeNotifier {
@@ -21,6 +22,8 @@ class UtxoDetailViewModel extends ChangeNotifier {
   late final UtxoTagProvider _tagProvider;
   late final TransactionProvider _txProvider;
   late final WalletProvider _walletProvider;
+  final Stream<WalletUpdateInfo> _syncWalletStateStream;
+  StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
 
   List<UtxoTag> _utxoTagList = [];
   List<UtxoTag> _selectedUtxoTagList = [];
@@ -36,6 +39,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     this._tagProvider,
     this._txProvider,
     this._walletProvider,
+    this._syncWalletStateStream,
   ) {
     _utxoId = _utxo.utxoId;
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
@@ -45,7 +49,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     _dateString = DateTimeUtil.formatTimestamp(_transaction!.timestamp);
 
     _initUtxoInOutputList();
-    _walletProvider.addWalletUpdateListener(_walletId, _onWalletUpdate);
+    _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdate);
   }
 
   void _onWalletUpdate(WalletUpdateInfo info) {
@@ -121,7 +125,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _walletProvider.removeWalletUpdateListener(_walletId, _onWalletUpdate);
+    _syncWalletStateSubscription?.cancel();
     super.dispose();
   }
 }

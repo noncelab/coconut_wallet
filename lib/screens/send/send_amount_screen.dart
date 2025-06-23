@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_amount_view_model.dart';
@@ -230,9 +231,14 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
   @override
   void initState() {
     super.initState();
+    final sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
+    final walletId = sendInfoProvider.walletId;
     _viewModel = SendAmountViewModel(
-        Provider.of<SendInfoProvider>(context, listen: false),
+        sendInfoProvider,
         Provider.of<WalletProvider>(context, listen: false),
+        walletId != null
+            ? Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(walletId)
+            : const Stream.empty(),
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
         context.read<PreferenceProvider>().currentUnit);
   }

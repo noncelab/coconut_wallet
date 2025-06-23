@@ -40,24 +40,8 @@ class WalletProvider extends ChangeNotifier {
   late final Future<void> Function(int) _saveWalletCount;
   late final bool _isSetPin;
 
-  final Map<int, List<WalletUpdateListener>> _walletUpdateListeners = {};
-
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletListItemBase>> walletItemListNotifier;
-
-  void addWalletUpdateListener(int walletId, WalletUpdateListener listener) {
-    if (!_walletUpdateListeners.containsKey(walletId)) {
-      _walletUpdateListeners[walletId] = [];
-    }
-    _walletUpdateListeners[walletId]!.add(listener);
-  }
-
-  void removeWalletUpdateListener(int walletId, WalletUpdateListener listener) {
-    _walletUpdateListeners[walletId]?.remove(listener);
-    if (_walletUpdateListeners[walletId]?.isEmpty ?? false) {
-      _walletUpdateListeners.remove(walletId);
-    }
-  }
 
   WalletProvider(
     this._realmManager,

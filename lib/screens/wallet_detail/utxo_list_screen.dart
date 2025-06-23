@@ -122,6 +122,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<UpbitConnectModel>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
+      Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -11,6 +13,8 @@ import 'package:flutter/material.dart';
 class SendAmountViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
+  final Stream<WalletUpdateInfo> _syncWalletStateStream;
+  StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
   late bool? _isNetworkOn;
   late int _confirmedBalance;
   late int _incomingBalance;
@@ -20,8 +24,8 @@ class SendAmountViewModel extends ChangeNotifier {
   int? _errorIndex;
   bool _isUtxoUpdating = false;
 
-  SendAmountViewModel(
-      this._sendInfoProvider, this._walletProvider, this._isNetworkOn, this._currentUnit) {
+  SendAmountViewModel(this._sendInfoProvider, this._walletProvider, this._syncWalletStateStream,
+      this._isNetworkOn, this._currentUnit) {
     _initBalances(); // _confirmedBalance, _incomingBalance
     _input = '';
     _isNextButtonEnabled = false;
@@ -185,18 +189,16 @@ class SendAmountViewModel extends ChangeNotifier {
 
   // pending tx가 완료되었을 때 잔액을 업데이트 하기 위해
   void _addWalletUpdateListner() {
-    _walletProvider.addWalletUpdateListener(_sendInfoProvider.walletId!, _onWalletUpdated);
+    _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdated);
   }
 
   void _removeWalletUpdateListener() {
-    _walletProvider.removeWalletUpdateListener(_sendInfoProvider.walletId!, _onWalletUpdated);
+    _syncWalletStateSubscription?.cancel();
   }
 
   @override
   void dispose() {
-    if (_sendInfoProvider.walletId != null) {
-      _removeWalletUpdateListener();
-    }
+    _syncWalletStateSubscription?.cancel();
     super.dispose();
   }
 }

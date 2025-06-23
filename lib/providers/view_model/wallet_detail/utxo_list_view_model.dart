@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -24,6 +26,8 @@ class UtxoListViewModel extends ChangeNotifier {
   late final UpbitConnectModel _upbitConnectModel;
   late final WalletListItemBase _walletListBaseItem;
   final NodeProvider _nodeProvider;
+  final Stream<WalletUpdateInfo> _syncWalletStateStream;
+  StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
   late final int _walletId;
   late WalletSyncState _prevUpdateStatus;
 
@@ -44,6 +48,7 @@ class UtxoListViewModel extends ChangeNotifier {
     this._connectProvider,
     this._upbitConnectModel,
     this._nodeProvider,
+    this._syncWalletStateStream,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     _initUtxoAndTags();
@@ -78,7 +83,7 @@ class UtxoListViewModel extends ChangeNotifier {
       _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
 
   void _addChangeListener() {
-    _walletProvider.addWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
+    _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdateInfoChanged);
   }
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
@@ -169,7 +174,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _walletProvider.removeWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
+    _syncWalletStateSubscription?.cancel();
     super.dispose();
   }
 }
