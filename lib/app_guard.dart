@@ -23,7 +23,7 @@ class AppGuard extends StatefulWidget {
 class _AppGuardState extends State<AppGuard> {
   final Connectivity _connectivity = Connectivity();
   bool? _isNetworkOn;
-  late PriceProvider _upbitConnectModel;
+  late PriceProvider _priceProvider;
   late AuthProvider _authProvider;
   late NodeProvider _nodeProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
@@ -35,7 +35,7 @@ class _AppGuardState extends State<AppGuard> {
   void initState() {
     super.initState();
 
-    _upbitConnectModel = Provider.of<PriceProvider>(context, listen: false);
+    _priceProvider = Provider.of<PriceProvider>(context, listen: false);
     _nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
@@ -71,7 +71,7 @@ class _AppGuardState extends State<AppGuard> {
         if (_isPause) {
           _isPause = false;
           _authProvider.checkDeviceBiometrics();
-          _upbitConnectModel.initUpbitWebSocketService();
+          _priceProvider.initUpbitWebSocketService();
           _nodeProvider.reconnect();
         }
         break;
@@ -80,7 +80,7 @@ class _AppGuardState extends State<AppGuard> {
       case AppLifecycleState.paused:
         if (_isPause) break;
         _isPause = true;
-        _upbitConnectModel.disposeUpbitWebSocketService();
+        _priceProvider.disposeUpbitWebSocketService();
         unawaited(_nodeProvider.closeConnection());
         break;
       case AppLifecycleState.inactive:

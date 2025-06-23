@@ -29,7 +29,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final TransactionProvider _txProvider;
   final ConnectivityProvider _connectProvider;
-  final PriceProvider _upbitConnectModel;
+  final PriceProvider _priceProvider;
   final SendInfoProvider _sendInfoProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
@@ -71,7 +71,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       this._walletProvider,
       this._txProvider,
       this._connectProvider,
-      this._upbitConnectModel,
+      this._priceProvider,
       this._sendInfoProvider,
       this._syncWalletStateStream) {
     // 지갑 상세 초기화
@@ -87,7 +87,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     _balance = _getBalance();
 
     // UpbitConnectModel 변경 감지 리스너
-    _upbitConnectModel.addListener(_updateBitcoinPrice);
+    _priceProvider.addListener(_updateBitcoinPrice);
 
     _setPendingAmount();
     _prevBalance = balance;
@@ -145,8 +145,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _updateBitcoinPrice() {
-    _bitcoinPriceKrw = _upbitConnectModel.bitcoinPriceKrw ?? 0;
-    _bitcoinPriceKrwInString = _upbitConnectModel.getFiatPrice(_balance, CurrencyCode.KRW);
+    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw ?? 0;
+    _bitcoinPriceKrwInString = _priceProvider.getFiatPrice(_balance, CurrencyCode.KRW);
     notifyListeners();
   }
 
@@ -223,7 +223,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _syncWalletStateSubscription?.cancel();
-    _upbitConnectModel.removeListener(_updateBitcoinPrice);
+    _priceProvider.removeListener(_updateBitcoinPrice);
     super.dispose();
   }
 

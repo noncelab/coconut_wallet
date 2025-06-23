@@ -22,7 +22,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late final TransactionProvider _txProvider;
   late final UtxoTagProvider _tagProvider;
   late final ConnectivityProvider _connectProvider;
-  late final PriceProvider _upbitConnectModel;
+  late final PriceProvider _priceProvider;
   late final WalletListItemBase _walletListBaseItem;
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
@@ -44,7 +44,7 @@ class UtxoListViewModel extends ChangeNotifier {
     this._txProvider,
     this._tagProvider,
     this._connectProvider,
-    this._upbitConnectModel,
+    this._priceProvider,
     this._syncWalletStateStream,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
@@ -55,7 +55,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
   int get prevBalance => _prevBalance;
-  int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
+  int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
   bool? get isNetworkOn => _connectProvider.isNetworkOn;
 
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
