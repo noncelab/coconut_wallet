@@ -66,13 +66,16 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                   decoration: BoxDecoration(
                       color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
                   child: AnimatedQrView(
+                    key: ValueKey(_isFastMode),
                     qrSize: MediaQuery.sizeOf(context).width * 0.8,
                     // 테스트용(갤폴드에서 보이는 QR사이즈)
                     // qrSize: qrSize,
                     isFastMode: _isFastMode,
-                    qrViewDataHandler: _walletImportSource == WalletImportSource.coconutVault
-                        ? CoconutQrViewHandler(_psbtBase64)
-                        : BcUrQrViewHandler(_psbtBase64, _isFastMode, {'urType': 'crypto-psbt'}),
+                    qrViewDataHandler: BcUrQrViewHandler(
+                      _psbtBase64,
+                      _isFastMode,
+                      {'urType': 'crypto-psbt'},
+                    ),
                   ),
                 ),
                 CoconutLayout.spacing_800h,

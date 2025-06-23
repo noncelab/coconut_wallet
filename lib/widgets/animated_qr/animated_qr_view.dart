@@ -24,6 +24,9 @@ class AnimatedQrView extends StatefulWidget {
 }
 
 class _AnimatedQrViewState extends State<AnimatedQrView> {
+  final maxBitsInFastMode = 1856;
+  final maxBitsInNormalMode = 1248;
+
   late String _qrData;
   late final Timer _timer;
 
@@ -32,18 +35,25 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
     super.initState();
     _qrData = widget.qrViewDataHandler.nextPart();
     _timer = Timer.periodic(Duration(milliseconds: widget.milliSeconds), (timer) {
-      setState(() {
-        _qrData = widget.qrViewDataHandler.nextPart();
-      });
+      final next = widget.qrViewDataHandler.nextPart();
+      final int maxBits = widget.isFastMode ? maxBitsInFastMode : maxBitsInNormalMode;
+      final int estimatedBits = next.runes.fold<int>(0, (prev, c) => prev + c.bitLength);
+
+      if (estimatedBits <= maxBits) {
+        setState(() {
+          _qrData = next;
+        });
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final int maxBits = widget.isFastMode ? 1856 : 1248;
+    final int maxBits = widget.isFastMode ? maxBitsInFastMode : maxBitsInNormalMode;
 
     final int estimatedBits = _qrData.runes.fold<int>(0, (prev, c) => prev + (c.bitLength));
     if (_qrData.isEmpty || estimatedBits > maxBits) {
+      // QR 전환이 바로 안될 때를 대비한 위젯 - 실제로는 렌더링 되지 않을 가능성 높음
       return Stack(
         children: [
           QrImageView(data: _qrData, size: widget.qrSize, version: 9),
