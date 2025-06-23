@@ -48,6 +48,7 @@ class TransactionProvider extends ChangeNotifier {
 
   void initTxList(int walletId) {
     _txList = _transactionRepository.getTransactionRecordList(walletId);
+    notifyListeners();
   }
 
   bool updateTransactionMemo(int walletId, String txHash, String memo) {
