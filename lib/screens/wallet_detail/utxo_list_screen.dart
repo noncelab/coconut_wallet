@@ -121,7 +121,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       Provider.of<UtxoTagProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<PriceProvider>(context, listen: false),
-      Provider.of<NodeProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id),
     );
   }
@@ -188,7 +187,9 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                                 onRemoveDropdown: _hideDropdown,
                                 onFirstBuildCompleted: () {
                                   if (!mounted) return;
-                                  _firstLoadedNotifier.value = true;
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    _firstLoadedNotifier.value = true;
+                                  });
                                 },
                               ),
                             ],
@@ -388,14 +389,14 @@ class UtxoList extends StatefulWidget {
     super.key,
     required this.walletId,
     required this.currentUnit,
-    this.onRemoveDropdown,
-    this.onFirstBuildCompleted,
+    required this.onRemoveDropdown,
+    required this.onFirstBuildCompleted,
   });
 
   final int walletId;
   final BitcoinUnit currentUnit;
-  final Function? onRemoveDropdown;
-  final VoidCallback? onFirstBuildCompleted;
+  final Function onRemoveDropdown;
+  final VoidCallback onFirstBuildCompleted;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -480,6 +481,8 @@ class _UtxoListState extends State<UtxoList> {
   }
 
   Widget _buildEmptyState() {
+    widget.onFirstBuildCompleted();
+
     return SliverFillRemaining(
       child: Padding(
         padding: const EdgeInsets.only(top: 80),
@@ -553,8 +556,8 @@ class _UtxoListState extends State<UtxoList> {
     }
 
     _isListLoading = false;
-    if (isFirstLoad && widget.onFirstBuildCompleted != null) {
-      widget.onFirstBuildCompleted!();
+    if (isFirstLoad) {
+      widget.onFirstBuildCompleted();
     }
   }
 

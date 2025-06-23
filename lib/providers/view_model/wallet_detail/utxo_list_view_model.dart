@@ -9,7 +9,6 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -25,11 +24,10 @@ class UtxoListViewModel extends ChangeNotifier {
   late final ConnectivityProvider _connectProvider;
   late final PriceProvider _upbitConnectModel;
   late final WalletListItemBase _walletListBaseItem;
-  final NodeProvider _nodeProvider;
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
   late final int _walletId;
-  late WalletSyncState _prevUpdateStatus;
+  WalletSyncState _prevUpdateStatus = WalletSyncState.completed;
 
   // balance 애니메이션을 위한 이전 잔액을 담는 변수
   late int _prevBalance;
@@ -47,13 +45,10 @@ class UtxoListViewModel extends ChangeNotifier {
     this._tagProvider,
     this._connectProvider,
     this._upbitConnectModel,
-    this._nodeProvider,
     this._syncWalletStateStream,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     _initUtxoAndTags();
-    _prevUpdateStatus =
-        _nodeProvider.state.registeredWallets[_walletId]?.utxo ?? WalletSyncState.waiting;
     _addChangeListener();
     _prevBalance = balance;
   }
@@ -90,10 +85,10 @@ class UtxoListViewModel extends ChangeNotifier {
     Logger.log('${DateTime.now()}--> 지갑$_walletId 업데이트 체크 (UTXO)');
     if (_prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == WalletSyncState.completed) {
       _getUtxoAndTagList();
-      notifyListeners();
     }
 
     _prevUpdateStatus = updateInfo.utxo;
+    notifyListeners();
   }
 
   void resetUtxoTagsUpdateState() {
