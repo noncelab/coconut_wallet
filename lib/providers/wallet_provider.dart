@@ -27,7 +27,7 @@ class WalletProvider extends ChangeNotifier {
   WalletLoadState get walletLoadState => _walletLoadState;
 
   List<WalletListItemBase> _walletItemList = [];
-  List<WalletListItemBase> get walletItemList => _walletItemList;
+  List<WalletListItemBase> get walletItemList => walletItemListNotifier.value;
 
   int gapLimit = 20;
 
@@ -42,6 +42,11 @@ class WalletProvider extends ChangeNotifier {
 
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletListItemBase>> walletItemListNotifier;
+
+  void _setWalletItemList(List<WalletListItemBase> value) {
+    _walletItemList = value;
+    walletItemListNotifier.value = value;
+  }
 
   WalletProvider(
     this._realmManager,
@@ -74,14 +79,10 @@ class WalletProvider extends ChangeNotifier {
       if (_realmManager.isInitialized) {
         await _realmManager.init(_isSetPin);
       }
-      _walletItemList = await _fetchWalletListFromDB();
+      _setWalletItemList(await _fetchWalletListFromDB());
       _walletLoadState = WalletLoadState.loadCompleted;
 
-      // ValueNotifier들 업데이트
       walletLoadStateNotifier.value = _walletLoadState;
-      walletItemListNotifier.value = _walletItemList;
-
-      _walletItemList.map((e) => debugPrint(e.name));
     } catch (e) {
       Logger.log('--> _loadWalletListFromDB error: $e');
       // Unhandled Exception: PlatformException(Exception encountered, read, javax.crypto.BadPaddingException: error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT
@@ -157,7 +158,7 @@ class WalletProvider extends ChangeNotifier {
         _walletRepository.updateWalletUI(_walletItemList[index].id, watchOnlyWallet);
 
         // 업데이트된 지갑 목록 가져오기
-        _walletItemList = await _fetchWalletListFromDB();
+        _setWalletItemList(await _fetchWalletListFromDB());
         result = WalletSyncResult.existingWalletUpdated;
         notifyListeners();
       }
@@ -213,10 +214,7 @@ class WalletProvider extends ChangeNotifier {
 
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
     updatedList.insert(0, newItem); // wallet-list의 지갑 정렬 방식을 최신순으로 하기 위함
-    _walletItemList = updatedList;
-
-    // ValueNotifier 업데이트
-    walletItemListNotifier.value = _walletItemList;
+    _setWalletItemList(updatedList);
 
     _saveWalletCount(updatedList.length);
     return newItem;
@@ -252,9 +250,8 @@ class WalletProvider extends ChangeNotifier {
 
   Future<void> deleteWallet(int walletId) async {
     await _walletRepository.deleteWallet(walletId);
-    _walletItemList = await _fetchWalletListFromDB();
+    _setWalletItemList(await _fetchWalletListFromDB());
     _saveWalletCount(_walletItemList.length);
-    walletItemListNotifier.value = _walletItemList;
 
     notifyListeners();
   }
@@ -276,10 +273,7 @@ class WalletProvider extends ChangeNotifier {
         null,
         walletItemList[index].walletImportSource.name);
     _walletRepository.updateWalletUI(id, watchOnlyWallet);
-    _walletItemList = await _fetchWalletListFromDB();
-
-    // ValueNotifier 업데이트
-    walletItemListNotifier.value = _walletItemList;
+    _setWalletItemList(await _fetchWalletListFromDB());
 
     notifyListeners();
   }

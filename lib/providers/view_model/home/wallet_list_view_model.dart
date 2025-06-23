@@ -41,6 +41,7 @@ class WalletListViewModel extends ChangeNotifier {
     _walletBalance = _walletProvider
         .fetchWalletBalanceMap()
         .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
+    _walletProvider.walletLoadStateNotifier.addListener(refreshWallets);
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
