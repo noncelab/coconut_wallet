@@ -164,7 +164,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             },
             update: (context, authProvider, walletProvider) => walletProvider!,
           ),
-          ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, NodeProvider>(
+          ChangeNotifierProvider<NodeProvider>(
             create: (context) {
               final walletProvider = context.read<WalletProvider>();
               return NodeProvider(
@@ -177,17 +177,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 walletProvider.walletItemListNotifier,
               );
             },
-            update: (context, connectivityProvider, walletProvider, previous) =>
-                previous ??
-                NodeProvider(
-                  CoconutWalletApp.kElectrumHost,
-                  CoconutWalletApp.kElectrumPort,
-                  CoconutWalletApp.kElectrumIsSSL,
-                  CoconutWalletApp.kNetworkType,
-                  connectivityProvider,
-                  walletProvider.walletLoadStateNotifier,
-                  walletProvider.walletItemListNotifier,
-                ),
           ),
         },
       ],
