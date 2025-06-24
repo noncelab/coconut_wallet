@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 
 // TransactionRecord -> _RealmTransaction 변환 함수
 RealmTransaction mapTransactionToRealmTransaction(
@@ -21,7 +22,6 @@ RealmTransaction mapTransactionToRealmTransaction(
     transaction.fee,
     transaction.vSize,
     transaction.createdAt,
-    memo: transaction.memo,
     inputAddressList:
         transaction.inputAddressList.map((address) => jsonEncode(addressToJson(address))).toList(),
     outputAddressList:
@@ -31,13 +31,15 @@ RealmTransaction mapTransactionToRealmTransaction(
 
 // note(트랜잭션 메모) 정보가 추가로 필요하여 TransactionDto를 반환
 TransactionRecord mapRealmTransactionToTransaction(RealmTransaction realmTransaction,
-    {List<RealmRbfHistory>? realmRbfHistoryList, RealmCpfpHistory? realmCpfpHistory}) {
+    {List<RealmRbfHistory>? realmRbfHistoryList,
+    RealmCpfpHistory? realmCpfpHistory,
+    String? memo}) {
   return TransactionRecord(
       realmTransaction.transactionHash,
       realmTransaction.timestamp,
       realmTransaction.blockHeight,
       TransactionTypeExtension.fromString(realmTransaction.transactionType),
-      realmTransaction.memo,
+      memo,
       realmTransaction.amount,
       realmTransaction.fee,
       realmTransaction.inputAddressList
@@ -97,5 +99,16 @@ RealmRbfHistory mapRbfHistoryToRealmRbfHistory(RbfHistory rbfHistory) {
     rbfHistory.transactionHash,
     rbfHistory.feeRate,
     rbfHistory.timestamp,
+  );
+}
+
+RealmTransactionMemo generateRealmTransactionMemo(
+    String transactionHash, int walletId, String memo) {
+  return RealmTransactionMemo(
+    getTransactionMemoId(transactionHash, walletId),
+    transactionHash,
+    walletId,
+    memo,
+    DateTime.now(),
   );
 }

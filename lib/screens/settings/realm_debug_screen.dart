@@ -46,6 +46,7 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
     'TempBroadcastTimeRecord',
     'RealmRbfHistory',
     'RealmCpfpHistory',
+    'RealmTransactionMemo',
   ];
 
   @override
@@ -128,6 +129,8 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
         return _convertToMapList(realm.query<RealmRbfHistory>(query));
       case 'RealmCpfpHistory':
         return _convertToMapList(realm.query<RealmCpfpHistory>(query));
+      case 'RealmTransactionMemo':
+        return _convertToMapList(realm.query<RealmTransactionMemo>(query));
       default:
         throw ArgumentError('지원되지 않는 테이블: $tableName');
     }
@@ -163,7 +166,6 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
         map['timestamp'] = obj.timestamp.toIso8601String();
         map['blockHeight'] = obj.blockHeight;
         map['transactionType'] = obj.transactionType;
-        map['memo'] = obj.memo;
         map['amount'] = obj.amount;
         map['fee'] = obj.fee;
         map['vSize'] = obj.vSize;
@@ -246,6 +248,12 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
         map['originalFee'] = obj.originalFee;
         map['newFee'] = obj.newFee;
         map['timestamp'] = obj.timestamp.toIso8601String();
+      } else if (obj is RealmTransactionMemo) {
+        map['id'] = obj.id;
+        map['transactionHash'] = obj.transactionHash;
+        map['walletId'] = obj.walletId;
+        map['memo'] = obj.memo;
+        map['createdAt'] = obj.createdAt.toIso8601String();
       } else {
         // 알 수 없는 타입인 경우 기본 처리
         map['type'] = obj.runtimeType.toString();
@@ -339,6 +347,7 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
       'TempBroadcastTimeRecord': realm.all<TempBroadcastTimeRecord>().length,
       'RealmRbfHistory': realm.all<RealmRbfHistory>().length,
       'RealmCpfpHistory': realm.all<RealmCpfpHistory>().length,
+      'RealmTransactionMemo': realm.all<RealmTransactionMemo>().length,
     };
   }
 

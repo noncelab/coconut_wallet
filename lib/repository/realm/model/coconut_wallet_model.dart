@@ -64,7 +64,6 @@ class _RealmTransaction {
   late DateTime timestamp;
   late int blockHeight;
   late String transactionType;
-  String? memo;
   late int amount;
   late int fee;
   late double vSize;
@@ -72,6 +71,18 @@ class _RealmTransaction {
   late List<String> outputAddressList;
   late DateTime createdAt;
   String? replaceByTransactionHash;
+}
+
+@RealmModel()
+class _RealmTransactionMemo {
+  @PrimaryKey()
+  late int id;
+  @Indexed()
+  late String transactionHash;
+  @Indexed()
+  late int walletId;
+  late String memo;
+  late DateTime createdAt;
 }
 
 @RealmModel()

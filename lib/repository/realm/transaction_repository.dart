@@ -10,13 +10,14 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart'
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 class TransactionRepository extends BaseRepository {
   TransactionRepository(super._realmManager);
 
-  /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함
+  /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함, memo 미포함
   List<TransactionRecord> getTransactionRecordList(int walletId) {
     final transactions = realm.query<RealmTransaction>(
         'walletId == $walletId AND replaceByTransactionHash == null SORT(timestamp DESC)');
@@ -61,18 +62,27 @@ class TransactionRepository extends BaseRepository {
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
   Result<TransactionRecord> updateTransactionMemo(int walletId, String txHash, String memo) {
-    final transactions =
-        realm.query<RealmTransaction>("walletId == '$walletId' AND transactionHash == '$txHash'");
+    final realmMemo = realm
+        .find<RealmTransactionMemo>("walletId == '$walletId' AND transactionHash == '$txHash'");
 
-    return handleRealm<TransactionRecord>(
-      () {
-        final transaction = transactions.first;
+    return handleRealm<TransactionRecord>(() {
+      // 메모 업데이트 또는 생성
+      if (realmMemo == null) {
+        realm.add(generateRealmTransactionMemo(txHash, walletId, memo));
+      } else {
         realm.write(() {
-          transaction.memo = memo;
+          realmMemo.memo = memo;
         });
-        return mapRealmTransactionToTransaction(transaction);
-      },
-    );
+      }
+
+      // 트랜잭션 레코드 조회 및 반환
+      final txRecord = getTransactionRecord(walletId, txHash);
+      if (txRecord == null) {
+        throw ErrorCodes.realmNotFound;
+      }
+
+      return txRecord;
+    });
   }
 
   /// 일시적인 브로드캐스트 시간 기록
@@ -198,15 +208,21 @@ class TransactionRepository extends BaseRepository {
       return null;
     }
 
+    final realmTransactionMemo = realm.find<RealmTransactionMemo>(
+      getTransactionMemoId(transactionHash, walletId),
+    );
+
     if (realmTransaction.blockHeight == 0) {
       final realmRbfHistoryList = getRbfHistoryList(walletId, transactionHash);
       final realmCpfpHistory = getCpfpHistory(walletId, transactionHash);
 
       return mapRealmTransactionToTransaction(realmTransaction,
-          realmRbfHistoryList: realmRbfHistoryList, realmCpfpHistory: realmCpfpHistory);
+          realmRbfHistoryList: realmRbfHistoryList,
+          realmCpfpHistory: realmCpfpHistory,
+          memo: realmTransactionMemo?.memo);
     }
 
-    return mapRealmTransactionToTransaction(realmTransaction);
+    return mapRealmTransactionToTransaction(realmTransaction, memo: realmTransactionMemo?.memo);
   }
 
   bool hasTransactionConfirmed(int walletId, String transactionHash) {

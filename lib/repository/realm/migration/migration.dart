@@ -23,8 +23,13 @@ import 'package:realm/realm.dart';
 /// [removeIsLatestTxBlockHeightZero] (2 -> 3)
 /// 1. RealmWalletBase isLatestTxBlockHeightZero 필드를 삭제합니다.
 ///
+/// [addRealmTransactionMemo] (4 -> 5)
+/// 1. RealmTransactionMemo 추가
+/// 2. RealmTransaction 에서 memo 필드 삭제
+///
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
+    Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
     return;
   }
 
@@ -33,10 +38,39 @@ void defaultMigration(Migration migration, int oldVersion) {
     if (oldVersion < 2) resetExceptForWallet(migration.newRealm);
     if (oldVersion < 3) removeIsLatestTxBlockHeightZero(migration.newRealm);
     if (oldVersion < 4) addIsDeletedToUtxo(migration.newRealm);
+    if (oldVersion < 5) addRealmTransactionMemo(migration);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
   }
+}
+
+void addRealmTransactionMemo(Migration migration) {
+  Logger.log('RealmTransactionMemo migration start');
+  final newRealm = migration.newRealm;
+  final oldTxs = migration.oldRealm.all("RealmTransaction");
+  final memos = List<RealmTransactionMemo>.empty(growable: true);
+  for (var oldTx in oldTxs) {
+    final memo = oldTx.dynamic.get("memo");
+    if (memo != null) {
+      final transactionHash = oldTx.dynamic.get("transactionHash") as String;
+      final walletId = oldTx.dynamic.get("walletId") as int;
+      final memoString = memo.toString();
+
+      Logger.log('memo: $memoString - $transactionHash - $walletId');
+
+      memos.add(RealmTransactionMemo(
+        Object.hash(transactionHash, walletId),
+        transactionHash,
+        walletId,
+        memoString,
+        DateTime.now(),
+      ));
+    }
+  }
+
+  newRealm.addAll(memos);
+  Logger.log('RealmTransactionMemo migration end');
 }
 
 void addIsDeletedToUtxo(Realm realm) {
