@@ -19,6 +19,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
@@ -126,27 +127,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         builder: (context, viewModel, child) => Scaffold(
           floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
           backgroundColor: CoconutColors.black,
-          appBar: CoconutAppBar.buildWithNext(
-              title: t.broadcasting_screen.title,
-              context: context,
-              usePrimaryActiveColor: true,
-              isActive: viewModel.isNetworkOn && viewModel.isInitDone,
-              onNextPressed: () async {
-                if (viewModel.isNetworkOn == false) {
-                  CoconutToast.showWarningToast(
-                    context: context,
-                    text: ErrorCodes.networkError.message,
-                  );
-                  return;
-                }
-                if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
-                  await TransactionUtil.showTransactionConfirmedDialog(context);
-                  return;
-                }
-                if (viewModel.isInitDone) {
-                  broadcast();
-                }
-              }),
+          appBar: CoconutAppBar.build(
+            title: t.broadcasting_screen.title,
+            context: context,
+          ),
           body: SafeArea(
             child: Stack(
               children: [
@@ -232,6 +216,25 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                   ),
                 ),
                 NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                FixedBottomButton(
+                    isActive: viewModel.isNetworkOn && viewModel.isInitDone,
+                    onButtonClicked: () async {
+                      if (viewModel.isNetworkOn == false) {
+                        CoconutToast.showWarningToast(
+                          context: context,
+                          text: ErrorCodes.networkError.message,
+                        );
+                        return;
+                      }
+                      if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
+                        await TransactionUtil.showTransactionConfirmedDialog(context);
+                        return;
+                      }
+                      if (viewModel.isInitDone) {
+                        broadcast();
+                      }
+                    },
+                    text: t.broadcasting_screen.btn_submit)
               ],
             ),
           ),
