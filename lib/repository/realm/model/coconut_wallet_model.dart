@@ -17,6 +17,7 @@ final realmAllSchemas = [
   RealmUtxo.schema,
   RealmRbfHistory.schema,
   RealmCpfpHistory.schema,
+  RealmTransactionMemo.schema,
 ];
 
 @RealmModel()
