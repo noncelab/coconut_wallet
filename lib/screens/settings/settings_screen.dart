@@ -42,8 +42,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                 context: context,
                 isBottom: true,
               ),
-              body: SafeArea(
-                  child: SingleChildScrollView(
+              body: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   _category(t.security),
@@ -150,8 +149,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                       },
                     ),
                   ],
+                  SizedBox(height: MediaQuery.of(context).viewPadding.bottom)
                 ]),
-              )));
+              ));
         }));
   }
 
