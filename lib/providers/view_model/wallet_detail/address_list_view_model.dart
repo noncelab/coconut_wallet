@@ -39,14 +39,14 @@ class AddressListViewModel extends ChangeNotifier {
         "[address_list_view_model.initializeAddressList] firstCount = $firstCount, showOnlyUnusedAddresses = $showOnlyUnusedAddresses");
     _receivingAddressList = await getWalletAddressList(
       _walletBaseItem!,
-      0,
+      -1,
       firstCount,
       false,
       showOnlyUnusedAddresses,
     );
     _changeAddressList = await getWalletAddressList(
       _walletBaseItem!,
-      0,
+      -1,
       firstCount,
       true,
       showOnlyUnusedAddresses,
