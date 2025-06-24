@@ -80,18 +80,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     }
   }
 
-  void _setQrDensity() {
-    // TODO: 제이드 추가??
-    if (_walletImportSource == WalletImportSource.coconutVault &&
-        _walletImportSource == WalletImportSource.keystone) {
-      _qrScanDensity = QrScanDensity.fast;
-    } else if (_walletImportSource == WalletImportSource.seedSigner) {
-      _qrScanDensity = QrScanDensity.normal;
-    } else {
-      _qrScanDensity = QrScanDensity.slow;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
