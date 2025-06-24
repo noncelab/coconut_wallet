@@ -103,36 +103,27 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProxyProvider<ConnectivityProvider, PriceProvider>(
+        ChangeNotifierProvider<PriceProvider>(
           create: (context) => PriceProvider(context.read<ConnectivityProvider>()),
-          update: (context, connectivityProvider, previous) =>
-              previous ?? PriceProvider(connectivityProvider),
         ),
 
         Provider.value(value: _realmManager),
 
         // Repository 등록 - Provider보다 먼저 등록해야 함
-        ProxyProvider<RealmManager, WalletRepository>(
+        Provider<WalletRepository>(
           create: (context) => WalletRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) => previous ?? WalletRepository(realmManager),
         ),
-        ProxyProvider<RealmManager, AddressRepository>(
+        Provider<AddressRepository>(
           create: (context) => AddressRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) => previous ?? AddressRepository(realmManager),
         ),
-        ProxyProvider<RealmManager, TransactionRepository>(
+        Provider<TransactionRepository>(
           create: (context) => TransactionRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) =>
-              previous ?? TransactionRepository(realmManager),
         ),
-        ProxyProvider<RealmManager, UtxoRepository>(
+        Provider<UtxoRepository>(
           create: (context) => UtxoRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) => previous ?? UtxoRepository(realmManager),
         ),
-        ProxyProvider<RealmManager, SubscriptionRepository>(
+        Provider<SubscriptionRepository>(
           create: (context) => SubscriptionRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) =>
-              previous ?? SubscriptionRepository(realmManager),
         ),
 
         ChangeNotifierProvider(
@@ -148,7 +139,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         if (_appEntryFlow == AppEntryFlow.main) ...{
           ChangeNotifierProvider(create: (_) => PreferenceProvider()),
           Provider(create: (_) => SendInfoProvider()),
-          ChangeNotifierProxyProvider<AuthProvider, WalletProvider>(
+          ChangeNotifierProvider<WalletProvider>(
             create: (context) {
               return WalletProvider(
                 Provider.of<RealmManager>(context, listen: false),
@@ -162,7 +153,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 Provider.of<AuthProvider>(context, listen: false).isSetPin,
               );
             },
-            update: (context, authProvider, walletProvider) => walletProvider!,
           ),
           ChangeNotifierProvider<NodeProvider>(
             create: (context) {
