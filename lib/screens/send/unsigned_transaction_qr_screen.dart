@@ -63,9 +63,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                         color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
                     child: AnimatedQrView(
                       qrSize: MediaQuery.of(context).size.width * 0.8,
-                      qrViewDataHandler: _walletImportSource == WalletImportSource.coconutVault
-                          ? CoconutQrViewHandler(_psbtBase64)
-                          : BcUrQrViewHandler(_psbtBase64, {'urType': 'crypto-psbt'}),
+                      qrViewDataHandler: BcUrQrViewHandler(_psbtBase64, {'urType': 'crypto-psbt'}),
                     )),
               ],
             ),
@@ -149,6 +147,30 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
   List<TextSpan> _getGuideTextSpan() {
     switch (_walletImportSource) {
+      case WalletImportSource.coconutVault:
+        {
+          return [
+            TextSpan(
+              text: t.tooltip.unsigned_tx_qr.in_vault,
+              style: const TextStyle(
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+            TextSpan(
+              text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} '
+                  '\'${_isMultisig ? t.sign_multisig : t.sign}\'',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(
+              text: t.tooltip.unsigned_tx_qr.scan_qr_below,
+              style: const TextStyle(
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ];
+        }
       case WalletImportSource.seedSigner:
         {
           return [
