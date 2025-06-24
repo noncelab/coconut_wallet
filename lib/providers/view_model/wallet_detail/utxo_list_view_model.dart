@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -8,12 +10,11 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
@@ -21,10 +22,12 @@ class UtxoListViewModel extends ChangeNotifier {
   late final TransactionProvider _txProvider;
   late final UtxoTagProvider _tagProvider;
   late final ConnectivityProvider _connectProvider;
-  late final UpbitConnectModel _upbitConnectModel;
+  late final PriceProvider _priceProvider;
   late final WalletListItemBase _walletListBaseItem;
+  final Stream<WalletUpdateInfo> _syncWalletStateStream;
+  StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
   late final int _walletId;
-  late UpdateStatus _prevUpdateStatus;
+  WalletSyncState _prevUpdateStatus = WalletSyncState.completed;
 
   // balance 애니메이션을 위한 이전 잔액을 담는 변수
   late int _prevBalance;
@@ -41,18 +44,18 @@ class UtxoListViewModel extends ChangeNotifier {
     this._txProvider,
     this._tagProvider,
     this._connectProvider,
-    this._upbitConnectModel,
+    this._priceProvider,
+    this._syncWalletStateStream,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     _initUtxoAndTags();
-    _prevUpdateStatus = _walletProvider.getWalletUpdateInfo(_walletId).utxo;
     _addChangeListener();
     _prevBalance = balance;
   }
 
   int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
   int get prevBalance => _prevBalance;
-  int? get bitcoinPriceKrw => _upbitConnectModel.bitcoinPriceKrw;
+  int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
   bool? get isNetworkOn => _connectProvider.isNetworkOn;
 
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
@@ -72,20 +75,20 @@ class UtxoListViewModel extends ChangeNotifier {
   WalletType get walletType => _walletListBaseItem.walletType;
 
   bool get isSyncing =>
-      _prevUpdateStatus == UpdateStatus.waiting || _prevUpdateStatus == UpdateStatus.syncing;
+      _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
 
   void _addChangeListener() {
-    _walletProvider.addWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
+    _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdateInfoChanged);
   }
 
   void _onWalletUpdateInfoChanged(WalletUpdateInfo updateInfo) {
     Logger.log('${DateTime.now()}--> 지갑$_walletId 업데이트 체크 (UTXO)');
-    if (_prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == UpdateStatus.completed) {
+    if (_prevUpdateStatus != updateInfo.utxo && updateInfo.utxo == WalletSyncState.completed) {
       _getUtxoAndTagList();
-      notifyListeners();
     }
 
     _prevUpdateStatus = updateInfo.utxo;
+    notifyListeners();
   }
 
   void resetUtxoTagsUpdateState() {
@@ -166,7 +169,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _walletProvider.removeWalletUpdateListener(_walletId, _onWalletUpdateInfoChanged);
+    _syncWalletStateSubscription?.cancel();
     super.dispose();
   }
 }

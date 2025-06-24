@@ -64,16 +64,6 @@ void main() {
     Provider.debugCheckInvalidValueType = null;
     await SharedPrefsRepository().init();
 
-    try {
-      // coconut 0.6 버전까지만 사용, 0.7버전부터 필요 없어짐, 사용하던 db 경로 데이터 삭제
-      final dbDirectory = await getAppDocumentDirectory(paths: ['objectbox']);
-      if (dbDirectory.existsSync()) {
-        dbDirectory.deleteSync(recursive: true);
-      }
-    } catch (_) {
-      // ignore
-    }
-
     String envFile = '$appFlavor.env';
     await dotenv.load(fileName: envFile);
     CoconutWalletApp.kElectrumHost = dotenv.env[DotenvKeys.electrumHost] ?? '';

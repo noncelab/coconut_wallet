@@ -63,8 +63,8 @@ class IsolateStateManager implements StateManagerInterface {
 
   /// 업데이트 요소에 따른 상태 업데이트 및 상태 변경 여부 반환
   bool _isUpdatedElementStatus(
-      WalletUpdateInfo walletUpdateInfo, UpdateElement updateType, UpdateStatus newStatus) {
-    UpdateStatus prevStatus;
+      WalletUpdateInfo walletUpdateInfo, UpdateElement updateType, WalletSyncState newStatus) {
+    WalletSyncState prevStatus;
 
     switch (updateType) {
       case UpdateElement.balance:
@@ -101,7 +101,7 @@ class IsolateStateManager implements StateManagerInterface {
 
     _walletUpdateCounter[walletId]!.incrementCounter(updateType);
 
-    if (_isUpdatedElementStatus(walletUpdateInfo, updateType, UpdateStatus.syncing)) {
+    if (_isUpdatedElementStatus(walletUpdateInfo, updateType, WalletSyncState.syncing)) {
       isChange = true;
     }
 
@@ -122,7 +122,7 @@ class IsolateStateManager implements StateManagerInterface {
 
     if (isCounterZero) {
       // 카운터가 0이면 상태를 completed로 변경
-      if (_isUpdatedElementStatus(walletUpdateInfo, updateType, UpdateStatus.completed)) {
+      if (_isUpdatedElementStatus(walletUpdateInfo, updateType, WalletSyncState.completed)) {
         isChange = true;
       }
     }
@@ -157,8 +157,8 @@ class IsolateStateManager implements StateManagerInterface {
       return false;
     }
 
-    return walletInfo.balance == UpdateStatus.syncing ||
-        walletInfo.transaction == UpdateStatus.syncing ||
-        walletInfo.utxo == UpdateStatus.syncing;
+    return walletInfo.balance == WalletSyncState.syncing ||
+        walletInfo.transaction == WalletSyncState.syncing ||
+        walletInfo.utxo == WalletSyncState.syncing;
   }
 }

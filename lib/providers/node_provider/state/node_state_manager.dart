@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -9,22 +11,27 @@ import 'package:coconut_wallet/utils/logger.dart';
 /// NodeProvider의 상태 관리를 담당하는 매니저 클래스
 class NodeStateManager implements StateManagerInterface {
   final void Function() _notifyListeners;
+  final StreamController<NodeSyncState> _syncStateController;
+  final StreamController<Map<int, WalletUpdateInfo>> _walletStateController;
 
   NodeProviderState _state = const NodeProviderState(
-    connectionState: MainClientState.waiting,
+    nodeSyncState: NodeSyncState.init,
     registeredWallets: {},
   );
-
   NodeProviderState get state => _state;
 
-  NodeStateManager(this._notifyListeners);
+  NodeStateManager(
+    this._notifyListeners,
+    this._syncStateController,
+    this._walletStateController,
+  );
 
   /// 노드 상태 업데이트
   /// [newConnectionState] 노드 상태
   /// [newUpdatedWallets] 지갑 업데이트 정보
   /// [notify] 상태 변경 시 리스너에게 알림 여부 (default: true)
   void _setState({
-    MainClientState? newConnectionState,
+    NodeSyncState? newConnectionState,
     Map<int, WalletUpdateInfo>? newUpdatedWallets,
     bool notify = true,
   }) {
@@ -41,6 +48,17 @@ class NodeStateManager implements StateManagerInterface {
 
     // notify가 true이고 상태가 변경된 경우에만 리스너에게 알림
     if (notify && _isStateChanged(prevState, newState)) {
+      newState.printStatus();
+
+      // Stream을 통해 상태 변경 알림
+      if (prevState.nodeSyncState != newState.nodeSyncState) {
+        _syncStateController.add(newState.nodeSyncState);
+      }
+
+      if (newUpdatedWallets != null) {
+        _walletStateController.add(newState.registeredWallets);
+      }
+
       _notifyListeners();
     }
   }
@@ -48,7 +66,7 @@ class NodeStateManager implements StateManagerInterface {
   /// 이전 상태와 새 상태를 비교하여 변경 여부를 확인
   bool _isStateChanged(NodeProviderState prevState, NodeProviderState newState) {
     // ConnectionState 비교
-    if (prevState.connectionState != newState.connectionState) {
+    if (prevState.nodeSyncState != newState.nodeSyncState) {
       return true;
     }
 
@@ -105,19 +123,19 @@ class NodeStateManager implements StateManagerInterface {
 
     switch (updateType) {
       case UpdateElement.balance:
-        walletUpdateInfo.balance = UpdateStatus.syncing;
+        walletUpdateInfo.balance = WalletSyncState.syncing;
         break;
       case UpdateElement.transaction:
-        walletUpdateInfo.transaction = UpdateStatus.syncing;
+        walletUpdateInfo.transaction = WalletSyncState.syncing;
         break;
       case UpdateElement.utxo:
-        walletUpdateInfo.utxo = UpdateStatus.syncing;
+        walletUpdateInfo.utxo = WalletSyncState.syncing;
         break;
     }
 
     // 상태 업데이트
     _setState(
-      newConnectionState: MainClientState.syncing,
+      newConnectionState: NodeSyncState.syncing,
       newUpdatedWallets: {
         ..._state.registeredWallets,
         walletId: walletUpdateInfo,
@@ -136,17 +154,17 @@ class NodeStateManager implements StateManagerInterface {
     }
 
     WalletUpdateInfo walletUpdateInfo = WalletUpdateInfo.fromExisting(existingInfo);
-    MainClientState? newConnectionState;
+    NodeSyncState? newConnectionState;
 
     switch (updateType) {
       case UpdateElement.balance:
-        walletUpdateInfo.balance = UpdateStatus.completed;
+        walletUpdateInfo.balance = WalletSyncState.completed;
         break;
       case UpdateElement.transaction:
-        walletUpdateInfo.transaction = UpdateStatus.completed;
+        walletUpdateInfo.transaction = WalletSyncState.completed;
         break;
       case UpdateElement.utxo:
-        walletUpdateInfo.utxo = UpdateStatus.completed;
+        walletUpdateInfo.utxo = WalletSyncState.completed;
         break;
     }
 
@@ -156,7 +174,7 @@ class NodeStateManager implements StateManagerInterface {
     };
 
     if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
-      newConnectionState = MainClientState.waiting;
+      newConnectionState = NodeSyncState.completed;
     }
 
     _setState(
@@ -168,24 +186,24 @@ class NodeStateManager implements StateManagerInterface {
   @override
   void addWalletCompletedAllStates(int walletId) {
     final existingInfo = _state.registeredWallets[walletId];
-    MainClientState? newConnectionState;
+    NodeSyncState? newConnectionState;
     WalletUpdateInfo updateInfo;
 
     // 기존 정보가 없으면 새 정보 생성
     if (existingInfo == null) {
       updateInfo = WalletUpdateInfo(
         walletId,
-        balance: UpdateStatus.completed,
-        transaction: UpdateStatus.completed,
-        utxo: UpdateStatus.completed,
+        balance: WalletSyncState.completed,
+        transaction: WalletSyncState.completed,
+        utxo: WalletSyncState.completed,
       );
     } else {
       // 기존 정보가 있는 경우 모든 카운터를 0으로 설정하고 상태를 완료로 변경
       updateInfo = WalletUpdateInfo.fromExisting(
         existingInfo,
-        balance: UpdateStatus.completed,
-        transaction: UpdateStatus.completed,
-        utxo: UpdateStatus.completed,
+        balance: WalletSyncState.completed,
+        transaction: WalletSyncState.completed,
+        utxo: WalletSyncState.completed,
       );
     }
 
@@ -195,7 +213,7 @@ class NodeStateManager implements StateManagerInterface {
     };
 
     if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
-      newConnectionState = MainClientState.waiting;
+      newConnectionState = NodeSyncState.completed;
     }
 
     _setState(
@@ -247,7 +265,7 @@ class NodeStateManager implements StateManagerInterface {
   @override
   void setMainClientSyncingState() {
     _setState(
-      newConnectionState: MainClientState.syncing,
+      newConnectionState: NodeSyncState.syncing,
       newUpdatedWallets: null,
       notify: true,
     );
@@ -257,12 +275,11 @@ class NodeStateManager implements StateManagerInterface {
   void setMainClientWaitingState() {
     // 등록된 지갑 중 하나라도 syncing 상태인지 확인
     if (!isAllWalletsCompleted()) {
-      Logger.log('=================아직 동기화 중인 지갑이 있습니다. =================');
       return;
     }
 
     _setState(
-      newConnectionState: MainClientState.waiting,
+      newConnectionState: NodeSyncState.completed,
       newUpdatedWallets: null,
       notify: true,
     );
@@ -272,9 +289,9 @@ class NodeStateManager implements StateManagerInterface {
     final registeredWallets = updatedWallets ?? _state.registeredWallets;
 
     for (final walletInfo in registeredWallets.values) {
-      if (walletInfo.balance != UpdateStatus.completed ||
-          walletInfo.transaction != UpdateStatus.completed ||
-          walletInfo.utxo != UpdateStatus.completed) {
+      if (walletInfo.balance != WalletSyncState.completed ||
+          walletInfo.transaction != WalletSyncState.completed ||
+          walletInfo.utxo != WalletSyncState.completed) {
         return false;
       }
     }

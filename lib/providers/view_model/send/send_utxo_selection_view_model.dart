@@ -10,7 +10,7 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
@@ -45,7 +45,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   final UtxoTagProvider _tagProvider;
   final SendInfoProvider _sendInfoProvider;
   final NodeProvider _nodeProvider;
-  final UpbitConnectModel _upbitConnectProvider;
+  final PriceProvider _priceProvider;
   late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;
@@ -83,14 +83,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
 
-  SendUtxoSelectionViewModel(
-      this._walletProvider,
-      this._tagProvider,
-      this._sendInfoProvider,
-      this._nodeProvider,
-      this._upbitConnectProvider,
-      this._isNetworkOn,
-      UtxoOrder initialUtxoOrder) {
+  SendUtxoSelectionViewModel(this._walletProvider, this._tagProvider, this._sendInfoProvider,
+      this._nodeProvider, this._priceProvider, this._isNetworkOn, UtxoOrder initialUtxoOrder) {
     _walletId = _sendInfoProvider.walletId!;
     _walletBaseItem = _walletProvider.getWalletById(_walletId);
     _requiredSignature = _walletBaseItem.walletType == WalletType.multiSignature
@@ -142,8 +136,8 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       notifyListeners();
     });
 
-    _bitcoinPriceKrw = _upbitConnectProvider.bitcoinPriceKrw;
-    _upbitConnectProvider.addListener(_updateBitcoinPriceKrw);
+    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
+    _priceProvider.addListener(_updateBitcoinPriceKrw);
   }
 
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
@@ -358,7 +352,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void _updateBitcoinPriceKrw() {
-    _bitcoinPriceKrw = _upbitConnectProvider.bitcoinPriceKrw;
+    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
     notifyListeners();
   }
 
@@ -516,7 +510,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _upbitConnectProvider.removeListener(_updateBitcoinPriceKrw);
+    _priceProvider.removeListener(_updateBitcoinPriceKrw);
     super.dispose();
   }
 }

@@ -39,7 +39,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   void initState() {
     super.initState();
     _viewModel = WalletAddScannerViewModel(
-        widget.importSource, Provider.of<WalletProvider>(context, listen: false));
+      widget.importSource,
+      Provider.of<WalletProvider>(context, listen: false),
+    );
   }
 
   // In order to get hot reload to work we need to pause the camera if the platform

@@ -9,10 +9,11 @@ import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -272,8 +273,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Provider.of<WalletProvider>(context, listen: false),
         Provider.of<TransactionProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false),
-        Provider.of<UpbitConnectModel>(context, listen: false),
-        Provider.of<SendInfoProvider>(context, listen: false));
+        Provider.of<PriceProvider>(context, listen: false),
+        Provider.of<SendInfoProvider>(context, listen: false),
+        Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topSelectorWidgetSize = const Size(0, 0);
@@ -477,7 +479,6 @@ class _TransactionListState extends State<TransactionList> {
   late List<TransactionRecord> _displayedTxList = [];
   final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
-  bool _isListLoading = false;
 
   @override
   void initState() {
@@ -511,9 +512,6 @@ class _TransactionListState extends State<TransactionList> {
 
   Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {
     final isFirstLoad = _displayedTxList.isEmpty && txList.isNotEmpty;
-
-    if (_isListLoading) return;
-    _isListLoading = true;
 
     const Duration animationDuration = Duration(milliseconds: 100);
     final oldTxMap = {for (var tx in _displayedTxList) tx.transactionHash: tx};
@@ -555,8 +553,6 @@ class _TransactionListState extends State<TransactionList> {
       }
       _txListKey.currentState?.insertItem(index, duration: _duration);
     }
-
-    _isListLoading = false;
   }
 
   Widget _buildSliverAnimatedList(List<TransactionRecord> txList) {

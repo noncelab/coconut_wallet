@@ -17,7 +17,6 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 
 class IsolateInitializer {
   static IsolateController entryInitialize(
@@ -70,7 +69,6 @@ class IsolateInitializer {
       electrumService,
     );
 
-    Logger.log("IsolateInitializer.entryInitialize: IsolateController created successfully");
     return isolateController;
   }
 }

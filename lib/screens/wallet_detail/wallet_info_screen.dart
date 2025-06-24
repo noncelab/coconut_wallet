@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
@@ -46,6 +47,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         widget.id,
         Provider.of<AuthProvider>(_, listen: false),
         Provider.of<WalletProvider>(_, listen: false),
+        Provider.of<NodeProvider>(_, listen: false),
         widget.isMultisig,
       ),
       child: Consumer<WalletInfoViewModel>(

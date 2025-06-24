@@ -15,7 +15,7 @@ import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/providers/upbit_connect_model.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
@@ -100,35 +100,30 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
     CoconutTheme.setTheme(Brightness.dark);
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UpbitConnectModel()),
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider<PriceProvider>(
+          create: (context) => PriceProvider(context.read<ConnectivityProvider>()),
+        ),
 
         Provider.value(value: _realmManager),
 
         // Repository 등록 - Provider보다 먼저 등록해야 함
-        ProxyProvider<RealmManager, WalletRepository>(
+        Provider<WalletRepository>(
           create: (context) => WalletRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) => previous ?? WalletRepository(realmManager),
         ),
-        ProxyProvider<RealmManager, AddressRepository>(
+        Provider<AddressRepository>(
           create: (context) => AddressRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) => previous ?? AddressRepository(realmManager),
         ),
-        ProxyProvider<RealmManager, TransactionRepository>(
+        Provider<TransactionRepository>(
           create: (context) => TransactionRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) =>
-              previous ?? TransactionRepository(realmManager),
         ),
-        ProxyProvider<RealmManager, UtxoRepository>(
+        Provider<UtxoRepository>(
           create: (context) => UtxoRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) => previous ?? UtxoRepository(realmManager),
         ),
-        ProxyProvider<RealmManager, SubscriptionRepository>(
+        Provider<SubscriptionRepository>(
           create: (context) => SubscriptionRepository(context.read<RealmManager>()),
-          update: (context, realmManager, previous) =>
-              previous ?? SubscriptionRepository(realmManager),
         ),
 
         ChangeNotifierProvider(
@@ -140,30 +135,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   context.read<TransactionRepository>(),
                 )),
 
-        // NodeProvider
-        ProxyProvider5<AddressRepository, TransactionRepository, UtxoRepository,
-            SubscriptionRepository, WalletRepository, NodeProvider>(
-          create: (context) => NodeProvider(
-              CoconutWalletApp.kElectrumHost,
-              CoconutWalletApp.kElectrumPort,
-              CoconutWalletApp.kElectrumIsSSL,
-              CoconutWalletApp.kNetworkType),
-          update: (context, addressRepository, transactionRepository, utxoRepository,
-                  subscribeRepository, walletRepository, previous) =>
-              previous ??
-              NodeProvider(
-                CoconutWalletApp.kElectrumHost,
-                CoconutWalletApp.kElectrumPort,
-                CoconutWalletApp.kElectrumIsSSL,
-                CoconutWalletApp.kNetworkType,
-              ),
-        ),
-
         /// main 에서만 사용하는 모델
         if (_appEntryFlow == AppEntryFlow.main) ...{
           ChangeNotifierProvider(create: (_) => PreferenceProvider()),
           Provider(create: (_) => SendInfoProvider()),
-          ChangeNotifierProxyProvider2<ConnectivityProvider, AuthProvider, WalletProvider>(
+          ChangeNotifierProvider<WalletProvider>(
             create: (context) {
               return WalletProvider(
                 Provider.of<RealmManager>(context, listen: false),
@@ -171,27 +147,25 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 Provider.of<TransactionRepository>(context, listen: false),
                 Provider.of<UtxoRepository>(context, listen: false),
                 Provider.of<WalletRepository>(context, listen: false),
-                Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
                 (count) async {
                   await context.read<VisibilityProvider>().setWalletCount(count);
                 },
                 Provider.of<AuthProvider>(context, listen: false).isSetPin,
-                Provider.of<NodeProvider>(context, listen: false),
               );
             },
-            update: (context, connectivityProvider, authProvider, walletProvider) {
-              try {
-                // TODO: 바뀌었을 때만 호출되도록. walletProvider 내부에서 addLitsener()
-                walletProvider!.setIsNetworkOn(connectivityProvider.isNetworkOn);
-
-                return walletProvider;
-              } catch (e) {
-                if (walletProvider == null) {
-                  rethrow;
-                }
-
-                return walletProvider;
-              }
+          ),
+          ChangeNotifierProvider<NodeProvider>(
+            create: (context) {
+              final walletProvider = context.read<WalletProvider>();
+              return NodeProvider(
+                CoconutWalletApp.kElectrumHost,
+                CoconutWalletApp.kElectrumPort,
+                CoconutWalletApp.kElectrumIsSSL,
+                CoconutWalletApp.kNetworkType,
+                context.read<ConnectivityProvider>(),
+                walletProvider.walletLoadStateNotifier,
+                walletProvider.walletItemListNotifier,
+              );
             },
           ),
         },

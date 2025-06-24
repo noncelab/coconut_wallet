@@ -38,9 +38,7 @@ class IsolateManager {
 
   final Set<ReceivePort> _activeReceivePorts = {};
 
-  IsolateManager() {
-    _isolateReady = Completer<void>();
-  }
+  IsolateManager();
 
   void _createReceivePort() {
     if (_mainFromIsolateReceivePort != null) {
@@ -51,9 +49,10 @@ class IsolateManager {
   }
 
   void _createIsolateCompleter() {
-    if (_isolateReady != null && !_isolateReady!.isCompleted) {
+    if (_isolateReady != null && !_isolateReady!.isCompleted && _isInitializing) {
       try {
-        _isolateReady!.completeError(Exception('Previous initialization was cancelled'));
+        _isolateReady!
+            .completeError(Exception('IsolateManager: Previous initialization was cancelled'));
       } catch (e) {
         // 이미 완료된 경우 무시
       }
@@ -74,8 +73,6 @@ class IsolateManager {
     _isInitializing = true;
 
     try {
-      Logger.log('IsolateManager: Starting initialization for $host:$port');
-
       await _forceCleanup();
 
       _createReceivePort();
@@ -209,7 +206,6 @@ class IsolateManager {
           if (_isolateReady != null && !_isolateReady!.isCompleted) {
             try {
               _isolateReady!.complete();
-              Logger.log('IsolateManager: Initialization completed via isolate message');
             } catch (e) {
               Logger.error('IsolateManager: Error completing initialization: $e');
             }
