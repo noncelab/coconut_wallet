@@ -179,7 +179,3 @@ class TransactionUtil {
     );
   }
 }
-
-int getTransactionMemoId(String transactionHash, int walletId) {
-  return Object.hash(transactionHash, walletId);
-}

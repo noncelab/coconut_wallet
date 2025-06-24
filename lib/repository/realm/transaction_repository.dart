@@ -9,8 +9,8 @@ import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
+import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
-import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
@@ -209,7 +209,7 @@ class TransactionRepository extends BaseRepository {
     }
 
     final realmTransactionMemo = realm.find<RealmTransactionMemo>(
-      getTransactionMemoId(transactionHash, walletId),
+      hashToInt([transactionHash, walletId]),
     );
 
     if (realmTransaction.blockHeight == 0) {

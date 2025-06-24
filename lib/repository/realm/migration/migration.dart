@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/constants/realm_constants.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:realm/realm.dart';
 
 /// Realm 마이그레이션 주의사항
@@ -61,7 +61,7 @@ void addRealmTransactionMemo(Migration migration) {
       Logger.log('memo: $memoString - $transactionHash - $walletId');
 
       memos.add(RealmTransactionMemo(
-        getTransactionMemoId(transactionHash, walletId),
+        hashToInt([transactionHash, walletId]),
         transactionHash,
         walletId,
         memoString,

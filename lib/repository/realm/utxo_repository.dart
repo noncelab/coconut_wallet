@@ -5,9 +5,8 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
-import 'package:realm/realm.dart';
 
 class UtxoRepository extends BaseRepository {
   UtxoRepository(super._realmManager);
@@ -295,7 +294,7 @@ class UtxoRepository extends BaseRepository {
     /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.
     for (var input in transaction.inputs) {
       // UTXO 소유 지갑 ID 찾기
-      final utxoId = makeUtxoId(input.transactionHash, input.index);
+      final utxoId = getUtxoId(input.transactionHash, input.index);
       final utxo = getUtxoState(walletId, utxoId);
 
       // UTXO가 자기 자신을 참조하지 않는지 확인
@@ -321,7 +320,7 @@ class UtxoRepository extends BaseRepository {
     lib.Transaction transaction,
   ) async {
     final utxoIds =
-        transaction.inputs.map((input) => makeUtxoId(input.transactionHash, input.index)).toList();
+        transaction.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
 
     await deleteUtxoList(walletId, utxoIds);
   }

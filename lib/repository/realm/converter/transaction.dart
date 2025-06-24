@@ -6,7 +6,7 @@ import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 
 // TransactionRecord -> _RealmTransaction 변환 함수
 RealmTransaction mapTransactionToRealmTransaction(

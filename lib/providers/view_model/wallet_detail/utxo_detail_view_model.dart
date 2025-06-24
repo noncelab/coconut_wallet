@@ -8,7 +8,6 @@ import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 class UtxoDetailViewModel extends ChangeNotifier {

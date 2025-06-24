@@ -4,12 +4,12 @@ import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -324,7 +324,7 @@ void main() {
         final incomingUtxoList = [
           UtxoMock.createIncomingUtxo(
             transactionHash: originalTx.transactionHash,
-            id: makeUtxoId(originalTx.transactionHash, 0),
+            id: getUtxoId(originalTx.transactionHash, 0),
           ),
         ];
         final originalTxRecord = TransactionMock.createUnconfirmedTransactionRecord(
@@ -353,7 +353,7 @@ void main() {
         final incomingUtxoList = [
           UtxoMock.createIncomingUtxo(
             transactionHash: originalTx.transactionHash,
-            id: makeUtxoId(originalTx.transactionHash, 0),
+            id: getUtxoId(originalTx.transactionHash, 0),
           ),
         ];
 
