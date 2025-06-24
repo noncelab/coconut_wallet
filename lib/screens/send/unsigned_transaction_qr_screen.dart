@@ -6,7 +6,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
-import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/coconut_qr_view_handler.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -142,10 +141,8 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                       qrSize: _qrSize,
                       // qrSize: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
                       qrScanDensity: _qrScanDensity,
-                      qrViewDataHandler: _walletImportSource == WalletImportSource.coconutVault
-                          ? CoconutQrViewHandler(_psbtBase64) // TODO: bcur 통합 예정
-                          : BcUrQrViewHandler(
-                              _psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
+                      qrViewDataHandler:
+                          BcUrQrViewHandler(_psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
                     ),
                   ),
                 ),
@@ -294,6 +291,30 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
   List<TextSpan> _getGuideTextSpan() {
     switch (_walletImportSource) {
+      case WalletImportSource.coconutVault:
+        {
+          return [
+            TextSpan(
+              text: t.tooltip.unsigned_tx_qr.in_vault,
+              style: const TextStyle(
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+            TextSpan(
+              text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} '
+                  '\'${_isMultisig ? t.sign_multisig : t.sign}\'',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(
+              text: t.tooltip.unsigned_tx_qr.scan_qr_below,
+              style: const TextStyle(
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ];
+        }
       case WalletImportSource.seedSigner:
         {
           return [
