@@ -8,7 +8,6 @@ final realmAllSchemas = [
   RealmExternalWallet.schema,
   RealmTransaction.schema,
   RealmIntegerId.schema,
-  TempBroadcastTimeRecord.schema,
   RealmUtxoTag.schema,
   RealmWalletAddress.schema,
   RealmWalletBalance.schema,
@@ -91,13 +90,6 @@ class _RealmIntegerId {
   @PrimaryKey()
   late String key; // "RealmTransaction"처럼 테이블 이름
   late int value; // 마지막으로 사용한 id
-}
-
-@RealmModel()
-class _TempBroadcastTimeRecord {
-  @PrimaryKey()
-  late String transactionHash;
-  late DateTime createdAt;
 }
 
 @RealmModel()

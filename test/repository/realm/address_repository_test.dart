@@ -2,8 +2,8 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../mock/wallet_mock.dart';
@@ -69,8 +69,7 @@ void main() {
     realmManager.realm.write(() {
       realmManager.realm.addAll<RealmWalletAddress>([
         ...initialAddresses.map((address) => RealmWalletAddress(
-              getWalletAddressId(
-                  walletId: testWalletId, index: address.index, address: address.address),
+              getWalletAddressId(testWalletId, address.index, address.address),
               testWalletId,
               address.address,
               address.index,

@@ -30,3 +30,19 @@ int getTransactionMemoId(String transactionHash, int walletId) {
 String getUtxoId(String transactionHash, int index) {
   return '$transactionHash$index';
 }
+
+int getCpfpHistoryId(int walletId, String parentTransactionHash, String childTransactionHash) {
+  return hashToInt([walletId, parentTransactionHash, childTransactionHash]);
+}
+
+int getRbfHistoryId(int walletId, String originalTransactionHash, String transactionHash) {
+  return hashToInt([walletId, originalTransactionHash, transactionHash]);
+}
+
+int getRealmTransactionId(int walletId, String transactionHash) {
+  return hashToInt([walletId, transactionHash]);
+}
+
+int getWalletAddressId(int walletId, int index, String address) {
+  return hashToInt([walletId, index, address]);
+}

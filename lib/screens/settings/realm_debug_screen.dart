@@ -123,8 +123,6 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
         return _convertToMapList(realm.query<RealmBlockTimestamp>(query));
       case 'RealmIntegerId':
         return _convertToMapList(realm.query<RealmIntegerId>(query));
-      case 'TempBroadcastTimeRecord':
-        return _convertToMapList(realm.query<TempBroadcastTimeRecord>(query));
       case 'RealmRbfHistory':
         return _convertToMapList(realm.query<RealmRbfHistory>(query));
       case 'RealmCpfpHistory':
@@ -230,9 +228,6 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
       } else if (obj is RealmIntegerId) {
         map['key'] = obj.key;
         map['value'] = obj.value;
-      } else if (obj is TempBroadcastTimeRecord) {
-        map['transactionHash'] = obj.transactionHash;
-        map['createdAt'] = obj.createdAt.toIso8601String();
       } else if (obj is RealmRbfHistory) {
         map['id'] = obj.id;
         map['walletId'] = obj.walletId;
@@ -344,7 +339,6 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
       'RealmScriptStatus': realm.all<RealmScriptStatus>().length,
       'RealmBlockTimestamp': realm.all<RealmBlockTimestamp>().length,
       'RealmIntegerId': realm.all<RealmIntegerId>().length,
-      'TempBroadcastTimeRecord': realm.all<TempBroadcastTimeRecord>().length,
       'RealmRbfHistory': realm.all<RealmRbfHistory>().length,
       'RealmCpfpHistory': realm.all<RealmCpfpHistory>().length,
       'RealmTransactionMemo': realm.all<RealmTransactionMemo>().length,

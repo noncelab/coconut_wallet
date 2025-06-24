@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.d
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
@@ -85,13 +86,6 @@ class TransactionRepository extends BaseRepository {
     });
   }
 
-  /// 일시적인 브로드캐스트 시간 기록
-  Future<void> recordTemporaryBroadcastTime(String txHash, DateTime createdAt) async {
-    await realm.writeAsync(() {
-      realm.add(TempBroadcastTimeRecord(txHash, createdAt));
-    });
-  }
-
   /// 트랜잭션 상태 업데이트
   Future<void> updateTransactionStates(
     int walletId,
@@ -163,7 +157,7 @@ class TransactionRepository extends BaseRepository {
         newTxsToAdd.add(mapTransactionToRealmTransaction(
           tx,
           walletId,
-          Object.hash(walletId, tx.transactionHash),
+          getRealmTransactionId(walletId, tx.transactionHash),
         ));
       } else if (existingTx.blockHeight == 0 && tx.blockHeight > 0) {
         // 미확인 -> 확인 상태로 변경된 트랜잭션 - 업데이트

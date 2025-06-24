@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/constants/realm_constants.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';
@@ -39,11 +40,86 @@ void defaultMigration(Migration migration, int oldVersion) {
     if (oldVersion < 2) resetExceptForWallet(migration.newRealm);
     if (oldVersion < 3) removeIsLatestTxBlockHeightZero(migration.newRealm);
     if (oldVersion < 4) addIsDeletedToUtxo(migration.newRealm);
-    if (oldVersion < 5) addRealmTransactionMemo(migration);
+    if (oldVersion < 5) migrationV5(migration);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
   }
+}
+
+void migrationV5(Migration migration) {
+  addRealmTransactionMemo(migration);
+  resetTxRecordAndAddress(migration);
+}
+
+void resetTxRecordAndAddress(Migration migration) {
+  Logger.log('resetTxRecordAndAddress migration start');
+  final newRealm = migration.newRealm;
+
+  // RealmTransaction 데이터 재생성
+  final oldTransactions = newRealm.all<RealmTransaction>().toList();
+  final newTransactions = <RealmTransaction>[];
+
+  for (var oldTx in oldTransactions) {
+    // transactionHash와 walletId를 조합하여 새로운 unique id 생성
+    final newId = getRealmTransactionId(oldTx.walletId, oldTx.transactionHash);
+
+    final newTx = RealmTransaction(
+      newId,
+      oldTx.transactionHash,
+      oldTx.walletId,
+      oldTx.timestamp,
+      oldTx.blockHeight,
+      oldTx.transactionType,
+      oldTx.amount,
+      oldTx.fee,
+      oldTx.vSize,
+      oldTx.createdAt,
+      inputAddressList: oldTx.inputAddressList,
+      outputAddressList: oldTx.outputAddressList,
+      replaceByTransactionHash: oldTx.replaceByTransactionHash,
+    );
+
+    newTransactions.add(newTx);
+  }
+
+  // RealmWalletAddress 데이터 재생성
+  final oldAddresses = newRealm.all<RealmWalletAddress>().toList();
+  final newAddresses = <RealmWalletAddress>[];
+
+  for (var oldAddr in oldAddresses) {
+    // walletId, address, index를 조합하여 새로운 unique id 생성
+    final newId = getWalletAddressId(
+      oldAddr.walletId,
+      oldAddr.index,
+      oldAddr.address,
+    );
+
+    final newAddr = RealmWalletAddress(
+      newId,
+      oldAddr.walletId,
+      oldAddr.address,
+      oldAddr.index,
+      oldAddr.isChange,
+      oldAddr.derivationPath,
+      oldAddr.isUsed,
+      oldAddr.confirmed,
+      oldAddr.unconfirmed,
+      oldAddr.total,
+    );
+
+    newAddresses.add(newAddr);
+  }
+
+  // 기존 데이터 삭제
+  newRealm.deleteAll<RealmTransaction>();
+  newRealm.deleteAll<RealmWalletAddress>();
+
+  // 새 데이터 추가
+  newRealm.addAll(newTransactions);
+  newRealm.addAll(newAddresses);
+
+  Logger.log('resetTxRecordAndAddress migration end');
 }
 
 void addRealmTransactionMemo(Migration migration) {
@@ -110,7 +186,6 @@ void resetExceptForWallet(Realm realm) {
   realm.deleteAll<RealmScriptStatus>();
   realm.deleteAll<RealmBlockTimestamp>();
   realm.deleteAll<RealmIntegerId>();
-  realm.deleteAll<TempBroadcastTimeRecord>();
   realm.deleteAll<RealmRbfHistory>();
   realm.deleteAll<RealmCpfpHistory>();
   realm.deleteAll<RealmTransactionMemo>();
