@@ -135,24 +135,22 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           ),
                           _buildLoadingIndicator(viewModel),
                           _buildPadding(isOffline),
-                          if (!shouldShowLoadingIndicator) ...{
+                          if (!shouldShowLoadingIndicator)
                             SliverToBoxAdapter(
                                 child: Column(
                               children: [
-                                if (!shouldShowLoadingIndicator)
-                                  if (isTermsShortcutVisible)
-                                    GlossaryShortcutCard(
-                                      onTap: () {
-                                        CommonBottomSheets.showBottomSheet_90(
-                                            context: context, child: const GlossaryBottomSheet());
-                                      },
-                                      onCloseTap: viewModel.hideTermsShortcut,
-                                    ),
+                                if (isTermsShortcutVisible)
+                                  GlossaryShortcutCard(
+                                    onTap: () {
+                                      CommonBottomSheets.showBottomSheet_90(
+                                          context: context, child: const GlossaryBottomSheet());
+                                    },
+                                    onCloseTap: viewModel.hideTermsShortcut,
+                                  ),
                                 if (walletListItem.isEmpty)
                                   WalletAdditionGuideCard(onPressed: _onAddWalletPressed)
                               ],
                             )),
-                          },
                           // 지갑 목록
                           _buildSliverAnimatedList(
                               walletListItem, walletBalanceMap, isBalanceHidden),
@@ -318,17 +316,18 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       }
 
       if (insertedIndexes.isNotEmpty) {
-        if (_isFirstLoad) {
+        if (_previousWalletList.isEmpty && _isFirstLoad) {
           // 첫 로딩시에는 애니메이션 없이 리스트 갱신
           for (var i = 0; i < insertedIndexes.length; i++) {
             _walletListKey.currentState?.insertItem(insertedIndexes[i], duration: Duration.zero);
           }
           _isFirstLoad = false;
-        }
-        for (var i = 0; i < insertedIndexes.length; i++) {
-          await Future.delayed(Duration(milliseconds: 100 * i), () {
-            _walletListKey.currentState?.insertItem(insertedIndexes[i], duration: _duration);
-          });
+        } else {
+          for (var i = 0; i < insertedIndexes.length; i++) {
+            await Future.delayed(Duration(milliseconds: 100 * i), () {
+              _walletListKey.currentState?.insertItem(insertedIndexes[i], duration: _duration);
+            });
+          }
         }
       }
 
@@ -612,7 +611,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         ),
       ),
       duration: const Duration(milliseconds: 300),
-      child: viewModel.shouldShowLoadingIndicator
+      child: viewModel.shouldShowLoadingIndicator && viewModel.walletItemList.isNotEmpty
           ? const Center(
               child: Padding(
                 key: ValueKey("loading"),
