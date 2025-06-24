@@ -43,7 +43,6 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
     'RealmScriptStatus',
     'RealmBlockTimestamp',
     'RealmIntegerId',
-    'TempBroadcastTimeRecord',
     'RealmRbfHistory',
     'RealmCpfpHistory',
     'RealmTransactionMemo',

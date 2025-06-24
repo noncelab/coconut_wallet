@@ -28,6 +28,9 @@ import 'package:realm/realm.dart';
 /// [addRealmTransactionMemo] (4 -> 5)
 /// 1. RealmTransactionMemo 추가
 /// 2. RealmTransaction 에서 memo 필드 삭제
+/// 3. RealmTransaction 의 id 를 재생성
+/// 4. RealmWalletAddress 의 id 를 재생성
+/// 5. TempBroadcastTimeRecord 삭제
 ///
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
