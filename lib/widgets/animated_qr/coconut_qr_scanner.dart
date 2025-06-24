@@ -27,6 +27,7 @@ class CoconutQrScanner extends StatefulWidget {
 class _CoconutQrScannerState extends State<CoconutQrScanner> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final double _borderWidth = 8;
+  double? _progress;
 
   void _onQrViewCreated(QRViewController controller) {
     widget.setQrViewController(controller);
@@ -40,6 +41,10 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
           handler.reset();
           return;
         }
+
+        setState(() {
+          _progress = handler.progress;
+        });
 
         if (handler.isCompleted()) {
           widget.onComplete(handler.result!);
@@ -83,6 +88,22 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
               onQRViewCreated: _onQrViewCreated,
               overlay: _getOverlayShape(),
             ),
+            Positioned(
+              bottom: (MediaQuery.of(context).size.width < 400 ||
+                      MediaQuery.of(context).size.height < 400)
+                  ? (constraints.maxHeight - 320.0) / 2 - _borderWidth - 20
+                  : (constraints.maxHeight - MediaQuery.of(context).size.width * 0.85) / 2 -
+                      _borderWidth -
+                      20, // QRView 아래에 배치되도록 위치 설정
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Text(
+                  _progress != null ? "${(_progress! * 100).toStringAsFixed(0)} %" : '',
+                  style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+                ),
+              ),
+            )
           ],
         );
       },
