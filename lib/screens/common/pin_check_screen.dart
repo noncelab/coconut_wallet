@@ -37,12 +37,8 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     super.initState();
     pin = '';
     errorMessage = '';
-
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _shuffledPinNumbers = _authProvider.getShuffledNumberPad();
-    if (_authProvider.isSetBiometrics && _authProvider.canCheckBiometrics) {
-      _verifyBiometric();
-    }
 
     /// appEntrance인 경우 AppGuard가 위젯트리에 없으므로 추가
     if (widget.appEntrance) {
@@ -63,7 +59,6 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     } else if (AppLifecycleState.resumed == state && _isPause) {
       _isPause = false;
       _authProvider.checkDeviceBiometrics();
-      //_subModel.checkDeviceBiometrics();
     }
   }
 

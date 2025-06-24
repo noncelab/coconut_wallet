@@ -31,27 +31,23 @@ class WalletRepository extends BaseRepository {
     var externalWallets = realm.all<RealmExternalWallet>().query('TRUEPREDICATE SORT(id DESC)');
 
     for (var i = 0; i < walletBases.length; i++) {
-      String? decryptedDescriptor;
-      if (cryptography != null) {
-        decryptedDescriptor = await cryptography!.decrypt(walletBases[i].descriptor);
-      }
-
       if (walletBases[i].walletType == WalletType.singleSignature.name) {
         // 외부 지갑인 경우 WalletImportSource 데이터 추가
         if (externalWalletIndex < externalWallets.length &&
             walletBases[i].id == externalWallets[externalWalletIndex].id) {
           walletList.add(mapRealmToSingleSigWalletItem(
               walletBases[i],
-              decryptedDescriptor,
+              walletBases[i].descriptor,
               WalletImportSourceExtension.fromString(
                   externalWallets[externalWalletIndex++].walletImportSource)));
         } else {
-          walletList.add(mapRealmToSingleSigWalletItem(walletBases[i], decryptedDescriptor, null));
+          walletList
+              .add(mapRealmToSingleSigWalletItem(walletBases[i], walletBases[i].descriptor, null));
         }
       } else {
         assert(walletBases[i].id == multisigWallets[multisigWalletIndex].id);
         walletList.add(mapRealmToMultisigWalletItem(
-            multisigWallets[multisigWalletIndex++], decryptedDescriptor));
+            multisigWallets[multisigWalletIndex++], walletBases[i].descriptor));
       }
     }
 
@@ -61,12 +57,8 @@ class WalletRepository extends BaseRepository {
   /// 싱글시그 지갑 추가
   Future<SinglesigWalletListItem> addSinglesigWallet(WatchOnlyWallet watchOnlyWallet) async {
     var id = _getNextWalletId();
-    String descriptor = cryptography != null
-        ? await cryptography!.encrypt(watchOnlyWallet.descriptor)
-        : watchOnlyWallet.descriptor;
-
     var realmWalletBase = RealmWalletBase(id, watchOnlyWallet.colorIndex, watchOnlyWallet.iconIndex,
-        descriptor, watchOnlyWallet.name, WalletType.singleSignature.name);
+        watchOnlyWallet.descriptor, watchOnlyWallet.name, WalletType.singleSignature.name);
 
     realm.write(() {
       realm.add(realmWalletBase);
@@ -81,18 +73,14 @@ class WalletRepository extends BaseRepository {
 
     _recordNextWalletId(id + 1);
     return mapRealmToSingleSigWalletItem(
-        realmWalletBase, descriptor, watchOnlyWallet.walletImportSource);
+        realmWalletBase, watchOnlyWallet.descriptor, watchOnlyWallet.walletImportSource);
   }
 
   /// 멀티시그 지갑 추가
   Future<MultisigWalletListItem> addMultisigWallet(WatchOnlyWallet walletSync) async {
     var id = _getNextWalletId();
-    String descriptor = cryptography != null
-        ? await cryptography!.encrypt(walletSync.descriptor)
-        : walletSync.descriptor;
-
     var realmWalletBase = RealmWalletBase(id, walletSync.colorIndex, walletSync.iconIndex,
-        descriptor, walletSync.name, WalletType.multiSignature.name);
+        walletSync.descriptor, walletSync.name, WalletType.multiSignature.name);
     var realmMultisigWallet = RealmMultisigWallet(
         id, MultisigSigner.toJsonList(walletSync.signers!), walletSync.requiredSignatureCount!,
         walletBase: realmWalletBase);
@@ -104,7 +92,7 @@ class WalletRepository extends BaseRepository {
 
     _recordNextWalletId(id + 1);
 
-    return mapRealmToMultisigWalletItem(realmMultisigWallet, descriptor);
+    return mapRealmToMultisigWalletItem(realmMultisigWallet, walletSync.descriptor);
   }
 
   /// 지갑 UI 정보 업데이트
