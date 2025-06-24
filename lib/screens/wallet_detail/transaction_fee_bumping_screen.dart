@@ -473,7 +473,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               ),
               CoconutLayout.spacing_200w,
               Text(
-                t.transaction_fee_bumping_screen.sats_vb,
+                t.sats_vb,
                 style: CoconutTypography.body2_14,
               ),
             ],

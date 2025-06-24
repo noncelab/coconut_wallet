@@ -163,7 +163,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
           "$feeText $unitText",
           style: CoconutTypography.body2_14_Number,
         ),
-        if (satsPerVb != null)
+        if (satsPerVb != null && !customFeeSelected)
           Text(
               '${selectedLevel?.expectedTime ?? ''} ($satsPerVb ${satsPerVb == 1 ? 'sat' : 'sats'}/vb)',
               style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500)),

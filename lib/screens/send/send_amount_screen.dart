@@ -11,8 +11,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/button/key_button.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
+import 'package:coconut_wallet/widgets/overlays/number_key_pad.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -74,151 +74,118 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
           body: Stack(
             children: [
               Container(
+                height: MediaQuery.sizeOf(context).height,
                 color: CoconutColors.black,
-                child: Column(
-                  children: [
-                    Expanded(
-                        child: Align(
-                            alignment: Alignment.center,
-                            child: Column(children: [
-                              const SizedBox(height: 16),
-                              if (viewModel.incomingBalance > 0)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: CoconutLayout.defaultPadding),
-                                  child: CoconutToolTip(
-                                    baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
-                                    richText: RichText(
-                                        text: TextSpan(
-                                      text: incomingBalanceTooltipText,
-                                      style: const TextStyle(
-                                        fontFamily: 'Pretendard',
-                                        fontWeight: FontWeight.normal,
-                                        fontSize: 15,
-                                        height: 1.4,
-                                        letterSpacing: 0.5,
-                                        color: CoconutColors.black,
-                                      ),
-                                    )),
-                                    tooltipType: CoconutTooltipType.fixed,
-                                  ),
-                                ),
-                              Expanded(
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      // 최대
-                                      GestureDetector(
-                                          onTap: () {
-                                            viewModel.setMaxAmount();
-                                          },
-                                          child: Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 12, vertical: 6.0),
-                                              margin: const EdgeInsets.only(bottom: 4),
-                                              decoration: BoxDecoration(
-                                                  borderRadius: BorderRadius.circular(12.0),
-                                                  border: Border.all(
-                                                      color: viewModel.errorIndex == 0
-                                                          ? MyColors.warningRed
-                                                          : Colors.transparent,
-                                                      width: 1),
-                                                  color: viewModel.errorIndex == 0
-                                                      ? Colors.transparent
-                                                      : MyColors.grey),
-                                              child: RichText(
-                                                  text: TextSpan(children: [
-                                                TextSpan(
-                                                    text: '${t.max} ',
-                                                    style: Styles.caption.merge(TextStyle(
-                                                        color: viewModel.errorIndex == 0
-                                                            ? MyColors.warningRed
-                                                            : CoconutColors.white,
-                                                        fontFamily:
-                                                            CustomFonts.text.getFontFamily))),
-                                                TextSpan(
-                                                    text: maxBalanceText,
-                                                    style: Styles.caption.merge(TextStyle(
-                                                        color: viewModel.errorIndex == 0
-                                                            ? MyColors.warningRed
-                                                            : CoconutColors.white))),
-                                              ])))),
-                                      // BTC Input
-                                      GestureDetector(
-                                        onTap: viewModel.toggleUnit,
-                                        child: Text(
-                                          '${viewModel.input.isEmpty ? 0 : viewModel.input} $unitText',
-                                          style: TextStyle(
-                                            fontFamily: CustomFonts.number.getFontFamily,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 38,
-                                            color: viewModel.input.isEmpty
-                                                ? MyColors.transparentWhite_20
-                                                : CoconutColors.white,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 1,
-                                        ),
-                                      ),
-                                      // Error
-                                      Text(
-                                        viewModel.errorIndex != null
-                                            ? errorMessages[viewModel.errorIndex!]
-                                            : '',
-                                        style: Styles.caption
-                                            .merge(const TextStyle(color: MyColors.warningRed)),
-                                      ),
-
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 4),
-                                        child: CustomUnderlinedButton(
-                                            text: t.select_utxo,
-                                            fontSize: 14,
-                                            lineHeight: 21,
-                                            isEnable: viewModel.errorIndex == null &&
-                                                viewModel.isNextButtonEnabled,
-                                            onTap: () => _goNextScreen('/utxo-selection')),
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              )
-                            ]))),
-                    Expanded(
-                      child: GridView.count(
-                        crossAxisCount: 3,
-                        childAspectRatio: 2,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: [
-                          '1',
-                          '2',
-                          '3',
-                          '4',
-                          '5',
-                          '6',
-                          '7',
-                          '8',
-                          '9',
-                          if (viewModel.currentUnit == BitcoinUnit.btc) '.' else ' ',
-                          '0',
-                          '<',
-                        ].map((key) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: KeyButton(
-                              keyValue: key,
-                              onKeyTap: viewModel.onKeyTap,
+                child: Column(mainAxisAlignment: MainAxisAlignment.start, children: [
+                  Container(
+                    height: 115,
+                  ),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // 최대
+                        GestureDetector(
+                            onTap: () {
+                              viewModel.setMaxAmount();
+                            },
+                            child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.0),
+                                margin: const EdgeInsets.only(bottom: 4),
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12.0),
+                                    border: Border.all(
+                                        color: viewModel.errorIndex == 0
+                                            ? MyColors.warningRed
+                                            : Colors.transparent,
+                                        width: 1),
+                                    color: viewModel.errorIndex == 0
+                                        ? Colors.transparent
+                                        : MyColors.grey),
+                                child: RichText(
+                                    text: TextSpan(children: [
+                                  TextSpan(
+                                      text: '${t.max} ',
+                                      style: Styles.caption.merge(TextStyle(
+                                          color: viewModel.errorIndex == 0
+                                              ? MyColors.warningRed
+                                              : CoconutColors.white,
+                                          fontFamily: CustomFonts.text.getFontFamily))),
+                                  TextSpan(
+                                      text: maxBalanceText,
+                                      style: Styles.caption.merge(TextStyle(
+                                          color: viewModel.errorIndex == 0
+                                              ? MyColors.warningRed
+                                              : CoconutColors.white))),
+                                ])))),
+                        // BTC Input
+                        GestureDetector(
+                          onTap: viewModel.toggleUnit,
+                          child: Text(
+                            '${viewModel.input.isEmpty ? 0 : viewModel.input} $unitText',
+                            style: TextStyle(
+                              fontFamily: CustomFonts.number.getFontFamily,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 38,
+                              color: viewModel.input.isEmpty
+                                  ? MyColors.transparentWhite_20
+                                  : CoconutColors.white,
                             ),
-                          );
-                        }).toList(),
-                      ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        // Error
+                        Text(
+                          viewModel.errorIndex != null ? errorMessages[viewModel.errorIndex!] : '',
+                          style: Styles.caption.merge(const TextStyle(color: MyColors.warningRed)),
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: CustomUnderlinedButton(
+                              text: t.select_utxo,
+                              fontSize: 14,
+                              lineHeight: 21,
+                              isEnable:
+                                  viewModel.errorIndex == null && viewModel.isNextButtonEnabled,
+                              onTap: () => _goNextScreen('/utxo-selection')),
+                        )
+                      ],
                     ),
-                  ],
+                  )
+                ]),
+              ),
+              Positioned(
+                bottom: 20,
+                left: 0,
+                right: 0,
+                child: NumberKeyPad(
+                  currentUnit: _viewModel.currentUnit,
+                  onKeyTap: _viewModel.onKeyTap,
                 ),
               ),
+              if (viewModel.incomingBalance > 0 && viewModel.isNetworkOn)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+                  child: CoconutToolTip(
+                    baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
+                    richText: RichText(
+                        text: TextSpan(
+                      text: incomingBalanceTooltipText,
+                      style: const TextStyle(
+                        fontFamily: 'Pretendard',
+                        fontWeight: FontWeight.normal,
+                        fontSize: 15,
+                        height: 1.4,
+                        letterSpacing: 0.5,
+                        color: CoconutColors.black,
+                      ),
+                    )),
+                    tooltipType: CoconutTooltipType.fixed,
+                  ),
+                ),
               NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
             ],
           ),
