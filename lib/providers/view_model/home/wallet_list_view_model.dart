@@ -10,9 +10,6 @@ import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 
-typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
-typedef BalanceGetter = int Function(int id);
-
 class WalletListViewModel extends ChangeNotifier {
   final VisibilityProvider _visibilityProvider;
   WalletProvider _walletProvider;
@@ -41,7 +38,7 @@ class WalletListViewModel extends ChangeNotifier {
     _walletBalance = _walletProvider
         .fetchWalletBalanceMap()
         .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
-    _walletProvider.walletLoadStateNotifier.addListener(refreshWallets);
+    _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalances);
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
@@ -50,6 +47,7 @@ class WalletListViewModel extends ChangeNotifier {
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemListNotifier.value;
   bool? get isNetworkOn => _isNetworkOn;
+  Map<int, AnimatedBalanceData> get walletBalanceMap => _walletBalance;
 
   void _handleNodeSyncState(NodeSyncState syncState) {
     if (_nodeSyncState != syncState) {
@@ -58,7 +56,7 @@ class WalletListViewModel extends ChangeNotifier {
           _isFirstLoaded = true;
           vibrateLight();
         }
-        refreshWallets();
+        updateWalletBalances();
       } else if (syncState == NodeSyncState.failed) {
         vibrateLightDouble();
       }
@@ -78,18 +76,14 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshWallets() async {
-    _updateBalance(_walletProvider.fetchWalletBalanceMap());
+  Future<void> updateWalletBalances() async {
+    final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
+    _walletBalance = updatedWalletBalance;
     notifyListeners();
   }
 
-  void _updateBalance(Map<int, Balance> balanceMap) {
-    // todo: remove debug print
-    // debugPrint('뷰모델!! _updateBalance: ${balanceMap.entries.map(
-    //       (e) => '${e.key}: ${e.value.total}',
-    //     ).toList()}');
-
-    _walletBalance = balanceMap.map((key, balance) {
+  Map<int, AnimatedBalanceData> _updateBalanceMap(Map<int, Balance> balanceMap) {
+    return balanceMap.map((key, balance) {
       final prev = _walletBalance[key]?.current ?? 0;
       return MapEntry(
         key,
@@ -112,10 +106,6 @@ class WalletListViewModel extends ChangeNotifier {
     await AppReviewService.increaseAppRunningCountIfRejected();
   }
 
-  AnimatedBalanceData getWalletBalance(int id) {
-    return _walletBalance[id] ?? AnimatedBalanceData(0, 0);
-  }
-
   void onNodeProviderUpdated() {
     notifyListeners();
   }
@@ -126,17 +116,20 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   bool isWalletListChanged(List<WalletListItemBase> oldList, List<WalletListItemBase> newList,
-      Map<int, int> previousWalletBalance, BalanceGetter getUpdatedBalance) {
+      Map<int, AnimatedBalanceData> walletBalanceMap) {
     if (oldList.length != newList.length) return true;
 
-    return oldList.asMap().entries.any((entry) {
-          int index = entry.key;
-          return entry.value.toString() != newList[index].toString();
-        }) ||
-        previousWalletBalance.entries.any((entry) {
-          int id = entry.key;
-          return entry.value != getUpdatedBalance(id);
-        });
+    bool walletListChanged = oldList.asMap().entries.any((entry) {
+      int index = entry.key;
+      return entry.value.toString() != newList[index].toString();
+    });
+
+    bool balanceChanged = walletBalanceMap.entries.any((entry) {
+      AnimatedBalanceData balanceData = entry.value;
+      return balanceData.previous != balanceData.current;
+    });
+
+    return walletListChanged || balanceChanged;
   }
 
   @override

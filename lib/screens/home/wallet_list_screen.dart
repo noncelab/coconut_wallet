@@ -35,6 +35,7 @@ import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_glossary_shortcut_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_glossary_bottom_sheet.dart';
+import 'package:tuple/tuple.dart';
 
 class WalletListScreen extends StatefulWidget {
   const WalletListScreen({super.key});
@@ -57,7 +58,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   ResultOfSyncFromVault? _resultOfSyncFromVault;
 
   late List<WalletListItemBase> _previousWalletList = [];
-  late Map<int, int> _previousWalletBalance = {};
   final GlobalKey<SliverAnimatedListState> _walletListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
 
@@ -66,7 +66,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   late WalletListViewModel _viewModel;
   late final List<Future<Object?> Function()> _dropdownActions;
 
-  bool isWalletLoading = false;
+  bool _isFirstLoad = true;
+  bool _isWalletListLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -92,17 +93,23 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
         return previous..onWalletProviderUpdated(walletProvider);
       },
-      child: Consumer<WalletListViewModel>(
-        builder: (context, viewModel, child) {
-          final isOffline = viewModel.isNetworkOn == null ? false : !viewModel.isNetworkOn!;
+      child: Selector<WalletListViewModel,
+          Tuple6<List<WalletListItemBase>, bool, bool, bool, bool, Map<int, AnimatedBalanceData>>>(
+        selector: (_, vm) => Tuple6(vm.walletItemList, vm.isNetworkOn ?? false, vm.isBalanceHidden,
+            vm.shouldShowLoadingIndicator, vm.isTermsShortcutVisible, vm.walletBalanceMap),
+        builder: (context, data, child) {
+          final viewModel = Provider.of<WalletListViewModel>(context, listen: false);
 
-          if (viewModel.isWalletListChanged(_previousWalletList, viewModel.walletItemList,
-              _previousWalletBalance, (id) => viewModel.getWalletBalance(id).current)) {
-            _handleWalletListUpdate(
-              viewModel.walletItemList,
-              (id) => viewModel.getWalletBalance(id),
-              viewModel.isBalanceHidden,
-            );
+          final walletListItem = data.item1;
+          final isOffline = !data.item2;
+          final isBalanceHidden = data.item3;
+          final shouldShowLoadingIndicator = data.item4;
+          final isTermsShortcutVisible = data.item5;
+          final walletBalanceMap = data.item6;
+
+          if (viewModel.isWalletListChanged(
+              _previousWalletList, walletListItem, walletBalanceMap)) {
+            _handleWalletListUpdate(walletListItem);
           }
 
           return PopScope(
@@ -119,21 +126,21 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     CustomScrollView(
                         controller: _scrollController,
                         physics: const AlwaysScrollableScrollPhysics(),
-                        semanticChildCount: viewModel.walletItemList.length,
+                        semanticChildCount: walletListItem.length,
                         slivers: <Widget>[
                           _buildAppBar(viewModel),
                           // pull to refresh시 로딩 인디케이터를 보이기 위함
                           CupertinoSliverRefreshControl(
-                            onRefresh: viewModel.refreshWallets,
+                            onRefresh: viewModel.updateWalletBalances,
                           ),
                           _buildLoadingIndicator(viewModel),
                           _buildPadding(isOffline),
-                          if (!viewModel.shouldShowLoadingIndicator) ...{
+                          if (!shouldShowLoadingIndicator) ...{
                             SliverToBoxAdapter(
                                 child: Column(
                               children: [
-                                if (!viewModel.shouldShowLoadingIndicator)
-                                  if (viewModel.isTermsShortcutVisible)
+                                if (!shouldShowLoadingIndicator)
+                                  if (isTermsShortcutVisible)
                                     GlossaryShortcutCard(
                                       onTap: () {
                                         CommonBottomSheets.showBottomSheet_90(
@@ -141,14 +148,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                       },
                                       onCloseTap: viewModel.hideTermsShortcut,
                                     ),
-                                if (viewModel.walletItemList.isEmpty)
+                                if (walletListItem.isEmpty)
                                   WalletAdditionGuideCard(onPressed: _onAddWalletPressed)
                               ],
                             )),
                           },
                           // 지갑 목록
-                          _buildSliverAnimatedList(viewModel.walletItemList,
-                              (id) => viewModel.getWalletBalance(id), viewModel.isBalanceHidden),
+                          _buildSliverAnimatedList(
+                              walletListItem, walletBalanceMap, isBalanceHidden),
                         ]),
                     _buildOfflineWarningBar(context, isOffline),
                     _buildDropdownBackdrop(),
@@ -297,36 +304,46 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     }
   }
 
-  void _handleWalletListUpdate(List<WalletListItemBase> walletList,
-      AnimatedBalanceDataGetter getWalletBalance, bool isBalanceHidden) async {
-    if (isWalletLoading) return;
-    isWalletLoading = true;
+  void _handleWalletListUpdate(List<WalletListItemBase> walletList) async {
+    if (_isWalletListLoading) return;
+    _isWalletListLoading = true;
+    try {
+      final oldWallets = {for (var walletItem in _previousWalletList) walletItem.id: walletItem};
 
-    final oldWallets = {for (var walletItem in _previousWalletList) walletItem.id: walletItem};
-
-    final List<int> insertedIndexes = [];
-    for (int i = 0; i < walletList.length; i++) {
-      if (!oldWallets.containsKey(walletList[i].id)) {
-        insertedIndexes.add(i);
+      final List<int> insertedIndexes = [];
+      for (int i = 0; i < walletList.length; i++) {
+        if (!oldWallets.containsKey(walletList[i].id)) {
+          insertedIndexes.add(i);
+        }
       }
-    }
 
-    for (var i = 0; i < insertedIndexes.length; i++) {
-      await Future.delayed(Duration(milliseconds: 100 * i), () {
-        _walletListKey.currentState?.insertItem(insertedIndexes[i], duration: _duration);
+      if (insertedIndexes.isNotEmpty) {
+        if (_isFirstLoad) {
+          // 첫 로딩시에는 애니메이션 없이 리스트 갱신
+          for (var i = 0; i < insertedIndexes.length; i++) {
+            _walletListKey.currentState?.insertItem(insertedIndexes[i], duration: Duration.zero);
+          }
+          _isFirstLoad = false;
+        }
+        for (var i = 0; i < insertedIndexes.length; i++) {
+          await Future.delayed(Duration(milliseconds: 100 * i), () {
+            _walletListKey.currentState?.insertItem(insertedIndexes[i], duration: _duration);
+          });
+        }
+      }
+
+      _previousWalletList = List.from(walletList);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _viewModel.updateWalletBalances();
       });
+    } finally {
+      _isWalletListLoading = false;
     }
-
-    _previousWalletList = List.from(walletList);
-    _previousWalletBalance = {
-      for (var walletId in walletList) walletId.id: getWalletBalance(walletId.id).previous
-    };
-
-    isWalletLoading = false;
   }
 
   Widget _buildSliverAnimatedList(List<WalletListItemBase> walletList,
-      AnimatedBalanceDataGetter getWalletBalance, bool isBalanceHidden) {
+      Map<int, AnimatedBalanceData> walletBalanceMap, bool isBalanceHidden) {
     return SliverAnimatedList(
       key: _walletListKey,
       initialItemCount: walletList.length,
@@ -335,7 +352,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           return _buildWalletItem(
               walletList[index],
               animation,
-              getWalletBalance(walletList[index].id),
+              walletBalanceMap[walletList[index].id] ?? AnimatedBalanceData(0, 0),
               isBalanceHidden,
               index == walletList.length - 1);
         }
