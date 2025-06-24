@@ -1,47 +1,33 @@
-import 'dart:io';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_crud_view_model.dart';
+import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/widgets/button/custom_tag_chip_color_button.dart';
-import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/textfield/custom_limit_text_field.dart';
+
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
+import 'package:provider/provider.dart';
 
-/// [TagBottomSheetType]
-/// - [attach] : 태그 목록 선택 변경 및 새 태그 생성
-/// - [create] : 새 태그 생성
-/// - [update] : 선택된 태그 수정
-enum TagBottomSheetType { attach, create, update }
+enum UtxoTagEditMode { add, delete, changAppliedTags, update }
 
-// Usage:
-// utxo_detail_screen.dart
-// utxo_tag.screen.dart
-
-/// [TagBottomSheet] : 태그 선택 변경, 태그 수정, 태그 생성 BottomSheet
-/// [type] : BottomSheet Type
-/// [utxoTags] : 지갑에 생성된 UtxoTag 전체 목록
-/// [selectedUtxoTagNames] : select type only, 선택된 Utxo name 목록
+/// [TagBottomSheet] : Utxo Detail 화면에서 '태그 편집' 클릭 시 노출
+/// [utxoTags] : 지갑의 UtxoTag 전체 목록
+/// [selectedTagNames] : select type only, 선택된 Utxo name 목록
 /// [updateUtxoTag] : update type only, 선택된 태그를 수정하기 위한 UtxoTag 객체
-/// [onSelected] : utxo detail에서 선택 또는 생성된 태그 목록 변경 완료 콜백
-/// [onUpdated] : create type, update type 선택된 태그 편집 및 새 태그 생성 완료 콜백
+/// [onUpdate] : utxo detail에서 선택 또는 생성된 태그 목록 변경 완료 콜백
 class TagBottomSheet extends StatefulWidget {
-  final TagBottomSheetType type;
+  final int walletId;
   final List<UtxoTag> utxoTags;
-  final List<String>? selectedUtxoTagNames;
-  final UtxoTag? updateUtxoTag;
-  final Function(List<String>, List<UtxoTag>)? onSelected;
-  final Function(UtxoTag)? onUpdated;
+  final List<String>? selectedTagNames;
+  final Function(List<String>, List<UtxoTag>, UtxoTagEditMode)? onUpdate;
+
   const TagBottomSheet({
     super.key,
-    required this.type,
+    required this.walletId,
     required this.utxoTags,
-    this.selectedUtxoTagNames,
-    this.updateUtxoTag,
-    this.onSelected,
-    this.onUpdated,
+    this.selectedTagNames,
+    this.onUpdate,
   });
 
   @override
@@ -49,371 +35,388 @@ class TagBottomSheet extends StatefulWidget {
 }
 
 class _TagBottomSheetState extends State<TagBottomSheet> {
-  late final TextEditingController _controller;
-  late final FocusNode _focusNode;
+  late final UtxoTagCrudViewModel _viewModel;
 
   late List<UtxoTag> _utxoTags;
-  late List<UtxoTag> _createdUtxoTags;
-  late List<String> _prevSelectedUtxoTagNames;
+  late List<String> _prevSelectedTagNames;
+  late List<String> _tagNamesToDelete;
 
-  // 바텀 시트를 호출한 컨텍스트
-  // 1. select: utxo 상세 화면 utxo 태그 선택
-  // 2. create: utxo 관리 화면 태그 생성
-  // 3. update: utxo 관리 화면 태그 수정
-  late final TagBottomSheetType _callContext;
-  late TagBottomSheetType _bottomSheetViewType;
+  bool _isButtonActive = false;
+  bool _isDeletionMode = false;
 
-  bool _isNextButtonEnabled = false;
-  bool _isUpdateButtonEnabled = false;
+  // 삭제 가능한 태그들
+  List<UtxoTag> get _deletableTags {
+    return _utxoTags.where((tag) => tag.utxoIdList == null || tag.utxoIdList!.isEmpty).toList();
+  }
 
-  // 변경된 태그 이름과 색상
-  late String _updateTagName;
-  late int _updateTagColorIndex;
+  // 현재 보여줄 태그 목록
+  List<UtxoTag> get _displayedTags {
+    return _isDeletionMode ? _deletableTags : _utxoTags;
+  }
 
   @override
   void initState() {
     super.initState();
 
-    _controller = TextEditingController();
-    _focusNode = FocusNode();
-    _utxoTags = [];
-    _createdUtxoTags = [];
-    _prevSelectedUtxoTagNames = [];
-    _updateTagName = '';
-    _updateTagColorIndex = 0;
-
-    _callContext = widget.type;
-    _bottomSheetViewType = widget.type;
-
-    _utxoTags = List.from(widget.utxoTags);
-
-    if (widget.selectedUtxoTagNames != null) {
-      _prevSelectedUtxoTagNames = List.from(widget.selectedUtxoTagNames!);
-    }
-
-    if (widget.updateUtxoTag != null) {
-      _updateTagName = widget.updateUtxoTag!.name;
-      _updateTagColorIndex = widget.updateUtxoTag!.colorIndex;
-    }
-    _controller.text = _updateTagName;
-    _controller.selection = TextSelection.fromPosition(
-      TextPosition(offset: _controller.text.length),
+    _viewModel = UtxoTagCrudViewModel(
+      context.read<UtxoTagProvider>(),
+      widget.walletId,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(const Duration(milliseconds: 300));
-      _focusNode.requestFocus();
-    });
-  }
 
-  void _resetTagCreation() {
-    setState(() {
-      _bottomSheetViewType = TagBottomSheetType.attach;
-      _controller.text = '';
-      _updateTagName = '';
-      _updateTagColorIndex = 0;
-    });
+    _prevSelectedTagNames = [];
+    _tagNamesToDelete = [];
+
+    _utxoTags = List.from(_viewModel.utxoTagList);
+
+    if (widget.selectedTagNames != null) {
+      _prevSelectedTagNames = List.from(widget.selectedTagNames!);
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
+    _viewModel.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return CoconutBottomSheet(
-      useIntrinsicHeight: true,
-      appBar: CoconutAppBar.buildWithNext(
-          isBottom: true,
-          context: context,
-          onBackPressed: () {
-            if (_bottomSheetViewType == TagBottomSheetType.create) {
-              _resetTagCreation();
-              return;
-            }
-            Navigator.pop(context);
-          },
-          onNextPressed: _complete,
-          title: TagBottomSheetType.create == _bottomSheetViewType
-              ? t.tag_bottom_sheet.title_new_tag
-              : t.tag_bottom_sheet.title_edit_tag,
-          isActive: _bottomSheetViewType == TagBottomSheetType.create
-              ? _controller.text.runes.length <= 30 &&
-                  _updateTagName.isNotEmpty &&
-                  !_utxoTags.any((tag) => tag.name == _updateTagName) &&
-                  !_controller.text.endsWith(' ')
-              : _bottomSheetViewType == TagBottomSheetType.attach
-                  ? _isNextButtonEnabled
-                  : _isUpdateButtonEnabled,
-          nextButtonTitle: t.complete),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom, // 키보드 높이만큼 패딩
-            left: 16,
-            right: 16,
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 24),
-                _bottomSheetViewType == TagBottomSheetType.attach
-                    ? _buildTagSelectionView()
-                    : _buildTagCreationView(),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return ChangeNotifierProvider<UtxoTagCrudViewModel>.value(
+      value: _viewModel,
+      child: Consumer<UtxoTagCrudViewModel>(builder: (context, model, child) {
+        return CoconutBottomSheet(
+          useIntrinsicHeight: true,
+          appBar: CoconutAppBar.buildWithNext(
+              isBottom: true,
+              context: context,
+              onBackPressed: () {
+                Navigator.pop(context);
+              },
+              onNextPressed: () {
+                widget.onUpdate
+                    ?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.changAppliedTags);
+                Navigator.pop(context);
+              },
+              title: t.tag_bottom_sheet.title_edit_tag,
+              isActive: !_isDeletionMode && _isButtonActive,
+              nextButtonTitle: t.complete),
+          body: Consumer<UtxoTagCrudViewModel>(builder: (context, viewModel, child) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: _buildUpdateView(),
+                ),
+              ),
+            );
+          }),
+        );
+      }),
     );
   }
 
-  Widget _buildTagSelectionView() {
+  Widget _buildUpdateView() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Visibility(
-          visible: _utxoTags.isNotEmpty,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            constraints: const BoxConstraints(
-              minHeight: 30,
-              maxHeight: 296,
-            ),
+        _buildTagList(),
+        _buildTagAdditionMenu(),
+        _buildTagDeletionMenu(),
+      ],
+    );
+  }
+
+  void _toggleDeletionMode() {
+    setState(() {
+      _isDeletionMode = !_isDeletionMode;
+      if (!_isDeletionMode) {
+        _tagNamesToDelete.clear();
+      }
+    });
+  }
+
+  Widget _buildTagList() {
+    final tagsToShow = _displayedTags;
+
+    return Visibility(
+      visible: tagsToShow.isNotEmpty,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CoconutLayout.spacing_400h,
+          Container(
+            constraints: const BoxConstraints(minHeight: 30, maxHeight: 296),
             child: SingleChildScrollView(
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: List.generate(
-                  _utxoTags.length,
-                  (index) {
-                    bool isSelected = _prevSelectedUtxoTagNames.contains(_utxoTags[index].name);
-                    Color foregroundColor = tagColorPalette[_utxoTags[index]
-                        .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
-                    return IntrinsicWidth(
-                      child: CoconutChip(
-                        minWidth: 40,
-                        color:
-                            CoconutColors.backgroundColorPaletteDark[_utxoTags[index].colorIndex],
-                        hasOpacity: true,
-                        borderColor: foregroundColor,
-                        label: '#${_utxoTags[index].name}',
-                        labelSize: 12,
-                        labelColor: foregroundColor,
-                        isSelected: isSelected,
-                        onTap: () {
-                          final tag = _utxoTags[index].name;
-                          setState(() {
-                            if (_prevSelectedUtxoTagNames.contains(tag)) {
-                              _prevSelectedUtxoTagNames.remove(tag);
-                            } else {
-                              if (_prevSelectedUtxoTagNames.length == 5) {
-                                CoconutToast.showToast(
-                                  context: context,
-                                  isVisibleIcon: true,
-                                  text: t.tag_bottom_sheet.max_tag_count,
-                                  seconds: 2,
-                                );
-                                return;
-                              }
-                              _prevSelectedUtxoTagNames.add(tag);
-                            }
-                            _checkNextButtonEnabled();
-                          });
-                        },
-                      ),
-                    );
-                  },
-                ),
+                children: List.generate(tagsToShow.length, (index) {
+                  final tag = tagsToShow[index];
+                  final isSelected = _prevSelectedTagNames.contains(tag.name);
+
+                  return TagChip(
+                    tag: tag,
+                    isSelected: isSelected,
+                    isDeletionMode: _isDeletionMode,
+                    onTap: () => _handleTagChipTap(context, index, tagsToShow),
+                    onLongPress: () => _handleTagChipLongPress(context, tagsToShow[index]),
+                  );
+                }),
               ),
             ),
           ),
-        ),
-        // Create new tag button
-        CustomUnderlinedButton(
-          text: t.tag_bottom_sheet.add_new_tag,
-          fontSize: 14,
-          onTap: () {
-            setState(() {
-              _bottomSheetViewType = TagBottomSheetType.create;
-              _focusNode.requestFocus();
-            });
-          },
-        ),
-      ],
+          CoconutLayout.spacing_500h,
+          Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
+        ],
+      ),
     );
   }
 
-  Widget _buildTagCreationView() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
+  void _handleTagChipTap(BuildContext context, int index, List<UtxoTag> currentTagList) {
+    final tag = _utxoTags[index].name;
+
+    if (_isDeletionMode) {
+      _tagNamesToDelete.add(tag);
+      _prevSelectedTagNames.remove(tag);
+      _utxoTags.removeWhere((t) => t.id == currentTagList[index].id);
+      setState(() {});
+
+      _checkButtonEnabled();
+      _toggleDeletionMode();
+
+      // 삭제 시 바로 db에서 삭제
+      widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.delete);
+      return;
+    }
+
+    // 적용 태그 선택 변경되는 경우, 완료 버튼 누르면 업데이트
+    setState(() {
+      if (_prevSelectedTagNames.contains(tag)) {
+        _prevSelectedTagNames.remove(tag);
+      } else {
+        if (_prevSelectedTagNames.length == 5) {
+          CoconutToast.showToast(
+            context: context,
+            isVisibleIcon: true,
+            text: t.tag_bottom_sheet.max_tag_count,
+            seconds: 2,
+          );
+          return;
+        }
+        _prevSelectedTagNames.add(tag);
+      }
+
+      _checkButtonEnabled();
+    });
+  }
+
+  void _handleTagChipLongPress(BuildContext context, UtxoTag selectedUtxoTag) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TagEditBottomSheet(
+        walletId: widget.walletId,
+        existingTags: _utxoTags,
+        updateUtxoTag: selectedUtxoTag,
+        onTagCreated: (updatedTag) {
+          setState(() {
+            final originalIndex =
+                _utxoTags.indexWhere((utxoTag) => utxoTag.id == selectedUtxoTag.id);
+            if (originalIndex != -1) {
+              _utxoTags.removeAt(originalIndex);
+              _utxoTags.insert(originalIndex, updatedTag);
+            }
+
+            if (selectedUtxoTag.name != updatedTag.name) {
+              final selectedTagIndex = _prevSelectedTagNames.indexOf(selectedUtxoTag.name);
+              if (selectedTagIndex != -1) {
+                _prevSelectedTagNames[selectedTagIndex] = updatedTag.name;
+              }
+            }
+
+            widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.update);
+          });
+          _checkButtonEnabled();
+        },
+      ),
+    );
+  }
+
+  Widget _buildTagAdditionMenu() {
+    return Visibility(
+        visible: !_isDeletionMode || _utxoTags.isEmpty,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              child: CustomTagChipColorButton(
-                colorIndex: widget.updateUtxoTag?.colorIndex ?? 0,
-                isCreate: widget.updateUtxoTag == null,
-                onTap: (index) {
-                  _updateTagColorIndex = index;
-                  _checkUpdateButtonEnabled();
-                },
-              ),
+            _buildMenuItem(t.tag_bottom_sheet.add_new_tag, () {
+              _showTagAdditionBottomSheet();
+            }),
+          ],
+        ));
+  }
+
+  void _showTagAdditionBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TagEditBottomSheet(
+        walletId: widget.walletId,
+        existingTags: _utxoTags,
+        onTagCreated: (newTag) {
+          setState(() {
+            // 완료 버튼 클릭 시, 바로 db에 추가
+            _utxoTags.insert(0, newTag);
+            widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.add);
+            // 화면에 선택 상태로 보이기
+            _prevSelectedTagNames.add(newTag.name);
+          });
+          _checkButtonEnabled();
+        },
+      ),
+    );
+  }
+
+  Widget _buildTagDeletionMenu() {
+    return Visibility(
+      visible: _deletableTags.isNotEmpty,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Divider(
+            color: CoconutColors.white.withOpacity(0.12),
+            height: 1,
+          ),
+          _buildMenuItem(
+              _isDeletionMode ? t.tag_bottom_sheet.exit_deletion : t.tag_bottom_sheet.delete_tag,
+              () {
+            _toggleDeletionMode();
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(String title, VoidCallback onPress,
+      {EdgeInsets padding = const EdgeInsets.symmetric(vertical: Sizes.size20)}) {
+    return GestureDetector(
+      onTap: onPress,
+      child: Container(
+        color: Colors.transparent,
+        padding: padding,
+        child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+      ),
+    );
+  }
+
+  /// 완료 버튼 활성화 여부 업데이트 함수
+  void _checkButtonEnabled() {
+    // 선택이 변경되거나 태그 정보가 변경된 경우
+    final currentSelected = _prevSelectedTagNames; // 현재 선택된 태그
+    final prevSelected = widget.selectedTagNames ?? []; // 원래 선택되어 있던 태그
+
+    final currentSet = currentSelected.toSet();
+    final selectedSet = prevSelected.toSet();
+
+    final isUpdated = !currentSet.containsAll(selectedSet) || !selectedSet.containsAll(currentSet);
+
+    setState(() {
+      _isButtonActive = isUpdated;
+    });
+  }
+}
+
+class TagChip extends StatelessWidget {
+  final UtxoTag tag;
+  final bool isSelected;
+  final bool isDeletionMode;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const TagChip({
+    super.key,
+    required this.tag,
+    required this.isSelected,
+    required this.isDeletionMode,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foregroundColor = tagColorPalette[tag.colorIndex];
+    final backgroundColor = isDeletionMode
+        ? CoconutColors.gray800
+        : isSelected
+            ? CoconutColors.backgroundColorPaletteDark[tag.colorIndex]
+            : CoconutColors.gray800;
+
+    final borderColor = isDeletionMode
+        ? CoconutColors.gray600
+        : isSelected
+            ? foregroundColor
+            : CoconutColors.gray600;
+
+    final borderWidth = isDeletionMode
+        ? 0.5
+        : isSelected
+            ? 1.0
+            : 0.5;
+
+    final textColor = isDeletionMode
+        ? CoconutColors.gray300
+        : isSelected
+            ? foregroundColor
+            : CoconutColors.gray600;
+
+    final fontWeight = isDeletionMode || !isSelected ? FontWeight.normal : FontWeight.w600;
+
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor, width: borderWidth),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: isDeletionMode
+                  ? const Padding(
+                      padding: EdgeInsets.only(right: 4.0),
+                      child: Icon(Icons.close,
+                          key: ValueKey('delete'), size: 16, color: CoconutColors.white),
+                    )
+                  : isSelected
+                      ? Padding(
+                          padding: const EdgeInsets.only(right: 4.0),
+                          child: Icon(Icons.check,
+                              key: const ValueKey('check'), size: 16, color: foregroundColor),
+                        )
+                      : const SizedBox.shrink(key: ValueKey('empty')),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: CustomLimitTextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                prefix: const Padding(
-                  padding: EdgeInsets.only(left: 16),
-                  child: Text(
-                    "#",
-                    style: CoconutTypography.body3_12,
-                  ),
-                ),
-                onChanged: (text) => _onTextChanged(text),
-                onClear: () {
-                  setState(() {
-                    _controller.clear();
-                    _updateTagName = '';
-                  });
-                },
-              ),
+            // const SizedBox(width: 6),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: CoconutTypography.body3_12.copyWith(color: textColor, fontWeight: fontWeight),
+              child: Text('#${tag.name}'),
             ),
           ],
         ),
-      ],
+      ),
     );
-  }
-
-  void _onTextChanged(text) {
-    {
-      String updatedText = text;
-
-      if (Platform.isIOS) {
-        if (text.startsWith(' ')) {
-          updatedText = text.trimLeft();
-        }
-        if (text.contains('#')) {
-          updatedText = updatedText.replaceAll('#', '');
-        }
-      } else {
-        if (text.startsWith(' ')) {
-          updatedText = '';
-        } else if (text.contains('#')) {
-          updatedText = updatedText.replaceAll('#', '');
-        }
-      }
-
-      // 글자 수 제한
-      if (updatedText.runes.length > 30) {
-        updatedText = String.fromCharCodes(updatedText.runes.take(30));
-      }
-
-      if (updatedText.endsWith(' ')) {
-        updatedText = updatedText.trimRight();
-      }
-
-      // TextEditingController의 값을 안전하게 업데이트
-      if (_controller.text != updatedText) {
-        _controller.value = TextEditingValue(
-          text: updatedText,
-          selection: TextSelection.collapsed(offset: updatedText.length),
-        );
-      }
-
-      setState(() {
-        _updateTagName = updatedText;
-      });
-
-      if (_callContext == TagBottomSheetType.update) {
-        _checkUpdateButtonEnabled();
-      }
-    }
-  }
-
-  void _checkNextButtonEnabled() {
-    if (widget.utxoTags.length != _utxoTags.length) return;
-    final prevTags = widget.selectedUtxoTagNames ?? [];
-    setState(() {
-      _isNextButtonEnabled = _prevSelectedUtxoTagNames.length != prevTags.length ||
-          _prevSelectedUtxoTagNames.length == prevTags.length &&
-              !Set.from(prevTags).containsAll(_prevSelectedUtxoTagNames);
-    });
-  }
-
-  /// update type 에서 완료 버튼 활성화 여부 업데이트 함수
-  void _checkUpdateButtonEnabled() {
-    final prevTag = widget.updateUtxoTag?.name ?? '';
-    final prevColorIndex = widget.updateUtxoTag?.colorIndex ?? 0;
-    setState(() {
-      _isUpdateButtonEnabled = _controller.text.runes.length <= 30 &&
-              _updateTagName.isNotEmpty &&
-              !_controller.text.endsWith(' ') &&
-              _updateTagName != prevTag &&
-              !_utxoTags.any((tag) => tag.name == _updateTagName) ||
-          _updateTagName == prevTag && _updateTagColorIndex != prevColorIndex;
-    });
-  }
-
-  void _complete() {
-    switch (_callContext) {
-      case TagBottomSheetType.attach:
-        if (_bottomSheetViewType == TagBottomSheetType.create) {
-          _handleCreateTag();
-          _bottomSheetViewType = TagBottomSheetType.attach;
-          _isNextButtonEnabled = true;
-        } else if (_bottomSheetViewType == TagBottomSheetType.attach) {
-          widget.onSelected?.call(_prevSelectedUtxoTagNames, _createdUtxoTags);
-          Navigator.pop(context);
-        }
-        break;
-      case TagBottomSheetType.create:
-        _handleCreateTag();
-        widget.onUpdated?.call(_createdUtxoTags.first);
-        Navigator.pop(context);
-        break;
-      case TagBottomSheetType.update:
-        _handleUpdateTag();
-        break;
-      default:
-        break;
-    }
-  }
-
-  void _handleCreateTag() {
-    final createdUtxoTag = UtxoTag(
-      id: const Uuid().v4(),
-      walletId: 0,
-      name: _updateTagName,
-      colorIndex: _updateTagColorIndex,
-    );
-
-    setState(() {
-      _utxoTags.insert(0, createdUtxoTag);
-      _createdUtxoTags.add(createdUtxoTag);
-      if (_prevSelectedUtxoTagNames.length < 5) {
-        _prevSelectedUtxoTagNames.add(_updateTagName);
-      }
-    });
-  }
-
-  void _handleUpdateTag() {
-    if (widget.updateUtxoTag != null) {
-      final updateUtxoTag = widget.updateUtxoTag?.copyWith(
-        name: _updateTagName,
-        colorIndex: _updateTagColorIndex,
-      );
-      widget.onUpdated?.call(updateUtxoTag!);
-      Navigator.pop(context);
-    }
   }
 }

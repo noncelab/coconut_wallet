@@ -149,11 +149,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       backgroundColor: CoconutColors.black,
       isScrollControlled: true,
       builder: (context) => TagBottomSheet(
-        type: TagBottomSheetType.attach,
+        walletId: widget.id,
         utxoTags: tags,
-        selectedUtxoTagNames: selectedTags.map((e) => e.name).toList(),
-        onSelected: (selectedNames, addTags) {
-          viewModel.updateUtxoTags(widget.utxo.utxoId, selectedNames, addTags);
+        selectedTagNames: selectedTags.map((e) => e.name).toList(),
+        onUpdate: (selectedNames, updatedTagList, updateMode) {
+          viewModel.updateUtxoTags(widget.utxo.utxoId, selectedNames, updatedTagList, updateMode);
+          viewModel.refreshTagList(widget.id);
         },
       ),
     );

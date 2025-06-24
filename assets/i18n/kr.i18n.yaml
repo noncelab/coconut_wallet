@@ -384,9 +384,12 @@ security_self_check_bottom_sheet:
   check9: "위 사항을 주기적으로 점검하고, 안전하게 니모닉 문구를 보관하겠습니다."
   guidance: "아래 자가 점검 항목을 숙지하고 니모닉 문구를 반드시 안전하게 보관합니다."
 tag_bottom_sheet:
-  title_new_tag: "새 태그"
+  title_new_tag: "태그 추가"
   title_edit_tag: "태그 편집"
-  add_new_tag: "새 태그 만들기"
+  tag_list: "태그 목록"
+  add_new_tag: "태그 추가하기"
+  delete_tag: "태그 삭제하기"
+  exit_deletion: "태그 삭제 종료"
   max_tag_count: "태그는 최대 5개 지정할 수 있어요"
 glossary_bottom_sheet:
   ask_to_pow: "포우에 물어보기"

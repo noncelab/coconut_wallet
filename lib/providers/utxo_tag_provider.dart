@@ -141,4 +141,25 @@ class UtxoTagProvider extends ChangeNotifier {
     _isUpdatedTagList = true;
     notifyListeners();
   }
+
+  void updateUtxoTagIdList({
+    required int walletId,
+    required String utxoId,
+    required List<String> selectedTagNames,
+  }) {
+    final updateUtxoTagListResult =
+        _utxoRepository.updateUtxoTagList(walletId, utxoId, selectedTagNames);
+    if (updateUtxoTagListResult.isFailure) {
+      Logger.log('-----------------------------------------------------------');
+      Logger.log('updateUtxoTagIdList('
+          'walletId: $walletId,'
+          'txHashIndex: $utxoId,'
+          'selectedTagNames: $selectedTagNames,'
+          ')');
+      Logger.log(updateUtxoTagListResult.error);
+    }
+
+    _isUpdatedTagList = true;
+    notifyListeners();
+  }
 }

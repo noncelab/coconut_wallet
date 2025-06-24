@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
@@ -134,6 +133,7 @@ class UtxoListViewModel extends ChangeNotifier {
     }
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
     _isUtxoListLoadComplete = true;
+    notifyListeners();
   }
 
   void refetchFromDB() {
