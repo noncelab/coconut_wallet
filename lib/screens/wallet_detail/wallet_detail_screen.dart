@@ -479,7 +479,6 @@ class _TransactionListState extends State<TransactionList> {
   late List<TransactionRecord> _displayedTxList = [];
   final GlobalKey<SliverAnimatedListState> _txListKey = GlobalKey<SliverAnimatedListState>();
   final Duration _duration = const Duration(milliseconds: 1200);
-  bool _isListLoading = false;
 
   @override
   void initState() {
@@ -504,9 +503,6 @@ class _TransactionListState extends State<TransactionList> {
 
   Future<void> _handleTransactionListUpdate(List<TransactionRecord> txList) async {
     final isFirstLoad = _displayedTxList.isEmpty && txList.isNotEmpty;
-
-    if (_isListLoading) return;
-    _isListLoading = true;
 
     const Duration animationDuration = Duration(milliseconds: 100);
     final oldTxMap = {for (var tx in _displayedTxList) tx.transactionHash: tx};
@@ -548,8 +544,6 @@ class _TransactionListState extends State<TransactionList> {
       }
       _txListKey.currentState?.insertItem(index, duration: _duration);
     }
-
-    _isListLoading = false;
   }
 
   Widget _buildSliverAnimatedList(List<TransactionRecord> txList) {
