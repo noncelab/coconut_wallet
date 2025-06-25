@@ -35,4 +35,10 @@ class CoconutQrScanDataHandler implements IQrScanDataHandler {
 
   @override
   double get progress => isCompleted() ? 1.0 : 0.0;
+
+  @override
+  bool validateUrFormat(String data) {
+    // TODO: implement validateUrFormat
+    throw UnimplementedError();
+  }
 }
