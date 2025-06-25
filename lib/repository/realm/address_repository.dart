@@ -298,13 +298,21 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 주소가 이미 존재하는지 확인
-  bool containsAddress(int walletId, String address, {bool isChange = false}) {
-    final realmWalletAddress = realm.query<RealmWalletAddress>(
-      isChange
-          ? r'walletId == $0 AND address == $1 AND isChange == true'
-          : r'walletId == $0 AND address == $1',
-      [walletId, address],
-    );
+  bool containsAddress(int walletId, String address, {bool? isChange}) {
+    String query;
+    List<Object> parameters;
+
+    if (isChange == null) {
+      // isChange 여부와 상관없이 모든 주소에서 검색
+      query = r'walletId == $0 AND address == $1';
+      parameters = [walletId, address];
+    } else {
+      // isChange 값에 따라 조건부 검색
+      query = r'walletId == $0 AND address == $1 AND isChange == $2';
+      parameters = [walletId, address, isChange];
+    }
+
+    final realmWalletAddress = realm.query<RealmWalletAddress>(query, parameters);
     return realmWalletAddress.isNotEmpty;
   }
 
