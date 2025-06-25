@@ -10,7 +10,6 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart'
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
-import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -63,13 +62,13 @@ class TransactionRepository extends BaseRepository {
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
   Result<TransactionRecord> updateTransactionMemo(int walletId, String txHash, String memo) {
-    final realmMemo = realm
-        .find<RealmTransactionMemo>("walletId == '$walletId' AND transactionHash == '$txHash'");
-
+    final realmMemo = realm.find<RealmTransactionMemo>(getTransactionMemoId(txHash, walletId));
     return handleRealm<TransactionRecord>(() {
       // 메모 업데이트 또는 생성
       if (realmMemo == null) {
-        realm.add(generateRealmTransactionMemo(txHash, walletId, memo));
+        realm.write(() {
+          realm.add(generateRealmTransactionMemo(txHash, walletId, memo));
+        });
       } else {
         realm.write(() {
           realmMemo.memo = memo;
@@ -202,9 +201,8 @@ class TransactionRepository extends BaseRepository {
       return null;
     }
 
-    final realmTransactionMemo = realm.find<RealmTransactionMemo>(
-      generateHashInt([transactionHash, walletId]),
-    );
+    final realmTransactionMemo =
+        realm.find<RealmTransactionMemo>(getTransactionMemoId(transactionHash, walletId));
 
     if (realmTransaction.blockHeight == 0) {
       final realmRbfHistoryList = getRbfHistoryList(walletId, transactionHash);
