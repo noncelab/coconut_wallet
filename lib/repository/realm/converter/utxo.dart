@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 
 UtxoTag mapRealmUtxoTagToUtxoTag(RealmUtxoTag utxoTag) {
   return UtxoTag(
@@ -15,7 +15,7 @@ UtxoTag mapRealmUtxoTagToUtxoTag(RealmUtxoTag utxoTag) {
 
 RealmUtxo mapUtxoToRealmUtxo(int walletId, UtxoState utxo) {
   return RealmUtxo(
-    makeUtxoId(utxo.transactionHash, utxo.index),
+    getUtxoId(utxo.transactionHash, utxo.index),
     walletId,
     utxo.to,
     utxo.amount,

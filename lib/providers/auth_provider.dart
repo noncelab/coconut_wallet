@@ -30,7 +30,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isSetPin => _isSetPin;
 
   /// 인증 활성화 여부
-  bool get isAuthEnabled => isBiometricsAuthEnabled || _isSetPin;
+  bool get isAuthEnabled => _isSetPin;
 
   /// 생체인식 인증 활성화 여부
   bool get isBiometricsAuthEnabled => _canCheckBiometrics && _isSetBiometrics;
@@ -123,7 +123,7 @@ class AuthProvider extends ChangeNotifier {
 
   /// 비밀번호 검증
   Future<bool> verifyPin(String inputPin) async {
-    String hashedInput = hashString(inputPin);
+    String hashedInput = generateHashString(inputPin);
     final savedPin = await _secureStorageService.read(key: kSecureStoragePinKey);
     return savedPin == hashedInput;
   }

@@ -78,9 +78,9 @@ class RealmManager {
       realm.deleteAll<RealmScriptStatus>();
       realm.deleteAll<RealmBlockTimestamp>();
       realm.deleteAll<RealmIntegerId>();
-      realm.deleteAll<TempBroadcastTimeRecord>();
       realm.deleteAll<RealmRbfHistory>();
       realm.deleteAll<RealmCpfpHistory>();
+      realm.deleteAll<RealmTransactionMemo>();
     });
 
     _isInitialized = false;

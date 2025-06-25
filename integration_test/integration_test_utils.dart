@@ -98,7 +98,7 @@ Future<void> skipTutorial(bool skip) async {
 Future<void> savePinCode(String pinCode) async {
   final SecureStorageRepository storageService = SecureStorageRepository();
   final SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-  await storageService.write(key: kSecureStoragePinKey, value: hashString(pinCode));
+  await storageService.write(key: kSecureStoragePinKey, value: generateHashString(pinCode));
   await sharedPreferences.setBool(SharedPrefKeys.kIsSetPin, true);
 }
 

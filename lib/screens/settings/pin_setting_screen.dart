@@ -148,7 +148,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           await _authProvider.checkDeviceBiometrics();
         }
 
-        var hashedPin = hashString(pin);
+        var hashedPin = generateHashString(pin);
         if (!mounted) return;
         _authProvider.savePinSet(hashedPin).then((_) async {
           _showPinSetSuccessLottie();

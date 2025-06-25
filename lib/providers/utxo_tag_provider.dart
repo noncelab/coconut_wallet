@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
 
@@ -36,9 +36,8 @@ class UtxoTagProvider extends ChangeNotifier {
   // [utxo tag 승계 유무에 따라 Utxo 태그 적용]
   // broadcasting_view_model.dart / updateTagsOfUsedUtxos에서 호출
   Future applyTagsToNewUtxos(int walletId, String signedTx, List<int> outputIndexes) async {
-    List<String> newUtxoIds = _isTagsMoveAllowed
-        ? outputIndexes.map((index) => makeUtxoId(signedTx, index)).toList()
-        : [];
+    List<String> newUtxoIds =
+        _isTagsMoveAllowed ? outputIndexes.map((index) => getUtxoId(signedTx, index)).toList() : [];
 
     final result =
         await _utxoRepository.updateTagsOfSpentUtxos(walletId, _spentUtxoIds, newUtxoIds);

@@ -129,13 +129,6 @@ class NetworkService {
     try {
       final txHash = await _electrumService.broadcast(signedTx.serialize());
 
-      // 브로드캐스트 시간 기록
-      _transactionRepository
-          .recordTemporaryBroadcastTime(signedTx.transactionHash, DateTime.now())
-          .catchError((e) {
-        Logger.error(e);
-      });
-
       return Result.success(txHash);
     } catch (e) {
       return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));

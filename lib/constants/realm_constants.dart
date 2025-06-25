@@ -1,1 +1,1 @@
-const int kRealmVersion = 4;
+const int kRealmVersion = 5;

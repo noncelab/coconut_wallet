@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../mock/transaction_mock.dart';
@@ -54,7 +54,7 @@ void main() {
         );
 
         // Then
-        final utxoId = makeUtxoId(
+        final utxoId = getUtxoId(
           mockTx.inputs[0].transactionHash,
           mockTx.inputs[0].index,
         );
@@ -92,7 +92,7 @@ void main() {
         );
 
         // Then
-        final utxoId = makeUtxoId(
+        final utxoId = getUtxoId(
           mockTx.inputs[0].transactionHash,
           mockTx.inputs[0].index,
         );
@@ -132,7 +132,7 @@ void main() {
         );
 
         // Then
-        final utxoId = makeUtxoId(
+        final utxoId = getUtxoId(
           mockTx.inputs[0].transactionHash,
           mockTx.inputs[0].index,
         );

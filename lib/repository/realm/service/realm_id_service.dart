@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:realm/realm.dart';
 
 int getLastId(Realm realm, String key) {
@@ -20,4 +21,28 @@ void saveLastId(Realm realm, String key, int lastId) {
   realm.write(() {
     counter.value = lastId;
   });
+}
+
+int getTransactionMemoId(String transactionHash, int walletId) {
+  return generateHashInt([transactionHash, walletId]);
+}
+
+String getUtxoId(String transactionHash, int index) {
+  return '$transactionHash$index';
+}
+
+int getCpfpHistoryId(int walletId, String parentTransactionHash, String childTransactionHash) {
+  return generateHashInt([walletId, parentTransactionHash, childTransactionHash]);
+}
+
+int getRbfHistoryId(int walletId, String originalTransactionHash, String transactionHash) {
+  return generateHashInt([walletId, originalTransactionHash, transactionHash]);
+}
+
+int getRealmTransactionId(int walletId, String transactionHash) {
+  return generateHashInt([walletId, transactionHash]);
+}
+
+int getWalletAddressId(int walletId, int index, String address) {
+  return generateHashInt([walletId, index, address]);
 }

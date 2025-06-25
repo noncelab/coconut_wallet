@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+
 class RbfHistory {
   final int _id;
   final int walletId;
@@ -14,9 +16,5 @@ class RbfHistory {
     required this.transactionHash,
     required this.feeRate,
     required this.timestamp,
-  }) : _id = Object.hash(
-          walletId,
-          originalTransactionHash,
-          transactionHash,
-        );
+  }) : _id = getRbfHistoryId(walletId, originalTransactionHash, transactionHash);
 }

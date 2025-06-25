@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 class AddressRepository extends BaseRepository {
@@ -199,7 +200,10 @@ class AddressRepository extends BaseRepository {
 
     for (final address in addresses) {
       final addressId = getWalletAddressId(
-          walletId: realmWalletBase.id, index: address.index, address: address.address);
+        realmWalletBase.id,
+        address.index,
+        address.address,
+      );
 
       // 이미 존재하는 주소는 건너뛰기
       if (existingIds.contains(addressId)) {
