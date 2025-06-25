@@ -8,7 +8,6 @@ final realmAllSchemas = [
   RealmExternalWallet.schema,
   RealmTransaction.schema,
   RealmIntegerId.schema,
-  TempBroadcastTimeRecord.schema,
   RealmUtxoTag.schema,
   RealmWalletAddress.schema,
   RealmWalletBalance.schema,
@@ -17,6 +16,7 @@ final realmAllSchemas = [
   RealmUtxo.schema,
   RealmRbfHistory.schema,
   RealmCpfpHistory.schema,
+  RealmTransactionMemo.schema,
 ];
 
 @RealmModel()
@@ -64,7 +64,6 @@ class _RealmTransaction {
   late DateTime timestamp;
   late int blockHeight;
   late String transactionType;
-  String? memo;
   late int amount;
   late int fee;
   late double vSize;
@@ -75,17 +74,22 @@ class _RealmTransaction {
 }
 
 @RealmModel()
+class _RealmTransactionMemo {
+  @PrimaryKey()
+  late int id;
+  @Indexed()
+  late String transactionHash;
+  @Indexed()
+  late int walletId;
+  late String memo;
+  late DateTime createdAt;
+}
+
+@RealmModel()
 class _RealmIntegerId {
   @PrimaryKey()
   late String key; // "RealmTransaction"처럼 테이블 이름
   late int value; // 마지막으로 사용한 id
-}
-
-@RealmModel()
-class _TempBroadcastTimeRecord {
-  @PrimaryKey()
-  late String transactionHash;
-  late DateTime createdAt;
 }
 
 @RealmModel()

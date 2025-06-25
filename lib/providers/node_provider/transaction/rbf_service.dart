@@ -2,11 +2,11 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 
 typedef RbfInfo = ({
   String originalTransactionHash, // RBF 체인의 최초 트랜잭션
@@ -54,7 +54,7 @@ class RbfService {
   /// 트랜잭션의 입력들을 검사하여 RBF 조건에 해당하는 입력이 있는지 확인
   Future<UtxoState?> findRbfCandidate(int walletId, Transaction tx) async {
     for (final input in tx.inputs) {
-      final utxoId = makeUtxoId(input.transactionHash, input.index);
+      final utxoId = getUtxoId(input.transactionHash, input.index);
       final utxo = _utxoRepository.getUtxoState(walletId, utxoId);
       if (utxo == null) continue;
 

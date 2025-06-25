@@ -398,29 +398,6 @@ void main() {
     });
   });
 
-  group('임시 브로드캐스트 시간 기록 테스트', () {
-    test('임시 브로드캐스트 시간을 기록하고 조회할 수 있어야 함', () async {
-      // 테스트용 트랜잭션 해시와 시간
-      const txHash = 'broadcast_tx_hash';
-      final broadcastTime = DateTime.now();
-
-      // 임시 브로드캐스트 시간 기록
-      await transactionRepository.recordTemporaryBroadcastTime(txHash, broadcastTime);
-
-      // 기록된 데이터 조회
-      final tempRecords = realmManager.realm.all<TempBroadcastTimeRecord>();
-      final recordedItem = tempRecords.firstWhere((r) => r.transactionHash == txHash);
-
-      // 검증
-      expect(tempRecords, isNotEmpty);
-      expect(recordedItem.transactionHash, txHash);
-
-      // DateTime 비교는 정밀도 차이 때문에 근사값으로 비교
-      final timeDiff = recordedItem.createdAt.difference(broadcastTime).inMilliseconds.abs();
-      expect(timeDiff < 1000, true); // 1초 이내 차이는 허용
-    });
-  });
-
   group('RBF 대체 표시 테스트', () {
     test('markAsRbfReplaced 함수가 트랜잭션에 대체 정보를 올바르게 설정해야 함', () async {
       // 테스트용 트랜잭션 생성 및 추가

@@ -13,10 +13,10 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/utxo_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -685,7 +685,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     List<Utxo> utxoList = [];
     for (var input in inputList) {
       var utxo =
-          _utxoRepository.getUtxoState(_walletId, makeUtxoId(input.transactionHash, input.index));
+          _utxoRepository.getUtxoState(_walletId, getUtxoId(input.transactionHash, input.index));
       if (utxo != null) {
         utxoList.add(Utxo(utxo.transactionHash, utxo.index, utxo.amount, utxo.derivationPath));
       }

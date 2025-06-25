@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:convert/convert.dart';
+import 'package:crypto/crypto.dart';
 
 /// 스크립트 및 주소 관련 유틸리티 클래스
 class ElectrumUtil {
@@ -36,13 +36,10 @@ class ElectrumUtil {
     throw 'Unsupported address type: $addressType';
   }
 
-  static String scriptToReversedHash(String script) {
-    String scriptHash = hexHashString(script);
-    return hex.encode(hex.decode(scriptHash).reversed.toList());
-  }
-
   static String addressToReversedScriptHash(AddressType addressType, String address) {
     String script = getScriptForAddress(addressType, address);
-    return scriptToReversedHash(script);
+    final bytes = hex.decode(script);
+    final digest = sha256.convert(bytes);
+    return hex.encode(digest.bytes.reversed.toList());
   }
 }

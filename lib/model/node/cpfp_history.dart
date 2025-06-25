@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+
 class CpfpHistory {
   final int _id;
   final int walletId;
@@ -16,9 +18,5 @@ class CpfpHistory {
     required this.originalFee,
     required this.newFee,
     required this.timestamp,
-  }) : _id = Object.hash(
-          walletId,
-          parentTransactionHash,
-          childTransactionHash,
-        );
+  }) : _id = getCpfpHistoryId(walletId, parentTransactionHash, childTransactionHash);
 }
