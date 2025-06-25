@@ -86,4 +86,10 @@ class TransactionProvider extends ChangeNotifier {
     _transaction = null;
     _txList.clear();
   }
+
+  Future<void> updateTransaction(int walletId, String txHash, TransactionRecord updatedTx) async {
+    _transaction = updatedTx;
+
+    await _transactionRepository.updateTransactionRecord(walletId, txHash, updatedTx);
+  }
 }

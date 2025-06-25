@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
@@ -311,5 +312,22 @@ class TransactionDetailViewModel extends ChangeNotifier {
         status == TransactionStatus.selfsending ||
         status == TransactionStatus.self ||
         status == TransactionStatus.sent;
+  }
+
+  Future<void> onRefresh() async {
+    Logger.log('Transaction Detail Force Refresh: $_txHash');
+    final walletItem = _walletProvider.getWalletById(_walletId);
+    final updatedTxResult = await _nodeProvider.getTransactionRecord(walletItem, _txHash);
+
+    if (updatedTxResult.isSuccess) {
+      final updatedTx = updatedTxResult.value;
+
+      _transactionList = [updatedTx];
+
+      _txProvider.updateTransaction(_walletId, _txHash, updatedTx);
+      safeNotifyListeners();
+    } else {
+      Logger.log('❌ updatedTxResult IS FAILED: ${updatedTxResult.error}');
+    }
   }
 }

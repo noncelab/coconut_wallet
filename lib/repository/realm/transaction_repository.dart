@@ -406,4 +406,20 @@ class TransactionRepository extends BaseRepository {
 
     return Result.failure(ErrorCodes.realmNotFound);
   }
+
+  Future<void> updateTransactionRecord(
+      int walletId, String txHash, TransactionRecord updatedTx) async {
+    final realmTransaction = realm.find<RealmTransaction>(getRealmTransactionId(walletId, txHash));
+
+    if (realmTransaction == null) {
+      return;
+    }
+
+    await realm.writeAsync(() {
+      realm.delete(realmTransaction);
+      realm.add(mapTransactionToRealmTransaction(
+          updatedTx, walletId, getRealmTransactionId(walletId, txHash)));
+      Logger.log('[TransactionRepository] updateTransactionRecord: $txHash');
+    });
+  }
 }

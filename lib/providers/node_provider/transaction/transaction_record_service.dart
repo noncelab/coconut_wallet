@@ -116,6 +116,7 @@ class TransactionRecordService {
       final outputAddressString = output.scriptPubKey.getAddress();
 
       if (outputAddressString.startsWith('Script')) {
+        // TODO: 빈 문자열로 대신 처리
         continue;
       }
 
