@@ -51,10 +51,12 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         body: Stack(children: [
           // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
           CoconutQrScanner(
-              setQrViewController: _setQRViewController,
-              onComplete: _onCompletedScanningForBcUr,
-              onFailed: _onFailedScanning,
-              qrDataHandler: BcUrQrScanDataHandler()),
+            setQrViewController: _setQRViewController,
+            onComplete: _onCompletedScanningForBcUr,
+            onFailed: _onFailedScanning,
+            qrDataHandler: BcUrQrScanDataHandler(),
+            validateUrFormat: true,
+          ),
           Padding(
               padding: const EdgeInsets.only(
                   top: 20, left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),

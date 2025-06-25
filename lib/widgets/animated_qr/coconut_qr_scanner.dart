@@ -96,9 +96,11 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
           return;
         }
 
-        setState(() {
-          _showLoadingBar = true;
-        });
+        if (!_showLoadingBar) {
+          setState(() {
+            _showLoadingBar = true;
+          });
+        }
 
         if (handler.isCompleted()) {
           setState(() {
