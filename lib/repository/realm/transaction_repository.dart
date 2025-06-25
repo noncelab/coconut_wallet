@@ -17,7 +17,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 class TransactionRepository extends BaseRepository {
   TransactionRepository(super._realmManager);
 
-  /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함, memo 미포함
+  /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함
   List<TransactionRecord> getTransactionRecordList(int walletId) {
     final transactions = realm.query<RealmTransaction>(
         'walletId == $walletId AND replaceByTransactionHash == null SORT(timestamp DESC)');
@@ -28,11 +28,17 @@ class TransactionRepository extends BaseRepository {
     final unconfirmed = transactions.query('blockHeight = 0 SORT(createdAt DESC)');
     final confirmed = transactions.query('blockHeight != 0 SORT(timestamp DESC, createdAt DESC)');
 
+    // 트랜잭션 해시와 메모에 대한 매핑을 생성
+    final transactionMemos = realm.query<RealmTransactionMemo>('walletId == $walletId');
+    final transactionMemoMap = {
+      for (var txMemo in transactionMemos) txMemo.transactionHash: txMemo.memo
+    };
+
     for (var t in unconfirmed) {
-      result.add(mapRealmTransactionToTransaction(t));
+      result.add(mapRealmTransactionToTransaction(t, memo: transactionMemoMap[t.transactionHash]));
     }
     for (var t in confirmed) {
-      result.add(mapRealmTransactionToTransaction(t));
+      result.add(mapRealmTransactionToTransaction(t, memo: transactionMemoMap[t.transactionHash]));
     }
 
     return result;
