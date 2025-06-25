@@ -32,4 +32,7 @@ class CoconutQrScanDataHandler implements IQrScanDataHandler {
 
   @override
   dynamic get result => _result;
+
+  @override
+  double get progress => isCompleted() ? 1.0 : 0.0;
 }

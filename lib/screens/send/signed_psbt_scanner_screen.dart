@@ -9,7 +9,6 @@ import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_vie
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/print_util.dart';
-import 'package:coconut_wallet/widgets/animated_qr/animated_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -50,21 +49,12 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           backgroundColor: CoconutColors.black.withOpacity(0.95),
         ),
         body: Stack(children: [
-          /// TODO: CoconutVault도 BC_UR 타입으로 변경 후 AnimatedQrScanner를 CoconutQrScanner로 대체할 수 있습니다.
-          /// CoconutQrScanner가 AnimatedQrScanner로 renaming 되는 형태
-          if (_viewModel.walletImportSource == WalletImportSource.coconutVault) ...[
-            AnimatedQrScanner(
+          // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
+          CoconutQrScanner(
               setQrViewController: _setQRViewController,
-              onComplete: _onCompletedScanningForCoconut,
+              onComplete: _onCompletedScanningForBcUr,
               onFailed: _onFailedScanning,
-            )
-          ] else ...[
-            CoconutQrScanner(
-                setQrViewController: _setQRViewController,
-                onComplete: _onCompletedScanningForBcUr,
-                onFailed: _onFailedScanning,
-                qrDataHandler: BcUrQrScanDataHandler())
-          ],
+              qrDataHandler: BcUrQrScanDataHandler()),
           Padding(
               padding: const EdgeInsets.only(
                   top: 20, left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),
@@ -96,49 +86,6 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     super.initState();
     _viewModel = SignedPsbtScannerViewModel(Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false));
-  }
-
-  /// TODO: CoconutVault도 BC_UR 타입으로 변경 후 AnimatedQrScanner가 제거되면 아래 함수가 제거될 예정입니다.
-  /// 중복 코드 양해바랍니다.
-  Future<void> _onCompletedScanningForCoconut(String signedPsbt) async {
-    if (_isProcessing) return;
-    _isProcessing = true;
-
-    Psbt psbt;
-    try {
-      psbt = _viewModel.parseBase64EncodedToPsbt(signedPsbt);
-      printLongString('--> coconut psbt: ${psbt.serialize()}');
-    } catch (e) {
-      await _showErrorDialog(t.alert.signed_psbt.invalid_qr);
-      return;
-    }
-
-    try {
-      if (!_viewModel.isSignedPsbtMatchingUnsignedPsbt(psbt)) {
-        await _showErrorDialog(t.alert.signed_psbt.wrong_send_info);
-        return;
-      }
-
-      if (_viewModel.isMultisig) {
-        int missingCount = _viewModel.getMissingSignaturesCount(psbt);
-        if (missingCount > 0) {
-          await _showErrorDialog(t.alert.signed_psbt.need_more_sign(count: missingCount));
-          controller?.pauseCamera();
-          await _stopCamera();
-          return;
-        }
-      }
-
-      _viewModel.setSignedPsbt(signedPsbt);
-
-      controller?.pauseCamera();
-      await _stopCamera();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting');
-      }
-    } catch (e) {
-      await _showErrorDialog(t.alert.scan_failed_description(error: e));
-    }
   }
 
   Future<void> _onCompletedScanningForBcUr(dynamic signedPsbt) async {
