@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
@@ -24,10 +26,51 @@ class CoconutQrScanner extends StatefulWidget {
   State<CoconutQrScanner> createState() => _CoconutQrScannerState();
 }
 
-class _CoconutQrScannerState extends State<CoconutQrScanner> {
+class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerProviderStateMixin {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final double _borderWidth = 8;
-  double? _progress;
+  double scannerLoadingVerticalPos = 0;
+
+  late AnimationController _loadingBarController;
+  late Animation<double> _animation;
+
+  Timer? _scanTimeoutTimer;
+  bool _showLoadingBar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadingBarController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: -1.0, end: 1.0).animate(CurvedAnimation(
+      parent: _loadingBarController,
+      curve: Curves.easeInOut,
+    ));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final rect = getQrViewRect();
+      if (rect != null) {
+        setState(() {
+          scannerLoadingVerticalPos =
+              ((MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
+                      ? 320.0
+                      : MediaQuery.of(context).size.width * 0.85) +
+                  30;
+        });
+      } else {
+        Logger.log('QRView position not available yet');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scanTimeoutTimer?.cancel();
+    _loadingBarController.dispose();
+    super.dispose();
+  }
 
   void _onQrViewCreated(QRViewController controller) {
     widget.setQrViewController(controller);
@@ -35,29 +78,52 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
     controller.scannedDataStream.listen((scanData) async {
       if (scanData.code == null) return;
 
+      _scanTimeoutTimer?.cancel();
+      _scanTimeoutTimer = Timer(const Duration(seconds: 1), () {
+        setState(() {
+          _showLoadingBar = false;
+        });
+      });
       try {
         if (!handler.isCompleted() && !handler.joinData(scanData.code!)) {
-          widget.onFailed('Invalid QR code');
+          if (!scanData.code!.startsWith('ur')) {
+            widget.onFailed('Invalid QR code');
+          }
           handler.reset();
+          setState(() {
+            _showLoadingBar = false;
+          });
           return;
         }
 
         setState(() {
-          _progress = handler.progress;
+          _showLoadingBar = true;
         });
 
         if (handler.isCompleted()) {
+          setState(() {
+            _showLoadingBar = false;
+          });
           widget.onComplete(handler.result!);
           handler.reset();
+          _scanTimeoutTimer?.cancel();
         }
       } catch (e) {
         Logger.log(e.toString());
+        setState(() {
+          _showLoadingBar = false;
+        });
         widget.onFailed(e.toString());
         handler.reset();
+        _scanTimeoutTimer?.cancel();
       }
     }, onError: (e) {
+      setState(() {
+        _showLoadingBar = false;
+      });
       widget.onFailed(e.toString());
       handler.reset();
+      _scanTimeoutTimer?.cancel();
     });
   }
 
@@ -89,18 +155,41 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
               overlay: _getOverlayShape(),
             ),
             Positioned(
-              bottom: (MediaQuery.of(context).size.width < 400 ||
-                      MediaQuery.of(context).size.height < 400)
-                  ? (constraints.maxHeight - 320.0) / 2 - _borderWidth - 20
-                  : (constraints.maxHeight - MediaQuery.of(context).size.width * 0.85) / 2 -
-                      _borderWidth -
-                      20, // QRView 아래에 배치되도록 위치 설정
+              top: scannerLoadingVerticalPos,
               left: 0,
               right: 0,
-              child: Center(
-                child: Text(
-                  _progress != null ? "${(_progress! * 100).toStringAsFixed(0)} %" : '',
-                  style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+              bottom: 0,
+              child: Visibility(
+                visible: _showLoadingBar,
+                child: Center(
+                  child: Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    height: 4,
+                    margin: const EdgeInsets.symmetric(horizontal: 100),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: _showLoadingBar
+                        ? AnimatedBuilder(
+                            animation: _animation,
+                            builder: (context, child) {
+                              return Align(
+                                alignment: Alignment(_animation.value, 0),
+                                child: child,
+                              );
+                            },
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                 ),
               ),
             )
@@ -108,5 +197,15 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> {
         );
       },
     );
+  }
+
+  Rect? getQrViewRect() {
+    final renderObject = qrKey.currentContext?.findRenderObject();
+    if (renderObject is RenderBox && renderObject.hasSize) {
+      final position = renderObject.localToGlobal(Offset.zero);
+      final size = renderObject.size;
+      return position & size;
+    }
+    return null;
   }
 }
