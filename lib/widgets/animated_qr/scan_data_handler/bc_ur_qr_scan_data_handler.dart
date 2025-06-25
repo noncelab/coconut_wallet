@@ -10,6 +10,9 @@ class BcUrQrScanDataHandler implements IQrScanDataHandler {
   dynamic get result => _urDecoder.result;
 
   @override
+  double get progress => _urDecoder.estimatedPercentComplete();
+
+  @override
   bool isCompleted() {
     Logger.log('--> BcUrQrScanDataHandler isCompleted: ${_urDecoder.isComplete()}');
     return _urDecoder.isComplete();
@@ -19,6 +22,14 @@ class BcUrQrScanDataHandler implements IQrScanDataHandler {
   bool joinData(String data) {
     Logger.log('--> joinData: $data');
     return _urDecoder.receivePart(data);
+  }
+
+  @override
+  bool validateFormat(String data) {
+    var lowered = data.toLowerCase();
+
+    // Validate URI scheme
+    return lowered.startsWith('ur:');
   }
 
   @override

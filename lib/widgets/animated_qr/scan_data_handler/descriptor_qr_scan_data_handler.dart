@@ -29,4 +29,17 @@ class DescriptorQrScanDataHandler implements IQrScanDataHandler {
 
   @override
   dynamic get result => _result;
+
+  @override
+  double get progress => isCompleted() ? 1.0 : 0.0;
+
+  @override
+  bool validateFormat(String data) {
+    try {
+      DescriptorUtil.normalizeDescriptor(data);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }
