@@ -203,7 +203,7 @@ class TransactionRepository extends BaseRepository {
     }
 
     final realmTransactionMemo = realm.find<RealmTransactionMemo>(
-      hashToInt([transactionHash, walletId]),
+      generateHashInt([transactionHash, walletId]),
     );
 
     if (realmTransaction.blockHeight == 0) {

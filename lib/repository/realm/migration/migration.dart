@@ -140,7 +140,7 @@ void addRealmTransactionMemo(Migration migration) {
       Logger.log('memo: $memoString - $transactionHash - $walletId');
 
       memos.add(RealmTransactionMemo(
-        hashToInt([transactionHash, walletId]),
+        generateHashInt([transactionHash, walletId]),
         transactionHash,
         walletId,
         memoString,

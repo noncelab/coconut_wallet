@@ -150,7 +150,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           await _authProvider.checkDeviceBiometrics();
         }
 
-        var hashedPin = hashString(pin);
+        var hashedPin = generateHashString(pin);
         if (!mounted) return;
         await Provider.of<WalletProvider>(context, listen: false)
             .encryptWalletSecureData(hashedPin)

@@ -1,21 +1,14 @@
 import 'dart:convert';
-import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
 
-String hashString(String input) {
+String generateHashString(String input) {
   final bytes = utf8.encode(input);
   final digest = sha256.convert(bytes);
   return digest.toString();
 }
 
-String hexHashString(String input) {
-  final bytes = hex.decode(input);
-  final digest = sha256.convert(bytes);
-  return hex.encode(digest.bytes);
-}
-
 /// 여러 개의 파라미터(int, String)를 조합하여 안정적인 integer ID를 생성합니다.
-int hashToInt(List<dynamic> params) {
+int generateHashInt(List<dynamic> params) {
   final buffer = StringBuffer();
   bool hasValidParam = false;
 

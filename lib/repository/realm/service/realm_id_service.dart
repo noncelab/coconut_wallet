@@ -24,7 +24,7 @@ void saveLastId(Realm realm, String key, int lastId) {
 }
 
 int getTransactionMemoId(String transactionHash, int walletId) {
-  return hashToInt([transactionHash, walletId]);
+  return generateHashInt([transactionHash, walletId]);
 }
 
 String getUtxoId(String transactionHash, int index) {
@@ -32,17 +32,17 @@ String getUtxoId(String transactionHash, int index) {
 }
 
 int getCpfpHistoryId(int walletId, String parentTransactionHash, String childTransactionHash) {
-  return hashToInt([walletId, parentTransactionHash, childTransactionHash]);
+  return generateHashInt([walletId, parentTransactionHash, childTransactionHash]);
 }
 
 int getRbfHistoryId(int walletId, String originalTransactionHash, String transactionHash) {
-  return hashToInt([walletId, originalTransactionHash, transactionHash]);
+  return generateHashInt([walletId, originalTransactionHash, transactionHash]);
 }
 
 int getRealmTransactionId(int walletId, String transactionHash) {
-  return hashToInt([walletId, transactionHash]);
+  return generateHashInt([walletId, transactionHash]);
 }
 
 int getWalletAddressId(int walletId, int index, String address) {
-  return hashToInt([walletId, index, address]);
+  return generateHashInt([walletId, index, address]);
 }

@@ -111,7 +111,7 @@ class AuthProvider extends ChangeNotifier {
 
   /// 비밀번호 검증
   Future<bool> verifyPin(String inputPin) async {
-    String hashedInput = hashString(inputPin);
+    String hashedInput = generateHashString(inputPin);
     final savedPin = await _secureStorageService.read(key: kSecureStoragePinKey);
     return savedPin == hashedInput;
   }
