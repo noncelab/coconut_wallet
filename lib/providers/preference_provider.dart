@@ -10,6 +10,10 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _isBalanceHidden;
   bool get isBalanceHidden => _isBalanceHidden;
 
+  /// 가짜 진엑 총량
+  late double? _fakeBalanceTotalAmount;
+  double? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
+
   late bool _isBtcUnit;
   bool get isBtcUnit => _isBtcUnit;
   BitcoinUnit get currentUnit => _isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats;
@@ -19,6 +23,7 @@ class PreferenceProvider extends ChangeNotifier {
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
 
   PreferenceProvider() {
+    _fakeBalanceTotalAmount = _sharedPrefs.getDouble(SharedPrefKeys.kFakeBalanceTotal);
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
     _isBtcUnit = _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
@@ -44,6 +49,18 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeShowOnlyUnusedAddresses(bool show) async {
     _showOnlyUnusedAddresses = show;
     await _sharedPrefs.setBool(SharedPrefKeys.kShowOnlyUnusedAddresses, show);
+    notifyListeners();
+  }
+
+  /// 가짜 잔액 총량 수정
+  Future<void> setFakeBalanceTotalAmount(double balance) async {
+    await _sharedPrefs.setDouble(SharedPrefKeys.kFakeBalanceTotal, balance);
+    notifyListeners();
+  }
+
+  /// 가짜 잔액 총량 초기화
+  Future<void> clearFakeBalanceTotalAmount() async {
+    await _sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kFakeBalanceTotal);
     notifyListeners();
   }
 }
