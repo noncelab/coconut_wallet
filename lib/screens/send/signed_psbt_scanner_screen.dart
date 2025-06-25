@@ -55,7 +55,6 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             onComplete: _onCompletedScanningForBcUr,
             onFailed: _onFailedScanning,
             qrDataHandler: BcUrQrScanDataHandler(),
-            validateUrFormat: true,
           ),
           Padding(
               padding: const EdgeInsets.only(

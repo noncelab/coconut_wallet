@@ -34,10 +34,12 @@ class DescriptorQrScanDataHandler implements IQrScanDataHandler {
   double get progress => isCompleted() ? 1.0 : 0.0;
 
   @override
-  bool validateUrFormat(String data) {
-    var lowered = data.toLowerCase();
-
-    // Validate URI scheme
-    return lowered.startsWith('ur:');
+  bool validateFormat(String data) {
+    try {
+      DescriptorUtil.normalizeDescriptor(data);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }
