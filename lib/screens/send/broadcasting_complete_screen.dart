@@ -47,19 +47,17 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                         t.broadcasting_complete_screen.complete,
                         style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
                       ),
-                      // #300
-                      // CoconutLayout.spacing_400h,
-                      // _buildMemoInputField(),
-                      // if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
-                      //   _buildMemoReadOnlyText(),
+                      CoconutLayout.spacing_400h,
+                      _buildMemoInputField(),
+                      if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
+                        _buildMemoReadOnlyText(),
                     ],
                   ),
                 ),
-                // #300
-                // if (_memoFocusNode.hasFocus)
-                //   Positioned(
-                //       bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
-                //       child: _buildMemoTags()),
+                if (_memoFocusNode.hasFocus)
+                  Positioned(
+                      bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
+                      child: _buildMemoTags()),
                 Positioned(
                   bottom: Sizes.size24,
                   left: Sizes.size16,
@@ -103,10 +101,11 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
 
   void onTapConfirmButton(BuildContext context) {
     // 메모가 있는 경우 업데이트 시도
-    if (_memoController.text.isNotEmpty &&
+    final memo = _memoController.text.trim();
+    if (memo.isNotEmpty &&
         !context
             .read<TransactionProvider>()
-            .updateTransactionMemo(widget.id, widget.txHash, _memoController.text)) {
+            .updateTransactionMemo(widget.id, widget.txHash, memo)) {
       CoconutToast.showWarningToast(
         context: context,
         text: t.toast.memo_update_failed,
