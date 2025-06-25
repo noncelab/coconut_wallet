@@ -86,7 +86,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       });
       try {
         if (!handler.isCompleted() && !handler.joinData(scanData.code!)) {
-          if (!handler.validateUrFormat(scanData.code!)) {
+          if (!handler.validateFormat(scanData.code!)) {
             widget.onFailed('Invalid QR code');
           } // 이어서 다른 Density의 QR(ur 포맷)을 스캔할 때는 alert를 띄우지 않습니다.
           handler.reset();

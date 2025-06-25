@@ -7,7 +7,7 @@ abstract class IQrScanDataHandler {
 
   bool joinData(String data);
 
-  bool validateUrFormat(String data);
+  bool validateFormat(String data);
 
   void reset();
 }
