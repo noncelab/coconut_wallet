@@ -12,6 +12,7 @@ class CoconutQrScanner extends StatefulWidget {
   final Function(String) onFailed;
   final Color borderColor;
   final IQrScanDataHandler qrDataHandler;
+  final bool validateUrFormat;
 
   const CoconutQrScanner({
     super.key,
@@ -20,6 +21,7 @@ class CoconutQrScanner extends StatefulWidget {
     required this.onFailed,
     required this.qrDataHandler,
     this.borderColor = CoconutColors.white,
+    this.validateUrFormat = false,
   });
 
   @override
@@ -86,7 +88,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       });
       try {
         if (!handler.isCompleted() && !handler.joinData(scanData.code!)) {
-          if (!handler.validateUrFormat(scanData.code!)) {
+          if (!widget.validateUrFormat || !handler.validateUrFormat(scanData.code!)) {
             widget.onFailed('Invalid QR code');
           } // 이어서 다른 Density의 QR(ur 포맷)을 스캔할 때는 alert를 띄우지 않습니다.
           handler.reset();
@@ -96,9 +98,11 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
           return;
         }
 
-        setState(() {
-          _showLoadingBar = true;
-        });
+        if (!_showLoadingBar) {
+          setState(() {
+            _showLoadingBar = true;
+          });
+        }
 
         if (handler.isCompleted()) {
           setState(() {
