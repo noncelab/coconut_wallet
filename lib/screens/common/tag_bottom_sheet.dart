@@ -186,8 +186,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
       setState(() {});
 
       _checkButtonEnabled();
-      _toggleDeletionMode();
-
       // 삭제 시 바로 db에서 삭제
       widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.delete);
       return;
