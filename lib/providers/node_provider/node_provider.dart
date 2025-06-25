@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
@@ -304,6 +305,11 @@ class NodeProvider extends ChangeNotifier {
 
   Future<Result<SocketConnectionStatus>> getSocketConnectionStatus() async {
     return _isolateManager.getSocketConnectionStatus();
+  }
+
+  Future<Result<TransactionRecord>> getTransactionRecord(
+      int walletId, String addressTypeString, String txHash) async {
+    return _isolateManager.getTransactionRecord(walletId, addressTypeString, txHash);
   }
 
   Future<void> reconnect() async {

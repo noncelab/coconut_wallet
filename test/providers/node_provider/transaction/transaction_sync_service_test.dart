@@ -2,7 +2,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
@@ -20,18 +19,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
-import '../../mock/script_status_mock.dart';
-import '../../mock/transaction_mock.dart';
-import '../../mock/utxo_mock.dart';
-import '../../mock/wallet_mock.dart';
-import '../../repository/realm/test_realm_manager.dart';
+import '../../../mock/script_status_mock.dart';
+import '../../../mock/transaction_mock.dart';
+import '../../../mock/utxo_mock.dart';
+import '../../../mock/wallet_mock.dart';
+import '../../../repository/realm/test_realm_manager.dart';
 
 // 모킹할 클래스 목록
 @GenerateMocks([
   ElectrumService,
   NodeStateManager,
   WalletProvider,
-  WalletListItemBase,
 ])
 import 'transaction_sync_service_test.mocks.dart';
 
