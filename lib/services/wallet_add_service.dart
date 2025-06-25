@@ -17,6 +17,10 @@ class WalletAddService {
     return createWalletFromUR(ur: ur, name: name, walletImportSource: WalletImportSource.keystone);
   }
 
+  WatchOnlyWallet createJadeWallet(UR ur, String name) {
+    return createWalletFromUR(ur: ur, name: name, walletImportSource: WalletImportSource.jade);
+  }
+
   WatchOnlyWallet createExtendedPublicKeyWallet(
       String extendedPublicKey, String name, String? masterFingerPrint) {
     final singleSigWallet = SingleSignatureWallet.fromExtendedPublicKey(

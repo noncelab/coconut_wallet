@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
@@ -10,6 +9,7 @@ class WalletItemIcon extends StatelessWidget {
   final WalletImportSource walletImportSource;
   final int colorIndex;
   final int iconIndex;
+
   const WalletItemIcon({
     super.key,
     required this.walletImportSource,
@@ -35,7 +35,7 @@ class WalletItemIcon extends StatelessWidget {
       ),
       child: isExternalWallet
           ? SvgPicture.asset(
-              _getExternalWalletIconPath(),
+              WalletImportSourceExtension.getExternalWalletIconPath(walletImportSource),
               colorFilter: const ColorFilter.mode(
                 Colors.black,
                 BlendMode.srcIn,
@@ -51,10 +51,4 @@ class WalletItemIcon extends StatelessWidget {
             ),
     );
   }
-
-  String _getExternalWalletIconPath() => walletImportSource == WalletImportSource.keystone
-      ? kKeystoneIconPath
-      : walletImportSource == WalletImportSource.seedSigner
-          ? kSeedSignerIconPath
-          : kZpubIconPath;
 }

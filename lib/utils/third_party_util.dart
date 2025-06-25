@@ -37,6 +37,8 @@ String _getThirdPartyDefaultName(WalletImportSource walletImportSource) {
   switch (walletImportSource) {
     case WalletImportSource.keystone:
       return t.third_party.keystone;
+    case WalletImportSource.jade:
+      return t.third_party.jade;
     case WalletImportSource.seedSigner:
       return t.third_party.seed_signer;
     case WalletImportSource.extendedPublicKey:

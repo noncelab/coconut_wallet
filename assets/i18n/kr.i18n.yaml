@@ -136,6 +136,7 @@ wallet_add_scanner_screen:
   add_watch_only_wallet: "보기 전용 지갑 추가"
   vault: "코코넛 볼트"
   keystone: "키스톤"
+  jade: "제이드"
   seed_signer: "시드사이너"
   self: "직접 입력"
   self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
@@ -163,6 +164,15 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "Connect Software Wallet"
     step3: "3. 어떤 지갑이든 선택"
+  guide_jade:
+    step0_em: "Active "
+    step0: "상태에서"
+    step1: "1. "
+    step1_em: "Options"
+    step2: "2. "
+    step2_em: "Wallet"
+    step3: "3. "
+    step3_em: "Export Xpub"
 
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
@@ -242,6 +252,12 @@ unsigned_tx_qr_screen:
   guide_seedsigner:
     step1: "1. 홈 화면에서"
     step1_em: "Scan"
+    step1_end: "선택"
+    step2: "2. 카메라로 아래 QR 코드 스캔"
+  guide_jade:
+    step0: "Active 상태에서"
+    step1: "1. "
+    step1_em: "Scan QR"
     step1_end: "선택"
     step2: "2. 카메라로 아래 QR 코드 스캔"
   
@@ -463,6 +479,7 @@ tooltip:
   scan_signed_psbt:
     guide: "${by_hardware_wallet} 서명을 완료하셨나요?\n이제, ${hardware_wallet} 화면에 보이는 QR 코드를 스캔해 주세요."
     by_seed_signer: "시드사이너로"
+    by_jade: "제이드로"
     by_keystone: "키스톤으로"
     by_hardware_wallet: "하드웨어 월렛으로"
     by_vault_app: "볼트 앱으로"
@@ -558,5 +575,6 @@ alert:
 
 third_party:
   keystone: "키스톤"
+  jade: "제이드"
   seed_signer: "시드사이너"
   zpub: "zpub"

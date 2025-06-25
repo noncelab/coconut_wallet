@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/constants/icon_path.dart';
+
 enum WalletType {
   singleSignature,
   multiSignature,
@@ -14,6 +16,7 @@ enum WalletSyncResult {
 enum WalletImportSource {
   coconutVault,
   keystone,
+  jade,
   seedSigner,
   extendedPublicKey,
 }
@@ -24,5 +27,18 @@ extension WalletImportSourceExtension on WalletImportSource {
       (type) => type.name == name,
       orElse: () => WalletImportSource.coconutVault,
     );
+  }
+
+  static String getExternalWalletIconPath(WalletImportSource walletImportSource) {
+    switch (walletImportSource) {
+      case WalletImportSource.keystone:
+        return kKeystoneIconPath;
+      case WalletImportSource.jade:
+        return kJadeIconPath;
+      case WalletImportSource.seedSigner:
+        return kSeedSignerIconPath;
+      default:
+        return kZpubIconPath;
+    }
   }
 }
