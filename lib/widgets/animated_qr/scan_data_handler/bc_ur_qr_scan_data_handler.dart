@@ -25,6 +25,14 @@ class BcUrQrScanDataHandler implements IQrScanDataHandler {
   }
 
   @override
+  bool validateUrFormat(String data) {
+    var lowered = data.toLowerCase();
+
+    // Validate URI scheme
+    return lowered.startsWith('ur:');
+  }
+
+  @override
   void reset() {
     // 한번 Completed되면 다시 재사용 불가
     _urDecoder = URDecoder();

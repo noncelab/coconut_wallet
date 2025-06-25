@@ -85,8 +85,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     final screenWidth = MediaQuery.of(context).size.width;
     const deviceMmWidth = 75.6; // 갤럭시 S21+ 실제 가로 mm
     const targetMmSize = 62.8 * 0.9; // 폴드1에서의 QR mm 크기
-    debugPrint(
-        '_walletImportSource == WalletImportSource.coconutVault: ${_walletImportSource == WalletImportSource.coconutVault}');
+
     // 테스트용(갤폴드에서 보이는 QR사이즈)
     final qrSize = screenWidth * (targetMmSize / deviceMmWidth);
     return Scaffold(
