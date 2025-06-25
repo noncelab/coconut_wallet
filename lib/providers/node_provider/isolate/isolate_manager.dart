@@ -386,9 +386,8 @@ class IsolateManager {
   }
 
   Future<Result<TransactionRecord>> getTransactionRecord(
-      int walletId, String addressTypeString, String txHash) {
-    return _send(
-        IsolateControllerCommand.getTransactionRecord, [walletId, addressTypeString, txHash]);
+      WalletListItemBase walletItem, String txHash) {
+    return _send(IsolateControllerCommand.getTransactionRecord, [walletItem, txHash]);
   }
 
   /// isolate 연결만 종료하는 메서드

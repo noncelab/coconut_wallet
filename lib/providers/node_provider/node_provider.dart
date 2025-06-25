@@ -308,8 +308,8 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<TransactionRecord>> getTransactionRecord(
-      int walletId, String addressTypeString, String txHash) async {
-    return _isolateManager.getTransactionRecord(walletId, addressTypeString, txHash);
+      WalletListItemBase walletItem, String txHash) async {
+    return _isolateManager.getTransactionRecord(walletItem, txHash);
   }
 
   Future<void> reconnect() async {

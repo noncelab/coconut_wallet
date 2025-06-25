@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/node/transaction_details.dart';
@@ -8,6 +9,8 @@ import 'package:coconut_wallet/providers/node_provider/transaction/transaction_s
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/result.dart';
 
 class TransactionRecordService {
   final ElectrumService _electrumService;
@@ -166,26 +169,31 @@ class TransactionRecordService {
   }
 
   /// 트랜잭션 레코드를 조회합니다.
-  Future<TransactionRecord> getTransactionRecord(
+  Future<Result<TransactionRecord>> getTransactionRecord(
       WalletListItemBase walletItem, String txHash) async {
-    final txRaw = await _electrumService.getTransaction(txHash);
-    final tx = Transaction.parse(txRaw);
-    final previousTxs = await _electrumService.getPreviousTransactions(tx);
-    final txDetails = processTransactionDetails(tx, previousTxs, walletItem.id);
-    final blockTimestamp = await getTxHeight(
-        walletItem.id, walletItem.walletBase.addressType, tx, previousTxs, txDetails);
+    try {
+      final txRaw = await _electrumService.getTransaction(txHash);
+      final tx = Transaction.parse(txRaw);
+      final previousTxs = await _electrumService.getPreviousTransactions(tx);
+      final txDetails = processTransactionDetails(tx, previousTxs, walletItem.id);
+      final blockTimestamp = await getTxHeight(
+          walletItem.id, walletItem.walletBase.addressType, tx, previousTxs, txDetails);
 
-    return TransactionRecord.fromTransactions(
-      transactionHash: tx.transactionHash,
-      timestamp: blockTimestamp.timestamp,
-      blockHeight: blockTimestamp.height,
-      inputAddressList: txDetails.inputAddressList,
-      outputAddressList: txDetails.outputAddressList,
-      transactionType: txDetails.txType,
-      amount: txDetails.amount,
-      fee: txDetails.fee,
-      vSize: tx.getVirtualByte(),
-    );
+      return Result.success(TransactionRecord.fromTransactions(
+        transactionHash: tx.transactionHash,
+        timestamp: blockTimestamp.timestamp,
+        blockHeight: blockTimestamp.height,
+        inputAddressList: txDetails.inputAddressList,
+        outputAddressList: txDetails.outputAddressList,
+        transactionType: txDetails.txType,
+        amount: txDetails.amount,
+        fee: txDetails.fee,
+        vSize: tx.getVirtualByte(),
+      ));
+    } catch (e) {
+      Logger.error('TransactionRecordService: Error in getTransactionRecord: $e');
+      return Result.failure(ErrorCodes.fetchTransactionsError);
+    }
   }
 
   /// 트랜잭션의 블록 높이를 조회합니다.

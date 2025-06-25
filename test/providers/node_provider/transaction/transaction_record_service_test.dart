@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -106,12 +107,19 @@ void main() {
         receiveTx.transactionHash,
       );
 
+      TransactionRecord? updatedTx;
+      if (result.isSuccess) {
+        updatedTx = result.value;
+      } else {
+        fail('❌ result IS FAILED: ${result.error}');
+      }
+
       // Then
-      expect(result.transactionHash, receiveTx.transactionHash);
-      expect(result.blockHeight, blockHeight);
-      expect(result.timestamp.millisecondsSinceEpoch, blockTimestamp.millisecondsSinceEpoch);
-      expect(result.transactionType, TransactionType.received);
-      expect(result.amount, 1000000);
+      expect(updatedTx.transactionHash, receiveTx.transactionHash);
+      expect(updatedTx.blockHeight, blockHeight);
+      expect(updatedTx.timestamp.millisecondsSinceEpoch, blockTimestamp.millisecondsSinceEpoch);
+      expect(updatedTx.transactionType, TransactionType.received);
+      expect(updatedTx.amount, 1000000);
 
       verify(electrumService.getTransaction(receiveTx.transactionHash)).called(1);
       verify(electrumService.getPreviousTransactions(any,
@@ -151,10 +159,17 @@ void main() {
       );
 
       // Then
-      expect(result.transactionHash, sendTx.transactionHash);
-      expect(result.blockHeight, 0);
-      expect(result.transactionType, TransactionType.sent);
-      expect(result.amount, -150000);
+      TransactionRecord? updatedTx;
+      if (result.isSuccess) {
+        updatedTx = result.value;
+      } else {
+        fail('❌ result IS FAILED: ${result.error}');
+      }
+
+      expect(updatedTx.transactionHash, sendTx.transactionHash);
+      expect(updatedTx.blockHeight, 0);
+      expect(updatedTx.transactionType, TransactionType.sent);
+      expect(updatedTx.amount, -150000);
 
       verify(electrumService.getTransaction(sendTx.transactionHash)).called(1);
       verify(electrumService.getPreviousTransactions(any,
@@ -191,10 +206,17 @@ void main() {
         tx.transactionHash,
       );
 
+      TransactionRecord? updatedTx;
+      if (result.isSuccess) {
+        updatedTx = result.value;
+      } else {
+        fail('❌ result IS FAILED: ${result.error}');
+      }
+
       // Then
-      expect(result.transactionHash, tx.transactionHash);
-      expect(result.blockHeight, 0);
-      expect(result.transactionType, TransactionType.received);
+      expect(updatedTx.transactionHash, tx.transactionHash);
+      expect(updatedTx.blockHeight, 0);
+      expect(updatedTx.transactionType, TransactionType.received);
 
       verify(electrumService.getTransaction(tx.transactionHash)).called(1);
       verify(electrumService.getPreviousTransactions(any,
