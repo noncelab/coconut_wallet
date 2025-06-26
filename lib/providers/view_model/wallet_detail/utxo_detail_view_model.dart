@@ -115,13 +115,11 @@ class UtxoDetailViewModel extends ChangeNotifier {
       case UtxoTagEditMode.delete:
         if (removedTags.isNotEmpty) {
           for (int i = 0; i < removedTags.length; i++) {
-            print('delete ${removedTags[i].name}');
             _tagProvider.deleteUtxoTag(_walletId, removedTags[i]);
           }
         }
         break;
       case UtxoTagEditMode.changAppliedTags:
-        print('changAppliedTags $selectedTagNames');
         _tagProvider.updateUtxoTagIdList(
             walletId: _walletId, utxoId: utxoId, selectedTagNames: selectedTagNames);
         break;

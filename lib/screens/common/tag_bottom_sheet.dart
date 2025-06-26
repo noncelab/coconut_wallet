@@ -243,6 +243,12 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
             }
 
             widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.update);
+
+            if (selectedUtxoTag.name != updatedTag.name ||
+                selectedUtxoTag.colorIndex != updatedTag.colorIndex) {
+              widget.onUpdate
+                  ?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.changAppliedTags);
+            }
           });
         },
       ),
