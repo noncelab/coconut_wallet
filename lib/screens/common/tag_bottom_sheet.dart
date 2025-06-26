@@ -177,7 +177,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   }
 
   void _handleTagChipTap(BuildContext context, int index, List<UtxoTag> currentTagList) {
-    final tag = _utxoTags[index].name;
+    final tag = currentTagList[index].name;
 
     if (_isDeletionMode) {
       _tagNamesToDelete.add(tag);
@@ -309,7 +309,9 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
       {EdgeInsets padding = const EdgeInsets.symmetric(vertical: Sizes.size20)}) {
     return GestureDetector(
       onTap: onPress,
+      behavior: HitTestBehavior.translucent,
       child: Container(
+        width: double.infinity,
         color: Colors.transparent,
         padding: padding,
         child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
@@ -404,22 +406,22 @@ class TagChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: isDeletionMode
-                  ? const Padding(
-                      padding: EdgeInsets.only(right: 4.0),
-                      child: Icon(Icons.close,
-                          key: ValueKey('delete'), size: 16, color: CoconutColors.white),
-                    )
-                  : isSelected
-                      ? Padding(
-                          padding: const EdgeInsets.only(right: 4.0),
-                          child: Icon(Icons.check,
-                              key: const ValueKey('check'), size: 16, color: foregroundColor),
-                        )
-                      : const SizedBox.shrink(key: ValueKey('empty')),
-            ),
+            isDeletionMode
+                ? const Padding(
+                    padding: EdgeInsets.only(right: 4.0),
+                    child: Icon(Icons.close,
+                        key: ValueKey('delete'), size: 16, color: CoconutColors.white),
+                  )
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: isSelected
+                        ? Padding(
+                            padding: const EdgeInsets.only(right: 4.0),
+                            child: Icon(Icons.check,
+                                key: const ValueKey('check'), size: 16, color: foregroundColor),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('empty')),
+                  ),
             // const SizedBox(width: 6),
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
