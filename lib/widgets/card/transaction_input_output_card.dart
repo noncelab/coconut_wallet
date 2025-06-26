@@ -220,11 +220,14 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
     required List<TransactionAddress> list,
     required InputOutputRowType rowType,
   }) {
+    final filteredEntries =
+        list.asMap().entries.where((entry) => entry.value.address.isNotEmpty).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ...list.asMap().entries.map((entry) {
-          final index = entry.key;
+        ...filteredEntries.map((entry) {
+          final originalIndex = entry.key; // UTXO의 인덱스에 해당하는 원본 인덱스 유지
           final item = entry.value;
 
           return Padding(
@@ -234,7 +237,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
               balance: item.amount,
               balanceMaxWidth: balanceMaxWidth,
               rowType: rowType,
-              isCurrentAddress: widget.isSameAddress(item.address, index),
+              isCurrentAddress: widget.isSameAddress(item.address, originalIndex),
               transactionStatus: widget.isForTransaction ? _status : null,
               currentUnit: widget.currentUnit,
             ),

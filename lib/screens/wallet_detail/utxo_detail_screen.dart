@@ -236,8 +236,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         ),
                       TransactionInputOutputCard(
                         transaction: tx,
-                        isSameAddress: (address, _) {
-                          return address == widget.utxo.to;
+                        isSameAddress: (address, index) {
+                          return address == widget.utxo.to && index == widget.utxo.index;
                         },
                         isForTransaction: false,
                         currentUnit: _currentUnit,
