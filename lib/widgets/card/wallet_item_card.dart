@@ -19,6 +19,7 @@ class WalletItemCard extends StatelessWidget {
   final int colorIndex;
   final bool isLastItem;
   final bool isBalanceHidden;
+  final double? fakeBlance;
   final List<MultisigSigner>? signers;
   final WalletImportSource walletImportSource;
   final BitcoinUnit currentUnit;
@@ -33,6 +34,7 @@ class WalletItemCard extends StatelessWidget {
     this.colorIndex = 0,
     required this.isLastItem,
     this.isBalanceHidden = false,
+    this.fakeBlance,
     this.signers,
     this.walletImportSource = WalletImportSource.coconutVault,
   });
@@ -74,14 +76,31 @@ class WalletItemCard extends StatelessWidget {
                       ),
                       CoconutLayout.spacing_50h,
                       isBalanceHidden
-                          ? Container(
-                              width: 100,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: CoconutColors.white.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            )
+                          ? fakeBlance != null
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      fakeBlance! % 1 == 0
+                                          ? fakeBlance.toString().split('.').first
+                                          : fakeBlance.toString(),
+                                      style: CoconutTypography.heading3_21_NumberBold.setColor(
+                                        CoconutColors.white,
+                                      ),
+                                    ),
+                                    Text(
+                                      " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                                      style: CoconutTypography.body3_12_Number.copyWith(
+                                          color: CoconutColors.gray500,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
+                                )
+                              : Text(
+                                  t.view_balance,
+                                  style: CoconutTypography.heading3_21_Bold
+                                      .copyWith(color: CoconutColors.gray600),
+                                )
                           : Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                               AnimatedBalance(
                                   prevValue: animatedBalanceData.previous,

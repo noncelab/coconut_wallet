@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -34,12 +36,14 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   QRViewController? controller;
   bool _isProcessing = false;
   late WalletAddScannerViewModel _viewModel;
+  late PreferenceProvider _preferenceProvider;
 
   @override
   void initState() {
     super.initState();
     _viewModel = WalletAddScannerViewModel(
         widget.importSource, Provider.of<WalletProvider>(context, listen: false));
+    _preferenceProvider = Provider.of<PreferenceProvider>(context, listen: false);
   }
 
   // In order to get hot reload to work we need to pause the camera if the platform
@@ -177,12 +181,23 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   Future<void> _onCompletedScanning(dynamic additionInfo) async {
     if (_isProcessing) return;
     _isProcessing = true;
-
     try {
       ResultOfSyncFromVault addResult = await _viewModel.addWallet(additionInfo);
+
       if (!mounted) return;
       switch (addResult.result) {
         case WalletSyncResult.newWalletAdded:
+          {
+            if (_preferenceProvider.fakeBalanceTotalAmount != null && addResult.walletId != null) {
+              // 가짜 잔액이 설정되어 있는 경우 FakeBalanceTotalAmount 이하의 값 랜덤 배정
+              final fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
+              final randomFakeBalance = Random().nextDouble() * fakeBalanceTotalAmount!;
+
+              await _preferenceProvider.setFakeBalance(addResult.walletId!, randomFakeBalance);
+            }
+            Navigator.pop(context, addResult);
+            break;
+          }
         case WalletSyncResult.existingWalletUpdated:
           {
             Navigator.pop(context, addResult);

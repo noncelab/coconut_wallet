@@ -11,23 +11,28 @@ import 'package:flutter/material.dart';
 
 typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
 typedef BalanceGetter = int Function(int id);
+typedef FakeBalanceGetter = double? Function(int id);
 
 class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
   late WalletProvider _walletProvider;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
+  double? _fakeBalanceTotalAmount;
   late final bool _isReviewScreenVisible;
   late WalletSubscriptionState _walletSyncingState;
   late final ConnectivityProvider _connectivityProvider;
   late bool? _isNetworkOn;
   Map<int, AnimatedBalanceData> _walletBalance = {};
+  Map<int, dynamic> _fakeBalanceMap = {};
   bool _isFirstLoaded = false;
 
   WalletListViewModel(
     this._walletProvider,
     this._visibilityProvider,
     this._isBalanceHidden,
+    this._fakeBalanceTotalAmount,
+    this._fakeBalanceMap,
     this._connectivityProvider,
   ) {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
@@ -45,6 +50,8 @@ class WalletListViewModel extends ChangeNotifier {
       _walletProvider.walletSubscriptionState != WalletSubscriptionState.failed;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
+  double? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
+  Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
 
   void hideTermsShortcut() {
     _isTermsShortcutVisible = false;
@@ -99,12 +106,26 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setFakeBlancTotalAmount(double? value) {
+    _fakeBalanceTotalAmount = value;
+    notifyListeners();
+  }
+
+  void setFakeBlanceMap(Map<int, dynamic> value) {
+    _fakeBalanceMap = value;
+    notifyListeners();
+  }
+
   void updateAppReviewRequestCondition() async {
     await AppReviewService.increaseAppRunningCountIfRejected();
   }
 
   AnimatedBalanceData getWalletBalance(int id) {
     return _walletBalance[id] ?? AnimatedBalanceData(0, 0);
+  }
+
+  double? getFakeBalance(int id) {
+    return _fakeBalanceMap[id] ?? _fakeBalanceTotalAmount;
   }
 
   void onNodeProviderUpdated() {

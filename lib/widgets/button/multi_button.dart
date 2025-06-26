@@ -58,7 +58,7 @@ class _MultiButtonState extends State<MultiButton> with TickerProviderStateMixin
                             height: 1,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(24),
-                              color: CoconutColors.gray600,
+                              color: CoconutColors.gray700,
                             ),
                             margin: EdgeInsets.symmetric(
                               horizontal:

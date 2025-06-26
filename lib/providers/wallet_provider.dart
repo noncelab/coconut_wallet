@@ -15,6 +15,7 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -67,6 +68,8 @@ class WalletProvider extends ChangeNotifier {
   late final NodeProvider _nodeProvider;
   late bool _isNodeProviderInitialized;
 
+  late final PreferenceProvider _preferenceProvider;
+
   // db 업데이트 중인가
   bool get isSyncing => _isSyncing;
   bool get isAnyBalanceUpdating => _isAnyBalanceUpdating;
@@ -104,6 +107,7 @@ class WalletProvider extends ChangeNotifier {
     Future<void> Function(int) saveWalletCount,
     bool isSetPin,
     this._nodeProvider,
+    this._preferenceProvider,
   )   : _isNetworkOn = isNetworkOn,
         _saveWalletCount = saveWalletCount,
         _isSetPin = isSetPin {
@@ -443,6 +447,9 @@ class WalletProvider extends ChangeNotifier {
     _walletItemList = await _fetchWalletListFromDB();
     _saveWalletCount(_walletItemList.length);
     _walletBalance.remove(walletId);
+
+    await _preferenceProvider.removeFakeBalance(walletId);
+
     notifyListeners();
 
     unawaited(_subscribeNodeProvider());

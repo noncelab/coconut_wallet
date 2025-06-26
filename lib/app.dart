@@ -177,6 +177,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 },
                 Provider.of<AuthProvider>(context, listen: false).isSetPin,
                 Provider.of<NodeProvider>(context, listen: false),
+                Provider.of<PreferenceProvider>(context, listen: false),
               );
             },
             update: (context, connectivityProvider, authProvider, walletProvider) {
