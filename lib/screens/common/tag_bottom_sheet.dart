@@ -188,6 +188,11 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
       _checkButtonEnabled();
       // 삭제 시 바로 db에서 삭제
       widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.delete);
+
+      if (_deletableTags.isEmpty) {
+        _toggleDeletionMode();
+      }
+
       return;
     }
 
@@ -239,7 +244,6 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
 
             widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.update);
           });
-          _checkButtonEnabled();
         },
       ),
     );
@@ -313,20 +317,30 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     );
   }
 
-  /// 완료 버튼 활성화 여부 업데이트 함수
   void _checkButtonEnabled() {
-    // 선택이 변경되거나 태그 정보가 변경된 경우
-    final currentSelected = _prevSelectedTagNames; // 현재 선택된 태그
-    final prevSelected = widget.selectedTagNames ?? []; // 원래 선택되어 있던 태그
+    final prevSelectedTagIds = _convertTagNamesToIds(widget.selectedTagNames ?? []);
+    final currentSelectedIds = _convertTagNamesToIds(_prevSelectedTagNames);
 
-    final currentSet = currentSelected.toSet();
-    final selectedSet = prevSelected.toSet();
+    final currentSet = currentSelectedIds.toSet();
+    final selectedSet = prevSelectedTagIds.toSet();
 
     final isUpdated = !currentSet.containsAll(selectedSet) || !selectedSet.containsAll(currentSet);
 
     setState(() {
       _isButtonActive = isUpdated;
     });
+  }
+
+  List<String> _convertTagNamesToIds(List<String> tagNames) {
+    return tagNames
+        .map((name) => _utxoTags
+            .firstWhere(
+              (tag) => tag.name == name,
+              orElse: () => UtxoTag(id: '', walletId: 0, name: name, colorIndex: 0),
+            )
+            .id)
+        .where((id) => id.isNotEmpty)
+        .toList();
   }
 }
 
