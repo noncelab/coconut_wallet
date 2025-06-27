@@ -8,4 +8,8 @@ environment:
 
 dev_dependencies:
   test: ^1.16.0
+  flutter_test:
+    sdk: flutter
   lints: ^4.0.0
+dependencies:
+  collection: ^1.18.0
