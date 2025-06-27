@@ -60,23 +60,25 @@ class CustomLimitTextField extends StatelessWidget {
             ),
             maxLength: maxLength,
             prefix: prefix,
-            suffix: GestureDetector(
-              onTap: () {
-                onClear();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
-                child: SvgPicture.asset(
-                  'assets/svg/text-field-clear.svg',
-                  colorFilter: const ColorFilter.mode(
-                    CoconutColors.white,
-                    BlendMode.srcIn,
-                  ),
-                  width: 15,
-                  height: 15,
-                ),
-              ),
-            ),
+            suffix: controller.text.isNotEmpty
+                ? GestureDetector(
+                    onTap: () {
+                      onClear();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+                      child: SvgPicture.asset(
+                        'assets/svg/text-field-clear.svg',
+                        colorFilter: const ColorFilter.mode(
+                          CoconutColors.white,
+                          BlendMode.srcIn,
+                        ),
+                        width: 15,
+                        height: 15,
+                      ),
+                    ),
+                  )
+                : null,
             onChanged: (text) {
               String formattedText = formatInput?.call(text) ?? text;
               if (formattedText.runes.length > maxLength) {

@@ -47,11 +47,17 @@ class UtxoTagCrudViewModel extends ChangeNotifier {
     return result;
   }
 
-  bool deleteUtxoTag() {
-    if (_selectedUtxoTag == null) return false;
-    final result = _tagProvider.deleteUtxoTag(_walletId, _selectedUtxoTag!);
-    _selectedUtxoTag = null;
-    _setUtxoTagList();
+  bool deleteUtxoTag([UtxoTag? tagToDelete]) {
+    if (tagToDelete == null) {
+      if (_selectedUtxoTag == null) return false;
+      final result = _tagProvider.deleteUtxoTag(_walletId, _selectedUtxoTag!);
+      _selectedUtxoTag = null;
+      _setUtxoTagList();
+      notifyListeners();
+      return result;
+    }
+
+    final result = _tagProvider.deleteUtxoTag(_walletId, tagToDelete);
     notifyListeners();
     return result;
   }

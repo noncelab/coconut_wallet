@@ -1,16 +1,12 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:provider/provider.dart';
 
 class UtxoListHeader extends StatefulWidget {
   final GlobalKey headerGlobalKey;
@@ -18,26 +14,23 @@ class UtxoListHeader extends StatefulWidget {
   final AnimatedBalanceData animatedBalanceData;
   final String selectedOption;
   final Function onTapDropdown;
-  final List<UtxoTag> utxoTagList;
-  final String selectedUtxoTagName;
-  final Function(String) onTagSelected;
   final bool isLoadComplete;
   final void Function() onPressedUnitToggle;
   final BitcoinUnit currentUnit;
+  final Widget tagListWidget;
 
-  const UtxoListHeader(
-      {super.key,
-      required this.headerGlobalKey,
-      required this.dropdownGlobalKey,
-      required this.animatedBalanceData,
-      required this.selectedOption,
-      required this.onTapDropdown,
-      required this.utxoTagList,
-      required this.selectedUtxoTagName,
-      required this.onTagSelected,
-      required this.isLoadComplete,
-      required this.currentUnit,
-      required this.onPressedUnitToggle});
+  const UtxoListHeader({
+    super.key,
+    required this.headerGlobalKey,
+    required this.dropdownGlobalKey,
+    required this.animatedBalanceData,
+    required this.selectedOption,
+    required this.onTapDropdown,
+    required this.isLoadComplete,
+    required this.currentUnit,
+    required this.onPressedUnitToggle,
+    required this.tagListWidget,
+  });
 
   @override
   State<UtxoListHeader> createState() => _UtxoListHeaderState();
@@ -150,13 +143,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                 ],
               ),
             ),
-            Consumer<UtxoListViewModel>(builder: (context, viewModel, child) {
-              return CustomTagHorizontalSelector(
-                tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-                selectedName: viewModel.selectedUtxoTagName,
-                onSelectedTag: widget.onTagSelected,
-              );
-            }),
+            widget.tagListWidget,
             CoconutLayout.spacing_300h,
           ],
         )

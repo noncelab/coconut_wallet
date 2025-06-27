@@ -20,6 +20,7 @@ import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
 import 'package:coconut_wallet/widgets/dropdown/utxo_filter_dropdown.dart';
+import 'package:coconut_wallet/widgets/header/utxo_tag_list_widget.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -246,33 +247,46 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final viewModel = context.read<UtxoListViewModel>();
     return ValueListenableBuilder<bool>(
         valueListenable: _firstLoadedNotifier,
         builder: (context, canShowDropdown, child) {
-          return Selector<UtxoListViewModel, UtxoOrder>(
-              selector: (_, viewModel) => viewModel.selectedUtxoOrder,
-              builder: (context, selectedOrder, child) {
+          return Selector<UtxoListViewModel, Tuple3<UtxoOrder, String, String>>(
+              selector: (_, viewModel) => Tuple3(viewModel.selectedUtxoOrder,
+                  viewModel.utxoTagListKey, viewModel.selectedUtxoTagName),
+              shouldRebuild: (previous, next) {
+                final result = previous.item1 != next.item1 || // order 변경
+                    previous.item2 != next.item2 || // key 변경
+                    previous.item3 != next.item3; // 선택된 태그 변경
+
+                return result;
+              },
+              builder: (context, data, child) {
+                final selectedOrder = data.item1;
+                final tagListKey = data.item2;
+                final selectedTagName = data.item3;
+
                 return UtxoListHeader(
-                  key: ValueKey(viewModel.utxoTagListKey),
+                  key: ValueKey(tagListKey),
                   headerGlobalKey: _headerKey,
                   dropdownGlobalKey: _headerDropdownKey,
                   isLoadComplete: canShowDropdown,
-                  animatedBalanceData:
-                      AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+                  animatedBalanceData: AnimatedBalanceData(
+                      context.read<UtxoListViewModel>().balance,
+                      context.read<UtxoListViewModel>().prevBalance),
                   selectedOption: selectedOrder.text,
-                  utxoTagList: viewModel.utxoTagList,
-                  selectedUtxoTagName: viewModel.selectedUtxoTagName,
                   onTapDropdown: () {
                     if (!canShowDropdown) return;
                     _dropdownVisibleNotifier.value = !_dropdownVisibleNotifier.value;
                     _hideStickyHeaderAndUpdateDropdownPosition();
                   },
-                  onTagSelected: (tagName) {
-                    viewModel.setSelectedUtxoTagName(tagName);
-                  },
                   onPressedUnitToggle: _toggleUnit,
                   currentUnit: _currentUnit,
+                  tagListWidget: UtxoTagListWidget(
+                    selectedUtxoTagName: selectedTagName,
+                    onTagSelected: (tagName) {
+                      context.read<UtxoListViewModel>().setSelectedUtxoTagName(tagName);
+                    },
+                  ),
                 );
               });
         });
@@ -317,31 +331,47 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   Widget _buildStickyHeader(BuildContext context) {
-    final viewModel = context.read<UtxoListViewModel>();
-    final currentBalane = viewModel.balance;
-    final prevBalance = viewModel.prevBalance;
-    final totalCount = viewModel.utxoList.length;
     return ValueListenableBuilder<bool>(
         valueListenable: _firstLoadedNotifier,
         builder: (context, enableDropdown, _) {
           return ValueListenableBuilder<bool>(
               valueListenable: _stickyHeaderVisibleNotifier,
               builder: (context, isStickyHeaderVisible, _) {
-                return Selector<UtxoListViewModel, UtxoOrder>(
-                  selector: (_, viewModel) => viewModel.selectedUtxoOrder,
-                  builder: (context, order, child) {
+                return Selector<UtxoListViewModel,
+                    Tuple5<UtxoOrder, String, int, AnimatedBalanceData, String>>(
+                  selector: (_, viewModel) => Tuple5(
+                      viewModel.selectedUtxoOrder,
+                      viewModel.utxoTagListKey,
+                      viewModel.utxoList.length,
+                      AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+                      viewModel.selectedUtxoTagName),
+                  shouldRebuild: (previous, next) {
+                    final result = previous.item1 != next.item1 || // order 변경
+                        previous.item2 != next.item2 || // 태그 리스트 변경
+                        previous.item3 != next.item3 || // 총 개수 변경
+                        previous.item4.current != next.item4.current || // 잔액 변경
+                        previous.item5 != next.item5; // 선택된 태그 변경
+
+                    return result;
+                  },
+                  builder: (context, data, child) {
+                    final selectedOrder = data.item1;
+                    final tagListKey = data.item2;
+                    final totalCount = data.item3;
+                    final animatedBalanceData = data.item4;
+                    final selectedTagName = data.item5;
+
                     return UtxoListStickyHeader(
-                      key: ValueKey(viewModel.utxoTagListKey),
+                      key: ValueKey('sticky_$tagListKey'),
                       stickyHeaderGlobalKey: _stickyHeaderKey,
                       dropdownGlobalKey: _stickyHeaderDropdownKey,
                       height: _appBarSize.height,
-                      currentUnit: _currentUnit,
                       isVisible: isStickyHeaderVisible,
                       isLoadComplete: _firstLoadedNotifier.value,
                       enableDropdown: enableDropdown,
-                      animatedBalanceData: AnimatedBalanceData(currentBalane, prevBalance),
+                      animatedBalanceData: animatedBalanceData,
                       totalCount: totalCount,
-                      selectedOption: order.text,
+                      selectedOption: selectedOrder.text,
                       onTapDropdown: () {
                         _dropdownVisibleNotifier.value = !_dropdownVisibleNotifier.value;
                         _scrollController.jumpTo(_scrollController.offset);
@@ -349,6 +379,13 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                       removePopup: () {
                         _hideDropdown();
                       },
+                      currentUnit: _currentUnit,
+                      tagListWidget: UtxoTagListWidget(
+                        selectedUtxoTagName: selectedTagName,
+                        onTagSelected: (tagName) {
+                          context.read<UtxoListViewModel>().setSelectedUtxoTagName(tagName);
+                        },
+                      ),
                     );
                   },
                 );

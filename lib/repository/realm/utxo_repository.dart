@@ -7,7 +7,6 @@ import 'package:coconut_wallet/repository/realm/converter/utxo.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
-
 class UtxoRepository extends BaseRepository {
   UtxoRepository(super._realmManager);
 
@@ -145,6 +144,35 @@ class UtxoRepository extends BaseRepository {
                 tag.utxoIdList.add(utxoId);
               }
             } else {
+              tag.utxoIdList.remove(utxoId);
+            }
+          }
+        });
+
+        return true;
+      },
+    );
+  }
+
+  /// utxo tag의 utxoIdList 변경
+  /// - [walletId] 목록 검색
+  /// - [utxoId] 업데이트할 Utxo Id
+  /// - [selectedTagNames] 선택된 태그명 목록
+  Result<bool> updateUtxoTagList(int walletId, String utxoId, List<String> selectedTagNames) {
+    return handleRealm<bool>(
+      () {
+        realm.write(() {
+          // 적용된 태그
+          final tags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
+          for (var tag in tags) {
+            final shouldHaveTag = selectedTagNames.contains(tag.name);
+            final alreadyHasTag = tag.utxoIdList.contains(utxoId);
+
+            if (shouldHaveTag && !alreadyHasTag) {
+              // 태그가 있어야 하는데 없는 경우 - 추가
+              tag.utxoIdList.add(utxoId);
+            } else if (!shouldHaveTag && alreadyHasTag) {
+              // 태그가 없어야 하는데 있는 경우 - 제거
               tag.utxoIdList.remove(utxoId);
             }
           }

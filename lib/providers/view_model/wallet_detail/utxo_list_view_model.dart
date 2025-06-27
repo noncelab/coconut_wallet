@@ -137,6 +137,7 @@ class UtxoListViewModel extends ChangeNotifier {
     }
     UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
     _isUtxoListLoadComplete = true;
+    notifyListeners();
   }
 
   void refetchFromDB() {
