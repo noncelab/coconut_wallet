@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 
 typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
 typedef BalanceGetter = int Function(int id);
-typedef FakeBalanceGetter = double? Function(int id);
+typedef FakeBalanceGetter = int? Function(int id);
 
 class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
@@ -20,13 +20,13 @@ class WalletListViewModel extends ChangeNotifier {
   late final PreferenceProvider _preferenceProvider;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
-  double? _fakeBalanceTotalAmount;
   late final bool _isReviewScreenVisible;
   late WalletSubscriptionState _walletSyncingState;
   late final ConnectivityProvider _connectivityProvider;
   late bool? _isNetworkOn;
   Map<int, AnimatedBalanceData> _walletBalance = {};
   Map<int, dynamic> _fakeBalanceMap = {};
+  int? _fakeBalanceTotalAmount;
   bool _isFirstLoaded = false;
 
   WalletListViewModel(
@@ -54,7 +54,7 @@ class WalletListViewModel extends ChangeNotifier {
       _walletProvider.walletSubscriptionState != WalletSubscriptionState.failed;
   List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   bool? get isNetworkOn => _isNetworkOn;
-  double? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
+  int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
 
   void hideTermsShortcut() {
@@ -131,7 +131,7 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setFakeBlancTotalAmount(double? value) {
+  void _setFakeBlancTotalAmount(int? value) {
     _fakeBalanceTotalAmount = value;
     notifyListeners();
   }
@@ -149,7 +149,7 @@ class WalletListViewModel extends ChangeNotifier {
     return _walletBalance[id] ?? AnimatedBalanceData(0, 0);
   }
 
-  double? getFakeBalance(int id) {
+  int? getFakeBalance(int id) {
     return _fakeBalanceMap[id] ?? _fakeBalanceTotalAmount;
   }
 

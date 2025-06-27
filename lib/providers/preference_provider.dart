@@ -16,8 +16,8 @@ class PreferenceProvider extends ChangeNotifier {
   bool get isFakeBalanceActive => _isFakeBalanceActive;
 
   /// 가짜 진엑 총량
-  late double? _fakeBalanceTotalAmount;
-  double? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
+  late int? _fakeBalanceTotalAmount;
+  int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
 
   late bool _isBtcUnit;
   bool get isBtcUnit => _isBtcUnit;
@@ -28,7 +28,7 @@ class PreferenceProvider extends ChangeNotifier {
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
 
   PreferenceProvider() {
-    _fakeBalanceTotalAmount = _sharedPrefs.getDouble(SharedPrefKeys.kFakeBalanceTotal);
+    _fakeBalanceTotalAmount = _sharedPrefs.getInt(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
     _isBtcUnit = _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)
@@ -74,9 +74,9 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 가짜 잔액 총량 수정
-  Future<void> setFakeBalanceTotalAmount(double balance) async {
+  Future<void> setFakeBalanceTotalAmount(int balance) async {
     _fakeBalanceTotalAmount = balance;
-    await _sharedPrefs.setDouble(SharedPrefKeys.kFakeBalanceTotal, balance);
+    await _sharedPrefs.setInt(SharedPrefKeys.kFakeBalanceTotal, balance);
     notifyListeners();
   }
 
@@ -89,7 +89,7 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 가짜 잔액 설정
-  Future<void> setFakeBalance(int walletId, double fakeBalance) async {
+  Future<void> setFakeBalance(int walletId, int fakeBalance) async {
     final Map<int, dynamic> map = getFakeBalanceMap();
     map[walletId] = fakeBalance;
     await setFakeBalanceMap(map);

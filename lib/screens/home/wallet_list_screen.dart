@@ -351,7 +351,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       Animation<double> animation,
       AnimatedBalanceData animatedBalanceData,
       bool isBalanceHidden,
-      double? fakeBalance,
+      int? fakeBalance,
       bool isLastItem) {
     var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
 
@@ -378,7 +378,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       WalletListItemBase walletItem,
       AnimatedBalanceData animatedBalanceData,
       bool isBalanceHidden,
-      double? fakeBalance,
+      int? fakeBalance,
       bool isLastItem) {
     final WalletListItemBase(
       id: id,

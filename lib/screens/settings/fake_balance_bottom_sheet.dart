@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -26,13 +27,13 @@ class FakeBalanceBottomSheet extends StatefulWidget {
 class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
   final TextEditingController _textEditingController = TextEditingController();
   final FocusNode _textFieldFocusNode = FocusNode();
-  double? _fakeBalanceTotalAmount;
+  double? _fakeBalanceTotalBtc;
   FakeBalanceInputError _inputError = FakeBalanceInputError.none;
 
   late final WalletProvider _walletProvider;
   late final PreferenceProvider _preferenceProvider;
-  late double _minimumAmount;
-  final double _maximumAmount = 21000000;
+  late int _minimumSatoshi;
+  final int _maximumAmount = 21000000;
   final int _maxInputLength = 17; // 21000000.00000000
 
   bool isLoading = false;
@@ -42,19 +43,21 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
   void initState() {
     super.initState();
     _preferenceProvider = context.read<PreferenceProvider>();
-    _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
+    _fakeBalanceTotalBtc = _preferenceProvider.fakeBalanceTotalAmount != null
+        ? UnitUtil.satoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
+        : null;
     _isFakeBalanceActive = _preferenceProvider.isFakeBalanceActive;
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
-    _minimumAmount = 0.00000001 * _walletProvider.walletItemList.length;
-    if (_fakeBalanceTotalAmount != null) {
-      if (_fakeBalanceTotalAmount == 0) {
+    _minimumSatoshi = _walletProvider.walletItemList.length;
+    if (_fakeBalanceTotalBtc != null) {
+      if (_fakeBalanceTotalBtc == 0) {
         // 0일 때
         _textEditingController.text = '0';
-      } else if (_fakeBalanceTotalAmount! % 1 == 0) {
+      } else if (_fakeBalanceTotalBtc! % 1 == 0) {
         // 정수일 때
-        _textEditingController.text = _fakeBalanceTotalAmount.toString().split('.')[0];
+        _textEditingController.text = _fakeBalanceTotalBtc.toString().split('.')[0];
       } else {
-        _textEditingController.text = _fakeBalanceTotalAmount.toString();
+        _textEditingController.text = _fakeBalanceTotalBtc.toString();
       }
     }
 
@@ -62,7 +65,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
       _textEditingController.addListener(() {
         double? input;
         if (_textEditingController.text.isEmpty) {
-          _fakeBalanceTotalAmount = null;
+          _fakeBalanceTotalBtc = null;
         }
         try {
           input = double.parse(_textEditingController.text);
@@ -71,16 +74,16 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
         }
 
         setState(() {
-          _fakeBalanceTotalAmount = input;
-          if (_fakeBalanceTotalAmount == null) {
+          _fakeBalanceTotalBtc = input;
+          debugPrint(
+              '_fakeBalanceTotalBtc : $_fakeBalanceTotalBtc _maximumAmount: $_maximumAmount');
+          if (_fakeBalanceTotalBtc == null) {
             _inputError = FakeBalanceInputError.none;
           } else {
-            final int inputSats = (_fakeBalanceTotalAmount! * 100000000).round();
-            final int minSats = (_minimumAmount * 100000000).round();
-
-            if (inputSats > 0 && inputSats < minSats) {
+            if (_fakeBalanceTotalBtc! > 0 &&
+                _fakeBalanceTotalBtc! < UnitUtil.satoshiToBitcoin(_minimumSatoshi)) {
               _inputError = FakeBalanceInputError.notEnoughForAllWallets;
-            } else if (_fakeBalanceTotalAmount! > _maximumAmount) {
+            } else if (_fakeBalanceTotalBtc! > _maximumAmount) {
               _inputError = FakeBalanceInputError.exceedsTotalSupply;
             } else {
               _inputError = FakeBalanceInputError.none;
@@ -151,7 +154,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                             textInputFormatter: [
                               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,8}')),
                             ],
-                            placeholderText: _fakeBalanceTotalAmount != null
+                            placeholderText: _fakeBalanceTotalBtc != null
                                 ? ''
                                 : t.settings_screen.fake_balance.fake_balance_input_placeholder,
                             descriptionText: _textFieldFocusNode.hasFocus
@@ -180,7 +183,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                             maxLength: _maxInputLength,
                             errorText: _inputError == FakeBalanceInputError.exceedsTotalSupply
                                 ? '  ${t.settings_screen.fake_balance.fake_balance_input_exceeds_error}'
-                                : '  ${t.settings_screen.fake_balance.fake_balance_input_not_enough_error(btc: _minimumAmount.toStringAsFixed(8), sats: _walletProvider.walletItemList.length)}',
+                                : '  ${t.settings_screen.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.satoshiToBitcoin(_minimumSatoshi).toStringAsFixed(8), sats: _walletProvider.walletItemList.length)}',
                             isError: _inputError != FakeBalanceInputError.none,
                             maxLines: 1,
                           ),
@@ -239,33 +242,41 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
       await _preferenceProvider.changeIsFakeBalanceActive(false);
       return;
     }
-    if (_fakeBalanceTotalAmount == null || wallets.isEmpty) return;
+    if (_fakeBalanceTotalBtc == null || wallets.isEmpty) return;
 
-    if (_fakeBalanceTotalAmount == 0) {
-      await _preferenceProvider.setFakeBalanceTotalAmount(_fakeBalanceTotalAmount!);
+    if (_fakeBalanceTotalBtc == 0) {
+      await _preferenceProvider.setFakeBalanceTotalAmount(0);
 
       final Map<int, dynamic> fakeBalanceMap = {};
       for (int i = 0; i < wallets.length; i++) {
         final walletId = wallets[i].id;
 
-        fakeBalanceMap[walletId] = 0.0;
+        fakeBalanceMap[walletId] = 0;
         debugPrint('[Wallet $i]Fake Balance: ${fakeBalanceMap[i]} BTC');
       }
       await _preferenceProvider.setFakeBalanceMap(fakeBalanceMap);
       return;
     }
 
-    final totalSats = (_fakeBalanceTotalAmount! * 100000000).round();
     final walletCount = wallets.length;
 
-    if (totalSats < walletCount) return; // 최소 1사토시씩 못 주면 리턴
+    if (!_fakeBalanceTotalBtc.toString().contains('.')) {
+      // input값이 정수 일 때 sats로 환산
+      _fakeBalanceTotalBtc = _fakeBalanceTotalBtc! * 100000000;
+    } else {
+      // input이 소수일 때 소수점 이하 8자리로 맞춘 후 정수로 변환
+      final fixedString = _fakeBalanceTotalBtc!.toStringAsFixed(8).replaceAll('.', '');
+      _fakeBalanceTotalBtc = double.parse(fixedString);
+    }
+
+    if (_fakeBalanceTotalBtc! < walletCount) return; // 최소 1사토시씩 못 주면 리턴
 
     final random = Random();
     // 1. 각 지갑에 최소 1사토시 할당
     // 2. 남은 사토시를 랜덤 가중치로 분배
     final List<int> weights = List.generate(walletCount, (_) => random.nextInt(100) + 1); // 1~100
     final int weightSum = weights.reduce((a, b) => a + b);
-    final int remainingSats = totalSats - walletCount;
+    final int remainingSats = (_fakeBalanceTotalBtc! - walletCount).toInt();
     final List<int> splits = [];
 
     for (int i = 0; i < walletCount; i++) {
@@ -274,23 +285,23 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
     }
 
     // 보정: 분할의 총합이 totalSats보다 작을 수 있으므로 마지막 지갑에 부족분 추가
-    final int diff = totalSats - splits.reduce((a, b) => a + b);
+    final int diff = (_fakeBalanceTotalBtc! - splits.reduce((a, b) => a + b)).toInt();
     splits[splits.length - 1] += diff;
 
-    final fakeBalances = splits.map((sats) => sats / 100000000).toList();
     final Map<int, dynamic> fakeBalanceMap = {};
 
     if (_preferenceProvider.isFakeBalanceActive != _isFakeBalanceActive) {
       await _preferenceProvider.changeIsFakeBalanceActive(_isFakeBalanceActive);
     }
 
-    await _preferenceProvider.setFakeBalanceTotalAmount(_fakeBalanceTotalAmount!);
+    debugPrint('_fakeBalanceTotalAmount!.toInt(): ${_fakeBalanceTotalBtc!.toInt()}');
+    await _preferenceProvider.setFakeBalanceTotalAmount(_fakeBalanceTotalBtc!.toInt());
 
-    for (int i = 0; i < fakeBalances.length; i++) {
+    for (int i = 0; i < splits.length; i++) {
       final walletId = wallets[i].id;
-      final fakeBalance = fakeBalances[i];
+      final fakeBalance = splits[i];
       fakeBalanceMap[walletId] = fakeBalance;
-      debugPrint('[Wallet $i]Fake Balance: ${fakeBalances[i]} BTC');
+      debugPrint('[Wallet $i]Fake Balance: ${splits[i]} Sats');
     }
 
     await _preferenceProvider.setFakeBalanceMap(fakeBalanceMap);

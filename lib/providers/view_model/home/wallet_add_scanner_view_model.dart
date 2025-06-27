@@ -40,7 +40,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   }
 
   IQrScanDataHandler get qrDataHandler => _qrDataHandler;
-  double? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
+  int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
     switch (_walletImportSource) {
@@ -83,8 +83,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     if (fakeBalanceTotalAmount == null || walletId == null) return;
 
     // 가짜 잔액이 설정되어 있는 경우 FakeBalanceTotalAmount 이하의 값 랜덤 배정
-    final randomFakeBalance =
-        double.parse((Random().nextDouble() * fakeBalanceTotalAmount!).toStringAsFixed(8));
+    final randomFakeBalance = (Random().nextDouble() * fakeBalanceTotalAmount! + 1).toInt();
 
     await _preferenceProvider.setFakeBalance(walletId, randomFakeBalance);
   }
