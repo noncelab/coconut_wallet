@@ -228,7 +228,9 @@ class ResultsArea extends StatelessWidget {
             size: 20,
           ),
         // RealmTransaction 테이블일 때만 비우기 버튼 표시
-        if (viewModel.selectedTable == 'RealmTransaction')
+        if (viewModel.selectedTable == 'RealmTransaction' &&
+            row['id'] != null &&
+            row['transactionHash'] != null)
           IconButton(
             icon: const Icon(Icons.restart_alt_outlined),
             onPressed: () => onClearTransaction(row),

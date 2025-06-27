@@ -90,9 +90,9 @@ class RealmDebugService {
 
     try {
       // 각 테이블별로 알려진 속성들을 직접 처리 (최적화)
-      switch (obj.runtimeType) {
-        case RealmWalletBase _:
-          final wallet = obj as RealmWalletBase;
+
+      switch (obj) {
+        case RealmWalletBase wallet:
           map['id'] = wallet.id;
           map['colorIndex'] = wallet.colorIndex;
           map['iconIndex'] = wallet.iconIndex;
@@ -105,8 +105,7 @@ class RealmDebugService {
           map['generatedChangeIndex'] = wallet.generatedChangeIndex;
           break;
 
-        case RealmTransaction _:
-          final tx = obj as RealmTransaction;
+        case RealmTransaction tx:
           map['id'] = tx.id;
           map['transactionHash'] = tx.transactionHash;
           map['walletId'] = tx.walletId;
@@ -122,8 +121,7 @@ class RealmDebugService {
           map['replaceByTransactionHash'] = tx.replaceByTransactionHash;
           break;
 
-        case RealmUtxo _:
-          final utxo = obj as RealmUtxo;
+        case RealmUtxo utxo:
           map['id'] = utxo.id;
           map['walletId'] = utxo.walletId;
           map['address'] = utxo.address;
@@ -138,8 +136,7 @@ class RealmDebugService {
           map['isDeleted'] = utxo.isDeleted;
           break;
 
-        case RealmWalletAddress _:
-          final addr = obj as RealmWalletAddress;
+        case RealmWalletAddress addr:
           map['id'] = addr.id;
           map['walletId'] = addr.walletId;
           map['address'] = addr.address;
@@ -152,8 +149,7 @@ class RealmDebugService {
           map['total'] = addr.total;
           break;
 
-        case RealmWalletBalance _:
-          final balance = obj as RealmWalletBalance;
+        case RealmWalletBalance balance:
           map['id'] = balance.id;
           map['walletId'] = balance.walletId;
           map['total'] = balance.total;
@@ -161,23 +157,20 @@ class RealmDebugService {
           map['unconfirmed'] = balance.unconfirmed;
           break;
 
-        case RealmMultisigWallet _:
-          final multisig = obj as RealmMultisigWallet;
+        case RealmMultisigWallet multisig:
           map['id'] = multisig.id;
           map['walletBase'] = multisig.walletBase?.name ?? 'null';
           map['signersInJsonSerialization'] = multisig.signersInJsonSerialization;
           map['requiredSignatureCount'] = multisig.requiredSignatureCount;
           break;
 
-        case RealmExternalWallet _:
-          final external = obj as RealmExternalWallet;
+        case RealmExternalWallet external:
           map['id'] = external.id;
           map['walletImportSource'] = external.walletImportSource;
           map['walletBase'] = external.walletBase?.name ?? 'null';
           break;
 
-        case RealmUtxoTag _:
-          final tag = obj as RealmUtxoTag;
+        case RealmUtxoTag tag:
           map['id'] = tag.id;
           map['walletId'] = tag.walletId;
           map['name'] = tag.name;
@@ -186,28 +179,24 @@ class RealmDebugService {
           map['createAt'] = tag.createAt.toIso8601String();
           break;
 
-        case RealmScriptStatus _:
-          final script = obj as RealmScriptStatus;
+        case RealmScriptStatus script:
           map['scriptPubKey'] = script.scriptPubKey;
           map['status'] = script.status;
           map['walletId'] = script.walletId;
           map['timestamp'] = script.timestamp.toIso8601String();
           break;
 
-        case RealmBlockTimestamp _:
-          final block = obj as RealmBlockTimestamp;
+        case RealmBlockTimestamp block:
           map['blockHeight'] = block.blockHeight;
           map['timestamp'] = block.timestamp.toIso8601String();
           break;
 
-        case RealmIntegerId _:
-          final integerId = obj as RealmIntegerId;
+        case RealmIntegerId integerId:
           map['key'] = integerId.key;
           map['value'] = integerId.value;
           break;
 
-        case RealmRbfHistory _:
-          final rbf = obj as RealmRbfHistory;
+        case RealmRbfHistory rbf:
           map['id'] = rbf.id;
           map['walletId'] = rbf.walletId;
           map['originalTransactionHash'] = rbf.originalTransactionHash;
@@ -216,8 +205,7 @@ class RealmDebugService {
           map['timestamp'] = rbf.timestamp.toIso8601String();
           break;
 
-        case RealmCpfpHistory _:
-          final cpfp = obj as RealmCpfpHistory;
+        case RealmCpfpHistory cpfp:
           map['id'] = cpfp.id;
           map['walletId'] = cpfp.walletId;
           map['parentTransactionHash'] = cpfp.parentTransactionHash;
@@ -227,8 +215,7 @@ class RealmDebugService {
           map['timestamp'] = cpfp.timestamp.toIso8601String();
           break;
 
-        case RealmTransactionMemo _:
-          final memo = obj as RealmTransactionMemo;
+        case RealmTransactionMemo memo:
           map['id'] = memo.id;
           map['transactionHash'] = memo.transactionHash;
           map['walletId'] = memo.walletId;
