@@ -26,12 +26,12 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late BitcoinUnit _currentUnit;
 
   String get confirmText =>
-      formatBitcoinBalance(UnitUtil.bitcoinToSatoshi(_viewModel.amount), _currentUnit);
+      formatBitcoinValue(UnitUtil.bitcoinToSatoshi(_viewModel.amount), _currentUnit);
 
-  String get estimatedFeeText => formatBitcoinBalance(_viewModel.estimatedFee, _currentUnit,
+  String get estimatedFeeText => formatBitcoinValue(_viewModel.estimatedFee, _currentUnit,
       defaultWhenZero: t.calculation_failed, shouldCheckZero: true);
 
-  String get totalCostText => formatBitcoinBalance(_viewModel.totalUsedAmount, _currentUnit,
+  String get totalCostText => formatBitcoinValue(_viewModel.totalUsedAmount, _currentUnit,
       defaultWhenZero: t.calculation_failed, shouldCheckZero: true);
 
   String get unitText => _currentUnit.symbol();

@@ -90,9 +90,9 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
 
   Widget _buildPendingAmountStatus() {
     String getSendingAmountText() =>
-        '${formatBitcoinBalance(widget.sendingAmount, widget.currentUnit, shouldCheckZero: true, withUnit: true)} ${t.status_sending}';
+        '${formatBitcoinValue(widget.sendingAmount, widget.currentUnit, shouldCheckZero: true, withUnit: true)} ${t.status_sending}';
     String getReceivingAmountText() =>
-        '${formatBitcoinBalance(widget.receivingAmount, widget.currentUnit, shouldCheckZero: true, withUnit: true)} ${t.status_receiving}';
+        '${formatBitcoinValue(widget.receivingAmount, widget.currentUnit, shouldCheckZero: true, withUnit: true)} ${t.status_receiving}';
 
     return Column(
       children: [

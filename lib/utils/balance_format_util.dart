@@ -126,7 +126,7 @@ String addThousandsSeparator(String input) {
   }
 }
 
-String formatBitcoinBalance(int? amount, BitcoinUnit unit,
+String formatBitcoinValue(int? amount, BitcoinUnit unit,
     {String defaultWhenNull = '',
     String defaultWhenZero = '',
     bool shouldCheckZero = false,

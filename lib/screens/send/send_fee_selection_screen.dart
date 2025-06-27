@@ -51,7 +51,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   bool? _isRecommendedFeeFetchSuccess;
   bool _isLoading = false;
 
-  String get feeText => formatBitcoinBalance(_estimatedFee, _currentUnit);
+  String get feeText => formatBitcoinValue(_estimatedFee, _currentUnit);
 
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
       bitcoin: _currentUnit == BitcoinUnit.btc

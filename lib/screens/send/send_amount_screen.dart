@@ -39,7 +39,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
       ];
 
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
-      bitcoin: formatBitcoinBalance(_viewModel.incomingBalance, _viewModel.currentUnit),
+      bitcoin: formatBitcoinValue(_viewModel.incomingBalance, _viewModel.currentUnit),
       unit: unitText);
 
   String get maxBalanceText =>

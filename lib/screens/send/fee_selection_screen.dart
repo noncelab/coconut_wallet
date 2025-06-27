@@ -58,7 +58,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
           : addCommasToIntegerPart(kMaxFeeLimit.toDouble()),
       unit: unitText);
 
-  String get feeText => formatBitcoinBalance(_estimatedFee, _currentUnit);
+  String get feeText => formatBitcoinValue(_estimatedFee, _currentUnit);
 
   String get unitText => _currentUnit.symbol();
 

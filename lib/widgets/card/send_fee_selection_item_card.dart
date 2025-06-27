@@ -83,7 +83,7 @@ class FeeSelectionItemCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          formatBitcoinBalance(feeInfo.estimatedFee, currentUnit),
+                          formatBitcoinValue(feeInfo.estimatedFee, currentUnit),
                           style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                         ),
                         Text(" ${currentUnit.symbol()}",
