@@ -244,6 +244,7 @@ flutter:
     - assets/svg/coconut-vault-mainnet.svg
     - assets/svg/coconut-vault-regtest.svg
     - assets/svg/seed-signer.svg
+    - assets/svg/jade.svg
     - assets/svg/keystone.svg
     - assets/svg/zpub.svg
     - assets/svg/copy.svg

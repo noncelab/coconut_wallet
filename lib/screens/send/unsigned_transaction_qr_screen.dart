@@ -326,6 +326,19 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step2}'),
           ];
         }
+      case WalletImportSource.jade:
+        {
+          return [
+            TextSpan(
+                text:
+                    '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1}'),
+            _em(t.unsigned_tx_qr_screen.guide_jade.step1_em),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1_end}\n'),
+            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step2}'),
+          ];
+        }
       // case WalletImportSource.coconutVault: TODO: 추후 BC_UR QR로 변경합니다.
       default:
         return [TextSpan(text: t.unsigned_tx_qr_screen.guide_hardware_wallet.step1)];
