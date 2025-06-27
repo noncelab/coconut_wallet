@@ -663,9 +663,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   Widget _amountText(TransactionRecord tx) {
     String prefix = _getPrefix(tx) == '-' ? '' : '+';
     Color color = prefix == '+' ? CoconutColors.cyan : CoconutColors.primary;
+    String amountText = bitcoinStringByUnit(tx.amount, _currentUnit);
 
-    return Text(
-        '$prefix${_currentUnit == BitcoinUnit.btc ? satoshiToBitcoinString(tx.amount) : addCommasToIntegerPart(tx.amount.toDouble())}',
+    return Text('$prefix$amountText',
         style: CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color));
   }
 

@@ -22,14 +22,6 @@ class AddressItemCard extends StatelessWidget {
       required this.currentUnit,
       this.balanceInSats});
 
-  String get balanceText => balanceInSats != null
-      ? currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(balanceInSats!)
-          : addCommasToIntegerPart(balanceInSats!.toDouble())
-      : '';
-
-  String get unitText => currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
-
   @override
   Widget build(BuildContext context) {
     var path = derivationPath.split('/');
@@ -62,7 +54,7 @@ class AddressItemCard extends StatelessWidget {
                   style: Styles.body1Number,
                 ),
                 const SizedBox(height: 4),
-                Text("$balanceText $unitText",
+                Text(bitcoinStringByUnit(balanceInSats, currentUnit, withUnit: true),
                     style: Styles.label.merge(TextStyle(
                         fontFamily: CustomFonts.number.getFontFamily,
                         fontWeight: FontWeight.normal,

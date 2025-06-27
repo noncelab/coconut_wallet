@@ -86,7 +86,7 @@ class WalletItemCard extends StatelessWidget {
                               AnimatedBalance(
                                   prevValue: animatedBalanceData.previous,
                                   value: animatedBalanceData.current,
-                                  isBtcUnit: currentUnit == BitcoinUnit.btc,
+                                  currentUnit: currentUnit,
                                   textStyle: CoconutTypography.heading3_21_NumberBold
                                       .setColor(CoconutColors.white)),
                               Text(

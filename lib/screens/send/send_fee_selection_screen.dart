@@ -51,19 +51,15 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   bool? _isRecommendedFeeFetchSuccess;
   bool _isLoading = false;
 
-  String get feeText => _estimatedFee != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_estimatedFee!)
-          : addCommasToIntegerPart(_estimatedFee!.toDouble())
-      : '';
-
-  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get feeText => bitcoinStringByUnit(_estimatedFee, _currentUnit);
 
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
       bitcoin: _currentUnit == BitcoinUnit.btc
           ? UnitUtil.satoshiToBitcoin(maxFeeLimit)
           : addCommasToIntegerPart(maxFeeLimit.toDouble()),
       unit: unitText);
+
+  String get unitText => bitcoinUnitString(_currentUnit);
 
   @override
   Widget build(BuildContext context) {

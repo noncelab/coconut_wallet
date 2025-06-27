@@ -25,31 +25,16 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late SendConfirmViewModel _viewModel;
   late BitcoinUnit _currentUnit;
 
-  String get confirmText => _currentUnit == BitcoinUnit.btc
-      ? satoshiToBitcoinString(UnitUtil.bitcoinToSatoshi(_viewModel.amount))
-      : addCommasToIntegerPart(UnitUtil.bitcoinToSatoshi(_viewModel.amount).toDouble());
+  String get confirmText =>
+      bitcoinStringByUnit(UnitUtil.bitcoinToSatoshi(_viewModel.amount), _currentUnit);
 
-  String get estimatedFeeText {
-    if (_viewModel.estimatedFee == null) return '';
+  String get estimatedFeeText => bitcoinStringByUnit(_viewModel.estimatedFee, _currentUnit,
+      zeroDefaultValue: t.calculation_failed, verifyZero: true);
 
-    return _viewModel.estimatedFee != 0
-        ? _currentUnit == BitcoinUnit.btc
-            ? satoshiToBitcoinString(_viewModel.estimatedFee!)
-            : addCommasToIntegerPart(_viewModel.estimatedFee!.toDouble())
-        : t.calculation_failed;
-  }
+  String get totalCostText => bitcoinStringByUnit(_viewModel.totalUsedAmount, _currentUnit,
+      zeroDefaultValue: t.calculation_failed, verifyZero: true);
 
-  String get totalCostText {
-    if (_viewModel.estimatedFee == null) return '';
-
-    return _viewModel.estimatedFee != 0
-        ? _currentUnit == BitcoinUnit.btc
-            ? satoshiToBitcoinString(_viewModel.totalUsedAmount!)
-            : addCommasToIntegerPart(_viewModel.totalUsedAmount!.toDouble())
-        : t.calculation_failed;
-  }
-
-  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get unitText => bitcoinUnitString(_currentUnit);
 
   @override
   Widget build(BuildContext context) {

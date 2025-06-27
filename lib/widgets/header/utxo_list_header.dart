@@ -81,7 +81,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                                     AnimatedBalance(
                                         prevValue: widget.animatedBalanceData.previous,
                                         value: widget.animatedBalanceData.current,
-                                        isBtcUnit: widget.currentUnit == BitcoinUnit.btc,
+                                        currentUnit: widget.currentUnit,
                                         textStyle: CoconutTypography.heading1_32_NumberBold),
                                   ],
                                 ),

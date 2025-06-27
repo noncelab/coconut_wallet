@@ -76,7 +76,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           AnimatedBalance(
             prevValue: widget.animatedBalanceData.previous,
             value: widget.animatedBalanceData.current,
-            isBtcUnit: widget.currentUnit == BitcoinUnit.btc,
+            currentUnit: widget.currentUnit,
           ),
           const SizedBox(width: 4.0),
           Text(
@@ -89,16 +89,10 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   }
 
   Widget _buildPendingAmountStatus() {
-    String getUnitText() => widget.currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
-    String getSendingAmountText() {
-      if (widget.sendingAmount == 0) return '';
-      return '${widget.currentUnit == BitcoinUnit.btc ? satoshiToBitcoinString(widget.sendingAmount) : addCommasToIntegerPart(widget.sendingAmount.toDouble())} ${getUnitText()} ${t.status_sending}';
-    }
-
-    String getReceivingAmountText() {
-      if (widget.receivingAmount == 0) return '';
-      return '${widget.currentUnit == BitcoinUnit.btc ? satoshiToBitcoinString(widget.receivingAmount) : addCommasToIntegerPart(widget.receivingAmount.toDouble())} ${getUnitText()} ${t.status_receiving}';
-    }
+    String getSendingAmountText() =>
+        '${bitcoinStringByUnit(widget.sendingAmount, widget.currentUnit, verifyZero: true, withUnit: true)} ${t.status_sending}';
+    String getReceivingAmountText() =>
+        '${bitcoinStringByUnit(widget.receivingAmount, widget.currentUnit, verifyZero: true, withUnit: true)} ${t.status_receiving}';
 
     return Column(
       children: [

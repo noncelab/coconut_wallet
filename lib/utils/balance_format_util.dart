@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:decimal/decimal.dart';
 import 'package:intl/intl.dart';
 
@@ -20,14 +22,18 @@ class UnitUtil {
 ///
 /// @param satoshi 사토시 단위 잔액
 /// @returns String 비트코인 단위 잔액 문자열 예) 00,000,000.0000 0000
-String satoshiToBitcoinString(int satoshi, {bool showDecimals = false}) {
+String satoshiToBitcoinString(int satoshi, {bool forceEightDecimals = false}) {
   double toBitcoin = UnitUtil.satoshiToBitcoin(satoshi);
 
   String bitcoinString;
   if (toBitcoin % 1 == 0) {
-    bitcoinString = showDecimals ? toBitcoin.toStringAsFixed(8) : toBitcoin.toInt().toString();
+    bitcoinString =
+        forceEightDecimals ? toBitcoin.toStringAsFixed(8) : toBitcoin.toInt().toString();
   } else {
-    bitcoinString = toBitcoin.toStringAsFixed(8); // Ensure it has 8 decimal places
+    bitcoinString = toBitcoin.toStringAsFixed(8);
+    if (!forceEightDecimals) {
+      bitcoinString = bitcoinString.replaceFirst(RegExp(r'0+$'), '');
+    }
   }
 
   // Split the integer and decimal parts
@@ -38,38 +44,25 @@ String satoshiToBitcoinString(int satoshi, {bool showDecimals = false}) {
   final integerPartFormatted =
       integerPart == '-0' ? '-0' : addCommasToIntegerPart(double.parse(integerPart));
 
-  // Group the decimal part into blocks of 4 digits
-  final decimalPartGrouped =
-      RegExp(r'.{1,4}').allMatches(decimalPart).map((match) => match.group(0)).join(' ');
+  String decimalPartGrouped = '';
+  if (decimalPart.isNotEmpty) {
+    if (decimalPart.length <= 4) {
+      decimalPartGrouped = decimalPart;
+    } else {
+      decimalPart = decimalPart.padRight(8, '0');
+      // Group the decimal part into blocks of 4 digits
+      decimalPartGrouped =
+          RegExp(r'.{1,4}').allMatches(decimalPart).map((match) => match.group(0)).join(' ');
+    }
+  }
 
   if (integerPartFormatted == '0' && decimalPartGrouped == '') {
     return '0';
   }
 
-  String result = '$integerPartFormatted.$decimalPartGrouped';
-
-  // Remove the trailing period if it exists
-  if (result.endsWith('.')) {
-    result = result.substring(0, result.length - 1);
-  }
-
-  return result;
-}
-
-extension NormalizeToFullCharacters on String {
-  /// 정수형 BTC 단위도 소수점 자리에 0을 포함하여 반환합니다.
-  String normalizeToFullCharacters() {
-    // Step 1: 쉼표 제거
-    String noCommas = replaceAll(',', '');
-
-    // Step 2: 정수인지 확인
-    if (!noCommas.contains('.')) {
-      // 정수라면 ".0000 0000" 추가
-      return "$noCommas.0000 0000";
-    }
-
-    return this;
-  }
+  return decimalPartGrouped.isNotEmpty
+      ? '$integerPartFormatted.$decimalPartGrouped'
+      : integerPartFormatted;
 }
 
 String addCommasToIntegerPart(double number) {
@@ -132,4 +125,22 @@ String addThousandsSeparator(String input) {
   } catch (e) {
     return input;
   }
+}
+
+String bitcoinStringByUnit(int? amount, BitcoinUnit unit,
+    {String nullDefaultValue = '',
+    String zeroDefaultValue = '',
+    bool verifyZero = false,
+    bool withUnit = false}) {
+  if (amount == null) return nullDefaultValue;
+  if (verifyZero && amount == 0) return zeroDefaultValue;
+
+  String amountText = unit == BitcoinUnit.btc
+      ? satoshiToBitcoinString(amount)
+      : addCommasToIntegerPart(amount.toDouble());
+  return withUnit ? "$amountText ${bitcoinUnitString(unit)}" : amountText;
+}
+
+String bitcoinUnitString(BitcoinUnit unit) {
+  return unit == BitcoinUnit.btc ? t.btc : t.sats;
 }

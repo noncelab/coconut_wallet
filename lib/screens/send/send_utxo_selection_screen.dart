@@ -283,12 +283,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   Widget _buildTotalUtxoAmount(Widget textKeyWidget, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
-    String utxoSumText = selectedUtxoListLength > 0
-        ? _currentUnit == BitcoinUnit.btc
-            ? satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()
-            : addCommasToIntegerPart(totalSelectedUtxoAmount.toDouble())
-        : '0';
-    String unitText = _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+    String utxoSumText = bitcoinStringByUnit(totalSelectedUtxoAmount, _currentUnit,
+        zeroDefaultValue: '0', verifyZero: true);
+    String unitText = bitcoinUnitString(_currentUnit);
 
     return Column(
       children: [

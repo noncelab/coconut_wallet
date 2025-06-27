@@ -93,9 +93,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        widget.currentUnit == BitcoinUnit.btc
-                            ? satoshiToBitcoinString(widget.utxo.amount)
-                            : addCommasToIntegerPart(widget.utxo.amount.toDouble()),
+                        bitcoinStringByUnit(widget.utxo.amount, widget.currentUnit),
                         style: Styles.h2Number,
                       ),
                       CoconutLayout.spacing_100w,
