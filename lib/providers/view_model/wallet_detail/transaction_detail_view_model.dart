@@ -101,6 +101,16 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
+  /// 트랜잭션 내용이 변경될 때마다 다른 키를 반환하여 위젯이 강제로 재생성되도록 합니다.
+  String getTransactionKey(int index) {
+    if (_transactionList == null || index >= _transactionList!.length) {
+      return 'empty_$index';
+    }
+
+    final tx = _transactionList![index];
+    return tx.contentKey;
+  }
+
   void clearSendInfo() {
     _sendInfoProvider.clear();
   }
@@ -320,11 +330,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
     final updatedTxResult = await _nodeProvider.getTransactionRecord(walletItem, _txHash);
 
     if (updatedTxResult.isSuccess) {
-      final updatedTx = updatedTxResult.value;
+      await _txProvider.updateTransaction(_walletId, _txHash, updatedTxResult.value);
 
-      _transactionList = [updatedTx];
+      _initTransactionList();
+      _setPreviousTransactionIndex(0);
+      _setSelectedTransactionIndex(0);
 
-      _txProvider.updateTransaction(_walletId, _txHash, updatedTx);
       safeNotifyListeners();
     } else {
       Logger.log('❌ updatedTxResult IS FAILED: ${updatedTxResult.error}');

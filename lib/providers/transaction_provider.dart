@@ -91,5 +91,7 @@ class TransactionProvider extends ChangeNotifier {
     _transaction = updatedTx;
 
     await _transactionRepository.updateTransactionRecord(walletId, txHash, updatedTx);
+
+    initTxList(walletId);
   }
 }

@@ -188,8 +188,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                   },
                                   child: TransactionInputOutputCard(
                                     key: ValueKey(_viewModel
-                                        .transactionList![_viewModel.previousTransactionIndex]
-                                        .transactionHash),
+                                        .getTransactionKey(_viewModel.previousTransactionIndex)),
                                     transaction: _viewModel
                                         .transactionList![_viewModel.previousTransactionIndex],
                                     isSameAddress: _viewModel.isSameAddress,
@@ -208,8 +207,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                 },
                                 child: TransactionInputOutputCard(
                                   key: ValueKey(_viewModel
-                                      .transactionList![_viewModel.selectedTransactionIndex]
-                                      .transactionHash),
+                                      .getTransactionKey(_viewModel.selectedTransactionIndex)),
                                   transaction: _viewModel
                                       .transactionList![_viewModel.selectedTransactionIndex],
                                   isSameAddress: _viewModel.isSameAddress,
