@@ -39,25 +39,16 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BitcoinUnit _currentUnit;
 
   int get amount => (_viewModel.sendingAmountWhenAddressIsMyChange ?? _viewModel.amount!);
-  String get confirmText => _viewModel.amount != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(amount)
-          : addCommasToIntegerPart(amount.toDouble())
-      : "";
 
-  String get estimatedFeeText => _viewModel.fee != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_viewModel.fee!)
-          : addCommasToIntegerPart(_viewModel.fee!.toDouble())
-      : t.calculation_failed;
+  String get confirmText => bitcoinStringByUnit(amount, _currentUnit);
 
-  String get totalCostText => _viewModel.totalAmount != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_viewModel.totalAmount!)
-          : addCommasToIntegerPart(_viewModel.totalAmount!.toDouble())
-      : t.calculation_failed;
+  String get estimatedFeeText =>
+      bitcoinStringByUnit(_viewModel.fee, _currentUnit, nullDefaultValue: t.calculation_failed);
 
-  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get totalCostText => bitcoinStringByUnit(_viewModel.totalAmount, _currentUnit,
+      nullDefaultValue: t.calculation_failed);
+
+  String get unitText => bitcoinUnitString(_currentUnit);
 
   void broadcast() async {
     if (context.loaderOverlay.visible) return;

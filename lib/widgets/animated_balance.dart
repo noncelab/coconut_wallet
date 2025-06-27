@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/material.dart';
 
@@ -6,14 +7,14 @@ class AnimatedBalance extends StatefulWidget {
   final int prevValue;
   final int value;
   final int duration;
-  final bool isBtcUnit;
+  final BitcoinUnit currentUnit;
   final TextStyle? textStyle;
 
   const AnimatedBalance({
     super.key,
     required this.prevValue,
     required this.value,
-    required this.isBtcUnit,
+    required this.currentUnit,
     this.duration = 1000,
     this.textStyle,
   });
@@ -30,9 +31,7 @@ class _AnimatedBalanceState extends State<AnimatedBalance> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     return Text(
-      widget.isBtcUnit
-          ? satoshiToBitcoinString(_displayValue.toInt())
-          : addCommasToIntegerPart(_displayValue),
+      bitcoinStringByUnit(_displayValue.toInt(), widget.currentUnit),
       style: widget.textStyle ?? CoconutTypography.heading1_32_NumberBold,
     );
   }

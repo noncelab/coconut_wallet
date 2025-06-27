@@ -58,13 +58,9 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
           : addCommasToIntegerPart(kMaxFeeLimit.toDouble()),
       unit: unitText);
 
-  String get feeText => _estimatedFee != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_estimatedFee!)
-          : addCommasToIntegerPart(_estimatedFee!.toDouble())
-      : '';
+  String get feeText => bitcoinStringByUnit(_estimatedFee, _currentUnit);
 
-  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get unitText => bitcoinUnitString(_currentUnit);
 
   @override
   Widget build(BuildContext context) {
