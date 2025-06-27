@@ -147,7 +147,6 @@ class UtxoDetailViewModel extends ChangeNotifier {
     }
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
-    print('_utxoTagList ${_utxoTagList.map((tag) => tag.name).toList()}');
     _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxoId);
     notifyListeners();
   }
