@@ -28,7 +28,7 @@ class PreferenceProvider extends ChangeNotifier {
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
 
   PreferenceProvider() {
-    _fakeBalanceTotalAmount = _sharedPrefs.getInt(SharedPrefKeys.kFakeBalanceTotal);
+    _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
     _isBtcUnit = _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)

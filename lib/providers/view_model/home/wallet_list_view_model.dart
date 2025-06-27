@@ -83,7 +83,6 @@ class WalletListViewModel extends ChangeNotifier {
       _nodeSyncState = syncState;
     }
   }
-  
 
   void hideTermsShortcut() {
     _isTermsShortcutVisible = false;

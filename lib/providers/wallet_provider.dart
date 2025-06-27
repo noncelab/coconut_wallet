@@ -39,7 +39,6 @@ class WalletProvider extends ChangeNotifier {
 
   late final PreferenceProvider _preferenceProvider;
 
-
   late final Future<void> Function(int) _saveWalletCount;
   late final bool _isSetPin;
 

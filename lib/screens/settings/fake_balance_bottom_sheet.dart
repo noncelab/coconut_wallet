@@ -43,6 +43,8 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
   void initState() {
     super.initState();
     _preferenceProvider = context.read<PreferenceProvider>();
+    debugPrint(
+        '_preferenceProvider.fakeBalanceTotalAmount: ${_preferenceProvider.fakeBalanceTotalAmount}');
     _fakeBalanceTotalBtc = _preferenceProvider.fakeBalanceTotalAmount != null
         ? UnitUtil.satoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
         : null;
@@ -238,6 +240,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
 
   void _onComplete() async {
     final wallets = _walletProvider.walletItemList;
+    debugPrint('_isFakeBalanceActive: $_isFakeBalanceActive');
     if (!_isFakeBalanceActive) {
       await _preferenceProvider.changeIsFakeBalanceActive(false);
       return;

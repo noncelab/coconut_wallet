@@ -17,7 +17,6 @@ class WalletInfoViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
-
   late String _walletName;
   late String _extendedPublicKey;
   late int _multisigTotalSignerCount;
@@ -57,7 +56,7 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   Future<void> deleteWallet() async {
     await _sharedPrefs.removeFaucetHistory(_walletId);
-    
+
     await _walletProvider.deleteWallet(_walletId);
     _nodeProvider.reconnect();
     _walletProvider.notifyListeners();

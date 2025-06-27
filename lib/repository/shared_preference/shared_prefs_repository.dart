@@ -50,6 +50,10 @@ class SharedPrefsRepository {
     return _sharedPrefs.getInt(key) ?? 0;
   }
 
+  int? getIntOrNull(String key) {
+    return _sharedPrefs.getInt(key);
+  }
+
   Future setInt(String key, int value) async {
     await _sharedPrefs.setInt(key, value);
   }

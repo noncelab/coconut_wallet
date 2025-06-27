@@ -92,10 +92,18 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
         return previous..onWalletProviderUpdated(walletProvider);
       },
-      child: Selector<WalletListViewModel,
-          Tuple7<List<WalletListItemBase>, bool, bool, bool, bool, Map<int, AnimatedBalanceData>, Tuple2<int?, Map<int, dynamic>>>>(
-        selector: (_, vm) => Tuple7(vm.walletItemList, vm.isNetworkOn ?? false, vm.isBalanceHidden,
-            vm.shouldShowLoadingIndicator, vm.isTermsShortcutVisible, vm.walletBalanceMap, Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap)),
+      child: Selector<
+          WalletListViewModel,
+          Tuple7<List<WalletListItemBase>, bool, bool, bool, bool, Map<int, AnimatedBalanceData>,
+              Tuple2<int?, Map<int, dynamic>>>>(
+        selector: (_, vm) => Tuple7(
+            vm.walletItemList,
+            vm.isNetworkOn ?? false,
+            vm.isBalanceHidden,
+            vm.shouldShowLoadingIndicator,
+            vm.isTermsShortcutVisible,
+            vm.walletBalanceMap,
+            Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap)),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletListViewModel>(context, listen: false);
 
