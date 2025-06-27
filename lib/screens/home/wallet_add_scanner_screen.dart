@@ -109,6 +109,25 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step3),
           ];
         }
+      case WalletImportSource.jade:
+        {
+          return [
+            _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
+            const TextSpan(text: '\n'),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step1),
+            _em(t.wallet_add_scanner_screen.guide_jade.step1_em),
+            TextSpan(text: t.wallet_add_scanner_screen.select),
+            const TextSpan(text: '\n'),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step2),
+            _em(t.wallet_add_scanner_screen.guide_jade.step2_em),
+            TextSpan(text: t.wallet_add_scanner_screen.select),
+            const TextSpan(text: '\n'),
+            TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step3),
+            _em(t.wallet_add_scanner_screen.guide_jade.step3_em),
+            TextSpan(text: t.wallet_add_scanner_screen.select),
+          ];
+        }
       default:
         return [];
     }
@@ -291,6 +310,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   String _getAppBarTitle() => switch (widget.importSource) {
         WalletImportSource.coconutVault => t.wallet_add_scanner_screen.vault,
         WalletImportSource.keystone => t.wallet_add_scanner_screen.keystone,
+        WalletImportSource.jade => t.wallet_add_scanner_screen.jade,
         WalletImportSource.seedSigner => t.wallet_add_scanner_screen.seed_signer,
         _ => '',
       };

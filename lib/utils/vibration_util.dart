@@ -3,6 +3,14 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart';
 
+void vibrateExtraLight() {
+  if (Platform.isAndroid) {
+    Vibration.vibrate(duration: 10);
+  } else if (Platform.isIOS) {
+    HapticFeedback.lightImpact();
+  }
+}
+
 void vibrateLight() {
   if (Platform.isAndroid) {
     Vibration.vibrate(duration: 100);

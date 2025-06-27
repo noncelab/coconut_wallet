@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -457,7 +458,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 position: offsetTween.animate(slideDownAnimation),
                 child: Material(
                   elevation: 4,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
                   color: CoconutColors.black,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -484,6 +485,22 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                 () => _goToScannerScreen(WalletImportSource.seedSigner),
                                 WalletImportSource.seedSigner,
                               ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.jade),
+                                WalletImportSource.jade,
+                              ),
+                            ),
+                            const Expanded(
+                              child: SizedBox(),
+                            ),
+                            const Expanded(
+                              child: SizedBox(),
                             ),
                           ],
                         ),
@@ -690,16 +707,21 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         scanText = t.wallet_add_scanner_screen.vault;
         break;
       case WalletImportSource.keystone:
-        svgPath = 'assets/svg/keystone.svg';
+        svgPath = kKeystoneIconPath;
         scanText = t.wallet_add_scanner_screen.keystone;
         break;
+      case WalletImportSource.jade:
+        svgPath = kJadeIconPath;
+        scanText = t.wallet_add_scanner_screen.jade;
+        break;
       case WalletImportSource.seedSigner:
-        svgPath = 'assets/svg/seed-signer.svg';
+        svgPath = kSeedSignerIconPath;
         scanText = t.wallet_add_scanner_screen.seed_signer;
         break;
       case WalletImportSource.extendedPublicKey:
-        svgPath = 'assets/svg/zpub.svg';
+        svgPath = kZpubIconPath;
         scanText = t.wallet_add_scanner_screen.self;
+        break;
     }
     return ShrinkAnimationButton(
       defaultColor: CoconutColors.black,

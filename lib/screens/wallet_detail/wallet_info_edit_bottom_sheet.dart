@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
@@ -154,7 +153,6 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
   }
 
   Widget _buildIcon() {
-    final path = _getExternalWalletIconPath();
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
@@ -164,15 +162,9 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
       ),
       padding: const EdgeInsets.all(10),
       child: SvgPicture.asset(
-        path,
+        WalletImportSourceExtension.getExternalWalletIconPath(widget.walletImportSource),
         colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
       ),
     );
   }
-
-  String _getExternalWalletIconPath() => widget.walletImportSource == WalletImportSource.keystone
-      ? kKeystoneIconPath
-      : widget.walletImportSource == WalletImportSource.seedSigner
-          ? kSeedSignerIconPath
-          : kZpubIconPath;
 }

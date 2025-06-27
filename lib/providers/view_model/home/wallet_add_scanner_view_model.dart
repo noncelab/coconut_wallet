@@ -22,6 +22,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         _qrDataHandler = CoconutQrScanDataHandler();
         break;
       case WalletImportSource.keystone:
+      case WalletImportSource.jade:
         _qrDataHandler = BcUrQrScanDataHandler();
         break;
       case WalletImportSource.seedSigner:
@@ -42,6 +43,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         return addCoconutVaultWallet(additionInfo as WatchOnlyWallet);
       case WalletImportSource.keystone:
         return addKeystoneWallet(additionInfo as UR);
+      case WalletImportSource.jade:
+        return addJadeWallet(additionInfo as UR);
       case WalletImportSource.seedSigner:
         return addSeedSignerWallet(additionInfo as String);
       case WalletImportSource.extendedPublicKey:
@@ -59,6 +62,13 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     final name = getNextThirdPartyWalletName(
         WalletImportSource.keystone, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createKeystoneWallet(ur, name);
+    return await _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  Future<ResultOfSyncFromVault> addJadeWallet(UR ur) async {
+    final name = getNextThirdPartyWalletName(
+        WalletImportSource.jade, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final wallet = _walletAddService.createJadeWallet(ur, name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
