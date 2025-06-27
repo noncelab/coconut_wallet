@@ -71,7 +71,7 @@ class UtxoItemCard extends StatelessWidget {
                           SvgPicture.asset('assets/svg/lock.svg'),
                         ],
                         Text(
-                          bitcoinStringByUnit(utxo.amount, currentUnit),
+                          formatBitcoinBalance(utxo.amount, currentUnit),
                           style: CoconutTypography.heading4_18_NumberBold
                               .setColor(CoconutColors.white),
                         ),

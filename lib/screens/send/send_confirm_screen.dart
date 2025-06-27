@@ -26,15 +26,15 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late BitcoinUnit _currentUnit;
 
   String get confirmText =>
-      bitcoinStringByUnit(UnitUtil.bitcoinToSatoshi(_viewModel.amount), _currentUnit);
+      formatBitcoinBalance(UnitUtil.bitcoinToSatoshi(_viewModel.amount), _currentUnit);
 
-  String get estimatedFeeText => bitcoinStringByUnit(_viewModel.estimatedFee, _currentUnit,
-      zeroDefaultValue: t.calculation_failed, verifyZero: true);
+  String get estimatedFeeText => formatBitcoinBalance(_viewModel.estimatedFee, _currentUnit,
+      defaultWhenZero: t.calculation_failed, shouldCheckZero: true);
 
-  String get totalCostText => bitcoinStringByUnit(_viewModel.totalUsedAmount, _currentUnit,
-      zeroDefaultValue: t.calculation_failed, verifyZero: true);
+  String get totalCostText => formatBitcoinBalance(_viewModel.totalUsedAmount, _currentUnit,
+      defaultWhenZero: t.calculation_failed, shouldCheckZero: true);
 
-  String get unitText => bitcoinUnitString(_currentUnit);
+  String get unitText => _currentUnit.symbol();
 
   @override
   Widget build(BuildContext context) {

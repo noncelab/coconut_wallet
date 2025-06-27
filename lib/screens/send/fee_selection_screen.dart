@@ -58,9 +58,9 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
           : addCommasToIntegerPart(kMaxFeeLimit.toDouble()),
       unit: unitText);
 
-  String get feeText => bitcoinStringByUnit(_estimatedFee, _currentUnit);
+  String get feeText => formatBitcoinBalance(_estimatedFee, _currentUnit);
 
-  String get unitText => bitcoinUnitString(_currentUnit);
+  String get unitText => _currentUnit.symbol();
 
   @override
   Widget build(BuildContext context) {

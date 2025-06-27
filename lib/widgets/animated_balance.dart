@@ -31,7 +31,7 @@ class _AnimatedBalanceState extends State<AnimatedBalance> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     return Text(
-      bitcoinStringByUnit(_displayValue.toInt(), widget.currentUnit),
+      formatBitcoinBalance(_displayValue.toInt(), widget.currentUnit),
       style: widget.textStyle ?? CoconutTypography.heading1_32_NumberBold,
     );
   }

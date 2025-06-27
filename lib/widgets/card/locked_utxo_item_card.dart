@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -12,11 +13,13 @@ import 'package:flutter_svg/svg.dart';
 class LockedUtxoItemCard extends StatefulWidget {
   final UtxoState utxo;
   final List<UtxoTag>? utxoTags;
+  final BitcoinUnit currentUnit;
 
   const LockedUtxoItemCard({
     super.key,
     required this.utxo,
     this.utxoTags,
+    required this.currentUnit,
   });
 
   @override
@@ -62,7 +65,7 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      satoshiToBitcoinString(widget.utxo.amount),
+                      formatBitcoinBalance(widget.utxo.amount, widget.currentUnit),
                       style: Styles.h2Number.setColor(CoconutColors.white.withOpacity(0.3)),
                     ),
                     CoconutLayout.spacing_100w,

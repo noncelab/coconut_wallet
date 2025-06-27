@@ -92,7 +92,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text(bitcoinStringByUnit(sendAmount, currentUnit, withUnit: true),
+          Text(formatBitcoinBalance(sendAmount, currentUnit, withUnit: true),
               style: CoconutTypography.body2_14_Number),
           FiatPrice(
             satoshiAmount: sendAmount,
@@ -140,9 +140,9 @@ class SendUtxoStickyHeader extends StatelessWidget {
     }
   }
 
-  String get unitText => bitcoinUnitString(currentUnit);
-  String get feeText => bitcoinStringByUnit(estimatedFee, currentUnit, nullDefaultValue: '0');
-  String get changeText => bitcoinStringByUnit(change, currentUnit, nullDefaultValue: '-');
+  String get unitText => currentUnit.symbol();
+  String get feeText => formatBitcoinBalance(estimatedFee, currentUnit, defaultWhenNull: '0');
+  String get changeText => formatBitcoinBalance(change, currentUnit, defaultWhenNull: '-');
 
   Widget _buildEstimatedFee() {
     return Column(

@@ -54,7 +54,7 @@ class AddressItemCard extends StatelessWidget {
                   style: Styles.body1Number,
                 ),
                 const SizedBox(height: 4),
-                Text(bitcoinStringByUnit(balanceInSats, currentUnit, withUnit: true),
+                Text(formatBitcoinBalance(balanceInSats, currentUnit, withUnit: true),
                     style: Styles.label.merge(TextStyle(
                         fontFamily: CustomFonts.number.getFontFamily,
                         fontWeight: FontWeight.normal,

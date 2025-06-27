@@ -283,9 +283,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   Widget _buildTotalUtxoAmount(Widget textKeyWidget, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
-    String utxoSumText = bitcoinStringByUnit(totalSelectedUtxoAmount, _currentUnit,
-        zeroDefaultValue: '0', verifyZero: true);
-    String unitText = bitcoinUnitString(_currentUnit);
+    String utxoSumText = formatBitcoinBalance(totalSelectedUtxoAmount, _currentUnit,
+        defaultWhenZero: '0', shouldCheckZero: true);
+    String unitText = _currentUnit.symbol();
 
     return Column(
       children: [
@@ -613,6 +613,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: LockedUtxoItemCard(
+                  currentUnit: _currentUnit,
                   key: ValueKey(utxo.transactionHash),
                   utxo: utxo,
                   utxoTags: viewModel.utxoTagMap[utxo.utxoId],

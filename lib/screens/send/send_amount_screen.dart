@@ -39,13 +39,13 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
       ];
 
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
-      bitcoin: bitcoinStringByUnit(_viewModel.incomingBalance, _viewModel.currentUnit),
+      bitcoin: formatBitcoinBalance(_viewModel.incomingBalance, _viewModel.currentUnit),
       unit: unitText);
 
   String get maxBalanceText =>
-      "${_viewModel.currentUnit == BitcoinUnit.btc ? UnitUtil.satoshiToBitcoin(_viewModel.confirmedBalance) : addCommasToIntegerPart(_viewModel.confirmedBalance.toDouble())} ${bitcoinUnitString(_viewModel.currentUnit)}";
+      "${_viewModel.currentUnit == BitcoinUnit.btc ? UnitUtil.satoshiToBitcoin(_viewModel.confirmedBalance) : addCommasToIntegerPart(_viewModel.confirmedBalance.toDouble())} ${_viewModel.currentUnit.symbol()}";
 
-  String get unitText => bitcoinUnitString(_viewModel.currentUnit);
+  String get unitText => _viewModel.currentUnit.symbol();
 
   @override
   Widget build(BuildContext context) {

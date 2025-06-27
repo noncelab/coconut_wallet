@@ -1,5 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
+import 'package:coconut_wallet/localization/strings.g.dart';
+
 enum CurrencyCode {
   KRW('KRW', 'South Korean Won', '₩'),
   ;
@@ -16,4 +18,11 @@ enum CurrencyCode {
   }
 }
 
-enum BitcoinUnit { btc, sats }
+enum BitcoinUnit {
+  btc,
+  sats;
+
+  String symbol() {
+    return this == BitcoinUnit.btc ? t.btc : t.sats;
+  }
+}

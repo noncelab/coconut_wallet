@@ -339,12 +339,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         child: Center(
             child: RichText(
                 text: TextSpan(
-                    text: bitcoinStringByUnit(widget.utxo.amount, _currentUnit),
+                    text: formatBitcoinBalance(widget.utxo.amount, _currentUnit),
                     style: CoconutTypography.heading2_28_NumberBold,
                     children: <InlineSpan>[
               WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
-                  child: Text(" ${bitcoinUnitString(_currentUnit)}",
+                  child: Text(" ${_currentUnit.symbol()}",
                       style: CoconutTypography.heading3_21_Number))
             ]))),
       ),

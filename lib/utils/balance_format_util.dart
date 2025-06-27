@@ -1,5 +1,4 @@
 import 'package:coconut_wallet/enums/currency_enums.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:decimal/decimal.dart';
 import 'package:intl/intl.dart';
 
@@ -127,20 +126,16 @@ String addThousandsSeparator(String input) {
   }
 }
 
-String bitcoinStringByUnit(int? amount, BitcoinUnit unit,
-    {String nullDefaultValue = '',
-    String zeroDefaultValue = '',
-    bool verifyZero = false,
+String formatBitcoinBalance(int? amount, BitcoinUnit unit,
+    {String defaultWhenNull = '',
+    String defaultWhenZero = '',
+    bool shouldCheckZero = false,
     bool withUnit = false}) {
-  if (amount == null) return nullDefaultValue;
-  if (verifyZero && amount == 0) return zeroDefaultValue;
+  if (amount == null) return defaultWhenNull;
+  if (shouldCheckZero && amount == 0) return defaultWhenZero;
 
   String amountText = unit == BitcoinUnit.btc
       ? satoshiToBitcoinString(amount)
       : addCommasToIntegerPart(amount.toDouble());
-  return withUnit ? "$amountText ${bitcoinUnitString(unit)}" : amountText;
-}
-
-String bitcoinUnitString(BitcoinUnit unit) {
-  return unit == BitcoinUnit.btc ? t.btc : t.sats;
+  return withUnit ? "$amountText ${unit.symbol()}" : amountText;
 }
