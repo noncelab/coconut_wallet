@@ -79,19 +79,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           ConnectivityProvider connectivityProvider,
           WalletListViewModel? previous) {
         previous ??= _createViewModel();
-        if (previous.isBalanceHidden != preferenceProvider.isBalanceHidden) {
-          previous.setIsBalanceHidden(preferenceProvider.isBalanceHidden);
-        }
-
-        if (previous.fakeBalanceTotalAmount != preferenceProvider.fakeBalanceTotalAmount) {
-          previous.setFakeBlancTotalAmount(preferenceProvider.fakeBalanceTotalAmount);
-          previous.setFakeBlanceMap(preferenceProvider.getFakeBalanceMap());
-        }
-
-        if (previous.fakeBalanceMap != preferenceProvider.getFakeBalanceMap()) {
-          // map이 변경되는 경우는 totalAmount가 변경되는 것과 관련이 없음
-          previous.setFakeBlanceMap(preferenceProvider.getFakeBalanceMap());
-        }
+        
+        previous.onPreferenceProviderUpdated();
 
         if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
           previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
@@ -283,10 +272,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   WalletListViewModel _createViewModel() {
     _viewModel = WalletListViewModel(
       Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<PreferenceProvider>(context, listen: false),
       Provider.of<VisibilityProvider>(context, listen: false),
-      Provider.of<PreferenceProvider>(context, listen: false).isBalanceHidden,
-      Provider.of<PreferenceProvider>(context, listen: false).fakeBalanceTotalAmount,
-      Provider.of<PreferenceProvider>(context, listen: false).getFakeBalanceMap(),
       Provider.of<ConnectivityProvider>(context, listen: false),
     );
     return _viewModel;

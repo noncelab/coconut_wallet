@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
@@ -16,6 +17,7 @@ typedef FakeBalanceGetter = double? Function(int id);
 class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
   late WalletProvider _walletProvider;
+  late final PreferenceProvider _preferenceProvider;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
   double? _fakeBalanceTotalAmount;
@@ -29,16 +31,18 @@ class WalletListViewModel extends ChangeNotifier {
 
   WalletListViewModel(
     this._walletProvider,
+    this._preferenceProvider,
     this._visibilityProvider,
-    this._isBalanceHidden,
-    this._fakeBalanceTotalAmount,
-    this._fakeBalanceMap,
     this._connectivityProvider,
   ) {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _walletSyncingState = _walletProvider.walletSubscriptionState;
     _isNetworkOn = _connectivityProvider.isNetworkOn;
+
+    _isBalanceHidden = _preferenceProvider.isBalanceHidden;
+    _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
+    _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
@@ -101,17 +105,38 @@ class WalletListViewModel extends ChangeNotifier {
     }
   }
 
-  void setIsBalanceHidden(bool value) {
+  void onPreferenceProviderUpdated() {
+    /// 잔액 숨기기 변동 체크
+    if (_isBalanceHidden != _preferenceProvider.isBalanceHidden) {
+      _setIsBalanceHidden(_preferenceProvider.isBalanceHidden);
+    }
+
+    /// 가짜 잔액 총량 변동 체크 (on/off 판별)
+    if (_fakeBalanceTotalAmount != _preferenceProvider.fakeBalanceTotalAmount) {
+      _setFakeBlancTotalAmount(_preferenceProvider.fakeBalanceTotalAmount);
+      _setFakeBlanceMap(_preferenceProvider.getFakeBalanceMap());
+    }
+
+    /// 지갑별 가짜 잔액 변동 체크
+    if (_fakeBalanceMap != _preferenceProvider.getFakeBalanceMap()) {
+      // map이 변경되는 경우는 totalAmount가 변경되는 것과 관련이 없음
+      _setFakeBlanceMap(_preferenceProvider.getFakeBalanceMap());
+    }
+
+    notifyListeners();
+  }
+
+  void _setIsBalanceHidden(bool value) {
     _isBalanceHidden = value;
     notifyListeners();
   }
 
-  void setFakeBlancTotalAmount(double? value) {
+  void _setFakeBlancTotalAmount(double? value) {
     _fakeBalanceTotalAmount = value;
     notifyListeners();
   }
 
-  void setFakeBlanceMap(Map<int, dynamic> value) {
+  void _setFakeBlanceMap(Map<int, dynamic> value) {
     _fakeBalanceMap = value;
     notifyListeners();
   }
