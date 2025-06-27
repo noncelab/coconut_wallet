@@ -189,7 +189,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       switch (addResult.result) {
         case WalletSyncResult.newWalletAdded:
           {
-            await _viewModel.setFakeBalance(addResult.walletId!);
+            await _viewModel.setFakeBalanceIfEnabled(addResult.walletId!);
             Navigator.pop(context, addResult);
             break;
           }
