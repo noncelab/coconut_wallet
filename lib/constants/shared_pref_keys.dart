@@ -15,4 +15,8 @@ class SharedPrefKeys {
   static const String kHaveSent = 'HAVE_SENT';
   static const String kHaveReviewed = 'HAVE_REVIEWED';
   static const String kAppRunCountAfterRejectReview = 'APP_RUN_COUNT_AFTER_REJECT_REVIEW';
+
+  /// Fake Balance
+  static const String kFakeBalanceTotal = 'FAKE_BALANCE_TOTAL';
+  static const String kFakeBalanceMap = 'FAKE_BALANCE_MAP';
 }

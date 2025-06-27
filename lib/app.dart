@@ -151,6 +151,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   await context.read<VisibilityProvider>().setWalletCount(count);
                 },
                 Provider.of<AuthProvider>(context, listen: false).isSetPin,
+                Provider.of<PreferenceProvider>(context, listen: false),
               );
             },
           ),

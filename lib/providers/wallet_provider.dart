@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -12,6 +11,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -37,6 +37,9 @@ class WalletProvider extends ChangeNotifier {
   final UtxoRepository _utxoRepository;
   final WalletRepository _walletRepository;
 
+  late final PreferenceProvider _preferenceProvider;
+
+
   late final Future<void> Function(int) _saveWalletCount;
   late final bool _isSetPin;
 
@@ -56,6 +59,7 @@ class WalletProvider extends ChangeNotifier {
     this._walletRepository,
     Future<void> Function(int) saveWalletCount,
     bool isSetPin,
+    this._preferenceProvider,
   )   : _saveWalletCount = saveWalletCount,
         _isSetPin = isSetPin {
     // ValueNotifier들 초기화
@@ -252,6 +256,8 @@ class WalletProvider extends ChangeNotifier {
     await _walletRepository.deleteWallet(walletId);
     _setWalletItemList(await _fetchWalletListFromDB());
     _saveWalletCount(_walletItemList.length);
+
+    await _preferenceProvider.removeFakeBalance(walletId);
 
     notifyListeners();
   }

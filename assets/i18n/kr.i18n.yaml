@@ -85,6 +85,7 @@ change_color: "색 변경"
 selection: "선택"
 hardware_wallet: "하드웨어 월렛"
 vault_app: "볼트 앱"
+view_balance: "잔액 보기"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sats/vb)"
@@ -295,6 +296,13 @@ settings_screen:
   use_biometric: "생체 인증 사용하기"
   change_password: "비밀번호 바꾸기"
   hide_balance: "홈 화면 잔액 숨기기"
+  fake_balance:
+    fake_balance_setting: "가짜 잔액 설정"
+    fake_balance_display: "가짜 잔액 표시"
+    fake_balance_input_placeholder: "가짜 총 잔액을 설정해 주세요.(BTC 단위)"
+    fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
+    fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
+    fake_balance_input_not_enough_error: "$btc ($sats sats) 미만으로는 설정할 수 없어요"
 
 # lib/screens/wallet_detail
 wallet_detail_screen:

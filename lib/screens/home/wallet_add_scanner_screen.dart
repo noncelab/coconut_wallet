@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -41,6 +43,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     _viewModel = WalletAddScannerViewModel(
       widget.importSource,
       Provider.of<WalletProvider>(context, listen: false),
+      Provider.of<PreferenceProvider>(context, listen: false),
     );
   }
 
@@ -198,12 +201,17 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   Future<void> _onCompletedScanning(dynamic additionInfo) async {
     if (_isProcessing) return;
     _isProcessing = true;
-
     try {
       ResultOfSyncFromVault addResult = await _viewModel.addWallet(additionInfo);
+
       if (!mounted) return;
       switch (addResult.result) {
         case WalletSyncResult.newWalletAdded:
+          {
+            await _viewModel.setFakeBalanceIfEnabled(addResult.walletId!);
+            Navigator.pop(context, addResult);
+            break;
+          }
         case WalletSyncResult.existingWalletUpdated:
           {
             Navigator.pop(context, addResult);

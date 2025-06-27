@@ -11,6 +11,8 @@ import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
+import 'package:coconut_wallet/screens/settings/fake_balance_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/button/multi_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -104,17 +106,29 @@ class _SettingsScreen extends State<SettingsScreen> {
 
                   if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
                     CoconutLayout.spacing_200h,
-                    SingleButton(
-                      title: t.settings_screen.hide_balance,
-                      rightElement: CupertinoSwitch(
-                          value: viewModel.isBalanceHidden,
-                          activeColor: CoconutColors.gray100,
-                          trackColor: CoconutColors.gray600,
-                          thumbColor: CoconutColors.gray800,
-                          onChanged: (isOn) async {
-                            viewModel.changeIsBalanceHidden(isOn);
-                          }),
-                    ),
+                    MultiButton(
+                    children: [
+                      SingleButton(
+                        title: t.settings_screen.hide_balance,
+                        rightElement: CupertinoSwitch(
+                            value: viewModel.isBalanceHidden,
+                            activeColor: CoconutColors.gray100,
+                            trackColor: CoconutColors.gray600,
+                            thumbColor: CoconutColors.gray800,
+                            onChanged: (value) {
+                              viewModel.changeIsBalanceHidden(value);
+                            }),
+                      ),
+                      if (viewModel.isBalanceHidden)
+                        SingleButton(
+                          title: t.settings_screen.fake_balance.fake_balance_setting,
+                          onPressed: () async {
+                            CommonBottomSheets.showBottomSheet_50(
+                                context: context, child: const FakeBalanceBottomSheet());
+                          },
+                        ),
+                    ],
+                  ),
                   ],
 
                   _category(t.unit),

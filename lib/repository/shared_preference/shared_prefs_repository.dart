@@ -62,6 +62,14 @@ class SharedPrefsRepository {
     await _sharedPrefs.setString(key, value);
   }
 
+  double? getDouble(String key) {
+    return _sharedPrefs.getDouble(key);
+  }
+
+  Future setDouble(String key, double value) async {
+    await _sharedPrefs.setDouble(key, value);
+  }
+
   /// FaucetHistory-------------------------------------------------------------
   Future<void> saveFaucetHistory(FaucetRecord faucetHistory) async {
     final Map<int, FaucetRecord> faucetHistories = _getFaucetHistories();

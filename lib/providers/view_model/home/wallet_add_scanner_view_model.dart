@@ -1,5 +1,8 @@
+import 'dart:math';
+
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
@@ -14,9 +17,11 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   final WalletImportSource _walletImportSource;
   final WalletProvider _walletProvider;
   final WalletAddService _walletAddService = WalletAddService();
+  final PreferenceProvider _preferenceProvider;
   late final IQrScanDataHandler _qrDataHandler;
 
-  WalletAddScannerViewModel(this._walletImportSource, this._walletProvider) {
+  WalletAddScannerViewModel(
+      this._walletImportSource, this._walletProvider, this._preferenceProvider) {
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         _qrDataHandler = CoconutQrScanDataHandler();
@@ -36,6 +41,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   }
 
   IQrScanDataHandler get qrDataHandler => _qrDataHandler;
+  int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
     switch (_walletImportSource) {
@@ -81,5 +87,14 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
   String getWalletName(int walletId) {
     return _walletProvider.getWalletById(walletId).name;
+  }
+
+  Future<void> setFakeBalanceIfEnabled(int? walletId) async {
+    if (fakeBalanceTotalAmount == null || walletId == null) return;
+
+    // 가짜 잔액이 설정되어 있는 경우 FakeBalanceTotalAmount 이하의 값 랜덤 배정
+    final randomFakeBalance = (Random().nextDouble() * fakeBalanceTotalAmount! + 1).toInt();
+
+    await _preferenceProvider.setFakeBalance(walletId, randomFakeBalance);
   }
 }
