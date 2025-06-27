@@ -23,6 +23,8 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
       child: ShrinkAnimationButton(
+        defaultColor: CoconutColors.gray800,
+        pressedColor: CoconutColors.gray750,
         onPressed: widget.onPressed,
         child: CustomPaint(
           painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0),

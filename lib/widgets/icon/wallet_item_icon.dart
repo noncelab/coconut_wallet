@@ -21,17 +21,17 @@ class WalletItemIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     var isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(6),
       constraints: const BoxConstraints(
         // zpub일 경우에 아이콘 사이즈가 작게 나오기 때문에 minimum 설정
-        minHeight: 44,
-        minWidth: 44,
+        minHeight: 22,
+        minWidth: 22,
       ),
       decoration: BoxDecoration(
         color: isExternalWallet
             ? CoconutColors.gray700
             : ColorUtil.getColor(colorIndex).backgroundColor,
-        borderRadius: BorderRadius.circular(16.0),
+        borderRadius: BorderRadius.circular(8.0),
       ),
       child: isExternalWallet
           ? SvgPicture.asset(
@@ -47,7 +47,7 @@ class WalletItemIcon extends StatelessWidget {
                 ColorUtil.getColor(colorIndex).color,
                 BlendMode.srcIn,
               ),
-              width: 20.0,
+              width: 18.0,
             ),
     );
   }
