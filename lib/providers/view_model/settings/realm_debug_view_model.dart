@@ -138,62 +138,55 @@ class RealmDebugViewModel extends ChangeNotifier {
     Clipboard.setData(ClipboardData(text: jsonString));
   }
 
-  /// 트랜잭션 데이터 수정
-  Future<void> updateTransactionData(Map<String, dynamic> updatedData) async {
+  /// 트랜잭션 데이터 비우기 (기본값으로 초기화)
+  Future<void> clearTransactionData(Map<String, dynamic> transactionData) async {
     try {
-      await _realmDebugService.updateTransactionData(updatedData);
+      final clearedData = _createClearedTransactionData(transactionData);
+      await _realmDebugService.updateTransactionData(clearedData);
 
       // 수정된 트랜잭션 ID 추적
-      _modifiedTransactionIds.add(updatedData['id'].toString());
+      _modifiedTransactionIds.add(transactionData['id'].toString());
       notifyListeners();
 
       // 결과 다시 로드
       executeQuery(buildFinalQuery('TRUEPREDICATE'));
     } catch (e) {
-      throw Exception('수정 실패: $e');
+      throw Exception('데이터 비우기 실패: $e');
     }
+  }
+
+  /// 비워진 트랜잭션 데이터 생성
+  Map<String, dynamic> _createClearedTransactionData(Map<String, dynamic> originalData) {
+    final now = DateTime.now();
+
+    return {
+      // 기본키는 유지
+      'id': originalData['id'],
+      'transactionHash': originalData['transactionHash'],
+      'walletId': originalData['walletId'],
+
+      // 문자열 필드는 빈 문자열
+      'replaceByTransactionHash': null,
+
+      // 숫자 필드는 1
+      'blockHeight': 1,
+      'amount': 1,
+      'fee': 1,
+      'vSize': 1.0,
+
+      // 날짜 필드는 현재 시간
+      'timestamp': now,
+      'createdAt': now,
+
+      // 리스트 필드는 빈 리스트
+      'inputAddressList': <String>[],
+      'outputAddressList': <String>[],
+    };
   }
 
   /// 수정된 트랜잭션인지 확인
   bool isModifiedTransaction(Map<String, dynamic> transactionData) {
     return _modifiedTransactionIds.contains(transactionData['id']?.toString());
-  }
-
-  /// 트랜잭션 수정을 위한 다이얼로그 데이터 검증
-  Map<String, dynamic> validateTransactionUpdateData({
-    required String id,
-    required String transactionHash,
-    required String walletId,
-    required String timestamp,
-    required String blockHeight,
-    required String transactionType,
-    required String amount,
-    required String fee,
-    required String vSize,
-    required List<String> inputAddressList,
-    required List<String> outputAddressList,
-    required String createdAt,
-    String? replaceByTransactionHash,
-  }) {
-    try {
-      return {
-        'id': int.parse(id),
-        'transactionHash': transactionHash,
-        'walletId': int.parse(walletId),
-        'timestamp': DateTime.parse(timestamp),
-        'blockHeight': int.parse(blockHeight),
-        'transactionType': transactionType,
-        'amount': int.parse(amount),
-        'fee': int.parse(fee),
-        'vSize': double.parse(vSize),
-        'inputAddressList': inputAddressList,
-        'outputAddressList': outputAddressList,
-        'createdAt': DateTime.parse(createdAt),
-        'replaceByTransactionHash': replaceByTransactionHash,
-      };
-    } catch (e) {
-      throw FormatException('입력 값이 올바르지 않습니다: $e');
-    }
   }
 
   // Private methods
@@ -211,10 +204,5 @@ class RealmDebugViewModel extends ChangeNotifier {
   void _clearError() {
     _errorMessage = '';
     notifyListeners();
-  }
-
-  bool isEditableField(String key) {
-    return _selectedTable == 'RealmTransaction' &&
-        !['id', 'transactionHash', 'walletId'].contains(key);
   }
 }

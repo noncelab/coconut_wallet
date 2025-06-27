@@ -345,7 +345,6 @@ class RealmDebugService {
         transaction.walletId = updatedData['walletId'];
         transaction.timestamp = updatedData['timestamp'];
         transaction.blockHeight = updatedData['blockHeight'];
-        transaction.transactionType = updatedData['transactionType'];
         transaction.amount = updatedData['amount'];
         transaction.fee = updatedData['fee'];
         transaction.vSize = updatedData['vSize'];

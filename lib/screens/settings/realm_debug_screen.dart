@@ -2,7 +2,6 @@ import 'package:coconut_wallet/providers/view_model/settings/realm_debug_view_mo
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/widgets/realm_debug/query_input_section.dart';
 import 'package:coconut_wallet/widgets/realm_debug/results_area.dart';
-import 'package:coconut_wallet/widgets/realm_debug/transaction_edit_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -45,32 +44,125 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
     super.dispose();
   }
 
-  /// 트랜잭션 데이터 수정 다이얼로그
-  Future<void> _showEditTransactionDialog(Map<String, dynamic> transactionData) async {
-    final result = await TransactionEditDialogHelper.show(
-      context,
-      transactionData,
-      _viewModel,
+  /// 트랜잭션 데이터 비우기 확인 다이얼로그
+  Future<void> _showClearTransactionDialog(Map<String, dynamic> transactionData) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('트랜잭션 데이터 비우기'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('다음 트랜잭션의 데이터를 비우시겠습니까?'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                // color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'ID: ${transactionData['id']}\n'
+                'Hash: ${transactionData['transactionHash']?.toString().substring(0, 16)}...',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '• 문자열 필드는 빈 문자열로\n'
+              '• 숫자 필드는 1로\n'
+              '• 날짜 필드는 현재 시간으로\n'
+              '• 리스트 필드는 빈 리스트로 변경됩니다.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('비우기'),
+          ),
+        ],
+      ),
     );
 
-    if (result != null) {
+    if (confirmed == true) {
       try {
-        await _viewModel.updateTransactionData(result);
+        await _viewModel.clearTransactionData(transactionData);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('트랜잭션 데이터가 수정되었습니다.'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          _showSuccessMessage('트랜잭션 데이터가 비워졌습니다.');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())),
-          );
+          _showErrorMessage('오류가 발생했습니다: $e');
         }
       }
+    }
+  }
+
+  /// 성공 메시지 표시 (ScaffoldMessenger 안전하게 사용)
+  void _showSuccessMessage(String message) {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      // ScaffoldMessenger가 없는 경우 다이얼로그로 표시
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('완료'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('확인'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  /// 에러 메시지 표시 (ScaffoldMessenger 안전하게 사용)
+  void _showErrorMessage(String message) {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      // ScaffoldMessenger가 없는 경우 다이얼로그로 표시
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('오류'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('확인'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -103,16 +195,9 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
                 onExportJson: () {
                   try {
                     _viewModel.exportToJson();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('JSON 데이터가 클립보드에 복사되었습니다'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    _showSuccessMessage('JSON 데이터가 클립보드에 복사되었습니다');
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.toString())),
-                    );
+                    _showErrorMessage(e.toString());
                   }
                 },
               ),
@@ -121,7 +206,7 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
 
               // 결과 영역
               ResultsArea(
-                onEditTransaction: _showEditTransactionDialog,
+                onClearTransaction: _showClearTransactionDialog,
               ),
             ],
           ),

@@ -5,11 +5,11 @@ import 'package:provider/provider.dart';
 
 /// 쿼리 결과 표시 영역 위젯
 class ResultsArea extends StatelessWidget {
-  final Function(Map<String, dynamic>) onEditTransaction;
+  final Function(Map<String, dynamic>) onClearTransaction;
 
   const ResultsArea({
     super.key,
-    required this.onEditTransaction,
+    required this.onClearTransaction,
   });
 
   @override
@@ -155,13 +155,13 @@ class ResultsArea extends StatelessWidget {
             color: Colors.amber[700],
             size: 20,
           ),
-        // RealmTransaction 테이블일 때만 수정 버튼 표시
+        // RealmTransaction 테이블일 때만 비우기 버튼 표시
         if (viewModel.selectedTable == 'RealmTransaction')
           IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => onEditTransaction(row),
-            tooltip: '트랜잭션 수정 (테스트용)',
-            color: Theme.of(context).colorScheme.primary,
+            icon: const Icon(Icons.restart_alt_outlined),
+            onPressed: () => onClearTransaction(row),
+            tooltip: '트랜잭션 데이터 비우기',
+            color: Colors.orange,
           ),
       ],
     );
@@ -193,24 +193,20 @@ class ResultsArea extends StatelessWidget {
 
   Widget _buildFieldRow(BuildContext context, RealmDebugViewModel viewModel,
       MapEntry<String, dynamic> entry, bool isModified) {
-    final isEditableField = viewModel.isEditableField(entry.key);
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 키 (필드명)
-          _buildFieldKey(context, entry.key, isEditableField),
+          _buildFieldKey(context, entry.key),
           const SizedBox(height: 4),
-          // 값
-          _buildFieldValue(context, entry.value, isEditableField, isModified),
+          _buildFieldValue(context, entry.value, isModified),
         ],
       ),
     );
   }
 
-  Widget _buildFieldKey(BuildContext context, String key, bool isEditableField) {
+  Widget _buildFieldKey(BuildContext context, String key) {
     return Row(
       children: [
         Text(
@@ -218,32 +214,14 @@ class ResultsArea extends StatelessWidget {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
-            color: isEditableField ? Colors.blue[700] : Theme.of(context).colorScheme.primary,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
-        if (isEditableField)
-          Container(
-            margin: const EdgeInsets.only(left: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.blue[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '수정가능',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.blue[700],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
       ],
     );
   }
 
-  Widget _buildFieldValue(
-      BuildContext context, dynamic value, bool isEditableField, bool isModified) {
+  Widget _buildFieldValue(BuildContext context, dynamic value, bool isModified) {
     return GestureDetector(
       onTap: () {
         Clipboard.setData(ClipboardData(text: value.toString()));
@@ -261,9 +239,8 @@ class ResultsArea extends StatelessWidget {
           color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isEditableField && isModified
-                ? Colors.amber
-                : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            color:
+                isModified ? Colors.amber : Theme.of(context).colorScheme.outline.withOpacity(0.2),
           ),
         ),
         child: Text(
