@@ -95,14 +95,86 @@ class ResultsArea extends StatelessWidget {
   Widget _buildResultsList(BuildContext context, RealmDebugViewModel viewModel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: viewModel.queryResults.asMap().entries.map((entry) {
-        final index = entry.key;
-        final row = entry.value;
-        final isModified =
-            viewModel.selectedTable == 'RealmTransaction' && viewModel.isModifiedTransaction(row);
+      children: [
+        // 결과 요약 헤더 추가
+        _buildResultsHeader(context, viewModel),
+        const SizedBox(height: 12),
 
-        return _buildResultCard(context, viewModel, index, row, isModified);
-      }).toList(),
+        // 기존 결과 리스트
+        ...viewModel.queryResults.asMap().entries.map((entry) {
+          final index = entry.key;
+          final row = entry.value;
+          final isModified =
+              viewModel.selectedTable == 'RealmTransaction' && viewModel.isModifiedTransaction(row);
+
+          return _buildResultCard(context, viewModel, index, row, isModified);
+        }),
+      ],
+    );
+  }
+
+  /// 결과 요약 헤더
+  Widget _buildResultsHeader(BuildContext context, RealmDebugViewModel viewModel) {
+    final resultCount = viewModel.queryResults.length;
+    final tableName = viewModel.selectedTable;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.table_chart,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$tableName 조회 결과',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$resultCount개 항목${resultCount >= 1000 ? ' (최대 1000개 제한)' : ''}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (resultCount >= 1000)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '제한됨',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.orange[700],
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

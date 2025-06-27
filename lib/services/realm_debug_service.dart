@@ -75,124 +75,171 @@ class RealmDebugService {
     }
   }
 
-  /// RealmResults를 Map 리스트로 변환
+  /// RealmResults를 Map 리스트로 변환 (최적화)
   List<Map<String, dynamic>> _convertToMapList<T extends RealmObject>(RealmResults<T> results) {
-    return results.map((item) => realmObjectToMap(item)).toList();
+    // 대량 데이터 처리를 위한 제한 (필요시 페이징 구현 가능)
+    const int maxResults = 1000;
+    final limitedResults = results.length > maxResults ? results.take(maxResults) : results;
+
+    return limitedResults.map((item) => realmObjectToMap(item)).toList();
   }
 
-  /// RealmObject를 Map으로 변환
+  /// RealmObject를 Map으로 변환 (최적화)
   Map<String, dynamic> realmObjectToMap(RealmObject obj) {
     final Map<String, dynamic> map = {};
 
     try {
-      // 각 테이블별로 알려진 속성들을 직접 처리
-      if (obj is RealmWalletBase) {
-        map['id'] = obj.id;
-        map['colorIndex'] = obj.colorIndex;
-        map['iconIndex'] = obj.iconIndex;
-        map['descriptor'] = obj.descriptor;
-        map['name'] = obj.name;
-        map['walletType'] = obj.walletType;
-        map['usedReceiveIndex'] = obj.usedReceiveIndex;
-        map['usedChangeIndex'] = obj.usedChangeIndex;
-        map['generatedReceiveIndex'] = obj.generatedReceiveIndex;
-        map['generatedChangeIndex'] = obj.generatedChangeIndex;
-      } else if (obj is RealmTransaction) {
-        map['id'] = obj.id;
-        map['transactionHash'] = obj.transactionHash;
-        map['walletId'] = obj.walletId;
-        map['timestamp'] = obj.timestamp.toIso8601String();
-        map['blockHeight'] = obj.blockHeight;
-        map['transactionType'] = obj.transactionType;
-        map['amount'] = obj.amount;
-        map['fee'] = obj.fee;
-        map['vSize'] = obj.vSize;
-        map['inputAddressList'] = obj.inputAddressList.toList();
-        map['outputAddressList'] = obj.outputAddressList.toList();
-        map['createdAt'] = obj.createdAt.toIso8601String();
-        map['replaceByTransactionHash'] = obj.replaceByTransactionHash;
-      } else if (obj is RealmUtxo) {
-        map['id'] = obj.id;
-        map['walletId'] = obj.walletId;
-        map['address'] = obj.address;
-        map['amount'] = obj.amount;
-        map['timestamp'] = obj.timestamp.toIso8601String();
-        map['transactionHash'] = obj.transactionHash;
-        map['index'] = obj.index;
-        map['derivationPath'] = obj.derivationPath;
-        map['blockHeight'] = obj.blockHeight;
-        map['status'] = obj.status;
-        map['spentByTransactionHash'] = obj.spentByTransactionHash;
-        map['isDeleted'] = obj.isDeleted;
-      } else if (obj is RealmWalletAddress) {
-        map['id'] = obj.id;
-        map['walletId'] = obj.walletId;
-        map['address'] = obj.address;
-        map['index'] = obj.index;
-        map['isChange'] = obj.isChange;
-        map['derivationPath'] = obj.derivationPath;
-        map['isUsed'] = obj.isUsed;
-        map['confirmed'] = obj.confirmed;
-        map['unconfirmed'] = obj.unconfirmed;
-        map['total'] = obj.total;
-      } else if (obj is RealmWalletBalance) {
-        map['id'] = obj.id;
-        map['walletId'] = obj.walletId;
-        map['total'] = obj.total;
-        map['confirmed'] = obj.confirmed;
-        map['unconfirmed'] = obj.unconfirmed;
-      } else if (obj is RealmMultisigWallet) {
-        map['id'] = obj.id;
-        map['walletBase'] = obj.walletBase?.name ?? 'null';
-        map['signersInJsonSerialization'] = obj.signersInJsonSerialization;
-        map['requiredSignatureCount'] = obj.requiredSignatureCount;
-      } else if (obj is RealmExternalWallet) {
-        map['id'] = obj.id;
-        map['walletImportSource'] = obj.walletImportSource;
-        map['walletBase'] = obj.walletBase?.name ?? 'null';
-      } else if (obj is RealmUtxoTag) {
-        map['id'] = obj.id;
-        map['walletId'] = obj.walletId;
-        map['name'] = obj.name;
-        map['colorIndex'] = obj.colorIndex;
-        map['utxoIdList'] = obj.utxoIdList.toList();
-        map['createAt'] = obj.createAt.toIso8601String();
-      } else if (obj is RealmScriptStatus) {
-        map['scriptPubKey'] = obj.scriptPubKey;
-        map['status'] = obj.status;
-        map['walletId'] = obj.walletId;
-        map['timestamp'] = obj.timestamp.toIso8601String();
-      } else if (obj is RealmBlockTimestamp) {
-        map['blockHeight'] = obj.blockHeight;
-        map['timestamp'] = obj.timestamp.toIso8601String();
-      } else if (obj is RealmIntegerId) {
-        map['key'] = obj.key;
-        map['value'] = obj.value;
-      } else if (obj is RealmRbfHistory) {
-        map['id'] = obj.id;
-        map['walletId'] = obj.walletId;
-        map['originalTransactionHash'] = obj.originalTransactionHash;
-        map['transactionHash'] = obj.transactionHash;
-        map['feeRate'] = obj.feeRate;
-        map['timestamp'] = obj.timestamp.toIso8601String();
-      } else if (obj is RealmCpfpHistory) {
-        map['id'] = obj.id;
-        map['walletId'] = obj.walletId;
-        map['parentTransactionHash'] = obj.parentTransactionHash;
-        map['childTransactionHash'] = obj.childTransactionHash;
-        map['originalFee'] = obj.originalFee;
-        map['newFee'] = obj.newFee;
-        map['timestamp'] = obj.timestamp.toIso8601String();
-      } else if (obj is RealmTransactionMemo) {
-        map['id'] = obj.id;
-        map['transactionHash'] = obj.transactionHash;
-        map['walletId'] = obj.walletId;
-        map['memo'] = obj.memo;
-        map['createdAt'] = obj.createdAt.toIso8601String();
-      } else {
-        // 알 수 없는 타입인 경우 기본 처리
-        map['type'] = obj.runtimeType.toString();
-        map['toString'] = obj.toString();
+      // 각 테이블별로 알려진 속성들을 직접 처리 (최적화)
+      switch (obj.runtimeType) {
+        case RealmWalletBase _:
+          final wallet = obj as RealmWalletBase;
+          map['id'] = wallet.id;
+          map['colorIndex'] = wallet.colorIndex;
+          map['iconIndex'] = wallet.iconIndex;
+          map['descriptor'] = wallet.descriptor;
+          map['name'] = wallet.name;
+          map['walletType'] = wallet.walletType;
+          map['usedReceiveIndex'] = wallet.usedReceiveIndex;
+          map['usedChangeIndex'] = wallet.usedChangeIndex;
+          map['generatedReceiveIndex'] = wallet.generatedReceiveIndex;
+          map['generatedChangeIndex'] = wallet.generatedChangeIndex;
+          break;
+
+        case RealmTransaction _:
+          final tx = obj as RealmTransaction;
+          map['id'] = tx.id;
+          map['transactionHash'] = tx.transactionHash;
+          map['walletId'] = tx.walletId;
+          map['timestamp'] = tx.timestamp.toIso8601String();
+          map['blockHeight'] = tx.blockHeight;
+          map['transactionType'] = tx.transactionType;
+          map['amount'] = tx.amount;
+          map['fee'] = tx.fee;
+          map['vSize'] = tx.vSize;
+          map['inputAddressList'] = tx.inputAddressList.toList();
+          map['outputAddressList'] = tx.outputAddressList.toList();
+          map['createdAt'] = tx.createdAt.toIso8601String();
+          map['replaceByTransactionHash'] = tx.replaceByTransactionHash;
+          break;
+
+        case RealmUtxo _:
+          final utxo = obj as RealmUtxo;
+          map['id'] = utxo.id;
+          map['walletId'] = utxo.walletId;
+          map['address'] = utxo.address;
+          map['amount'] = utxo.amount;
+          map['timestamp'] = utxo.timestamp.toIso8601String();
+          map['transactionHash'] = utxo.transactionHash;
+          map['index'] = utxo.index;
+          map['derivationPath'] = utxo.derivationPath;
+          map['blockHeight'] = utxo.blockHeight;
+          map['status'] = utxo.status;
+          map['spentByTransactionHash'] = utxo.spentByTransactionHash;
+          map['isDeleted'] = utxo.isDeleted;
+          break;
+
+        case RealmWalletAddress _:
+          final addr = obj as RealmWalletAddress;
+          map['id'] = addr.id;
+          map['walletId'] = addr.walletId;
+          map['address'] = addr.address;
+          map['index'] = addr.index;
+          map['isChange'] = addr.isChange;
+          map['derivationPath'] = addr.derivationPath;
+          map['isUsed'] = addr.isUsed;
+          map['confirmed'] = addr.confirmed;
+          map['unconfirmed'] = addr.unconfirmed;
+          map['total'] = addr.total;
+          break;
+
+        case RealmWalletBalance _:
+          final balance = obj as RealmWalletBalance;
+          map['id'] = balance.id;
+          map['walletId'] = balance.walletId;
+          map['total'] = balance.total;
+          map['confirmed'] = balance.confirmed;
+          map['unconfirmed'] = balance.unconfirmed;
+          break;
+
+        case RealmMultisigWallet _:
+          final multisig = obj as RealmMultisigWallet;
+          map['id'] = multisig.id;
+          map['walletBase'] = multisig.walletBase?.name ?? 'null';
+          map['signersInJsonSerialization'] = multisig.signersInJsonSerialization;
+          map['requiredSignatureCount'] = multisig.requiredSignatureCount;
+          break;
+
+        case RealmExternalWallet _:
+          final external = obj as RealmExternalWallet;
+          map['id'] = external.id;
+          map['walletImportSource'] = external.walletImportSource;
+          map['walletBase'] = external.walletBase?.name ?? 'null';
+          break;
+
+        case RealmUtxoTag _:
+          final tag = obj as RealmUtxoTag;
+          map['id'] = tag.id;
+          map['walletId'] = tag.walletId;
+          map['name'] = tag.name;
+          map['colorIndex'] = tag.colorIndex;
+          map['utxoIdList'] = tag.utxoIdList.toList();
+          map['createAt'] = tag.createAt.toIso8601String();
+          break;
+
+        case RealmScriptStatus _:
+          final script = obj as RealmScriptStatus;
+          map['scriptPubKey'] = script.scriptPubKey;
+          map['status'] = script.status;
+          map['walletId'] = script.walletId;
+          map['timestamp'] = script.timestamp.toIso8601String();
+          break;
+
+        case RealmBlockTimestamp _:
+          final block = obj as RealmBlockTimestamp;
+          map['blockHeight'] = block.blockHeight;
+          map['timestamp'] = block.timestamp.toIso8601String();
+          break;
+
+        case RealmIntegerId _:
+          final integerId = obj as RealmIntegerId;
+          map['key'] = integerId.key;
+          map['value'] = integerId.value;
+          break;
+
+        case RealmRbfHistory _:
+          final rbf = obj as RealmRbfHistory;
+          map['id'] = rbf.id;
+          map['walletId'] = rbf.walletId;
+          map['originalTransactionHash'] = rbf.originalTransactionHash;
+          map['transactionHash'] = rbf.transactionHash;
+          map['feeRate'] = rbf.feeRate;
+          map['timestamp'] = rbf.timestamp.toIso8601String();
+          break;
+
+        case RealmCpfpHistory _:
+          final cpfp = obj as RealmCpfpHistory;
+          map['id'] = cpfp.id;
+          map['walletId'] = cpfp.walletId;
+          map['parentTransactionHash'] = cpfp.parentTransactionHash;
+          map['childTransactionHash'] = cpfp.childTransactionHash;
+          map['originalFee'] = cpfp.originalFee;
+          map['newFee'] = cpfp.newFee;
+          map['timestamp'] = cpfp.timestamp.toIso8601String();
+          break;
+
+        case RealmTransactionMemo _:
+          final memo = obj as RealmTransactionMemo;
+          map['id'] = memo.id;
+          map['transactionHash'] = memo.transactionHash;
+          map['walletId'] = memo.walletId;
+          map['memo'] = memo.memo;
+          map['createdAt'] = memo.createdAt.toIso8601String();
+          break;
+
+        default:
+          // 알 수 없는 타입인 경우 기본 처리
+          map['type'] = obj.runtimeType.toString();
+          map['toString'] = obj.toString();
       }
     } catch (e) {
       // 오류 발생시 기본 정보만 표시

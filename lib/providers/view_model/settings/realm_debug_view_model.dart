@@ -16,6 +16,9 @@ class RealmDebugViewModel extends ChangeNotifier {
   bool _isLoading = false;
   final Set<String> _modifiedTransactionIds = {};
 
+  // 마지막 실행 쿼리 저장
+  String _lastExecutedQuery = 'TRUEPREDICATE';
+
   // 정렬 옵션
   String _selectedSortField = '';
   bool _sortDescending = true;
@@ -27,6 +30,7 @@ class RealmDebugViewModel extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   Set<String> get modifiedTransactionIds => _modifiedTransactionIds;
+  String get lastExecutedQuery => _lastExecutedQuery;
   String get selectedSortField => _selectedSortField;
   bool get sortDescending => _sortDescending;
   bool get enableSort => _enableSort;
@@ -39,14 +43,34 @@ class RealmDebugViewModel extends ChangeNotifier {
   /// 선택된 테이블 변경
   Future<void> changeSelectedTable(String tableName) async {
     _selectedTable = tableName;
-    // 정렬 옵션 초기화
-    _enableSort = false;
-    _selectedSortField = '';
+
+    // 기본 정렬 설정 (timestamp → createdAt → id 우선순위)
+    _enableSort = true;
     _sortDescending = true;
+    _selectedSortField = _getDefaultSortField(tableName);
+
     notifyListeners();
 
     // 전체 데이터 로드 (비동기로 처리)
     await executeQuery('TRUEPREDICATE');
+  }
+
+  /// 테이블별 기본 정렬 필드 결정
+  String _getDefaultSortField(String tableName) {
+    final sortableFields = getSortableFields();
+
+    // 우선순위: timestamp → createdAt → id
+    if (sortableFields.contains('timestamp')) {
+      return 'timestamp';
+    } else if (sortableFields.contains('createdAt')) {
+      return 'createdAt';
+    } else if (sortableFields.contains('id')) {
+      return 'id';
+    } else if (sortableFields.isNotEmpty) {
+      return sortableFields.first;
+    } else {
+      return '';
+    }
   }
 
   /// 정렬 활성화/비활성화
@@ -94,10 +118,11 @@ class RealmDebugViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      // UI 응답성을 위해 작은 지연 추가
-      await Future.delayed(const Duration(milliseconds: 50));
-
       final finalQuery = buildFinalQuery(query);
+
+      // 마지막 실행 쿼리 저장 (기본 쿼리만 저장, 정렬 옵션 제외)
+      _lastExecutedQuery = query.trim().isEmpty ? 'TRUEPREDICATE' : query;
+
       final results = _realmDebugService.executeQuery(_selectedTable, finalQuery);
 
       _queryResults = results;
@@ -141,16 +166,20 @@ class RealmDebugViewModel extends ChangeNotifier {
   /// 트랜잭션 데이터 비우기 (기본값으로 초기화)
   Future<void> clearTransactionData(Map<String, dynamic> transactionData) async {
     try {
+      _setLoading(true);
+
       final clearedData = _createClearedTransactionData(transactionData);
       await _realmDebugService.updateTransactionData(clearedData);
 
       // 수정된 트랜잭션 ID 추적
       _modifiedTransactionIds.add(transactionData['id'].toString());
-      notifyListeners();
 
-      // 결과 다시 로드
-      executeQuery(buildFinalQuery('TRUEPREDICATE'));
+      // 마지막에 실행했던 쿼리로 다시 조회
+      await executeQuery(_lastExecutedQuery);
+
+      _setLoading(false);
     } catch (e) {
+      _setLoading(false);
       throw Exception('데이터 비우기 실패: $e');
     }
   }

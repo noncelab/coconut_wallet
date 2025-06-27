@@ -32,7 +32,7 @@ class _RealmDebugScreenState extends State<RealmDebugScreen> {
     _viewModel = RealmDebugViewModel(widget.realmManager);
     // 초기 데이터 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _viewModel.executeQuery('TRUEPREDICATE');
+      _viewModel.changeSelectedTable(_viewModel.selectedTable);
     });
   }
 
