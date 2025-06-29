@@ -117,4 +117,28 @@ class TransactionRecord {
 
   @override
   int get hashCode => transactionHash.hashCode ^ blockHeight.hashCode;
+
+  /// 트랜잭션 내용이 변경되었는지 감지하기 위한 컨텐트 해시
+  /// UI 업데이트 감지용으로 사용됩니다.
+  int get contentHashCode {
+    // TransactionAddress의 hashCode를 활용하여 더 깔끔하게 처리
+    final inputHash = Object.hashAll(inputAddressList);
+    final outputHash = Object.hashAll(outputAddressList);
+
+    return Object.hash(
+      transactionHash,
+      blockHeight,
+      amount,
+      fee,
+      feeRate,
+      memo,
+      transactionType,
+      inputHash,
+      outputHash,
+    );
+  }
+
+  /// 트랜잭션 내용 변경 감지를 위한 고유한 키 생성
+  /// Flutter 위젯의 Key로 사용하여 내용이 변경될 때 위젯을 재생성합니다.
+  String get contentKey => contentHashCode.toString();
 }

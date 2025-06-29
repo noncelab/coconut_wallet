@@ -1,5 +1,13 @@
 import 'package:realm/realm.dart';
 
+/// 스키마 수정/추가 시 검토해야 할 코드
+///
+/// [realmAllSchemas]
+/// [services/realm_debug_service.dart]
+/// [widgets/realm_debug/transaction_edit_dialog.dart] 트랜잭션 수정 시 사용되는 코드
+/// [repository/realm/realm_manager.dart] reset 함수
+/// [test/repository/realm/test_realm_manager.dart]
+
 part 'coconut_wallet_model.realm.dart'; // dart run realm generate
 
 final realmAllSchemas = [

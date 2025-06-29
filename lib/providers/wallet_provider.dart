@@ -310,7 +310,7 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.getGeneratedAddressIndexes(wallet);
   }
 
-  bool containsAddress(int walletId, String address, {bool isChange = false}) {
+  bool containsAddress(int walletId, String address, {bool? isChange}) {
     return _addressRepository.containsAddress(
       walletId,
       address,

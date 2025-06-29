@@ -61,6 +61,7 @@ class TestRealmManager implements RealmManager {
       realm.deleteAll<RealmIntegerId>();
       realm.deleteAll<RealmRbfHistory>();
       realm.deleteAll<RealmCpfpHistory>();
+      realm.deleteAll<RealmTransactionMemo>();
     });
 
     _isInitialized = false;

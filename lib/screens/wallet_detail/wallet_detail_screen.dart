@@ -501,11 +501,13 @@ class _TransactionListState extends State<TransactionList> {
         });
   }
 
-  // 내부 필드가 변경된 경우 감지(memo)
+  // 내부 필드가 변경된 경우 감지(memo, amount, blockHeight 등)
   bool _deepEquals(List<TransactionRecord> a, List<TransactionRecord> b) {
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
-      if (a[i].memo != b[i].memo) return false;
+      if (a[i].contentHashCode != b[i].contentHashCode) {
+        return false;
+      }
     }
     return true;
   }

@@ -89,6 +89,9 @@ class WalletDetailViewModel extends ChangeNotifier {
     // UpbitConnectModel 변경 감지 리스너
     _priceProvider.addListener(_updateBitcoinPrice);
 
+    // TransactionProvider 변경 감지 리스너
+    _txProvider.addListener(_onTransactionProviderChanged);
+
     _setPendingAmount();
     _prevBalance = balance;
     debugPrint('prev :: $_prevBalance');
@@ -147,6 +150,11 @@ class WalletDetailViewModel extends ChangeNotifier {
   void _updateBitcoinPrice() {
     _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw ?? 0;
     _bitcoinPriceKrwInString = _priceProvider.getFiatPrice(_balance, CurrencyCode.KRW);
+    notifyListeners();
+  }
+
+  void _onTransactionProviderChanged() {
+    _setPendingAmount();
     notifyListeners();
   }
 
@@ -224,6 +232,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   void dispose() {
     _syncWalletStateSubscription?.cancel();
     _priceProvider.removeListener(_updateBitcoinPrice);
+    _txProvider.removeListener(_onTransactionProviderChanged);
     super.dispose();
   }
 
