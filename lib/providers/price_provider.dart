@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -104,7 +105,7 @@ class PriceProvider extends ChangeNotifier {
     }
 
     if (fiatCode.code == CurrencyCode.KRW.code) {
-      return '${CurrencyCode.KRW.symbol} ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(satoshiAmount, bitcoinPriceKrw!).toDouble())}';
+      return '${CurrencyCode.KRW.symbol} ${FiatUtil.calculateFiatAmount(satoshiAmount, bitcoinPriceKrw!).toThousandsSeparatedString()}';
     }
     return '';
   }

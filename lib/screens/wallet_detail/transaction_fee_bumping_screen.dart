@@ -1,9 +1,11 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping_view_model.dart';
@@ -194,10 +196,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             if (!_viewModel.insufficientUtxos)
                               Text(
                                 t.transaction_fee_bumping_screen.estimated_fee(
-                                  fee: addCommasToIntegerPart(viewModel
+                                  fee: viewModel
                                       .getTotalEstimatedFee(
                                           double.parse(_textEditingController.text))
-                                      .toDouble()),
+                                      .toThousandsSeparatedString(),
                                 ),
                                 style: CoconutTypography.body2_14,
                               ),
@@ -426,8 +428,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             children: [
               Text(
                 t.transaction_fee_bumping_screen.total_fee(
-                  fee: addCommasToIntegerPart(widget.transaction.fee.toDouble()),
-                  vb: addCommasToIntegerPart(widget.transaction.vSize.toDouble()),
+                  fee: widget.transaction.fee.toThousandsSeparatedString(),
+                  vb: widget.transaction.vSize.toInt().toThousandsSeparatedString(),
                 ),
                 style: CoconutTypography.body2_14,
               ),

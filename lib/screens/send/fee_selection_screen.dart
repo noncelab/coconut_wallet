@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
@@ -55,7 +56,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
       bitcoin: _currentUnit == BitcoinUnit.btc
           ? UnitUtil.satoshiToBitcoin(kMaxFeeLimit)
-          : addCommasToIntegerPart(kMaxFeeLimit.toDouble()),
+          : kMaxFeeLimit.toThousandsSeparatedString(),
       unit: unitText);
 
   String get feeText => formatBitcoinValue(_estimatedFee, _currentUnit);

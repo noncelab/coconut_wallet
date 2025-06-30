@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -34,7 +35,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
         t.alert.error_send.minimum_amount(
             bitcoin: _viewModel.currentUnit == BitcoinUnit.btc
                 ? UnitUtil.satoshiToBitcoin(dustLimit + 1)
-                : addCommasToIntegerPart(dustLimit + 1),
+                : (dustLimit + 1).toThousandsSeparatedString(),
             unit: unitText)
       ];
 
@@ -43,7 +44,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
       unit: unitText);
 
   String get maxBalanceText =>
-      "${_viewModel.currentUnit == BitcoinUnit.btc ? UnitUtil.satoshiToBitcoin(_viewModel.confirmedBalance) : addCommasToIntegerPart(_viewModel.confirmedBalance.toDouble())} ${_viewModel.currentUnit.symbol()}";
+      "${_viewModel.currentUnit == BitcoinUnit.btc ? UnitUtil.satoshiToBitcoin(_viewModel.confirmedBalance) : _viewModel.confirmedBalance.toThousandsSeparatedString()} ${_viewModel.currentUnit.symbol()}";
 
   String get unitText => _viewModel.currentUnit.symbol();
 
