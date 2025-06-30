@@ -122,19 +122,19 @@ class BroadcastingViewModel extends ChangeNotifier {
       Map<String, double> recipientAmounts = {};
       if (outputsToOther.isNotEmpty) {
         for (var output in outputsToOther) {
-          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
       if (outputToMyReceivingAddress.isNotEmpty) {
         for (var output in outputToMyReceivingAddress) {
-          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
         _isSendingToMyAddress = true;
       }
       if (outputToMyChangeAddress.length > 1) {
         for (int i = outputToMyChangeAddress.length - 1; i > 0; i--) {
           var output = outputToMyChangeAddress[i];
-          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
       _sendingAmount = psbt.sendingAmount;

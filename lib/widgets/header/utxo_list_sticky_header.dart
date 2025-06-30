@@ -94,7 +94,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                             ),
                             CoconutLayout.spacing_100w,
                             Text(
-                              currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
+                              currentUnit.symbol,
                               style: CoconutTypography.body2_14_Number,
                             ),
                             CoconutLayout.spacing_100w,

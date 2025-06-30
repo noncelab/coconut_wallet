@@ -119,7 +119,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
 
     int maxAmount = max(maxInputAmount, maxOutputAmount);
     _longestSatoshiText = maxAmount.toThousandsSeparatedString();
-    _longestBtcText = satoshiToBitcoinString(maxAmount);
+    _longestBtcText = BalanceFormatUtil.formatSatoshiToReadableBitcoin(maxAmount);
 
     /// 최소값
     if (_longestBtcText.length < _minimumLongestText.length) {

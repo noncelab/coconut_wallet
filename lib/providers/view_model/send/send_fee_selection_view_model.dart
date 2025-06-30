@@ -77,13 +77,13 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     final utxoPool = _walletProvider.getUtxoListByStatus(_walletId, UtxoStatus.unspent);
     final wallet = _walletProvider.getWalletById(_walletId);
     final changeAddress = _walletProvider.getChangeAddress(_walletId);
-    final amount = UnitUtil.bitcoinToSatoshi(_amount);
+    final amount = UnitUtil.convertBitcoinToSatoshi(_amount);
 
     if (_isBatchTx) {
       return Transaction.forBatchPayment(
           TransactionUtil.selectOptimalUtxos(utxoPool, amount, satsPerVb, _walletAddressType),
           _sendInfoProvider.recipientsForBatch!
-              .map((key, value) => MapEntry(key, UnitUtil.bitcoinToSatoshi(value))),
+              .map((key, value) => MapEntry(key, UnitUtil.convertBitcoinToSatoshi(value))),
           changeAddress.derivationPath,
           satsPerVb.toDouble(),
           _walletListItemBase.walletBase);
@@ -104,7 +104,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   void _setSingleTxParams() {
     _amount = _sendInfoProvider.amount!;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
-    _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_amount);
+    _isMaxMode = _confirmedBalance == UnitUtil.convertBitcoinToSatoshi(_amount);
   }
 
   void _setBatchTxParams() {
@@ -122,8 +122,8 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   bool isBalanceEnough(int? estimatedFee) {
     if (estimatedFee == null || estimatedFee == 0) return false;
     if (_isMaxMode) return (_confirmedBalance - estimatedFee) > dustLimit;
-    Logger.log('--> ${UnitUtil.bitcoinToSatoshi(amount)} $estimatedFee $_confirmedBalance');
-    return (UnitUtil.bitcoinToSatoshi(amount) + estimatedFee) <= _confirmedBalance;
+    Logger.log('--> ${UnitUtil.convertBitcoinToSatoshi(amount)} $estimatedFee $_confirmedBalance');
+    return (UnitUtil.convertBitcoinToSatoshi(amount) + estimatedFee) <= _confirmedBalance;
   }
 
   void setBitcoinPriceKrw(int price) {
@@ -133,7 +133,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
 
   void saveFinalSendInfo(int estimatedFee, double satsPerVb) {
     double finalAmount =
-        _isMaxMode ? UnitUtil.satoshiToBitcoin(_confirmedBalance - estimatedFee) : _amount;
+        _isMaxMode ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - estimatedFee) : _amount;
     _sendInfoProvider.setAmount(finalAmount);
     _sendInfoProvider.setEstimatedFee(estimatedFee);
     _sendInfoProvider.setTransaction(_createTransaction(satsPerVb));

@@ -80,7 +80,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           ),
           const SizedBox(width: 4.0),
           Text(
-            widget.currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
+            widget.currentUnit.symbol,
             style: CoconutTypography.heading4_18_Number.setColor(CoconutColors.gray350),
           ),
         ],
@@ -90,9 +90,9 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
 
   Widget _buildPendingAmountStatus() {
     String getSendingAmountText() =>
-        '${formatBitcoinValue(widget.sendingAmount, widget.currentUnit, shouldCheckZero: true, withUnit: true)} ${t.status_sending}';
+        '${widget.currentUnit.displayBitcoinAmount(widget.sendingAmount, shouldCheckZero: true, withUnit: true)} ${t.status_sending}';
     String getReceivingAmountText() =>
-        '${formatBitcoinValue(widget.receivingAmount, widget.currentUnit, shouldCheckZero: true, withUnit: true)} ${t.status_receiving}';
+        '${widget.currentUnit.displayBitcoinAmount(widget.receivingAmount, shouldCheckZero: true, withUnit: true)} ${t.status_receiving}';
 
     return Column(
       children: [

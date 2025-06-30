@@ -88,7 +88,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                               ),
                               CoconutLayout.spacing_100w,
                               Text(
-                                widget.currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
+                                widget.currentUnit.symbol,
                                 style: CoconutTypography.heading3_21_Number,
                               ),
                             ],

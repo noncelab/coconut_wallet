@@ -65,7 +65,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                             ),
                           ),
                           Text(
-                            widget.currentUnit == BitcoinUnit.btc ? ' ${t.btc}' : ' ${t.sats}',
+                            ' ${widget.currentUnit.symbol}',
                             style: CoconutTypography.body2_14_Number,
                           ),
                         ],

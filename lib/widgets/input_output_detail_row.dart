@@ -28,9 +28,8 @@ class InputOutputDetailRow extends StatelessWidget {
     this.transactionStatus,
   }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
 
-  String get balanceText => currentUnit == BitcoinUnit.btc
-      ? satoshiToBitcoinString(balance.abs(), forceEightDecimals: true)
-      : balance.abs().toThousandsSeparatedString();
+  String get balanceText =>
+      currentUnit.displayBitcoinAmount(balance.abs(), forceEightDecimals: true);
 
   @override
   Widget build(BuildContext context) {

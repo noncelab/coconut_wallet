@@ -107,7 +107,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _walletBase = _walletBaseItem.walletBase;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
     _changeAddressDerivationPath = _walletProvider.getChangeAddress(_walletId).derivationPath;
-    _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
+    _isMaxMode = _confirmedBalance == UnitUtil.convertBitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
 
     // Transaction 생성에 쓰이는 utxoList (UtxoStatus.locked상태는 제외합니다.)
@@ -115,7 +115,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         _confirmedUtxoList.where((utxo) => utxo.status != UtxoStatus.locked).toList();
 
     final sufficientUtxo = availableUtxoList.firstWhere(
-      (utxo) => utxo.amount >= UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+      (utxo) => utxo.amount >= UnitUtil.convertBitcoinToSatoshi(_sendInfoProvider.amount!),
       orElse: () => availableUtxoList.first,
     );
 
@@ -380,7 +380,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
           optimalUtxos,
           _sendInfoProvider.recipientAddress!,
           _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).derivationPath,
-          UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+          UnitUtil.convertBitcoinToSatoshi(_sendInfoProvider.amount!),
           feeRate,
           walletListItemBase.walletBase);
     } catch (e) {
@@ -426,11 +426,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _setAmount() {
     _sendAmount = _isMaxMode
-        ? UnitUtil.bitcoinToSatoshi(
+        ? UnitUtil.convertBitcoinToSatoshi(
               _sendInfoProvider.amount!,
             ) -
             (_estimatedFee ?? 0)
-        : UnitUtil.bitcoinToSatoshi(
+        : UnitUtil.convertBitcoinToSatoshi(
             _sendInfoProvider.amount!,
           );
   }
@@ -497,7 +497,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void saveSendInfo() {
     double finalAmount = _isMaxMode
-        ? UnitUtil.satoshiToBitcoin(_confirmedBalance - _estimatedFee!)
+        ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - _estimatedFee!)
         : _sendInfoProvider.amount!;
     _sendInfoProvider.setAmount(finalAmount);
     _sendInfoProvider.setEstimatedFee(_estimatedFee!);

@@ -283,9 +283,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   Widget _buildTotalUtxoAmount(Widget textKeyWidget, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
-    String utxoSumText = formatBitcoinValue(totalSelectedUtxoAmount, _currentUnit,
+    String utxoSumText = _currentUnit.displayBitcoinAmount(totalSelectedUtxoAmount,
         defaultWhenZero: '0', shouldCheckZero: true);
-    String unitText = _currentUnit.symbol();
+    String unitText = _currentUnit.symbol;
 
     return Column(
       children: [

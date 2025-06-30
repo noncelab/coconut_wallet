@@ -55,13 +55,13 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
       bitcoin: _currentUnit == BitcoinUnit.btc
-          ? UnitUtil.satoshiToBitcoin(kMaxFeeLimit)
+          ? UnitUtil.convertSatoshiToBitcoin(kMaxFeeLimit)
           : kMaxFeeLimit.toThousandsSeparatedString(),
       unit: unitText);
 
-  String get feeText => formatBitcoinValue(_estimatedFee, _currentUnit);
+  String get feeText => _currentUnit.displayBitcoinAmount(_estimatedFee);
 
-  String get unitText => _currentUnit.symbol();
+  String get unitText => _currentUnit.symbol;
 
   @override
   Widget build(BuildContext context) {

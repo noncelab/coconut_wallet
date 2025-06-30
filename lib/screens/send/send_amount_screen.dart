@@ -30,23 +30,24 @@ class SendAmountScreen extends StatefulWidget {
 class _SendAmountScreenState extends State<SendAmountScreen> {
   late SendAmountViewModel _viewModel;
 
+  // TODO: ...
   List<String> get errorMessages => [
         t.errors.insufficient_balance,
         t.alert.error_send.minimum_amount(
             bitcoin: _viewModel.currentUnit == BitcoinUnit.btc
-                ? UnitUtil.satoshiToBitcoin(dustLimit + 1)
+                ? UnitUtil.convertSatoshiToBitcoin(dustLimit + 1)
                 : (dustLimit + 1).toThousandsSeparatedString(),
             unit: unitText)
       ];
 
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
-      bitcoin: formatBitcoinValue(_viewModel.incomingBalance, _viewModel.currentUnit),
+      bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
       unit: unitText);
 
   String get maxBalanceText =>
-      "${_viewModel.currentUnit == BitcoinUnit.btc ? UnitUtil.satoshiToBitcoin(_viewModel.confirmedBalance) : _viewModel.confirmedBalance.toThousandsSeparatedString()} ${_viewModel.currentUnit.symbol()}";
+      _viewModel.currentUnit.displayBitcoinAmount(_viewModel.confirmedBalance, withUnit: true);
 
-  String get unitText => _viewModel.currentUnit.symbol();
+  String get unitText => _viewModel.currentUnit.symbol;
 
   @override
   Widget build(BuildContext context) {

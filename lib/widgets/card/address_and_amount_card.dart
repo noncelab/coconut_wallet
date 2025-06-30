@@ -201,7 +201,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                 isError: widget.isAmountDust,
                 errorText: widget.isAmountDust
                     ? t.alert.error_send.minimum_amount(
-                        bitcoin: UnitUtil.satoshiToBitcoin(dustLimit + 1), unit: t.btc)
+                        bitcoin: UnitUtil.convertSatoshiToBitcoin(dustLimit + 1), unit: t.btc)
                     : null),
           ],
         ),

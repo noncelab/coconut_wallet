@@ -65,7 +65,7 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      formatBitcoinValue(widget.utxo.amount, widget.currentUnit),
+                      widget.currentUnit.displayBitcoinAmount(widget.utxo.amount),
                       style: Styles.h2Number.setColor(CoconutColors.white.withOpacity(0.3)),
                     ),
                     CoconutLayout.spacing_100w,

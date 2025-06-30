@@ -40,15 +40,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   int get amount => (_viewModel.sendingAmountWhenAddressIsMyChange ?? _viewModel.amount!);
 
-  String get confirmText => formatBitcoinValue(amount, _currentUnit);
+  String get confirmText => _currentUnit.displayBitcoinAmount(amount);
 
   String get estimatedFeeText =>
-      formatBitcoinValue(_viewModel.fee, _currentUnit, defaultWhenNull: t.calculation_failed);
+      _currentUnit.displayBitcoinAmount(_viewModel.fee, defaultWhenNull: t.calculation_failed);
 
-  String get totalCostText => formatBitcoinValue(_viewModel.totalAmount, _currentUnit,
+  String get totalCostText => _currentUnit.displayBitcoinAmount(_viewModel.totalAmount,
       defaultWhenNull: t.calculation_failed);
 
-  String get unitText => _currentUnit.symbol();
+  String get unitText => _currentUnit.symbol;
 
   void broadcast() async {
     if (context.loaderOverlay.visible) return;

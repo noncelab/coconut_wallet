@@ -90,7 +90,7 @@ class WalletItemCard extends StatelessWidget {
                                   textStyle: CoconutTypography.heading3_21_NumberBold
                                       .setColor(CoconutColors.white)),
                               Text(
-                                " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                                " ${currentUnit.symbol}",
                                 style: CoconutTypography.body3_12_Number.copyWith(
                                     color: CoconutColors.gray500, fontWeight: FontWeight.w500),
                               ),
