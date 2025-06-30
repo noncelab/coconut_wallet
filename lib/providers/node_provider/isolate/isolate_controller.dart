@@ -4,6 +4,7 @@ import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart
 import 'package:coconut_wallet/providers/node_provider/state/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/network_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/subscription_service.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -13,8 +14,9 @@ class IsolateController {
   final NetworkService _networkManager;
   final IsolateStateManager _isolateStateManager;
   final ElectrumService _electrumService;
+  final TransactionRecordService _transactionRecordService;
   IsolateController(this._subscriptionService, this._networkManager, this._isolateStateManager,
-      this._electrumService);
+      this._electrumService, this._transactionRecordService);
 
   Future<void> executeNetworkCommand(
       IsolateControllerCommand messageType, SendPort isolateToMainSendPort, List params) async {
@@ -63,6 +65,10 @@ class IsolateController {
           break;
         case IsolateControllerCommand.getSocketConnectionStatus:
           isolateToMainSendPort.send(Result.success(_electrumService.connectionStatus));
+          break;
+        case IsolateControllerCommand.getTransactionRecord:
+          isolateToMainSendPort
+              .send(await _transactionRecordService.getTransactionRecord(params[0], params[1]));
           break;
       }
     } catch (e, stack) {

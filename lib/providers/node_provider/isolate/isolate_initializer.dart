@@ -31,7 +31,7 @@ class IsolateInitializer {
     final transactionRepository = TransactionRepository(realmManager);
     final subscribeRepository = SubscriptionRepository(realmManager);
     // IsolateStateManager 초기화
-    final transactionProcessor = TransactionRecordService(electrumService, addressRepository);
+    final transactionRecordService = TransactionRecordService(electrumService, addressRepository);
     final isolateStateManager = IsolateStateManager(sendPort);
     final BalanceSyncService balanceSyncService = BalanceSyncService(
         electrumService, isolateStateManager, addressRepository, walletRepository);
@@ -41,7 +41,7 @@ class IsolateInitializer {
     final TransactionSyncService transactionSyncService = TransactionSyncService(
         electrumService,
         transactionRepository,
-        transactionProcessor,
+        transactionRecordService,
         isolateStateManager,
         utxoRepository,
         scriptCallbackService);
@@ -67,6 +67,7 @@ class IsolateInitializer {
       networkManager,
       isolateStateManager,
       electrumService,
+      transactionRecordService,
     );
 
     return isolateController;
