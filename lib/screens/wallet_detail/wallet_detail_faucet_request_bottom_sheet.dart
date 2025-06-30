@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -221,7 +222,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                           _isRequesting
                               ? t.faucet_request_bottom_sheet.requesting
                               : t.faucet_request_bottom_sheet
-                                  .request_amount(bitcoin: formatNumber(_requestAmount)),
+                                  .request_amount(bitcoin: _requestAmount.toTrimmedString()),
                           style: CoconutTypography.body2_14
                               .setColor((canRequestFaucet())
                                   ? CoconutColors.black

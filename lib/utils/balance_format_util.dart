@@ -62,13 +62,3 @@ class BalanceFormatUtil {
         : integerPartFormatted;
   }
 }
-
-// TODO: double extension
-String formatNumber(double number) {
-  // 정수로 딱 떨어지면 정수형으로 출력
-  if (number == number.toInt()) {
-    return number.toInt().toString();
-  }
-  // 그렇지 않으면 double형 그대로 출력
-  return number.toString();
-}
