@@ -129,8 +129,6 @@ class WalletDetailViewModel extends ChangeNotifier {
       ? null
       : (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
 
-  int _bitcoinPriceKrw = 0;
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   String _bitcoinPriceKrwInString = '';
 
   String get bitcoinPriceKrwInString => _bitcoinPriceKrwInString;
@@ -144,7 +142,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _updateBitcoinPrice() {
-    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw ?? 0;
     _bitcoinPriceKrwInString = _priceProvider.getFiatPrice(_balance);
     notifyListeners();
   }

@@ -135,8 +135,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     });
   }
 
-  int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
-
   int? get change {
     if (_sendInfoProvider.walletId == null) {
       // 이미 보내기 과정 완료 후 호출 될 때를 대비
@@ -494,11 +492,5 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _sendInfoProvider.setTransaction(_transaction);
     _sendInfoProvider.setFeeBumpfingType(null);
     _sendInfoProvider.setWalletImportSource(_walletBaseItem.walletImportSource);
-  }
-
-  @override
-  void dispose() {
-    // _priceProvider.removeListener(_updateBitcoinPriceKrw);
-    super.dispose();
   }
 }

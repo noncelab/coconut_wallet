@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -19,7 +18,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   late final UtxoTagProvider _tagProvider;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _txProvider;
-  late final PriceProvider _priceProvider;
   late final WalletBase _walletBase;
   late final int _walletId;
   late bool? _isNetworkOn;
@@ -39,16 +37,9 @@ class BroadcastingViewModel extends ChangeNotifier {
     this._isNetworkOn,
     this._nodeProvider,
     this._txProvider,
-    this._priceProvider,
   ) {
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
-    _priceProvider.addListener(_onPriceChanged);
-  }
-
-  void _onPriceChanged() {
-    // 가격이 변경되면 UI 업데이트를 위해 notifyListeners 호출
-    notifyListeners();
   }
 
   List<String> get recipientAddresses => UnmodifiableListView(_recipientAddresses);
@@ -192,11 +183,5 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   bool _hasAllInputsBip32Derivation(Psbt psbt) {
     return psbt.inputs.every((input) => input.bip32Derivation != null);
-  }
-
-  @override
-  void dispose() {
-    _priceProvider.removeListener(_onPriceChanged);
-    super.dispose();
   }
 }

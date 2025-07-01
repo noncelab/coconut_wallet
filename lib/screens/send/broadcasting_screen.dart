@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -237,7 +236,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
-      Provider.of<PriceProvider>(context, listen: false),
     );
     WidgetsBinding.instance.addPostFrameCallback((duration) {
       _setOverlayLoading(true);
