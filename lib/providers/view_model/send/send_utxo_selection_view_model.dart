@@ -17,7 +17,6 @@ import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -46,7 +45,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   final SendInfoProvider _sendInfoProvider;
   final NodeProvider _nodeProvider;
   final PriceProvider _priceProvider;
-  late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;
   late String _changeAddressDerivationPath;
@@ -135,12 +133,9 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       deselectAllUtxo();
       notifyListeners();
     });
-
-    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
-    _priceProvider.addListener(_updateBitcoinPriceKrw);
   }
 
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
+  int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
 
   int? get change {
     if (_sendInfoProvider.walletId == null) {
@@ -351,11 +346,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _updateBitcoinPriceKrw() {
-    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
-    notifyListeners();
-  }
-
   int _calculateTotalAmountOfUtxoList(List<Utxo> utxos) {
     return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
   }
@@ -394,9 +384,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
     feeInfo.estimatedFee = estimatedFee;
-    feeInfo.fiatValue = _bitcoinPriceKrw != null
-        ? FiatUtil.calculateFiatAmount(estimatedFee, _bitcoinPriceKrw!)
-        : null;
+    feeInfo.fiatValue = _priceProvider.getFiatAmount(estimatedFee);
 
     if (feeInfo is FeeInfoWithLevel && feeInfo.level == _selectedLevel) {
       _estimatedFee = estimatedFee;
@@ -510,7 +498,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _priceProvider.removeListener(_updateBitcoinPriceKrw);
+    // _priceProvider.removeListener(_updateBitcoinPriceKrw);
     super.dispose();
   }
 }

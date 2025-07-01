@@ -19,7 +19,6 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   late final WalletListItemBase _walletListItemBase;
   late AddressType _walletAddressType;
   late int _confirmedBalance;
-  late int? _bitcoinPriceKrw;
   late bool _isMultisigWallet;
   late bool _isMaxMode;
   late int _walletId;
@@ -28,8 +27,8 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   late bool _isBatchTx = false;
 
-  SendFeeSelectionViewModel(this._sendInfoProvider, this._walletProvider, this._nodeProvider,
-      this._bitcoinPriceKrw, this._isNetworkOn) {
+  SendFeeSelectionViewModel(
+      this._sendInfoProvider, this._walletProvider, this._nodeProvider, this._isNetworkOn) {
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _walletAddressType = _walletListItemBase.walletType == WalletType.singleSignature
         ? AddressType.p2wpkh
@@ -42,7 +41,6 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
       return sum;
     });
     _isMultisigWallet = _walletListItemBase.walletType == WalletType.multiSignature;
-    _bitcoinPriceKrw = _bitcoinPriceKrw;
     _walletId = _sendInfoProvider.walletId!;
     if (_sendInfoProvider.recipientsForBatch != null) {
       _isBatchTx = true;
@@ -55,7 +53,6 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   }
 
   double get amount => _amount;
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   bool get isNetworkOn => _isNetworkOn == true;
   WalletProvider get walletProvider => _walletProvider;
   NodeProvider get nodeprovider => _nodeProvider;
@@ -124,11 +121,6 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     if (_isMaxMode) return (_confirmedBalance - estimatedFee) > dustLimit;
     Logger.log('--> ${UnitUtil.convertBitcoinToSatoshi(amount)} $estimatedFee $_confirmedBalance');
     return (UnitUtil.convertBitcoinToSatoshi(amount) + estimatedFee) <= _confirmedBalance;
-  }
-
-  void setBitcoinPriceKrw(int price) {
-    _bitcoinPriceKrw = price;
-    notifyListeners();
   }
 
   void saveFinalSendInfo(int estimatedFee, double satsPerVb) {

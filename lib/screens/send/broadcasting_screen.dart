@@ -14,7 +14,6 @@ import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -99,17 +98,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, PriceProvider,
+    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider,
         BroadcastingViewModel>(
       create: (_) => _viewModel,
-      update: (_, connectivityProvider, walletProvider, upbitConnectModel, viewModel) {
+      update: (_, connectivityProvider, walletProvider, viewModel) {
         if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
           viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
-        }
-        if (mounted && upbitConnectModel.bitcoinPriceKrw != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
-          });
         }
 
         return viewModel;
@@ -243,9 +237,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<UtxoTagProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
-      Provider.of<PriceProvider>(context, listen: false).bitcoinPriceKrw,
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
+      Provider.of<PriceProvider>(context, listen: false),
     );
     WidgetsBinding.instance.addPostFrameCallback((duration) {
       _setOverlayLoading(true);

@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -30,7 +29,7 @@ class _FiatPriceState extends State<FiatPrice> {
               defaultStyle.copyWith(color: widget.textColor ?? defaultStyle.color);
 
       return Text(
-        viewModel.getFiatPrice(widget.satoshiAmount, CurrencyCode.KRW),
+        viewModel.getFiatPrice(widget.satoshiAmount),
         style: appliedStyle,
       );
     });

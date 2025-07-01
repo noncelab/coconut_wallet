@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -146,7 +145,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   void _updateBitcoinPrice() {
     _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw ?? 0;
-    _bitcoinPriceKrwInString = _priceProvider.getFiatPrice(_balance, CurrencyCode.KRW);
+    _bitcoinPriceKrwInString = _priceProvider.getFiatPrice(_balance);
     notifyListeners();
   }
 
