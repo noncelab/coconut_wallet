@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
@@ -211,7 +212,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       message: t.alert.wallet_delete.confirm_delete_description,
                                       onConfirm: () {
                                         _handleAuthFlow(onComplete: () async {
-                                          await _deleteWalletAndGoToWalletList(context, viewModel);
+                                          await _deleteWalletAndGoToWalletHome(context, viewModel);
                                         });
                                       },
                                       onCancel: () {
@@ -315,7 +316,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _tooltipTimer?.cancel();
   }
 
-  Future<void> _deleteWalletAndGoToWalletList(
+  Future<void> _deleteWalletAndGoToWalletHome(
       BuildContext context, WalletInfoViewModel viewModel) async {
     Navigator.of(context).pop();
     _setOverlayLoading(true);
@@ -325,7 +326,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-              builder: (BuildContext context) => const AppGuard(child: WalletListScreen())),
+              builder: (BuildContext context) => const AppGuard(child: WalletHomeScreen())),
           (route) => false);
     }
   }

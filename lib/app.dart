@@ -18,6 +18,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
@@ -46,7 +47,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
-
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -213,7 +213,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             ? StartScreen(onComplete: _completeSplash)
             : _appEntryFlow == AppEntryFlow.main
                 ? const AppGuard(
-                    child: WalletListScreen(),
+                    child: WalletHomeScreen(),
                   )
                 : CustomLoadingOverlay(
                     child: PinCheckScreen(
@@ -226,6 +226,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     ),
                   ),
         routes: {
+          '/wallet-list': (context) => const WalletListScreen(),
           '/wallet-add-scanner': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
