@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -340,15 +339,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         child: Center(
             child: RichText(
                 text: TextSpan(
-                    text: _currentUnit == BitcoinUnit.btc
-                        ? satoshiToBitcoinString(widget.utxo.amount)
-                        : addCommasToIntegerPart(widget.utxo.amount.toDouble()),
+                    text: _currentUnit.displayBitcoinAmount(widget.utxo.amount),
                     style: CoconutTypography.heading2_28_NumberBold,
                     children: <InlineSpan>[
               WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
-                  child: Text(" ${_currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
-                      style: CoconutTypography.heading3_21_Number))
+                  child:
+                      Text(" ${_currentUnit.symbol}", style: CoconutTypography.heading3_21_Number))
             ]))),
       ),
     );

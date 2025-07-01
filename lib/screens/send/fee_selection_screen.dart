@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
@@ -54,17 +55,13 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
       bitcoin: _currentUnit == BitcoinUnit.btc
-          ? UnitUtil.satoshiToBitcoin(kMaxFeeLimit)
-          : addCommasToIntegerPart(kMaxFeeLimit.toDouble()),
+          ? UnitUtil.convertSatoshiToBitcoin(kMaxFeeLimit)
+          : kMaxFeeLimit.toThousandsSeparatedString(),
       unit: unitText);
 
-  String get feeText => _estimatedFee != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_estimatedFee!)
-          : addCommasToIntegerPart(_estimatedFee!.toDouble())
-      : '';
+  String get feeText => _currentUnit.displayBitcoinAmount(_estimatedFee);
 
-  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get unitText => _currentUnit.symbol;
 
   @override
   Widget build(BuildContext context) {

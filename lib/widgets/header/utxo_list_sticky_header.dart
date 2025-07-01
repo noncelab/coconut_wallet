@@ -87,12 +87,12 @@ class UtxoListStickyHeader extends StatelessWidget {
                           AnimatedBalance(
                             prevValue: animatedBalanceData.previous,
                             value: animatedBalanceData.current,
-                            isBtcUnit: currentUnit == BitcoinUnit.btc,
+                            currentUnit: currentUnit,
                             textStyle: CoconutTypography.heading4_18_NumberBold,
                           ),
                           CoconutLayout.spacing_100w,
                           Text(
-                            currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
+                            currentUnit.symbol,
                             style: CoconutTypography.body2_14_Number,
                           ),
                           CoconutLayout.spacing_100w,

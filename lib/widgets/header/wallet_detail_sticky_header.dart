@@ -57,7 +57,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                           AnimatedBalance(
                             prevValue: widget.animatedBalanceData.previous,
                             value: widget.animatedBalanceData.current,
-                            isBtcUnit: widget.currentUnit == BitcoinUnit.btc,
+                            currentUnit: widget.currentUnit,
                             textStyle: CoconutTypography.body1_16_NumberBold.merge(
                               const TextStyle(
                                 fontSize: 18,
@@ -65,7 +65,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                             ),
                           ),
                           Text(
-                            widget.currentUnit == BitcoinUnit.btc ? ' ${t.btc}' : ' ${t.sats}',
+                            ' ${widget.currentUnit.symbol}',
                             style: CoconutTypography.body2_14_Number,
                           ),
                         ],

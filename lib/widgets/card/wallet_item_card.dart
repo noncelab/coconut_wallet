@@ -4,7 +4,6 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
@@ -20,7 +19,7 @@ class WalletItemCard extends StatelessWidget {
   final int colorIndex;
   final bool isLastItem;
   final bool isBalanceHidden;
-  final int? fakeBlance;
+  final int? fakeBalance;
   final List<MultisigSigner>? signers;
   final WalletImportSource walletImportSource;
   final BitcoinUnit currentUnit;
@@ -35,18 +34,14 @@ class WalletItemCard extends StatelessWidget {
     this.colorIndex = 0,
     required this.isLastItem,
     this.isBalanceHidden = false,
-    this.fakeBlance,
+    this.fakeBalance,
     this.signers,
     this.walletImportSource = WalletImportSource.coconutVault,
   });
 
   @override
   Widget build(BuildContext context) {
-    final displayFakeBalance = fakeBlance != null
-        ? currentUnit == BitcoinUnit.btc
-            ? satoshiToBitcoinString(fakeBlance!)
-            : addCommasToIntegerPart(fakeBlance!.toDouble())
-        : '';
+    final displayedFakeBalance = currentUnit.displayBitcoinAmount(fakeBalance);
     final isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
     final row = Padding(
       padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
@@ -82,7 +77,7 @@ class WalletItemCard extends StatelessWidget {
                       ),
                       CoconutLayout.spacing_50h,
                       isBalanceHidden
-                          ? fakeBlance != null
+                          ? fakeBalance != null
                               ? FittedBox(
                                   fit: BoxFit.scaleDown,
                                   alignment: Alignment.centerLeft,
@@ -90,12 +85,12 @@ class WalletItemCard extends StatelessWidget {
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Text(
-                                        displayFakeBalance,
+                                        displayedFakeBalance,
                                         style: CoconutTypography.heading3_21_NumberBold
                                             .setColor(CoconutColors.white),
                                       ),
                                       Text(
-                                        " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                                        " ${currentUnit.symbol}",
                                         style: CoconutTypography.body3_12_Number.copyWith(
                                           color: CoconutColors.gray500,
                                           fontWeight: FontWeight.w500,
@@ -116,11 +111,11 @@ class WalletItemCard extends StatelessWidget {
                                 AnimatedBalance(
                                     prevValue: animatedBalanceData.previous,
                                     value: animatedBalanceData.current,
-                                    isBtcUnit: currentUnit == BitcoinUnit.btc,
+                                    currentUnit: currentUnit,
                                     textStyle: CoconutTypography.heading3_21_NumberBold
                                         .setColor(CoconutColors.white)),
                                 Text(
-                                  " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                                  " ${currentUnit.symbol}",
                                   style: CoconutTypography.body3_12_Number.copyWith(
                                       color: CoconutColors.gray500, fontWeight: FontWeight.w500),
                                 ),

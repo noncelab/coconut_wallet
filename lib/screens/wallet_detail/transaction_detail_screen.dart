@@ -16,7 +16,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_de
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
@@ -138,7 +137,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                   _amountText(tx),
                                   CoconutLayout.spacing_100w,
                                   Text(
-                                    _currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
+                                    _currentUnit.symbol,
                                     style: CoconutTypography.body2_14_Number
                                         .setColor(CoconutColors.gray350),
                                   ),
@@ -674,9 +673,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   Widget _amountText(TransactionRecord tx) {
     String prefix = _getPrefix(tx) == '-' ? '' : '+';
     Color color = prefix == '+' ? CoconutColors.cyan : CoconutColors.primary;
+    String amountText = _currentUnit.displayBitcoinAmount(tx.amount);
 
-    return Text(
-        '$prefix${_currentUnit == BitcoinUnit.btc ? satoshiToBitcoinString(tx.amount) : addCommasToIntegerPart(tx.amount.toDouble())}',
+    return Text('$prefix$amountText',
         style: CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color));
   }
 

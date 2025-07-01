@@ -46,7 +46,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
     debugPrint(
         '_preferenceProvider.fakeBalanceTotalAmount: ${_preferenceProvider.fakeBalanceTotalAmount}');
     _fakeBalanceTotalBtc = _preferenceProvider.fakeBalanceTotalAmount != null
-        ? UnitUtil.satoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
+        ? UnitUtil.convertSatoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
         : null;
     _isFakeBalanceActive = _preferenceProvider.isFakeBalanceActive;
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
@@ -83,7 +83,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
             _inputError = FakeBalanceInputError.none;
           } else {
             if (_fakeBalanceTotalBtc! > 0 &&
-                _fakeBalanceTotalBtc! < UnitUtil.satoshiToBitcoin(_minimumSatoshi)) {
+                _fakeBalanceTotalBtc! < UnitUtil.convertSatoshiToBitcoin(_minimumSatoshi)) {
               _inputError = FakeBalanceInputError.notEnoughForAllWallets;
             } else if (_fakeBalanceTotalBtc! > _maximumAmount) {
               _inputError = FakeBalanceInputError.exceedsTotalSupply;
@@ -185,7 +185,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                             maxLength: _maxInputLength,
                             errorText: _inputError == FakeBalanceInputError.exceedsTotalSupply
                                 ? '  ${t.settings_screen.fake_balance.fake_balance_input_exceeds_error}'
-                                : '  ${t.settings_screen.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.satoshiToBitcoin(_minimumSatoshi).toStringAsFixed(8), sats: _walletProvider.walletItemList.length)}',
+                                : '  ${t.settings_screen.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.convertSatoshiToBitcoin(_minimumSatoshi).toStringAsFixed(8), sats: _walletProvider.walletItemList.length)}',
                             isError: _inputError != FakeBalanceInputError.none,
                             maxLines: 1,
                           ),
