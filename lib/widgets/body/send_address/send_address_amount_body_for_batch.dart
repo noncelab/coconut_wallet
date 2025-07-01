@@ -201,7 +201,7 @@ class _SendAddressAmountBodyForBatchState extends State<SendAddressAmountBodyFor
       return;
     }
 
-    if (doubleAmount < UnitUtil.satoshiToBitcoin(dustLimit)) {
+    if (doubleAmount < UnitUtil.convertSatoshiToBitcoin(dustLimit)) {
       setState(() {
         _recipients[index].amount = '';
         _recipients[index].isAmountDust = true;
@@ -266,7 +266,7 @@ class _SendAddressAmountBodyForBatchState extends State<SendAddressAmountBodyFor
   void _onComplete(BuildContext context) {
     double totalAmount =
         _recipients.fold(0, (sum, recipient) => sum + (double.parse(recipient.amount)));
-    bool isAffordable = widget.checkSendAvailable(UnitUtil.bitcoinToSatoshi(totalAmount));
+    bool isAffordable = widget.checkSendAvailable(UnitUtil.convertBitcoinToSatoshi(totalAmount));
     if (!isAffordable) {
       CoconutToast.showToast(
           isVisibleIcon: true, context: context, text: t.errors.insufficient_balance);

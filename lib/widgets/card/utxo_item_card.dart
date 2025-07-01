@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -71,9 +70,7 @@ class UtxoItemCard extends StatelessWidget {
                           SvgPicture.asset('assets/svg/lock.svg'),
                         ],
                         Text(
-                          currentUnit == BitcoinUnit.btc
-                              ? satoshiToBitcoinString(utxo.amount)
-                              : addCommasToIntegerPart(utxo.amount.toDouble()),
+                          currentUnit.displayBitcoinAmount(utxo.amount),
                           style: CoconutTypography.heading4_18_NumberBold
                               .setColor(CoconutColors.white),
                         ),

@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/cupertino.dart';
@@ -76,11 +75,11 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           AnimatedBalance(
             prevValue: widget.animatedBalanceData.previous,
             value: widget.animatedBalanceData.current,
-            isBtcUnit: widget.currentUnit == BitcoinUnit.btc,
+            currentUnit: widget.currentUnit,
           ),
           const SizedBox(width: 4.0),
           Text(
-            widget.currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
+            widget.currentUnit.symbol,
             style: CoconutTypography.heading4_18_Number.setColor(CoconutColors.gray350),
           ),
         ],
@@ -89,16 +88,10 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   }
 
   Widget _buildPendingAmountStatus() {
-    String getUnitText() => widget.currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
-    String getSendingAmountText() {
-      if (widget.sendingAmount == 0) return '';
-      return '${widget.currentUnit == BitcoinUnit.btc ? satoshiToBitcoinString(widget.sendingAmount) : addCommasToIntegerPart(widget.sendingAmount.toDouble())} ${getUnitText()} ${t.status_sending}';
-    }
-
-    String getReceivingAmountText() {
-      if (widget.receivingAmount == 0) return '';
-      return '${widget.currentUnit == BitcoinUnit.btc ? satoshiToBitcoinString(widget.receivingAmount) : addCommasToIntegerPart(widget.receivingAmount.toDouble())} ${getUnitText()} ${t.status_receiving}';
-    }
+    String getSendingAmountText() =>
+        '${widget.currentUnit.displayBitcoinAmount(widget.sendingAmount, shouldCheckZero: true, withUnit: true)} ${t.status_sending}';
+    String getReceivingAmountText() =>
+        '${widget.currentUnit.displayBitcoinAmount(widget.receivingAmount, shouldCheckZero: true, withUnit: true)} ${t.status_receiving}';
 
     return Column(
       children: [

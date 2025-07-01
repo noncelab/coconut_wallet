@@ -3,14 +3,13 @@ import 'dart:collection';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
@@ -20,6 +19,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   late final UtxoTagProvider _tagProvider;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _txProvider;
+  late final PriceProvider _priceProvider;
   late final WalletBase _walletBase;
   late final int _walletId;
   late bool? _isNetworkOn;
@@ -31,32 +31,36 @@ class BroadcastingViewModel extends ChangeNotifier {
   int? _totalAmount;
   int? _sendingAmountWhenAddressIsMyChange; // 내 지갑의 change address로 보내는 경우 잔액
   final List<int> _outputIndexesToMyAddress = [];
-  late int? _bitcoinPriceKrw;
 
   BroadcastingViewModel(
     this._sendInfoProvider,
     this._walletProvider,
     this._tagProvider,
     this._isNetworkOn,
-    this._bitcoinPriceKrw,
     this._nodeProvider,
     this._txProvider,
+    this._priceProvider,
   ) {
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
+    _priceProvider.addListener(_onPriceChanged);
+  }
+
+  void _onPriceChanged() {
+    // 가격이 변경되면 UI 업데이트를 위해 notifyListeners 호출
+    notifyListeners();
   }
 
   List<String> get recipientAddresses => UnmodifiableListView(_recipientAddresses);
 
   int? get amount => _sendingAmount;
   int? get amountValueInKrw {
-    if (_bitcoinPriceKrw == null || _sendingAmount == null) return null;
-    return FiatUtil.calculateFiatAmount(
-        sendingAmountWhenAddressIsMyChange != null ? sendingAmountWhenAddressIsMyChange! : amount!,
-        _bitcoinPriceKrw!);
+    final amount = sendingAmountWhenAddressIsMyChange != null
+        ? sendingAmountWhenAddressIsMyChange!
+        : this.amount!;
+    return _priceProvider.getFiatAmount(amount);
   }
 
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get fee => _fee;
   bool get isInitDone => _isInitDone;
   bool get isNetworkOn => _isNetworkOn == true;
@@ -74,11 +78,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   Future<Result<String>> broadcast(Transaction signedTx) async {
     debugPrint('signedTx: ${signedTx.serialize()}');
     return _nodeProvider.broadcast(signedTx);
-  }
-
-  void setBitcoinPriceKrw(int bitcoinPriceKrw) {
-    _bitcoinPriceKrw = bitcoinPriceKrw;
-    notifyListeners();
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
@@ -122,19 +121,19 @@ class BroadcastingViewModel extends ChangeNotifier {
       Map<String, double> recipientAmounts = {};
       if (outputsToOther.isNotEmpty) {
         for (var output in outputsToOther) {
-          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
       if (outputToMyReceivingAddress.isNotEmpty) {
         for (var output in outputToMyReceivingAddress) {
-          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
         _isSendingToMyAddress = true;
       }
       if (outputToMyChangeAddress.length > 1) {
         for (int i = outputToMyChangeAddress.length - 1; i > 0; i--) {
           var output = outputToMyChangeAddress[i];
-          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
       _sendingAmount = psbt.sendingAmount;
@@ -197,5 +196,11 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   bool _hasAllInputsBip32Derivation(Psbt psbt) {
     return psbt.inputs.every((input) => input.bip32Derivation != null);
+  }
+
+  @override
+  void dispose() {
+    _priceProvider.removeListener(_onPriceChanged);
+    super.dispose();
   }
 }

@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -10,7 +11,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping_vi
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -194,10 +194,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             if (!_viewModel.insufficientUtxos)
                               Text(
                                 t.transaction_fee_bumping_screen.estimated_fee(
-                                  fee: addCommasToIntegerPart(viewModel
+                                  fee: viewModel
                                       .getTotalEstimatedFee(
                                           double.parse(_textEditingController.text))
-                                      .toDouble()),
+                                      .toThousandsSeparatedString(),
                                 ),
                                 style: CoconutTypography.body2_14,
                               ),
@@ -426,8 +426,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             children: [
               Text(
                 t.transaction_fee_bumping_screen.total_fee(
-                  fee: addCommasToIntegerPart(widget.transaction.fee.toDouble()),
-                  vb: addCommasToIntegerPart(widget.transaction.vSize.toDouble()),
+                  fee: widget.transaction.fee.toThousandsSeparatedString(),
+                  vb: widget.transaction.vSize.toInt().toThousandsSeparatedString(),
                 ),
                 style: CoconutTypography.body2_14,
               ),

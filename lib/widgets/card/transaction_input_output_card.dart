@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -117,8 +118,8 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         : 0;
 
     int maxAmount = max(maxInputAmount, maxOutputAmount);
-    _longestSatoshiText = addCommasToIntegerPart(maxAmount.toDouble());
-    _longestBtcText = satoshiToBitcoinString(maxAmount);
+    _longestSatoshiText = maxAmount.toThousandsSeparatedString();
+    _longestBtcText = BalanceFormatUtil.formatSatoshiToReadableBitcoin(maxAmount);
 
     /// 최소값
     if (_longestBtcText.length < _minimumLongestText.length) {

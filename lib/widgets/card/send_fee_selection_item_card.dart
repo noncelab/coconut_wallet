@@ -3,7 +3,6 @@ import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -83,12 +82,10 @@ class FeeSelectionItemCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          currentUnit == BitcoinUnit.btc
-                              ? satoshiToBitcoinString(feeInfo.estimatedFee!)
-                              : addCommasToIntegerPart(feeInfo.estimatedFee!.toDouble()),
+                          currentUnit.displayBitcoinAmount(feeInfo.estimatedFee),
                           style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                         ),
-                        Text(" ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                        Text(" ${currentUnit.symbol}",
                             style:
                                 CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
                       ],
