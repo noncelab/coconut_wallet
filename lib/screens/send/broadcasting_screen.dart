@@ -37,9 +37,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BroadcastingViewModel _viewModel;
   late BitcoinUnit _currentUnit;
 
-  int get amount => (_viewModel.sendingAmountWhenAddressIsMyChange ?? _viewModel.amount!);
-
-  String get confirmText => _currentUnit.displayBitcoinAmount(amount);
+  String get confirmText => _currentUnit.displayBitcoinAmount(_viewModel.amount);
 
   String get estimatedFeeText =>
       _currentUnit.displayBitcoinAmount(_viewModel.fee, defaultWhenNull: t.calculation_failed);
