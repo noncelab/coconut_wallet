@@ -56,7 +56,7 @@ class SendAddressViewModel extends ChangeNotifier {
     final normalized = recipient.toLowerCase();
 
     // Bech32m(T2R) 주소 최대 62자
-    if (normalized.length < 26 || normalized.length > 62) {
+    if (normalized.length < 26 || normalized.length > 65) {
       throw invalidAddressMessage;
     }
 
