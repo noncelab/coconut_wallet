@@ -74,7 +74,11 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  coconut_design_system: ^0.9.0
+  # coconut_design_system: ^0.9.0
+  coconut_design_system: 
+    git:
+      url: https://github.com/noncelab/coconut_design_system.git
+      ref: feat/appbar-custom-widget
   coconut_lib: ^0.10.4
   realm: ^20.0.0
   cryptography: ^2.7.0
@@ -131,6 +135,7 @@ flutter:
     - assets/svg/bell.svg
     - assets/svg/add-circle.svg
     - assets/svg/arrow-right.svg
+    - assets/svg/arrow-right-md.svg
     - assets/svg/arrow-back.svg
     - assets/svg/send.svg
     - assets/svg/settings.svg
