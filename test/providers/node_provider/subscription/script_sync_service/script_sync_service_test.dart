@@ -15,7 +15,7 @@ import '../../../../mock/transaction_mock.dart';
 import '../../../../mock/wallet_mock.dart';
 import '../../../../services/shared_prefs_service_test.mocks.dart';
 
-part 'test_constants.dart';
+part 'constants.dart';
 part 'data.dart';
 part 'verifier.dart';
 part 'setup.dart';
@@ -77,7 +77,7 @@ void main() {
         // Given
         final defaultData = _ScriptSyncTestDataBuilder.createDefaultTestData();
         final testData = _ScriptSyncTestDataBuilder.createRbfCpfpTestData(defaultData);
-        await _ScriptSyncTestSetup.setupRbfCpfpTestEnvironment1(testData);
+        await _ScriptSyncTestSetup.setupRbfCpfpInitialEnvironment(testData);
 
         final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
         scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
@@ -91,7 +91,10 @@ void main() {
         await _ScriptSyncTestVerifier.verifyInitialTransactionProcessed(testData);
 
         // When & Then - 2단계: B가 CPFP 수행
-        await scriptSyncService.syncScriptStatus(testData.cpfpTxDto!);
+        await _ScriptSyncTestSetup.setupCpfpEnvironment(testData);
+        for (var dto in testData.cpfpTxDtos!) {
+          await scriptSyncService.syncScriptStatus(dto);
+        }
         await _ScriptSyncTestVerifier.verifyCpfpTransactionProcessed(testData);
 
         // When & Then - 3단계: A가 RBF 수행 (핵심 버그 검증)

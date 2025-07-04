@@ -114,18 +114,17 @@ class _ScriptSyncTestVerifier {
   }
 
   static Future<void> verifyCpfpTransactionProcessed(_ScriptSyncTestData testData) async {
-    // 지갑 A에 CPFP 트랜잭션(B -> A) 수신 확인
-    final walletATxList =
-        ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(testData.walletA.id);
-
-    expect(walletATxList.length, 1, reason: 'CPFP 후 지갑 A에 1개의 트랜잭션이 있어야 합니다.');
-    expect(walletATxList[0].transactionHash, testData.cpfpTx!.transactionHash,
-        reason: 'CPFP 트랜잭션 해시가 일치해야 합니다.');
-
-    // 지갑 B에는 여전히 2개의 트랜잭션 (초기 + CPFP 지출)
+    // 지갑 B에  2개의 트랜잭션 (초기 + CPFP)
     final walletBTxList =
         ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(testData.walletB.id);
     expect(walletBTxList.length, 2, reason: 'CPFP 후 지갑 B에 2개의 트랜잭션이 있어야 합니다.');
+
+    expect(walletBTxList[0].transactionHash,
+        anyOf(testData.mockTx.transactionHash, testData.cpfpTx!.transactionHash),
+        reason: 'CPFP 후 트랜잭션 중 초기 트랜잭션 해시가 일치해야 합니다.');
+    expect(walletBTxList[1].transactionHash,
+        anyOf(testData.mockTx.transactionHash, testData.cpfpTx!.transactionHash),
+        reason: 'CPFP 트랜잭션 해시가 일치해야 합니다.');
   }
 
   static Future<void> verifyRbfProcessedAndCpfpRemoved(_ScriptSyncTestData testData) async {

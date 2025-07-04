@@ -61,8 +61,8 @@ class _ScriptSyncTestSetup {
 
     when(electrumService.getBalance(any, any)).thenAnswer(
       (_) async => GetBalanceRes(
-        confirmed: _TestConstants.transactionAmount,
-        unconfirmed: 0,
+        confirmed: 0,
+        unconfirmed: _TestConstants.transactionAmount,
       ),
     );
 
@@ -72,7 +72,7 @@ class _ScriptSyncTestSetup {
     when(electrumService.getUnspentList(any, any)).thenAnswer((_) async {
       return [
         ListUnspentRes(
-          height: _TestConstants.blockHeight,
+          height: 0,
           txHash: testData.mockTx.transactionHash,
           txPos: 0,
           value: _TestConstants.transactionAmount,
@@ -93,7 +93,7 @@ class _ScriptSyncTestSetup {
   }
 
   // RBF-CPFP 테스트용 셋업
-  static Future<void> setupRbfCpfpTestEnvironment1(_ScriptSyncTestData testData) async {
+  static Future<void> setupRbfCpfpInitialEnvironment(_ScriptSyncTestData testData) async {
     setupNetworkAndSharedPrefs(testData);
     await setupLocalDatabase(testData);
     final electrumService = ScriptSyncServiceMock.electrumService;
@@ -115,13 +115,14 @@ class _ScriptSyncTestSetup {
     when(electrumService.getBalance(any, any)).thenAnswer(
       (_) async => GetBalanceRes(confirmed: 0, unconfirmed: 0),
     );
-    when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {
+    when(electrumService.fetchBlocksByHeight({
+      _TestConstants.blockHeight - 1,
+      _TestConstants.blockHeight,
+      _TestConstants.blockHeight + 1
+    })).thenAnswer((_) async => {
           _TestConstants.blockHeight - 1:
-              BlockTimestamp(_TestConstants.blockHeight - 1, DateTime.now())
-        });
-    when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async =>
-        {_TestConstants.blockHeight: BlockTimestamp(_TestConstants.blockHeight, DateTime.now())});
-    when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {
+              BlockTimestamp(_TestConstants.blockHeight - 1, DateTime.now()),
+          _TestConstants.blockHeight: BlockTimestamp(_TestConstants.blockHeight, DateTime.now()),
           _TestConstants.blockHeight + 1:
               BlockTimestamp(_TestConstants.blockHeight + 1, DateTime.now())
         });
@@ -134,7 +135,7 @@ class _ScriptSyncTestSetup {
     final addressA = testData.walletA.walletBase.getAddress(_TestConstants.addressIndex);
     final addressB = testData.walletB.walletBase.getAddress(_TestConstants.addressIndex);
     final txHistoryRes = GetTxHistoryRes(
-      height: _TestConstants.blockHeight,
+      height: 0,
       txHash: testData.mockTx.transactionHash,
     );
 
@@ -146,11 +147,63 @@ class _ScriptSyncTestSetup {
 
     when(electrumService.getUnspentList(any, addressB)).thenAnswer((_) async => [
           ListUnspentRes(
-            height: _TestConstants.blockHeight,
+            height: 0,
             txHash: testData.mockTx.transactionHash,
             txPos: 0,
             value: _TestConstants.transactionAmount,
           ),
         ]);
+  }
+
+  static Future<void> setupCpfpEnvironment(_ScriptSyncTestData testData) async {
+    final electrumService = ScriptSyncServiceMock.electrumService;
+
+    final addressB = testData.walletB.walletBase.getAddress(_TestConstants.addressIndex);
+    final changeAddressB =
+        testData.walletB.walletBase.getAddress(_TestConstants.addressIndex, isChange: true);
+
+    final txHistoryRes = GetTxHistoryRes(
+      height: 0,
+      txHash: testData.mockTx.transactionHash,
+    );
+
+    final cpfpTxHistoryRes = GetTxHistoryRes(
+      height: 0,
+      txHash: testData.cpfpTx!.transactionHash,
+    );
+    final cpfpUnspentRes = ListUnspentRes(
+      height: 0,
+      txHash: testData.cpfpTx!.transactionHash,
+      txPos: 0,
+      value: _TestConstants.transactionAmount - _TestConstants.cpfpFeeAmount,
+    );
+
+    when(electrumService.getHistory(any, addressB))
+        .thenAnswer((_) async => [txHistoryRes, cpfpTxHistoryRes]);
+    when(electrumService.getHistory(any, changeAddressB))
+        .thenAnswer((_) async => [cpfpTxHistoryRes]);
+
+    when(electrumService.getTransaction(testData.cpfpTx!.transactionHash))
+        .thenAnswer((_) async => testData.cpfpTx!.serialize());
+
+    when(electrumService.getBalance(any, addressB)).thenAnswer(
+      (_) async => GetBalanceRes(confirmed: 0, unconfirmed: 0),
+    );
+
+    when(electrumService.getBalance(any, changeAddressB)).thenAnswer(
+      (_) async => GetBalanceRes(
+        confirmed: 0,
+        unconfirmed: _TestConstants.transactionAmount - _TestConstants.cpfpFeeAmount,
+      ),
+    );
+
+    when(electrumService.getUnspentList(any, addressB)).thenAnswer((_) async => []);
+    when(electrumService.getUnspentList(any, changeAddressB))
+        .thenAnswer((_) async => [cpfpUnspentRes]);
+
+    when(electrumService.getPreviousTransactions(
+      any,
+      existingTxList: anyNamed('existingTxList'),
+    )).thenAnswer((_) async => []);
   }
 }

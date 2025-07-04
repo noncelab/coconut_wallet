@@ -27,8 +27,8 @@ class _ScriptSyncTestData {
   // A에서 B로 전송한 RBF 트랜잭션
   final Transaction? rbfTx;
 
-  // B에서 Self로 전송한 CPFP 트랜잭션
-  final SubscribeScriptStreamDto? cpfpTxDto;
+  // B에서 Self로 전송한 CPFP 트랜잭션 스트림
+  final List<SubscribeScriptStreamDto>? cpfpTxDtos;
 
   // 지갑A의 RBF 트랜잭션 스트림
   final SubscribeScriptStreamDto? rbfTxDtoA;
@@ -47,7 +47,7 @@ class _ScriptSyncTestData {
     required this.previousMockTx,
     this.cpfpTx,
     this.rbfTx,
-    this.cpfpTxDto,
+    this.cpfpTxDtos,
     this.rbfTxDtoA,
     this.rbfTxDtoB,
   });
@@ -55,7 +55,7 @@ class _ScriptSyncTestData {
   factory _ScriptSyncTestData.createPreviousTestData(_ScriptSyncTestData defaultData,
       {required Transaction cpfpTx,
       required Transaction rbfTx,
-      required SubscribeScriptStreamDto cpfpTxDto,
+      required List<SubscribeScriptStreamDto> cpfpTxDtos,
       required SubscribeScriptStreamDto rbfTxDtoA,
       required SubscribeScriptStreamDto rbfTxDtoB}) {
     return _ScriptSyncTestData(
@@ -69,7 +69,7 @@ class _ScriptSyncTestData {
       previousMockTx: defaultData.previousMockTx,
       cpfpTx: cpfpTx,
       rbfTx: rbfTx,
-      cpfpTxDto: cpfpTxDto,
+      cpfpTxDtos: cpfpTxDtos,
       rbfTxDtoA: rbfTxDtoA,
       rbfTxDtoB: rbfTxDtoB,
     );
@@ -161,9 +161,18 @@ class _ScriptSyncTestDataBuilder {
       defaultData.walletB,
       _TestConstants.addressIndex,
     );
+    final cpfpTxChangeScriptStatus = ScriptStatusMock.createMockScriptStatus(
+      defaultData.walletB,
+      _TestConstants.addressIndex,
+      isChange: true,
+    );
     final cpfpTxDto = SubscribeScriptStreamDto(
       walletItem: defaultData.walletB,
       scriptStatus: cpfpTxScriptStatus,
+    );
+    final cpfpTxChangeDto = SubscribeScriptStreamDto(
+      walletItem: defaultData.walletB,
+      scriptStatus: cpfpTxChangeScriptStatus,
     );
 
     final rbfTxScriptStatusA = ScriptStatusMock.createMockScriptStatus(
@@ -187,7 +196,7 @@ class _ScriptSyncTestDataBuilder {
       defaultData,
       cpfpTx: cpfpTx,
       rbfTx: rbfTx,
-      cpfpTxDto: cpfpTxDto,
+      cpfpTxDtos: [cpfpTxDto, cpfpTxChangeDto],
       rbfTxDtoA: rbfTxDtoA,
       rbfTxDtoB: rbfTxDtoB,
     );
