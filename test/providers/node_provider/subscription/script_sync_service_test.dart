@@ -22,32 +22,91 @@ class _TestConstants {
   static const int blockHeight = 812345;
   static const int transactionAmount = 1000000;
   static const int previousTxAmount = 2000000;
+  static const int cpfpFeeAmount = 5000;
+  static const int rbfFeeAmount = 10000;
 }
 
 /// 테스트 데이터 클래스
 class _ScriptSyncTestData {
-  final WalletListItemBase walletItem;
-  final WalletListItemBase otherWalletItem;
+  final WalletListItemBase walletA;
+  final WalletListItemBase walletB;
   final SharedPrefsRepository sharedPrefsRepository;
-  final SubscribeScriptStreamDto dto;
+
+  // previousWallet에서 A로 전송한 트랜잭션
+  final SubscribeScriptStreamDto previousDto;
+
+  // A에서 B로 전송한 트랜잭션 지갑 A의 스트림
+  final SubscribeScriptStreamDto dtoA;
+
+  // A에서 B로 전송한 트랜잭션 지갑 B의 스트림
+  final SubscribeScriptStreamDto dtoB;
+
+  // A에서 B로 전송한 트랜잭션
   final Transaction mockTx;
+
+  // previousWallet에서 A로 전송한 트랜잭션
   final Transaction previousMockTx;
 
+  // B에서 Self로 전송한 CPFP 트랜잭션
+  final Transaction? cpfpTx;
+
+  // A에서 B로 전송한 RBF 트랜잭션
+  final Transaction? rbfTx;
+
+  // B에서 Self로 전송한 CPFP 트랜잭션
+  final SubscribeScriptStreamDto? cpfpTxDto;
+
+  // 지갑A의 RBF 트랜잭션 스트림
+  final SubscribeScriptStreamDto? rbfTxDtoA;
+
+  // 지갑B의 RBF 트랜잭션 스트림
+  final SubscribeScriptStreamDto? rbfTxDtoB;
+
   _ScriptSyncTestData({
-    required this.walletItem,
-    required this.otherWalletItem,
+    required this.walletA,
+    required this.walletB,
     required this.sharedPrefsRepository,
-    required this.dto,
+    required this.dtoA,
+    required this.dtoB,
+    required this.previousDto,
     required this.mockTx,
     required this.previousMockTx,
+    this.cpfpTx,
+    this.rbfTx,
+    this.cpfpTxDto,
+    this.rbfTxDtoA,
+    this.rbfTxDtoB,
   });
+
+  factory _ScriptSyncTestData.createPreviousTestData(_ScriptSyncTestData defaultData,
+      {required Transaction cpfpTx,
+      required Transaction rbfTx,
+      required SubscribeScriptStreamDto cpfpTxDto,
+      required SubscribeScriptStreamDto rbfTxDtoA,
+      required SubscribeScriptStreamDto rbfTxDtoB}) {
+    return _ScriptSyncTestData(
+      walletA: defaultData.walletA,
+      walletB: defaultData.walletB,
+      sharedPrefsRepository: defaultData.sharedPrefsRepository,
+      dtoA: defaultData.dtoA,
+      dtoB: defaultData.dtoB,
+      previousDto: defaultData.previousDto,
+      mockTx: defaultData.mockTx,
+      previousMockTx: defaultData.previousMockTx,
+      cpfpTx: cpfpTx,
+      rbfTx: rbfTx,
+      cpfpTxDto: cpfpTxDto,
+      rbfTxDtoA: rbfTxDtoA,
+      rbfTxDtoB: rbfTxDtoB,
+    );
+  }
 }
 
 /// 테스트 데이터 빌더
 class _ScriptSyncTestDataBuilder {
   static _ScriptSyncTestData createDefaultTestData() {
-    final walletItem = WalletMock.createSingleSigWalletItem(id: _TestConstants.walletId);
-    final otherWalletItem = WalletMock.createSingleSigWalletItem(
+    final walletA = WalletMock.createSingleSigWalletItem(id: _TestConstants.walletId);
+    final walletB = WalletMock.createSingleSigWalletItem(
       id: _TestConstants.walletId + 1,
       randomDescriptor: true,
     );
@@ -55,34 +114,108 @@ class _ScriptSyncTestDataBuilder {
     final sharedPrefsRepository = SharedPrefsRepository()
       ..setSharedPreferencesForTest(MockSharedPreferences());
 
-    final scriptStatus = ScriptStatusMock.createMockScriptStatus(
-      walletItem,
+    final previousScriptStatus = ScriptStatusMock.createMockScriptStatus(
+      walletA,
       _TestConstants.addressIndex,
     );
 
-    final dto = SubscribeScriptStreamDto(
-      walletItem: walletItem,
-      scriptStatus: scriptStatus,
+    final previousDto = SubscribeScriptStreamDto(
+      walletItem: walletA,
+      scriptStatus: previousScriptStatus,
+    );
+
+    final scriptStatusA = ScriptStatusMock.createMockScriptStatus(
+      walletA,
+      _TestConstants.addressIndex,
+    );
+
+    final dtoA = SubscribeScriptStreamDto(
+      walletItem: walletA,
+      scriptStatus: scriptStatusA,
+    );
+
+    final scriptStatusB = ScriptStatusMock.createMockScriptStatus(
+      walletB,
+      _TestConstants.addressIndex,
+    );
+
+    final dtoB = SubscribeScriptStreamDto(
+      walletItem: walletB,
+      scriptStatus: scriptStatusB,
     );
 
     final previousMockTx = TransactionMock.createMockTransaction(
-      toAddress: otherWalletItem.walletBase.getAddress(_TestConstants.addressIndex),
+      toAddress: walletA.walletBase.getAddress(_TestConstants.addressIndex),
       amount: _TestConstants.previousTxAmount,
     );
 
     final mockTx = TransactionMock.createMockTransaction(
       inputTransactionHash: previousMockTx.transactionHash,
-      toAddress: walletItem.walletBase.getAddress(_TestConstants.addressIndex),
+      toAddress: walletB.walletBase.getAddress(_TestConstants.addressIndex),
       amount: _TestConstants.transactionAmount,
     );
 
     return _ScriptSyncTestData(
-      walletItem: walletItem,
-      otherWalletItem: otherWalletItem,
+      walletA: walletA,
+      walletB: walletB,
       sharedPrefsRepository: sharedPrefsRepository,
-      dto: dto,
+      dtoA: dtoA,
+      dtoB: dtoB,
+      previousDto: previousDto,
       mockTx: mockTx,
       previousMockTx: previousMockTx,
+    );
+  }
+
+  // RBF-CPFP 테스트 데이터 생성
+  static _ScriptSyncTestData createRbfCpfpTestData(_ScriptSyncTestData defaultData) {
+    // B가 수행하는 CPFP 트랜잭션 (initialTx를 부모로 함)
+    final cpfpTx = TransactionMock.createMockTransaction(
+      inputTransactionHash: defaultData.mockTx.transactionHash,
+      toAddress: defaultData.walletB.walletBase.getAddress(_TestConstants.addressIndex),
+      amount: _TestConstants.transactionAmount - _TestConstants.cpfpFeeAmount,
+    );
+
+    // A가 수행하는 RBF 트랜잭션 (initialTx를 대체)
+    final rbfTx = TransactionMock.createMockTransaction(
+      toAddress: defaultData.walletB.walletBase.getAddress(_TestConstants.addressIndex),
+      amount: _TestConstants.transactionAmount - _TestConstants.rbfFeeAmount,
+    );
+
+    // Script Status DTO들 생성
+    final cpfpTxScriptStatus = ScriptStatusMock.createMockScriptStatus(
+      defaultData.walletB,
+      _TestConstants.addressIndex,
+    );
+    final cpfpTxDto = SubscribeScriptStreamDto(
+      walletItem: defaultData.walletB,
+      scriptStatus: cpfpTxScriptStatus,
+    );
+
+    final rbfTxScriptStatusA = ScriptStatusMock.createMockScriptStatus(
+      defaultData.walletA,
+      _TestConstants.addressIndex,
+    );
+    final rbfTxScriptStatusB = ScriptStatusMock.createMockScriptStatus(
+      defaultData.walletB,
+      _TestConstants.addressIndex,
+    );
+    final rbfTxDtoA = SubscribeScriptStreamDto(
+      walletItem: defaultData.walletA,
+      scriptStatus: rbfTxScriptStatusA,
+    );
+    final rbfTxDtoB = SubscribeScriptStreamDto(
+      walletItem: defaultData.walletB,
+      scriptStatus: rbfTxScriptStatusB,
+    );
+
+    return _ScriptSyncTestData.createPreviousTestData(
+      defaultData,
+      cpfpTx: cpfpTx,
+      rbfTx: rbfTx,
+      cpfpTxDto: cpfpTxDto,
+      rbfTxDtoA: rbfTxDtoA,
+      rbfTxDtoB: rbfTxDtoB,
     );
   }
 }
@@ -157,31 +290,128 @@ class _ScriptSyncTestVerifier {
     _ScriptSyncTestData testData,
   ) async {
     verifyTransactionProcessing(_TestConstants.walletId, testData.mockTx.transactionHash);
-    await verifyAddressUpdate(testData.walletItem);
+    await verifyAddressUpdate(testData.walletA);
     verifyBalanceUpdate(_TestConstants.walletId, _TestConstants.transactionAmount);
     verifyTransactionRecord(_TestConstants.walletId, testData.mockTx.transactionHash);
     verifyUtxoRecord(_TestConstants.walletId, testData.mockTx.transactionHash);
     verifyWalletSubscription();
+  }
+
+  // RBF-CPFP 테스트용 검증 메소드들
+  static void verifyRbfCpfpInitialState(_ScriptSyncTestData testData) {
+    // 지갑 A 초기 상태 검증
+    final walletABefore = ScriptSyncServiceMock.walletRepository.getWalletBase(testData.walletA.id);
+    expect(walletABefore.usedReceiveIndex, -1, reason: '지갑 A 초기 상태에서 usedReceiveIndex는 -1이어야 합니다.');
+
+    // 지갑 B 초기 상태 검증
+    final walletBBefore = ScriptSyncServiceMock.walletRepository.getWalletBase(testData.walletB.id);
+    expect(walletBBefore.usedReceiveIndex, -1, reason: '지갑 B 초기 상태에서 usedReceiveIndex는 -1이어야 합니다.');
+
+    // 초기 트랜잭션 없음 검증
+    final walletATxList =
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(testData.walletA.id);
+    final walletBTxList =
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(testData.walletB.id);
+
+    expect(walletATxList.length, 0, reason: '초기 상태에서 지갑 A에 트랜잭션이 없어야 합니다.');
+    expect(walletBTxList.length, 0, reason: '초기 상태에서 지갑 B에 트랜잭션이 없어야 합니다.');
+  }
+
+  static Future<void> verifyInitialTransactionProcessed(_ScriptSyncTestData testData) async {
+    // 지갑 B에 초기 트랜잭션(A -> B) 수신 확인
+    final walletBTxList =
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(testData.walletB.id);
+
+    expect(walletBTxList.length, 1, reason: 'A -> B 전송 후 지갑 B에 1개의 트랜잭션이 있어야 합니다.');
+    expect(walletBTxList[0].transactionHash, testData.mockTx.transactionHash,
+        reason: '초기 트랜잭션 해시가 일치해야 합니다.');
+
+    // 지갑 B 잔액 증가 확인
+    final walletBBalance =
+        ScriptSyncServiceMock.walletRepository.getWalletBalance(testData.walletB.id);
+    expect(walletBBalance.total, _TestConstants.transactionAmount,
+        reason: '지갑 B 잔액이 초기 전송 금액만큼 증가해야 합니다.');
+  }
+
+  static Future<void> verifyCpfpTransactionProcessed(_ScriptSyncTestData testData) async {
+    // 지갑 A에 CPFP 트랜잭션(B -> A) 수신 확인
+    final walletATxList =
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(testData.walletA.id);
+
+    expect(walletATxList.length, 1, reason: 'CPFP 후 지갑 A에 1개의 트랜잭션이 있어야 합니다.');
+    expect(walletATxList[0].transactionHash, testData.cpfpTx!.transactionHash,
+        reason: 'CPFP 트랜잭션 해시가 일치해야 합니다.');
+
+    // 지갑 B에는 여전히 2개의 트랜잭션 (초기 + CPFP 지출)
+    final walletBTxList =
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(testData.walletB.id);
+    expect(walletBTxList.length, 2, reason: 'CPFP 후 지갑 B에 2개의 트랜잭션이 있어야 합니다.');
+  }
+
+  static Future<void> verifyRbfProcessedAndCpfpRemoved(_ScriptSyncTestData testData) async {
+    // RBF 트랜잭션이 초기 트랜잭션을 대체했는지 확인
+    final walletBTxList =
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(testData.walletB.id);
+
+    // 지갑 B에는 RBF 트랜잭션만 남아있어야 함 (초기 트랜잭션은 대체됨)
+    final rbfTxExists =
+        walletBTxList.any((tx) => tx.transactionHash == testData.rbfTx!.transactionHash);
+    final initialTxExists =
+        walletBTxList.any((tx) => tx.transactionHash == testData.mockTx.transactionHash);
+
+    expect(rbfTxExists, true, reason: 'RBF 트랜잭션이 지갑 B에 존재해야 합니다.');
+    expect(initialTxExists, false, reason: '초기 트랜잭션은 RBF로 인해 대체되어야 합니다.');
+
+    // 핵심 버그 검증: CPFP 트랜잭션이 제거되어야 함
+    final walletATxList =
+        ScriptSyncServiceMock.transactionRepository.getTransactionRecordList(testData.walletA.id);
+
+    final cpfpTxExists =
+        walletATxList.any((tx) => tx.transactionHash == testData.cpfpTx!.transactionHash);
+    expect(cpfpTxExists, false,
+        reason: 'CPFP 트랜잭션은 부모 트랜잭션(초기 트랜잭션)이 RBF로 대체되면서 제거되어야 합니다. 이것이 수정되어야 할 버그입니다.');
+
+    // UTXO 상태도 확인
+    final walletAUtxoList =
+        ScriptSyncServiceMock.utxoRepository.getUtxoStateList(testData.walletA.id);
+    final cpfpUtxoExists =
+        walletAUtxoList.any((utxo) => utxo.transactionHash == testData.cpfpTx!.transactionHash);
+    expect(cpfpUtxoExists, false, reason: 'CPFP 트랜잭션 관련 UTXO도 제거되어야 합니다.');
   }
 }
 
 /// 테스트 셋업 헬퍼 클래스
 class _ScriptSyncTestSetup {
   static void setupNetworkAndSharedPrefs(_ScriptSyncTestData testData) {
-    NetworkType.setNetworkType(NetworkType.regtest);
-
-    when(testData.sharedPrefsRepository.getInt('nextId')).thenReturn(testData.walletItem.id);
-    when(testData.sharedPrefsRepository.setInt('nextId', testData.walletItem.id + 1))
+    int callCount = 0;
+    when(testData.sharedPrefsRepository.getInt('nextId')).thenAnswer((_) {
+      callCount++;
+      return testData.walletA.id + callCount - 1; // 첫 번째 호출에서 walletAId, 두 번째에서 walletBId
+    });
+    when(testData.sharedPrefsRepository.setInt('nextId', testData.walletA.id + 1))
+        .thenAnswer((_) async => true);
+    when(testData.sharedPrefsRepository.setInt('nextId', testData.walletB.id + 1))
         .thenAnswer((_) async => true);
   }
 
   static Future<void> setupLocalDatabase(_ScriptSyncTestData testData) async {
     await ScriptSyncServiceMock.walletRepository.addSinglesigWallet(
       WatchOnlyWallet(
-        testData.walletItem.name,
-        testData.walletItem.colorIndex,
-        testData.walletItem.iconIndex,
-        testData.walletItem.descriptor,
+        testData.walletA.name,
+        testData.walletA.colorIndex,
+        testData.walletA.iconIndex,
+        testData.walletA.descriptor,
+        null,
+        null,
+        WalletImportSource.coconutVault.name,
+      ),
+    );
+    await ScriptSyncServiceMock.walletRepository.addSinglesigWallet(
+      WatchOnlyWallet(
+        testData.walletB.name,
+        testData.walletB.colorIndex,
+        testData.walletB.iconIndex,
+        testData.walletB.descriptor,
         null,
         null,
         WalletImportSource.coconutVault.name,
@@ -189,7 +419,9 @@ class _ScriptSyncTestSetup {
     );
 
     await ScriptSyncServiceMock.addressRepository
-        .ensureAddressesInit(walletItemBase: testData.walletItem);
+        .ensureAddressesInit(walletItemBase: testData.walletA);
+    await ScriptSyncServiceMock.addressRepository
+        .ensureAddressesInit(walletItemBase: testData.walletB);
   }
 
   static void setupMockElectrumService(_ScriptSyncTestData testData) {
@@ -239,6 +471,68 @@ class _ScriptSyncTestSetup {
     await setupLocalDatabase(testData);
     setupMockElectrumService(testData);
   }
+
+  // RBF-CPFP 테스트용 셋업
+  static Future<void> setupRbfCpfpTestEnvironment1(_ScriptSyncTestData testData) async {
+    setupNetworkAndSharedPrefs(testData);
+    await setupLocalDatabase(testData);
+    final electrumService = ScriptSyncServiceMock.electrumService;
+
+    // 모든 트랜잭션에 대한 모킹
+    when(electrumService.getTransaction(testData.mockTx.transactionHash))
+        .thenAnswer((_) async => testData.mockTx.serialize());
+    if (testData.cpfpTx != null) {
+      when(electrumService.getTransaction(testData.cpfpTx!.transactionHash))
+          .thenAnswer((_) async => testData.cpfpTx!.serialize());
+    }
+    if (testData.rbfTx != null) {
+      when(electrumService.getTransaction(testData.rbfTx!.transactionHash))
+          .thenAnswer((_) async => testData.rbfTx!.serialize());
+    }
+
+    // 기본 응답 설정
+    when(electrumService.getHistory(any, any)).thenAnswer((_) async => []);
+    when(electrumService.getBalance(any, any)).thenAnswer(
+      (_) async => GetBalanceRes(confirmed: 0, unconfirmed: 0),
+    );
+    when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {
+          _TestConstants.blockHeight - 1:
+              BlockTimestamp(_TestConstants.blockHeight - 1, DateTime.now())
+        });
+    when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async =>
+        {_TestConstants.blockHeight: BlockTimestamp(_TestConstants.blockHeight, DateTime.now())});
+    when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {
+          _TestConstants.blockHeight + 1:
+              BlockTimestamp(_TestConstants.blockHeight + 1, DateTime.now())
+        });
+    when(electrumService.getUnspentList(any, any)).thenAnswer((_) async => []);
+    when(electrumService.getPreviousTransactions(
+      any,
+      existingTxList: anyNamed('existingTxList'),
+    )).thenAnswer((_) async => []);
+
+    final addressA = testData.walletA.walletBase.getAddress(_TestConstants.addressIndex);
+    final addressB = testData.walletB.walletBase.getAddress(_TestConstants.addressIndex);
+    final txHistoryRes = GetTxHistoryRes(
+      height: _TestConstants.blockHeight,
+      txHash: testData.mockTx.transactionHash,
+    );
+
+    when(electrumService.getBalance(any, addressB)).thenAnswer(
+      (_) async => GetBalanceRes(confirmed: _TestConstants.transactionAmount, unconfirmed: 0),
+    );
+    when(electrumService.getHistory(any, addressA)).thenAnswer((_) async => [txHistoryRes]);
+    when(electrumService.getHistory(any, addressB)).thenAnswer((_) async => [txHistoryRes]);
+
+    when(electrumService.getUnspentList(any, addressB)).thenAnswer((_) async => [
+          ListUnspentRes(
+            height: _TestConstants.blockHeight,
+            txHash: testData.mockTx.transactionHash,
+            txPos: 0,
+            value: _TestConstants.transactionAmount,
+          ),
+        ]);
+  }
 }
 
 void main() {
@@ -256,11 +550,11 @@ void main() {
       scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
 
       // 초기 상태 검증
-      _ScriptSyncTestVerifier.verifyInitialState(testData.walletItem, _TestConstants.walletId);
-      await _ScriptSyncTestVerifier.verifyInitialAddress(testData.walletItem);
+      _ScriptSyncTestVerifier.verifyInitialState(testData.walletA, _TestConstants.walletId);
+      await _ScriptSyncTestVerifier.verifyInitialAddress(testData.walletA);
 
       // When
-      await scriptSyncService.syncScriptStatus(testData.dto);
+      await scriptSyncService.syncScriptStatus(testData.dtoA);
 
       // Then
       await _ScriptSyncTestVerifier.verifyAllPostConditions(testData);
@@ -275,17 +569,56 @@ void main() {
       scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
 
       // 초기 상태 검증
-      _ScriptSyncTestVerifier.verifyInitialState(testData.walletItem, _TestConstants.walletId);
-      await _ScriptSyncTestVerifier.verifyInitialAddress(testData.walletItem);
+      _ScriptSyncTestVerifier.verifyInitialState(testData.walletA, _TestConstants.walletId);
+      await _ScriptSyncTestVerifier.verifyInitialAddress(testData.walletA);
 
       // When - 동시에 두 번 실행
       await Future.wait([
-        scriptSyncService.syncScriptStatus(testData.dto),
-        scriptSyncService.syncScriptStatus(testData.dto),
+        scriptSyncService.syncScriptStatus(testData.dtoA),
+        scriptSyncService.syncScriptStatus(testData.dtoA),
       ]);
 
       // Then
       await _ScriptSyncTestVerifier.verifyAllPostConditions(testData);
+    });
+
+    group('RBF-CPFP 테스트', () {
+      setUp(() {
+        // 완전히 새로운 초기화
+        ScriptSyncServiceMock.init();
+      });
+
+      test('CPFP 후 조상 트랜잭션 RBF 수행 시 CPFP 트랜잭션이 제거되어야 함', () async {
+        // Given
+        final defaultData = _ScriptSyncTestDataBuilder.createDefaultTestData();
+        final testData = _ScriptSyncTestDataBuilder.createRbfCpfpTestData(defaultData);
+        await _ScriptSyncTestSetup.setupRbfCpfpTestEnvironment1(testData);
+
+        final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
+        scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;
+
+        // 초기 상태 검증
+        _ScriptSyncTestVerifier.verifyRbfCpfpInitialState(testData);
+
+        // When & Then - 1단계: A -> B 전송 트랜잭션 처리
+        await scriptSyncService.syncScriptStatus(testData.dtoA);
+        await scriptSyncService.syncScriptStatus(testData.dtoB);
+        await _ScriptSyncTestVerifier.verifyInitialTransactionProcessed(testData);
+
+        // When & Then - 2단계: B가 CPFP 수행
+        await scriptSyncService.syncScriptStatus(testData.cpfpTxDto!);
+        await _ScriptSyncTestVerifier.verifyCpfpTransactionProcessed(testData);
+
+        // When & Then - 3단계: A가 RBF 수행 (핵심 버그 검증)
+        await scriptSyncService.syncScriptStatus(testData.rbfTxDtoA!);
+        await scriptSyncService.syncScriptStatus(testData.rbfTxDtoB!);
+        await _ScriptSyncTestVerifier.verifyRbfProcessedAndCpfpRemoved(testData);
+      });
+    });
+
+    tearDown(() {
+      ScriptSyncServiceMock.realmManager?.reset();
+      ScriptSyncServiceMock.realmManager?.dispose();
     });
   });
 }
