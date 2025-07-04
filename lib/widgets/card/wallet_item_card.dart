@@ -34,6 +34,7 @@ class WalletItemCard extends StatelessWidget {
   final bool isEditMode;
   final bool isStarred;
   final ValueChanged<(bool, int)>? onPrimaryWalletChanged;
+  final int? index;
 
   const WalletItemCard({
     super.key,
@@ -55,6 +56,7 @@ class WalletItemCard extends StatelessWidget {
     this.isEditMode = false,
     this.isStarred = false,
     this.onPrimaryWalletChanged,
+    this.index,
   });
 
   @override
@@ -72,7 +74,7 @@ class WalletItemCard extends StatelessWidget {
         if (isPrimaryWallet != null) {
           onPrimaryWalletChanged?.call(pair);
         }
-      });
+      }, index: index);
     }
     final row = ShrinkAnimationButton(
       defaultColor: backgroundColor ?? CoconutColors.gray800,
@@ -110,8 +112,12 @@ class WalletItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildWalletItemContent(String displayFakeBalance,
-      {bool isEditMode = false, ValueChanged<(bool, int)>? onPrimaryWalletChanged}) {
+  Widget _buildWalletItemContent(
+    String displayFakeBalance, {
+    bool isEditMode = false,
+    ValueChanged<(bool, int)>? onPrimaryWalletChanged,
+    int? index,
+  }) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isEditMode ? 8 : 20, vertical: 12),
       child: Row(
@@ -209,10 +215,15 @@ class WalletItemCard extends StatelessWidget {
           ),
           CoconutLayout.spacing_200w,
           isEditMode
-              ? Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: SvgPicture.asset(
-                    'assets/svg/hamburger.svg',
+              ? ReorderableDragStartListener(
+                  index: index!,
+                  child: GestureDetector(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: SvgPicture.asset(
+                        'assets/svg/hamburger.svg',
+                      ),
+                    ),
                   ),
                 )
               : SvgPicture.asset(

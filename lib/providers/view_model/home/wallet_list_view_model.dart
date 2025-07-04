@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
 
 typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
 typedef BalanceGetter = int Function(int id);
@@ -24,7 +25,9 @@ class WalletListViewModel extends ChangeNotifier {
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
 
   // 임시 즐겨찾기 지갑 ID 목록(편집용)
-  List<int> starredWalletIds = [];
+  List<int> tempStarredWalletIds = [];
+
+  List<WalletListItemBase> tempWalletList = [];
 
   WalletListViewModel(
     this._walletProvider,
@@ -113,28 +116,49 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void toggleTempStarred(int walletId) {
-    if (starredWalletIds.contains(walletId)) {
-      starredWalletIds = List.from(starredWalletIds)..remove(walletId);
+    if (tempStarredWalletIds.contains(walletId)) {
+      tempStarredWalletIds = List.from(tempStarredWalletIds)..remove(walletId);
     } else {
-      if (starredWalletIds.length < 5) {
-        starredWalletIds = List.from(starredWalletIds)..add(walletId);
+      if (tempStarredWalletIds.length < 5) {
+        tempStarredWalletIds = List.from(tempStarredWalletIds)..add(walletId);
       }
     }
     notifyListeners();
   }
 
-  /// 임시값을 실제 isStarred 필드에 반영
-  void applyTempStarredToWallets() {
+  void clearTempDatas() {
+    tempStarredWalletIds.clear();
+    tempWalletList.clear();
+    notifyListeners();
+  }
+
+  /// 임시값을 실제 walletList에 반영
+  void applyTempDatasToWallets() {
+    // TODO: 실제 WalletProvider에 있는 walletItemList을 업데이트하는 로직이 필요합니다. (Realm 업데이트도 고려해야 함))
+    walletItemList
+      ..clear()
+      ..addAll(tempWalletList);
     for (var wallet in walletItemList) {
-      wallet.isStarred = starredWalletIds.contains(wallet.id);
+      wallet.isStarred = tempStarredWalletIds.contains(wallet.id);
     }
     notifyListeners();
   }
 
   /// 편집 진입 시 현재 상태를 temp로 복사
-  void cacheCurrentStarredWallets() {
-    starredWalletIds = walletItemList.where((w) => w.isStarred).map((w) => w.id).toList();
+  void cacheCurrentWalletsState() {
+    tempStarredWalletIds = walletItemList.where((w) => w.isStarred).map((w) => w.id).toList();
+    tempWalletList = List.from(walletItemList);
   }
+
+  bool get hasStarredChanged => !const SetEquality().equals(
+        tempStarredWalletIds.toSet(),
+        walletItemList.where((w) => w.isStarred).map((w) => w.id).toSet(),
+      );
+
+  bool get hasWalletOrderChanged => !const ListEquality().equals(
+        tempWalletList,
+        walletItemList,
+      );
 
   @override
   void dispose() {
