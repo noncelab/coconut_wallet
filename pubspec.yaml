@@ -257,6 +257,10 @@ flutter:
     - assets/svg/unlock.svg
     - assets/svg/pen.svg
     - assets/svg/cloud-disconnected.svg
+    - assets/svg/star-small.svg
+    - assets/svg/star-outlined.svg
+    - assets/svg/star-filled.svg
+    - assets/svg/hamburger.svg
 
 
   fonts:

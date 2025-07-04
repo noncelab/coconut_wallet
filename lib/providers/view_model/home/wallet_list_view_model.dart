@@ -23,6 +23,9 @@ class WalletListViewModel extends ChangeNotifier {
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
 
+  // 임시 즐겨찾기 지갑 ID 목록(편집용)
+  List<int> starredWalletIds = [];
+
   WalletListViewModel(
     this._walletProvider,
     this._connectivityProvider,
@@ -107,6 +110,30 @@ class WalletListViewModel extends ChangeNotifier {
     });
 
     return walletListChanged || balanceChanged;
+  }
+
+  void toggleTempStarred(int walletId) {
+    if (starredWalletIds.contains(walletId)) {
+      starredWalletIds = List.from(starredWalletIds)..remove(walletId);
+    } else {
+      if (starredWalletIds.length < 5) {
+        starredWalletIds = List.from(starredWalletIds)..add(walletId);
+      }
+    }
+    notifyListeners();
+  }
+
+  /// 임시값을 실제 isStarred 필드에 반영
+  void applyTempStarredToWallets() {
+    for (var wallet in walletItemList) {
+      wallet.isStarred = starredWalletIds.contains(wallet.id);
+    }
+    notifyListeners();
+  }
+
+  /// 편집 진입 시 현재 상태를 temp로 복사
+  void cacheCurrentStarredWallets() {
+    starredWalletIds = walletItemList.where((w) => w.isStarred).map((w) => w.id).toList();
   }
 
   @override
