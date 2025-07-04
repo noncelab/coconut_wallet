@@ -35,6 +35,7 @@ import 'package:coconut_wallet/screens/settings/settings_screen.dart';
 import 'package:coconut_wallet/widgets/card/wallet_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_glossary_bottom_sheet.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
 
 class WalletHomeScreen extends StatefulWidget {
@@ -137,11 +138,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             SliverToBoxAdapter(
                                 child: Column(
                               children: [
-                                if (walletItem.isEmpty)
+                                if (walletItem.isEmpty) ...[
+                                  CoconutLayout.spacing_600h,
                                   WalletAdditionGuideCard(onPressed: _onAddWalletPressed)
+                                ]
                               ],
                             )),
-
+                          if (_isFirstLoad) ...[
+                            // 처음 로딩시 스켈레톤
+                            _buildBodySkeleton(),
+                          ],
                           if (walletItem.isNotEmpty) ...[
                             // 지갑 리스트가 비어있지 않을 때
 
@@ -305,6 +311,51 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildHeader() {
+    // 처음 로딩시 스켈레톤
+    if (_isFirstLoad) {
+      return SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.only(left: 20, top: 5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '',
+                    style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.gray350),
+                  ),
+                  Shimmer.fromColors(
+                    baseColor: CoconutColors.gray800,
+                    highlightColor: CoconutColors.gray750,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                        color: CoconutColors.gray800,
+                      ),
+                      child: Text(
+                        '0.0000 0000 BTC',
+                        style: CoconutTypography.heading3_21_NumberBold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            CoconutLayout.spacing_500h,
+            Padding(
+              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+              child: _buildHeaderActions(isActive: false),
+            ),
+            const Divider(
+              thickness: 12,
+              color: CoconutColors.gray900,
+            ),
+          ],
+        ),
+      );
+    }
     return SliverToBoxAdapter(
       child: Column(
         children: [
@@ -362,49 +413,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   },
                 ),
                 CoconutLayout.spacing_500h,
-                Row(
-                  children: [
-                    Expanded(
-                      child: ShrinkAnimationButton(
-                        onPressed: () {
-                          // TODO: 받기 동작
-                        },
-                        borderRadius: CoconutStyles.radius_100,
-                        defaultColor: CoconutColors.gray800,
-                        pressedColor: CoconutColors.gray750,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Text(
-                              t.receive,
-                              style: CoconutTypography.body3_12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    CoconutLayout.spacing_200w,
-                    Expanded(
-                      child: ShrinkAnimationButton(
-                        onPressed: () {
-                          // TODO: 받기 동작
-                        },
-                        borderRadius: CoconutStyles.radius_100,
-                        defaultColor: CoconutColors.gray800,
-                        pressedColor: CoconutColors.gray750,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Text(
-                              t.send,
-                              style: CoconutTypography.body3_12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildHeaderActions(),
               ],
             ),
           ),
@@ -414,6 +423,129 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBodySkeleton() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          children: [
+            CoconutLayout.spacing_500h,
+            Shimmer.fromColors(
+              baseColor: CoconutColors.gray800,
+              highlightColor: CoconutColors.gray750,
+              child: Container(
+                width: MediaQuery.sizeOf(context).width,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: CoconutColors.gray800,
+                  borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+                ),
+                child: const Text(
+                  '',
+                  style: CoconutTypography.body2_14,
+                ),
+              ),
+            ),
+            CoconutLayout.spacing_300h,
+            Shimmer.fromColors(
+              baseColor: CoconutColors.gray800,
+              highlightColor: CoconutColors.gray750,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: CoconutColors.gray800,
+                  borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+                ),
+                width: MediaQuery.sizeOf(context).width,
+                height: 200,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderActions({bool isActive = true}) {
+    return Row(
+      children: [
+        Expanded(
+          child: isActive
+              ? ShrinkAnimationButton(
+                  onPressed: () {
+                    // TODO: 받기 동작
+                  },
+                  borderRadius: CoconutStyles.radius_100,
+                  defaultColor: CoconutColors.gray800,
+                  pressedColor: CoconutColors.gray750,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Text(
+                        t.receive,
+                        style: CoconutTypography.body3_12,
+                      ),
+                    ),
+                  ),
+                )
+              : Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: CoconutColors.gray800,
+                    borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                  ),
+                  child: Center(
+                    child: Text(
+                      t.receive,
+                      style: CoconutTypography.body3_12.setColor(
+                        CoconutColors.white.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+        CoconutLayout.spacing_200w,
+        Expanded(
+          child: isActive
+              ? ShrinkAnimationButton(
+                  onPressed: () {
+                    // TODO: 받기 동작
+                  },
+                  borderRadius: CoconutStyles.radius_100,
+                  defaultColor: CoconutColors.gray800,
+                  pressedColor: CoconutColors.gray750,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Text(
+                        t.send,
+                        style: CoconutTypography.body3_12,
+                      ),
+                    ),
+                  ),
+                )
+              : Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: CoconutColors.gray800,
+                    borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                  ),
+                  child: Center(
+                    child: Text(
+                      t.send,
+                      style: CoconutTypography.body3_12.setColor(
+                        CoconutColors.white.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      ],
     );
   }
 

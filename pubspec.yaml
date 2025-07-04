@@ -90,6 +90,7 @@ dependencies:
   cbor: ^6.3.5
   ur:
     path: lib/packages/bc-ur-dart
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
