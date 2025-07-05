@@ -131,8 +131,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
             vibrateLightDouble();
             _showPinSetSuccessLottie();
             
-            // Close the success dialog and the PIN setting screen
-            await Future.delayed(const Duration(milliseconds: 1000));
             if (mounted) {
               Navigator.pop(context); // Close success dialog
               Navigator.pop(context); // Close PIN setting screen
