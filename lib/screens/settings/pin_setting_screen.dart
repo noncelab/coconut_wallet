@@ -1,12 +1,11 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_dialog.dart';
 import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
+import 'package:coconut_wallet/widgets/pin/pin_length_toggle_button.dart';
 import 'package:provider/provider.dart';
 
 class PinSettingScreen extends StatefulWidget {
@@ -49,7 +48,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: MyColors.transparentBlack_50,
+      barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (BuildContext buildContext, Animation animation, Animation secondaryAnimation) {
         return AnimatedDialog(
@@ -173,34 +172,15 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
     Widget? centerWidget;
     if (step == 0) {
-      centerWidget = Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40.0),
-        child: OutlinedButton(
-          onPressed: () {
-            setState(() {
-              _pinLength = _pinLength == 4 ? 6 : 4;
-              pin = '';
-              _showNextButton = false;
-            });
-          },
-          style: OutlinedButton.styleFrom(
-            foregroundColor: CoconutColors.gray600,
-            backgroundColor: Colors.transparent,
-            side: BorderSide(color: CoconutColors.gray300, width: 1.0),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(
-                Radius.circular(8),
-              ),
-            ),
-          ),
-          child: Text(
-            _pinLength == 4
-                ? t.pin_setting_screen.set_to_6_digit
-                : t.pin_setting_screen.set_to_4_digit,
-            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray300),
-          ),
-        ),
+      centerWidget = PinLengthToggleButton(
+        currentPinLength: _pinLength,
+        onToggle: () {
+          setState(() {
+            _pinLength = _pinLength == 4 ? 6 : 4;
+            pin = '';
+            _showNextButton = false;
+          });
+        },
       );
     }
 
