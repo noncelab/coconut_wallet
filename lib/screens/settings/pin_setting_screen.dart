@@ -1,3 +1,5 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
@@ -21,6 +23,8 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   late String pin;
   late String pinConfirm;
   late String errorMessage;
+  late int _pinLength;
+  late bool _showNextButton;
   late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
 
@@ -30,6 +34,8 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     pin = '';
     pinConfirm = '';
     errorMessage = '';
+    _pinLength = 4;
+    _showNextButton = false;
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _shuffledPinNumbers = _authProvider.getShuffledNumberPad(isSettings: true);
   }
@@ -73,7 +79,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       errorMessage = message;
       pinConfirm = '';
       _shufflePinNumbers();
-      //_subModel.shuffleNumbers(isSettings: true);
       if (firstSequence) {
         step = 0;
         pin = '';
@@ -93,105 +98,151 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   }
 
   void _onKeyTap(String value) async {
+    setState(() {
+      errorMessage = '';
+    });
+
     if (step == 0) {
       if (value == '<') {
         if (pin.isNotEmpty) {
-          setState(() {
-            pin = pin.substring(0, pin.length - 1);
-          });
+          setState(() => pin = pin.substring(0, pin.length - 1));
         }
-      } else if (pin.length < 4) {
-        setState(() {
-          pin += value;
-        });
+      } else if (pin.length < _pinLength) {
+        setState(() => pin += value);
       }
-
-      if (pin.length == 4) {
-        try {
-          bool isAlreadyUsingPin = await _comparePin(pin);
-
-          if (isAlreadyUsingPin) {
-            returnToBackSequence(t.errors.pin_setting_error.already_in_use, firstSequence: true);
-            return;
-          }
-        } catch (error) {
-          returnToBackSequence(t.errors.pin_setting_error.process_failed, isError: true);
-          return;
-        }
-        setState(() {
-          step = 1;
-          errorMessage = '';
-          _shufflePinNumbers();
-          //_subModel.shuffleNumbers(isSettings: true);
-        });
-      }
-    } else if (step == 1) {
       setState(() {
-        if (value == '<') {
-          if (pinConfirm.isNotEmpty) {
-            pinConfirm = pinConfirm.substring(0, pinConfirm.length - 1);
-          }
-        } else if (pinConfirm.length < 4) {
-          pinConfirm += value;
-        }
+        _showNextButton = (pin.length == _pinLength);
       });
-
-      if (pinConfirm.length == 4) {
-        if (pin != pinConfirm) {
-          returnToBackSequence(t.errors.pin_setting_error.incorrect);
-          return;
+    } else if (step == 1) {
+      if (value == '<') {
+        if (pinConfirm.isNotEmpty) {
+          setState(() =>
+              pinConfirm = pinConfirm.substring(0, pinConfirm.length - 1));
         }
+      } else if (pinConfirm.length < pin.length) {
+        setState(() => pinConfirm += value);
+      }
 
-        vibrateLight();
-        if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
-          await _authProvider.authenticateWithBiometrics(isSave: true);
-          await _authProvider.checkDeviceBiometrics();
-        }
-
-        var hashedPin = generateHashString(pin);
-        if (!mounted) return;
-        _authProvider.savePinSet(hashedPin).then((_) async {
-          _showPinSetSuccessLottie();
-
-          if (mounted) {
-            Navigator.pop(context);
-            Navigator.pop(context);
+      if (pinConfirm.length == pin.length) {
+        if (pinConfirm == pin) {
+          try {
+            var hashedPin = generateHashString(pin);
+            await _authProvider.savePinSet(hashedPin, pin.length);
+            vibrateLightDouble();
+            _showPinSetSuccessLottie();
+            
+            // Close the success dialog and the PIN setting screen
+            await Future.delayed(const Duration(milliseconds: 1000));
+            if (mounted) {
+              Navigator.pop(context); // Close success dialog
+              Navigator.pop(context); // Close PIN setting screen
+            }
+          } catch (e) {
+            returnToBackSequence(t.errors.pin_setting_error.save_failed,
+                isError: true, firstSequence: true);
           }
-        }).catchError((e) {
-          returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true);
-        });
+        } else {
+          returnToBackSequence(t.errors.pin_setting_error.incorrect,
+              isError: true, firstSequence: true);
+        }
       }
     }
   }
 
+  void _onNextPressed() async {
+    if (_authProvider.isSetPin) {
+      final isSamePin = await _comparePin(pin);
+      if (isSamePin) {
+        setState(() {
+          errorMessage = t.errors.pin_setting_error.already_in_use;
+        });
+        vibrateMedium();
+        return;
+      }
+    }
+    setState(() {
+      step = 1;
+      pinConfirm = '';
+      _showNextButton = false;
+      _shufflePinNumbers();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return PinInputPad(
-      title: step == 0 ? t.pin_setting_screen.new_password : t.pin_setting_screen.enter_again,
-      pin: step == 0 ? pin : pinConfirm,
-      errorMessage: errorMessage,
-      onKeyTap: _onKeyTap,
-      pinShuffleNumbers: _shuffledPinNumbers,
-      onClosePressed: step == 0
-          ? () {
-              Navigator.pop(context); // Pin 설정 취소
-            }
-          : () {
-              setState(() {
-                pin = '';
-                pinConfirm = '';
-                step = 0;
-              });
-            },
-      onBackPressed: () {
-        setState(() {
-          pin = '';
-          pinConfirm = '';
-          errorMessage = '';
-          step = 0;
-        });
-      },
-      step: step,
+    String title = step == 0
+        ? t.pin_setting_screen.new_password
+        : t.pin_setting_screen.enter_again;
+
+    Widget? centerWidget;
+    if (step == 0) {
+      centerWidget = Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40.0),
+        child: OutlinedButton(
+          onPressed: () {
+            setState(() {
+              _pinLength = _pinLength == 4 ? 6 : 4;
+              pin = '';
+              _showNextButton = false;
+            });
+          },
+          style: OutlinedButton.styleFrom(
+            foregroundColor: CoconutColors.gray600,
+            backgroundColor: Colors.transparent,
+            side: BorderSide(color: CoconutColors.gray300, width: 1.0),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(
+                Radius.circular(8),
+              ),
+            ),
+          ),
+          child: Text(
+            _pinLength == 4
+                ? t.pin_setting_screen.set_to_6_digit
+                : t.pin_setting_screen.set_to_4_digit,
+            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray300),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      body: PinInputPad(
+        title: title,
+        pin: step == 0 ? pin : pinConfirm,
+        errorMessage: errorMessage,
+        onKeyTap: _onKeyTap,
+        pinShuffleNumbers: _shuffledPinNumbers,
+        onClosePressed: () => Navigator.pop(context),
+        onBackPressed: () {
+          setState(() {
+            step = 0;
+            pin = '';
+            pinConfirm = '';
+            errorMessage = '';
+            _showNextButton = false;
+          });
+        },
+        step: step,
+        pinLength: _pinLength,
+        appBarVisible: true,
+        initOptionVisible: false,
+        centerWidget: centerWidget,
+      ),
+      bottomSheet: _showNextButton
+          ? Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _onNextPressed,
+                  child: Text(t.next),
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
