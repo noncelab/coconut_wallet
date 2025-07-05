@@ -6,6 +6,7 @@ class SharedPrefKeys {
   static const String kCanCheckBiometrics = "CAN_CHECK_BIOMETRICS";
   static const String kIsSetBiometrics = "IS_SET_BIOMETRICS";
   static const String kIsSetPin = "IS_SET_PIN";
+  static const String kPinLength = "PIN_LENGTH";
   static const String kNextVersionUpdateDialogDate = "NEXT_VERSION_UPDATE_DIALOG_DATE";
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';

@@ -291,6 +291,8 @@ bip39_list_screen:
 pin_setting_screen:
   new_password: "새로운 비밀번호를 눌러주세요"
   enter_again: "다시 한번 확인할게요"
+  set_to_6_digit: "6자리 비밀번호로 설정하기"
+  set_to_4_digit: "4자리 비밀번호로 설정하기"
 settings_screen:
   set_password: "비밀번호 설정하기"
   use_biometric: "생체 인증 사용하기"

@@ -134,12 +134,12 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
         if (pin.isNotEmpty) {
           pin = pin.substring(0, pin.length - 1);
         }
-      } else if (pin.length < 4) {
+      } else if (pin.length < _authProvider.pinLength) {
         pin += value;
       }
     });
 
-    if (pin.length == 4) {
+    if (pin.length == _authProvider.pinLength) {
       _verifyPin();
     }
   }
@@ -183,6 +183,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
             }
           : null,
       step: 0,
+      pinLength: _authProvider.pinLength,
     );
   }
 }

@@ -16,6 +16,8 @@ class PinInputPad extends StatefulWidget {
   final int step;
   final bool appBarVisible;
   final bool initOptionVisible;
+  final int pinLength;
+  final Widget? centerWidget;
 
   const PinInputPad({
     super.key,
@@ -30,6 +32,8 @@ class PinInputPad extends StatefulWidget {
     required this.step,
     this.appBarVisible = true,
     this.initOptionVisible = false,
+    this.pinLength = 4,
+    this.centerWidget,
   });
 
   @override
@@ -95,16 +99,18 @@ class PinInputPadState extends State<PinInputPad> {
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                PinBox(isSet: widget.pin.isNotEmpty),
-                const SizedBox(width: 8),
-                PinBox(isSet: widget.pin.length > 1),
-                const SizedBox(width: 8),
-                PinBox(isSet: widget.pin.length > 2),
-                const SizedBox(width: 8),
-                PinBox(isSet: widget.pin.length > 3),
-              ],
+              children: List.generate(widget.pinLength, (index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: PinBox(isSet: widget.pin.length > index),
+                );
+              }),
             ),
+            if (widget.centerWidget != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: widget.centerWidget,
+              ),
             const SizedBox(height: 16),
             Text(widget.errorMessage,
                 style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
