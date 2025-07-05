@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
 class PinLengthToggleButton extends StatelessWidget {
@@ -18,9 +19,9 @@ class PinLengthToggleButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onToggle,
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF9CA3AF), // gray600 equivalent
+          foregroundColor: CoconutColors.gray600,
           backgroundColor: Colors.transparent,
-          side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.0), // gray300 equivalent
+          side: BorderSide(color: CoconutColors.gray400, width: 1.0),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(
@@ -32,11 +33,7 @@ class PinLengthToggleButton extends StatelessWidget {
           currentPinLength == 4
               ? t.pin_setting_screen.set_to_6_digit
               : t.pin_setting_screen.set_to_4_digit,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFFD1D5DB), // gray300 equivalent
-          ),
+          style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
         ),
       ),
     );
