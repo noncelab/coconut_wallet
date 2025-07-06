@@ -560,7 +560,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
         amount,
         feeRate,
         walletListItemBase.walletBase);
-    _sendInfoProvider.setAmount(UnitUtil.satoshiToBitcoin(amount));
+    _sendInfoProvider.setAmount(UnitUtil.convertSatoshiToBitcoin(amount));
     _sendInfoProvider.setIsMaxMode(false);
     _setInsufficientUtxo(false);
     debugPrint('RBF::    ▶️ 싱글 트잭 생성(fee rate: $feeRate)');

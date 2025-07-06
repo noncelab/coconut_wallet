@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
@@ -89,6 +88,9 @@ class WalletDetailViewModel extends ChangeNotifier {
     // UpbitConnectModel 변경 감지 리스너
     _priceProvider.addListener(_updateBitcoinPrice);
 
+    // TransactionProvider 변경 감지 리스너
+    _txProvider.addListener(_onTransactionProviderChanged);
+
     _setPendingAmount();
     _prevBalance = balance;
     debugPrint('prev :: $_prevBalance');
@@ -130,8 +132,6 @@ class WalletDetailViewModel extends ChangeNotifier {
       ? null
       : (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
 
-  int _bitcoinPriceKrw = 0;
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   String _bitcoinPriceKrwInString = '';
 
   String get bitcoinPriceKrwInString => _bitcoinPriceKrwInString;
@@ -145,8 +145,12 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _updateBitcoinPrice() {
-    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw ?? 0;
-    _bitcoinPriceKrwInString = _priceProvider.getFiatPrice(_balance, CurrencyCode.KRW);
+    _bitcoinPriceKrwInString = _priceProvider.getFiatPrice(_balance);
+    notifyListeners();
+  }
+
+  void _onTransactionProviderChanged() {
+    _setPendingAmount();
     notifyListeners();
   }
 
@@ -224,6 +228,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   void dispose() {
     _syncWalletStateSubscription?.cancel();
     _priceProvider.removeListener(_updateBitcoinPrice);
+    _txProvider.removeListener(_onTransactionProviderChanged);
     super.dispose();
   }
 

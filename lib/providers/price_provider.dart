@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -97,15 +97,35 @@ class PriceProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  // util: 통화 코드를 받아서 가격을 반환
-  String getFiatPrice(int satoshiAmount, CurrencyCode fiatCode) {
+  // util: 통화 코드를 받아서 가격을 반환 (문자열)
+  String getFiatPrice(int satoshiAmount,
+      {CurrencyCode fiatCode = CurrencyCode.KRW, bool showCurrencySymbol = true}) {
     if (_bitcoinPriceKrw == null) {
       return '';
     }
 
     if (fiatCode.code == CurrencyCode.KRW.code) {
-      return '${CurrencyCode.KRW.symbol} ${addCommasToIntegerPart(FiatUtil.calculateFiatAmount(satoshiAmount, bitcoinPriceKrw!).toDouble())}';
+      final amount = FiatUtil.calculateFiatAmount(satoshiAmount, bitcoinPriceKrw!)
+          .toThousandsSeparatedString();
+
+      if (showCurrencySymbol) {
+        return '${fiatCode.symbol} $amount';
+      } else {
+        return amount;
+      }
     }
     return '';
+  }
+
+  // util: 통화 코드를 받아서 가격을 반환 (정수)
+  int? getFiatAmount(int satoshiAmount, [CurrencyCode fiatCode = CurrencyCode.KRW]) {
+    if (_bitcoinPriceKrw == null) {
+      return null;
+    }
+
+    if (fiatCode.code == CurrencyCode.KRW.code) {
+      return FiatUtil.calculateFiatAmount(satoshiAmount, bitcoinPriceKrw!);
+    }
+    return null;
   }
 }

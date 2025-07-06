@@ -9,8 +9,6 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
@@ -31,14 +29,12 @@ class BroadcastingViewModel extends ChangeNotifier {
   int? _totalAmount;
   int? _sendingAmountWhenAddressIsMyChange; // 내 지갑의 change address로 보내는 경우 잔액
   final List<int> _outputIndexesToMyAddress = [];
-  late int? _bitcoinPriceKrw;
 
   BroadcastingViewModel(
     this._sendInfoProvider,
     this._walletProvider,
     this._tagProvider,
     this._isNetworkOn,
-    this._bitcoinPriceKrw,
     this._nodeProvider,
     this._txProvider,
   ) {
@@ -48,15 +44,7 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   List<String> get recipientAddresses => UnmodifiableListView(_recipientAddresses);
 
-  int? get amount => _sendingAmount;
-  int? get amountValueInKrw {
-    if (_bitcoinPriceKrw == null || _sendingAmount == null) return null;
-    return FiatUtil.calculateFiatAmount(
-        sendingAmountWhenAddressIsMyChange != null ? sendingAmountWhenAddressIsMyChange! : amount!,
-        _bitcoinPriceKrw!);
-  }
-
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
+  int? get amount => _sendingAmountWhenAddressIsMyChange ?? _sendingAmount;
   int? get fee => _fee;
   bool get isInitDone => _isInitDone;
   bool get isNetworkOn => _isNetworkOn == true;
@@ -74,11 +62,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   Future<Result<String>> broadcast(Transaction signedTx) async {
     debugPrint('signedTx: ${signedTx.serialize()}');
     return _nodeProvider.broadcast(signedTx);
-  }
-
-  void setBitcoinPriceKrw(int bitcoinPriceKrw) {
-    _bitcoinPriceKrw = bitcoinPriceKrw;
-    notifyListeners();
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
@@ -122,19 +105,19 @@ class BroadcastingViewModel extends ChangeNotifier {
       Map<String, double> recipientAmounts = {};
       if (outputsToOther.isNotEmpty) {
         for (var output in outputsToOther) {
-          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
       if (outputToMyReceivingAddress.isNotEmpty) {
         for (var output in outputToMyReceivingAddress) {
-          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
         _isSendingToMyAddress = true;
       }
       if (outputToMyChangeAddress.length > 1) {
         for (int i = outputToMyChangeAddress.length - 1; i > 0; i--) {
           var output = outputToMyChangeAddress[i];
-          recipientAmounts[output.outAddress] = UnitUtil.satoshiToBitcoin(output.outAmount!);
+          recipientAmounts[output.outAddress] = UnitUtil.convertSatoshiToBitcoin(output.outAmount!);
         }
       }
       _sendingAmount = psbt.sendingAmount;
@@ -145,9 +128,12 @@ class BroadcastingViewModel extends ChangeNotifier {
       if (outputsToOther.isNotEmpty) {
         output = outputsToOther[0];
       } else if (outputToMyReceivingAddress.isNotEmpty) {
+        /// DEPRECATED:2025.07.01 받는 주소가 내 지갑의 receive adress여도 outputs[i].bip32Derivation == null로 설정되고 있어 항상 첫번째 if문을 거침
         output = outputToMyReceivingAddress[0];
         _isSendingToMyAddress = true;
       } else if (outputToMyChangeAddress.isNotEmpty) {
+        /// DEPRECATED: 2025.07.01 받는 주소가 내 지갑의 change address여도 outputs[i].bip32Derivation == null로 설정되고 있어 항상 첫번째 if문을 거침
+
         // 받는 주소에 내 지갑의 change address를 입력한 경우
         // 원래 이 경우 output.sendingAmount = 0, 보낼 주소가 표기되지 않았었지만, 버그처럼 보이는 문제 때문에 대응합니다.
         // (주의!!) coconut_lib에서 output 배열에 sendingOutput을 먼저 담으므로 항상 첫번째 것을 사용하면 전액 보내기일 때와 아닐 때 모두 커버 됨

@@ -8,6 +8,7 @@ enum IsolateControllerCommand {
   getTransaction,
   getRecommendedFees,
   getSocketConnectionStatus,
+  getTransactionRecord,
 }
 
 enum IsolateStateMethod {

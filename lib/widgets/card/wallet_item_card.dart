@@ -5,7 +5,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
@@ -61,15 +60,10 @@ class WalletItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayFakeBalance = fakeBalance != null
-        ? currentUnit == BitcoinUnit.btc
-            ? satoshiToBitcoinString(fakeBalance!)
-            : addCommasToIntegerPart(fakeBalance!.toDouble())
-        : '';
-    // final isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
-
+    final displayedFakeBalance = currentUnit.displayBitcoinAmount(fakeBalance);
+    final isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
     if (isEditMode) {
-      return _buildWalletItemContent(displayFakeBalance, isEditMode: true,
+      return _buildWalletItemContent(displayedFakeBalance, isEditMode: true,
           onPrimaryWalletChanged: (pair) {
         if (isPrimaryWallet != null) {
           onPrimaryWalletChanged?.call(pair);
@@ -98,7 +92,7 @@ class WalletItemCard extends StatelessWidget {
       // borderGradientColors: signers?.isNotEmpty == true
       //     ? ColorUtil.getGradientColors(signers!)
       //     : [CoconutColors.gray800, CoconutColors.gray800],
-      child: _buildWalletItemContent(displayFakeBalance),
+      child: _buildWalletItemContent(displayedFakeBalance),
     );
 
     if (isLastItem) {
@@ -174,7 +168,9 @@ class WalletItemCard extends StatelessWidget {
                             AnimatedBalance(
                                 prevValue: animatedBalanceData.previous,
                                 value: animatedBalanceData.current,
-                                isBtcUnit: currentUnit == BitcoinUnit.btc,
+                                currentUnit: currentUnit == BitcoinUnit.btc
+                                    ? BitcoinUnit.btc
+                                    : BitcoinUnit.sats,
                                 textStyle: CoconutTypography.body2_14_NumberBold
                                     .setColor(CoconutColors.white)),
                             Text(

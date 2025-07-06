@@ -294,7 +294,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                             walletBalanceMap.values.map((e) => e.previous).fold(0, (a, b) => a + b),
                         value:
                             walletBalanceMap.values.map((e) => e.current).fold(0, (a, b) => a + b),
-                        isBtcUnit: isBtcUnit,
+                        currentUnit:
+                            isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
                         textStyle: CoconutTypography.heading3_21_NumberBold),
                     CoconutLayout.spacing_100w,
                     Text(

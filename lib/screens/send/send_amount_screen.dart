@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -29,25 +30,24 @@ class SendAmountScreen extends StatefulWidget {
 class _SendAmountScreenState extends State<SendAmountScreen> {
   late SendAmountViewModel _viewModel;
 
+  // TODO: ...
   List<String> get errorMessages => [
         t.errors.insufficient_balance,
         t.alert.error_send.minimum_amount(
             bitcoin: _viewModel.currentUnit == BitcoinUnit.btc
-                ? UnitUtil.satoshiToBitcoin(dustLimit + 1)
-                : addCommasToIntegerPart(dustLimit + 1),
+                ? UnitUtil.convertSatoshiToBitcoin(dustLimit + 1)
+                : (dustLimit + 1).toThousandsSeparatedString(),
             unit: unitText)
       ];
 
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
-      bitcoin: _viewModel.currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_viewModel.incomingBalance)
-          : addCommasToIntegerPart(_viewModel.incomingBalance.toDouble()),
+      bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
       unit: unitText);
 
   String get maxBalanceText =>
-      "${_viewModel.currentUnit == BitcoinUnit.btc ? UnitUtil.satoshiToBitcoin(_viewModel.confirmedBalance) : addCommasToIntegerPart(_viewModel.confirmedBalance.toDouble())} $unitText";
+      _viewModel.currentUnit.displayBitcoinAmount(_viewModel.confirmedBalance, withUnit: true);
 
-  String get unitText => _viewModel.currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get unitText => _viewModel.currentUnit.symbol;
 
   @override
   Widget build(BuildContext context) {

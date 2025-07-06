@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -9,7 +10,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_text_field.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -221,7 +221,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                           _isRequesting
                               ? t.faucet_request_bottom_sheet.requesting
                               : t.faucet_request_bottom_sheet
-                                  .request_amount(bitcoin: formatNumber(_requestAmount)),
+                                  .request_amount(bitcoin: _requestAmount.toTrimmedString()),
                           style: CoconutTypography.body2_14
                               .setColor((canRequestFaucet())
                                   ? CoconutColors.black

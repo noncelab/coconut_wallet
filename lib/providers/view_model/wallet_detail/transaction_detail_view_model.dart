@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
@@ -98,6 +99,16 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   void safeNotifyListeners() {
     if (!_disposed) notifyListeners();
+  }
+
+  /// 트랜잭션 내용이 변경될 때마다 다른 키를 반환하여 위젯이 강제로 재생성되도록 합니다.
+  String getTransactionKey(int index) {
+    if (_transactionList == null || index >= _transactionList!.length) {
+      return 'empty_$index';
+    }
+
+    final tx = _transactionList![index];
+    return tx.contentKey;
   }
 
   void clearSendInfo() {
@@ -311,5 +322,23 @@ class TransactionDetailViewModel extends ChangeNotifier {
         status == TransactionStatus.selfsending ||
         status == TransactionStatus.self ||
         status == TransactionStatus.sent;
+  }
+
+  Future<void> onRefresh() async {
+    Logger.log('Transaction Detail Force Refresh: $_txHash');
+    final walletItem = _walletProvider.getWalletById(_walletId);
+    final updatedTxResult = await _nodeProvider.getTransactionRecord(walletItem, _txHash);
+
+    if (updatedTxResult.isSuccess) {
+      await _txProvider.updateTransaction(_walletId, _txHash, updatedTxResult.value);
+
+      _initTransactionList();
+      _setPreviousTransactionIndex(0);
+      _setSelectedTransactionIndex(0);
+
+      safeNotifyListeners();
+    } else {
+      Logger.log('❌ updatedTxResult IS FAILED: ${updatedTxResult.error}');
+    }
   }
 }

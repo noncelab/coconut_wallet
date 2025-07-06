@@ -25,31 +25,16 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late SendConfirmViewModel _viewModel;
   late BitcoinUnit _currentUnit;
 
-  String get confirmText => _currentUnit == BitcoinUnit.btc
-      ? satoshiToBitcoinString(UnitUtil.bitcoinToSatoshi(_viewModel.amount))
-      : addCommasToIntegerPart(UnitUtil.bitcoinToSatoshi(_viewModel.amount).toDouble());
+  String get confirmText =>
+      _currentUnit.displayBitcoinAmount(UnitUtil.convertBitcoinToSatoshi(_viewModel.amount));
 
-  String get estimatedFeeText {
-    if (_viewModel.estimatedFee == null) return '';
+  String get estimatedFeeText => _currentUnit.displayBitcoinAmount(_viewModel.estimatedFee,
+      defaultWhenZero: t.calculation_failed, shouldCheckZero: true);
 
-    return _viewModel.estimatedFee != 0
-        ? _currentUnit == BitcoinUnit.btc
-            ? satoshiToBitcoinString(_viewModel.estimatedFee!)
-            : addCommasToIntegerPart(_viewModel.estimatedFee!.toDouble())
-        : t.calculation_failed;
-  }
+  String get totalCostText => _currentUnit.displayBitcoinAmount(_viewModel.totalUsedAmount,
+      defaultWhenZero: t.calculation_failed, shouldCheckZero: true);
 
-  String get totalCostText {
-    if (_viewModel.estimatedFee == null) return '';
-
-    return _viewModel.estimatedFee != 0
-        ? _currentUnit == BitcoinUnit.btc
-            ? satoshiToBitcoinString(_viewModel.totalUsedAmount!)
-            : addCommasToIntegerPart(_viewModel.totalUsedAmount!.toDouble())
-        : t.calculation_failed;
-  }
-
-  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get unitText => _currentUnit.symbol;
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +76,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                 ),
                               )),
                           FiatPrice(
-                            satoshiAmount: UnitUtil.bitcoinToSatoshi(viewModel.amount),
+                            satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.amount),
                           ),
                         ],
                       ),

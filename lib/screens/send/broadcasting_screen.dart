@@ -8,13 +8,11 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -38,26 +36,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BroadcastingViewModel _viewModel;
   late BitcoinUnit _currentUnit;
 
-  int get amount => (_viewModel.sendingAmountWhenAddressIsMyChange ?? _viewModel.amount!);
-  String get confirmText => _viewModel.amount != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(amount)
-          : addCommasToIntegerPart(amount.toDouble())
-      : "";
+  String get confirmText => _currentUnit.displayBitcoinAmount(_viewModel.amount);
 
-  String get estimatedFeeText => _viewModel.fee != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_viewModel.fee!)
-          : addCommasToIntegerPart(_viewModel.fee!.toDouble())
-      : t.calculation_failed;
+  String get estimatedFeeText =>
+      _currentUnit.displayBitcoinAmount(_viewModel.fee, defaultWhenNull: t.calculation_failed);
 
-  String get totalCostText => _viewModel.totalAmount != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_viewModel.totalAmount!)
-          : addCommasToIntegerPart(_viewModel.totalAmount!.toDouble())
-      : t.calculation_failed;
+  String get totalCostText => _currentUnit.displayBitcoinAmount(_viewModel.totalAmount,
+      defaultWhenNull: t.calculation_failed);
 
-  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get unitText => _currentUnit.symbol;
 
   void broadcast() async {
     if (context.loaderOverlay.visible) return;
@@ -108,17 +95,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, PriceProvider,
+    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider,
         BroadcastingViewModel>(
       create: (_) => _viewModel,
-      update: (_, connectivityProvider, walletProvider, upbitConnectModel, viewModel) {
+      update: (_, connectivityProvider, walletProvider, viewModel) {
         if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
           viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
-        }
-        if (mounted && upbitConnectModel.bitcoinPriceKrw != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
-          });
         }
 
         return viewModel;
@@ -252,7 +234,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<UtxoTagProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
-      Provider.of<PriceProvider>(context, listen: false).bitcoinPriceKrw,
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
     );

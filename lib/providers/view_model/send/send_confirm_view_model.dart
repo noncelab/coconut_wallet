@@ -56,7 +56,7 @@ class SendConfirmViewModel extends ChangeNotifier {
 
   Future<void> setEstimatedFeeAndTotalUsedAmount() async {
     _unsignedPsbt = await _generateUnsignedPsbt();
-    _totalUsedAmount = UnitUtil.bitcoinToSatoshi(_amount) + _unsignedPsbt!.fee;
+    _totalUsedAmount = UnitUtil.convertBitcoinToSatoshi(_amount) + _unsignedPsbt!.fee;
     notifyListeners();
   }
 

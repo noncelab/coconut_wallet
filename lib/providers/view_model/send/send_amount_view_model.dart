@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -37,7 +38,7 @@ class SendAmountViewModel extends ChangeNotifier {
 
   int? get errorIndex => _errorIndex;
 
-  String get input => addThousandsSeparator(_input);
+  String get input => _input.toThousandsSeparatedString();
 
   bool get isNetworkOn => _isNetworkOn == true;
 
@@ -57,8 +58,8 @@ class SendAmountViewModel extends ChangeNotifier {
     _currentUnit = isBtcUnit ? BitcoinUnit.sats : BitcoinUnit.btc;
     if (_input.isNotEmpty && _input != '0') {
       _input = (isBtcUnit
-              ? UnitUtil.satoshiToBitcoin(int.parse(_input))
-              : UnitUtil.bitcoinToSatoshi(double.parse(_input)))
+              ? UnitUtil.convertSatoshiToBitcoin(int.parse(_input))
+              : UnitUtil.convertBitcoinToSatoshi(double.parse(_input)))
           .toString();
 
       // sats to btc 변환에서 지수로 표현되는 경우에는 다시 변환한다.
@@ -137,7 +138,7 @@ class SendAmountViewModel extends ChangeNotifier {
 
   void _setAmountWithInput() {
     double bitcoin =
-        isBtcUnit ? double.parse(_input) : UnitUtil.satoshiToBitcoin(int.parse(_input));
+        isBtcUnit ? double.parse(_input) : UnitUtil.convertSatoshiToBitcoin(int.parse(_input));
     _sendInfoProvider.setAmount(bitcoin);
   }
 
@@ -147,8 +148,8 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   void setMaxAmount() {
-    _input =
-        (isBtcUnit ? UnitUtil.satoshiToBitcoin(_confirmedBalance) : _confirmedBalance).toString();
+    _input = (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance) : _confirmedBalance)
+        .toString();
     if (double.parse(_input) <= dustLimit / dustLimitDenominator) {
       _errorIndex = 1;
       _isNextButtonEnabled = false;
