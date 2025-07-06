@@ -384,7 +384,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             AnimatedBalance(
                               prevValue: 0, // TODO: previous balance
                               value: 123456789, // TODO: current balance
-                              isBtcUnit: isBtcUnit,
+                              currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
                               textStyle: CoconutTypography.heading3_21_NumberBold,
                             ),
                             const SizedBox(width: 4.0),
