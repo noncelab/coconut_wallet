@@ -9,6 +9,7 @@ import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/screens/settings/fake_balance_bottom_sheet.dart';
@@ -145,6 +146,20 @@ class _SettingsScreen extends State<SettingsScreen> {
                         );
                       }),
 
+                  _category(t.general),
+                  Selector<PreferenceProvider, String>(
+                    selector: (_, provider) => provider.language,
+                    builder: (context, language, child) {
+                      return SingleButton(
+                        title: t.settings_screen.language,
+                        subtitle: _getCurrentLanguageDisplayName(language),
+                        onPressed: () async {
+                          _showLanguageSelectionDialog();
+                        },
+                      );
+                    },
+                  ),
+
                   // 개발자 모드에서만 표시되는 디버그 섹션
                   if (kDebugMode) ...[
                     CoconutLayout.spacing_400h,
@@ -189,5 +204,23 @@ class _SettingsScreen extends State<SettingsScreen> {
     return (await CommonBottomSheets.showBottomSheet_90(
             context: context, child: const CustomLoadingOverlay(child: PinCheckScreen())) ==
         true);
+  }
+
+  String _getCurrentLanguageDisplayName(String language) {
+    switch (language) {
+      case 'kr':
+        return t.settings_screen.korean;
+      case 'en':
+        return t.settings_screen.english;
+      default:
+        return t.settings_screen.korean;
+    }
+  }
+
+  void _showLanguageSelectionDialog() {
+    CommonBottomSheets.showBottomSheet_50(
+      context: context,
+      child: const LanguageBottomSheet(),
+    );
   }
 }

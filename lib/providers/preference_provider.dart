@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
@@ -27,6 +28,10 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _showOnlyUnusedAddresses;
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
 
+  /// 언어 설정
+  late String _language;
+  String get language => _language;
+
   PreferenceProvider() {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
@@ -35,6 +40,26 @@ class PreferenceProvider extends ChangeNotifier {
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
+    _language = _sharedPrefs.isContainsKey(SharedPrefKeys.kLanguage)
+        ? _sharedPrefs.getString(SharedPrefKeys.kLanguage)
+        : 'kr'; // 기본값은 한국어
+
+    // 앱 시작 시 저장된 언어 설정 적용
+    _initializeLanguage();
+  }
+
+  /// 앱 시작 시 언어 설정 초기화
+  void _initializeLanguage() {
+    try {
+      if (_language == 'kr') {
+        LocaleSettings.setLocaleSync(AppLocale.kr);
+      } else if (_language == 'en') {
+        LocaleSettings.setLocaleSync(AppLocale.en);
+      }
+    } catch (e) {
+      // 언어 초기화 실패 시 로그 출력 (선택사항)
+      print('Language initialization failed: $e');
+    }
   }
 
   /// 홈 화면 잔액 숨기기
@@ -70,6 +95,26 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeShowOnlyUnusedAddresses(bool show) async {
     _showOnlyUnusedAddresses = show;
     await _sharedPrefs.setBool(SharedPrefKeys.kShowOnlyUnusedAddresses, show);
+    notifyListeners();
+  }
+
+  /// 언어 변경
+  Future<void> changeLanguage(String languageCode) async {
+    _language = languageCode;
+    await _sharedPrefs.setString(SharedPrefKeys.kLanguage, languageCode);
+
+    // slang을 사용하여 동적으로 언어 변경
+    try {
+      if (languageCode == 'kr') {
+        await LocaleSettings.setLocale(AppLocale.kr);
+      } else if (languageCode == 'en') {
+        await LocaleSettings.setLocale(AppLocale.en);
+      }
+    } catch (e) {
+      // 언어 변경 실패 시 로그 출력 (선택사항)
+      print('Language change failed: $e');
+    }
+
     notifyListeners();
   }
 

@@ -51,6 +51,7 @@ import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
 
@@ -171,145 +172,147 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ),
         },
       ],
-      child: CupertinoApp(
-        localizationsDelegates: const [
-          DefaultMaterialLocalizations.delegate,
-          DefaultWidgetsLocalizations.delegate,
-          DefaultCupertinoLocalizations.delegate,
-        ],
-        debugShowCheckedModeBanner: false,
-        theme: const CupertinoThemeData(
-          // 테마 설정
-          brightness: Brightness.dark,
-          primaryColor: CoconutColors.primary,
-          // 기본 색상
-          scaffoldBackgroundColor: CoconutColors.black,
-          textTheme: CupertinoTextThemeData(
-            // 텍스트 테마 설정
-            textStyle: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: CupertinoColors.white, // 기본 텍스트 색상
+      child: TranslationProvider(
+        child: CupertinoApp(
+          localizationsDelegates: const [
+            DefaultMaterialLocalizations.delegate,
+            DefaultWidgetsLocalizations.delegate,
+            DefaultCupertinoLocalizations.delegate,
+          ],
+          debugShowCheckedModeBanner: false,
+          theme: const CupertinoThemeData(
+            // 테마 설정
+            brightness: Brightness.dark,
+            primaryColor: CoconutColors.primary,
+            // 기본 색상
+            scaffoldBackgroundColor: CoconutColors.black,
+            textTheme: CupertinoTextThemeData(
+              // 텍스트 테마 설정
+              textStyle: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: CupertinoColors.white, // 기본 텍스트 색상
+              ),
+              navTitleTextStyle: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: CupertinoColors.white, // AppBar 제목 텍스트 색상
+              ),
+              primaryColor: CupertinoColors.white, // 기본 주요 텍스트 색상
+              actionTextStyle: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: CupertinoColors.white,
+              ),
             ),
-            navTitleTextStyle: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.white, // AppBar 제목 텍스트 색상
-            ),
-            primaryColor: CupertinoColors.white, // 기본 주요 텍스트 색상
-            actionTextStyle: TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.white,
-            ),
+            barBackgroundColor: CoconutColors.black, // AppBar 배경 색상
           ),
-          barBackgroundColor: CoconutColors.black, // AppBar 배경 색상
-        ),
-        color: CoconutColors.black,
-        home: _appEntryFlow == AppEntryFlow.splash
-            ? StartScreen(onComplete: _completeSplash)
-            : _appEntryFlow == AppEntryFlow.main
-                ? const AppGuard(
-                    child: WalletListScreen(),
-                  )
-                : CustomLoadingOverlay(
-                    child: PinCheckScreen(
-                      appEntrance: true,
-                      onComplete: () {
-                        setState(() {
-                          _appEntryFlow = AppEntryFlow.main;
-                        });
-                      },
+          color: CoconutColors.black,
+          home: _appEntryFlow == AppEntryFlow.splash
+              ? StartScreen(onComplete: _completeSplash)
+              : _appEntryFlow == AppEntryFlow.main
+                  ? const AppGuard(
+                      child: WalletListScreen(),
+                    )
+                  : CustomLoadingOverlay(
+                      child: PinCheckScreen(
+                        appEntrance: true,
+                        onComplete: () {
+                          setState(() {
+                            _appEntryFlow = AppEntryFlow.main;
+                          });
+                        },
+                      ),
+                    ),
+          routes: {
+            '/wallet-add-scanner': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => CustomLoadingOverlay(
+                    child: WalletAddScannerScreen(
+                      importSource: args['walletImportSource'],
                     ),
                   ),
-        routes: {
-          '/wallet-add-scanner': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                  child: WalletAddScannerScreen(
-                    importSource: args['walletImportSource'],
+                ),
+            '/wallet-add-input': (context) => const CustomLoadingOverlay(
+                  child: WalletAddInputScreen(),
+                ),
+            '/app-info': (context) => const AppInfoScreen(),
+            '/wallet-detail': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => WalletDetailScreen(id: args['id']),
+                ),
+            '/wallet-info': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => CustomLoadingOverlay(
+                      child: WalletInfoScreen(id: args['id'], isMultisig: args['isMultisig'])),
+                ),
+            '/address-list': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => AddressListScreen(id: args['id']),
+                ),
+            '/address-search': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => AddressSearchScreen(id: args['id']),
+                ),
+            '/transaction-detail': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => TransactionDetailScreen(id: args['id'], txHash: args['txHash']),
+                ),
+            '/transaction-fee-bumping': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => TransactionFeeBumpingScreen(
+                    transaction: args['transaction'],
+                    feeBumpingType: args['feeBumpingType'],
+                    walletId: args['walletId'],
+                    walletName: args['walletName'],
                   ),
                 ),
-              ),
-          '/wallet-add-input': (context) => const CustomLoadingOverlay(
-                child: WalletAddInputScreen(),
-              ),
-          '/app-info': (context) => const AppInfoScreen(),
-          '/wallet-detail': (context) => buildScreenWithArguments(
-                context,
-                (args) => WalletDetailScreen(id: args['id']),
-              ),
-          '/wallet-info': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: WalletInfoScreen(id: args['id'], isMultisig: args['isMultisig'])),
-              ),
-          '/address-list': (context) => buildScreenWithArguments(
-                context,
-                (args) => AddressListScreen(id: args['id']),
-              ),
-          '/address-search': (context) => buildScreenWithArguments(
-                context,
-                (args) => AddressSearchScreen(id: args['id']),
-              ),
-          '/transaction-detail': (context) => buildScreenWithArguments(
-                context,
-                (args) => TransactionDetailScreen(id: args['id'], txHash: args['txHash']),
-              ),
-          '/transaction-fee-bumping': (context) => buildScreenWithArguments(
-                context,
-                (args) => TransactionFeeBumpingScreen(
-                  transaction: args['transaction'],
-                  feeBumpingType: args['feeBumpingType'],
-                  walletId: args['walletId'],
-                  walletName: args['walletName'],
+            '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => UnsignedTransactionQrScreen(walletName: args['walletName']),
                 ),
-              ),
-          '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
-                context,
-                (args) => UnsignedTransactionQrScreen(walletName: args['walletName']),
-              ),
-          '/signed-psbt-scanner': (context) => const SignedPsbtScannerScreen(),
-          '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
-          '/broadcasting-complete': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                    child: BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash'])),
-              ),
-          '/send-address': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
-              ),
-          '/send-amount': (context) => const SendAmountScreen(),
-          '/fee-selection': (context) => const SendFeeSelectionScreen(),
-          '/utxo-selection': (context) => const CustomLoadingOverlay(
-                child: SendUtxoSelectionScreen(),
-              ),
-          '/send-confirm': (context) => const CustomLoadingOverlay(child: SendConfirmScreen()),
-          '/utxo-list': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                  child: UtxoListScreen(id: args['id']),
+            '/signed-psbt-scanner': (context) => const SignedPsbtScannerScreen(),
+            '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
+            '/broadcasting-complete': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => CustomLoadingOverlay(
+                      child: BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash'])),
                 ),
-              ),
-          '/utxo-detail': (context) => buildScreenWithArguments(
-                context,
-                (args) => CustomLoadingOverlay(
-                  child: UtxoDetailScreen(
-                    utxo: args['utxo'],
-                    id: args['id'],
+            '/send-address': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
+                ),
+            '/send-amount': (context) => const SendAmountScreen(),
+            '/fee-selection': (context) => const SendFeeSelectionScreen(),
+            '/utxo-selection': (context) => const CustomLoadingOverlay(
+                  child: SendUtxoSelectionScreen(),
+                ),
+            '/send-confirm': (context) => const CustomLoadingOverlay(child: SendConfirmScreen()),
+            '/utxo-list': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => CustomLoadingOverlay(
+                    child: UtxoListScreen(id: args['id']),
                   ),
                 ),
-              ),
-          '/positive-feedback': (context) => const PositiveFeedbackScreen(),
-          '/negative-feedback': (context) => const NegativeFeedbackScreen(),
-          '/mnemonic-word-list': (context) => const Bip39ListScreen(),
-          '/utxo-tag': (context) =>
-              buildScreenWithArguments(context, (args) => UtxoTagCrudScreen(id: args['id'])),
-        },
+            '/utxo-detail': (context) => buildScreenWithArguments(
+                  context,
+                  (args) => CustomLoadingOverlay(
+                    child: UtxoDetailScreen(
+                      utxo: args['utxo'],
+                      id: args['id'],
+                    ),
+                  ),
+                ),
+            '/positive-feedback': (context) => const PositiveFeedbackScreen(),
+            '/negative-feedback': (context) => const NegativeFeedbackScreen(),
+            '/mnemonic-word-list': (context) => const Bip39ListScreen(),
+            '/utxo-tag': (context) =>
+                buildScreenWithArguments(context, (args) => UtxoTagCrudScreen(id: args['id'])),
+          },
+        ),
       ),
     );
   }
