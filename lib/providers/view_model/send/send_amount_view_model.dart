@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';

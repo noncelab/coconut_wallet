@@ -12,11 +12,6 @@ wallet: "Wallet"
 btc: "BTC"
 bitcoin_en: "Bitcoin"
 bitcoin_kr: "Bitcoin"
-fiat: "Fiat"
-fiat_krw: "KRW"
-krw_title: "South Korean Won"
-fiat_usd: "USD"
-usd_title: "US Dollar"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "Testnet"
@@ -312,8 +307,6 @@ settings_screen:
   language: "Language"
   korean: "한국어"
   english: "English"
-  language_change_completed: "Language Change Completed"
-  language_change_completed_description: "Language has been changed. Please restart the app to fully apply the changes."
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
@@ -600,3 +593,16 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   zpub: "zpub"
+
+trade_exchange:
+  upbit: "Upbit"
+  binance: "Binance"
+
+fiat:
+  fiat: "Fiat"
+  krw_symbol: "₩"
+  usd_symbol: "$"
+  krw_code: "KRW"
+  usd_code: "USD"
+  krw_title: "South Korean Won"
+  usd_title: "US Dollar"

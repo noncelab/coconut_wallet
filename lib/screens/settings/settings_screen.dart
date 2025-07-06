@@ -10,6 +10,7 @@ import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/screens/settings/fake_balance_bottom_sheet.dart';
@@ -142,6 +143,32 @@ class _SettingsScreen extends State<SettingsScreen> {
                           onPressed: () async {
                             CommonBottomSheets.showBottomSheet_50(
                                 context: context, child: const UnitBottomSheet());
+                          },
+                        );
+                      }),
+
+                  CoconutLayout.spacing_200h,
+                  Selector<PreferenceProvider, String>(
+                      selector: (_, provider) => provider.selectedFiat.code,
+                      builder: (context, fiatCode, child) {
+                        String fiatDisplayName;
+                        switch (fiatCode) {
+                          case 'KRW':
+                            fiatDisplayName = t.fiat.krw_code;
+                            break;
+                          case 'USD':
+                            fiatDisplayName = t.fiat.usd_code;
+                            break;
+                          default:
+                            fiatDisplayName = t.fiat.usd_code;
+                        }
+
+                        return SingleButton(
+                          title: t.fiat.fiat,
+                          subtitle: fiatDisplayName,
+                          onPressed: () async {
+                            CommonBottomSheets.showBottomSheet_50(
+                                context: context, child: const CurrencyBottomSheet());
                           },
                         );
                       }),

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
@@ -33,6 +33,10 @@ class PreferenceProvider extends ChangeNotifier {
   late String _language;
   String get language => _language;
 
+  /// 선택된 통화
+  late FiatCode _selectedFiat;
+  FiatCode get selectedFiat => _selectedFiat;
+
   PreferenceProvider() {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
@@ -42,12 +46,29 @@ class PreferenceProvider extends ChangeNotifier {
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
 
+    // 통화 설정 초기화
+    _initializeFiat();
+
     // 언어 설정 초기화 - OS 설정에 따라 자동 선택
     _initializeLanguageFromSystem();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyLanguageSettingSync();
     });
+  }
+
+  /// 통화 설정 초기화
+  void _initializeFiat() {
+    final fiatCode = _sharedPrefs.getString(SharedPrefKeys.kSelectedFiat);
+    if (fiatCode.isNotEmpty) {
+      _selectedFiat = FiatCode.values.firstWhere(
+        (fiat) => fiat.code == fiatCode,
+        orElse: () => FiatCode.KRW,
+      );
+    } else {
+      _selectedFiat = FiatCode.KRW;
+      _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, _selectedFiat.code);
+    }
   }
 
   /// OS 설정에 따라 언어 설정 초기화
@@ -149,6 +170,13 @@ class PreferenceProvider extends ChangeNotifier {
     await _applyLanguageSetting();
 
     // 언어 설정 후 상태 업데이트
+    notifyListeners();
+  }
+
+  /// 통화 변경
+  Future<void> changeFiat(FiatCode fiatCode) async {
+    _selectedFiat = fiatCode;
+    await _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, fiatCode.code);
     notifyListeners();
   }
 

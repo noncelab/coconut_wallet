@@ -22,4 +22,7 @@ class SharedPrefKeys {
 
   /// Language
   static const String kLanguage = 'LANGUAGE';
+
+  /// Fiat
+  static const String kSelectedFiat = 'SELECTED_FIAT';
 }

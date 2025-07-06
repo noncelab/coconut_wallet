@@ -104,8 +104,15 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+
+        // 언어 설정은 모든 플로우에서 필요하므로 항상 생성 (PriceProvider보다 먼저)
+        ChangeNotifierProvider(create: (_) => PreferenceProvider()),
+
         ChangeNotifierProvider<PriceProvider>(
-          create: (context) => PriceProvider(context.read<ConnectivityProvider>()),
+          create: (context) => PriceProvider(
+            context.read<ConnectivityProvider>(),
+            context.read<PreferenceProvider>(),
+          ),
         ),
 
         Provider.value(value: _realmManager),
@@ -135,9 +142,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             create: (context) => TransactionProvider(
                   context.read<TransactionRepository>(),
                 )),
-
-        // 언어 설정은 모든 플로우에서 필요하므로 항상 생성
-        ChangeNotifierProvider(create: (_) => PreferenceProvider()),
 
         /// main 에서만 사용하는 모델
         if (_appEntryFlow == AppEntryFlow.main) ...{
