@@ -133,7 +133,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             onRefresh: viewModel.updateWalletBalances,
                           ),
                           _buildLoadingIndicator(viewModel),
-                          _buildHeader(),
+                          _buildHeader(isBalanceHidden, viewModel.getFakeTotalBalance()),
                           if (!shouldShowLoadingIndicator)
                             SliverToBoxAdapter(
                                 child: Column(
@@ -310,7 +310,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isBalanceHidden, int? fakeBalanceTotalAmount) {
     // 처음 로딩시 스켈레톤
     if (_isFirstLoad && _viewModel.walletItemList.isNotEmpty) {
       return SliverToBoxAdapter(
@@ -381,17 +381,34 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       children: [
                         Row(
                           children: [
-                            AnimatedBalance(
-                              prevValue: 0, // TODO: previous balance
-                              value: 123456789, // TODO: current balance
-                              currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                              textStyle: CoconutTypography.heading3_21_NumberBold,
-                            ),
+                            isBalanceHidden
+                                ? fakeBalanceTotalAmount != null
+                                    ? Text(
+                                        isBtcUnit
+                                            ? BitcoinUnit.btc.displayBitcoinAmount(
+                                                fakeBalanceTotalAmount.toInt())
+                                            : BitcoinUnit.sats.displayBitcoinAmount(
+                                                fakeBalanceTotalAmount.toInt()),
+                                        style: CoconutTypography.heading3_21_NumberBold,
+                                      )
+                                    : Text(
+                                        t.view_balance,
+                                        style: CoconutTypography.heading3_21_NumberBold.setColor(
+                                          CoconutColors.gray600,
+                                        ),
+                                      )
+                                : AnimatedBalance(
+                                    prevValue: 0, // TODO: previous balance
+                                    value: 123456789, // TODO: current balance
+                                    currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                                    textStyle: CoconutTypography.heading3_21_NumberBold,
+                                  ),
                             const SizedBox(width: 4.0),
-                            Text(
-                              isBtcUnit ? t.btc : t.sats,
-                              style: CoconutTypography.heading3_21_NumberBold,
-                            ),
+                            if (!isBalanceHidden || fakeBalanceTotalAmount != null)
+                              Text(
+                                isBtcUnit ? t.btc : t.sats,
+                                style: CoconutTypography.heading3_21_NumberBold,
+                              ),
                           ],
                         ),
                         ShrinkAnimationButton(
@@ -399,12 +416,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             defaultColor: CoconutColors.gray800,
                             pressedColor: CoconutColors.gray750,
                             onPressed: () {
-                              // TODO: 숨기기 on/off
+                              _viewModel.setIsBalanceHidden(!isBalanceHidden);
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                               child: Text(
-                                t.wallet_list.hide,
+                                _viewModel.isBalanceHidden ? t.view : t.wallet_list.hide,
                                 style: CoconutTypography.body3_12,
                               ),
                             ))

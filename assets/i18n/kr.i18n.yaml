@@ -86,6 +86,7 @@ selection: "선택"
 hardware_wallet: "하드웨어 월렛"
 vault_app: "볼트 앱"
 view_balance: "잔액 보기"
+view: "보기"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sats/vb)"

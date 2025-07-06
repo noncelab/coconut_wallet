@@ -114,7 +114,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   void onPreferenceProviderUpdated() {
     /// 잔액 숨기기 변동 체크
     if (_isBalanceHidden != _preferenceProvider.isBalanceHidden) {
-      _setIsBalanceHidden(_preferenceProvider.isBalanceHidden);
+      setIsBalanceHidden(_preferenceProvider.isBalanceHidden);
     }
 
     /// 가짜 잔액 총량 변동 체크 (on/off 판별)
@@ -132,7 +132,8 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setIsBalanceHidden(bool value) {
+  void setIsBalanceHidden(bool value) {
+    _preferenceProvider.changeIsBalanceHidden(value);
     _isBalanceHidden = value;
     notifyListeners();
   }
@@ -153,6 +154,10 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   int? getFakeBalance(int id) {
     return _fakeBalanceMap[id] ?? _fakeBalanceTotalAmount;
+  }
+
+  int? getFakeTotalBalance() {
+    return _fakeBalanceTotalAmount;
   }
 
   void onNodeProviderUpdated() {
