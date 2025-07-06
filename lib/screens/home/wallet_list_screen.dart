@@ -72,7 +72,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           final starredWalletIds = data.item4;
 
           return PopScope(
-            canPop: true,
+            canPop: !_isEditMode,
             onPopInvokedWithResult: (didPop, _) {
               if (!didPop) {
                 Navigator.pop(context);
@@ -294,8 +294,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                             walletBalanceMap.values.map((e) => e.previous).fold(0, (a, b) => a + b),
                         value:
                             walletBalanceMap.values.map((e) => e.current).fold(0, (a, b) => a + b),
-                        currentUnit:
-                            isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                        currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
                         textStyle: CoconutTypography.heading3_21_NumberBold),
                     CoconutLayout.spacing_100w,
                     Text(
