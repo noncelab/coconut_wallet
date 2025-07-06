@@ -136,9 +136,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   context.read<TransactionRepository>(),
                 )),
 
+        // 언어 설정은 모든 플로우에서 필요하므로 항상 생성
+        ChangeNotifierProvider(create: (_) => PreferenceProvider()),
+
         /// main 에서만 사용하는 모델
         if (_appEntryFlow == AppEntryFlow.main) ...{
-          ChangeNotifierProvider(create: (_) => PreferenceProvider()),
           Provider(create: (_) => SendInfoProvider()),
           ChangeNotifierProvider<WalletProvider>(
             create: (context) {

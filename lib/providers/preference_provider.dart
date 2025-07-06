@@ -4,6 +4,7 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
@@ -40,21 +41,62 @@ class PreferenceProvider extends ChangeNotifier {
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
-    _language = _sharedPrefs.isContainsKey(SharedPrefKeys.kLanguage)
-        ? _sharedPrefs.getString(SharedPrefKeys.kLanguage)
-        : 'kr'; // 기본값은 한국어
 
-    // 앱 시작 시 저장된 언어 설정 적용
-    _initializeLanguage();
+    // 언어 설정 초기화 - OS 설정에 따라 자동 선택
+    _initializeLanguageFromSystem();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyLanguageSettingSync();
+    });
   }
 
-  /// 앱 시작 시 언어 설정 초기화
-  void _initializeLanguage() {
+  /// OS 설정에 따라 언어 설정 초기화
+  void _initializeLanguageFromSystem() {
+    bool changed = false;
+    if (_sharedPrefs.isContainsKey(SharedPrefKeys.kLanguage)) {
+      _language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
+    } else {
+      _language = getSystemLanguageCode();
+      _sharedPrefs.setString(SharedPrefKeys.kLanguage, _language);
+      changed = true;
+    }
+
+    _applyLanguageSettingSync();
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
+  /// 언어 설정 적용 (동기 버전)
+  void _applyLanguageSettingSync() {
     try {
+      print('Applying language setting: $_language');
       if (_language == 'kr') {
         LocaleSettings.setLocaleSync(AppLocale.kr);
+        print('Korean locale applied successfully');
       } else if (_language == 'en') {
         LocaleSettings.setLocaleSync(AppLocale.en);
+        print('English locale applied successfully');
+      }
+
+      // 언어 설정 후 상태 업데이트를 위해 notifyListeners 호출
+      notifyListeners();
+    } catch (e) {
+      // 언어 초기화 실패 시 로그 출력 (선택사항)
+      print('Language initialization failed: $e');
+    }
+  }
+
+  /// 언어 설정 적용
+  Future<void> _applyLanguageSetting() async {
+    try {
+      if (_language == 'kr') {
+        await LocaleSettings.setLocale(AppLocale.kr);
+      } else if (_language == 'en') {
+        await LocaleSettings.setLocale(AppLocale.en);
+      } else {
+        // 기본값은 영어로 설정
+        await LocaleSettings.setLocale(AppLocale.en);
       }
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
@@ -103,18 +145,10 @@ class PreferenceProvider extends ChangeNotifier {
     _language = languageCode;
     await _sharedPrefs.setString(SharedPrefKeys.kLanguage, languageCode);
 
-    // slang을 사용하여 동적으로 언어 변경
-    try {
-      if (languageCode == 'kr') {
-        await LocaleSettings.setLocale(AppLocale.kr);
-      } else if (languageCode == 'en') {
-        await LocaleSettings.setLocale(AppLocale.en);
-      }
-    } catch (e) {
-      // 언어 변경 실패 시 로그 출력 (선택사항)
-      print('Language change failed: $e');
-    }
+    // 언어 설정 적용
+    await _applyLanguageSetting();
 
+    // 언어 설정 후 상태 업데이트
     notifyListeners();
   }
 

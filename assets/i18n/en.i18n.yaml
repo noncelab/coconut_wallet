@@ -390,8 +390,8 @@ wallet_list_add_guide_card:
 wallet_list_glossary_shortcut_card:
   any_word_you_dont_know: "Don't know any terms?"
   top_right: "Top right "
-  kebab_button: "⋮ button"
-  click_to_jump: " - Click glossary or here to jump"
+  kebab_button: "⋮ "
+  click_to_jump: "Click glossary or here to jump"
 
 # lib/widgets/overlays
 faucet_request_bottom_sheet:
