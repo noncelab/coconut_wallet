@@ -144,7 +144,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 ]
                               ],
                             )),
-                          if (_isFirstLoad) ...[
+                          if (_isFirstLoad && viewModel.walletItemList.isNotEmpty) ...[
                             // 처음 로딩시 스켈레톤
                             _buildBodySkeleton(),
                           ],
@@ -312,7 +312,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildHeader() {
     // 처음 로딩시 스켈레톤
-    if (_isFirstLoad) {
+    if (_isFirstLoad && _viewModel.walletItemList.isNotEmpty) {
       return SliverToBoxAdapter(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
