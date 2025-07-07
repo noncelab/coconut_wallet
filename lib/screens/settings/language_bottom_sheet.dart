@@ -35,6 +35,7 @@ class _LanguageBottomSheetState extends State<LanguageBottomSheet> {
                       await context.read<PreferenceProvider>().changeLanguage('kr');
                       if (context.mounted) {
                         Navigator.of(context).pop();
+                        Navigator.of(context).pop();
                       }
                     }),
                     Divider(
@@ -46,6 +47,7 @@ class _LanguageBottomSheetState extends State<LanguageBottomSheet> {
                         () async {
                       await context.read<PreferenceProvider>().changeLanguage('en');
                       if (context.mounted) {
+                        Navigator.of(context).pop();
                         Navigator.of(context).pop();
                       }
                     }),

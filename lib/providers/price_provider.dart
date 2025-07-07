@@ -83,7 +83,7 @@ class PriceProvider extends ChangeNotifier {
   void initWebSocketService({bool force = false}) {
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isNetworkOn != true) {
-      Logger.log('PriceProvider: Network not connected');
+      Logger.log('PriceProvider: 네트워크가 연결되지 않아 WebSocket 연결을 보류합니다.');
       _isPendingConnection = true;
       return;
     }
@@ -93,21 +93,28 @@ class PriceProvider extends ChangeNotifier {
     }
 
     if (_currentWebSocketService != null) {
-      Logger.log('PriceProvider: WebSocket already connected');
+      Logger.log('PriceProvider: WebSocket이 이미 연결되어 있습니다.');
       return;
     }
 
-    final selectedFiat = _preferenceProvider.selectedFiat;
-    Logger.log('[${selectedFiat.code} WebSocket] Initialized');
-    _isPendingConnection = false;
+    try {
+      final selectedFiat = _preferenceProvider.selectedFiat;
+      Logger.log('[${selectedFiat.code} WebSocket] 초기화 중...');
+      _isPendingConnection = false;
 
-    _currentWebSocketService = WebSocketServiceFactory.create(selectedFiat);
-    _currentWebSocketService?.tickerStream.listen((ticker) {
-      _updatePrice(ticker);
-      notifyListeners();
-    }, onError: (error) {
-      Logger.error('PriceProvider: WebSocket stream error: $error');
-    });
+      _currentWebSocketService = WebSocketServiceFactory.create(selectedFiat);
+      _currentWebSocketService?.tickerStream.listen((ticker) {
+        _updatePrice(ticker);
+        notifyListeners();
+      }, onError: (error) {
+        Logger.error('PriceProvider: WebSocket 스트림 오류: $error');
+        // 오류 발생 시 WebSocket 서비스 정리
+        disposeWebSocketService();
+      });
+    } catch (e) {
+      Logger.error('PriceProvider: WebSocket 서비스 초기화 실패: $e');
+      _isPendingConnection = true;
+    }
   }
 
   void _updatePrice(PriceResponse? ticker) {
@@ -125,9 +132,14 @@ class PriceProvider extends ChangeNotifier {
 
   void disposeWebSocketService() {
     if (_currentWebSocketService != null) {
-      _currentWebSocketService?.dispose();
-      _currentWebSocketService = null;
-      Logger.log('[${_preferenceProvider.selectedFiat.code} WebSocket] Disposed');
+      try {
+        _currentWebSocketService?.dispose();
+        Logger.log('[${_preferenceProvider.selectedFiat.code} WebSocket] 정리 완료');
+      } catch (e) {
+        Logger.error('PriceProvider: WebSocket 서비스 정리 중 오류: $e');
+      } finally {
+        _currentWebSocketService = null;
+      }
     }
   }
 
@@ -135,38 +147,53 @@ class PriceProvider extends ChangeNotifier {
   void dispose() {
     _connectivityProvider.removeListener(_connectivityListener);
     _preferenceProvider.removeListener(_preferenceListener);
-    _currentWebSocketService?.dispose();
+    try {
+      _currentWebSocketService?.dispose();
+    } catch (e) {
+      Logger.error('PriceProvider: dispose 중 WebSocket 오류: $e');
+    }
     super.dispose();
   }
 
   // util: 통화 코드를 받아서 가격을 반환 (문자열)
   String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) {
-    final targetFiat = fiatCode ?? _preferenceProvider.selectedFiat;
-    final price = _getPriceForFiat(targetFiat);
+    try {
+      final targetFiat = fiatCode ?? _preferenceProvider.selectedFiat;
+      final price = _getPriceForFiat(targetFiat);
 
-    if (price == null) {
+      if (price == null) {
+        return '';
+      }
+
+      final amount =
+          FiatUtil.calculateFiatAmount(satoshiAmount, price).toThousandsSeparatedString();
+
+      if (showCurrencySymbol) {
+        return '${targetFiat.symbol} $amount';
+      } else {
+        return amount;
+      }
+    } catch (e) {
+      Logger.error('PriceProvider: getFiatPrice 오류: $e');
       return '';
-    }
-
-    final amount = FiatUtil.calculateFiatAmount(satoshiAmount, price).toThousandsSeparatedString();
-
-    if (showCurrencySymbol) {
-      return '${targetFiat.symbol} $amount';
-    } else {
-      return amount;
     }
   }
 
   // util: 통화 코드를 받아서 가격을 반환 (정수)
   int? getFiatAmount(int satoshiAmount, [FiatCode? fiatCode]) {
-    final targetFiat = fiatCode ?? _preferenceProvider.selectedFiat;
-    final price = _getPriceForFiat(targetFiat);
+    try {
+      final targetFiat = fiatCode ?? _preferenceProvider.selectedFiat;
+      final price = _getPriceForFiat(targetFiat);
 
-    if (price == null) {
+      if (price == null) {
+        return null;
+      }
+
+      return FiatUtil.calculateFiatAmount(satoshiAmount, price);
+    } catch (e) {
+      Logger.error('PriceProvider: getFiatAmount 오류: $e');
       return null;
     }
-
-    return FiatUtil.calculateFiatAmount(satoshiAmount, price);
   }
 
   /// 특정 통화의 가격 반환
