@@ -6,7 +6,8 @@ class _TestConstants {
   static const int addressIndex = 0;
   static const int blockHeight = 812345;
   static const int transactionAmount = 1000000;
-  static const int previousTxAmount = 2000000;
+  static const int changeAmount = 50000;
+  static const int previousTxAmount = 1011000;
   static const int cpfpFeeAmount = 5000;
   static const int rbfFeeAmount = 10000;
 }

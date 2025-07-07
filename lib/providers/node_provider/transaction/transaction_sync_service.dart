@@ -310,7 +310,7 @@ class TransactionSyncService {
     if (toDeleteTxs.isNotEmpty) {
       final deleted = _transactionRepository.deleteTransaction(walletId, toDeleteTxs);
       if (deleted.isSuccess) {
-        Logger.log('Deleted stale unconfirmed transactions: $toDeleteTxs');
+        Logger.log('[$walletId] Deleted stale unconfirmed transactions: $toDeleteTxs');
       }
     }
   }

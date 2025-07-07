@@ -127,6 +127,10 @@ class _ScriptSyncTestDataBuilder {
       inputTransactionHash: previousMockTx.transactionHash,
       toAddress: walletB.walletBase.getAddress(_TestConstants.addressIndex),
       amount: _TestConstants.transactionAmount,
+      change: (
+        amount: _TestConstants.changeAmount,
+        address: walletA.walletBase.getAddress(_TestConstants.addressIndex, isChange: true)
+      ),
     );
 
     return _ScriptSyncTestData(
@@ -152,8 +156,14 @@ class _ScriptSyncTestDataBuilder {
 
     // A가 수행하는 RBF 트랜잭션 (initialTx를 대체)
     final rbfTx = TransactionMock.createMockTransaction(
+      inputTransactionHash: defaultData.previousMockTx.transactionHash,
       toAddress: defaultData.walletB.walletBase.getAddress(_TestConstants.addressIndex),
-      amount: _TestConstants.transactionAmount - _TestConstants.rbfFeeAmount,
+      amount: _TestConstants.transactionAmount,
+      change: (
+        amount: _TestConstants.changeAmount - _TestConstants.rbfFeeAmount,
+        address:
+            defaultData.walletA.walletBase.getAddress(_TestConstants.addressIndex, isChange: true)
+      ),
     );
 
     // Script Status DTO들 생성
