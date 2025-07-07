@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ class WalletListViewModel extends ChangeNotifier {
   WalletProvider _walletProvider;
   final Stream<NodeSyncState> _syncNodeStateStream;
   late final ConnectivityProvider _connectivityProvider;
+  late final PreferenceProvider _preferenceProvider;
   late bool? _isNetworkOn;
   Map<int, AnimatedBalanceData> _walletBalance = {};
 
@@ -24,17 +26,35 @@ class WalletListViewModel extends ChangeNotifier {
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
 
+  // late final StreamSubscription _preferenceSubscription;
+  late List<int> _walletOrder = [];
+  List<int> get walletOrder => _walletOrder;
+  // 임시 지갑 순서 ID 목록(편집용)
+  List<int> tempWalletOrder = [];
+
+  late List<int> _starredWalletIds = [];
+  List<int> get starredWalletIds => _starredWalletIds;
   // 임시 즐겨찾기 지갑 ID 목록(편집용)
   List<int> tempStarredWalletIds = [];
 
-  List<WalletListItemBase> tempWalletList = [];
+  late List<int> _excludedFromTotalBalanceWalletIds = [];
+  List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
+
+  bool _isEditMode = false;
+  bool get isEditMode => _isEditMode;
+
+  List<int> _originalWalletOrder = [];
 
   WalletListViewModel(
     this._walletProvider,
     this._connectivityProvider,
     this._syncNodeStateStream,
+    this._preferenceProvider,
   ) {
     _isNetworkOn = _connectivityProvider.isNetworkOn;
+    _walletOrder = _preferenceProvider.walletOrder;
+    _starredWalletIds = _preferenceProvider.starredWalletIds;
+    _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
     _walletBalance = _walletProvider
         .fetchWalletBalanceMap()
@@ -43,7 +63,19 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
-  List<WalletListItemBase> get walletItemList => _walletProvider.walletItemListNotifier.value;
+  List<WalletListItemBase> get walletItemList {
+    final walletList = _walletProvider.walletItemListNotifier.value;
+    final order = _preferenceProvider.walletOrder;
+
+    if (order.isEmpty) {
+      return walletList;
+    }
+
+    final walletMap = {for (var wallet in walletList) wallet.id: wallet};
+    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+    return orderedMap;
+  }
+
   bool? get isNetworkOn => _isNetworkOn;
   Map<int, AnimatedBalanceData> get walletBalanceMap => _walletBalance;
 
@@ -67,6 +99,42 @@ class WalletListViewModel extends ChangeNotifier {
       _nodeSyncState = syncState;
     }
   }
+
+  void setEditMode(bool isEditMode) {
+    _isEditMode = isEditMode;
+    if (isEditMode) {
+      // 최신 starredWalletIds를 PreferenceProvider에서 다시 읽어옴
+      _starredWalletIds = List.from(_preferenceProvider.starredWalletIds);
+
+      tempStarredWalletIds =
+          walletItemList.where((w) => _starredWalletIds.contains(w.id)).map((w) => w.id).toList();
+
+      tempWalletOrder = walletItemList.map((w) => w.id).toList();
+      _originalWalletOrder = List.from(tempWalletOrder); // 편집 진입 시점의 순서 저장
+    }
+    notifyListeners();
+  }
+
+  // void onPreferenceProviderUpdated() {
+  //   /// 지갑 순서 변경 체크
+  //   if (!const ListEquality().equals(_walletOrder, _preferenceProvider.walletOrder)) {
+  //     _walletOrder = _preferenceProvider.walletOrder;
+  //   }
+
+  //   /// 지갑 즐겨찾기 목록 변경 체크
+  //   if (!const SetEquality()
+  //       .equals(_starredWalletIds.toSet(), _preferenceProvider.starredWalletIds.toSet())) {
+  //     _starredWalletIds = _preferenceProvider.starredWalletIds;
+  //   }
+
+  //   /// 총 잔액에서 제외할 지갑 목록 변경 체크
+  //   if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
+  //       _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
+  //     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+  //   }
+
+  //   notifyListeners();
+  // }
 
   Future<void> updateWalletBalances() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
@@ -128,37 +196,44 @@ class WalletListViewModel extends ChangeNotifier {
 
   void clearTempDatas() {
     tempStarredWalletIds.clear();
-    tempWalletList.clear();
+    tempWalletOrder.clear();
     notifyListeners();
   }
 
   /// 임시값을 실제 walletList에 반영
-  void applyTempDatasToWallets() {
-    // TODO: 실제 WalletProvider에 있는 walletItemList을 업데이트하는 로직이 필요합니다. (Realm 업데이트도 고려해야 함))
-    walletItemList
-      ..clear()
-      ..addAll(tempWalletList);
-    for (var wallet in walletItemList) {
-      wallet.isStarred = tempStarredWalletIds.contains(wallet.id);
-    }
-    notifyListeners();
-  }
+  Future<void> applyTempDatasToWallets() async {
+    if (!hasWalletOrderChanged && !hasStarredChanged) return;
 
-  /// 편집 진입 시 현재 상태를 temp로 복사
-  void cacheCurrentWalletsState() {
-    tempStarredWalletIds = walletItemList.where((w) => w.isStarred).map((w) => w.id).toList();
-    tempWalletList = List.from(walletItemList);
+    if (hasWalletOrderChanged) {
+      await _preferenceProvider.setWalletOrder(tempWalletOrder);
+
+      final walletMap = {for (var wallet in walletItemList) wallet.id: wallet};
+      _walletProvider.walletItemListNotifier.value =
+          tempWalletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+    }
+    if (hasStarredChanged) {
+      await _preferenceProvider.setStarredWalletIds(tempStarredWalletIds);
+      _starredWalletIds = _preferenceProvider.starredWalletIds;
+    }
+
+    notifyListeners();
   }
 
   bool get hasStarredChanged => !const SetEquality().equals(
         tempStarredWalletIds.toSet(),
-        walletItemList.where((w) => w.isStarred).map((w) => w.id).toSet(),
+        _preferenceProvider.starredWalletIds.toSet(),
       );
 
   bool get hasWalletOrderChanged => !const ListEquality().equals(
-        tempWalletList,
-        walletItemList,
+        tempWalletOrder,
+        _originalWalletOrder,
       );
+
+  void reorderTempWalletOrder(int oldIndex, int newIndex) {
+    final item = tempWalletOrder.removeAt(oldIndex);
+    tempWalletOrder.insert(newIndex > oldIndex ? newIndex - 1 : newIndex, item);
+    notifyListeners();
+  }
 
   @override
   void dispose() {

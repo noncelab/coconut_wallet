@@ -36,7 +36,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   double? itemCardHeight;
   late WalletListViewModel _viewModel;
 
-  bool _isEditMode = false;
   // bool _isFirstLoad = true;
   // bool _isWalletListLoading = false;
 
@@ -55,24 +54,28 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
         return previous..onWalletProviderUpdated(walletProvider);
       },
-      child: Selector<WalletListViewModel,
-          Tuple4<List<WalletListItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>>>(
-        selector: (_, vm) => Tuple4(
+      child: Selector<
+          WalletListViewModel,
+          Tuple6<List<WalletListItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>,
+              List<int>, bool>>(
+        selector: (_, vm) => Tuple6(
           vm.walletItemList,
           vm.isNetworkOn ?? false,
           vm.walletBalanceMap,
           vm.tempStarredWalletIds,
+          vm.tempWalletOrder,
+          vm.isEditMode,
         ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletListViewModel>(context, listen: false);
 
           final walletListItem = data.item1;
-          final isOffline = !data.item2;
           final walletBalanceMap = data.item3;
-          final starredWalletIds = data.item4;
-
+          final isEditMode = data.item6;
+          debugPrint(
+              'hasStarredChanged: ${viewModel.hasStarredChanged} hasORderChanged: ${viewModel.hasWalletOrderChanged}');
           return PopScope(
-            canPop: !_isEditMode,
+            canPop: isEditMode,
             onPopInvokedWithResult: (didPop, _) {
               if (!didPop) {
                 Navigator.pop(context);
@@ -85,17 +88,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               body: SafeArea(
                 top: true,
                 bottom: false,
-                child: _isEditMode
+                child: isEditMode
+                    // 편집 모드
                     ? Stack(
                         children: [
                           _buildEditableWalletList(walletBalanceMap),
                           FixedBottomButton(
-                            onButtonClicked: () {
-                              _viewModel.applyTempDatasToWallets();
-                              setState(() {
-                                _isEditMode = false;
-                              });
-                              viewModel.clearTempDatas();
+                            onButtonClicked: () async {
+                              await viewModel.applyTempDatasToWallets();
+                              viewModel.setEditMode(false);
                             },
                             isActive:
                                 viewModel.hasStarredChanged || viewModel.hasWalletOrderChanged,
@@ -104,6 +105,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           )
                         ],
                       )
+                    // 일반 모드
                     : Stack(
                         children: [
                           CustomScrollView(
@@ -187,6 +189,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false).syncStateStream,
+      Provider.of<PreferenceProvider>(context, listen: false),
     );
     return _viewModel;
   }
@@ -323,6 +326,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       delegate: SliverChildBuilderDelegate(
         (context, index) {
           if (index < walletList.length) {
+            debugPrint(
+                '1111 walletList[index].id: ${walletList[index].id}, name: ${walletList[index].name}');
             return _buildWalletItem(
               walletList[index],
               walletBalanceMap[walletList[index].id] ?? AnimatedBalanceData(0, 0),
@@ -338,8 +343,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildEditableWalletList(Map<int, AnimatedBalanceData> walletBalanceMap) {
-    if (_viewModel.tempWalletList.isEmpty) {
-      _viewModel.tempWalletList = List.from(_viewModel.walletItemList);
+    if (_viewModel.tempWalletOrder.isEmpty) {
+      _viewModel.tempWalletOrder = List.from(_viewModel.walletItemList);
     }
     return ReorderableListView.builder(
       shrinkWrap: true,
@@ -361,26 +366,26 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           child: child,
         );
       },
-      itemCount: _viewModel.tempWalletList.length,
+      itemCount: _viewModel.tempWalletOrder.length,
       onReorder: (oldIndex, newIndex) {
-        setState(() {
-          final item = _viewModel.tempWalletList.removeAt(oldIndex);
-          _viewModel.tempWalletList.insert(newIndex > oldIndex ? newIndex - 1 : newIndex, item);
-        });
+        _viewModel.reorderTempWalletOrder(oldIndex, newIndex);
       },
       itemBuilder: (context, index) {
         debugPrint(
-            'index::: $index, walletId: ${_viewModel.tempWalletList[index].id} _viewModel.starredWalletIds.contains(walletList[index].id) ${_viewModel.tempStarredWalletIds.contains(_viewModel.tempWalletList[index].id)}');
+            'index::: $index, walletId: ${_viewModel.tempWalletOrder[index]} _viewModel.starredWalletIds.contains(walletList[index].id) ${_viewModel.starredWalletIds.contains(_viewModel.tempWalletOrder[index])}');
+        debugPrint('_viewModel.tempWalletOrder[index],: ${_viewModel.tempWalletOrder[index]}');
+        WalletListItemBase wallet = _viewModel.walletItemList.firstWhere(
+          (w) => w.id == _viewModel.tempWalletOrder[index],
+        );
         return KeyedSubtree(
-          key: ValueKey(_viewModel.tempWalletList[index].id),
+          key: ValueKey(_viewModel.tempWalletOrder[index]),
           child: _buildWalletItem(
-            _viewModel.tempWalletList[index],
-            walletBalanceMap[_viewModel.tempWalletList[index].id] ?? AnimatedBalanceData(0, 0),
+            wallet,
+            walletBalanceMap[_viewModel.tempWalletOrder[index]] ?? AnimatedBalanceData(0, 0),
             false,
             index == 0,
             isEditMode: true,
-            isStarred:
-                _viewModel.tempStarredWalletIds.contains(_viewModel.tempWalletList[index].id),
+            isStarred: _viewModel.tempStarredWalletIds.contains(wallet.id),
             index: index,
           ),
         );
@@ -468,28 +473,24 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   AppBar _buildAppBar(BuildContext context) {
+    bool isEditMode = _viewModel.isEditMode;
     return CoconutAppBar.build(
-      title: _isEditMode ? t.wallet_list.edit.wallet_list : '',
+      title: isEditMode ? t.wallet_list.edit.wallet_list : '',
       context: context,
       onBackPressed: () {
-        if (_isEditMode) {
-          setState(() {
-            _isEditMode = false;
-          });
+        if (isEditMode) {
+          _viewModel.setEditMode(false);
         } else {
           Navigator.pop(context);
         }
       },
       actionButtonList: [
-        if (!_isEditMode)
+        if (!isEditMode)
           CoconutUnderlinedButton(
             text: t.edit,
             textStyle: CoconutTypography.body2_14,
             onTap: () {
-              setState(() {
-                _isEditMode = true;
-              });
-              _viewModel.cacheCurrentWalletsState();
+              _viewModel.setEditMode(true);
             },
           ),
       ],

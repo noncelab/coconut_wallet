@@ -29,8 +29,10 @@ class WalletHomeViewModel extends ChangeNotifier {
   Map<int, dynamic> _fakeBalanceMap = {};
   int? _fakeBalanceTotalAmount;
   bool _isFirstLoaded = false;
+  bool _isEmptyStarredWallet = false; // 즐겨찾기 설정된 지갑이 없는지 여부
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
+  List<WalletListItemBase> starredWallets = [];
 
   WalletHomeViewModel(
     this._walletProvider,
@@ -53,11 +55,38 @@ class WalletHomeViewModel extends ChangeNotifier {
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
   }
 
+  Future<void> loadStarredWallets() async {
+    final ids = _preferenceProvider.starredWalletIds;
+    final wallets =
+        ids.map((id) => _walletProvider.getWalletById(id)).whereType<WalletListItemBase>().toList();
+    starredWallets = wallets;
+    debugPrint('starredWalletItem: 2 $starredWalletList');
+    _isEmptyStarredWallet = wallets.isEmpty;
+    notifyListeners();
+  }
+
+  bool get isStarredEmpty => _isEmptyStarredWallet;
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
-  List<WalletListItemBase> get walletItemList => _walletProvider.walletItemListNotifier.value;
+  List<WalletListItemBase> get walletItemList {
+    // 지갑 목록을 가져오고, 순서가 설정되어 있다면 그 순서대로 정렬
+    // 홈에서는 즐겨찾기가 되어있는 지갑만 보여야 하기 때문에 필터링 작업도 수행
+    final walletList = _walletProvider.walletItemListNotifier.value;
+    final order = _preferenceProvider.walletOrder;
+
+    if (order.isEmpty) {
+      return walletList;
+    }
+
+    final walletMap = {for (var wallet in walletList) wallet.id: wallet};
+    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+    return orderedMap;
+  }
+
+  List<WalletListItemBase> get starredWalletList => starredWallets;
+
   bool? get isNetworkOn => _isNetworkOn;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
@@ -127,6 +156,12 @@ class WalletHomeViewModel extends ChangeNotifier {
     if (_fakeBalanceMap != _preferenceProvider.getFakeBalanceMap()) {
       // map이 변경되는 경우는 totalAmount가 변경되는 것과 관련이 없음
       _setFakeBlanceMap(_preferenceProvider.getFakeBalanceMap());
+    }
+
+    /// 지갑 즐겨찾기 변동 체크
+    if (starredWallets.map((w) => w.id).toList().toString() !=
+        _preferenceProvider.starredWalletIds.toString()) {
+      loadStarredWallets();
     }
 
     notifyListeners();

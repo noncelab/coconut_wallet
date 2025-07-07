@@ -2,11 +2,13 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final WalletPreferencesRepository _walletPreferencesRepository;
 
   /// 홈 화면 잔액 숨기기 on/off 여부
   late bool _isBalanceHidden;
@@ -27,7 +29,19 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _showOnlyUnusedAddresses;
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
 
-  PreferenceProvider() {
+  /// 지갑 순서
+  late List<int> _walletOrder;
+  List<int> get walletOrder => _walletOrder;
+
+  /// 지갑 즐겨찾기 목록
+  late List<int> _starredWalletIds;
+  List<int> get starredWalletIds => _starredWalletIds;
+
+  /// 총 잔액에서 제외할 지갑 목록
+  late List<int> _excludedFromTotalBalanceWalletIds;
+  List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
+
+  PreferenceProvider(this._walletPreferencesRepository) {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
@@ -35,6 +49,11 @@ class PreferenceProvider extends ChangeNotifier {
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
+    _walletOrder = _walletPreferencesRepository.getWalletOrder();
+    _starredWalletIds = _walletPreferencesRepository.getStarredWalletIds();
+    _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds();
+
+    debugPrint('_starredWalletIds: $_starredWalletIds');
   }
 
   /// 홈 화면 잔액 숨기기
@@ -122,5 +141,26 @@ class PreferenceProvider extends ChangeNotifier {
         map.map((key, value) => MapEntry(key.toString(), value));
     final String encoded = json.encode(stringKeyMap);
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
+  }
+
+  /// 지갑 순서 설정
+  Future<void> setWalletOrder(List<int> walletOrder) async {
+    _walletOrder = walletOrder;
+    await _walletPreferencesRepository.setWalletOrder(walletOrder);
+    notifyListeners();
+  }
+
+  /// 지갑 즐겨찾기 설정
+  Future<void> setStarredWalletIds(List<int> ids) async {
+    _starredWalletIds = ids;
+    await _walletPreferencesRepository.setStarredWalletIds(ids);
+    notifyListeners();
+  }
+
+  /// 총 잔액에서 제외할 지갑 설정
+  Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
+    _excludedFromTotalBalanceWalletIds = ids;
+    await _walletPreferencesRepository.setExcludedWalletIds(ids);
+    notifyListeners();
   }
 }

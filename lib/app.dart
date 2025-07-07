@@ -16,6 +16,7 @@ import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
@@ -125,6 +126,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider<SubscriptionRepository>(
           create: (context) => SubscriptionRepository(context.read<RealmManager>()),
         ),
+        Provider<WalletPreferencesRepository>(
+          create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
+        ),
 
         ChangeNotifierProvider(
             create: (context) => UtxoTagProvider(
@@ -137,7 +141,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
         /// main 에서만 사용하는 모델
         if (_appEntryFlow == AppEntryFlow.main) ...{
-          ChangeNotifierProvider(create: (_) => PreferenceProvider()),
+          ChangeNotifierProvider(
+              create: (context) => PreferenceProvider(
+                  Provider.of<WalletPreferencesRepository>(context, listen: false))),
           Provider(create: (_) => SendInfoProvider()),
           ChangeNotifierProvider<WalletProvider>(
             create: (context) {
