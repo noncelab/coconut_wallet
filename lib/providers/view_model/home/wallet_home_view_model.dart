@@ -160,7 +160,8 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     /// 지갑 즐겨찾기 변동 체크
     if (starredWallets.map((w) => w.id).toList().toString() !=
-        _preferenceProvider.starredWalletIds.toString()) {
+            _preferenceProvider.starredWalletIds.toString() &&
+        walletItemList.isNotEmpty) {
       loadStarredWallets();
     }
 
