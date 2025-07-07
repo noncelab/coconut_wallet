@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
 
 typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
 typedef BalanceGetter = int Function(int id);
@@ -56,11 +57,18 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   Future<void> loadStarredWallets() async {
+    if (_walletProvider.walletItemListNotifier.value.isEmpty) return;
+
     final ids = _preferenceProvider.starredWalletIds;
-    final wallets =
-        ids.map((id) => _walletProvider.getWalletById(id)).whereType<WalletListItemBase>().toList();
+
+    final wallets = ids
+        .map((id) =>
+            _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
+        .whereType<WalletListItemBase>()
+        .toList();
     starredWallets = wallets;
-    debugPrint('starredWalletItem: 2 $starredWalletList');
+    debugPrint('loadStarredWallets 4');
+
     _isEmptyStarredWallet = wallets.isEmpty;
     notifyListeners();
   }

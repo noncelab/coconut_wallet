@@ -49,11 +49,10 @@ class PreferenceProvider extends ChangeNotifier {
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
-    _walletOrder = _walletPreferencesRepository.getWalletOrder();
-    _starredWalletIds = _walletPreferencesRepository.getStarredWalletIds();
-    _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds();
-
-    debugPrint('_starredWalletIds: $_starredWalletIds');
+    _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
+    _starredWalletIds = _walletPreferencesRepository.getStarredWalletIds().toList();
+    _excludedFromTotalBalanceWalletIds =
+        _walletPreferencesRepository.getExcludedWalletIds().toList();
   }
 
   /// 홈 화면 잔액 숨기기
@@ -150,6 +149,12 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> removeWalletOrder(int walletId) async {
+    _walletOrder.remove(walletId);
+    await _walletPreferencesRepository.setWalletOrder(_walletOrder);
+    notifyListeners();
+  }
+
   /// 지갑 즐겨찾기 설정
   Future<void> setStarredWalletIds(List<int> ids) async {
     _starredWalletIds = ids;
@@ -157,10 +162,22 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> removeStarredWalletId(int walletId) async {
+    _starredWalletIds.remove(walletId);
+    await _walletPreferencesRepository.setStarredWalletIds(_starredWalletIds);
+    notifyListeners();
+  }
+
   /// 총 잔액에서 제외할 지갑 설정
   Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
     _excludedFromTotalBalanceWalletIds = ids;
     await _walletPreferencesRepository.setExcludedWalletIds(ids);
+    notifyListeners();
+  }
+
+  Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
+    _excludedFromTotalBalanceWalletIds.remove(walletId);
+    await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
     notifyListeners();
   }
 }

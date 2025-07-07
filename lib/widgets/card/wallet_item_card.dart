@@ -32,6 +32,7 @@ class WalletItemCard extends StatelessWidget {
   final bool? isExcludeFromTotalAmount;
   final bool isEditMode;
   final bool isStarred;
+  final bool isStarVisible;
   final ValueChanged<(bool, int)>? onPrimaryWalletChanged;
   final int? index;
 
@@ -54,6 +55,7 @@ class WalletItemCard extends StatelessWidget {
     this.isExcludeFromTotalAmount,
     this.isEditMode = false,
     this.isStarred = false,
+    this.isStarVisible = true,
     this.onPrimaryWalletChanged,
     this.index,
   });
@@ -117,12 +119,18 @@ class WalletItemCard extends StatelessWidget {
       child: Row(
         children: [
           if (isEditMode)
-            GestureDetector(
-              onTap: () => onPrimaryWalletChanged?.call((!isStarred, id)),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: SvgPicture.asset(
-                  'assets/svg/${isStarred ? 'star-filled' : 'star-outlined'}.svg',
+            Opacity(
+              opacity: isStarVisible ? 1 : 0,
+              child: GestureDetector(
+                onTap: () {
+                  if (!isStarVisible) return;
+                  onPrimaryWalletChanged?.call((!isStarred, id));
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SvgPicture.asset(
+                    'assets/svg/${isStarred ? 'star-filled' : 'star-outlined'}.svg',
+                  ),
                 ),
               ),
             ),

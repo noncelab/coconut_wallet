@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -72,8 +73,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           final walletListItem = data.item1;
           final walletBalanceMap = data.item3;
           final isEditMode = data.item6;
-          debugPrint(
-              'hasStarredChanged: ${viewModel.hasStarredChanged} hasORderChanged: ${viewModel.hasWalletOrderChanged}');
           return PopScope(
             canPop: isEditMode,
             onPopInvokedWithResult: (didPop, _) {
@@ -326,8 +325,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       delegate: SliverChildBuilderDelegate(
         (context, index) {
           if (index < walletList.length) {
-            debugPrint(
-                '1111 walletList[index].id: ${walletList[index].id}, name: ${walletList[index].name}');
             return _buildWalletItem(
               walletList[index],
               walletBalanceMap[walletList[index].id] ?? AnimatedBalanceData(0, 0),
@@ -371,9 +368,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         _viewModel.reorderTempWalletOrder(oldIndex, newIndex);
       },
       itemBuilder: (context, index) {
-        debugPrint(
-            'index::: $index, walletId: ${_viewModel.tempWalletOrder[index]} _viewModel.starredWalletIds.contains(walletList[index].id) ${_viewModel.starredWalletIds.contains(_viewModel.tempWalletOrder[index])}');
-        debugPrint('_viewModel.tempWalletOrder[index],: ${_viewModel.tempWalletOrder[index]}');
         WalletListItemBase wallet = _viewModel.walletItemList.firstWhere(
           (w) => w.id == _viewModel.tempWalletOrder[index],
         );
@@ -396,7 +390,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   Widget _buildWalletItem(WalletListItemBase wallet, AnimatedBalanceData animatedBalanceData,
       bool isLastItem, bool isFirstItem,
       {bool isEditMode = false, bool isStarred = false, int? index}) {
-    debugPrint('_buildWalletItem isStarred: $isStarred, id: ${wallet.id}, name: ${wallet.name}');
     return Column(
       children: [
         if (isEditMode) CoconutLayout.spacing_100h,
@@ -440,7 +433,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     if (walletItem.walletType == WalletType.multiSignature) {
       signers = (walletItem as MultisigWalletListItem).signers;
     }
-    debugPrint('isStared ::: $isStarred, id: $id, name: $name');
     return Selector<PreferenceProvider, bool>(
         selector: (_, viewModel) => viewModel.isBtcUnit,
         builder: (context, isBtcUnit, child) {
@@ -461,6 +453,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             isExcludeFromTotalAmount: true,
             isEditMode: isEditMode,
             isStarred: isStarred,
+            isStarVisible: isStarred ||
+                _viewModel.tempStarredWalletIds.length < kMaxStarLenght, // 즐겨찾기 제한 만큼 설정
             onPrimaryWalletChanged: (pair) {
               // pair: (bool isStarred, int walletId)
               vibrateExtraLight();
