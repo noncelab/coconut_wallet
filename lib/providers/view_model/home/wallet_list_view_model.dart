@@ -18,7 +18,7 @@ class WalletListViewModel extends ChangeNotifier {
   WalletProvider _walletProvider;
   final Stream<NodeSyncState> _syncNodeStateStream;
   late final ConnectivityProvider _connectivityProvider;
-  late final PreferenceProvider _preferenceProvider;
+  late PreferenceProvider _preferenceProvider;
   late bool? _isNetworkOn;
   Map<int, AnimatedBalanceData> _walletBalance = {};
 
@@ -43,8 +43,6 @@ class WalletListViewModel extends ChangeNotifier {
   bool _isEditMode = false;
   bool get isEditMode => _isEditMode;
 
-  List<int> _originalWalletOrder = [];
-
   WalletListViewModel(
     this._walletProvider,
     this._connectivityProvider,
@@ -60,6 +58,11 @@ class WalletListViewModel extends ChangeNotifier {
         .fetchWalletBalanceMap()
         .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
     _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalances);
+    _preferenceProvider.addListener(_onPreferenceChanged);
+  }
+
+  void _onPreferenceChanged() {
+    onPreferenceProviderUpdated();
   }
 
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
@@ -110,31 +113,26 @@ class WalletListViewModel extends ChangeNotifier {
           walletItemList.where((w) => _starredWalletIds.contains(w.id)).map((w) => w.id).toList();
 
       tempWalletOrder = walletItemList.map((w) => w.id).toList();
-      _originalWalletOrder = List.from(tempWalletOrder); // 편집 진입 시점의 순서 저장
     }
     notifyListeners();
   }
 
-  // void onPreferenceProviderUpdated() {
-  //   /// 지갑 순서 변경 체크
-  //   if (!const ListEquality().equals(_walletOrder, _preferenceProvider.walletOrder)) {
-  //     _walletOrder = _preferenceProvider.walletOrder;
-  //   }
+  void onPreferenceProviderUpdated() {
+    debugPrint('aaaaaaaaa');
 
-  //   /// 지갑 즐겨찾기 목록 변경 체크
-  //   if (!const SetEquality()
-  //       .equals(_starredWalletIds.toSet(), _preferenceProvider.starredWalletIds.toSet())) {
-  //     _starredWalletIds = _preferenceProvider.starredWalletIds;
-  //   }
+    /// 지갑 순서 변경 체크
+    if (!const ListEquality().equals(_walletOrder, _preferenceProvider.walletOrder)) {
+      _walletOrder = _preferenceProvider.walletOrder;
+    }
 
-  //   /// 총 잔액에서 제외할 지갑 목록 변경 체크
-  //   if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
-  //       _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
-  //     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
-  //   }
+    /// 총 잔액에서 제외할 지갑 목록 변경 체크
+    if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
+        _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
+      _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+    }
 
-  //   notifyListeners();
-  // }
+    notifyListeners();
+  }
 
   Future<void> updateWalletBalances() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
@@ -235,9 +233,19 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updatePreferenceProvider(PreferenceProvider preferenceProvider) {
+    if (_preferenceProvider != preferenceProvider) {
+      _preferenceProvider.removeListener(_onPreferenceChanged);
+      _preferenceProvider = preferenceProvider;
+      _preferenceProvider.addListener(_onPreferenceChanged);
+      onPreferenceProviderUpdated();
+    }
+  }
+
   @override
   void dispose() {
     _syncNodeStateSubscription?.cancel();
+    _preferenceProvider.removeListener(_onPreferenceChanged);
     super.dispose();
   }
 }

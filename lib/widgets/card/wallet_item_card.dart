@@ -84,7 +84,7 @@ class WalletItemCard extends StatelessWidget {
             title: '',
             titlePadding: EdgeInsets.zero,
             context: context,
-            child: const WalletItemSettingBottomSheet());
+            child: WalletItemSettingBottomSheet(id: id));
       },
       // ** gradient 사용안할수도 있음**
       // Coconut Vault에서 가져온 멀티시그 지갑 => 테두리 그라디언트 적용

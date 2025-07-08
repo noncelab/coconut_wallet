@@ -42,30 +42,37 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<WalletProvider, ConnectivityProvider, WalletListViewModel>(
+    return ChangeNotifierProxyProvider3<WalletProvider, ConnectivityProvider, PreferenceProvider,
+        WalletListViewModel>(
       create: (_) => _createViewModel(),
-      update: (BuildContext context, WalletProvider walletProvider,
-          ConnectivityProvider connectivityProvider, WalletListViewModel? previous) {
+      update: (BuildContext context,
+          WalletProvider walletProvider,
+          ConnectivityProvider connectivityProvider,
+          PreferenceProvider preferenceProvider,
+          WalletListViewModel? previous) {
         previous ??= _createViewModel();
 
         if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
           previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
         }
 
+        previous.onPreferenceProviderUpdated();
+
         // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
         return previous..onWalletProviderUpdated(walletProvider);
       },
       child: Selector<
           WalletListViewModel,
-          Tuple6<List<WalletListItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>,
-              List<int>, bool>>(
-        selector: (_, vm) => Tuple6(
+          Tuple7<List<WalletListItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>,
+              List<int>, bool, List<int>>>(
+        selector: (_, vm) => Tuple7(
           vm.walletItemList,
           vm.isNetworkOn ?? false,
           vm.walletBalanceMap,
           vm.tempStarredWalletIds,
           vm.tempWalletOrder,
           vm.isEditMode,
+          vm.walletOrder,
         ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletListViewModel>(context, listen: false);
@@ -73,6 +80,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           final walletListItem = data.item1;
           final walletBalanceMap = data.item3;
           final isEditMode = data.item6;
+          final walletOrder = data.item7;
+
           return PopScope(
             canPop: isEditMode,
             onPopInvokedWithResult: (didPop, _) {
@@ -120,7 +129,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                 // _buildPadding(isOffline),
                                 _buildTotalAmount(walletBalanceMap),
                                 // 지갑 목록
-                                _buildWalletList(walletListItem, walletBalanceMap),
+                                _buildWalletList(walletListItem, walletBalanceMap, walletOrder),
                               ]),
                           // _buildOfflineWarningBar(context, isOffline)
                         ],
@@ -319,8 +328,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildWalletList(
-      List<WalletListItemBase> walletList, Map<int, AnimatedBalanceData> walletBalanceMap) {
+  Widget _buildWalletList(List<WalletListItemBase> walletList,
+      Map<int, AnimatedBalanceData> walletBalanceMap, List<int> walletOrder) {
+    walletList.sort((a, b) => walletOrder.indexOf(a.id).compareTo(walletOrder.indexOf(b.id)));
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {

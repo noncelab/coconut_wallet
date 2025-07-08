@@ -3,33 +3,32 @@ import 'dart:math';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class WalletItemSettingBottomSheet extends StatefulWidget {
-  const WalletItemSettingBottomSheet({super.key});
+  final int id;
+
+  const WalletItemSettingBottomSheet({super.key, required this.id});
 
   @override
   State<WalletItemSettingBottomSheet> createState() => _WalletItemSettingBottomSheetState();
 }
 
 class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSheet> {
-  late final WalletProvider _walletProvider;
   late final PreferenceProvider _preferenceProvider;
   late bool _isPrimaryWallet;
   late bool _isExcludedFromTotalAmount;
+
+  final GlobalKey<CoconutShakeAnimationState> _primaryWalletShakeKey =
+      GlobalKey<CoconutShakeAnimationState>();
 
   @override
   void initState() {
     super.initState();
     _preferenceProvider = context.read<PreferenceProvider>();
-    _walletProvider = Provider.of<WalletProvider>(context, listen: false);
-    _isPrimaryWallet = false;
+    _isPrimaryWallet = _preferenceProvider.walletOrder.first == widget.id;
     _isExcludedFromTotalAmount = false;
   }
 
@@ -50,10 +49,20 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
             t.wallet_list.settings.primary_wallet_description,
             _isPrimaryWallet,
             (bool value) {
+              if (!value) {
+                _primaryWalletShakeKey.currentState?.shake();
+                return;
+              }
               setState(() {
                 _isPrimaryWallet = value;
               });
+              final updatedOrder = [
+                widget.id,
+                ..._preferenceProvider.walletOrder.where((id) => id != widget.id),
+              ];
+              _preferenceProvider.setWalletOrder(updatedOrder);
             },
+            enableShakeAnimation: true,
           ),
           CoconutLayout.spacing_400h,
           const Divider(color: CoconutColors.gray700, height: 1),
@@ -72,7 +81,8 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
   }
 
   Widget _buildToggleWidget(
-      String title, String description, bool value, ValueChanged<bool> onChanged) {
+      String title, String description, bool value, ValueChanged<bool> onChanged,
+      {bool enableShakeAnimation = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -86,17 +96,38 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
             ),
           ],
         ),
-        CupertinoSwitch(
-          activeColor: CoconutColors.gray100,
-          trackColor: CoconutColors.gray600,
-          thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
-          value: value,
-          onChanged: (bool newValue) {
-            setState(() {
-              onChanged(newValue);
-            });
-          },
-        ),
+        enableShakeAnimation
+            ? CoconutShakeAnimation(
+                key: _primaryWalletShakeKey,
+                shakeOffset: 3,
+                shakeAmount: 2,
+                direction: Axis.horizontal,
+                curve: Curves.linear,
+                child: CoconutSwitch(
+                  isOn: value,
+                  activeColor: CoconutColors.gray100,
+                  thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
+                  trackColor: CoconutColors.gray600,
+                  scale: 0.8,
+                  onChanged: (bool newValue) {
+                    setState(() {
+                      onChanged(newValue);
+                    });
+                  },
+                ),
+              )
+            : CoconutSwitch(
+                isOn: value,
+                activeColor: CoconutColors.gray100,
+                thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
+                trackColor: CoconutColors.gray600,
+                scale: 0.8,
+                onChanged: (bool newValue) {
+                  setState(() {
+                    onChanged(newValue);
+                  });
+                },
+              ),
       ],
     );
   }
