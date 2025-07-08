@@ -120,6 +120,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           if (viewModel.isWalletListChanged(_previousWalletList, walletItem, walletBalanceMap)) {
             _handleWalletListUpdate(walletItem);
           }
+
           return PopScope(
             canPop: false,
             onPopInvokedWithResult: onPopInvoked,
@@ -142,7 +143,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             onRefresh: viewModel.updateWalletBalances,
                           ),
                           _buildLoadingIndicator(viewModel),
-                          _buildHeader(isBalanceHidden, viewModel.getFakeTotalBalance()),
+                          _buildHeader(isBalanceHidden, viewModel.getFakeTotalBalance(),
+                              shouldShowLoadingIndicator),
                           if (!shouldShowLoadingIndicator)
                             SliverToBoxAdapter(
                                 child: Column(
@@ -153,7 +155,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 ]
                               ],
                             )),
-                          if (_isFirstLoad && walletItem.isNotEmpty) ...[
+                          if (shouldShowLoadingIndicator && walletItem.isEmpty) ...[
                             // 처음 로딩시 스켈레톤
                             _buildBodySkeleton(),
                           ],
@@ -311,7 +313,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           }
         }
       }
-
       _previousWalletList = List.from(walletList);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -322,9 +323,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
   }
 
-  Widget _buildHeader(bool isBalanceHidden, int? fakeBalanceTotalAmount) {
+  Widget _buildHeader(
+      bool isBalanceHidden, int? fakeBalanceTotalAmount, bool shouldShowLoadingIndicator) {
     // 처음 로딩시 스켈레톤
-    if (_isFirstLoad && _viewModel.walletItemList.isNotEmpty) {
+    if (shouldShowLoadingIndicator && _viewModel.walletItemList.isEmpty) {
       return SliverToBoxAdapter(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

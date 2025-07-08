@@ -70,7 +70,6 @@ class WalletHomeViewModel extends ChangeNotifier {
     // 홈에서는 즐겨찾기가 되어있는 지갑만 보여야 하기 때문에 필터링 작업도 수행
     final walletList = _walletProvider.walletItemListNotifier.value;
     final order = _preferenceProvider.walletOrder;
-
     if (order.isEmpty) {
       return walletList;
     }
@@ -181,7 +180,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   void clearFakeBlancTotalAmount() {
     _preferenceProvider.clearFakeBalanceTotalAmount();
-    _preferenceProvider.changeIsFakeBalanceActive(false); // 가짜잔액 초기화시 비활성화도 같이 수행(홈에서만)
+    _preferenceProvider.changeIsFakeBalanceActive(false); // 가짜잔액 초기화시 비활성화도 같이 수행(Wallet_home 에서만)
     notifyListeners();
   }
 
