@@ -371,14 +371,34 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             color: CoconutColors.black,
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    FiatPrice(
-                      satoshiAmount: 100000000, // TODO : fiatPrice
-                      textStyle: CoconutTypography.body3_12_Bold.setColor(CoconutColors.gray350),
-                    ),
-                  ],
+                Visibility(
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  visible: !isBalanceHidden,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Selector<WalletHomeViewModel, List<int>>(
+                        selector: (_, viewModel) => viewModel.excludedFromTotalBalanceWalletIds,
+                        builder: (context, excludedIds, child) {
+                          final balance = Map.fromEntries(
+                            _viewModel.walletBalanceMap.entries.where(
+                              (entry) => !excludedIds.contains(entry.key),
+                            ),
+                          )
+                              .values
+                              .map((e) => e.current)
+                              .fold(0, (current, element) => current + element);
+                          return FiatPrice(
+                            satoshiAmount: balance, // TODO : fiatPrice
+                            textStyle:
+                                CoconutTypography.body3_12_Bold.setColor(CoconutColors.gray350),
+                          );
+                        },
+                      )
+                    ],
+                  ),
                 ),
                 Selector<PreferenceProvider, bool>(
                   selector: (_, viewModel) => viewModel.isBtcUnit,
@@ -404,11 +424,31 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                           CoconutColors.gray600,
                                         ),
                                       )
-                                : AnimatedBalance(
-                                    prevValue: 0, // TODO: previous balance
-                                    value: 123456789, // TODO: current balance
-                                    currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                                    textStyle: CoconutTypography.heading3_21_NumberBold,
+                                : Selector<WalletHomeViewModel, List<int>>(
+                                    selector: (_, viewModel) =>
+                                        viewModel.excludedFromTotalBalanceWalletIds,
+                                    builder: (context, excludedIds, child) {
+                                      // 총 잔액에서 숨기기 설정된 지갑 ID는 합에서 제외
+                                      final filteredBalanceMap = Map.fromEntries(
+                                        _viewModel.walletBalanceMap.entries.where(
+                                          (entry) => !excludedIds.contains(entry.key),
+                                        ),
+                                      );
+
+                                      final prevValue = filteredBalanceMap.values
+                                          .map((e) => e.previous)
+                                          .fold(0, (prev, element) => prev + element);
+
+                                      final currentValue = filteredBalanceMap.values
+                                          .map((e) => e.current)
+                                          .fold(0, (current, element) => current + element);
+                                      return AnimatedBalance(
+                                        prevValue: prevValue,
+                                        value: currentValue,
+                                        currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                                        textStyle: CoconutTypography.heading3_21_NumberBold,
+                                      );
+                                    },
                                   ),
                             const SizedBox(width: 4.0),
                             if (!isBalanceHidden || fakeBalanceTotalAmount != null)

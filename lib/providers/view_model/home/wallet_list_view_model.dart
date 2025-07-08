@@ -118,8 +118,6 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void onPreferenceProviderUpdated() {
-    debugPrint('aaaaaaaaa');
-
     /// 지갑 순서 변경 체크
     if (!const ListEquality().equals(_walletOrder, _preferenceProvider.walletOrder)) {
       _walletOrder = _preferenceProvider.walletOrder;

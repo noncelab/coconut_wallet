@@ -29,7 +29,8 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
     super.initState();
     _preferenceProvider = context.read<PreferenceProvider>();
     _isPrimaryWallet = _preferenceProvider.walletOrder.first == widget.id;
-    _isExcludedFromTotalAmount = false;
+    _isExcludedFromTotalAmount =
+        _preferenceProvider.excludedFromTotalBalanceWalletIds.contains(widget.id);
   }
 
   @override

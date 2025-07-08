@@ -66,6 +66,7 @@ class WalletProvider extends ChangeNotifier {
     walletItemListNotifier = ValueNotifier(_walletItemList);
 
     _loadWalletListFromDB().then((_) {
+      _migrateWalletPreferences(); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
       notifyListeners();
     });
   }
@@ -216,7 +217,7 @@ class WalletProvider extends ChangeNotifier {
     await _addressRepository.ensureAddressesInit(walletItemBase: newItem);
 
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
-    updatedList.insert(0, newItem); // wallet-list의 지갑 정렬 방식을 최신순으로 하기 위함
+    updatedList.add(newItem); // 새로 추가된 지갑을 후순으로 변경 -> 대표 지갑 변경되는걸 막기 위함
     _setWalletItemList(updatedList);
 
     _saveWalletCount(updatedList.length);
@@ -371,6 +372,21 @@ class WalletProvider extends ChangeNotifier {
       newAddresses: newAddresses,
       isChange: isChange,
     );
+  }
+
+  Future<void> _migrateWalletPreferences() async {
+    if (walletItemList.isEmpty) return;
+
+    var walletOrder = _preferenceProvider.walletOrder;
+    var starredWalletIds = _preferenceProvider.starredWalletIds;
+    if (walletOrder.isEmpty) {
+      walletOrder = List.from(walletItemList.map((w) => w.id));
+      await _preferenceProvider.setWalletOrder(walletOrder);
+    }
+    if (starredWalletIds.isEmpty) {
+      starredWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
+      await _preferenceProvider.setStarredWalletIds(starredWalletIds);
+    }
   }
 
   @override

@@ -62,20 +62,29 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> _addToWalletOrder(int walletId) async {
+    final walletOrder = _preferenceProvider.walletOrder.toList();
+    if (!walletOrder.contains(walletId)) {
+      walletOrder.add(walletId);
+
+      await _preferenceProvider.setWalletOrder(walletOrder);
+    }
+  }
+
   Future<void> _addToStarredWallets(int walletId) async {
     final starredWallets = _preferenceProvider.starredWalletIds.toList();
 
     // 즐겨찾기된 지갑이 5개이상이면 등록안함
-    if (starredWallets.length <= kMaxStarLenght && !starredWallets.contains(walletId)) {
+    if (starredWallets.length < kMaxStarLenght && !starredWallets.contains(walletId)) {
       starredWallets.add(walletId);
       await _preferenceProvider.setStarredWalletIds(starredWallets);
-      debugPrint('_addToStarredWallets: ${_preferenceProvider.starredWalletIds}');
     }
   }
 
   Future<ResultOfSyncFromVault> addCoconutVaultWallet(WatchOnlyWallet watchOnlyWallet) async {
     return await _walletProvider.syncFromCoconutVault(watchOnlyWallet).then((result) {
       if (result.result == WalletSyncResult.newWalletAdded) {
+        _addToWalletOrder(result.walletId!);
         _addToStarredWallets(result.walletId!);
       }
       return result;
@@ -88,6 +97,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     final wallet = _walletAddService.createKeystoneWallet(ur, name);
     return await _walletProvider.syncFromThirdParty(wallet).then((result) {
       if (result.result == WalletSyncResult.newWalletAdded) {
+        _addToWalletOrder(result.walletId!);
         _addToStarredWallets(result.walletId!);
       }
       return result;
@@ -100,6 +110,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     final wallet = _walletAddService.createJadeWallet(ur, name);
     return await _walletProvider.syncFromThirdParty(wallet).then((result) {
       if (result.result == WalletSyncResult.newWalletAdded) {
+        _addToWalletOrder(result.walletId!);
         _addToStarredWallets(result.walletId!);
       }
       return result;
@@ -112,6 +123,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     final wallet = _walletAddService.createSeedSignerWallet(descriptor, name);
     return await _walletProvider.syncFromThirdParty(wallet).then((result) {
       if (result.result == WalletSyncResult.newWalletAdded) {
+        _addToWalletOrder(result.walletId!);
         _addToStarredWallets(result.walletId!);
       }
       return result;

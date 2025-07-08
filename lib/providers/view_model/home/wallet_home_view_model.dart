@@ -35,6 +35,9 @@ class WalletHomeViewModel extends ChangeNotifier {
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
   List<WalletListItemBase> starredWallets = [];
 
+  late List<int> _excludedFromTotalBalanceWalletIds = [];
+  List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
+
   WalletHomeViewModel(
     this._walletProvider,
     this._preferenceProvider,
@@ -54,22 +57,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     _isBalanceHidden = _preferenceProvider.isBalanceHidden;
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
-  }
-
-  Future<void> loadStarredWallets() async {
-    if (_walletProvider.walletItemListNotifier.value.isEmpty) return;
-
-    final ids = _preferenceProvider.starredWalletIds;
-
-    final wallets = ids
-        .map((id) =>
-            _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
-        .whereType<WalletListItemBase>()
-        .toList();
-    starredWallets = wallets;
-
-    _isEmptyStarredWallet = wallets.isEmpty;
-    notifyListeners();
+    _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
   }
 
   bool get isStarredEmpty => _isEmptyStarredWallet;
@@ -172,6 +160,11 @@ class WalletHomeViewModel extends ChangeNotifier {
       loadStarredWallets();
     }
 
+    /// 총 잔액에서 제외할 지갑 목록 변경 체크
+    if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
+        _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
+      _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+    }
     notifyListeners();
   }
 
@@ -227,6 +220,22 @@ class WalletHomeViewModel extends ChangeNotifier {
     });
 
     return walletListChanged || balanceChanged;
+  }
+
+  Future<void> loadStarredWallets() async {
+    if (_walletProvider.walletItemListNotifier.value.isEmpty) return;
+
+    final ids = _preferenceProvider.starredWalletIds;
+
+    final wallets = ids
+        .map((id) =>
+            _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
+        .whereType<WalletListItemBase>()
+        .toList();
+    starredWallets = wallets;
+
+    _isEmptyStarredWallet = wallets.isEmpty;
+    notifyListeners();
   }
 
   @override
