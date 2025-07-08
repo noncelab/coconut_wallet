@@ -29,7 +29,7 @@ class WalletItemCard extends StatelessWidget {
   final Color? backgroundColor;
   final Color? pressedColor;
   final bool? isPrimaryWallet;
-  final bool? isExcludeFromTotalAmount;
+  final bool? isExcludeFromTotalBalance;
   final bool isEditMode;
   final bool isStarred;
   final bool isStarVisible;
@@ -52,7 +52,7 @@ class WalletItemCard extends StatelessWidget {
     this.backgroundColor,
     this.pressedColor,
     this.isPrimaryWallet,
-    this.isExcludeFromTotalAmount,
+    this.isExcludeFromTotalBalance,
     this.isEditMode = false,
     this.isStarred = false,
     this.isStarVisible = true,
@@ -204,7 +204,7 @@ class WalletItemCard extends StatelessWidget {
                         ' • ${t.wallet_list.primary_wallet}',
                         style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
                       ),
-                    if (isExcludeFromTotalAmount == true)
+                    if (isExcludeFromTotalBalance == true)
                       Text(
                         isPrimaryWallet == true
                             ? ' | ${t.wallet_list.exclude_from_total_amount}'

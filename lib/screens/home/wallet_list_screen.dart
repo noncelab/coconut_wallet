@@ -443,9 +443,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     if (walletItem.walletType == WalletType.multiSignature) {
       signers = (walletItem as MultisigWalletListItem).signers;
     }
-    return Selector<PreferenceProvider, bool>(
-        selector: (_, viewModel) => viewModel.isBtcUnit,
-        builder: (context, isBtcUnit, child) {
+    return Selector<PreferenceProvider, Tuple2<bool, List<int>>>(
+        selector: (_, viewModel) =>
+            Tuple2(viewModel.isBtcUnit, viewModel.excludedFromTotalBalanceWalletIds),
+        builder: (context, data, child) {
+          bool isBtcUnit = data.item1;
+          bool isExludedFromTotalBalance = data.item2.contains(id);
+
           return WalletItemCard(
             key: key,
             id: id,
@@ -460,7 +464,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
             backgroundColor: CoconutColors.black,
             isPrimaryWallet: isFirstItem,
-            isExcludeFromTotalAmount: true,
+            isExcludeFromTotalBalance: isExludedFromTotalBalance,
             isEditMode: isEditMode,
             isStarred: isStarred,
             isStarVisible: isStarred ||

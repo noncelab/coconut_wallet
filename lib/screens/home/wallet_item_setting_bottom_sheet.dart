@@ -68,13 +68,22 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
           const Divider(color: CoconutColors.gray700, height: 1),
           CoconutLayout.spacing_400h,
           _buildToggleWidget(
-              t.wallet_list.settings.exclude_from_total_amount,
-              t.wallet_list.settings.exclude_from_total_amount_description,
-              _isExcludedFromTotalAmount, (bool value) {
-            setState(() {
-              _isExcludedFromTotalAmount = value;
-            });
-          })
+            t.wallet_list.settings.exclude_from_total_amount,
+            t.wallet_list.settings.exclude_from_total_amount_description,
+            _isExcludedFromTotalAmount,
+            (bool value) {
+              setState(() {
+                _isExcludedFromTotalAmount = value;
+              });
+              List<int> prevExcludedIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+              if (value && !prevExcludedIds.contains(widget.id)) {
+                _preferenceProvider
+                    .setExcludedFromTotalBalanceWalletIds([...prevExcludedIds, widget.id]);
+              } else if (!value && prevExcludedIds.contains(widget.id)) {
+                _preferenceProvider.removeExcludedFromTotalBalanceWalletId(widget.id);
+              }
+            },
+          )
         ],
       ),
     );
