@@ -91,8 +91,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       },
       child: Selector<
           WalletHomeViewModel,
-          Tuple7<List<WalletListItemBase>, List<WalletListItemBase>, bool, bool,
-              Map<int, AnimatedBalanceData>, Tuple2<int?, Map<int, dynamic>>, bool>>(
+          Tuple7<
+              List<WalletListItemBase>,
+              List<WalletListItemBase>,
+              bool,
+              bool,
+              Map<int, AnimatedBalanceData>,
+              Tuple2<int?, Map<int, dynamic>>,
+              List<WalletListItemBase>>>(
         selector: (_, vm) => Tuple7(
             vm.walletItemList,
             vm.starredWalletList,
@@ -100,7 +106,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             vm.shouldShowLoadingIndicator,
             vm.walletBalanceMap,
             Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
-            vm.isStarredEmpty),
+            vm.starredWallets),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
 
@@ -109,12 +115,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           final isBalanceHidden = data.item3;
           final shouldShowLoadingIndicator = data.item4;
           final walletBalanceMap = data.item5;
-          final isStarredEmpty = data.item7;
+          final starredWallets = data.item7;
 
           if (viewModel.isWalletListChanged(_previousWalletList, walletItem, walletBalanceMap)) {
             _handleWalletListUpdate(walletItem);
           }
-
           return PopScope(
             canPop: false,
             onPopInvokedWithResult: onPopInvoked,
@@ -158,7 +163,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             // 전체보기 위젯
                             _buildViewAll(walletItem.length),
 
-                            if (!isStarredEmpty)
+                            if (starredWallets.isNotEmpty)
                               // 즐겨찾기된 지갑 목록
                               _buildWalletList(
                                 walletItem,

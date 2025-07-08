@@ -232,9 +232,11 @@ class WalletHomeViewModel extends ChangeNotifier {
             _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
         .whereType<WalletListItemBase>()
         .toList();
+
     starredWallets = wallets;
 
     _isEmptyStarredWallet = wallets.isEmpty;
+
     notifyListeners();
   }
 
