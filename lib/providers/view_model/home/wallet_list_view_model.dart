@@ -226,7 +226,7 @@ class WalletListViewModel extends ChangeNotifier {
 
   bool get hasWalletOrderChanged => !const ListEquality().equals(
         tempWalletOrder,
-        _originalWalletOrder,
+        _preferenceProvider.walletOrder,
       );
 
   void reorderTempWalletOrder(int oldIndex, int newIndex) {

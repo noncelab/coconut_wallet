@@ -455,10 +455,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             isStarred: isStarred,
             isStarVisible: isStarred ||
                 _viewModel.tempStarredWalletIds.length < kMaxStarLenght, // 즐겨찾기 제한 만큼 설정
-            onPrimaryWalletChanged: (pair) {
+            onTapStar: (pair) {
               // pair: (bool isStarred, int walletId)
               vibrateExtraLight();
-              debugPrint('${pair.$1}, ${pair.$2}');
               _viewModel.toggleTempStarred(pair.$2);
             },
             index: index,

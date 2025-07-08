@@ -33,7 +33,7 @@ class WalletItemCard extends StatelessWidget {
   final bool isEditMode;
   final bool isStarred;
   final bool isStarVisible;
-  final ValueChanged<(bool, int)>? onPrimaryWalletChanged;
+  final ValueChanged<(bool, int)>? onTapStar;
   final int? index;
 
   const WalletItemCard({
@@ -56,7 +56,7 @@ class WalletItemCard extends StatelessWidget {
     this.isEditMode = false,
     this.isStarred = false,
     this.isStarVisible = true,
-    this.onPrimaryWalletChanged,
+    this.onTapStar,
     this.index,
   });
 
@@ -65,10 +65,9 @@ class WalletItemCard extends StatelessWidget {
     final displayedFakeBalance = currentUnit.displayBitcoinAmount(fakeBalance);
     final isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
     if (isEditMode) {
-      return _buildWalletItemContent(displayedFakeBalance, isEditMode: true,
-          onPrimaryWalletChanged: (pair) {
+      return _buildWalletItemContent(displayedFakeBalance, isEditMode: true, onTapStar: (pair) {
         if (isPrimaryWallet != null) {
-          onPrimaryWalletChanged?.call(pair);
+          onTapStar?.call(pair);
         }
       }, index: index);
     }
@@ -111,7 +110,7 @@ class WalletItemCard extends StatelessWidget {
   Widget _buildWalletItemContent(
     String displayFakeBalance, {
     bool isEditMode = false,
-    ValueChanged<(bool, int)>? onPrimaryWalletChanged,
+    ValueChanged<(bool, int)>? onTapStar,
     int? index,
   }) {
     return Container(
@@ -124,7 +123,7 @@ class WalletItemCard extends StatelessWidget {
               child: GestureDetector(
                 onTap: () {
                   if (!isStarVisible) return;
-                  onPrimaryWalletChanged?.call((!isStarred, id));
+                  onTapStar?.call((!isStarred, id));
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),

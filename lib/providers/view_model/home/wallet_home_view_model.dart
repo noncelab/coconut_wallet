@@ -67,7 +67,6 @@ class WalletHomeViewModel extends ChangeNotifier {
         .whereType<WalletListItemBase>()
         .toList();
     starredWallets = wallets;
-    debugPrint('loadStarredWallets 4');
 
     _isEmptyStarredWallet = wallets.isEmpty;
     notifyListeners();
