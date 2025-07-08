@@ -259,8 +259,13 @@ class _ScriptSyncTestSetup {
       height: 0,
       txHash: testData.rbfTx!.transactionHash,
     );
+    final txHistoryRes = GetTxHistoryRes(
+      height: 0,
+      txHash: testData.mockTx.transactionHash,
+    );
 
-    when(electrumService.getHistory(any, addressA)).thenAnswer((_) async => [rbfTxHistoryRes]);
+    when(electrumService.getHistory(any, addressA))
+        .thenAnswer((_) async => [txHistoryRes, rbfTxHistoryRes]);
     when(electrumService.getHistory(any, addressB)).thenAnswer((_) async => [rbfTxHistoryRes]);
 
     when(electrumService.getTransaction(testData.rbfTx!.transactionHash))

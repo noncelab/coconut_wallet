@@ -125,6 +125,16 @@ class _ScriptSyncTestVerifier {
     expect(walletBTxList[1].transactionHash,
         anyOf(testData.mockTx.transactionHash, testData.cpfpTx!.transactionHash),
         reason: 'CPFP 트랜잭션 해시가 일치해야 합니다.');
+
+    final walletBUtxoList =
+        ScriptSyncServiceMock.utxoRepository.getUtxoStateList(testData.walletB.id);
+    expect(walletBUtxoList.length, 2, reason: 'CPFP 후 지갑 B에 2개의 UTXO가 있어야 합니다.');
+
+    final walletAUtxoList =
+        ScriptSyncServiceMock.utxoRepository.getUtxoStateList(testData.walletA.id);
+    final outgoingUtxos = walletAUtxoList.where((utxo) => utxo.status == UtxoStatus.outgoing);
+    expect(walletAUtxoList.length, 1, reason: 'CPFP 후 지갑 A에 1개의 Outgoing UTXO가 있어야 합니다.');
+    expect(outgoingUtxos.length, 1, reason: 'A지갑에서는 사용한 UTXO가 Outgoing 상태여야 합니다.');
   }
 
   static Future<void> verifyRbfProcessedAndCpfpRemoved(_ScriptSyncTestData testData) async {
@@ -151,14 +161,14 @@ class _ScriptSyncTestVerifier {
     // // B 지갑의 CPFP 트랜잭션이 제거되어야 함
     final cpfpTxExists =
         walletBTxList.any((tx) => tx.transactionHash == testData.cpfpTx!.transactionHash);
-    expect(cpfpTxExists, false,
-        reason: 'CPFP 트랜잭션은 부모 트랜잭션(초기 트랜잭션)이 RBF로 대체되면서 제거되어야 합니다. 이것이 수정되어야 할 버그입니다.');
+    expect(cpfpTxExists, false, reason: 'CPFP 트랜잭션은 부모 트랜잭션(초기 트랜잭션)이 RBF로 대체되면서 제거되어야 합니다.');
 
     // UTXO 상태도 확인
     final walletBUtxoList =
         ScriptSyncServiceMock.utxoRepository.getUtxoStateList(testData.walletB.id);
     final cpfpUtxoExists =
         walletBUtxoList.any((utxo) => utxo.transactionHash == testData.cpfpTx!.transactionHash);
-    expect(cpfpUtxoExists, false, reason: 'CPFP 트랜잭션 관련 UTXO도 제거되어야 합니다.');
+    expect(cpfpUtxoExists, false,
+        reason: 'CPFP 트랜잭션 관련 UTXO도 제거되어야 합니다. ${testData.cpfpTx!.transactionHash}');
   }
 }

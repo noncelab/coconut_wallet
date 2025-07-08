@@ -104,19 +104,20 @@ class RbfService {
     int walletId,
     Transaction tx,
   ) async {
-    List<UtxoState> incomingUtxoList =
-        _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.incoming);
+    List<UtxoState> unconfirmedUtxoList =
+        _utxoRepository.getUtxoStateList(walletId).where((utxo) => utxo.isPending).toList();
 
-    incomingUtxoList =
-        incomingUtxoList.where((utxo) => utxo.transactionHash != tx.transactionHash).toList();
+    // 현재 페칭 중인 트랜잭션은 제외
+    unconfirmedUtxoList =
+        unconfirmedUtxoList.where((utxo) => utxo.transactionHash != tx.transactionHash).toList();
 
-    // 수신 중인 UTXO가 없으면 RBF 대상이 아님
-    if (incomingUtxoList.isEmpty) {
+    // 펜딩 중인 UTXO가 없으면 RBF 대상이 아님
+    if (unconfirmedUtxoList.isEmpty) {
       return null;
     }
 
-    for (final utxo in incomingUtxoList) {
-      // 이미 확인된 트랜잭션은 RBF 대상이 아님
+    for (final utxo in unconfirmedUtxoList) {
+      // 이미 컨펌된 트랜잭션은 RBF 대상이 아님
       final txRecord = _transactionRepository.getTransactionRecord(walletId, utxo.transactionHash);
       if (txRecord == null || txRecord.blockHeight > 0) {
         continue;

@@ -24,7 +24,7 @@ typedef FetchedTransactionDetails = ({
 
 typedef RbfCpfpDetectionResult = ({
   Map<String, RbfInfo> sendingRbfInfoMap,
-  Set<String> receivingRbfTxHashSet,
+  Set<String> replacedTxHashSetByReceivingRbf,
   Map<String, CpfpInfo> cpfpInfoMap
 });
 
@@ -116,7 +116,7 @@ class TransactionSyncService {
     );
 
     // 7. 대체된 언컨펌 트랜잭션 삭제
-    await _cleanupStaleUnconfirmedTransactions(
+    await _cleanupOrphanedUnconfirmedTransactions(
         walletId, fetchedTransactionDetails.fetchedTransactions);
 
     // 8. 마무리 단계
@@ -190,7 +190,7 @@ class TransactionSyncService {
     Set<String> confirmedFetchedTxHashes,
   ) async {
     Map<String, RbfInfo> sendingRbfInfoMap = {}; // fetchedTxHash -> RbfInfo
-    Set<String> receivingRbfTxHashSet = {};
+    Set<String> replacedTxHashSetByReceivingRbf = {};
     Map<String, CpfpInfo> cpfpInfoMap = {};
 
     for (final fetchedTx in fetchedTransactions) {
@@ -201,9 +201,11 @@ class TransactionSyncService {
           sendingRbfInfoMap[fetchedTx.transactionHash] = sendingRbfInfo;
         }
 
-        final receivingRbfTxHash =
+        final replacedTxHashByReceivingRbf =
             await _rbfService.detectReceivingRbfTransaction(walletId, fetchedTx);
-        if (receivingRbfTxHash != null) receivingRbfTxHashSet.add(receivingRbfTxHash);
+        if (replacedTxHashByReceivingRbf != null) {
+          replacedTxHashSetByReceivingRbf.add(replacedTxHashByReceivingRbf);
+        }
 
         final cpfpInfo = await _cpfpService.detectCpfpTransaction(walletId, fetchedTx);
         if (cpfpInfo != null) cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
@@ -220,7 +222,7 @@ class TransactionSyncService {
 
     return (
       sendingRbfInfoMap: sendingRbfInfoMap,
-      receivingRbfTxHashSet: receivingRbfTxHashSet,
+      replacedTxHashSetByReceivingRbf: replacedTxHashSetByReceivingRbf,
       cpfpInfoMap: cpfpInfoMap
     );
   }
@@ -232,7 +234,7 @@ class TransactionSyncService {
     RbfCpfpDetectionResult rbfCpfpResult,
   ) async {
     if (rbfCpfpResult.sendingRbfInfoMap.isEmpty &&
-        rbfCpfpResult.receivingRbfTxHashSet.isEmpty &&
+        rbfCpfpResult.replacedTxHashSetByReceivingRbf.isEmpty &&
         rbfCpfpResult.cpfpInfoMap.isEmpty) {
       return;
     }
@@ -251,9 +253,11 @@ class TransactionSyncService {
           walletId, rbfCpfpResult.sendingRbfInfoMap.keys.toSet());
     }
 
-    if (rbfCpfpResult.receivingRbfTxHashSet.isNotEmpty) {
+    if (rbfCpfpResult.replacedTxHashSetByReceivingRbf.isNotEmpty) {
+      await _transactionRepository.deleteOrphanedCpfpTransaction(
+          walletId, rbfCpfpResult.replacedTxHashSetByReceivingRbf);
       await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
-          walletId, rbfCpfpResult.receivingRbfTxHashSet);
+          walletId, rbfCpfpResult.replacedTxHashSetByReceivingRbf);
     }
 
     if (rbfCpfpResult.cpfpInfoMap.isNotEmpty) {
@@ -263,7 +267,8 @@ class TransactionSyncService {
   }
 
   /// 7. 대체된 언컨펌 트랜잭션 삭제
-  Future<void> _cleanupStaleUnconfirmedTransactions(int walletId, List<Transaction> newTxs) async {
+  Future<void> _cleanupOrphanedUnconfirmedTransactions(
+      int walletId, List<Transaction> newTxs) async {
     final unconfirmedTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
     final toDeleteTxs = <String>[];
 
@@ -310,7 +315,7 @@ class TransactionSyncService {
     if (toDeleteTxs.isNotEmpty) {
       final deleted = _transactionRepository.deleteTransaction(walletId, toDeleteTxs);
       if (deleted.isSuccess) {
-        Logger.log('[$walletId] Deleted stale unconfirmed transactions: $toDeleteTxs');
+        Logger.log('[$walletId] Deleted orphaned unconfirmed transactions: $toDeleteTxs');
       }
     }
   }
