@@ -175,8 +175,8 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                       // 버튼 보이지 않을 때: 수수료 조회에 실패, 잔액이 충분한 지갑이 없음
                       // 비활성화 상태로 보일 때: 지갑 동기화 진행 중, 수수료 조회 중,
                       // 활성화 상태로 보일 때: 모든 지갑 동기화 완료, 지갑별 수수료 조회 성공
-                      isActive:
-                          viewModel.isSyncCompleted && viewModel.isRecommendedFeeFetchSuccess != null,
+                      isActive: viewModel.isSyncCompleted &&
+                          viewModel.isRecommendedFeeFetchSuccess != null,
                       text: t.next,
                       backgroundColor: CoconutColors.gray100,
                       pressedBackgroundColor: CoconutColors.gray500,

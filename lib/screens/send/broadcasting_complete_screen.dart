@@ -15,7 +15,8 @@ class BroadcastingCompleteScreen extends StatefulWidget {
   final String txHash;
   final bool isDonation;
 
-  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash, this.isDonation = false});
+  const BroadcastingCompleteScreen(
+      {super.key, required this.id, required this.txHash, this.isDonation = false});
 
   @override
   State<BroadcastingCompleteScreen> createState() => _BroadcastingCompleteScreenState();
@@ -93,42 +94,41 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       alignment: Alignment.center,
       children: [
         Positioned(
-        top: MediaQuery.of(context).size.height * 0.15,
-        child: Column(
-          children: [
-            SvgPicture.asset('assets/svg/completion-check.svg'),
-                                  CoconutLayout.spacing_400h,
-
-            Text(
-                        t.broadcasting_complete_screen.complete,
-                        style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-                      ),
-                      CoconutLayout.spacing_400h,
-            _buildMemoInputField(),
-                      if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
-                        _buildMemoReadOnlyText(),
-          ],
+          top: MediaQuery.of(context).size.height * 0.15,
+          child: Column(
+            children: [
+              SvgPicture.asset('assets/svg/completion-check.svg'),
+              CoconutLayout.spacing_400h,
+              Text(
+                t.broadcasting_complete_screen.complete,
+                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+              ),
+              CoconutLayout.spacing_400h,
+              _buildMemoInputField(),
+              if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
+                _buildMemoReadOnlyText(),
+            ],
+          ),
         ),
-      ),
-      if (_memoFocusNode.hasFocus)
-      Positioned(
-          bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
-          child: _buildMemoTags()),
-      Positioned(
-                  bottom: Sizes.size24,
-                  left: Sizes.size16,
-                  right: Sizes.size16,
-                  child: CoconutButton(
-                    onPressed: () => onTapConfirmButton(context),
-                    textStyle: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray800),
-                    disabledBackgroundColor: CoconutColors.gray800,
-                    disabledForegroundColor: CoconutColors.gray700,
-                    backgroundColor: CoconutColors.primary,
-                    foregroundColor: CoconutColors.black,
-                    pressedTextColor: CoconutColors.black,
-                    text: t.confirm,
-                  ),
-                ),
+        if (_memoFocusNode.hasFocus)
+          Positioned(
+              bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
+              child: _buildMemoTags()),
+        Positioned(
+          bottom: Sizes.size24,
+          left: Sizes.size16,
+          right: Sizes.size16,
+          child: CoconutButton(
+            onPressed: () => onTapConfirmButton(context),
+            textStyle: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray800),
+            disabledBackgroundColor: CoconutColors.gray800,
+            disabledForegroundColor: CoconutColors.gray700,
+            backgroundColor: CoconutColors.primary,
+            foregroundColor: CoconutColors.black,
+            pressedTextColor: CoconutColors.black,
+            text: t.confirm,
+          ),
+        ),
       ],
     );
   }
