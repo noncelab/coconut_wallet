@@ -468,12 +468,19 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             defaultColor: CoconutColors.gray800,
                             pressedColor: CoconutColors.gray750,
                             onPressed: () {
+                              if (fakeBalanceTotalAmount != null) {
+                                _viewModel.clearFakeBlancTotalAmount();
+                                _viewModel.setIsBalanceHidden(true);
+                                return;
+                              }
                               _viewModel.setIsBalanceHidden(!isBalanceHidden);
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                               child: Text(
-                                _viewModel.isBalanceHidden ? t.view : t.wallet_list.hide,
+                                _viewModel.isBalanceHidden && fakeBalanceTotalAmount == null
+                                    ? t.view
+                                    : t.wallet_list.hide,
                                 style: CoconutTypography.body3_12,
                               ),
                             ))
