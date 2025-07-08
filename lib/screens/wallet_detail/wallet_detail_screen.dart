@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -389,6 +390,10 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         value: _viewModel,
         child: ReceiveAddressBottomSheet(
           id: widget.id,
+          derivationPath: _viewModel.derivationPath,
+          receiveAddress: _viewModel.receiveAddress,
+          receiveAddressIndex: _viewModel.receiveAddressIndex,
+          
         ),
       ),
     );

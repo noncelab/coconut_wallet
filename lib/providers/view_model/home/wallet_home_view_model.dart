@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
@@ -37,6 +39,8 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   late List<int> _excludedFromTotalBalanceWalletIds = [];
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
+
+  late WalletAddress _receiveAddress;
 
   WalletHomeViewModel(
     this._walletProvider,
@@ -85,6 +89,14 @@ class WalletHomeViewModel extends ChangeNotifier {
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
   Map<int, AnimatedBalanceData> get walletBalanceMap => _walletBalance;
+
+  String get derivationPath => _receiveAddress.derivationPath;
+  String get receiveAddressIndex => _receiveAddress.derivationPath.split('/').last;
+  String get receiveAddress => _receiveAddress.address;
+
+  WalletListItemBase getWalletById(int walletId) {
+    return _walletProvider.getWalletById(walletId);
+  }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
     if (_nodeSyncState != syncState) {
@@ -243,6 +255,11 @@ class WalletHomeViewModel extends ChangeNotifier {
     _isEmptyStarredWallet = wallets.isEmpty;
 
     notifyListeners();
+  }
+
+  void setReceiveAddress(int walletId) {
+    _receiveAddress = _walletProvider.getReceiveAddress(walletId);
+    Logger.log('--> 리시브주소: ${_receiveAddress.address}');
   }
 
   @override

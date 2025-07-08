@@ -238,6 +238,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (args) => CustomLoadingOverlay(
                   child: WalletAddScannerScreen(
                     importSource: args['walletImportSource'],
+                    onNewWalletAdded: args['onNewWalletAdded'],
                   ),
                 ),
               ),

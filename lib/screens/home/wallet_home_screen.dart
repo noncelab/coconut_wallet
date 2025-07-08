@@ -6,13 +6,19 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -144,7 +150,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           ),
                           _buildLoadingIndicator(viewModel),
                           _buildHeader(isBalanceHidden, viewModel.getFakeTotalBalance(),
-                              shouldShowLoadingIndicator),
+                              shouldShowLoadingIndicator, viewModel.walletItemList.isEmpty),
                           if (!shouldShowLoadingIndicator)
                             SliverToBoxAdapter(
                                 child: Column(
@@ -323,8 +329,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
   }
 
-  Widget _buildHeader(
-      bool isBalanceHidden, int? fakeBalanceTotalAmount, bool shouldShowLoadingIndicator) {
+  Widget _buildHeader(bool isBalanceHidden, int? fakeBalanceTotalAmount,
+      bool shouldShowLoadingIndicator, bool isWalletListEmpty) {
     // 처음 로딩시 스켈레톤
     if (shouldShowLoadingIndicator && _viewModel.walletItemList.isEmpty) {
       return SliverToBoxAdapter(
@@ -491,7 +497,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   },
                 ),
                 CoconutLayout.spacing_500h,
-                _buildHeaderActions(),
+                _buildHeaderActions(isActive: !isWalletListEmpty),
               ],
             ),
           ),
@@ -550,81 +556,154 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildHeaderActions({bool isActive = true}) {
-    return Row(
-      children: [
-        Expanded(
-          child: isActive
-              ? ShrinkAnimationButton(
-                  onPressed: () {
-                    // TODO: 받기 동작
-                  },
-                  borderRadius: CoconutStyles.radius_100,
-                  defaultColor: CoconutColors.gray800,
-                  pressedColor: CoconutColors.gray750,
-                  child: Center(
-                    child: Padding(
+    return Selector<PreferenceProvider, List<int>>(
+      selector: (_, viewModel) => viewModel.walletOrder,
+      builder: (context, walletOrder, child) {
+        return Row(
+          children: [
+            Expanded(
+              child: isActive
+                  ? ShrinkAnimationButton(
+                      onPressed: () {
+                        _onTapReceive(walletOrder);
+                      },
+                      borderRadius: CoconutStyles.radius_100,
+                      defaultColor: CoconutColors.gray800,
+                      pressedColor: CoconutColors.gray750,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Text(
+                            t.receive,
+                            style: CoconutTypography.body3_12,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Container(
                       padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Text(
-                        t.receive,
-                        style: CoconutTypography.body3_12,
+                      decoration: BoxDecoration(
+                        color: CoconutColors.gray800,
+                        borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                      ),
+                      child: Center(
+                        child: Text(
+                          t.receive,
+                          style: CoconutTypography.body3_12.setColor(
+                            CoconutColors.white.withOpacity(0.3),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                )
-              : Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: CoconutColors.gray800,
-                    borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
-                  ),
-                  child: Center(
-                    child: Text(
-                      t.receive,
-                      style: CoconutTypography.body3_12.setColor(
-                        CoconutColors.white.withOpacity(0.3),
+            ),
+            CoconutLayout.spacing_200w,
+            Expanded(
+              child: isActive
+                  ? ShrinkAnimationButton(
+                      onPressed: () {
+                        _onTapSend(walletOrder);
+                      },
+                      borderRadius: CoconutStyles.radius_100,
+                      defaultColor: CoconutColors.gray800,
+                      pressedColor: CoconutColors.gray750,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Text(
+                            t.send,
+                            style: CoconutTypography.body3_12,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-        ),
-        CoconutLayout.spacing_200w,
-        Expanded(
-          child: isActive
-              ? ShrinkAnimationButton(
-                  onPressed: () {
-                    // TODO: 받기 동작
-                  },
-                  borderRadius: CoconutStyles.radius_100,
-                  defaultColor: CoconutColors.gray800,
-                  pressedColor: CoconutColors.gray750,
-                  child: Center(
-                    child: Padding(
+                    )
+                  : Container(
                       padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Text(
-                        t.send,
-                        style: CoconutTypography.body3_12,
+                      decoration: BoxDecoration(
+                        color: CoconutColors.gray800,
+                        borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                      ),
+                      child: Center(
+                        child: Text(
+                          t.send,
+                          style: CoconutTypography.body3_12.setColor(
+                            CoconutColors.white.withOpacity(0.3),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                )
-              : Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: CoconutColors.gray800,
-                    borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
-                  ),
-                  child: Center(
-                    child: Text(
-                      t.send,
-                      style: CoconutTypography.body3_12.setColor(
-                        CoconutColors.white.withOpacity(0.3),
-                      ),
-                    ),
-                  ),
-                ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  bool _checkStateAndShowToast(int id) {
+    if (_viewModel.isNetworkOn != true) {
+      CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      return false;
+    }
+    final walletUpdateInfo = WalletUpdateInfo(id);
+    // TODO: 실제 특정 id(대표지갑)의 SyncState와 연동-> 대표지갑 sync가 충족되지 않으면 [보내기] 불가하도록 개선, 아래 조건문도 변경이 필요함
+    if (walletUpdateInfo.balance == WalletSyncState.completed &&
+        walletUpdateInfo.transaction == WalletSyncState.completed) {
+      CoconutToast.showToast(
+          isVisibleIcon: true, context: context, text: t.toast.fetching_onchain_data);
+      return false;
+    }
+
+    return true;
+  }
+
+  void _onTapReceive(List<int> walletOrder) {
+    final firstWallet = _viewModel.walletItemList.firstOrNull;
+    if (firstWallet == null) return;
+
+    // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
+    final targetId = walletOrder.firstWhere(
+      (id) => id == firstWallet.id,
+      orElse: () => firstWallet.id,
+    );
+
+    _viewModel.setReceiveAddress(targetId);
+
+    CommonBottomSheets.showBottomSheet_90(
+      context: context,
+      child: ChangeNotifierProvider.value(
+        value: _viewModel,
+        child: ReceiveAddressBottomSheet(
+          id: targetId,
+          derivationPath: _viewModel.derivationPath,
+          receiveAddress: _viewModel.receiveAddress,
+          receiveAddressIndex: _viewModel.receiveAddressIndex,
+        ),
+      ),
+    );
+  }
+
+  void _onTapSend(List<int> walletOrder) {
+    final firstWallet = _viewModel.walletItemList.firstOrNull;
+    if (firstWallet == null) return;
+
+    // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
+    final targetId = walletOrder.firstWhere(
+      (id) => id == firstWallet.id,
+      orElse: () => firstWallet.id,
+    );
+
+    final wallet = _viewModel.getWalletById(targetId);
+    if (wallet is! MultisigWalletListItem &&
+        (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
+            WalletAddService.masterFingerprintPlaceholder) {
+      CoconutToast.showToast(
+          isVisibleIcon: true,
+          context: context,
+          text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send);
+      return;
+    }
+    if (!_checkStateAndShowToast(targetId)) return;
+    context.read<SendInfoProvider>().clear();
+    Navigator.pushNamed(context, '/send-address', arguments: {'id': targetId});
   }
 
   Widget _buildViewAll(int walletCount) {
@@ -783,6 +862,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     final ResultOfSyncFromVault? scanResult =
         (await Navigator.pushNamed(context, '/wallet-add-scanner', arguments: {
       'walletImportSource': walletImportSource,
+      'onNewWalletAdded': (scanResult) {
+        setState(() {
+          _resultOfSyncFromVault = scanResult;
+        });
+      }
     }) as ResultOfSyncFromVault?);
 
     setState(() {

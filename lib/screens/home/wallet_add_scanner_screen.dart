@@ -22,9 +22,11 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class WalletAddScannerScreen extends StatefulWidget {
   final WalletImportSource importSource;
+  final Function(ResultOfSyncFromVault)? onNewWalletAdded;
   const WalletAddScannerScreen({
     super.key,
     required this.importSource,
+    this.onNewWalletAdded,
   });
 
   @override
@@ -209,7 +211,16 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         case WalletSyncResult.newWalletAdded:
           {
             await _viewModel.setFakeBalanceIfEnabled(addResult.walletId!);
-            Navigator.pop(context, addResult);
+
+            if (widget.onNewWalletAdded != null) {
+              widget.onNewWalletAdded!(addResult);
+            }
+            Navigator.pushReplacementNamed(
+              context,
+              '/wallet-detail',
+              arguments: {'id': addResult.walletId},
+            );
+
             break;
           }
         case WalletSyncResult.existingWalletUpdated:
