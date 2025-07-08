@@ -212,6 +212,16 @@ flutter:
     - assets/lottie/loading-three-dots.json
     - assets/lottie/arrow-up.json
     - assets/lottie/arrow-down.json
+    - assets/lottie/hand-with-floating-heart.json
+    - assets/lottie/hand-with-floating-heart-delayed.json
+    - assets/lottie/tripple-hearts.json
+    - assets/lottie/giving-heart.json
+    - assets/lottie/giving-coin.json
+    - assets/lottie/two-hands-making-heart.json
+    - assets/lottie/spinning-heart.json
+    - assets/lottie/upside-down-hands.json
+    - assets/lottie/thankyou-hearts.json
+    - assets/images/hand-with-laid-heart.png
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg
     - assets/images/discord-logo.png

@@ -4,15 +4,18 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
   final String txHash;
+  final bool isDonation;
 
-  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash});
+  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash, this.isDonation = false});
 
   @override
   State<BroadcastingCompleteScreen> createState() => _BroadcastingCompleteScreenState();
@@ -34,31 +37,84 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           resizeToAvoidBottomInset: false,
           backgroundColor: CoconutColors.black,
           body: SafeArea(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Positioned(
-                  top: MediaQuery.of(context).size.height * 0.15,
-                  child: Column(
-                    children: [
-                      SvgPicture.asset('assets/svg/completion-check.svg'),
-                      CoconutLayout.spacing_400h,
-                      Text(
+            child: widget.isDonation
+                ? _buildDonationCompleteScreen()
+                : _buildBroadcastingCompleteScreen(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDonationCompleteScreen() {
+    return Stack(
+      children: [
+        SizedBox(
+          width: MediaQuery.sizeOf(context).width,
+          height: MediaQuery.sizeOf(context).height,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CoconutLayout.spacing_2500h,
+              Lottie.asset(
+                'assets/lottie/thankyou-hearts.json',
+              ),
+              CoconutLayout.spacing_800h,
+              Text(
+                t.donation.complete.thank_you,
+                style: CoconutTypography.heading3_21_Bold,
+              ),
+              CoconutLayout.spacing_500h,
+              Text(
+                t.donation.complete.description,
+                textAlign: TextAlign.center,
+                style: CoconutTypography.body2_14,
+              ),
+            ],
+          ),
+        ),
+        FixedBottomButton(
+          onButtonClicked: () {
+            Navigator.pop(context);
+          },
+          // 버튼 보이지 않을 때: 수수료 조회에 실패, 잔액이 충분한 지갑이 없음
+          // 비활성화 상태로 보일 때: 지갑 동기화 진행 중, 수수료 조회 중,
+          // 활성화 상태로 보일 때: 모든 지갑 동기화 완료, 지갑별 수수료 조회 성공
+          text: t.close,
+          backgroundColor: CoconutColors.gray100,
+          pressedBackgroundColor: CoconutColors.gray500,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBroadcastingCompleteScreen() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned(
+        top: MediaQuery.of(context).size.height * 0.15,
+        child: Column(
+          children: [
+            SvgPicture.asset('assets/svg/completion-check.svg'),
+                                  CoconutLayout.spacing_400h,
+
+            Text(
                         t.broadcasting_complete_screen.complete,
                         style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
                       ),
                       CoconutLayout.spacing_400h,
-                      _buildMemoInputField(),
+            _buildMemoInputField(),
                       if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
                         _buildMemoReadOnlyText(),
-                    ],
-                  ),
-                ),
-                if (_memoFocusNode.hasFocus)
-                  Positioned(
-                      bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
-                      child: _buildMemoTags()),
-                Positioned(
+          ],
+        ),
+      ),
+      if (_memoFocusNode.hasFocus)
+      Positioned(
+          bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
+          child: _buildMemoTags()),
+      Positioned(
                   bottom: Sizes.size24,
                   left: Sizes.size16,
                   right: Sizes.size16,
@@ -73,11 +129,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                     text: t.confirm,
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -91,6 +143,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   @override
   void initState() {
     super.initState();
+    debugPrint('isSending: ${widget.isDonation}');
     _animationController = BottomSheet.createAnimationController(this);
     _animationController.duration = const Duration(seconds: 2);
     Provider.of<SendInfoProvider>(context, listen: false).clear();

@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -17,6 +18,9 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
+import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
+import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
@@ -54,12 +58,15 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
 
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
 class CoconutWalletApp extends StatefulWidget {
   static late String kElectrumHost;
   static late int kElectrumPort;
   static late bool kElectrumIsSSL;
   static late String kMempoolHost;
   static late String kFaucetHost;
+  static late String kDonationAddress;
   static late NetworkType kNetworkType;
 
   const CoconutWalletApp({super.key});
@@ -172,6 +179,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         },
       ],
       child: CupertinoApp(
+        navigatorObservers: [routeObserver],
         localizationsDelegates: const [
           DefaultMaterialLocalizations.delegate,
           DefaultWidgetsLocalizations.delegate,
@@ -277,7 +285,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/broadcasting-complete': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
-                    child: BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash'])),
+                    child: BroadcastingCompleteScreen(
+                        id: args['id'], txHash: args['txHash'], isDonation: args['isDonation'])),
               ),
           '/send-address': (context) => buildScreenWithArguments(
                 context,
@@ -309,6 +318,15 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/mnemonic-word-list': (context) => const Bip39ListScreen(),
           '/utxo-tag': (context) =>
               buildScreenWithArguments(context, (args) => UtxoTagCrudScreen(id: args['id'])),
+          '/select-donation-amount': (context) => buildScreenWithArguments(context,
+              (args) => SelectDonationAmountScreen(walletListLength: args['wallet-list-length'])),
+          '/onchain-donation-info': (context) => buildScreenWithArguments(
+              context,
+              (args) => OnchainDonationInfoScreen(
+                    donationAmount: args['donation-amount'],
+                  )),
+          '/lightning-donation-info': (context) => buildScreenWithArguments(context,
+              (args) => LightningDonationInfoScreen(donationAmount: args['donation-amount'])),
         },
       ),
     );

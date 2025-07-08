@@ -7,9 +7,14 @@ class SignedPsbtScannerViewModel {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
 
-  SignedPsbtScannerViewModel(this._sendInfoProvider, this._walletProvider);
+  bool _isSendingDonation = false;
+
+  SignedPsbtScannerViewModel(this._sendInfoProvider, this._walletProvider) {
+    _isSendingDonation = _sendInfoProvider.isDonation ?? false;
+  }
 
   bool get isMultisig => _sendInfoProvider.isMultisig!;
+  bool get isSendingDonation => _isSendingDonation;
   WalletImportSource get walletImportSource => _sendInfoProvider.walletImportSource!;
 
   int getMissingSignaturesCount(Psbt psbt) {
