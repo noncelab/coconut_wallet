@@ -3,10 +3,14 @@ import 'dart:async';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 
@@ -15,9 +19,15 @@ typedef BalanceGetter = int Function(int id);
 typedef FakeBalanceGetter = int? Function(int id);
 
 class WalletListViewModel extends ChangeNotifier {
+  final ValueNotifier<bool> loadingNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> pinCheckNotifier = ValueNotifier(false);
+  final SharedPrefsRepository sharedPrefs = SharedPrefsRepository();
+
   WalletProvider _walletProvider;
-  final Stream<NodeSyncState> _syncNodeStateStream;
   late final ConnectivityProvider _connectivityProvider;
+  late final AuthProvider _authProvider;
+  late final NodeProvider _nodeProvider;
+  late Stream<NodeSyncState> _syncNodeStateStream;
   late PreferenceProvider _preferenceProvider;
   late bool? _isNetworkOn;
   Map<int, AnimatedBalanceData> _walletBalance = {};
@@ -46,13 +56,15 @@ class WalletListViewModel extends ChangeNotifier {
   WalletListViewModel(
     this._walletProvider,
     this._connectivityProvider,
-    this._syncNodeStateStream,
+    this._authProvider,
+    this._nodeProvider,
     this._preferenceProvider,
   ) {
     _isNetworkOn = _connectivityProvider.isNetworkOn;
     _walletOrder = _preferenceProvider.walletOrder;
     _starredWalletIds = _preferenceProvider.starredWalletIds;
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+    _syncNodeStateStream = _nodeProvider.syncStateStream;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
     _walletBalance = _walletProvider
         .fetchWalletBalanceMap()
@@ -201,7 +213,20 @@ class WalletListViewModel extends ChangeNotifier {
     if (!hasWalletOrderChanged && !hasStarredChanged) return;
 
     if (hasWalletOrderChanged) {
-      await _preferenceProvider.setWalletOrder(tempWalletOrder);
+      // 삭제 여부 판단
+      if (tempWalletOrder.length != _preferenceProvider.walletOrder.length) {
+        setLoadingNotifier(true);
+
+        final deletedWalletIds =
+            _preferenceProvider.walletOrder.where((id) => !tempWalletOrder.contains(id)).toList();
+
+        await _handleAuthFlow(onComplete: () async {
+          await _deleteWallets(deletedWalletIds);
+        });
+        setLoadingNotifier(false);
+      } else {
+        await _preferenceProvider.setWalletOrder(tempWalletOrder);
+      }
 
       final walletMap = {for (var wallet in walletItemList) wallet.id: wallet};
       _walletProvider.walletItemListNotifier.value =
@@ -213,6 +238,40 @@ class WalletListViewModel extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  VoidCallback? _pendingAuthCompleteCallback;
+
+  Future<void> _handleAuthFlow({required VoidCallback onComplete}) async {
+    if (!_authProvider.isAuthEnabled) {
+      onComplete();
+      return;
+    }
+
+    if (await _authProvider.isBiometricsAuthValid()) {
+      onComplete();
+      return;
+    }
+
+    _pendingAuthCompleteCallback = onComplete;
+    setPincheckNotifier(true);
+  }
+
+  void handleAuthCompletion() {
+    if (_pendingAuthCompleteCallback != null) {
+      _pendingAuthCompleteCallback!();
+      _pendingAuthCompleteCallback = null;
+    }
+  }
+
+  Future<void> _deleteWallets(List<int> deletedWalletIds) async {
+    for (int i = 0; i < deletedWalletIds.length; i++) {
+      int walletId = deletedWalletIds[i];
+      await sharedPrefs.removeFaucetHistory(walletId);
+      await _walletProvider.deleteWallet(walletId);
+    }
+    _nodeProvider.reconnect();
+    _walletProvider.notifyListeners();
   }
 
   bool get hasStarredChanged => !const SetEquality().equals(
@@ -231,6 +290,18 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void removeTempWalletOrderByWalletId(int walletId) {
+    final orderIndex = tempWalletOrder.indexOf(walletId);
+    final starIndex = tempStarredWalletIds.indexOf(walletId);
+    if (orderIndex != -1) {
+      tempWalletOrder.removeAt(orderIndex);
+    }
+    if (starIndex != -1) {
+      tempStarredWalletIds.removeAt(starIndex);
+    }
+    notifyListeners();
+  }
+
   void updatePreferenceProvider(PreferenceProvider preferenceProvider) {
     if (_preferenceProvider != preferenceProvider) {
       _preferenceProvider.removeListener(_onPreferenceChanged);
@@ -238,6 +309,14 @@ class WalletListViewModel extends ChangeNotifier {
       _preferenceProvider.addListener(_onPreferenceChanged);
       onPreferenceProviderUpdated();
     }
+  }
+
+  void setLoadingNotifier(bool value) {
+    loadingNotifier.value = value;
+  }
+
+  void setPincheckNotifier(bool value) {
+    pinCheckNotifier.value = value;
   }
 
   @override

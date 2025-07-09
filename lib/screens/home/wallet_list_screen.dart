@@ -2,14 +2,19 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
+import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
+import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -82,60 +87,85 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           final isEditMode = data.item6;
           final walletOrder = data.item7;
 
-          return PopScope(
-            canPop: !isEditMode,
-            onPopInvokedWithResult: (didPop, _) {
-              if (!didPop) {
-                Navigator.pop(context);
-              }
-            },
-            child: Scaffold(
-              backgroundColor: CoconutColors.black,
-              extendBodyBehindAppBar: true,
-              appBar: _buildAppBar(context),
-              body: SafeArea(
-                top: true,
-                bottom: false,
-                child: isEditMode
-                    // 편집 모드
-                    ? Stack(
-                        children: [
-                          _buildEditableWalletList(walletBalanceMap),
-                          FixedBottomButton(
-                            onButtonClicked: () async {
-                              await viewModel.applyTempDatasToWallets();
-                              viewModel.setEditMode(false);
-                            },
-                            isActive:
-                                viewModel.hasStarredChanged || viewModel.hasWalletOrderChanged,
-                            backgroundColor: CoconutColors.white,
-                            text: t.complete,
+          // Pin check 로직(편집모드에서 삭제 후 완료 버튼 클릭시 동작)
+          if (viewModel.pinCheckNotifier.value == true) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              viewModel.pinCheckNotifier.value = false;
+              await CommonBottomSheets.showBottomSheet_90(
+                context: context,
+                child: CustomLoadingOverlay(
+                  child: PinCheckScreen(
+                    onComplete: () => viewModel.handleAuthCompletion(),
+                  ),
+                ),
+              );
+            });
+          }
+
+          return Stack(
+            children: [
+              PopScope(
+                canPop: !isEditMode,
+                onPopInvokedWithResult: (didPop, _) {
+                  if (!didPop) {
+                    Navigator.pop(context);
+                  }
+                },
+                child: Scaffold(
+                  backgroundColor: CoconutColors.black,
+                  extendBodyBehindAppBar: true,
+                  appBar: _buildAppBar(context),
+                  body: SafeArea(
+                    top: true,
+                    bottom: false,
+                    child: isEditMode
+                        // 편집 모드
+                        ? Stack(
+                            children: [
+                              _buildEditableWalletList(walletBalanceMap),
+                              FixedBottomButton(
+                                onButtonClicked: () async {
+                                  await viewModel.applyTempDatasToWallets();
+                                  viewModel.setEditMode(false);
+                                },
+                                isActive:
+                                    viewModel.hasStarredChanged || viewModel.hasWalletOrderChanged,
+                                backgroundColor: CoconutColors.white,
+                                text: t.complete,
+                              )
+                            ],
                           )
-                        ],
-                      )
-                    // 일반 모드
-                    : Stack(
-                        children: [
-                          CustomScrollView(
-                              controller: _scrollController,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              semanticChildCount: walletListItem.length,
-                              slivers: <Widget>[
-                                // pull to refresh시 로딩 인디케이터를 보이기 위함
-                                CupertinoSliverRefreshControl(
-                                  onRefresh: viewModel.updateWalletBalances,
-                                ),
-                                _buildLoadingIndicator(viewModel),
-                                // _buildPadding(isOffline),
-                                _buildTotalAmount(walletBalanceMap),
-                                // 지갑 목록
-                                _buildWalletList(walletListItem, walletBalanceMap, walletOrder),
-                              ]),
-                          // _buildOfflineWarningBar(context, isOffline)
-                        ],
-                      ),
+                        // 일반 모드
+                        : Stack(
+                            children: [
+                              CustomScrollView(
+                                  controller: _scrollController,
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  semanticChildCount: walletListItem.length,
+                                  slivers: <Widget>[
+                                    // pull to refresh시 로딩 인디케이터를 보이기 위함
+                                    CupertinoSliverRefreshControl(
+                                      onRefresh: viewModel.updateWalletBalances,
+                                    ),
+                                    _buildLoadingIndicator(viewModel),
+                                    // _buildPadding(isOffline),
+                                    _buildTotalAmount(walletBalanceMap),
+                                    // 지갑 목록
+                                    _buildWalletList(walletListItem, walletBalanceMap, walletOrder),
+                                  ]),
+                              // _buildOfflineWarningBar(context, isOffline)
+                            ],
+                          ),
+                  ),
+                ),
               ),
-            ),
+              ValueListenableBuilder<bool>(
+                valueListenable: viewModel.loadingNotifier,
+                builder: (context, isLoading, _) {
+                  return isLoading ? const CoconutLoadingOverlay() : Container();
+                },
+              )
+            ],
           );
         },
       ),
@@ -196,7 +226,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     _viewModel = WalletListViewModel(
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<NodeProvider>(context, listen: false).syncStateStream,
+      Provider.of<AuthProvider>(context, listen: false),
+      Provider.of<NodeProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false),
     );
     return _viewModel;
@@ -362,6 +393,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         padding: EdgeInsets.all(60.0),
       ),
       proxyDecorator: (child, index, animation) {
+        // 드래그 중인 항목의 외관 변경
         return Container(
           decoration: BoxDecoration(
             color: CoconutColors.gray900,
@@ -381,16 +413,36 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         WalletListItemBase wallet = _viewModel.walletItemList.firstWhere(
           (w) => w.id == _viewModel.tempWalletOrder[index],
         );
-        return KeyedSubtree(
-          key: ValueKey(_viewModel.tempWalletOrder[index]),
-          child: _buildWalletItem(
-            wallet,
-            walletBalanceMap[_viewModel.tempWalletOrder[index]] ?? AnimatedBalanceData(0, 0),
-            false,
-            index == 0,
-            isEditMode: true,
-            isStarred: _viewModel.tempStarredWalletIds.contains(wallet.id),
-            index: index,
+        return Dismissible(
+          key: ValueKey(wallet.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            color: CoconutColors.hotPink,
+            child: SvgPicture.asset(
+              'assets/svg/trash.svg',
+              width: 16,
+              colorFilter: const ColorFilter.mode(
+                CoconutColors.white,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+          onDismissed: (direction) {
+            _viewModel.removeTempWalletOrderByWalletId(wallet.id);
+          },
+          child: KeyedSubtree(
+            key: ValueKey(_viewModel.tempWalletOrder[index]),
+            child: _buildWalletItem(
+              wallet,
+              walletBalanceMap[_viewModel.tempWalletOrder[index]] ?? AnimatedBalanceData(0, 0),
+              false,
+              index == 0,
+              isEditMode: true,
+              isStarred: _viewModel.tempStarredWalletIds.contains(wallet.id),
+              index: index,
+            ),
           ),
         );
       },
