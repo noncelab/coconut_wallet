@@ -121,6 +121,7 @@ class WalletItemCard extends StatelessWidget {
             Opacity(
               opacity: isStarVisible ? 1 : 0,
               child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
                 onTap: () {
                   if (!isStarVisible) return;
                   onTapStar?.call((!isStarred, id));
