@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_mode
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -25,6 +26,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
 
 class SendScreen extends StatefulWidget {
@@ -277,8 +279,17 @@ class _SendScreenState extends State<SendScreen> {
                       }),
                   if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
                     Positioned(
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
-                        child: _buildKeyboardToolbar(context)),
+                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                      child: GestureDetector(
+                          onTap: () {}, // ignore
+                          child: Container(
+                              width: MediaQuery.of(context).size.width,
+                              height: 50,
+                              color: keyboardToolbarGray,
+                              child: _amountFocusNode.hasFocus
+                                  ? _buildAmountKeyboardToolbar(context)
+                                  : _buildFeeRateKeyboardToolbar(context))),
+                    ),
                   Selector<SendViewModel, Tuple2<int, int>>(
                       selector: (_, viewModel) =>
                           Tuple2(viewModel.currentIndex, viewModel.recipientList.length),
@@ -340,111 +351,114 @@ class _SendScreenState extends State<SendScreen> {
     );
   }
 
-  Widget _buildFeeItem(String imagePath, int sats) {
+  Widget _buildFeeItem(String imagePath, int sats, bool isFetching) {
+    final child = Container(
+        height: 30,
+        decoration: BoxDecoration(
+            border: Border.all(
+              width: 1,
+              color: CoconutColors.gray600,
+            ),
+            borderRadius: const BorderRadius.all(Radius.circular(8))),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              imagePath,
+              width: 12,
+              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+            ),
+            CoconutLayout.spacing_150w,
+            Text("$sats ${t.send_screen.fee_rate_suffix}",
+                style: CoconutTypography.body3_12_Number),
+          ],
+        ));
+
     return Expanded(
       child: RippleEffect(
         borderRadius: 8,
-        onTap: () {},
-        child: Container(
-            height: 30,
-            decoration: BoxDecoration(
-                border: Border.all(
-                  width: 1,
-                  color: CoconutColors.gray600,
-                ),
-                borderRadius: const BorderRadius.all(Radius.circular(8))),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SvgPicture.asset(
-                  imagePath,
-                  width: 12,
-                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                ),
-                CoconutLayout.spacing_150w,
-                Text("$sats ${t.send_screen.fee_rate_suffix}",
-                    style: CoconutTypography.body3_12_Number),
-              ],
-            )),
+        onTap: () {
+          if (isFetching) return;
+        },
+        child: !isFetching
+            ? child
+            : Shimmer.fromColors(
+                baseColor: CoconutColors.white.withOpacity(0.2),
+                highlightColor: CoconutColors.white.withOpacity(0.6),
+                child: child),
       ),
     );
   }
 
-  List<Widget> _getAmountKeyboardToolbarChildren(BuildContext context) {
-    return [
-      const Spacer(),
-      GestureDetector(
-        onTap: _viewModel.toggleUnit,
-        child: Container(
-            color: Colors.transparent,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-            child: Selector<SendViewModel, BitcoinUnit>(
-                selector: (_, viewModel) => viewModel.currentUnit,
-                builder: (context, data, child) {
-                  return Row(
-                    children: [
-                      SvgPicture.asset(
-                        'assets/svg/check.svg',
-                        width: 8,
-                        colorFilter: ColorFilter.mode(
-                            _viewModel.currentUnit == BitcoinUnit.btc
-                                ? CoconutColors.white
-                                : CoconutColors.white.withOpacity(0.3),
-                            BlendMode.srcIn),
-                      ),
-                      CoconutLayout.spacing_100w,
-                      Text(t.send_screen.use_btc_unit, style: CoconutTypography.body3_12),
-                    ],
-                  );
-                })),
-      ),
-    ];
-  }
-
-  List<Widget> _getFeeRateKeyboardToolbarChildren(BuildContext context) {
-    // todo: 수수료 api 연동
-    bool hasError = true;
-    return [
-      CoconutLayout.spacing_200w,
-      if (hasError) ...[
-        SvgPicture.asset('assets/svg/triangle-warning.svg',
-            colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn), width: 24),
-        CoconutLayout.spacing_200w,
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(t.send_screen.recommended_fee_unavailable, style: CoconutTypography.body3_12_Bold),
-            Text(t.send_screen.recommended_fee_unavailable_description,
-                style: CoconutTypography.body3_12),
-          ],
+  Widget _buildAmountKeyboardToolbar(BuildContext context) {
+    return Row(
+      children: [
+        const Spacer(),
+        GestureDetector(
+          onTap: _viewModel.toggleUnit,
+          child: Container(
+              color: Colors.transparent,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              child: Selector<SendViewModel, BitcoinUnit>(
+                  selector: (_, viewModel) => viewModel.currentUnit,
+                  builder: (context, data, child) {
+                    return Row(
+                      children: [
+                        SvgPicture.asset(
+                          'assets/svg/check.svg',
+                          width: 8,
+                          colorFilter: ColorFilter.mode(
+                              _viewModel.currentUnit == BitcoinUnit.btc
+                                  ? CoconutColors.white
+                                  : CoconutColors.white.withOpacity(0.3),
+                              BlendMode.srcIn),
+                        ),
+                        CoconutLayout.spacing_100w,
+                        Text(t.send_screen.use_btc_unit, style: CoconutTypography.body3_12),
+                      ],
+                    );
+                  })),
         ),
-      ] else ...[
-        _buildFeeItem('assets/svg/rocket.svg', 7),
-        CoconutLayout.spacing_200w,
-        _buildFeeItem('assets/svg/car.svg', 3),
-        CoconutLayout.spacing_200w,
-        _buildFeeItem('assets/svg/barefoot.svg', 1),
       ],
-      CoconutLayout.spacing_200w,
-    ];
+    );
   }
 
-  Widget _buildKeyboardToolbar(BuildContext context) {
-    List<Widget> keyboardToolbarChildren = [];
-    if (_amountFocusNode.hasFocus) {
-      keyboardToolbarChildren = _getAmountKeyboardToolbarChildren(context);
-    } else if (_feeRateFocusNode.hasFocus) {
-      keyboardToolbarChildren = _getFeeRateKeyboardToolbarChildren(context);
-    }
-    return GestureDetector(
-      onTap: () {}, // ignore
-      child: Container(
-          width: MediaQuery.of(context).size.width,
-          height: 50,
-          color: keyboardToolbarGray,
-          child: Row(children: keyboardToolbarChildren)),
-    );
+  Widget _buildFeeRateKeyboardToolbar(BuildContext context) {
+    // todo: 수수료 api 연동
+    return Selector<SendViewModel, RecommendedFeeFetchStatus>(
+        selector: (_, viewModel) => _viewModel.recommendedFeeFetchStatus,
+        builder: (context, recommendedFeeFetchStatus, child) {
+          final isFailed = recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed;
+          final isFetching = recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching;
+          return Row(
+            children: [
+              CoconutLayout.spacing_200w,
+              if (isFailed) ...[
+                SvgPicture.asset('assets/svg/triangle-warning.svg',
+                    colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+                    width: 24),
+                CoconutLayout.spacing_200w,
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t.send_screen.recommended_fee_unavailable,
+                        style: CoconutTypography.body3_12_Bold),
+                    Text(t.send_screen.recommended_fee_unavailable_description,
+                        style: CoconutTypography.body3_12),
+                  ],
+                ),
+              ] else ...[
+                _buildFeeItem('assets/svg/rocket.svg', 7, isFetching),
+                CoconutLayout.spacing_200w,
+                _buildFeeItem('assets/svg/car.svg', 3, isFetching),
+                CoconutLayout.spacing_200w,
+                _buildFeeItem('assets/svg/barefoot.svg', 1, isFetching),
+              ],
+              CoconutLayout.spacing_200w,
+            ],
+          );
+        });
   }
 
   Widget _buildFeeBoard(BuildContext context) {
