@@ -248,12 +248,18 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/app-info': (context) => const AppInfoScreen(),
           '/wallet-detail': (context) => buildScreenWithArguments(
                 context,
-                (args) => WalletDetailScreen(id: args['id']),
+                (args) => WalletDetailScreen(
+                  id: args['id'],
+                  entryPoint: args['entryPoint'],
+                ),
               ),
           '/wallet-info': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(
-                    child: WalletInfoScreen(id: args['id'], isMultisig: args['isMultisig'])),
+                    child: WalletInfoScreen(
+                        id: args['id'],
+                        isMultisig: args['isMultisig'],
+                        entryPoint: args['entryPoint'])),
               ),
           '/address-list': (context) => buildScreenWithArguments(
                 context,

@@ -35,6 +35,7 @@ class WalletItemCard extends StatelessWidget {
   final bool isStarVisible;
   final ValueChanged<(bool, int)>? onTapStar;
   final int? index;
+  final String entryPoint;
 
   const WalletItemCard({
     super.key,
@@ -42,6 +43,7 @@ class WalletItemCard extends StatelessWidget {
     required this.animatedBalanceData,
     required this.name,
     required this.currentUnit,
+    required this.entryPoint,
     this.iconIndex = 0,
     this.colorIndex = 0,
     required this.isLastItem,
@@ -76,7 +78,10 @@ class WalletItemCard extends StatelessWidget {
       pressedColor: pressedColor ?? CoconutColors.gray750,
       borderRadius: 12,
       onPressed: () {
-        Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id});
+        Navigator.pushNamed(context, '/wallet-detail', arguments: {
+          'id': id,
+          'entryPoint': entryPoint,
+        });
       },
       onLongPressed: () {
         vibrateExtraLight();

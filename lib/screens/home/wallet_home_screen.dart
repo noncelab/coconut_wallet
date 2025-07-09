@@ -18,6 +18,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
@@ -842,18 +843,20 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         selector: (_, viewModel) => viewModel.isBtcUnit,
         builder: (context, isBtcUnit, child) {
           return WalletItemCard(
-              key: key,
-              id: id,
-              name: name,
-              animatedBalanceData: animatedBalanceData,
-              iconIndex: iconIndex,
-              colorIndex: colorIndex,
-              isLastItem: isLastItem,
-              isBalanceHidden: isBalanceHidden,
-              fakeBalance: fakeBalance,
-              signers: signers,
-              walletImportSource: walletImportSource,
-              currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats);
+            key: key,
+            id: id,
+            name: name,
+            animatedBalanceData: animatedBalanceData,
+            iconIndex: iconIndex,
+            colorIndex: colorIndex,
+            isLastItem: isLastItem,
+            isBalanceHidden: isBalanceHidden,
+            fakeBalance: fakeBalance,
+            signers: signers,
+            walletImportSource: walletImportSource,
+            currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+            entryPoint: kEntryPointWalletHome,
+          );
         });
   }
 
