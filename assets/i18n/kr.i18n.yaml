@@ -185,7 +185,8 @@ wallet_list:
   exclude_from_total_amount: "홈 화면 총액에서 제외"
   settings:
     primary_wallet: "대표 지갑 설정"
-    primary_wallet_description: "홈 화면에서 받기•보내기할 때 기본으로 지정돼요."
+    primary_wallet_disabled_description: "홈 화면에서 받기•보내기할 때 기본으로 지정돼요."
+    primary_wallet_abled_description: "다른 지갑을 대표 지갑으로 설정하면, 자동 해제돼요."
     exclude_from_total_amount: "총액에서 제외"
     exclude_from_total_amount_description: "홈 화면 총 잔액 계산에서 제외돼요."
   edit:

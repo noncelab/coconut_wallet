@@ -47,7 +47,9 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
         children: [
           _buildToggleWidget(
             t.wallet_list.settings.primary_wallet,
-            t.wallet_list.settings.primary_wallet_description,
+            _isPrimaryWallet
+                ? t.wallet_list.settings.primary_wallet_abled_description
+                : t.wallet_list.settings.primary_wallet_disabled_description,
             _isPrimaryWallet,
             (bool value) {
               if (!value) {
@@ -63,7 +65,6 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
               ];
               _preferenceProvider.setWalletOrder(updatedOrder);
             },
-            enableShakeAnimation: true,
           ),
           CoconutLayout.spacing_400h,
           const Divider(color: CoconutColors.gray700, height: 1),
@@ -91,8 +92,11 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
   }
 
   Widget _buildToggleWidget(
-      String title, String description, bool value, ValueChanged<bool> onChanged,
-      {bool enableShakeAnimation = false}) {
+    String title,
+    String description,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -106,38 +110,43 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
             ),
           ],
         ),
-        enableShakeAnimation
-            ? CoconutShakeAnimation(
-                key: _primaryWalletShakeKey,
-                shakeOffset: 3,
-                shakeAmount: 2,
-                direction: Axis.horizontal,
-                curve: Curves.linear,
-                child: CoconutSwitch(
-                  isOn: value,
-                  activeColor: CoconutColors.gray100,
-                  thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
-                  trackColor: CoconutColors.gray600,
-                  scale: 0.8,
-                  onChanged: (bool newValue) {
-                    setState(() {
-                      onChanged(newValue);
-                    });
-                  },
-                ),
-              )
-            : CoconutSwitch(
-                isOn: value,
-                activeColor: CoconutColors.gray100,
-                thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
-                trackColor: CoconutColors.gray600,
-                scale: 0.8,
-                onChanged: (bool newValue) {
-                  setState(() {
-                    onChanged(newValue);
-                  });
-                },
-              ),
+        // CoconutShakeAnimation(
+        //         key: _primaryWalletShakeKey,
+        //         shakeOffset: 3,
+        //         shakeAmount: 2,
+        //         direction: Axis.horizontal,
+        //         curve: Curves.linear,
+        //         child: CoconutSwitch(
+        //           isOn: value,
+        //           activeColor: CoconutColors.gray100,
+        //           thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
+        //           trackColor: CoconutColors.gray600,
+        //           scale: 0.8,
+        //           onChanged: (bool newValue) {
+        //             setState(() {
+        //               onChanged(newValue);
+        //             });
+        //           },
+        //         ),
+        //       )
+        Visibility(
+          visible: !value,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: CoconutSwitch(
+            isOn: value,
+            activeColor: CoconutColors.gray100,
+            thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
+            trackColor: CoconutColors.gray600,
+            scale: 0.8,
+            onChanged: (bool newValue) {
+              setState(() {
+                onChanged(newValue);
+              });
+            },
+          ),
+        ),
       ],
     );
   }
