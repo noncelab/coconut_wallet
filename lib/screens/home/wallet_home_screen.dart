@@ -477,7 +477,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             pressedColor: CoconutColors.gray750,
                             onPressed: () {
                               if (fakeBalanceTotalAmount != null) {
-                                _viewModel.clearFakeBlancTotalAmount();
+                                _viewModel.clearFakeBlanceTotalAmount();
                                 _viewModel.setIsBalanceHidden(true);
                                 return;
                               }

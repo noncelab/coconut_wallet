@@ -190,7 +190,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clearFakeBlancTotalAmount() {
+  void clearFakeBlanceTotalAmount() {
     _preferenceProvider.clearFakeBalanceTotalAmount();
     _preferenceProvider.changeIsFakeBalanceActive(false); // 가짜잔액 초기화시 비활성화도 같이 수행(Wallet_home 에서만)
     notifyListeners();
