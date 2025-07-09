@@ -83,7 +83,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           final walletOrder = data.item7;
 
           return PopScope(
-            canPop: isEditMode,
+            canPop: !isEditMode,
             onPopInvokedWithResult: (didPop, _) {
               if (!didPop) {
                 Navigator.pop(context);
@@ -356,7 +356,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     return ReorderableListView.builder(
       shrinkWrap: true,
       primary: false,
-      physics: const NeverScrollableScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(),
       header: _buildEditModeHeader(),
       footer: const Padding(
         padding: EdgeInsets.all(60.0),

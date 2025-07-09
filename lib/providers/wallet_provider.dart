@@ -66,7 +66,7 @@ class WalletProvider extends ChangeNotifier {
     walletItemListNotifier = ValueNotifier(_walletItemList);
 
     _loadWalletListFromDB().then((_) {
-      _migrateWalletPreferences(); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
+      _fetchWalletPreferences(); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
       notifyListeners();
     });
   }
@@ -374,9 +374,8 @@ class WalletProvider extends ChangeNotifier {
     );
   }
 
-  Future<void> _migrateWalletPreferences() async {
-    if (walletItemList.isEmpty) return;
-
+  /// DB에서 지갑 로드(_loadWalletListFromDB) 완료 후 수행
+  Future<void> _fetchWalletPreferences() async {
     var walletOrder = _preferenceProvider.walletOrder;
     var starredWalletIds = _preferenceProvider.starredWalletIds;
     if (walletOrder.isEmpty) {
