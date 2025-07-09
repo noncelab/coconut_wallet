@@ -37,11 +37,11 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   @override
   void initState() {
     super.initState();
-    final sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
-    _psbtBase64 = sendInfoProvider.txWaitingForSign!;
-    _isMultisig = sendInfoProvider.isMultisig!;
-    _walletImportSource = sendInfoProvider.walletImportSource!;
-    _isDonation = sendInfoProvider.isDonation;
+    _sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
+    _psbtBase64 = _sendInfoProvider.txWaitingForSign!;
+    _isMultisig = _sendInfoProvider.isMultisig!;
+    _walletImportSource = _sendInfoProvider.walletImportSource!;
+    _isDonation = _sendInfoProvider.isDonation;
   }
 
   @override
