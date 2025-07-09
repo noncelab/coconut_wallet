@@ -14,7 +14,6 @@ import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_vie
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
@@ -283,12 +282,9 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
 
   Widget _buildTotalUtxoAmount(Widget textKeyWidget, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
-    String utxoSumText = selectedUtxoListLength > 0
-        ? _currentUnit == BitcoinUnit.btc
-            ? satoshiToBitcoinString(totalSelectedUtxoAmount).normalizeToFullCharacters()
-            : addCommasToIntegerPart(totalSelectedUtxoAmount.toDouble())
-        : '0';
-    String unitText = _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+    String utxoSumText = _currentUnit.displayBitcoinAmount(totalSelectedUtxoAmount,
+        defaultWhenZero: '0', shouldCheckZero: true);
+    String unitText = _currentUnit.symbol;
 
     return Column(
       children: [
@@ -616,6 +612,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: LockedUtxoItemCard(
+                  currentUnit: _currentUnit,
                   key: ValueKey(utxo.transactionHash),
                   utxo: utxo,
                   utxoTags: viewModel.utxoTagMap[utxo.utxoId],

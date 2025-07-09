@@ -72,6 +72,7 @@ void main() {
     CoconutWalletApp.kElectrumIsSSL = dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
     CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
     CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
+    CoconutWalletApp.kDonationAddress = dotenv.env[DotenvKeys.donationAddress] ?? '';
     CoconutWalletApp.kNetworkType = NetworkType.getNetworkType(dotenv.env[DotenvKeys.networkType]!);
     NetworkType.setNetworkType(CoconutWalletApp.kNetworkType);
     runApp(const CoconutWalletApp());

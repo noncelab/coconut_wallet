@@ -441,4 +441,20 @@ class TransactionRepository extends BaseRepository {
       realm.deleteMany<RealmUtxo>(orphanedUtxo);
     });
   }
+
+  Future<void> updateTransactionRecord(
+      int walletId, String txHash, TransactionRecord updatedTx) async {
+    final realmTransaction = realm.find<RealmTransaction>(getRealmTransactionId(walletId, txHash));
+
+    if (realmTransaction == null) {
+      return;
+    }
+
+    await realm.writeAsync(() {
+      realm.delete(realmTransaction);
+      realm.add(mapTransactionToRealmTransaction(
+          updatedTx, walletId, getRealmTransactionId(walletId, txHash)));
+      Logger.log('[TransactionRepository] updateTransactionRecord: $txHash');
+    });
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
@@ -15,7 +16,6 @@ import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
@@ -35,6 +35,7 @@ class SendFeeSelectionScreen extends StatefulWidget {
 class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   late SendFeeSelectionViewModel _viewModel;
   late BitcoinUnit _currentUnit;
+  late PriceProvider _priceProvider;
   static const maxFeeLimit = 1000000; // sats, 사용자가 실수로 너무 큰 금액을 수수료로 지불하지 않도록 지정했습니다.
   final TextEditingController _customFeeController = TextEditingController();
   List<FeeInfoWithLevel> feeInfos = [
@@ -51,34 +52,25 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   bool? _isRecommendedFeeFetchSuccess;
   bool _isLoading = false;
 
-  String get feeText => _estimatedFee != null
-      ? _currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(_estimatedFee!)
-          : addCommasToIntegerPart(_estimatedFee!.toDouble())
-      : '';
-
-  String get unitText => _currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
+  String get feeText => _currentUnit.displayBitcoinAmount(_estimatedFee ?? 0);
 
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
       bitcoin: _currentUnit == BitcoinUnit.btc
-          ? UnitUtil.satoshiToBitcoin(maxFeeLimit)
-          : addCommasToIntegerPart(maxFeeLimit.toDouble()),
+          ? UnitUtil.convertSatoshiToBitcoin(maxFeeLimit)
+          : maxFeeLimit.toThousandsSeparatedString(),
       unit: unitText);
+
+  String get unitText => _currentUnit.symbol;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<ConnectivityProvider, WalletProvider, PriceProvider,
+    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider,
         SendFeeSelectionViewModel>(
       create: (_) => _viewModel,
-      update: (_, connectivityProvider, walletProvider, upbitConnectModel, viewModel) {
+      update: (_, connectivityProvider, walletProvider, viewModel) {
         if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
-          });
-        }
-        if (upbitConnectModel.bitcoinPriceKrw != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            viewModel.setBitcoinPriceKrw(upbitConnectModel.bitcoinPriceKrw!);
           });
         }
 
@@ -238,11 +230,11 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   void initState() {
     super.initState();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
+    _priceProvider = context.read<PriceProvider>();
     _viewModel = SendFeeSelectionViewModel(
         Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false),
         Provider.of<NodeProvider>(context, listen: false),
-        Provider.of<PriceProvider>(context, listen: false).bitcoinPriceKrw,
         Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -362,9 +354,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
 
   void _setFeeInfo(FeeInfo feeInfo, int estimatedFee) {
     feeInfo.estimatedFee = estimatedFee;
-    feeInfo.fiatValue = _viewModel.bitcoinPriceKrw != null
-        ? FiatUtil.calculateFiatAmount(estimatedFee, _viewModel.bitcoinPriceKrw!)
-        : null;
+    feeInfo.fiatValue = _priceProvider.getFiatAmount(estimatedFee);
 
     if (feeInfo is FeeInfoWithLevel && feeInfo.level == _selectedLevel) {
       _estimatedFee = estimatedFee;

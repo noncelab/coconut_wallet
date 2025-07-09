@@ -17,7 +17,6 @@ import 'package:coconut_wallet/screens/send/fee_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -46,7 +45,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   final SendInfoProvider _sendInfoProvider;
   final NodeProvider _nodeProvider;
   final PriceProvider _priceProvider;
-  late int? _bitcoinPriceKrw;
   late int _sendAmount;
   late String _recipientAddress;
   late String _changeAddressDerivationPath;
@@ -107,7 +105,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _walletBase = _walletBaseItem.walletBase;
     _recipientAddress = _sendInfoProvider.recipientAddress!;
     _changeAddressDerivationPath = _walletProvider.getChangeAddress(_walletId).derivationPath;
-    _isMaxMode = _confirmedBalance == UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!);
+    _isMaxMode = _confirmedBalance == UnitUtil.convertBitcoinToSatoshi(_sendInfoProvider.amount!);
     _setAmount();
 
     // Transaction 생성에 쓰이는 utxoList (UtxoStatus.locked상태는 제외합니다.)
@@ -115,7 +113,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
         _confirmedUtxoList.where((utxo) => utxo.status != UtxoStatus.locked).toList();
 
     final sufficientUtxo = availableUtxoList.firstWhere(
-      (utxo) => utxo.amount >= UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+      (utxo) => utxo.amount >= UnitUtil.convertBitcoinToSatoshi(_sendInfoProvider.amount!),
       orElse: () => availableUtxoList.first,
     );
 
@@ -135,12 +133,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       deselectAllUtxo();
       notifyListeners();
     });
-
-    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
-    _priceProvider.addListener(_updateBitcoinPriceKrw);
   }
-
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
 
   int? get change {
     if (_sendInfoProvider.walletId == null) {
@@ -351,11 +344,6 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _updateBitcoinPriceKrw() {
-    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
-    notifyListeners();
-  }
-
   int _calculateTotalAmountOfUtxoList(List<Utxo> utxos) {
     return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
   }
@@ -380,7 +368,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
           optimalUtxos,
           _sendInfoProvider.recipientAddress!,
           _walletProvider.getChangeAddress(_sendInfoProvider.walletId!).derivationPath,
-          UnitUtil.bitcoinToSatoshi(_sendInfoProvider.amount!),
+          UnitUtil.convertBitcoinToSatoshi(_sendInfoProvider.amount!),
           feeRate,
           walletListItemBase.walletBase);
     } catch (e) {
@@ -394,9 +382,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _initFeeInfo(FeeInfo feeInfo, int estimatedFee) {
     feeInfo.estimatedFee = estimatedFee;
-    feeInfo.fiatValue = _bitcoinPriceKrw != null
-        ? FiatUtil.calculateFiatAmount(estimatedFee, _bitcoinPriceKrw!)
-        : null;
+    feeInfo.fiatValue = _priceProvider.getFiatAmount(estimatedFee);
 
     if (feeInfo is FeeInfoWithLevel && feeInfo.level == _selectedLevel) {
       _estimatedFee = estimatedFee;
@@ -426,11 +412,11 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void _setAmount() {
     _sendAmount = _isMaxMode
-        ? UnitUtil.bitcoinToSatoshi(
+        ? UnitUtil.convertBitcoinToSatoshi(
               _sendInfoProvider.amount!,
             ) -
             (_estimatedFee ?? 0)
-        : UnitUtil.bitcoinToSatoshi(
+        : UnitUtil.convertBitcoinToSatoshi(
             _sendInfoProvider.amount!,
           );
   }
@@ -497,7 +483,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
 
   void saveSendInfo() {
     double finalAmount = _isMaxMode
-        ? UnitUtil.satoshiToBitcoin(_confirmedBalance - _estimatedFee!)
+        ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - _estimatedFee!)
         : _sendInfoProvider.amount!;
     _sendInfoProvider.setAmount(finalAmount);
     _sendInfoProvider.setEstimatedFee(_estimatedFee!);
@@ -506,11 +492,5 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _sendInfoProvider.setTransaction(_transaction);
     _sendInfoProvider.setFeeBumpfingType(null);
     _sendInfoProvider.setWalletImportSource(_walletBaseItem.walletImportSource);
-  }
-
-  @override
-  void dispose() {
-    _priceProvider.removeListener(_updateBitcoinPriceKrw);
-    super.dispose();
   }
 }

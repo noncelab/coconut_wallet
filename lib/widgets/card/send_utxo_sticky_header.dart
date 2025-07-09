@@ -4,7 +4,6 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/material.dart';
@@ -92,10 +91,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text(
-              currentUnit == BitcoinUnit.btc
-                  ? "${satoshiToBitcoinString(sendAmount).normalizeToFullCharacters()} ${t.btc}"
-                  : "${addCommasToIntegerPart(sendAmount.toDouble())} ${t.sats}",
+          Text(currentUnit.displayBitcoinAmount(sendAmount, withUnit: true),
               style: CoconutTypography.body2_14_Number),
           FiatPrice(
             satoshiAmount: sendAmount,
@@ -143,17 +139,9 @@ class SendUtxoStickyHeader extends StatelessWidget {
     }
   }
 
-  String get unitText => currentUnit == BitcoinUnit.btc ? t.btc : t.sats;
-  String get feeText => estimatedFee != null
-      ? currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(estimatedFee!)
-          : addCommasToIntegerPart(estimatedFee!.toDouble())
-      : '0';
-  String get changeText => change != null
-      ? currentUnit == BitcoinUnit.btc
-          ? satoshiToBitcoinString(change!)
-          : addCommasToIntegerPart(change!.toDouble())
-      : '-';
+  String get unitText => currentUnit.symbol;
+  String get feeText => currentUnit.displayBitcoinAmount(estimatedFee, defaultWhenNull: '0');
+  String get changeText => currentUnit.displayBitcoinAmount(change, defaultWhenNull: '-');
 
   Widget _buildEstimatedFee() {
     return Column(

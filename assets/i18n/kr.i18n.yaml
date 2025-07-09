@@ -113,6 +113,48 @@ faucet_already_request: "해당 주소로 이미 요청했습니다. 입금까�
 faucet_failed: "요청에 실패했습니다. 잠시 후 다시 시도해 주세요."
 bio_auth_required: "생체 인증을 진행해 주세요"
 
+donation:
+  coconut: "코코넛 후원"
+  donate: "후원하기"
+  supportImpactMessage: "당신의 응원 덕분에, 우린 자유로운 돈을 더 많은 사람들에게 전할 수 있습니다"
+  encourageSupportMessage: "코코넛을 지속할 수 있도록 응원해 주세요"
+  coffee: "☕️ 커피 한 잔"
+  late_meal: "🍜️ 야근 식대"
+  maintenance: "⚒️️ 유지 보수비"
+  support_heart: "🩷 응원의 마음"
+  onchain: "온체인 후원"
+  lightning: "라이트닝 후원"
+  under_dust_error: "${dust}(더스트) 보다 큰 금액을 입력해 주세요\n"
+  over_donation_max_value_error: "최대 $value sats까지 후원하실 수 있어요\n"
+  donation_wallet: "후원 지갑"
+  total_donation_amount: "최종 후원 금액"
+  donation_address: "후원 주소"
+  empty_enough_balance_wallet: "잔액이 충분한 지갑이 없어요"
+  unsigned_qr_tooltip: "QR 코드를 스캔하여 서명해 주세요"
+  signed_qr_tooltip: "서명된 트랜잭션을 스캔해 주세요"
+  user_messages: [
+    "사랑을 담아",
+    "응원의 마음을 담아",
+    "파이팅 하라고",
+    "소처럼 일하라고",
+    "힘내라고",
+    "고마운 마음으로",
+    "기특해서",
+  ]
+  user_messages_description_1: "코코넛 개발팀에게"
+  user_messages_description_2: "${amount} sats를"
+  donate_confirm: "후원합니다"
+  complete:
+    thank_you: "감사합니다!"
+    description: "당신의 후원은 단순한 비트코인이 아닙니다.\n더 나은 지갑, 더 가까운 대중화를 향한\n코코넛의 발걸음을 이어갈 수 있게 해줍니다."
+
+  # 후원하기 - 라이트닝
+  donation_amount: "후원 금액"
+  ln_invoice: "라이트닝 인보이스"
+  ln_address: "라이트닝 주소"
+  ln_address_pow: "powbitcoiner@speed.app"
+  ln_invoice_api_error: "라이트닝 인보이스 생성에 실패했어요"
+
 # lib/enums
 transaction_enums:
   high_priority: "빠른 전송"

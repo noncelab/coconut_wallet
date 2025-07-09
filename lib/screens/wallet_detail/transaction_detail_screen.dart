@@ -16,7 +16,6 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_de
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
@@ -27,6 +26,7 @@ import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_memo_bottom_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -105,181 +105,191 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                 title: t.view_tx_details,
                 context: context,
               ),
-              body: SingleChildScrollView(
+              body: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 20,
+                slivers: [
+                  CupertinoSliverRefreshControl(
+                    onRefresh: () async => viewModel.onRefresh(),
+                    refreshTriggerPullDistance: 100,
                   ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                    HighlightedInfoArea(
-                      textList: DateTimeUtil.formatTimestamp(
-                        tx.timestamp.toLocal(),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 20,
                       ),
-                    ),
-                    CoconutLayout.spacing_500h,
-                    GestureDetector(
-                      onTap: _toggleUnit,
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                        HighlightedInfoArea(
+                          textList: DateTimeUtil.formatTimestamp(
+                            tx.timestamp.toLocal(),
+                          ),
+                        ),
+                        CoconutLayout.spacing_500h,
+                        GestureDetector(
+                          onTap: _toggleUnit,
+                          child: Column(
                             children: [
-                              _amountText(tx),
-                              CoconutLayout.spacing_100w,
-                              Text(
-                                _currentUnit == BitcoinUnit.btc ? t.btc : t.sats,
-                                style: CoconutTypography.body2_14_Number
-                                    .setColor(CoconutColors.gray350),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  _amountText(tx),
+                                  CoconutLayout.spacing_100w,
+                                  Text(
+                                    _currentUnit.symbol,
+                                    style: CoconutTypography.body2_14_Number
+                                        .setColor(CoconutColors.gray350),
+                                  ),
+                                ],
                               ),
+                              CoconutLayout.spacing_100h,
+                              FiatPrice(
+                                  satoshiAmount: tx.amount.abs(),
+                                  textStyle: CoconutTypography.body2_14_Number
+                                      .setColor(CoconutColors.gray500))
                             ],
                           ),
-                          CoconutLayout.spacing_100h,
-                          FiatPrice(
-                              satoshiAmount: tx.amount.abs(),
-                              textStyle:
-                                  CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500))
-                        ],
-                      ),
-                    ),
-                    CoconutLayout.spacing_400h,
-                    if (_isTransactionStatusPending(txList.last) &&
-                        viewModel.isSendType != null) ...{
-                      Column(
-                        children: [
-                          _pendingWidget(txList.first),
-                          if (viewModel.isSendType!)
-                            (txList.last.rbfHistoryList != null &&
-                                    txList.last.rbfHistoryList!.isNotEmpty)
-                                ? _rbfHistoryWidget()
-                                : Container()
-                          else
-                            txList.last.cpfpHistory != null ? _cpfpHistoryWidget() : Container(),
-                          CoconutLayout.spacing_300h,
-                        ],
-                      )
-                    },
-                    Stack(
-                      children: [
-                        if (_viewModel.previousTransactionIndex !=
-                            _viewModel.selectedTransactionIndex)
-                          AnimatedBuilder(
-                              animation: _animationController,
-                              builder: (context, child) {
-                                return SlideTransition(
-                                  position: _slideOutAnimation,
-                                  child: Opacity(
-                                    opacity: 1.0 - _animationController.value,
-                                    child: child,
-                                  ),
-                                );
-                              },
-                              child: TransactionInputOutputCard(
-                                key: ValueKey(_viewModel
-                                    .transactionList![_viewModel.previousTransactionIndex]
-                                    .transactionHash),
-                                transaction: _viewModel
-                                    .transactionList![_viewModel.previousTransactionIndex],
-                                isSameAddress: _viewModel.isSameAddress,
-                                currentUnit: _currentUnit,
-                              )),
-                        AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              return SlideTransition(
-                                position: _slideInAnimation,
-                                child: Opacity(
-                                  opacity: _animationController.value,
-                                  child: child,
+                        ),
+                        CoconutLayout.spacing_400h,
+                        if (_isTransactionStatusPending(txList.last) &&
+                            viewModel.isSendType != null) ...{
+                          Column(
+                            children: [
+                              _pendingWidget(txList.first),
+                              if (viewModel.isSendType!)
+                                (txList.last.rbfHistoryList != null &&
+                                        txList.last.rbfHistoryList!.isNotEmpty)
+                                    ? _rbfHistoryWidget()
+                                    : Container()
+                              else
+                                txList.last.cpfpHistory != null
+                                    ? _cpfpHistoryWidget()
+                                    : Container(),
+                              CoconutLayout.spacing_300h,
+                            ],
+                          )
+                        },
+                        Stack(
+                          children: [
+                            if (_viewModel.previousTransactionIndex !=
+                                _viewModel.selectedTransactionIndex)
+                              AnimatedBuilder(
+                                  animation: _animationController,
+                                  builder: (context, child) {
+                                    return SlideTransition(
+                                      position: _slideOutAnimation,
+                                      child: Opacity(
+                                        opacity: 1.0 - _animationController.value,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: TransactionInputOutputCard(
+                                    key: ValueKey(_viewModel
+                                        .getTransactionKey(_viewModel.previousTransactionIndex)),
+                                    transaction: _viewModel
+                                        .transactionList![_viewModel.previousTransactionIndex],
+                                    isSameAddress: _viewModel.isSameAddress,
+                                    currentUnit: _currentUnit,
+                                  )),
+                            AnimatedBuilder(
+                                animation: _animationController,
+                                builder: (context, child) {
+                                  return SlideTransition(
+                                    position: _slideInAnimation,
+                                    child: Opacity(
+                                      opacity: _animationController.value,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: TransactionInputOutputCard(
+                                  key: ValueKey(_viewModel
+                                      .getTransactionKey(_viewModel.selectedTransactionIndex)),
+                                  transaction: _viewModel
+                                      .transactionList![_viewModel.selectedTransactionIndex],
+                                  isSameAddress: _viewModel.isSameAddress,
+                                  currentUnit: _currentUnit,
+                                )),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        UnderlineButtonItemCard(
+                          label: t.block_num,
+                          underlineButtonLabel: tx.blockHeight != 0 ? t.view_mempool : '',
+                          onTapUnderlineButton: () {
+                            tx.blockHeight != 0
+                                ? launchUrl(Uri.parse(
+                                    '${CoconutWalletApp.kMempoolHost}/block/${tx.blockHeight}'))
+                                : ();
+                          },
+                          child: Text(
+                            tx.blockHeight != 0
+                                ? t.transaction_detail_screen.confirmation(
+                                    height: tx.blockHeight.toString(),
+                                    count: _confirmedCountText(tx, viewModel.currentBlock?.height))
+                                : '-',
+                            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                          ),
+                        ),
+                        TransactionDetailScreen._divider,
+                        UnderlineButtonItemCard(
+                          label: t.fee_rate,
+                          underlineButtonLabel: '',
+                          onTapUnderlineButton: () {},
+                          child: Text(
+                            '${tx.feeRate.toStringAsFixed(2)} sats/vb',
+                            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                          ),
+                        ),
+                        TransactionDetailScreen._divider,
+                        UnderlineButtonItemCard(
+                          label: t.tx_id,
+                          underlineButtonLabel: t.view_mempool,
+                          onTapUnderlineButton: () {
+                            launchUrl(Uri.parse(
+                                "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
+                          },
+                          child: CopyTextContainer(
+                            text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
+                            textStyle:
+                                CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                          ),
+                        ),
+                        TransactionDetailScreen._divider,
+                        UnderlineButtonItemCard(
+                            label: t.tx_memo,
+                            underlineButtonLabel: t.edit,
+                            onTapUnderlineButton: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (context) => MemoBottomSheet(
+                                  originalMemo: txMemo ?? '',
+                                  onComplete: (memo) {
+                                    if (!viewModel.updateTransactionMemo(memo)) {
+                                      CoconutToast.showWarningToast(
+                                        context: context,
+                                        text: t.toast.memo_update_failed,
+                                      );
+                                    }
+                                  },
                                 ),
                               );
                             },
-                            child: TransactionInputOutputCard(
-                              key: ValueKey(_viewModel
-                                  .transactionList![_viewModel.selectedTransactionIndex]
-                                  .transactionHash),
-                              transaction:
-                                  _viewModel.transactionList![_viewModel.selectedTransactionIndex],
-                              isSameAddress: _viewModel.isSameAddress,
-                              currentUnit: _currentUnit,
+                            child: Text(
+                              txMemo?.isNotEmpty == true ? txMemo! : '-',
+                              style:
+                                  CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                             )),
-                      ],
+                        const SizedBox(
+                          height: 40,
+                        ),
+                      ]),
                     ),
-                    const SizedBox(height: 12),
-                    UnderlineButtonItemCard(
-                      label: t.block_num,
-                      underlineButtonLabel: tx.blockHeight != 0 ? t.view_mempool : '',
-                      onTapUnderlineButton: () {
-                        tx.blockHeight != 0
-                            ? launchUrl(Uri.parse(
-                                '${CoconutWalletApp.kMempoolHost}/block/${tx.blockHeight}'))
-                            : ();
-                      },
-                      child: Text(
-                        tx.blockHeight != 0
-                            ? t.transaction_detail_screen.confirmation(
-                                height: tx.blockHeight.toString(),
-                                count: _confirmedCountText(tx, viewModel.currentBlock?.height))
-                            : '-',
-                        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-                      ),
-                    ),
-                    TransactionDetailScreen._divider,
-                    UnderlineButtonItemCard(
-                      label: t.fee_rate,
-                      underlineButtonLabel: '',
-                      onTapUnderlineButton: () {},
-                      child: Text(
-                        '${tx.feeRate.toStringAsFixed(2)} sats/vb',
-                        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-                      ),
-                    ),
-                    TransactionDetailScreen._divider,
-                    UnderlineButtonItemCard(
-                      label: t.tx_id,
-                      underlineButtonLabel: t.view_mempool,
-                      onTapUnderlineButton: () {
-                        launchUrl(
-                            Uri.parse("${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
-                      },
-                      child: CopyTextContainer(
-                        text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
-                        textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-                      ),
-                    ),
-                    TransactionDetailScreen._divider,
-                    UnderlineButtonItemCard(
-                        label: t.tx_memo,
-                        underlineButtonLabel: t.edit,
-                        onTapUnderlineButton: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            builder: (context) => MemoBottomSheet(
-                              originalMemo: txMemo ?? '',
-                              onComplete: (memo) {
-                                if (!viewModel.updateTransactionMemo(memo)) {
-                                  CoconutToast.showWarningToast(
-                                    context: context,
-                                    text: t.toast.memo_update_failed,
-                                  );
-                                }
-                              },
-                            ),
-                          );
-                        },
-                        child: Text(
-                          txMemo?.isNotEmpty == true ? txMemo! : '-',
-                          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-                        )),
-                    const SizedBox(
-                      height: 40,
-                    ),
-                  ]),
-                ),
+                  ),
+                ],
               ));
         },
       ),
@@ -663,9 +673,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   Widget _amountText(TransactionRecord tx) {
     String prefix = _getPrefix(tx) == '-' ? '' : '+';
     Color color = prefix == '+' ? CoconutColors.cyan : CoconutColors.primary;
+    String amountText = _currentUnit.displayBitcoinAmount(tx.amount);
 
-    return Text(
-        '$prefix${_currentUnit == BitcoinUnit.btc ? satoshiToBitcoinString(tx.amount) : addCommasToIntegerPart(tx.amount.toDouble())}',
+    return Text('$prefix$amountText',
         style: CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color));
   }
 

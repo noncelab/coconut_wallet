@@ -6,7 +6,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/svg.dart';
@@ -24,6 +23,7 @@ class UnsignedTransactionQrScreen extends StatefulWidget {
 
 class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScreen> {
   int? _lastSnappedValue;
+  late final SendInfoProvider _sendInfoProvider;
   late final String _psbtBase64;
   late final bool _isMultisig;
   late final WalletImportSource _walletImportSource;
@@ -32,6 +32,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   late double _qrPaddingVertical;
   late double _qrSize;
   bool _isQrDensityInitialized = false;
+  late bool? _isDonation;
 
   @override
   void initState() {
@@ -40,6 +41,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     _psbtBase64 = sendInfoProvider.txWaitingForSign!;
     _isMultisig = sendInfoProvider.isMultisig!;
     _walletImportSource = sendInfoProvider.walletImportSource!;
+    _isDonation = sendInfoProvider.isDonation;
   }
 
   @override
@@ -87,12 +89,12 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     const targetMmSize = 62.8 * 0.9; // 폴드1에서의 QR mm 크기
 
     // 테스트용(갤폴드에서 보이는 QR사이즈)
-    final qrSize = screenWidth * (targetMmSize / deviceMmWidth);
+    // final qrSize = screenWidth * (targetMmSize / deviceMmWidth);
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       backgroundColor: CoconutColors.black,
       appBar: CoconutAppBar.buildWithNext(
-          title: t.send,
+          title: (_isDonation ?? false) ? t.donation.donate : t.send,
           context: context,
           usePrimaryActiveColor: true,
           onNextPressed: () {
@@ -254,6 +256,18 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ),
           ),
           showIcon: true);
+    } else if (_sendInfoProvider.isDonation == true) {
+      return Padding(
+        padding: const EdgeInsets.only(
+          top: 24,
+        ),
+        child: Center(
+          child: Text(
+            t.donation.unsigned_qr_tooltip,
+            style: CoconutTypography.body2_14_Bold,
+          ),
+        ),
+      );
     } else {
       return CoconutToolTip(
         backgroundColor: CoconutColors.gray900,

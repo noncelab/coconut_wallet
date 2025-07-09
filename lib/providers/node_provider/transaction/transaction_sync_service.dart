@@ -95,7 +95,7 @@ class TransactionSyncService {
     // 4. 트랜잭션 레코드 생성 및 저장
     final List<TransactionRecord> txRecords =
         await _transactionRecordService.createTransactionRecords(
-      walletItem,
+      walletId,
       fetchedTransactionDetails,
       now: now,
     );

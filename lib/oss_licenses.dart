@@ -10273,7 +10273,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.''',
     isMarkdown: false,
     isSdk: true,
-    dependencies: []);
+    dependencies: [PackageRef('collection')]);
 
 /// url_launcher 6.3.1
 const _url_launcher = Package(

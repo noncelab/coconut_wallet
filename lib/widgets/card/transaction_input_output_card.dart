@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -75,20 +76,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   @override
   void initState() {
     super.initState();
-    _inputCountToShow = _transaction.inputAddressList.length;
-    _outputCountToShow = _transaction.outputAddressList.length;
-    _inputAddressList = _transaction.inputAddressList;
-    _outputAddressList = _transaction.outputAddressList;
-    _status = TransactionUtil.getStatus(_transaction)!;
-
-    if (_inputAddressList.length > kInputMaxCount) {
-      _canShowMoreInputs = true;
-      _setInitialInputCountToShow();
-    }
-    if (_outputAddressList.length > kOutputMaxCount) {
-      _canShowMoreOutputs = true;
-      _setInitialOutputCountToShow();
-    }
+    _initializeTransactionData();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -99,6 +87,39 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         updateBalanceMaxWidth();
       }
     });
+  }
+
+  void _initializeTransactionData() {
+    _inputCountToShow = _transaction.inputAddressList.length;
+    _outputCountToShow = _transaction.outputAddressList.length;
+    _inputAddressList = _transaction.inputAddressList;
+    _outputAddressList = _transaction.outputAddressList;
+    _status = TransactionUtil.getStatus(_transaction)!;
+
+    // 버튼 상태 초기화
+    _canShowMoreInputs = false;
+    _canShowMoreOutputs = false;
+    _canShowLessInputs = false;
+    _canShowLessOutputs = false;
+
+    if (_inputAddressList.length > kInputMaxCount) {
+      _canShowMoreInputs = true;
+      _setInitialInputCountToShow();
+    }
+    if (_outputAddressList.length > kOutputMaxCount) {
+      _canShowMoreOutputs = true;
+      _setInitialOutputCountToShow();
+    }
+  }
+
+  @override
+  void didUpdateWidget(TransactionInputOutputCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 트랜잭션 데이터가 변경되었으면 상태를 다시 초기화
+    if (oldWidget.transaction != widget.transaction) {
+      _initializeTransactionData();
+      updateBalanceMaxWidth();
+    }
   }
 
   void updateBalanceMaxWidth() {
@@ -117,8 +138,8 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         : 0;
 
     int maxAmount = max(maxInputAmount, maxOutputAmount);
-    _longestSatoshiText = addCommasToIntegerPart(maxAmount.toDouble());
-    _longestBtcText = satoshiToBitcoinString(maxAmount);
+    _longestSatoshiText = maxAmount.toThousandsSeparatedString();
+    _longestBtcText = BalanceFormatUtil.formatSatoshiToReadableBitcoin(maxAmount);
 
     /// 최소값
     if (_longestBtcText.length < _minimumLongestText.length) {
@@ -220,11 +241,14 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
     required List<TransactionAddress> list,
     required InputOutputRowType rowType,
   }) {
+    final filteredEntries =
+        list.asMap().entries.where((entry) => entry.value.address.isNotEmpty).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ...list.asMap().entries.map((entry) {
-          final index = entry.key;
+        ...filteredEntries.map((entry) {
+          final originalIndex = entry.key; // UTXO의 인덱스에 해당하는 원본 인덱스 유지
           final item = entry.value;
 
           return Padding(
@@ -234,7 +258,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
               balance: item.amount,
               balanceMaxWidth: balanceMaxWidth,
               rowType: rowType,
-              isCurrentAddress: widget.isSameAddress(item.address, index),
+              isCurrentAddress: widget.isSameAddress(item.address, originalIndex),
               transactionStatus: widget.isForTransaction ? _status : null,
               currentUnit: widget.currentUnit,
             ),

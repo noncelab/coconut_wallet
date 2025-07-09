@@ -17,13 +17,13 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 # iOS
-#version: 3.1.5+1
+#version: 3.1.6+1
 # AOS
-#version: 3.1.5+41
+version: 3.1.6+42
 # iOS Mainnet
-version: 0.0.11+2
+#version: 0.0.12+1
 # AOS Mainnet
-#version: 0.0.11+14
+#version: 0.0.12+15
 
 environment:
   sdk: ">=3.3.1 <4.0.0"
@@ -212,6 +212,16 @@ flutter:
     - assets/lottie/loading-three-dots.json
     - assets/lottie/arrow-up.json
     - assets/lottie/arrow-down.json
+    - assets/lottie/hand-with-floating-heart.json
+    - assets/lottie/hand-with-floating-heart-delayed.json
+    - assets/lottie/tripple-hearts.json
+    - assets/lottie/giving-heart.json
+    - assets/lottie/giving-coin.json
+    - assets/lottie/two-hands-making-heart.json
+    - assets/lottie/spinning-heart.json
+    - assets/lottie/upside-down-hands.json
+    - assets/lottie/thankyou-hearts.json
+    - assets/images/hand-with-laid-heart.png
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg
     - assets/images/discord-logo.png

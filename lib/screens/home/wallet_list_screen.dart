@@ -16,6 +16,7 @@ import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_b
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/card/donation_banner_card.dart';
 import 'package:coconut_wallet/widgets/label_testnet.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
@@ -142,6 +143,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           ),
                           _buildLoadingIndicator(viewModel),
                           _buildPadding(isOffline),
+                          //if (NetworkType.currentNetworkType == NetworkType.mainnet)
+                          _buildDonationBanner(),
                           if (!shouldShowLoadingIndicator)
                             SliverToBoxAdapter(
                                 child: Column(
@@ -198,6 +201,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDonationBanner() {
+    return SliverToBoxAdapter(
+      child: DonationBannerCard(
+        walletListLength: _viewModel.walletItemList.length,
       ),
     );
   }
@@ -429,7 +440,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               colorIndex: colorIndex,
               isLastItem: isLastItem,
               isBalanceHidden: isBalanceHidden,
-              fakeBlance: fakeBalance,
+              fakeBalance: fakeBalance,
               signers: signers,
               walletImportSource: walletImportSource,
               currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats);
