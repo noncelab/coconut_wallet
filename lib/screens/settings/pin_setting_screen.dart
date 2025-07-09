@@ -22,7 +22,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   late String pinConfirm;
   late String errorMessage;
   late int _pinLength;
-  late bool _showNextButton;
   late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
 
@@ -32,9 +31,8 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     pin = '';
     pinConfirm = '';
     errorMessage = '';
-    _pinLength = 4;
-    _showNextButton = false;
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _pinLength = _authProvider.pinLength == 0 ? 4 : _authProvider.pinLength;
     _shuffledPinNumbers = _authProvider.getShuffledNumberPad(isSettings: true);
   }
 
@@ -90,11 +88,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     vibrateLightDouble();
   }
 
-  Future<bool> _comparePin(String input) async {
-    bool isSamePin = await _authProvider.verifyPin(input);
-    return isSamePin;
-  }
-
   void _onKeyTap(String value) async {
     setState(() {
       errorMessage = '';
@@ -107,18 +100,21 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         }
       } else if (pin.length < _pinLength) {
         setState(() => pin += value);
+        vibrateExtraLight();
       }
       setState(() {
-        _showNextButton = (pin.length == _pinLength);
+        if (pin.length == _pinLength) {
+          step = 1;
+        }
       });
     } else if (step == 1) {
       if (value == '<') {
         if (pinConfirm.isNotEmpty) {
-          setState(() =>
-              pinConfirm = pinConfirm.substring(0, pinConfirm.length - 1));
+          setState(() => pinConfirm = pinConfirm.substring(0, pinConfirm.length - 1));
         }
       } else if (pinConfirm.length < pin.length) {
         setState(() => pinConfirm += value);
+        vibrateExtraLight();
       }
 
       if (pinConfirm.length == pin.length) {
@@ -128,7 +124,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
             await _authProvider.savePinSet(hashedPin, pin.length);
             vibrateLightDouble();
             _showPinSetSuccessLottie();
-            
+
             if (mounted) {
               Navigator.pop(context); // Close success dialog
               Navigator.pop(context); // Close PIN setting screen
@@ -145,30 +141,9 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     }
   }
 
-  void _onNextPressed() async {
-    if (_authProvider.isSetPin) {
-      final isSamePin = await _comparePin(pin);
-      if (isSamePin) {
-        setState(() {
-          errorMessage = t.errors.pin_setting_error.already_in_use;
-        });
-        vibrateMedium();
-        return;
-      }
-    }
-    setState(() {
-      step = 1;
-      pinConfirm = '';
-      _showNextButton = false;
-      _shufflePinNumbers();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    String title = step == 0
-        ? t.pin_setting_screen.new_password
-        : t.pin_setting_screen.enter_again;
+    String title = step == 0 ? t.pin_setting_screen.new_password : t.pin_setting_screen.enter_again;
 
     Widget? centerWidget;
     if (step == 0) {
@@ -178,7 +153,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           setState(() {
             _pinLength = _pinLength == 4 ? 6 : 4;
             pin = '';
-            _showNextButton = false;
           });
         },
       );
@@ -198,7 +172,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
             pin = '';
             pinConfirm = '';
             errorMessage = '';
-            _showNextButton = false;
           });
         },
         step: step,
@@ -207,19 +180,6 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         initOptionVisible: false,
         centerWidget: centerWidget,
       ),
-      bottomSheet: _showNextButton
-          ? Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _onNextPressed,
-                  child: Text(t.next),
-                ),
-              ),
-            )
-          : null,
     );
   }
 }

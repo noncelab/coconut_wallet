@@ -16,26 +16,17 @@ class PinLengthToggleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0),
-      child: OutlinedButton(
-        onPressed: onToggle,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: CoconutColors.gray600,
-          backgroundColor: Colors.transparent,
-          side: BorderSide(color: CoconutColors.gray400, width: 1.0),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(8),
-            ),
-          ),
-        ),
-        child: Text(
-          currentPinLength == 4
+      child: CoconutButton(
+          width: 180,
+          padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
+          onPressed: onToggle,
+          text: currentPinLength == 4
               ? t.pin_setting_screen.set_to_6_digit
               : t.pin_setting_screen.set_to_4_digit,
-          style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-        ),
-      ),
+          pressedBackgroundColor: CoconutColors.gray800,
+          backgroundColor: CoconutColors.gray600,
+          buttonType: CoconutButtonType.outlined,
+          textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
     );
   }
 }

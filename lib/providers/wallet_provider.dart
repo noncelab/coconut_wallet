@@ -40,7 +40,6 @@ class WalletProvider extends ChangeNotifier {
   late final PreferenceProvider _preferenceProvider;
 
   late final Future<void> Function(int) _saveWalletCount;
-  late final bool _isSetPin;
 
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletListItemBase>> walletItemListNotifier;
@@ -57,10 +56,8 @@ class WalletProvider extends ChangeNotifier {
     this._utxoRepository,
     this._walletRepository,
     Future<void> Function(int) saveWalletCount,
-    bool isSetPin,
     this._preferenceProvider,
-  )   : _saveWalletCount = saveWalletCount,
-        _isSetPin = isSetPin {
+  ) : _saveWalletCount = saveWalletCount {
     // ValueNotifier들 초기화
     walletLoadStateNotifier = ValueNotifier(_walletLoadState);
     walletItemListNotifier = ValueNotifier(_walletItemList);
@@ -79,9 +76,7 @@ class WalletProvider extends ChangeNotifier {
 
     try {
       Logger.log('--> RealmManager.isInitialized: ${_realmManager.isInitialized}');
-      if (_realmManager.isInitialized) {
-        await _realmManager.init(_isSetPin);
-      }
+
       _setWalletItemList(await _fetchWalletListFromDB());
       _walletLoadState = WalletLoadState.loadCompleted;
 

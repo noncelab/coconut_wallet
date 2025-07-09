@@ -136,6 +136,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
         }
       } else if (pin.length < _authProvider.pinLength) {
         pin += value;
+        vibrateExtraLight();
       }
     });
 

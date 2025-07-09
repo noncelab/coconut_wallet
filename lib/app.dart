@@ -49,8 +49,6 @@ import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
-import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
 
@@ -73,19 +71,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   AppEntryFlow _appEntryFlow = AppEntryFlow.splash;
 
   final RealmManager _realmManager = RealmManager();
-  final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   @override
   void initState() {
     super.initState();
-    _initializeRealmManager();
-  }
-
-  // RealmManager 초기화 메서드
-  Future<void> _initializeRealmManager() async {
-    // SharedPreferences에서 PIN 설정 여부 확인
-    final isSetPin = _sharedPrefs.getBool(SharedPrefKeys.kIsSetPin);
-    await _realmManager.init(isSetPin);
   }
 
   /// startSplash 완료 콜백
@@ -150,7 +139,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (count) async {
                   await context.read<VisibilityProvider>().setWalletCount(count);
                 },
-                Provider.of<AuthProvider>(context, listen: false).isSetPin,
                 Provider.of<PreferenceProvider>(context, listen: false),
               );
             },

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
@@ -97,14 +98,18 @@ class PinInputPadState extends State<PinInputPad> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(widget.pinLength, (index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: PinBox(isSet: widget.pin.length > index),
-                );
-              }),
+            SizedBox(
+              height: 50,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(widget.pinLength, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: PinBox(
+                        isSet: widget.pin.length > index, size: widget.pinLength == 4 ? null : 40),
+                  );
+                }),
+              ),
             ),
             if (widget.centerWidget != null)
               Padding(
@@ -136,7 +141,7 @@ class PinInputPadState extends State<PinInputPad> {
                 ),
               ),
             ),
-            SizedBox(height: widget.initOptionVisible ? 60 : 100),
+            SizedBox(height: widget.initOptionVisible ? 60 : 76),
             if (widget.initOptionVisible)
               Padding(
                   padding: const EdgeInsets.only(bottom: 60.0),
@@ -145,7 +150,7 @@ class PinInputPadState extends State<PinInputPad> {
                       widget.onReset?.call();
                     },
                     child: Text(
-                      '비밀번호가 기억나지 않나요?',
+                      t.forgot_password,
                       style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray600),
                       textAlign: TextAlign.center,
                     ),
