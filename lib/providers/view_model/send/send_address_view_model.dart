@@ -31,7 +31,13 @@ class SendAddressViewModel extends ChangeNotifier {
     if (clipboardText.isNotEmpty) {
       try {
         await validateAddress(clipboardText);
-        _address = _isBech32(clipboardText) ? clipboardText.toLowerCase() : clipboardText;
+
+        String addressToSave = clipboardText;
+        if (clipboardText.toLowerCase().startsWith('bitcoin:')) {
+          addressToSave = _parseBip21Address(clipboardText);
+        }
+
+        _address = _isBech32(addressToSave) ? addressToSave.toLowerCase() : addressToSave;
       } catch (_) {
         _address = null;
       }
@@ -41,7 +47,13 @@ class SendAddressViewModel extends ChangeNotifier {
 
   void saveWalletIdAndRecipientAddress(int id, String address) {
     _sendInfoProvider.setWalletId(id);
-    _sendInfoProvider.setRecipientAddress(_isBech32(address) ? address.toLowerCase() : address);
+
+    String addressToSave = address;
+    if (address.toLowerCase().startsWith('bitcoin:')) {
+      addressToSave = _parseBip21Address(address);
+    }
+    _sendInfoProvider.setRecipientAddress(
+        _isBech32(addressToSave) ? addressToSave.toLowerCase() : addressToSave);
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
@@ -53,7 +65,16 @@ class SendAddressViewModel extends ChangeNotifier {
       throw invalidAddressMessage;
     }
 
-    final normalized = recipient.toLowerCase();
+    String addressToParse = recipient;
+
+    if (recipient.toLowerCase().startsWith('bitcoin:')) {
+      addressToParse = _parseBip21Address(recipient);
+      if (addressToParse.isEmpty) {
+        throw invalidAddressMessage;
+      }
+    }
+
+    final normalized = addressToParse.toLowerCase();
 
     // Bech32m(T2R) 주소 최대 62자
     if (normalized.length < 26 || normalized.length > 62) {
@@ -90,6 +111,21 @@ class SendAddressViewModel extends ChangeNotifier {
     if (!result) {
       throw invalidAddressMessage;
     }
+  }
+
+  String _parseBip21Address(String recipient) {
+    if (!recipient.startsWith('bitcoin:')) {
+      return recipient;
+    }
+
+    final withoutScheme = recipient.substring(8);
+
+    final queryIndex = withoutScheme.indexOf('?');
+    if (queryIndex == -1) {
+      return withoutScheme;
+    }
+
+    return withoutScheme.substring(0, queryIndex);
   }
 
   bool _isBech32(String address) {
